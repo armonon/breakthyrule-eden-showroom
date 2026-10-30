@@ -1,0 +1,20 @@
+#open-residents{color:inherit;border-color:#ffffff70;background:#25332b30}
+#open-residents:hover{background:#25332b70}
+#resident-dialog{width:min(470px,calc(100vw - 24px));height:fit-content;max-height:calc(100svh - 24px);border-radius:6px;margin:auto;letter-spacing:0}
+#resident-dialog header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid #ddd;gap:12px}
+#resident-dialog h2{font-size:28px;line-height:1.1;letter-spacing:0;margin:0}
+#resident-list{list-style:none;padding:0 20px;margin:0}
+#resident-list li{display:flex;align-items:center;gap:12px;padding:18px 0;border-bottom:1px solid #e4e6e3;min-height:100px}
+#resident-list li:last-child{border:0}
+#resident-list img{width:50px;height:64px;object-fit:cover;border-radius:3px;background:#e4e9e8}
+#resident-list .resident-description{min-width:0;flex:1}
+#resident-list strong{display:block;font-size:14px;font-weight:600;overflow-wrap:anywhere}
+#resident-list small{display:block;font-size:12px;color:#626961;margin-top:5px}
+#resident-list .resident-status{font-size:11px;color:#a13e37}
+#resident-list button:disabled{opacity:.35;cursor:wait}
+#resident-dialog footer{border-top:1px solid #ddd;padding:12px 20px}
+#resident-concepts{gap:8px;letter-spacing:0}
+#resident-concepts svg{width:18px;height:18px}
+body:has(#scene.resident-view) .world-caption h1{font-size:34px;line-height:1.05}
+@media(max-width:580px){.header-actions{gap:12px}.site-header{gap:10px}#open-residents{width:36px;height:36px;flex-basis:36px}.wordmark{font-size:25px}body:has(#scene.resident-view) .world-caption h1{font-size:28px}}
+@media(max-width:359px){.header-actions{gap:8px}.site-header{padding-inline:12px}.wordmark{font-size:22px}}

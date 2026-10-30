@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "numbers": {
+    "faceDefinition": {"label":"Face definition","min":0,"max":1,"step":0.01,"default":0.65,"optional":true,"tab":"face"},
+    "age": {"label":"Maturity","min":0,"max":1,"step":0.01,"default":0.2,"optional":true,"tab":"face"},
+    "lipFullness": {"label":"Lip fullness","min":0.65,"max":1.35,"step":0.01,"default":1,"optional":true,"tab":"face"},
+    "browWeight": {"label":"Brow thickness","min":0.6,"max":1.4,"step":0.01,"default":1,"optional":true,"tab":"face"},
+    "hairLength": {"label":"Hair length","min":0.65,"max":1.35,"step":0.01,"default":1,"optional":true,"tab":"hair"},
+    "hairVolume": {"label":"Hair volume","min":0.7,"max":1.4,"step":0.01,"default":1,"optional":true,"tab":"hair"},
+    "height": {"label":"Height","min":145,"max":210,"step":1,"default":175,"unit":"cm","tab":"body"},
+    "weight": {"label":"Body weight","min":45,"max":140,"step":1,"default":72,"unit":"kg","tab":"body"},
+    "build": {"label":"Muscle definition","min":0,"max":1,"step":0.01,"default":0.35,"tab":"body"},
+    "shoulders": {"label":"Shoulder width","min":0.8,"max":1.3,"step":0.01,"default":1,"tab":"body"},
+    "waist": {"label":"Waist","min":0.75,"max":1.3,"step":0.01,"default":1,"tab":"body"},
+    "hips": {"label":"Hip width","min":0.8,"max":1.35,"step":0.01,"default":1,"tab":"body"},
+    "legLength": {"label":"Leg length","min":0.9,"max":1.1,"step":0.01,"default":1,"tab":"body"},
+    "faceWidth": {"label":"Face width","min":0.8,"max":1.2,"step":0.01,"default":1,"tab":"face"},
+    "faceHeight": {"label":"Face height","min":0.85,"max":1.2,"step":0.01,"default":1,"tab":"face"},
+    "jawWidth": {"label":"Jaw width","min":0.75,"max":1.3,"step":0.01,"default":1,"tab":"face"},
+    "chinLength": {"label":"Chin length","min":0.8,"max":1.2,"step":0.01,"default":1,"tab":"face"},
+    "cheekWidth": {"label":"Cheek width","min":0.85,"max":1.2,"step":0.01,"default":1,"tab":"face"},
+    "eyeSpacing": {"label":"Eye spacing","min":0.8,"max":1.2,"step":0.01,"default":1,"tab":"face"},
+    "eyeSize": {"label":"Eye size","min":0.8,"max":1.2,"step":0.01,"default":1,"tab":"face"},
+    "noseWidth": {"label":"Nose width","min":0.75,"max":1.3,"step":0.01,"default":1,"tab":"face"},
+    "noseLength": {"label":"Nose length","min":0.8,"max":1.3,"step":0.01,"default":1,"tab":"face"},
+    "mouthWidth": {"label":"Mouth width","min":0.8,"max":1.25,"step":0.01,"default":1,"tab":"face"},
+    "browHeight": {"label":"Brow height","min":0.8,"max":1.2,"step":0.01,"default":1,"tab":"face"}
+  },
+  "colors": {
+    "skinTone": {"label":"Skin tone","default":"#ba8564","tab":"face","swatches":["#f2d5bd","#dfb393","#ba8564","#9a6349","#754630","#482d24"]},
+    "eyeColor": {"label":"Eye color","default":"#596d58","tab":"face","swatches":["#38281e","#82562b","#596d58","#638caa","#8c9296","#b0a17a"]},
+    "hairColor": {"label":"Hair color","default":"#302821","tab":"hair","swatches":["#19191b","#302821","#70482c","#c99e58","#933d2e","#c3c3c1","#e3dad0","#98517f"]},
+    "shirtColor": {"label":"Top color","default":"#546e68","tab":"style","swatches":["#546e68","#e9e8e2","#2d3035","#9a4656","#587d9e","#b18a42"]},
+    "pantsColor": {"label":"Trouser color","default":"#3b4048","tab":"style","swatches":["#3b4048","#586778","#a4a69e","#dedbd2","#466056","#6b4f60"]}
+  },
+  "choices": {
+    "hairStyle": {"label":"Hairstyle","default":"side","tab":"hair","options":{"none":"Shaved","crop":"Textured crop","side":"Swept side part","slick":"Slick back","quiff":"High quiff","curls":"Sculpted curls","bob":"Chin-length bob","long":"Layered long","bun":"Twisted bun","ponytail":"Ponytail","locs":"Shoulder-length locs"}},
+    "facialHair": {"label":"Facial hair","default":"none","tab":"hair","options":{"none":"None","mustache":"Mustache","beard":"Beard"}},
+    "outfit": {"label":"Top","default":"resort","tab":"style","options":{"resort":"Palm resort shirt","tee":"Essential tee","sleeveless":"Sleeveless","longsleeve":"Long sleeve"}},
+    "eyewear": {"label":"Eyewear","default":"none","optional":true,"tab":"style","options":{"none":"None","aviators":"Aviators","wayfarers":"Square shades"}}
+  }
+}

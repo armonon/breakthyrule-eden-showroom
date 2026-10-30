@@ -1,0 +1,13 @@
+Seated Librarian 3D Character
+
+Adapted from "Old Lady" by CDmir, with collaborator TinyWorlds.
+Source: https://opengameart.org/content/old-lady
+Original asset: https://opengameart.org/sites/default/files/oldlady-v2.blend
+License: CC0 1.0 Universal
+License text: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+Changes: converted legacy materials to glTF PBR with diffuse and normal maps;
+validated mesh data; baked a seated animation excerpt; exported a self-contained
+GLB. Garden integration adds an open book, world placement, interaction, and
+limited head turning. This is a fully volumetric, skinned character, not a
+photographic billboard.

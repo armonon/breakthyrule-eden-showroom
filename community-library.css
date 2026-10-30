@@ -1,0 +1,8 @@
+.result-links .atlas-like{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:60px;width:auto;height:38px;padding:6px 10px;border:1px solid #bdc8bf;background:#fff;color:#294a46;border-radius:4px}
+.result-links .atlas-like svg{width:18px;height:18px;flex-shrink:0}
+.result-links .atlas-like[aria-pressed="true"]{color:#a33554;background:#fff3f5;border-color:#c995a3}
+.result-links .atlas-like[aria-pressed="true"] svg{fill:currentColor}
+#library-shared-status,#librarian-action-status{font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+#librarian-action-status:empty{display:none}
+.upload-privacy{display:flex;align-items:flex-start;gap:8px;line-height:1.5}
+.upload-privacy input{flex:0 0 auto;margin-top:4px;accent-color:#294a46}

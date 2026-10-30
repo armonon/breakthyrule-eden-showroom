@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Break Thy Rule / Garment Studio</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#dbe1df;color:#172e28;font:14px Arial,sans-serif;letter-spacing:0}header{position:fixed;inset:0 0 auto;z-index:2;padding:18px 24px;display:flex;align-items:center;gap:16px;background:#f9fbf9e8;border-bottom:1px solid #bec9c3}strong{font-size:15px}select{max-width:340px;min-width:0;padding:10px;border:1px solid #a7b9af;border-radius:4px;background:#fff;font:inherit}button,a{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid #a7b9af;border-radius:4px;background:#fff;color:inherit;cursor:pointer}button[aria-pressed=true]{background:#245b4c;color:white}button svg,a svg{width:18px;height:18px}label{display:flex;gap:8px;align-items:center}#canvas{width:100vw;height:100svh;display:block;touch-action:none}footer{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px;padding:8px;background:#f9fbf9ed;border:1px solid #bec9c3;border-radius:6px}#status{position:fixed;bottom:88px;left:20px;right:20px;text-align:center;font-size:12px;color:#345649;pointer-events:none}#error{color:#9e263c}header a{margin-left:auto;flex-shrink:0}@media(max-width:650px){header{padding:12px;gap:8px;flex-wrap:wrap}strong{font-size:12px}select{flex:1;max-width:calc(100vw - 75px)}header label{font-size:12px}footer{gap:4px;bottom:14px}footer button{width:36px;height:38px}#status{bottom:78px;font-size:11px}}
+@media(max-width:650px){header strong{flex:1}header a{order:1}header select{order:2;flex-basis:100%;width:100%;max-width:none}header label{order:3;margin-right:12px}}
+</style><script defer src="/assets/three.min.js"></script><script defer src="/assets/gltf-loader.js"></script><script defer src="/assets/lucide.min.js"></script><script defer src="/asset-loader.js"></script><script defer src="/garment-catalog.js?v=10"></script><script defer src="/shirt-study.js?v=4"></script></head>
+<body>
+<header>
+ <strong>BREAKTHYRULE / GARMENTS</strong>
+ <select id="shirt" aria-label="Garment"></select>
+ <label><input id="previous" type="checkbox">Previous model</label>
+ <label><input id="rack" type="checkbox">Rack quality</label>
+ <a href="/" aria-label="Return to garden" title="Return to garden"><i data-lucide="arrow-up-right"></i></a>
+</header>
+<canvas id="canvas" aria-label="Rotatable 3D garment" tabindex="0"></canvas>
+<p id="status" role="status"></p>
+<footer>
+ <button id="front" aria-label="Front view" title="Front view"><i data-lucide="shirt"></i></button>
+ <button id="left" aria-label="Rotate left" title="Rotate left"><i data-lucide="rotate-ccw"></i></button>
+ <button id="back" aria-label="Back view" title="Back view"><i data-lucide="flip-horizontal-2"></i></button>
+ <button id="right" aria-label="Rotate right" title="Rotate right"><i data-lucide="rotate-cw"></i></button>
+ <button id="spin" aria-label="Auto rotate" title="Auto rotate" aria-pressed="false"><i data-lucide="rotate-3d"></i></button>
+ <button id="closer" aria-label="Zoom in" title="Zoom in"><i data-lucide="zoom-in"></i></button>
+ <button id="farther" aria-label="Zoom out" title="Zoom out"><i data-lucide="zoom-out"></i></button>
+</footer>
+</body></html>

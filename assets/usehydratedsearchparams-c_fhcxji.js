@@ -1,0 +1,1 @@
+import{l as a,b as s}from"./react_vendor-CIgO16wh.js";const e=new URLSearchParams,t=()=>()=>{};function n(){return s.useSyncExternalStore(t,()=>!1,()=>!0)}function u(){const[r]=a();return n()?e:r}export{n as a,u};

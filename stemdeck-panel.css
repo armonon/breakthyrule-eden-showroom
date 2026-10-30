@@ -1,0 +1,11 @@
+#stemdeck-dialog{width:min(1560px,calc(100vw - 40px));max-width:none;height:calc(100svh - 48px);max-height:none;padding:0;margin:auto;border:1px solid #cbd3d1;border-radius:6px;background:#f6f7f6;color:#213c34;overflow:hidden}
+#stemdeck-dialog[open]{display:flex;flex-direction:column}
+#stemdeck-dialog>header{flex:0 0 58px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px;border-bottom:1px solid #cbd3d1;background:white}
+#stemdeck-dialog h2{margin:0;font-family:inherit;font-size:17px;letter-spacing:0;white-space:nowrap}
+.stemdeck-actions{display:flex;align-items:center;gap:8px}.stemdeck-actions button,.stemdeck-actions a{height:36px;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #cbd3d1;border-radius:4px;background:white;color:#213c34;padding:0 10px;font-family:inherit;font-size:12px;text-decoration:none}
+.stemdeck-actions svg{width:17px;height:17px}.stemdeck-actions .icon-button{width:36px;min-width:36px;padding:0;flex-basis:36px}
+.stemdeck-content{position:relative;flex:1;min-height:0;background:#f4f5f3}#stemdeck-frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#f4f5f3}#stemdeck-frame[hidden]{display:none}
+#stemdeck-status{position:absolute;top:35%;left:16px;right:16px;text-align:center;margin:0;font-size:14px}#stemdeck-retry{position:absolute;top:calc(35% + 38px);left:50%;transform:translateX(-50%);padding:10px 16px;border:1px solid #cbd3d1;border-radius:4px;background:white;color:#213c34}#stemdeck-retry[hidden]{display:none}
+#stemdeck-launcher{position:fixed;top:244px;right:24px;z-index:5;display:flex;align-items:center;gap:8px;min-height:42px;padding:8px 14px;background:#8b2545;color:#fff;border:1px solid #ffffff90;border-radius:4px;font-size:12px}#stemdeck-launcher svg{width:18px;height:18px}#stemdeck-launcher[hidden],body:has(dialog[open]) #stemdeck-launcher{display:none}
+#music-stemdeck{flex:1}
+@media(max-width:700px){#stemdeck-dialog{width:calc(100vw - 12px);height:calc(100svh - 16px)}#stemdeck-dialog>header{padding:0 9px;gap:6px;flex-basis:54px}#stemdeck-dialog h2{font-size:14px}.stemdeck-actions{gap:5px}.stemdeck-actions button{padding:0 7px;font-size:11px}.stemdeck-actions a{display:none}#stemdeck-launcher{top:217px;right:12px}body:has(#social-panel:not([hidden])) #stemdeck-launcher{display:none}}

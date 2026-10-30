@@ -1,0 +1,79 @@
+functionsDirectory = "/Users/lillypad/Documents/Codex/2026-09-28/breakthyrule-showroom/netlify/functions"
+functionsDirectoryOrigin = "config"
+redirectsOrigin = "config"
+plugins = []
+
+[build]
+publish = "/Users/lillypad/Documents/Codex/2026-09-28/breakthyrule-showroom/outputs/netlify-preview"
+publishOrigin = "config"
+functions = "/Users/lillypad/Documents/Codex/2026-09-28/breakthyrule-showroom/netlify/functions"
+
+  [build.environment]
+
+  [build.processing]
+  skip_processing = true
+
+    [build.processing.css]
+
+    [build.processing.html]
+
+    [build.processing.images]
+
+    [build.processing.js]
+
+  [build.services]
+
+[database]
+
+  [database.migrations]
+  path = "/Users/lillypad/Documents/Codex/2026-09-28/breakthyrule-showroom/netlify/database/migrations"
+
+[functions]
+
+  [functions."*"]
+  node_bundler = "esbuild"
+
+[[headers]]
+for = "/*"
+
+  [headers.values]
+  X-Content-Type-Options = "nosniff"
+  Referrer-Policy = "strict-origin-when-cross-origin"
+  X-Frame-Options = "SAMEORIGIN"
+  Content-Security-Policy = "frame-ancestors 'self'"
+
+[[redirects]]
+from = "/studio"
+to = "/studio.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/studio/"
+to = "/studio.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/api/*"
+to = "/preview-api-unavailable.json"
+status = 404
+force = true
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]

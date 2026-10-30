@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "bounds": [-39, 62, -111, -22],
+  "spawn": [11.7, -24],
+  "exit": [11.7, -111],
+  "landmarks": [
+    {"id":"temple","name":"The Moon Temple","x":-12,"z":-43,"w":16,"d":16,"h":7,"color":"#b9c4bb"},
+    {"id":"observatory","name":"The Observatory","x":37,"z":-42,"w":16,"d":16,"h":6,"color":"#d3d6c7"},
+    {"id":"playhouse","name":"The Silent Playhouse","x":-15,"z":-74,"w":18,"d":16,"h":7,"color":"#b77f72"},
+    {"id":"hotel","name":"The Hotel on the Hill","x":39,"z":-77,"w":16,"d":20,"h":11,"color":"#b2b8ad"},
+    {"id":"gardens","name":"The Sunken Gardens","x":-14,"z":-101,"w":20,"d":14,"h":4,"color":"#bac5b7"}
+  ],
+  "pages": [
+    {"id":0,"title":"The First Threshold","site":"temple","sockets":[[-16,-44],[-8,-46]],"text":"We built the gates before we knew what stood outside."},
+    {"id":1,"title":"The Attendant","site":"temple","sockets":[[-12,-39],[-17,-40]],"text":"He was appointed to count the guests. He has never stopped."},
+    {"id":2,"title":"A Borrowed Sky","site":"observatory","sockets":[[33,-43],[41,-44]],"text":"The stars return to their positions. The missing do not."},
+    {"id":3,"title":"An Empty Audience","site":"playhouse","sockets":[[-19,-76],[-11,-76]],"text":"The curtain rose each night, though no living audience remained."},
+    {"id":4,"title":"The Applause","site":"playhouse","sockets":[[-15,-70],[-21,-71]],"text":"Do not bow when you hear the applause. It is not for you."},
+    {"id":5,"title":"Your Reservation","site":"hotel","sockets":[[35,-78],[43,-79]],"text":"Your room was prepared long before you arrived."},
+    {"id":6,"title":"Still Water","site":"gardens","sockets":[[-21,-101],[-7,-100]],"text":"The garden remembers the faces we taught ourselves to forget."},
+    {"id":7,"title":"The Eighth Guest","site":"gardens","sockets":[[-14,-105],[-14,-97]],"text":"The attendant was not keeping us out. He was keeping the ceremony in."}
+  ]
+}

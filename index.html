@@ -1,0 +1,216 @@
+<!DOCTYPE html><html lang="en"><head><script src="/deployment.js"></script>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <meta name="theme-color" content="#ffffff">
+ <title>BREAKTHYRULE — Garden of Eden</title>
+ <meta name="description" content="Enter the Garden of Eden. Explore the Break Thy Rule collection in a sunlit outdoor garden.">
+ <link rel="icon" type="image/png" href="/assets/favicon-32.png">
+ <link rel="stylesheet" href="/style.css?v=20">
+ <link rel="stylesheet" href="/multiplayer.css?v=4">
+ <link rel="stylesheet" href="/character-creator.css?v=3">
+ <link rel="stylesheet" href="/residents.css?v=1">
+ <link rel="stylesheet" href="/music.css?v=2">
+ <link rel="stylesheet" href="/stemdeck-panel.css?v=1">
+ <link rel="stylesheet" href="/community-library.css?v=1">
+ <link rel="stylesheet" href="/tree-snake.css?v=1">
+ <link rel="stylesheet" href="/expedition.css?v=1">
+ <link rel="stylesheet" href="/shop.css?v=1">
+ <script defer="" src="/assets/three.min.js"></script>
+ <script defer="" src="/assets/gltf-loader.js?v=1"></script>
+ <script defer="" src="/asset-loader.js?v=1"></script>
+ <script defer="" src="/assets/lucide.min.js"></script>
+ <script defer="" src="/collection.js?v=10"></script>
+ <script defer="" src="/garment-catalog.js?v=10"></script>
+ <script defer="" src="/shop.js?v=1"></script>
+ <script defer="" src="/books.js?v=2"></script>
+ <script defer="" src="/community-library.js?v=1"></script>
+ <script defer="" src="/library.js?v=7"></script>
+ <script defer="" src="/library-uploads.js?v=3"></script>
+ <script defer="" src="/librarian-engine.js?v=1"></script>
+ <script defer="" src="/librarian-client.js?v=1"></script>
+ <script defer="" src="/librarian-npc.js?v=4"></script>
+ <script defer="" src="/librarian-dialog.js?v=2"></script>
+ <script defer="" src="/spin-viewer.js?v=2"></script>
+ <script defer="" src="/room.js?v=31"></script>
+ <script defer="" src="/tree-snake.js?v=1"></script>
+ <script defer="" src="/pyramid-gathering.js?v=2"></script>
+ <script defer="" src="/road-pyramid.js?v=4"></script>
+ <script defer="" src="/night-district.js?v=1"></script>
+ <script defer="" src="/night-road.js?v=4"></script>
+ <script defer="" src="/garden.js?v=13"></script>
+ <script defer="" src="/amphitheater.js?v=3"></script>
+ <script defer="" src="/live-music.js?v=3"></script>
+ <script defer="" src="/stemdeck-panel.js?v=1"></script>
+ <script defer="" src="/music-player.js?v=6"></script>
+ <script defer="" src="/wall-film.js?v=7"></script>
+ <script defer="" src="/instagram-slideshow.js?v=6"></script>
+ <script defer="" src="/assets/character-human-base.js?v=1"></script>
+ <script defer="" src="/character-details.js?v=2"></script>
+ <script defer="" src="/character-model.js?v=4"></script>
+ <script defer="" src="/character-creator.js?v=5"></script>
+ <script defer="" src="/social-account.js?v=1"></script>
+ <script defer="" src="/multiplayer.js?v=7"></script>
+ <script defer="" src="/residents.js?v=5"></script>
+ <script defer="" src="/assets/night-pathfinding.js?v=1"></script>
+ <script defer="" src="/solo-expedition.js?v=2"></script>
+ <script defer="" src="/expedition.js?v=2"></script>
+ <script defer="" src="/player-motion.js?v=1"></script>
+ <script defer="" src="/app.js?v=56"></script>
+</head>
+<body>
+ <header class="site-header">
+  <a class="wordmark" href="/" aria-label="Break Thy Rule showroom home">BREAKTHYRULE</a>
+  <span class="header-label">A CODEX WORN ON THE BODY</span>
+  <div class="header-actions"><button class="icon-button" id="open-residents" aria-label="Garden residents" title="Garden residents" disabled=""><i data-lucide="drama"></i></button><button class="text-button" id="open-library">LIBRARY</button><button class="text-button" id="view-product" aria-label="Shop garment photos">SHOP <span aria-hidden="true">↗</span></button></div>
+ </header>
+ <main>
+  <section id="world" aria-label="Interactive clothing showroom">
+   <div class="world-topline"><span>CHAPTER 00 / EDEN</span><span>BREAKTHYRULE / CODEX</span></div>
+   <div id="scene" aria-label="Sunlit garden with a fruit tree, flowers, pond and open collection pavilion"></div>
+   <section id="night-hud" hidden="" aria-label="Expedition status">
+    <div class="night-kicker"><span id="night-phase">THE LOST PAGES</span> / <span id="night-connection"></span></div>
+    <strong id="night-count">00 / 08</strong><span id="night-location">The Processional Road</span>
+    <p id="night-event" role="status"></p><div id="night-danger" role="status"></div>
+    <div class="night-tools">
+     <button id="night-flash" aria-label="Flashlight" title="Flashlight" aria-pressed="true"><i data-lucide="flashlight"></i></button>
+     <button id="night-journal-open" aria-label="Read recovered pages" title="Read recovered pages"><i data-lucide="book-open"></i></button>
+     <button id="night-sound" aria-label="Night ambience" title="Night ambience" aria-pressed="false"><i data-lucide="audio-lines"></i></button>
+     <button id="night-chat-open" aria-label="Party chat" title="Party chat"><i data-lucide="messages-square"></i></button>
+     <button id="night-return" aria-label="Leave expedition and return to Eden" title="Leave expedition and return to Eden"><i data-lucide="log-out"></i></button>
+    </div>
+    <div id="night-outcome" hidden=""><h3 id="night-outcome-title"></h3><button id="night-spectate">Watch teammate</button><button id="night-retry">Try again</button></div>
+   </section>
+   <button id="night-action" hidden=""><i data-lucide="file-text"></i><span id="night-action-label">Take page</span></button>
+   <aside id="night-chat" hidden="" aria-label="Party chat"><header><strong>Party chat</strong><button id="night-chat-close" aria-label="Close party chat" title="Close party chat"><i data-lucide="x"></i></button></header><ol id="night-chat-log" role="log" aria-live="polite"></ol><form id="night-chat-form"><input id="night-chat-input" aria-label="Message your expedition" maxlength="280" autocomplete="off" placeholder="Message the party"><button id="night-chat-send" aria-label="Send message" title="Send message"><i data-lucide="send"></i></button></form></aside>
+   <button id="garden-effects" class="icon-button" aria-label="Mute garden sound effects" title="Mute garden sound effects" aria-pressed="true" hidden=""><i data-lucide="volume-2"></i></button>
+   <button id="npc-prompt" hidden=""><i data-lucide="message-circle"></i><span>Talk to the librarian</span></button>
+   <button id="music-prompt" hidden=""><i data-lucide="disc-3"></i><span>Sattari StemDeck</span></button>
+   <div id="shelf-actions" hidden="" aria-label="Library shelf">
+    <button id="previous-shelf" class="icon-button" aria-label="Previous shelf page" title="Previous shelf page" hidden=""><i data-lucide="chevron-left"></i></button>
+    <span id="shelf-page" hidden=""></span>
+    <button id="next-shelf" class="icon-button" aria-label="Next shelf page" title="Next shelf page" hidden=""><i data-lucide="chevron-right"></i></button>
+    <button id="add-shelf-pdf" class="icon-button" aria-label="Add PDFs to the library" title="Add PDFs to the library"><i data-lucide="plus"></i></button>
+   </div>
+   <div id="loading" role="status"><span class="loading-line"></span>Entering Eden</div>
+   <div id="fallback" hidden=""><img src="/products/war-tee-front.png" alt="WAR / Witnesses Tee product photo"><p>The vault is ready to explore.</p><button class="solid-button" id="fallback-inspect">Inspect vault</button></div>
+   <div class="world-caption"><span class="edition">BREAKTHYRULE / 12 PHOTO PIECES</span><h1>THE VAULT</h1><p id="world-hint" aria-live="polite">Explore the room. Select a piece to look closer.</p><nav id="poster-links" aria-label="View media" hidden=""></nav><button id="retry-film" class="text-button" hidden="">RETRY VIDEO ↻</button><a id="film-link" href="https://breakthyrule-co.netlify.app" target="_blank" rel="noopener noreferrer" hidden="">OPEN BREAKTHYRULE ↗</a></div>
+  </section>
+  <footer class="world-footer">
+   <div class="control-hint" id="movement-hint">SELECT A PIECE TO INSPECT</div>
+   <nav class="view-nav" aria-label="Garden positions"><button id="spawn" class="selected" aria-pressed="true">EDEN</button><button id="library-view" aria-pressed="false" disabled="">LIBRARY</button><button id="approach" aria-pressed="false">VAULT</button><button id="wall-view" aria-pressed="false" disabled="">GALLERY</button><button id="film-view" aria-pressed="false" disabled="">SCREEN</button><button id="amphitheater-view" aria-pressed="false" disabled="">MUSIC</button><button id="open-music" hidden=""><i data-lucide="speaker"></i>SOUND DESK</button><button id="talk-librarian" class="npc-command" hidden=""><i data-lucide="message-circle"></i> TALK</button><button id="browse-library" class="inspect-button" hidden="">BROWSE BOOKS <span aria-hidden="true">↗</span></button><button id="inspect-jacket" class="inspect-button">SHOP PHOTOS <span aria-hidden="true">↗</span></button></nav>
+   <button id="retry-rack" class="icon-button" title="Retry loading 3D collection" aria-label="Retry loading 3D collection" hidden=""><i data-lucide="refresh-cw"></i></button><span class="footer-note" id="collection-status" role="status">3D COLLECTION / GHOST STUDIO</span>
+  </footer>
+ </main>
+ <dialog id="night-dialog" aria-labelledby="night-title">
+  <header class="night-heading"><div><small>CHAPTER 01 / THE OLD CIVILIZATION</small><h2 id="night-title">Beyond Eden</h2></div><button id="night-close" class="icon-button" aria-label="Close expedition menu" title="Close expedition menu"><i data-lucide="x"></i></button></header>
+  <div id="night-service" role="status">Connecting...</div>
+  <div id="night-entry"><div class="night-buttons"><button id="night-solo"><i data-lucide="footprints"></i>Enter alone</button><button id="night-create"><i data-lucide="users"></i>Create party</button></div>
+   <form id="night-join-form"><label>Expedition code<input id="night-join-code" maxlength="6" minlength="6" pattern="[a-zA-Z]{6}" autocomplete="off" required=""></label><button id="night-join" type="submit">Join party</button></form>
+  </div>
+  <div id="night-room" hidden=""><p>Expedition <strong id="night-code"></strong></p><ul id="night-party"></ul><div class="night-buttons"><button id="night-start">Begin expedition</button><button id="night-resume">Return to expedition</button><button id="night-abandon">Leave party</button></div></div>
+  <p id="night-error" role="alert"></p>
+ </dialog>
+ <dialog id="night-journal" aria-labelledby="night-journal-title"><header class="night-heading"><div><small>THE EMPTY BINDING</small><h2 id="night-journal-title">Recovered pages</h2></div><button id="night-journal-close" class="icon-button" aria-label="Close journal" title="Close journal"><i data-lucide="x"></i></button></header><p id="night-journal-empty">The binding is empty.</p><ol id="night-journal-list"></ol></dialog>
+ <audio id="garden-audio" preload="metadata"></audio>
+ <dialog id="music-dialog" aria-labelledby="music-title">
+  <header><div><h2 id="music-title">Eden sound desk</h2><span id="music-connection" role="status">Connecting...</span></div><button id="close-music" class="icon-button" aria-label="Close sound desk" title="Close sound desk"><i data-lucide="x"></i></button></header>
+  <div class="music-body">
+   <div class="music-live-actions"><button id="music-stemdeck"><i data-lucide="panels-top-left"></i>Open Sattari StemDeck</button><button id="music-live" disabled=""><i data-lucide="radio"></i><span>Go live</span></button></div>
+   <p id="music-live-status" role="status" aria-live="polite">Off air</p>
+   <div class="music-now"><i data-lucide="disc-3"></i><div><p id="music-track">Nothing playing</p><p id="music-credit">The amphitheater</p></div></div>
+   <div class="music-timeline"><output id="music-elapsed">0:00</output><input id="music-seek" type="range" min="0" max="1" step=".1" value="0" aria-label="Room playback position" disabled=""><output id="music-duration">0:00</output></div>
+   <div class="music-transport"><button id="music-play" class="icon-button" aria-label="Play room music" title="Play room music" disabled=""><i data-lucide="play"></i></button><button id="music-skip" class="icon-button" aria-label="Skip track" title="Skip track" disabled=""><i data-lucide="skip-forward"></i></button><button id="music-listen" aria-pressed="false"><i data-lucide="headphones"></i><span>Listen</span></button></div>
+   <label class="music-volume"><i data-lucide="volume-2"></i><input id="music-volume" type="range" min="0" max="100" value="65" aria-label="Your volume"><output id="music-volume-value">65%</output></label>
+   <div class="music-queue-heading"><h3>Up next</h3><span id="music-queue-count">0 / 12</span></div><ol id="music-queue" aria-label="Shared music queue"></ol><p id="music-empty">Queue is empty</p>
+   <label class="music-rights"><input id="music-rights" type="checkbox">I have permission to share this audio with the garden.</label>
+   <div class="music-upload-row"><button id="music-upload" disabled=""><i data-lucide="plus"></i>Add tracks</button><small id="music-upload-format">MP3 / WAV / OGG · 40 MB · 20 min</small><input id="music-files" type="file" accept=".mp3,.wav,.ogg,audio/mpeg,audio/wav,audio/ogg" multiple="" hidden=""></div>
+   <p id="music-error" role="status" aria-live="polite"></p><button id="music-connect" disabled="">Connect to speakers</button>
+  </div>
+ </dialog>
+ <audio id="garden-live-audio" preload="none"></audio>
+ <button id="stemdeck-launcher" hidden=""><i data-lucide="disc-3"></i>StemDeck</button>
+ <dialog id="stemdeck-dialog" aria-labelledby="stemdeck-title">
+  <header><h2 id="stemdeck-title">Sattari StemDeck</h2><div class="stemdeck-actions"><button id="stemdeck-sound-desk"><i data-lucide="speaker"></i>Sound desk</button><a class="icon-button" href="https://sattarimusic.com/studio" target="_blank" rel="noopener noreferrer" aria-label="Open public StemDeck in a new tab" title="Open public StemDeck in a new tab"><i data-lucide="external-link"></i></a><button id="close-stemdeck" class="icon-button" aria-label="Return to garden" title="Return to garden"><i data-lucide="x"></i></button></div></header>
+  <div class="stemdeck-content"><p id="stemdeck-status" role="status">Connecting to Sattari StemDeck...</p><button id="stemdeck-retry" hidden="">Retry connection</button><iframe id="stemdeck-frame" title="Sattari StemDeck music studio" allow="autoplay" sandbox="allow-scripts allow-same-origin allow-forms allow-downloads" hidden=""></iframe></div>
+ </dialog>
+ <dialog id="resident-dialog" aria-labelledby="resident-title">
+  <header><h2 id="resident-title">Garden residents</h2><button id="close-residents" class="icon-button" aria-label="Close residents" title="Close residents"><i data-lucide="x"></i></button></header>
+  <ul id="resident-list"></ul>
+  <footer><button id="resident-concepts" class="text-button"><i data-lucide="images"></i>Full-body concepts</button></footer>
+ </dialog>
+ <dialog id="shop-dialog" aria-labelledby="shop-title">
+  <header class="shop-header"><div class="shop-heading"><small>BREAKTHYRULE</small><h2 id="shop-title">Shop the collection</h2></div><span id="shop-count" class="shop-count" role="status"></span><button id="close-shop" class="icon-button" aria-label="Close shop" title="Close shop"><i data-lucide="x"></i></button></header>
+  <div class="shop-filters"><label class="shop-search"><i data-lucide="search"></i><input id="shop-search" type="search" aria-label="Search garments" placeholder="Search garments" autocomplete="off"><button id="shop-clear-search" aria-label="Clear search" title="Clear search" hidden=""><i data-lucide="x"></i></button></label><select id="shop-category" aria-label="Garment category"><option value="">All garments</option></select></div>
+  <div class="shop-scroll"><ul id="shop-grid" aria-label="Garments"></ul><div id="shop-empty" hidden=""><p>No garments found.</p><button id="shop-reset">Clear filters</button></div></div>
+ </dialog>
+ <dialog id="product-dialog" aria-labelledby="product-title">
+  <div class="product-shell">
+   <header class="product-header"><span id="piece-number">COLLECTION / INSPECT</span><button class="text-button" id="close-product">CLOSE <span aria-hidden="true">×</span></button></header>
+   <div class="product-layout">
+    <div class="product-visual">
+     <div id="garment-viewer" tabindex="0" aria-label="360 degree garment viewer. Drag to rotate. Arrow keys turn the garment." hidden=""></div>
+     <div class="image-scroll" id="image-scroll" tabindex="0" aria-label="Product photograph. Zoom in, then drag or scroll to explore details."><div id="zoom-surface"><img id="detail-image" src="/products/war-tee-front.png" draggable="false" alt="WAR / Witnesses Tee product photo"></div></div>
+     <div class="image-annotation"><span id="image-caption">01 / FRONT</span><span id="image-help">DRAG TO ROTATE</span><button id="auto-spin" aria-pressed="false" hidden="">START SPIN ↻</button></div>
+     <div class="image-toolbar">
+      <div class="side-switch" role="group" aria-label="Jacket view"><button id="show-3d" aria-pressed="false" disabled="">360° VIEW</button><button id="show-front" class="active" aria-pressed="true">FRONT</button><button id="show-back" aria-pressed="false">BACK</button></div>
+      <div class="zoom-controls"><button id="zoom-out" aria-label="Zoom out">−</button><input type="range" id="zoom" min="100" max="250" value="100" step="25" aria-label="Image zoom"><button id="zoom-reset" aria-label="Reset image zoom"><output id="zoom-output">100%</output></button><button id="zoom-in" aria-label="Zoom in">+</button></div>
+     </div>
+    </div>
+    <div class="product-info">
+     <span class="edition">BREAKTHYRULE / VAULT</span>
+     <label class="collection-label" for="collection-select">SELECT A PIECE</label><select id="collection-select"></select>
+     <h2 id="product-title">THE COLLECTION</h2>
+     <p class="product-description">Explore the silhouette, materials and details from every angle.</p>
+     <p class="model-note" id="model-status" role="status">Loading the collection…</p>
+     <button id="retry-model" class="text-button" hidden="">RETRY LOADING</button>
+     <button class="return-button" id="return-room"><i data-lucide="arrow-left"></i><span id="return-product-label">RETURN TO SHOWROOM</span></button>
+    </div>
+   </div>
+  </div>
+ </dialog>
+ <dialog id="book-dialog" aria-labelledby="library-title">
+  <header class="product-header"><span id="library-title">THE FOUNDING SHELF / 08 TEXTS</span><button id="add-library-pdf" class="icon-button" aria-label="Add PDFs to the library" title="Add PDFs to the library"><i data-lucide="plus"></i></button><button id="ask-from-books" class="text-button">ASK THE LIBRARIAN</button><button id="close-library" class="text-button">CLOSE <span aria-hidden="true">×</span></button></header>
+  <div class="library-layout">
+   <nav id="book-list" aria-label="Books in the library"></nav>
+   <article class="book-detail">
+    <div class="book-cover-wrap"><img id="book-cover" alt=""></div>
+    <div class="book-info"><span id="book-category" class="edition"></span><h2 id="book-title"></h2><p id="book-author"></p><p id="book-format"></p><a id="read-book" class="read-book" target="_blank" rel="noopener noreferrer">READ PDF <span aria-hidden="true">↗</span></a><a class="archive-source" href="https://breakthyrule-co.netlify.app/library" target="_blank" rel="noopener noreferrer">The Break Thy Rule archive ↗</a><p id="library-shared-status" role="status">Connecting to the shared library...</p><div class="book-paging"><button id="previous-book" aria-label="Previous book">←</button><span id="book-number"></span><button id="next-book" aria-label="Next book">→</button></div></div>
+   </article>
+  </div>
+ </dialog>
+ <dialog id="upload-dialog" aria-labelledby="upload-title">
+  <header class="librarian-header"><h2 id="upload-title">Add PDFs</h2><button id="close-upload" class="icon-button" aria-label="Close upload" title="Close upload"><i data-lucide="x"></i></button></header>
+  <div class="upload-body"><div id="pdf-drop"><i data-lucide="file-up"></i><button id="choose-pdfs" class="solid-button">Choose PDFs</button><input id="pdf-files" type="file" accept=".pdf,application/pdf" multiple="" hidden=""></div>
+   <p id="upload-status" role="status" aria-live="polite">PDF only / up to 4 MB each</p><label class="upload-privacy"><input id="pdf-rights" type="checkbox"> I have permission to share these PDFs publicly.</label><ul id="upload-results" aria-live="polite"></ul>
+  </div>
+ </dialog>
+ <dialog id="poster-dialog" aria-labelledby="poster-title"><header class="product-header"><span id="poster-title">Artwork</span><nav id="poster-navigation" aria-label="Media pages" hidden=""><button id="poster-previous" aria-label="Previous post or photograph">←</button><button id="poster-next" aria-label="Next post or photograph">→</button></nav><button class="text-button" id="close-poster">CLOSE <span aria-hidden="true">×</span></button></header><div class="poster-view"><img id="poster-image" alt=""><video id="poster-video" controls="" playsinline="" preload="metadata" hidden=""></video></div></dialog>
+ <dialog id="librarian-dialog" aria-labelledby="librarian-title">
+  <header class="librarian-header"><div><span class="librarian-eyebrow">THE GARDEN KEEPER</span><h2 id="librarian-title">The librarian</h2></div><button id="close-librarian" class="icon-button" aria-label="End conversation" title="End conversation"><i data-lucide="x"></i></button></header>
+  <div class="librarian-scroll">
+   <p id="librarian-user" class="visitor-line" hidden=""></p>
+   <p id="librarian-speech" class="librarian-speech" aria-live="polite">Come, sit a moment. What would you like to read?</p>
+   <div id="librarian-tools" hidden=""><div class="librarian-result-heading"><span id="librarian-count">0 books</span><select id="librarian-source" aria-label="Filter results by source"><option value="all">All sources</option></select></div><p id="librarian-status" role="status"></p></div>
+   <p id="librarian-action-status" role="status"></p><div id="librarian-results" aria-label="Book search results" aria-busy="false"></div>
+   <p id="librarian-empty" hidden=""></p>
+   <button id="librarian-more" class="text-button" hidden="">MORE BOOKS</button><button id="librarian-retry" class="text-button" hidden="">TRY AGAIN</button>
+  </div>
+  <form id="librarian-form"><label for="librarian-query">What are you looking for?</label><div class="librarian-input-row"><input id="librarian-query" name="query" type="search" maxlength="200" required="" autocomplete="off" placeholder="Title, author, subject, or ISBN"><button id="librarian-submit" class="icon-button" aria-label="Search books" title="Search books"><i data-lucide="arrow-up"></i></button><button id="librarian-cancel" type="button" class="icon-button" aria-label="Stop search" title="Stop search" hidden=""><i data-lucide="square"></i></button></div><a id="librarian-atlas" target="_blank" rel="noopener noreferrer">Librarian Atlas <i data-lucide="arrow-up-right"></i></a></form>
+ </dialog>
+ <button id="social-launcher" class="social-launcher" aria-label="Open garden chat"><i data-lucide="users"></i><span id="social-dot" class="social-dot"></span><span id="social-launch-label">Join garden</span><span id="social-unread" hidden=""></span></button>
+ <button id="character-launcher" class="social-launcher character-launcher"><i data-lucide="user-round-pen"></i><span id="character-launch-label">Become a character</span></button>
+ <aside id="social-panel" aria-label="Garden community" hidden="">
+  <header><div><h2>Garden chat</h2><span id="social-status" role="status">Connecting...</span></div><button id="social-close" class="icon-button" aria-label="Close chat" title="Close chat"><i data-lucide="x"></i></button></header>
+  <div class="social-tabs" role="tablist" aria-label="Community views"><button id="social-chat-tab" role="tab" aria-selected="true">Chat</button><button id="social-people-tab" role="tab" aria-selected="false">Visitors (0)</button></div>
+  <p id="social-empty">No messages yet.</p><ol id="social-messages" role="log" aria-label="Room messages" aria-live="polite"></ol><ul id="social-people" aria-label="Online visitors" hidden=""></ul>
+  <p id="social-error" role="status"></p>
+  <button id="social-gate" type="button">Create an account</button>
+  <form id="social-chat-form"><textarea id="social-message" rows="1" maxlength="300" aria-label="Message everyone in the garden" placeholder="Message the garden" required=""></textarea><button id="social-send" class="icon-button" aria-label="Send message" title="Send message"><i data-lucide="arrow-up"></i></button></form>
+  <div class="social-account"><span id="social-account-name"></span><button id="social-edit" class="icon-button" title="Your character" aria-label="Your character"><i data-lucide="user-round-pen"></i></button><button id="social-wave" class="icon-button" title="Wave to everyone" aria-label="Wave to everyone"><i data-lucide="hand"></i></button><button id="social-delete" class="icon-button" title="Delete account" aria-label="Delete account" hidden=""><i data-lucide="user-round-x"></i></button><button id="social-logout" class="icon-button" title="Sign out" aria-label="Sign out"><i data-lucide="log-out"></i></button></div>
+ </aside>
+ <dialog id="social-auth" aria-labelledby="social-auth-title"><header><h2 id="social-auth-title">Create an account</h2><button id="social-auth-close" class="icon-button" aria-label="Close sign in" title="Close sign in"><i data-lucide="x"></i></button></header><form id="social-auth-form"><label>Username<input id="social-name" autocomplete="username" pattern="[a-zA-Z0-9_]{3,24}" minlength="3" maxlength="24" required=""></label><label>Password<input id="social-password" type="password" autocomplete="new-password" minlength="10" maxlength="128" required=""></label><label id="social-recovery-field" hidden="">Recovery code<input id="social-recovery-code" autocomplete="off" maxlength="100" spellcheck="false"></label><p id="social-auth-error" role="alert"></p><button id="social-auth-submit" type="submit">Create account</button><button id="social-auth-switch" type="button">Already have an account? Sign in</button><button id="social-recover" type="button" hidden="">Recover account</button><p class="social-privacy">Your saved character, username and garden messages are public. Chat is retained for up to 24 hours. Keep your recovery code private.</p></form></dialog>
+ <div id="social-move" class="social-move" aria-label="Move around the garden" hidden=""><button data-key="w" aria-label="Walk forward" title="Walk forward"><i data-lucide="arrow-up"></i></button><button data-key="a" aria-label="Walk left" title="Walk left"><i data-lucide="arrow-left"></i></button><button data-key="s" aria-label="Walk backward" title="Walk backward"><i data-lucide="arrow-down"></i></button><button data-key="d" aria-label="Walk right" title="Walk right"><i data-lucide="arrow-right"></i></button><button data-key="space" aria-label="Jump" title="Jump"><i data-lucide="arrow-up-from-line"></i></button><button data-key="shift" aria-label="Sprint" title="Sprint" aria-pressed="false"><i data-lucide="footprints"></i></button></div>
+ <noscript><div class="noscript"><p>Explore Break Thy Rule product photographs.</p><a href="/products/war-tee-front.png">Featured piece</a></div></noscript>
+
+
+</body></html>
