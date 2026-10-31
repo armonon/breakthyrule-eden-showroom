@@ -273,7 +273,7 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false}){
     p.push(-c,0,-s_, c,0,s_, c,h,s_, -c,h,-s_);uv.push(0,0,1,0,1,1,0,1);for(let k=0;k<4;k++)n.push(0,1,0);idx.push(o,o+1,o+2,o,o+2,o+3);}
    g.setAttribute('position',new T.Float32BufferAttribute(p,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setAttribute('normal',new T.Float32BufferAttribute(n,3));g.setIndex(idx);
    const map=new T.TextureLoader().load(type.url);map.colorSpace=T.SRGBColorSpace;map.anisotropy=4;
-   const material=windMaterial({map,alphaTest:.45,roughness:.8},{sway:.35,flutter:.008,keepNormals:false});
+   const material=windMaterial({map,alphaTest:.62,roughness:.8},{sway:.35,flutter:.008,keepNormals:false}); // high cutoff drops faint backdrop haze
    const mesh=instance(g,material,spots.map(f=>matrix(f.x,f.z,f.s,-.03)),spots.map(()=>new T.Color().setHSL(0,0,between(.9,1.05))),false);
    if(mesh)flowerMeshes.push(mesh);
   });
