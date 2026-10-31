@@ -3,7 +3,8 @@
 // ratio a step when frames keep arriving late and raises it again after several seconds of smooth frames. Only
 // consecutive frames count, so the idle/on-demand pauses in the render loop never read as slowness.
 window.createAdaptiveResolution=function(renderer,{max=Math.min(devicePixelRatio,1.5),min=.75,step=.25,onChange=()=>{}}={}){
- let ratio=max,vsync=1000/60,average=0,smoothSince=0,lastChange=0,last=0,frames=0;
+ const RATES=[30,48,50,60,75,90,100,120,144,165,240];
+ let ratio=max,vsync=1000/60,shortest=Infinity,average=0,smoothSince=0,lastChange=0,last=0,frames=0;
  renderer.setPixelRatio(ratio);
  function set(next,time){
   next=Math.max(min,Math.min(max,Math.round(next/step)*step));if(next===ratio)return;
@@ -15,11 +16,12 @@ window.createAdaptiveResolution=function(renderer,{max=Math.min(devicePixelRatio
    if(!consecutive||!last){last=time;return;}
    const interval=time-last;last=time;if(interval<=0||interval>250)return;
    if(++frames<240)return; // ignore the first ~4 s: loading and shader compiles make every frame slow
-   vsync=Math.min(vsync,Math.max(interval,4));
+   // Shortest interval seen, snapped to the nearest standard refresh rate (jitter must not lower the baseline).
+   shortest=Math.min(shortest,Math.max(interval,4));vsync=1000/RATES.reduce((best,hz)=>Math.abs(1000/hz-shortest)<Math.abs(1000/best-shortest)?hz:best);
    average=average?average+(interval-average)*.08:interval;
    if(time-lastChange<2500)return;
    if(average>vsync*1.6)set(ratio-step,time);
-   else if(average<vsync*1.12){if(!smoothSince)smoothSince=time;else if(time-smoothSince>8000&&ratio<max)set(ratio+step,time);}
+   else if(average<vsync*1.25){if(!smoothSince)smoothSince=time;else if(time-smoothSince>8000&&ratio<max)set(ratio+step,time);}
    else smoothSince=0;
   },
   pause(){last=0;},

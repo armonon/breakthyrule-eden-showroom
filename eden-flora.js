@@ -94,6 +94,8 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false}){
  const species={
   broadleaf:{trunk:3.1,trunkRadius:.3,forkStart:.55,children:[5,4,3],spread:[.95,.75,.7],lift:.35,ratio:[.62,.6,.55],gnarl:.12,depth:3,leafSize:1.25,clusters:3,fruit:0},
   apple:{trunk:1.9,trunkRadius:.24,forkStart:.6,children:[5,3,3],spread:[1.05,.85,.75],lift:.28,ratio:[.85,.6,.55],gnarl:.2,depth:3,leafSize:.95,clusters:3,fruit:.28},
+  // Woodland trees seen at night through fog: two branching levels and fewer, larger leaf cards (~1/3 the triangles).
+  forest:{trunk:3.1,trunkRadius:.3,forkStart:.5,children:[6,4],spread:[.95,.75],lift:.35,ratio:[.62,.6],gnarl:.12,depth:2,leafSize:2.1,clusters:3,cards:2,fruit:0},
   hero:{trunk:4.4,trunkRadius:.42,forkStart:.68,children:[7,4,3],spread:[1.0,.8,.7],lift:.3,ratio:[.78,.6,.55],gnarl:.17,depth:3,leafSize:1.25,clusters:4,fruit:.3}
  };
  function grow(b,tips,spec,from,dir,length,radius,depth){
@@ -121,18 +123,18 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false}){
   const m=new T.Matrix4();
   for(const tip of tips){
    const out=tip.clone().sub(crown).normalize();
-   for(let k=0;k<3;k++){const facing=out.clone().add(new T.Vector3(between(-.7,.7),between(-.4,.7),between(-.7,.7))).normalize();card(foliage,tip.clone().addScaledVector(facing,between(-.25,.25)),facing,spec.leafSize*between(.8,1.25),crown);}
+   for(let k=0;k<(spec.cards||3);k++){const facing=out.clone().add(new T.Vector3(between(-.7,.7),between(-.4,.7),between(-.7,.7))).normalize();card(foliage,tip.clone().addScaledVector(facing,between(-.25,.25)),facing,spec.leafSize*between(.8,1.25),crown);}
    if(spec.fruit&&random()<spec.fruit){const s=between(.075,.1);m.compose(tip.clone().add(new T.Vector3(between(-.4,.4),-.35,between(-.4,.4))),new T.Quaternion(),new T.Vector3(s,s*1.08,s));appendGeometry(fruit,sphere,m);}
   }
   return {wood:toGeometry(wood),foliage:toGeometry(foliage),fruit:fruit.p.length?toGeometry(fruit):null,height:tips.reduce((h,p)=>Math.max(h,p.y),0)};
  }
- function buildCypress(){
+ function buildCypress(cards=150,cardScale=1){
   const wood=builder(),foliage=builder(),height=between(6.5,8),crown=new T.Vector3(0,height*.5,0);
   tube(wood,[0,.3,.6,1].map(t=>new T.Vector3(0,-.15+t*height*.75,0)),[.2,.17,.12,.05],7);
-  for(let i=0;i<150;i++){
+  for(let i=0;i<cards;i++){
    const t=Math.pow(random(),.8),y=.5+t*(height-.3),radius=(Math.sin(Math.min(1,(1-t)*1.25)*Math.PI*.5)*.95+.08)*Math.pow(1-t,.25),a=between(0,6.28),r=radius*Math.sqrt(random());
    const p=new T.Vector3(Math.cos(a)*r,y,Math.sin(a)*r),facing=new T.Vector3(Math.cos(a),between(-.2,.5),Math.sin(a));
-   card(foliage,p,facing,between(.6,.95),new T.Vector3(0,y,0),.85,between(0,6.28),1.4);
+   card(foliage,p,facing,between(.6,.95)*cardScale,new T.Vector3(0,y,0),.85,between(0,6.28),1.4);
   }
   return {wood:toGeometry(wood),foliage:toGeometry(foliage),fruit:null,height,crown};
  }
@@ -154,8 +156,9 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false}){
  }
 
  const shadowed=(mesh,cast=true)=>{mesh.castShadow=cast;mesh.receiveShadow=true;garden.add(mesh);return mesh;};
+ const gardenMeshes=[];
  function instance(geometry,material,matrices,tints,cast=true){
-  if(!matrices.length)return null;const mesh=new T.InstancedMesh(geometry,material,matrices.length);
+  if(!matrices.length)return null;const mesh=new T.InstancedMesh(geometry,material,matrices.length);gardenMeshes.push(mesh);
   matrices.forEach((m,i)=>{mesh.setMatrixAt(i,m);if(tints)mesh.setColorAt(i,tints[i]);});mesh.computeBoundingSphere();return shadowed(mesh,cast);
  }
  const leafMeshes=[];
@@ -179,7 +182,7 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false}){
  }
  for(const [x,z,s] of [[-22,7,1.3],[10,12,1.5],[-18,-7,1.5],[12,-7,1.4]]){apples.push({x,z,s});trunks.push([x,z]);}
  const broadTemplates=[0,1,2].map(()=>buildTree(species.broadleaf)),appleTemplates=[0,1].map(()=>buildTree(species.apple));
- const cypressTemplates=[0,1].map(buildCypress);
+ const cypressTemplates=[0,1].map(()=>buildCypress());
  plant(broadTemplates,broad.map(t=>({matrix:matrix(t.x,t.z,t.s*5.5/7)})),leafMaterial,tintFrom(.24,.42,.86));
  plant(appleTemplates,apples.map(t=>({matrix:matrix(t.x,t.z,t.s*.95)})),leafMaterial,tintFrom(.22,.5,.92));
  plant(cypressTemplates,cypresses.map(t=>({matrix:matrix(t.x,t.z,t.s*.85)})),cypressMaterial,tintFrom(.3,.25,.85));
@@ -190,6 +193,7 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false}){
  instance(hero.wood,bark,heroMatrix,null);leafMeshes.push(instance(hero.foliage,leafMaterial,heroMatrix,[new T.Color().setHSL(.23,.52,.9)]));instance(hero.fruit,fruitMaterial,heroMatrix,null);
  trunks.push([.5,-7]);
 
+ const forestTemplates=[0,1].map(()=>buildTree(species.forest)),forestCypress=buildCypress(80,1.35);
  // Ferns gather at tree bases.
  const fern=buildFern(),ferns=[];
  for(const [x,z] of trunks){if(Math.hypot(x,z)>48)continue;for(let k=0;k<4;k++){const a=between(0,6.28),r=between(.9,2.4),fx=x+Math.cos(a)*r,fz=z+Math.sin(a)*r;if(openGround(fx,fz))continue;ferns.push(matrix(fx,fz,between(.8,1.4),-.02));}}
@@ -224,8 +228,10 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false}){
   ready:shrubsReady,
   get leaves(){return leafMeshes.filter(Boolean);},
   // Templates for other woodland (the night road streams its own instances of these).
-  forest:{trees:[[broadTemplates[0],leafMaterial],[broadTemplates[1],leafMaterial],[cypressTemplates[0],cypressMaterial]].map(([t,material])=>({wood:t.wood,foliage:t.foliage,material,height:t.height})),fern:{geometry:fern,material:fernMaterial}},
+  forest:{trees:[[forestTemplates[0],leafMaterial],[forestTemplates[1],leafMaterial],[forestCypress,cypressMaterial]].map(([t,material])=>({wood:t.wood,foliage:t.foliage,material,height:t.height})),fern:{geometry:fern,material:fernMaterial}},
   update(t){time.value=t;},
+  // Hide the garden's own trees and ground cover (not the road woodland, which uses its own instances).
+  setVisible(value){if(gardenMeshes[0]?.visible===value)return;for(const mesh of gardenMeshes)mesh.visible=value;},
   inspect:()=>({trees:{broadleaf:broad.length,apple:apples.length,cypress:cypresses.length,hero:1},ferns:ferns.length,flowers:flowerHeads.length,shrubs:shrubCount})
  };
 };

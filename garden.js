@@ -106,7 +106,7 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  let pyramid=null,district=null,nightSteps=null,lastViewer=null;
  const nightBuilders=[
   ()=>{pyramid=window.createRoadPyramid(T,scene,{roadX,roadEnd,stone,onChange,reduced});},
-  ()=>{district=window.createNightDistrict(T,scene,{stone,leafMat,layout:window.nightLayout,reduced});},
+  ()=>{district=window.createNightDistrict(T,scene,{stone,leafMat,layout:window.nightLayout,reduced});window.mergeStaticMeshes?.(T,district.root,{skip:o=>o.name.startsWith('Lost page')});},
   ()=>{nightRoad=window.createNightRoad(T,scene,{sections:roadSections,roadX,roadStart,roadLength,clearingStart:-120,district,sky,bark,forest:flora.forest,stone,roadMaterial,vergeMaterial,clouds:garden.children.filter(node=>node.isSprite),reduced,mobile});roadFirst=-1;if(lastViewer)updateRoad(lastViewer.position);onChange();}
  ];
  // Back in the garden the night section is hidden again, exactly as before it was first built.
@@ -120,7 +120,7 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
   if(district?.blocks(position)||pyramid?.blocks(position))position.copy(previous);
   position.z=Math.min(position.z,26);return position;
  },road:{x:roadX,start:roadStart,end:roadEnd,inspect:()=>({first:roadFirst,sections:roadSections.length,near:roadStart-roadFirst*roadLength,far:Math.max(roadEnd,roadStart-(roadFirst+roadSections.length)*roadLength)})},update(time,viewer,active=true){
-  if(viewer){lastViewer=viewer;if(!nightBuilt()&&(nightSteps||nightNear(viewer.position))){buildNight();onChange();}updateRoad(viewer.position);sky.position.copy(viewer.position);snake.update(time,viewer,active);if(nightBuilt()){const near=nightNear(viewer.position);nightRoad.setEnabled(near);district.root.visible=near;nightRoad.update(time,viewer,active);pyramid.update(viewer,time);if(near)district.update(time,viewer,nightRoad.amount);}}
+  if(viewer){lastViewer=viewer;flora.setVisible(viewer.position.z>-45);if(!nightBuilt()&&(nightSteps||nightNear(viewer.position))){buildNight();onChange();}updateRoad(viewer.position);sky.position.copy(viewer.position);snake.update(time,viewer,active);if(nightBuilt()){const near=nightNear(viewer.position);nightRoad.setEnabled(near);district.root.visible=near;nightRoad.update(time,viewer,active);pyramid.update(viewer,time);if(near)district.update(time,viewer,nightRoad.amount);}}
   if(reduced)return;wind.value=time;flora.update(time);waterUniforms.time.value=time;dust.rotation.y=Math.sin(time*.025)*.07;
  },foliage:flora.leaves,flora,sky};
 };
