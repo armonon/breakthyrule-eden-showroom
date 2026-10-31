@@ -20,9 +20,43 @@ window.GardenCharacterDetails={
   shade(0,6.46,20,7,'#583b2d',.24);shade(0,6.36,18,9,'#ffe1b6',.13);
   shade(0,7.03,7,31,'#ffdfbe',.17,1.65);
   for(let i=0;i<3;i++)stroke([[-.38,7.72+i*.085],[0,7.74+i*.085],[.38,7.72+i*.085]],'#614536',.7,a.age*.14);
+  for(const s of [-1,1]){stroke([[s*.17,7.32],[s*.31,7.36],[s*.45,7.31]],'#2c1d18',2.2,.55);stroke([[s*.2,7.22],[s*.31,7.2],[s*.43,7.23]],'#7a5244',1.2,.35);}
   let seed=1427;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
-  for(let i=0;i<14000;i++){const x=random()*512,y=random()*470;c.globalAlpha=.025+random()*.025;c.fillStyle=i%2?'#fff1d8':'#412b23';c.fillRect(x,y,1,1);}c.globalAlpha=1;
-  const texture=new T.CanvasTexture(canvas);texture.colorSpace=T.SRGBColorSpace;texture.anisotropy=4;texture.name='Painted 512px character skin';return texture;
+  for(let i=0;i<900;i++){const x=random()*512,y=random()*470;c.globalAlpha=.04+random()*.04;c.fillStyle=i%2?'#fff1d8':'#412b23';c.fillRect(x,y,4,4);}c.globalAlpha=1;
+  return this.retro(T,canvas,256,256,'Painted 256px character skin');
+ },
+ // Shared character material: Lambert plus a small self-lit floor, so painted colour survives back-light in the world
+ // the way era characters kept a constant ambient term. One program variant serves every character material.
+ material(T,color,extra={}){
+  const m=new T.MeshLambertMaterial({color,...extra});
+  m.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>','outgoingLight+=diffuseColor.rgb*.2;\n#include <opaque_fragment>');};
+  m.customProgramCacheKey=()=>'ps2-ambient';return m;
+ },
+ // Downsample a painted canvas to an era-sized texture: bilinear, no mipmaps, no anisotropy.
+ retro(T,source,width,height,name,repeat=false){
+  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const c=canvas.getContext('2d');c.imageSmoothingQuality='high';c.drawImage(source,0,0,width,height);
+  const texture=new T.CanvasTexture(canvas);texture.colorSpace=T.SRGBColorSpace;texture.generateMipmaps=false;texture.minFilter=texture.magFilter=T.LinearFilter;texture.name=name;
+  if(repeat)texture.wrapS=texture.wrapT=T.RepeatWrapping;return texture;
+ },
+ eyeTexture(T,a){
+  // Equirectangular 64x32 eyeball: the sphere's +z front sits at u=.25, v=.5.
+  const canvas=document.createElement('canvas');canvas.width=64;canvas.height=32;const c=canvas.getContext('2d');
+  c.fillStyle='#c4c1b3';c.fillRect(0,0,64,32);c.fillStyle='#8f8c80';c.fillRect(0,0,64,7);
+  const dot=(r,color)=>{c.fillStyle=color;c.beginPath();c.arc(16,16,r,0,Math.PI*2);c.fill();};
+  dot(6.4,'#151617');dot(5.3,a.eyeColor);dot(2.1,'#0c0d0e');c.fillStyle='#ffffffb0';c.fillRect(17,13,1.5,1.5);
+  const texture=new T.CanvasTexture(canvas);texture.colorSpace=T.SRGBColorSpace;texture.generateMipmaps=false;texture.minFilter=texture.magFilter=T.LinearFilter;texture.name='Painted eyes';return texture;
+ },
+ blobTexture(T){
+  const canvas=document.createElement('canvas');canvas.width=canvas.height=32;const c=canvas.getContext('2d'),g=c.createRadialGradient(16,16,0,16,16,16);
+  g.addColorStop(0,'#000000d0');g.addColorStop(.6,'#00000090');g.addColorStop(1,'#00000000');c.fillStyle=g;c.fillRect(0,0,32,32);
+  const texture=new T.CanvasTexture(canvas);texture.generateMipmaps=false;texture.minFilter=T.LinearFilter;texture.name='Blob shadow';return texture;
+ },
+ merge(T,geometries){
+  // Concatenate same-layout geometries so a detail costs one draw call.
+  const out=new T.BufferGeometry(),index=[];let offset=0;
+  for(const name of Object.keys(geometries[0].attributes)){const size=geometries[0].attributes[name].itemSize,values=[];for(const g of geometries)values.push(...g.attributes[name].array);out.setAttribute(name,new T.Float32BufferAttribute(values,size));}
+  for(const g of geometries){const count=g.attributes.position.count;if(g.index)for(const i of g.index.array)index.push(i+offset);else for(let i=0;i<count;i++)index.push(i+offset);offset+=count;g.dispose();}
+  out.setIndex(index);return out;
  },
  clothTexture(T,kind){
   const canvas=document.createElement('canvas');canvas.width=kind==='pants'?512:256;canvas.height=256;const c=canvas.getContext('2d');c.fillStyle='#eeeeeb';c.fillRect(0,0,canvas.width,256);
@@ -42,7 +76,7 @@ window.GardenCharacterDetails={
    path([[6,0],[6,256]],'#c1c1bf',3);path([[250,0],[250,256]],'#c1c1bf',3);
    path([[0,247],[256,247]],'#b3b3b0',2);path([[0,251],[256,251]],'#fafaf5',1);
   }
-  const texture=new T.CanvasTexture(canvas);texture.colorSpace=T.SRGBColorSpace;texture.wrapS=texture.wrapT=T.RepeatWrapping;texture.anisotropy=4;texture.name='Painted '+kind+' fabric';return texture;
+  return this.retro(T,canvas,canvas.width/4,64,'Painted '+kind+' fabric',true);
  },
  shoeTexture(T){
   const canvas=document.createElement('canvas');canvas.width=canvas.height=256;const c=canvas.getContext('2d');c.fillStyle='#dfdfd8';c.fillRect(0,0,256,256);
@@ -50,7 +84,7 @@ window.GardenCharacterDetails={
   c.strokeStyle='#adb0af';c.lineWidth=4;c.beginPath();c.ellipse(127,81,94,68,0,Math.PI,2*Math.PI);c.stroke();
   for(let i=0;i<5;i++){const y=78+i*18;c.fillStyle='#4b5256';for(const x of [83,173]){c.beginPath();c.arc(x,y,3.5,0,Math.PI*2);c.fill();}c.strokeStyle='#f8f6e9';c.lineWidth=5;c.beginPath();c.moveTo(83,y);c.lineTo(173,y+11);c.moveTo(173,y);c.lineTo(83,y+11);c.stroke();}
   c.fillStyle='#6b7379';c.fillRect(7,118,21,71);c.fillRect(228,118,21,71);c.fillRect(81,224,93,32);
-  const texture=new T.CanvasTexture(canvas);texture.colorSpace=T.SRGBColorSpace;texture.anisotropy=4;texture.name='Painted sneaker panels and laces';return texture;
+  return this.retro(T,canvas,64,64,'Painted sneaker panels and laces');
  },
  shirtTexture(T){
   const canvas=document.createElement('canvas');canvas.width=canvas.height=256;const c=canvas.getContext('2d');c.fillStyle='#f0f1dc';c.fillRect(0,0,256,256);
@@ -58,21 +92,18 @@ window.GardenCharacterDetails={
    c.save();c.translate(x,y);c.rotate(angle);c.strokeStyle='#4f766b';c.lineWidth=3;c.beginPath();c.moveTo(0,42);c.quadraticCurveTo(11,16,0,0);c.stroke();
    for(let i=0;i<7;i++){const theta=-Math.PI+i*Math.PI/6;c.beginPath();c.moveTo(0,0);c.quadraticCurveTo(Math.cos(theta)*32,Math.sin(theta)*27-7,Math.cos(theta)*46,Math.sin(theta)*12+10);c.lineWidth=7-i%2*2;c.stroke();}c.restore();
   }
-  const texture=new T.CanvasTexture(canvas);texture.colorSpace=T.SRGBColorSpace;texture.wrapS=texture.wrapT=T.RepeatWrapping;texture.anisotropy=4;return texture;
+  return this.retro(T,canvas,128,128,'Painted palm resort print',true);
  },
  add({T,a,morph,head,headOrigin,torso,torsoOrigin}){
-  const mat=(color,extra={})=>new T.MeshStandardMaterial({color,roughness:.9,...extra});
-  function attach(g,m,parent,origin,name){g.translate(-origin.x,-origin.y,-origin.z);const mesh=new T.Mesh(g,m);mesh.name=name;mesh.castShadow=true;parent.add(mesh);return mesh;}
-  function surface(points,indices,m,parent=head,origin=headOrigin,name='Character detail'){
-   const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(points.flatMap(morph),3));g.setIndex(indices);g.computeVertexNormals();return attach(g,m,parent,origin,name);
-  }
+  const mat=(color,extra={})=>this.material(T,color,extra);
+  function attach(g,m,parent,origin,name){g.translate(-origin.x,-origin.y,-origin.z);const mesh=new T.Mesh(g,m);mesh.name=name;parent.add(mesh);return mesh;}
   // Closed, tapered lock volumes keep every hairstyle readable from the back and side.
   const hp=[],huv=[],hi=[];
   const center=new T.Vector3(0,7.4,.55),skull=[];
-  for(let i=0;i<13380*3;i+=3){const p=new T.Vector3(...GardenHumanBase.positions.slice(i,i+3));if(p.y>7.05&&(Math.abs(p.x)<.75||p.y>7.72)){const delta=p.sub(center);skull.push({direction:delta.clone().normalize(),radius:delta.length()});}}
+  for(let i=0;i<GardenHumanBase.positions.length;i+=3){const p=new T.Vector3(...GardenHumanBase.positions.slice(i,i+3));if(p.y>7.05&&(Math.abs(p.x)<.75||p.y>7.72)){const delta=p.sub(center);skull.push({direction:delta.clone().normalize(),radius:delta.length()});}}
   function fit(point,lift=.065){const direction=point.clone().sub(center).normalize();let best=-Infinity,radius=1;for(const v of skull){const score=direction.dot(v.direction);if(score>best){best=score;radius=v.radius;}}return center.clone().addScaledVector(direction,radius+lift);}
   function lock(points,width=.13,depth=.72,taper=.75,fitted=false){
-   const rawCurve=new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),steps=points.length>10?10:14,sides=6;
+   const rawCurve=new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),steps=points.length>10?8:6,sides=4;
    const curve=fitted?new T.CatmullRomCurve3(Array.from({length:25},(_,j)=>{const p=rawCurve.getPointAt(j/24);return fit(p,(style==='slick'?.025:.065)+(fitted==='quiff'?Math.max(0,p.y-8.35)*.48:0));})):rawCurve;
    const frames=curve.computeFrenetFrames(steps,false),offset=hp.length/3;
    for(let j=0;j<=steps;j++){
@@ -102,10 +133,10 @@ window.GardenCharacterDetails={
    if(style==='long')for(const side of [-1,1])for(let i=0;i<5;i++){const k=i/5;lock([[side*(.05+k*.16),8.4,.82],[side*(.25+k*.18),8.23,1.23],[side*(.66+k*.08),7.74,1.5],[side*.89,7.23,1.18]],.1*volume,.6,.6,true);}
   }
   if(style==='curls'){
-   for(let i=0;i<160;i++){
-    const y=.04+(i+.5)/160*.94,theta=i*2.39996,r=Math.sqrt(1-y*y),points=[];
+   for(let i=0;i<96;i++){
+    const y=.04+(i+.5)/96*.94,theta=i*2.39996,r=Math.sqrt(1-y*y),points=[];
     const curlCenter=fit(new T.Vector3(Math.cos(theta)*r,7.65+y*.95,.55+Math.sin(theta)*r),.085*volume);
-    for(let j=0;j<13;j++){const t=j/12,angle=t*Math.PI*3;points.push([curlCenter.x+Math.cos(angle)*.085*volume,curlCenter.y+(t-.5)*.2*length,curlCenter.z+Math.sin(angle)*.085*volume]);}lock(points,.082*volume,1,.1);
+    for(let j=0;j<11;j++){const t=j/10,angle=t*Math.PI*3;points.push([curlCenter.x+Math.cos(angle)*.1*volume,curlCenter.y+(t-.5)*.24*length,curlCenter.z+Math.sin(angle)*.1*volume]);}lock(points,.1*volume,1,.1);
    }
   }
   if(['bun','ponytail'].includes(style)){
@@ -115,22 +146,27 @@ window.GardenCharacterDetails={
   }
   if(hp.length){
    const c=document.createElement('canvas');c.width=64;c.height=128;const ctx=c.getContext('2d');
-   const highlight=ctx.createLinearGradient(0,0,64,0);highlight.addColorStop(0,'#676767');highlight.addColorStop(.42,'#e3e3e3');highlight.addColorStop(.66,'#bfbfbf');highlight.addColorStop(1,'#747474');ctx.fillStyle=highlight;ctx.fillRect(0,0,64,128);
-   for(let i=0;i<22;i++){ctx.strokeStyle=i%3===0?'#929292':'#d6d6d6';ctx.globalAlpha=.45;ctx.lineWidth=i%3===0?1:.6;ctx.beginPath();ctx.moveTo(i*3,0);ctx.bezierCurveTo(i*3+3,40,i*3-2,85,i*3,128);ctx.stroke();}
-   const map=new T.CanvasTexture(c);map.colorSpace=T.SRGBColorSpace;const hair=mat(a.hairColor,{map}),g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(hp,3));g.setAttribute('uv',new T.Float32BufferAttribute(huv,2));g.setIndex(hi);g.computeVertexNormals();attach(g,hair,head,headOrigin,'Styled hair locks');
+   const highlight=ctx.createLinearGradient(0,0,64,0);highlight.addColorStop(0,'#5a5a5a');highlight.addColorStop(.42,'#e8e8e8');highlight.addColorStop(.66,'#bcbcbc');highlight.addColorStop(1,'#646464');ctx.fillStyle=highlight;ctx.fillRect(0,0,64,128);
+   for(let i=0;i<11;i++){ctx.strokeStyle=i%3===0?'#808080':'#dadada';ctx.globalAlpha=.55;ctx.lineWidth=i%3===0?4:2.5;ctx.beginPath();ctx.moveTo(i*6,0);ctx.bezierCurveTo(i*6+5,40,i*6-4,85,i*6,128);ctx.stroke();}
+   const hair=mat(a.hairColor,{map:this.retro(T,c,16,32,'Painted hair strands')}),g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(hp,3));g.setAttribute('uv',new T.Float32BufferAttribute(huv,2));g.setIndex(hi);g.computeVertexNormals();attach(g,hair,head,headOrigin,'Styled hair locks');
   }
+  const shape=(points,indices)=>{const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(points.flatMap(morph),3));g.setIndex(indices);g.computeVertexNormals();return g;};
   if(a.outfit==='resort'){
-   const collar=mat(a.shirtColor,{side:T.DoubleSide});
-   for(const sign of [-1,1])surface([[sign*.44,5.84,.93],[sign*1.03,5.4,1.09],[sign*.78,4.76,1.48],[sign*.25,5.17,1.39],[sign*.56,5.45,1.48]], [0,1,4,1,2,4,2,3,4,3,0,4],collar,torso,torsoOrigin,'Folded resort collar');
-   const buttons=mat('#ece8d5');for(const y of [3.9,2.9,1.9]){const g=new T.SphereGeometry(.014,8,6),p=new T.Vector3(...morph([0,y,1.2]));g.translate(p.x,p.y,p.z);attach(g,buttons,torso,torsoOrigin,'Shirt button');}
+   // Collar flaps and buttons share one vertex-coloured mesh and draw call.
+   const tint=(g,color)=>{g.deleteAttribute('uv');g.setAttribute('color',new T.Float32BufferAttribute(Array.from({length:g.attributes.position.count},()=>color.toArray()).flat(),3));return g;};
+   const shirt=new T.Color(a.shirtColor),button=new T.Color('#ece8d5').multiplyScalar(.9),parts=[];
+   for(const sign of [-1,1])parts.push(tint(shape([[sign*.44,5.84,.93],[sign*1.03,5.4,1.09],[sign*.78,4.76,1.48],[sign*.25,5.17,1.39],[sign*.56,5.45,1.48]],[0,1,4,1,2,4,2,3,4,3,0,4]),shirt));
+   for(const y of [3.9,2.9,1.9]){const p=new T.Vector3(...morph([0,y,1.2]));parts.push(tint(new T.SphereGeometry(.016,5,3).translate(p.x,p.y,p.z),button));}
+   attach(this.merge(T,parts),mat('#ffffff',{vertexColors:true,side:T.DoubleSide}),torso,torsoOrigin,'Resort collar and buttons');
   }
   if(a.eyewear!=='none'){
-   const metal=mat(a.eyewear==='aviators'?'#b7a578':'#17181b',{metalness:.55,roughness:.35}),lens=mat('#162f32',{roughness:.25,metalness:.2,side:T.DoubleSide});
-   function bar(points,r=.014){const curve=new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...morph(p))));return attach(new T.TubeGeometry(curve,24,r*.105,6,false),metal,head,headOrigin,'Eyewear frame');}
+   const metal=mat(a.eyewear==='aviators'?'#b7a578':'#17181b'),lens=mat('#162f32',{side:T.DoubleSide}),frames=[],lenses=[];
+   const bar=(points,r=.014)=>frames.push(new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...morph(p)))),8,r*.105,4,false));
    for(const sign of [-1,1]){
     const x=sign*.325,y=7.27,aviator=a.eyewear==='aviators';const pts=aviator?[[-.23,.14],[.19,.14],[.23,-.06],[.09,-.2],[-.16,-.16],[-.23,.14]]:[[-.24,.14],[.23,.14],[.2,-.15],[-.2,-.15],[-.24,.14]];
-    const points=pts.map(([dx,dy])=>[x+dx,y+dy,1.57-Math.abs(x+dx)*.05]);surface(points,[0,1,2,0,2,3,...(aviator?[0,3,4]:[])],lens);bar(points,a.eyewear==='aviators'?.014:.033);bar([[x+sign*.23,y+.09,1.54],[sign*.74,y+.09,.92],[sign*.79,y-.02,.35]],.022);
+    const points=pts.map(([dx,dy])=>[x+dx,y+dy,1.57-Math.abs(x+dx)*.05]);lenses.push(shape(points,[0,1,2,0,2,3,...(aviator?[0,3,4]:[])]));bar(points,a.eyewear==='aviators'?.014:.033);bar([[x+sign*.23,y+.09,1.54],[sign*.74,y+.09,.92],[sign*.79,y-.02,.35]],.022);
    }bar([[-.095,7.35,1.59],[0,7.39,1.7],[.095,7.35,1.59]],.018);
+   attach(this.merge(T,frames),metal,head,headOrigin,'Eyewear frame');attach(this.merge(T,lenses),lens,head,headOrigin,'Eyewear lenses');
   }
  }
 };

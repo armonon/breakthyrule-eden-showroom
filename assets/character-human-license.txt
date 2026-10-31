@@ -9,5 +9,6 @@ https://github.com/makehumancommunity/makehuman/blob/master/makehuman/data/rigs/
 https://github.com/makehumancommunity/makehuman/blob/master/makehuman/data/rigs/default_weights.mhw
 
 Original asset credits: Data Collection AB, Joel Palmius, Jonas Hauquier.
-Showroom adaptations: compact skeleton, body and face morphs, clothing,
+Showroom adaptations: compact skeleton, Blender-decimated low-poly body (~3k triangles)
+and clothing (~2.6k), body and face morphs, clothing,
 hair styling, materials and animation. No Grand Theft Auto assets used.
