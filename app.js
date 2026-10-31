@@ -268,12 +268,12 @@ $('amphitheater-view').disabled=false;
 if(pendingMultiplayerSpawn)enterMultiplayer();
 }).catch(fallback);
 let frame=0,previous=0,drag=null,suppressClickUntil=0;
-const motion=createPlayerMotion();
+const motion=createPlayerMotion(),walkVelocity=new T.Vector3(),sway=createCameraSway(T,{reduced});
 const moveKeys=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright']);
 const finePointer=matchMedia('(pointer: fine)').matches;
 $('movement-hint').textContent=finePointer?'W A S D TO MOVE / DRAG TO LOOK':'DRAG TO LOOK / TAP TO EXPLORE';
 function requestDraw(){if(!frame&&!document.hidden)frame=requestAnimationFrame(draw);}
-function draw(time){frame=0;if(!state.ready)return;const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(keys.size&&!modalOpen())move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();if(!reduced&&camera.position.z> -25&&time-lastResidentShadow>160){renderer.shadowMap.needsUpdate=true;lastResidentShadow=time;}const factor=reduced?1:1-Math.exp(-7*(dt||.016));camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);camera.lookAt(aim);garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();post.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();if(motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||keys.size||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
+function draw(time){frame=0;if(!state.ready)return;const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(modalOpen())walkVelocity.set(0,0,0);else if(keys.size||walkVelocity.lengthSq())move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();if(!reduced&&camera.position.z> -25&&time-lastResidentShadow>160){renderer.shadowMap.needsUpdate=true;lastResidentShadow=time;}sway.remove(camera);const factor=reduced?1:1-Math.exp(-(walkVelocity.lengthSq()?12:7)*(dt||.016));camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false)});garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();post.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();if(motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
 let roadCaption='';
 function updateRoadCaption(){if(state.view!=='free'){roadCaption='';return;}const place=garden.pyramid.gathering.inspect().inside?'gathering':camera.position.z<garden.road.start-4?'road':'garden';if(place===roadCaption)return;roadCaption=place;document.querySelector('.world-caption h1').textContent=place==='gathering'?'THE GATHERING':place==='road'?'THE FOREVER ROAD':'GARDEN OF EDEN';document.querySelector('.world-caption .edition').textContent=place==='gathering'?'BREAKTHYRULE / WITHIN THE PYRAMID':place==='road'?'BREAKTHYRULE / BEYOND THE SIGN':'BREAKTHYRULE / IN THE BEGINNING';}
 function updateMusicPrompt(){const point=amphitheater.marker.clone().project(camera),button=$('music-prompt');button.hidden=modalOpen()||!['amphitheater','free'].includes(state.view)||point.z< -1||point.z>1||Math.abs(point.x)>.9||Math.abs(point.y)>.8||camera.position.distanceTo(amphitheater.marker)>26;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,90,stage.clientWidth-90)+'px';button.style.top=T.MathUtils.clamp((1-point.y)*stage.clientHeight/2,245,stage.clientHeight-170)+'px';}}
@@ -293,7 +293,7 @@ function go(view,instant=false){
  if(view==='film'||view==='lookbook')view='wall';
  if(expedition?.active())expedition.leave();
  followResident=null;stage.classList.remove('resident-view');
- if(view==='free')view='spawn';state.view=view;keys.clear();markView();if(!state.ready)return;motion.reset();
+ if(view==='free')view='spawn';state.view=view;keys.clear();walkVelocity.set(0,0,0);markView();if(!state.ready)return;motion.reset();
  if(view==='approach')loadRackModels();
  if(view==='library'||view==='librarian')librarianNPC.load();
  $('poster-links').hidden=view!=='wall'&&view!=='lookbook';if($('gallery-wall-switch'))$('gallery-wall-switch').textContent=view==='lookbook'?'ART WALL':'PHOTO WALL';$('film-link').hidden=view!=='film';$('retry-film').hidden=view!=='film'||filmStatus!=='unavailable';document.querySelector('.world-caption h1').textContent=view==='spawn'?'GARDEN OF EDEN':view==='film'?'THE SCREEN':view==='lookbook'?'THE PHOTO WALL':view==='wall'?'THE ARTWORK':'THE VAULT';document.querySelector('.world-caption .edition').textContent=view==='spawn'?'BREAKTHYRULE / IN THE BEGINNING':view==='film'?'MOVING SIGNAL / BREAKTHYRULE':view==='lookbook'?'BREAKTHYRULE / '+collection.length+' PHOTOGRAPHS':view==='wall'?'BREAKTHYRULE / ARTWORK':'BREAKTHYRULE / '+collection.length+' 3D GARMENTS';
@@ -322,16 +322,30 @@ function focusResident(id){
  document.querySelector('.world-caption h1').textContent=entry.def.name.toUpperCase();document.querySelector('.world-caption .edition').textContent=entry.def.region.toUpperCase();requestDraw();
 }
 function move(dt){
- if(expedition&&!expedition.canMove())return;
+ if(expedition&&!expedition.canMove()){walkVelocity.set(0,0,0);return;}
  const z=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),x=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
- if(!x&&!z)return;
- prepareWalking();const forward=targetAim.clone().sub(targetPosition);forward.y=0;forward.normalize();const right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));
- const step=forward.multiplyScalar(z).add(right.multiplyScalar(x));if(step.lengthSq()===0)return;step.normalize().multiplyScalar(dt*motion.speed(keys.has('shift')));const next=garden.constrain(targetPosition.clone().add(step),targetPosition);
+ const forward=targetAim.clone().sub(targetPosition);forward.y=0;forward.normalize();const right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));
+ const wish=forward.multiplyScalar(z).add(right.multiplyScalar(x));if(wish.lengthSq())wish.normalize().multiplyScalar(motion.speed(keys.has('shift')));
+ // Ease up to speed (~0.25 s) and glide to a stop instead of starting and stopping instantly; keep momentum in the air.
+ walkVelocity.lerp(wish,1-Math.exp(-(motion.inspect().airborne?1.5:wish.lengthSq()?9:11)*dt));
+ if(walkVelocity.lengthSq()<1e-4){walkVelocity.set(0,0,0);return;}
+ if(x||z)prepareWalking();
+ // Try the full step, then each axis alone, so walls, props and the pond edge slide the player along.
+ const step=walkVelocity.clone().multiplyScalar(dt);
+ for(const [candidate,keepX,keepZ] of [[step,1,1],[new T.Vector3(step.x,0,0),1,0],[new T.Vector3(0,0,step.z),0,1]]){
+  if(candidate.lengthSq()<1e-10)continue;const next=tryStep(candidate);if(!next)continue;
+  if(!keepX)walkVelocity.x=0;if(!keepZ)walkVelocity.z=0;
+  const actual=next.clone().sub(targetPosition);targetPosition.copy(next);targetAim.add(actual);return;
+ }
+ walkVelocity.set(0,0,0);
+}
+function tryStep(step){
+ const next=garden.constrain(targetPosition.clone().add(step),targetPosition);
  expedition?.constrain(next,targetPosition);
  const pond=((next.x-5.7)/4.1)**2+((next.z-3.5)/5.9)**2<1;const walls=collectionPavilion?.blocks(next);const rack=next.x<-12.6&&next.x>-13.7&&Math.abs(next.z-.5)<3.5;const trunk=Math.hypot(next.x-.5,next.z+7)<.75;
- if(pond||walls||rack||trunk||amphitheater.blocks(next)||gardenLibrary?.blocks(next)||gardenProps?.blocks(next))return;
+ if(pond||walls||rack||trunk||amphitheater.blocks(next)||gardenLibrary?.blocks(next)||gardenProps?.blocks(next))return null;
  next.y=1.75+amphitheater.groundHeight(next)+motion.inspect().height;
- const actual=next.clone().sub(targetPosition);targetPosition.copy(next);targetAim.add(actual);
+ return next;
 }
 function shiftHeight(delta){targetPosition.y+=delta;targetAim.y+=delta;}
 function prepareWalking(){
@@ -379,5 +393,5 @@ function focusVisitor(p){
 multiplayer=window.createGardenMultiplayer?.({T,scene,camera,requestDraw,enter:enterMultiplayer,inExpedition:()=>expedition?.active(),getPose:()=>state.ready&&!expedition?.active()?{x:camera.position.x,z:camera.position.z,yaw:Math.atan2(aim.x-camera.position.x,aim.z-camera.position.z)}:null,lookAt:focusVisitor,stopMoving:()=>{keys.clear();drag=null;}});
 expedition=window.createExpedition({T,scene,camera,garden,layout:window.nightLayout,getPose:()=>state.ready?{x:targetPosition.x,z:targetPosition.z,yaw:Math.atan2(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z)}:null,place(x,z,lx=x,lz=z-5){motion.reset();freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,1.75,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=60;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},stopMoving(){keys.clear();drag=null;},requestDraw,returnHome:()=>go('spawn',true)});
 $('night-dialog').addEventListener('close',()=>{if(expedition.active()&&expedition.canMove()&&!modalOpen())renderer.domElement.focus({preventScroll:true});});
-window.breakThyRuleShowroom={go,inspect,showSide,focusResident,getState:()=>({...state,position:camera.position.toArray(),movement:{...motion.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.district.inspect(),library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),lighting:lighting.inspect(),post:post.inspect(),residents:residents.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
+window.breakThyRuleShowroom={go,inspect,showSide,focusResident,getState:()=>({...state,position:camera.position.toArray(),movement:{...motion.inspect(),velocity:walkVelocity.toArray().map(v=>+v.toFixed(3)),sway:sway.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.district.inspect(),library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),lighting:lighting.inspect(),post:post.inspect(),residents:residents.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
 })();
