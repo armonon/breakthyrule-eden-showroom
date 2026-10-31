@@ -102,7 +102,7 @@ export function registerTempleColliders(world) {
   covers.forEach(([minX, maxX, minZ, maxZ], index) => world.addBox(minX, maxX, minZ, maxZ, { id: `plaza:cover-${index}`, minY: 0, maxY: 1.25 }));
 }
 
-export function createTempleSectorFactory({ materials, assetLoader, assetRoot }) {
+export function createTempleSectorFactory({ materials, assetLoader, assetRoot, pbr = null }) {
   const loadModelOrProxy = async (assetName, lod, proxyFactory) => {
     const url = `${assetRoot}${assetName}-lod${lod}.glb`;
     const result = await assetLoader.loadOptional(url);
@@ -110,11 +110,13 @@ export function createTempleSectorFactory({ materials, assetLoader, assetRoot })
       const scene = result.scene;
       scene.name = `${assetName} LOD ${lod}`;
       scene.userData.ownsMaterials = true;
+      pbr?.apply(scene);
       return scene;
     }
     const proxy = proxyFactory(lod);
     proxy.userData.proxyFallback = true;
     proxy.userData.ownsMaterials = false;
+    pbr?.apply(proxy);
     return proxy;
   };
 
@@ -218,6 +220,7 @@ export function disposeSector(object) {
     if (!ownsMaterials || !child.material) return;
     if (Array.isArray(child.material)) child.material.forEach(material => materials.add(material));
     else materials.add(child.material);
+    for (const material of materials) if (material.userData?.shared) materials.delete(material); // shared photographic stone
   });
   if (ownsMaterials) {
     for (const material of materials) {

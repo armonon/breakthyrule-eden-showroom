@@ -9,6 +9,7 @@ import { DistrictStreamer } from './core/streaming.js';
 import { BenchRunner } from './core/bench.js';
 import { rendererCounters, estimateTextureMemory, measureTransferSize } from './core/resource-metrics.js';
 import { createMaterialLibrary } from './scene/materials.js';
+import { createPbrMaterialLibrary } from './scene/pbr-materials.js';
 import { createTempleSectorFactory, disposeSector, registerTempleColliders } from './scene/proxy-temple.js';
 import { createNightAtmosphere } from './scene/atmosphere.js';
 import { Flashlight } from './scene/flashlight.js';
@@ -63,7 +64,7 @@ async function init() {
   const controls = new FirstPersonController({ camera, element: renderer.domElement, collisionWorld, spawn: CONFIG.spawn });
   const materials = createMaterialLibrary();
   const assets = await new SliceAssetLoader({ renderer, ktx2TranscoderPath: CONFIG.ktx2TranscoderPath }).init();
-  const atmosphere = createNightAtmosphere({ scene, preset: quality.preset });
+  const atmosphere = createNightAtmosphere({ scene, preset: quality.preset, camera });
   const practicalLights = createPracticalLights({ scene, preset: quality.preset });
   const ritualDoor = createRitualDoor({ scene, position: CONFIG.templeDoor });
   ritualDoor.setPages(0);
@@ -71,7 +72,8 @@ async function init() {
   const trees = await new TreeSystem({ scene, camera, assetLoader: assets, preset: quality.preset }).init();
 
   const streamer = new DistrictStreamer({ scene, camera, config: CONFIG.streaming, enabled: true });
-  const sectorDefinitions = createTempleSectorFactory({ materials, assetLoader: assets, assetRoot: CONFIG.assetRoot });
+  const pbr = createPbrMaterialLibrary({ assetLoader: assets });
+  const sectorDefinitions = createTempleSectorFactory({ materials, assetLoader: assets, assetRoot: CONFIG.assetRoot, pbr });
   sectorDefinitions.forEach(definition => streamer.register({ ...definition, dispose: disposeSector }));
   streamer.update(performance.now());
 
@@ -361,6 +363,7 @@ async function init() {
       practicalLights.dispose();
       atmosphere.dispose();
       materials.dispose();
+      pbr.dispose();
       assets.dispose();
       disposeRenderer();
     },
