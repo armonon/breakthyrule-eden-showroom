@@ -69,7 +69,7 @@ $('close-residents').onclick=()=>residentDialog.close();
 residentDialog.addEventListener('close',()=>{keys.clear();requestDraw();});
 residentDialog.addEventListener('click',event=>{if(event.target===residentDialog){const r=residentDialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)residentDialog.close();}});
 $('resident-concepts').onclick=()=>{residentDialog.close();showPoster({name:'Garden residents / full-body concepts',file:'/residents/full-body-concepts.png',alt:'Front and back concept designs for Violet Trickster, Azure Oracle and Gilded Sentinel.'});};
-let selectedBook=0,gardenLibrary=null,librarianNPC=null;
+let selectedBook=0,gardenLibrary=null,librarianNPC=null,gardenProps=null;
 const conversation=createLibrarianConversation({onOpen(){keys.clear();if(bookDialog.open)bookDialog.close();go('librarian');librarianNPC?.setTalking(true);$('npc-prompt').hidden=true;requestDraw();},onClose(){librarianNPC?.setTalking(false);go('library');requestDraw();}});
 $('npc-prompt').onclick=$('talk-librarian').onclick=$('ask-from-books').onclick=()=>conversation.open();
 function showBook(index=selectedBook){
@@ -245,6 +245,7 @@ const texturePaths=[collection[0].images[0],collection[0].images[1]||collection[
 Promise.resolve(texturePaths.map(path=>{const texture=showroomAssets.texture(T,path,requestDraw);texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());return texture;})).then(async allTextures=>{
 garden.ready.then(requestDraw);
 gardenLibrary=createGardenLibrary(T,scene,requestDraw);
+gardenProps=createGardenProps(T,scene,{onLoad(){renderer.shadowMap.needsUpdate=true;requestDraw();}});
 gardenLibrary.ready.then(requestDraw);
 setShelfPage(0);
 const textures=allTextures.slice(0,2);
@@ -326,7 +327,7 @@ function move(dt){
  const step=forward.multiplyScalar(z).add(right.multiplyScalar(x));if(step.lengthSq()===0)return;step.normalize().multiplyScalar(dt*motion.speed(keys.has('shift')));const next=garden.constrain(targetPosition.clone().add(step),targetPosition);
  expedition?.constrain(next,targetPosition);
  const pond=((next.x-5.7)/4.1)**2+((next.z-3.5)/5.9)**2<1;const walls=collectionPavilion?.blocks(next);const rack=next.x<-12.6&&next.x>-13.7&&Math.abs(next.z-.5)<3.5;const trunk=Math.hypot(next.x-.5,next.z+7)<.75;
- if(pond||walls||rack||trunk||amphitheater.blocks(next)||gardenLibrary?.blocks(next))return;
+ if(pond||walls||rack||trunk||amphitheater.blocks(next)||gardenLibrary?.blocks(next)||gardenProps?.blocks(next))return;
  next.y=1.75+amphitheater.groundHeight(next)+motion.inspect().height;
  const actual=next.clone().sub(targetPosition);targetPosition.copy(next);targetAim.add(actual);
 }
@@ -376,5 +377,5 @@ function focusVisitor(p){
 multiplayer=window.createGardenMultiplayer?.({T,scene,camera,requestDraw,enter:enterMultiplayer,inExpedition:()=>expedition?.active(),getPose:()=>state.ready&&!expedition?.active()?{x:camera.position.x,z:camera.position.z,yaw:Math.atan2(aim.x-camera.position.x,aim.z-camera.position.z)}:null,lookAt:focusVisitor,stopMoving:()=>{keys.clear();drag=null;}});
 expedition=window.createExpedition({T,scene,camera,garden,layout:window.nightLayout,getPose:()=>state.ready?{x:targetPosition.x,z:targetPosition.z,yaw:Math.atan2(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z)}:null,place(x,z,lx=x,lz=z-5){motion.reset();freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,1.75,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=60;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},stopMoving(){keys.clear();drag=null;},requestDraw,returnHome:()=>go('spawn',true)});
 $('night-dialog').addEventListener('close',()=>{if(expedition.active()&&expedition.canMove()&&!modalOpen())renderer.domElement.focus({preventScroll:true});});
-window.breakThyRuleShowroom={go,inspect,showSide,focusResident,getState:()=>({...state,position:camera.position.toArray(),movement:{...motion.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.district.inspect(),library:gardenLibrary?.inspect(),residents:residents.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
+window.breakThyRuleShowroom={go,inspect,showSide,focusResident,getState:()=>({...state,position:camera.position.toArray(),movement:{...motion.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.district.inspect(),library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),residents:residents.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
 })();
