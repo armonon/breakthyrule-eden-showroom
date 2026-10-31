@@ -9,7 +9,7 @@ window.createNightRoad=function(T,scene,{sections,roadX,roadStart,roadLength,cle
  for(const section of sections){
   const root=new T.Group();root.name='Night road woodland';section.add(root);
   // Woodland uses the garden's tree and fern templates (eden-flora.js); one wood + one leaf mesh per template.
-  const trees=forest.trees.map(kind=>({kind,wood:new T.InstancedMesh(kind.wood,bark,68),leaves:new T.InstancedMesh(kind.foliage,kind.material,68)})),brush=new T.InstancedMesh(forest.fern.geometry,forest.fern.material,120);
+  const trees=forest.trees.map(kind=>({kind,wood:new T.InstancedMesh(kind.wood,kind.woodMaterial||bark,68),leaves:new T.InstancedMesh(kind.foliage,kind.material,68)})),brush=new T.InstancedMesh(forest.fern.geometry,forest.fern.material,120);
   for(const mesh of [...trees.flatMap(t=>[t.wood,t.leaves]),brush]){mesh.receiveShadow=true;root.add(mesh);}
   const part={section,root,trees,brush,index:0};parts.push(part);section.userData.nightPart=part;
  }
