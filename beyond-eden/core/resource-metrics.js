@@ -49,7 +49,7 @@ export function rendererCounters(renderer) {
   const render = renderer.info?.render || {};
   const memory = renderer.info?.memory || {};
   return {
-    drawCalls: render.calls ?? null,
+    drawCalls: render.drawCalls ?? render.calls ?? null, // WebGPURenderer: drawCalls is per frame, calls is a running total
     triangles: render.triangles ?? null,
     points: render.points ?? null,
     lines: render.lines ?? null,

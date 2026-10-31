@@ -110,6 +110,7 @@ export function createTempleSectorFactory({ materials, assetLoader, assetRoot, p
       const scene = result.scene;
       scene.name = `${assetName} LOD ${lod}`;
       scene.userData.ownsMaterials = true;
+      scene.traverse(object => { if (object.isMesh) object.castShadow = true; }); // architecture casts the moonlight shadow
       pbr?.apply(scene);
       return scene;
     }
