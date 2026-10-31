@@ -1,0 +1,118 @@
+{
+  "schema": "beyond-eden-optimized-assets-v1",
+  "generatedAt": "2026-10-31T20:51:10.203Z",
+  "geometryCompression": "EXT_meshopt_compression/high",
+  "textureCompression": "KHR_texture_basisu: UASTC for normal/ORM, ETC1S for remaining slots",
+  "files": [
+    {
+      "file": "approach-east-lod0.glb",
+      "rawBytes": 84720,
+      "optimizedBytes": 22572,
+      "ratio": 0.2664,
+      "maxTextureSize": 2048
+    },
+    {
+      "file": "approach-east-lod1.glb",
+      "rawBytes": 19288,
+      "optimizedBytes": 8716,
+      "ratio": 0.4519,
+      "maxTextureSize": 1024
+    },
+    {
+      "file": "approach-east-lod2.glb",
+      "rawBytes": 3876,
+      "optimizedBytes": 5432,
+      "ratio": 1.4014,
+      "maxTextureSize": 512
+    },
+    {
+      "file": "approach-south-lod0.glb",
+      "rawBytes": 48016,
+      "optimizedBytes": 13092,
+      "ratio": 0.2727,
+      "maxTextureSize": 2048
+    },
+    {
+      "file": "approach-south-lod1.glb",
+      "rawBytes": 20716,
+      "optimizedBytes": 7040,
+      "ratio": 0.3398,
+      "maxTextureSize": 1024
+    },
+    {
+      "file": "approach-south-lod2.glb",
+      "rawBytes": 3712,
+      "optimizedBytes": 4472,
+      "ratio": 1.2047,
+      "maxTextureSize": 512
+    },
+    {
+      "file": "approach-west-lod0.glb",
+      "rawBytes": 84724,
+      "optimizedBytes": 22520,
+      "ratio": 0.2658,
+      "maxTextureSize": 2048
+    },
+    {
+      "file": "approach-west-lod1.glb",
+      "rawBytes": 19292,
+      "optimizedBytes": 8628,
+      "ratio": 0.4472,
+      "maxTextureSize": 1024
+    },
+    {
+      "file": "approach-west-lod2.glb",
+      "rawBytes": 3880,
+      "optimizedBytes": 5440,
+      "ratio": 1.4021,
+      "maxTextureSize": 512
+    },
+    {
+      "file": "plaza-center-lod0.glb",
+      "rawBytes": 384652,
+      "optimizedBytes": 83668,
+      "ratio": 0.2175,
+      "maxTextureSize": 2048
+    },
+    {
+      "file": "plaza-center-lod1.glb",
+      "rawBytes": 165240,
+      "optimizedBytes": 56104,
+      "ratio": 0.3395,
+      "maxTextureSize": 1024
+    },
+    {
+      "file": "plaza-center-lod2.glb",
+      "rawBytes": 35820,
+      "optimizedBytes": 33904,
+      "ratio": 0.9465,
+      "maxTextureSize": 512
+    },
+    {
+      "file": "temple-core-lod0.glb",
+      "rawBytes": 570292,
+      "optimizedBytes": 75080,
+      "ratio": 0.1317,
+      "maxTextureSize": 2048
+    },
+    {
+      "file": "temple-core-lod1.glb",
+      "rawBytes": 86360,
+      "optimizedBytes": 22956,
+      "ratio": 0.2658,
+      "maxTextureSize": 1024
+    },
+    {
+      "file": "temple-core-lod2.glb",
+      "rawBytes": 15004,
+      "optimizedBytes": 14436,
+      "ratio": 0.9621,
+      "maxTextureSize": 512
+    }
+  ],
+  "totals": {
+    "rawBytes": 1545592,
+    "optimizedBytes": 384060,
+    "ratio": 0.2485
+  }
+}

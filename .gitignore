@@ -7,3 +7,5 @@ assets/beyond-eden/trees/*.blend
 assets/beyond-eden/trees/*.blend1
 **/__pycache__/
 *.pyc
+tools/native/
+assets/beyond-eden/trees/*.png

@@ -35,6 +35,13 @@ import bpy
 from mathutils import Vector
 
 
+def eevee_engine() -> str:
+    """EEVEE's enum is BLENDER_EEVEE_NEXT in Blender 4.2-4.x and BLENDER_EEVEE again in Blender 5."""
+    names = bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items.keys()
+    return "BLENDER_EEVEE_NEXT" if "BLENDER_EEVEE_NEXT" in names else "BLENDER_EEVEE"
+
+
+
 def parse_args() -> argparse.Namespace:
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     parser = argparse.ArgumentParser()
@@ -58,7 +65,7 @@ def setup_scene(samples: int) -> None:
     scene = bpy.context.scene
     scene.unit_settings.system = "METRIC"
     scene.unit_settings.scale_length = 1.0
-    scene.render.engine = "BLENDER_EEVEE_NEXT"
+    scene.render.engine = eevee_engine()
     scene.render.resolution_x = 1024
     scene.render.resolution_y = 1024
     scene.render.resolution_percentage = 100
@@ -68,12 +75,20 @@ def setup_scene(samples: int) -> None:
         scene.render.engine = "CYCLES"
         scene.cycles.samples = samples
         scene.cycles.device = "CPU"
+        try:  # bake on the Apple GPU through Metal when available; CPU otherwise
+            prefs = bpy.context.preferences.addons["cycles"].preferences
+            prefs.compute_device_type = "METAL"; prefs.get_devices()
+            if any(d.type == "METAL" for d in prefs.devices):
+                for d in prefs.devices: d.use = True
+                scene.cycles.device = "GPU"
+        except Exception as exc:
+            print(f"[Beyond Eden] Metal unavailable, baking on CPU: {exc}")
         scene.render.bake.target = "VERTEX_COLORS"
         scene.render.bake.margin = 2
         scene.render.bake.use_clear = True
     except Exception as exc:
         print(f"[Beyond Eden] Cycles/vertex bake setup unavailable: {exc}")
-        scene.render.engine = "BLENDER_EEVEE_NEXT"
+        scene.render.engine = eevee_engine()
 
 
 def make_material(name: str, color: tuple[float, float, float, float], roughness: float = 0.8, metallic: float = 0.0, emission=None) -> bpy.types.Material:

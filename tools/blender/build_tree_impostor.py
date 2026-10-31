@@ -18,6 +18,13 @@ import bpy
 from mathutils import Vector
 
 
+def eevee_engine() -> str:
+    """EEVEE's enum is BLENDER_EEVEE_NEXT in Blender 4.2-4.x and BLENDER_EEVEE again in Blender 5."""
+    names = bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items.keys()
+    return "BLENDER_EEVEE_NEXT" if "BLENDER_EEVEE_NEXT" in names else "BLENDER_EEVEE"
+
+
+
 def args():
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     parser = argparse.ArgumentParser()
@@ -58,7 +65,7 @@ def main():
     world = bpy.context.scene.world
     world.color = (0, 0, 0)
     bpy.context.scene.render.film_transparent = True
-    bpy.context.scene.render.engine = "BLENDER_EEVEE_NEXT"
+    bpy.context.scene.render.engine = eevee_engine()
     bpy.context.scene.render.resolution_x = options.size
     bpy.context.scene.render.resolution_y = options.size
     bpy.context.scene.render.resolution_percentage = 100
