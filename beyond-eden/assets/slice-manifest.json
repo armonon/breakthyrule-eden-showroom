@@ -1,0 +1,12 @@
+{
+  "schema": "beyond-eden-slice-manifest-v1",
+  "renderer": "three@0.187.0 WebGPURenderer with automatic WebGL2 backend fallback",
+  "sectors": [
+    { "id": "temple-core", "files": ["temple-core-lod0.glb", "temple-core-lod1.glb", "temple-core-lod2.glb"] },
+    { "id": "plaza-center", "files": ["plaza-center-lod0.glb", "plaza-center-lod1.glb", "plaza-center-lod2.glb"] },
+    { "id": "approach-south", "files": ["approach-south-lod0.glb", "approach-south-lod1.glb", "approach-south-lod2.glb"] },
+    { "id": "approach-west", "files": ["approach-west-lod0.glb", "approach-west-lod1.glb", "approach-west-lod2.glb"] },
+    { "id": "approach-east", "files": ["approach-east-lod0.glb", "approach-east-lod1.glb", "approach-east-lod2.glb"] }
+  ],
+  "fallback": "If an optimized GLB is absent, the runtime builds a procedural proxy for that sector so the proof page remains walkable."
+}
