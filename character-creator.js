@@ -33,14 +33,13 @@ window.createCharacterEditor=function({T,save,stopMoving,draftOwner=()=> 'guest'
  const defaults=()=>Object.fromEntries([['version',1],...Object.values(schema).filter(v=>v&&typeof v==='object').flatMap(group=>Object.entries(group).map(([key,s])=>[key,s.default]))]);
  function initScene(){
   if(renderer)return;
-  renderer=new T.WebGLRenderer({antialias:true,alpha:true});renderer.setClearColor(0x101819,0);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
+  // PS2-era presentation: no MSAA, at most 1x pixel ratio (upscaled softly), no shadow-map pass.
+  renderer=new T.WebGLRenderer({antialias:false,alpha:true,powerPreference:'low-power'});renderer.setClearColor(0x101819,0);renderer.setPixelRatio(Math.min(devicePixelRatio,1));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
   renderer.domElement.tabIndex=0;renderer.domElement.setAttribute('aria-label','3D character preview');stage.prepend(renderer.domElement);
   scene=new T.Scene();camera=new T.PerspectiveCamera(32,1,.01,30);
-  scene.add(new T.HemisphereLight('#fffaf2','#777d87',1.3));
-  const key=new T.DirectionalLight('#fff0da',2.4);key.position.set(3,5,4);key.castShadow=true;key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=-2;key.shadow.camera.right=2;key.shadow.camera.top=3;key.shadow.camera.bottom=-2;key.shadow.normalBias=.02;scene.add(key);
-  const fill=new T.DirectionalLight('#b2e0e8',.65);fill.position.set(-3,2,1);scene.add(fill);
-  const rim=new T.DirectionalLight('#ff9dce',1.1);rim.position.set(0,3,-3);scene.add(rim);
-  const ground=new T.Mesh(new T.PlaneGeometry(200,200),new T.ShadowMaterial({opacity:.28}));ground.rotation.x=-Math.PI/2;ground.position.y=-.01;ground.receiveShadow=true;scene.add(ground);
+  scene.add(new T.HemisphereLight('#fff4e6','#6a6f80',1.55));
+  const key=new T.DirectionalLight('#ffe9cf',1.9);key.position.set(3,5,4);scene.add(key);
+  const rim=new T.DirectionalLight('#ff9dce',.7);rim.position.set(0,3,-3);scene.add(rim);
   renderer.domElement.onpointerdown=e=>{drag={x:e.clientX,angle};renderer.domElement.setPointerCapture(e.pointerId);};
   renderer.domElement.onpointermove=e=>{if(drag){angle=drag.angle+(e.clientX-drag.x)*.012;draw();}};
   renderer.domElement.onpointerup=renderer.domElement.onpointercancel=renderer.domElement.onlostpointercapture=()=>drag=null;
