@@ -1,28 +1,31 @@
 {
   "schema": "beyond-eden-tree-source-ledger-v1",
-  "status": "fill-from-existing-local-records",
-  "sourceAssetName": null,
-  "sourceUrl": null,
-  "authorOrPublisher": null,
-  "license": null,
-  "licenseEvidencePath": null,
-  "purchaseOrDownloadDate": null,
-  "costUsd": null,
-  "originalFilename": null,
-  "originalBytes": null,
-  "originalSha256": null,
-  "commercialUseConfirmed": null,
+  "status": "complete-from-local-records",
+  "sourceAssetName": "Jacaranda Tree",
+  "sourceUrl": "https://polyhaven.com/a/jacaranda_tree",
+  "authorOrPublisher": "Rico Cilliers (model), Rob Tuytel (guidance); published by Poly Haven",
+  "license": "CC0 1.0 Universal (public domain dedication)",
+  "licenseEvidencePath": "~/Projects/breakthyrule-asset-workshop/downloads/polyhaven/jacaranda_tree/SOURCE.txt (Poly Haven publishes all assets as CC0)",
+  "purchaseOrDownloadDate": "2026-10-31",
+  "costUsd": 0,
+  "originalFilename": "jacaranda_tree_2k.gltf + jacaranda_tree.bin + 9 x 2k JPG textures",
+  "originalBytes": 229608704,
+  "originalSha256": {
+    "jacaranda_tree_2k.gltf": "5c98732eae5a139f3883eca22766c7a523f37c2629cea1d74fd16e43cbf8a472",
+    "jacaranda_tree.bin": "4310d1e25db8ac63d6d345afc8154a1df7e85b301dfad228be66d85d6c52bbfc"
+  },
+  "commercialUseConfirmed": true,
   "modifications": [
-    "normalized scale and origin",
-    "generated browser LOD0",
-    "generated browser LOD1",
-    "rendered transparent billboard",
-    "encoded KTX2 billboard"
+    "rebuilt by the asset workshop's make_card_tree.py: trunk/limbs kept and decimated to ~2.5k tris, 2.4M leaf triangles replaced by 800 frond cards using the source's own frond texture",
+    "scaled to 9 m, base at origin",
+    "browser LOD0 (full card tree) and LOD1 (decimated to ~40%) via tools/agent/build-approved-tree.sh",
+    "meshopt geometry + KTX2 texture compression",
+    "rendered transparent billboard, encoded KTX2"
   ],
   "runtimeDerivatives": [
     "hero-tree-lod0.glb",
     "hero-tree-lod1.glb",
     "hero-tree-billboard.ktx2"
   ],
-  "notes": "Do not publish until every null provenance/licensing field is filled from real local evidence."
+  "notes": "CC0: no attribution required; credit kept here for provenance. Same tree as the live Eden garden (assets/flora/jacaranda.glb)."
 }
