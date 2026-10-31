@@ -1,8 +1,8 @@
 'use strict';
 // Garden flora. Trees grow from a few recursive branching templates per species (broadleaf, apple, Italian cypress),
 // each instanced across the garden; leaf clusters use normals bent away from the crown centre so canopies shade as
-// volumes, not as flat cards. Ground cover: rounded shrubs (kept clear of placed props), ferns at tree bases,
-// curved two-tone grass blades and wildflower patches. Leaves and grass sway in the wind unless motion is reduced.
+// volumes, not as flat cards. Ground cover: rounded shrubs (kept clear of placed props), ferns at tree bases and
+// wildflower patches (grass is eden-grass.js). Leaves sway in the wind unless motion is reduced.
 window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false}){
  let seed=90210;
  const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;},between=(a,b)=>a+(b-a)*random();
@@ -195,20 +195,6 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false}){
  for(const [x,z] of trunks){if(Math.hypot(x,z)>48)continue;for(let k=0;k<4;k++){const a=between(0,6.28),r=between(.9,2.4),fx=x+Math.cos(a)*r,fz=z+Math.sin(a)*r;if(openGround(fx,fz))continue;ferns.push(matrix(fx,fz,between(.8,1.4),-.02));}}
  instance(fern,fernMaterial,ferns,ferns.map(tintFrom(.27,.45,.75)),false);
 
- // ---- grass: curved three-segment blades, dark at the root, light at the tip ----
- const blade=builder();
- for(let s=0;s<=3;s++){const t=s/3,w=.034*(1-t*.85),bend=t*t*.16,shade=.55+t*.45;
-  for(const k of [-1,1]){blade.p.push(k*w,t,bend);blade.n.push(0,.8,-.6);blade.uv.push(k<0?0:1,t);blade.c.push(shade,shade,shade);}}
- for(let s=0;s<3;s++){const i=s*2;blade.i.push(i,i+1,i+3,i,i+3,i+2);}
- const bladeGeometry=toGeometry(blade),blades=[],bladeTints=[];
- for(let i=0;i<(mobile?44000:90000);i++){
-  const x=between(-29,29),z=between(-27,25);if(openGround(x,z))continue;
-  dummy.position.set(x,-.03,z);dummy.rotation.set(0,between(0,6.28),between(-.12,.12));dummy.scale.set(between(.7,1.2),between(.1,.3),1);dummy.updateMatrix();blades.push(dummy.matrix.clone());
-  bladeTints.push(new T.Color().setHSL(between(.19,.27),between(.38,.6),between(.32,.5)));
- }
- const grassMaterial=windMaterial({vertexColors:true,color:0xffffff,roughness:.95,emissive:0x2a3d12,emissiveIntensity:.1,alphaTest:0},{sway:.5,flutter:.012,keepNormals:false});
- instance(bladeGeometry,grassMaterial,blades,bladeTints,false);
-
  // ---- wildflowers in single-colour patches ----
  const flowerHeads=[],stems=[],headTints=[],palette=[0xffffff,0xffd2dc,0xd2b6f0,0xf6cd5c,0xffffff,0xf4a3a8];
  for(let p=0;p<(mobile?45:80);p++){
@@ -240,6 +226,6 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false}){
   // Templates for other woodland (the night road streams its own instances of these).
   forest:{trees:[[broadTemplates[0],leafMaterial],[broadTemplates[1],leafMaterial],[cypressTemplates[0],cypressMaterial]].map(([t,material])=>({wood:t.wood,foliage:t.foliage,material,height:t.height})),fern:{geometry:fern,material:fernMaterial}},
   update(t){time.value=t;},
-  inspect:()=>({trees:{broadleaf:broad.length,apple:apples.length,cypress:cypresses.length,hero:1},ferns:ferns.length,grass:blades.length,flowers:flowerHeads.length,shrubs:shrubCount})
+  inspect:()=>({trees:{broadleaf:broad.length,apple:apples.length,cypress:cypresses.length,hero:1},ferns:ferns.length,flowers:flowerHeads.length,shrubs:shrubCount})
  };
 };

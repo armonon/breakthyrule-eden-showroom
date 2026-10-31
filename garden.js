@@ -13,6 +13,16 @@ window.createEdenGarden=function(T,scene,{reduced=false,mobile=false,onChange=()
  const bark=new T.MeshStandardMaterial({color:0x67513d,roughness:1});
  const terrain=new T.Mesh(new T.PlaneGeometry(240,240,100,100),new T.MeshStandardMaterial({color:0xa4bd79,map:surface('/assets/eden-grass-color.jpg',80),normalMap:surface('/assets/eden-grass-normal.jpg',80,false),normalScale:new T.Vector2(.65,.65),roughness:1}));
  terrain.rotation.x=-Math.PI/2;terrain.position.y=-.09;terrain.receiveShadow=true;garden.add(terrain);
+ // Break up the tiled lawn texture with large soft patches (greener / drier, lighter / darker) from world position.
+ terrain.material.onBeforeCompile=shader=>{
+  shader.vertexShader='varying vec2 vLawn;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n vLawn=(modelMatrix*vec4(transformed,1.)).xz;');
+  shader.fragmentShader=`varying vec2 vLawn;
+float lawnHash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(lawnHash(i),lawnHash(i+vec2(1,0)),f.x),mix(lawnHash(i+vec2(0,1)),lawnHash(i+vec2(1,1)),f.x),f.y);}
+`+shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+ float lawnBroad=lawnNoise(vLawn*.07)*.65+lawnNoise(vLawn*.23)*.35,lawnDry=smoothstep(.55,.85,lawnNoise(vLawn*.11+17.));
+ diffuseColor.rgb*=mix(.84,1.1,lawnBroad);diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(1.12,1.04,.78),lawnDry*.6);`);
+ };
  const p=terrain.geometry.attributes.position;
  for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getY(i),edge=Math.max(0,Math.hypot(x,z)-25),worldZ=-z;
   const roadClearance=worldZ<roadStart?T.MathUtils.smoothstep(Math.abs(x-roadX),60,80):1;
@@ -40,7 +50,7 @@ window.createEdenGarden=function(T,scene,{reduced=false,mobile=false,onChange=()
 
  const pathX=z=>Math.sin((z-3)*.15)*1.5;
  function openGround(x,z){return (z< -9&&Math.abs(x-roadX)<2.5)||(x>6.8&&x<13&&z>-10.8&&z<-7.2)||(x>-4.5&&x<-1.1&&z>-8.2&&z<-5.3)||Math.hypot(x-window.showroomAmphitheaterPosition.x,z-window.showroomAmphitheaterPosition.z)<8.6||Math.hypot(x-3.1,z+5.7)<4.7||(Math.abs(x-pathX(z))<1.45&&z>-6&&z<22)||(x>-14.5&&x<-5.4&&z>-4&&z<5)||Math.pow((x-5.7)/3.8,2)+Math.pow((z-3.5)/5.6,2)<1.14;}
- // Trees, shrubs, ferns, grass and wildflowers come from eden-flora.js.
+ // Trees, shrubs, ferns and wildflowers come from eden-flora.js; the lawn is the terrain texture (no grass geometry).
  const flora=window.createEdenFlora(T,garden,{bark,openGround,mobile});assetJobs.push(flora.ready);
 
  const pathStone=new T.CylinderGeometry(1,1.07,.065,9);
@@ -91,16 +101,26 @@ window.createEdenGarden=function(T,scene,{reduced=false,mobile=false,onChange=()
  const dustPos=new Float32Array(90*3);for(let i=0;i<90;i++){dustPos[i*3]=between(-15,15);dustPos[i*3+1]=between(.5,6);dustPos[i*3+2]=between(-15,18);}
  const dustGeo=new T.BufferGeometry();dustGeo.setAttribute('position',new T.BufferAttribute(dustPos,3));const dust=new T.Points(dustGeo,new T.PointsMaterial({color:0xffefb8,size:.026,transparent:true,opacity:.6,depthWrite:false}));garden.add(dust);
  const snake=window.createTreeSnake(T,scene,{bark,reduced,onChange});
- const pyramid=window.createRoadPyramid(T,scene,{roadX,roadEnd,stone,onChange,reduced});
- const district=window.createNightDistrict(T,scene,{stone,leafMat,layout:window.nightLayout,reduced});
- nightRoad=window.createNightRoad(T,scene,{sections:roadSections,roadX,roadStart,roadLength,clearingStart:-120,district,sky,bark,forest:flora.forest,stone,roadMaterial,vergeMaterial,clouds:garden.children.filter(node=>node.isSprite),reduced,mobile});
- return {snake,nightRoad,pyramid,district,ready:Promise.allSettled(assetJobs),constrain(position,previous){
+ // The night section (pyramid court, district, night woodland) is built only when the viewer heads for the road
+ // entrance or an expedition starts, one piece per frame so the build never lands as a single long stall.
+ let pyramid=null,district=null,nightSteps=null,lastViewer=null;
+ const nightBuilders=[
+  ()=>{pyramid=window.createRoadPyramid(T,scene,{roadX,roadEnd,stone,onChange,reduced});},
+  ()=>{district=window.createNightDistrict(T,scene,{stone,leafMat,layout:window.nightLayout,reduced});},
+  ()=>{nightRoad=window.createNightRoad(T,scene,{sections:roadSections,roadX,roadStart,roadLength,clearingStart:-120,district,sky,bark,forest:flora.forest,stone,roadMaterial,vergeMaterial,clouds:garden.children.filter(node=>node.isSprite),reduced,mobile});roadFirst=-1;if(lastViewer)updateRoad(lastViewer.position);onChange();}
+ ];
+ // Back in the garden the night section is hidden again, exactly as before it was first built.
+ const nightNear=p=>p.z< -12||Math.hypot(p.x-9,p.z+8.5)<10;
+ function buildNight(all=false){nightSteps??=[...nightBuilders];while(nightSteps.length){nightSteps.shift()();if(!all)break;}}
+ const nightBuilt=()=>!!nightRoad;
+ return {snake,get nightRoad(){return nightRoad;},get pyramid(){buildNight(true);return pyramid;},get district(){buildNight(true);return district;},nightBuilt,ready:Promise.allSettled(assetJobs),constrain(position,previous){
+  if(position.z< -12&&!nightBuilt())buildNight(true);
   if(previous.z< -20){if(position.z< -111)pyramid.constrain(position);else{const width=T.MathUtils.lerp(2.7,50,T.MathUtils.smoothstep(-position.z,20,30));position.x=T.MathUtils.clamp(position.x,roadX-width,roadX+width);}}
   else{position.x=T.MathUtils.clamp(position.x,-20,20);if(position.z< -20&&Math.abs(position.x-roadX)>2.7)position.z=-20;}
-  if(district.blocks(position)||pyramid.blocks(position))position.copy(previous);
+  if(district?.blocks(position)||pyramid?.blocks(position))position.copy(previous);
   position.z=Math.min(position.z,26);return position;
  },road:{x:roadX,start:roadStart,end:roadEnd,inspect:()=>({first:roadFirst,sections:roadSections.length,near:roadStart-roadFirst*roadLength,far:Math.max(roadEnd,roadStart-(roadFirst+roadSections.length)*roadLength)})},update(time,viewer,active=true){
-  if(viewer){updateRoad(viewer.position);sky.position.copy(viewer.position);snake.update(time,viewer,active);nightRoad.update(time,viewer,active);pyramid.update(viewer,time);district.update(time,viewer,nightRoad.amount);}
+  if(viewer){lastViewer=viewer;if(!nightBuilt()&&(nightSteps||nightNear(viewer.position))){buildNight();onChange();}updateRoad(viewer.position);sky.position.copy(viewer.position);snake.update(time,viewer,active);if(nightBuilt()){const near=nightNear(viewer.position);nightRoad.setEnabled(near);district.root.visible=near;nightRoad.update(time,viewer,active);pyramid.update(viewer,time);if(near)district.update(time,viewer,nightRoad.amount);}}
   if(reduced)return;wind.value=time;flora.update(time);waterUniforms.time.value=time;dust.rotation.y=Math.sin(time*.025)*.07;
  },foliage:flora.leaves,flora,sky};
 };

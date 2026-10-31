@@ -21,7 +21,7 @@ window.createGardenResidents = function(T,scene,{reduced=false,onChange=()=>{},r
   if(!entry.root)return;
   const duration=entry.length/entry.def.speed,cycle=duration+entry.def.pause;
   const phase=reduced?entry.def.offset%cycle:(time+entry.def.offset)%cycle;
-  const walking=!reduced&&phase<duration,u=Math.min(phase/duration,1);
+  const walking=!reduced&&phase<duration,u=Math.min(phase/duration,1);entry.walking=walking;
   entry.curve.getPointAt(u,point);entry.curve.getTangentAt(u,tangent);
   entry.root.position.copy(point);entry.root.rotation.y=Math.atan2(tangent.x,tangent.z);
   const weight=walking?Math.min(1,phase/.35,(duration-phase)/.35):0;
@@ -50,6 +50,8 @@ window.createGardenResidents = function(T,scene,{reduced=false,onChange=()=>{},r
   })();return entry.job;
  }
  return {
+  // True while a resident walks within `radius` of `position` (the sun shadow only needs refreshing then).
+  walkingNear(position,radius){for(const e of entries.values())if(e.root&&e.walking&&e.root.position.distanceTo(position)<radius)return true;return false;},
   ready:Promise.all([...entries.keys()].map(load)),retry:load,
   update(){const time=epoch+(performance.now()-start)/1000;for(const entry of entries.values())updateEntry(entry,time);},
   get(id){return entries.get(id);},

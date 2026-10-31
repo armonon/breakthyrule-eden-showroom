@@ -92,6 +92,15 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   inspect:()=>({...settings,webgl2,size:size.toArray()}),
   // Development aid: average ms per frame for n full renders (GPU-finished).
   bench(n=60){const gl=renderer.getContext();render();gl.finish();const t0=performance.now();for(let i=0;i<n;i++)render();gl.readPixels(0,0,1,1,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array(4));return +((performance.now()-t0)/n).toFixed(2);},
+  // Development aid: per scene group (and the garden's children), the draw calls and triangles it adds to a frame,
+  // measured by hiding it. Counts are exact even in a background tab, where timings are not.
+  profile(){
+   const count=()=>{render();return [renderer.info.render.calls,renderer.info.render.triangles];},[calls,tris]=count(),rows=[];
+   const groups=scene.children.flatMap(o=>o.name==='Garden of Eden'?[o,...o.children]:[o]);
+   for(const o of groups){if(!o.visible||(!o.children.length&&!o.isMesh))continue;o.visible=false;const [c,t]=count();o.visible=true;
+    if(calls-c||tris-t)rows.push({name:(o.parent===scene?'':'  ')+(o.name||o.type),calls:calls-c,ktris:Math.round((tris-t)/1e3)});}
+   return {calls,ktris:Math.round(tris/1e3),rows:rows.sort((a,b)=>b.calls-a.calls)};
+  },
   // Development aid: show one buffer full-screen ('ao' | 'bloom') to tune them.
   debug(view){composite.uniforms.view.value=view==='ao'?1:view==='bloom'?2:view==='alpha'?3:0;}
  };

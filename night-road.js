@@ -10,12 +10,12 @@ window.createNightRoad=function(T,scene,{sections,roadX,roadStart,roadLength,cle
   const root=new T.Group();root.name='Night road woodland';section.add(root);
   // Woodland uses the garden's tree and fern templates (eden-flora.js); one wood + one leaf mesh per template.
   const trees=forest.trees.map(kind=>({kind,wood:new T.InstancedMesh(kind.wood,bark,68),leaves:new T.InstancedMesh(kind.foliage,kind.material,68)})),brush=new T.InstancedMesh(forest.fern.geometry,forest.fern.material,120);
-  for(const mesh of [...trees.flatMap(t=>[t.wood,t.leaves]),brush]){mesh.frustumCulled=false;mesh.receiveShadow=true;root.add(mesh);}
+  for(const mesh of [...trees.flatMap(t=>[t.wood,t.leaves]),brush]){mesh.receiveShadow=true;root.add(mesh);}
   const part={section,root,trees,brush,index:0};parts.push(part);section.userData.nightPart=part;
  }
  function recycle(section,index){
   const part=section.userData.nightPart;if(!part)return;
-  part.index=index;part.root.visible=index>=0&&section.position.z>clearingStart;
+  part.index=index;part.active=index>=0&&section.position.z>clearingStart;part.root.visible=part.active;
   // Keep all architectural footprints and approach paths free of foliage.
   const occupied=(x,z)=>section.position.z+z> -28||district.clearGround(roadX+x,section.position.z+z);
   const counts=part.trees.map(()=>0);let b=0;
@@ -33,17 +33,21 @@ window.createNightRoad=function(T,scene,{sections,roadX,roadStart,roadLength,cle
   }
   part.trees.forEach((tree,t)=>{for(const mesh of [tree.wood,tree.leaves]){mesh.count=counts[t];mesh.instanceMatrix.needsUpdate=true;}if(tree.leaves.instanceColor)tree.leaves.instanceColor.needsUpdate=true;});
   part.brush.count=b;part.brush.instanceMatrix.needsUpdate=true;
+  // Bounds over the stamped instances, so sections out of view are culled like any other mesh.
+  for(const mesh of [...part.trees.flatMap(t=>[t.wood,t.leaves]),part.brush])mesh.computeBoundingSphere();
  }
  parts.forEach(part=>recycle(part.section,part.section.userData.roadIndex||0));
  const starPositions=[];for(let i=0;i<280;i++){const az=noise(44,i)*Math.PI*2,y=.16+noise(44,i,1)*.8,r=Math.sqrt(1-y*y);starPositions.push(Math.cos(az)*r*149,y*149,Math.sin(az)*r*149);}
  const starGeo=new T.BufferGeometry();starGeo.setAttribute('position',new T.Float32BufferAttribute(starPositions,3));const stars=new T.Points(starGeo,new T.PointsMaterial({color:0xcfe4da,size:.16,transparent:true,opacity:0,depthWrite:false,fog:false}));sky.add(stars);
- let amount=0;
+ let amount=0,enabled=true;
  function update(time,viewer){
   amount=smooth(roadStart-viewer.position.z,1,17);sky.material.uniforms.roadNight.value=amount;
+  // Sections beyond the fog (~120 m) are not drawn at all.
+  for(const part of parts)part.root.visible=enabled&&part.active&&Math.abs(part.section.position.z-viewer.position.z)<roadLength*.5+120;
   scene.fog.color.copy(originalFog).lerp(nightFog,amount);scene.fog.density=T.MathUtils.lerp(.016,.019,amount);
   for(const state of lights){const l=state.light;l.color.copy(state.color).lerp(moonColor,amount);l.intensity=T.MathUtils.lerp(state.intensity,l.isHemisphereLight?.58:state.intensity>1?.52:.16,amount);if(state.ground)l.groundColor.copy(state.ground).lerp(moonGround,amount);}
   roadMaterial.color.copy(originalRoad).lerp(nightRoadColor,amount);vergeMaterial.color.copy(originalVerge).lerp(nightVerge,amount);
   clouds.forEach(cloud=>{cloud.material.opacity=.65*(1-amount);});stars.material.opacity=amount*.8;
  }
- return {recycle,update,blocks:district.blocks,get amount(){return amount;},inspect:()=>({night:amount,sections:parts.length,trees:parts.reduce((n,p)=>n+(p.root.visible?p.trunks.count:0),0),district:district.inspect()})};
+ return {recycle,update,setEnabled(value){enabled=value;if(!value)for(const part of parts)part.root.visible=false;},blocks:district.blocks,get amount(){return amount;},inspect:()=>({night:amount,sections:parts.length,trees:parts.reduce((n,p)=>n+(p.root.visible?p.trees.reduce((m,t)=>m+t.wood.count,0):0),0),district:district.inspect()})};
 };
