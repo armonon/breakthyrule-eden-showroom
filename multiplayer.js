@@ -7,6 +7,18 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
  let user=null,selfId=null,timer=0,running=false,failures=0,generation=0,register=true,lastId=0,unread=0,firstSnapshot=true,people=[],messages=[],muted=new Set(),selected=null,pendingChat=null,spawned=false;
  let characterAuth=null;
  let nightSuspended=false;
+ // Live mode (local Eden server): one WebSocket carries snapshots in and poses out instead of 400 ms polling.
+ const liveUrl=window.showroomDeployment?.realtime;let socket=null,socketEpoch=-1,liveRetry=0,liveTimer=0,lastPoseSent='';
+ function closeLive(){clearTimeout(liveTimer);if(socket){const old=socket;socket=null;old.onclose=null;old.close();}}
+ function connectLive(){
+  if(socket||document.hidden||preview)return;
+  const epoch=generation,ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+liveUrl+'?connectionId='+connectionId);
+  socket=ws;socketEpoch=epoch;
+  ws.onopen=()=>{liveRetry=0;failures=0;$('social-error').textContent='';};
+  ws.onmessage=event=>{if(epoch!==generation||socket!==ws)return;let data;try{data=JSON.parse(event.data);}catch{return;}if(data.t==='snapshot')snapshot(data);};
+  ws.onclose=()=>{if(socket!==ws)return;socket=null;failures++;setConnected(false,'Reconnecting...');if(failures>3)clearAvatars();if(!document.hidden)liveTimer=setTimeout(poll,Math.min(10000,500*2**liveRetry++));};
+ }
+ if(liveUrl)setInterval(()=>{if(socket?.readyState!==1||socketEpoch!==generation)return;const pose=getPose();if(!pose)return;const key=pose.x.toFixed(2)+','+pose.z.toFixed(2)+','+pose.yaw.toFixed(2);if(key===lastPoseSent)return;lastPoseSent=key;socket.send(JSON.stringify({t:'pose',...pose}));},66);
  const icons=()=>window.lucide?.createIcons();
  async function api(action,data){
   if(preview)throw new Error('Accounts and shared rooms are not enabled on this public preview.');
@@ -69,14 +81,15 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
  }
  async function poll(){
   if(preview||document.hidden)return;
-  if(inExpedition()){if(!nightSuspended){nightSuspended=true;leave();clearAvatars();}timer=setTimeout(poll,500);return;}nightSuspended=false;
+  if(inExpedition()){if(!nightSuspended){nightSuspended=true;closeLive();leave();clearAvatars();}timer=setTimeout(poll,500);return;}nightSuspended=false;
+  if(liveUrl){if(!socket||socketEpoch!==generation){closeLive();connectLive();}clearTimeout(timer);timer=setTimeout(poll,1000);return;}
   if(running)return;const epoch=generation;running=true;
   try{const pose=getPose();if(!pose){timer=setTimeout(poll,500);return;}const data=await api('sync',{pose:document.hidden?null:pose});if(epoch!==generation)return;if(failures)$('social-error').textContent='';snapshot(data);failures=0;}
   catch(error){if(epoch!==generation)return;failures++;setConnected(false,'Reconnecting...');if(failures>3)clearAvatars();if(error.status===401){setUser(null);$('social-error').textContent='Your session ended. Sign in again.';return;}$('social-error').textContent=error.message;}
   finally{running=false;clearTimeout(timer);if(!document.hidden)timer=setTimeout(poll,failures?Math.min(15000,1000*2**failures):hosted?900:400);}
  }
  function setUser(value){
-  generation++;clearTimeout(timer);user=value;failures=0;people=[];messages=[];lastId=0;firstSnapshot=true;unread=0;pendingChat=null;$('social-message').value='';clearAvatars();muted=new Set();
+  generation++;clearTimeout(timer);closeLive();user=value;failures=0;people=[];messages=[];lastId=0;firstSnapshot=true;unread=0;pendingChat=null;$('social-message').value='';clearAvatars();muted=new Set();
   try{muted=new Set(JSON.parse(localStorage.getItem('eden-muted-'+(user?.id||'guest'))||'[]'));}catch{}
   if(!spawned){spawned=true;enter();}timer=setTimeout(poll,50);$('social-move').hidden=false;setConnected(false,'Connecting...');
   accountUI();renderMessages();renderPeople();$('social-unread').hidden=true;
@@ -107,7 +120,7 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
  $('social-message').onkeydown=event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();if(!$('social-send').disabled)send('chat');}};
  $('social-panel').addEventListener('focusin',stopMoving);$('social-auth').addEventListener('close',()=>{stopMoving();if(characterAuth){const waiting=characterAuth;characterAuth=null;waiting.reject(new Error('Your changes are still here. Sign in when you are ready to save and enter.'));}});
  function leave(){if(!preview)navigator.sendBeacon(apiBase+'leave',new Blob([JSON.stringify({connectionId})],{type:'application/json'}));}
- document.addEventListener('visibilitychange',()=>{clearTimeout(timer);if(document.hidden){generation++;leave();setConnected(false,'Away from the garden');}else poll();});
+ document.addEventListener('visibilitychange',()=>{clearTimeout(timer);if(document.hidden){generation++;closeLive();leave();setConnected(false,'Away from the garden');}else poll();});
  window.addEventListener('pagehide',leave);
  function fitKeyboard(){const viewport=window.visualViewport;if(!viewport)return;const panel=$('social-panel'),covered=innerHeight-viewport.height-viewport.offsetTop;panel.style.bottom=covered>100?covered+12+'px':'';panel.style.height=covered>100?Math.max(220,Math.min(430,viewport.height-32))+'px':'';}
  window.visualViewport?.addEventListener('resize',fitKeyboard);
