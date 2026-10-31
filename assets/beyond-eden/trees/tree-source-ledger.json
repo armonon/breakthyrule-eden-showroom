@@ -1,0 +1,28 @@
+{
+  "schema": "beyond-eden-tree-source-ledger-v1",
+  "status": "fill-from-existing-local-records",
+  "sourceAssetName": null,
+  "sourceUrl": null,
+  "authorOrPublisher": null,
+  "license": null,
+  "licenseEvidencePath": null,
+  "purchaseOrDownloadDate": null,
+  "costUsd": null,
+  "originalFilename": null,
+  "originalBytes": null,
+  "originalSha256": null,
+  "commercialUseConfirmed": null,
+  "modifications": [
+    "normalized scale and origin",
+    "generated browser LOD0",
+    "generated browser LOD1",
+    "rendered transparent billboard",
+    "encoded KTX2 billboard"
+  ],
+  "runtimeDerivatives": [
+    "hero-tree-lod0.glb",
+    "hero-tree-lod1.glb",
+    "hero-tree-billboard.ktx2"
+  ],
+  "notes": "Do not publish until every null provenance/licensing field is filled from real local evidence."
+}

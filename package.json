@@ -1,0 +1,25 @@
+{
+  "name": "breakthyrule-eden-showroom",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.18"
+  },
+  "devDependencies": {
+    "@gltf-transform/cli": "4.5.1",
+    "three": "0.187.0"
+  },
+  "scripts": {
+    "proof:check": "node tools/pipeline/check-runtime.mjs",
+    "proof:vendor-three": "node tools/vendor/copy-three.mjs",
+    "proof:build-temple": "blender --background --factory-startup --python tools/blender/build_scottish_rite_slice.py -- --output assets/beyond-eden/raw --bake-ao --samples 48 --keep-blend",
+    "proof:optimize": "node tools/pipeline/optimize-slice.mjs",
+    "proof:inspect": "node tools/pipeline/inspect-slice.mjs",
+    "proof:validate-tree": "node tools/pipeline/validate-tree-assets.mjs",
+    "proof:verify-handoff": "node tools/agent/verify-handoff.mjs",
+    "proof:serve-source": "node tools/agent/serve-handoff.mjs",
+    "proof:smoke-server": "node tools/agent/check-server-static.mjs",
+    "proof:summarize-benchmarks": "node tools/agent/summarize-benchmarks.mjs",
+    "proof:assets": "npm run proof:build-temple && npm run proof:optimize && npm run proof:inspect"
+  }
+}

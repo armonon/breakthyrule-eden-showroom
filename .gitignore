@@ -1,0 +1,9 @@
+node_modules/
+assets/vendor/three-r187/*
+!assets/vendor/three-r187/.gitkeep
+assets/beyond-eden/raw/*.blend
+assets/beyond-eden/raw/*.blend1
+assets/beyond-eden/trees/*.blend
+assets/beyond-eden/trees/*.blend1
+**/__pycache__/
+*.pyc
