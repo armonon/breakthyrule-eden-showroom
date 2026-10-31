@@ -34,59 +34,14 @@ window.createEdenGarden=function(T,scene,{reduced=false,mobile=false,onChange=()
    c.save();c.translate(x,y);c.rotate(a+between(-1,1));c.fillStyle=['#91a951','#6c8838','#b1bd66','#44682e'][i%4];c.beginPath();c.ellipse(0,0,between(8,17),between(3,7),0,0,Math.PI*2);c.fill();c.strokeStyle='#d2d48a';c.lineWidth=.7;c.beginPath();c.moveTo(-9,0);c.lineTo(9,0);c.stroke();c.restore();}
  });
  const leafMat=new T.MeshStandardMaterial({map:leaves,alphaTest:.45,side:T.DoubleSide,roughness:.88,emissive:0x34421a,emissiveIntensity:.18});
- const leafInstances=[],branchInstances=[],fruitInstances=[];
- function branch(a,b,r1,r2){const av=new T.Vector3(...a),bv=new T.Vector3(...b),v=bv.clone().sub(av);dummy.position.copy(av.add(bv).multiplyScalar(.5));dummy.quaternion.setFromUnitVectors(up,v.clone().normalize());dummy.scale.set(r1,v.length(),r2);dummy.updateMatrix();branchInstances.push(dummy.matrix.clone());}
- function tree(x,z,scale,hero=false){
-  if(!hero&&z< -20)return;
-  if(!hero&&z< -9&&Math.abs(x-roadX)<6)return;
-  if(!hero&&(Math.hypot(x+11,z-11)<10.5||(x>-8&&x<5&&z>19&&z<30)))return;
-  const height=scale*5.5;
-  branch([x,0,z],[x+.2*scale,height*.6,z],.34*scale,.36*scale);
-  for(let b=0;b<(hero?12:7);b++){
-   const a=b*2.399+between(-.2,.2),y=height*between(.36,.70),reach=scale*between(1.8,3.6);
-   const end=[x+Math.cos(a)*reach,y+scale*between(.7,1.7),z+Math.sin(a)*reach];
-   const elbow=[x+Math.cos(a)*reach*.4,y+scale*.2,z+Math.sin(a)*reach*.4];
-   branch([x+.12*scale,y*.72,z],elbow,.14*scale,.17*scale);branch(elbow,end,.075*scale,.1*scale);
-   for(let k=0;k<(hero?45:23);k++){
-    const theta=between(0,Math.PI*2),radius=Math.sqrt(random())*scale*1.65;
-    dummy.position.set(end[0]+Math.cos(theta)*radius,end[1]+between(-.3,1)*scale,end[2]+Math.sin(theta)*radius);
-    dummy.rotation.set(between(-1.2,1.2),between(0,6.28),between(-1,1));dummy.scale.setScalar(scale*between(.72,1.35));dummy.updateMatrix();leafInstances.push(dummy.matrix.clone());
-   }
-   if(hero)for(let k=0;k<4;k++){dummy.position.set(end[0]+between(-.65,.65),end[1]-.45+between(-.3,.3),end[2]+between(-.65,.65));dummy.rotation.set(0,0,0);dummy.scale.set(.095,.11,.095);dummy.updateMatrix();fruitInstances.push(dummy.matrix.clone());}
-  }
- }
- tree(.5,-7,1.8,true);
- for(let i=0;i<48;i++){
-  const a=between(0,Math.PI*2),r=between(23,62);tree(Math.cos(a)*r,Math.sin(a)*r-8,between(.85,1.8));
- }
- tree(-22,7,1.3);tree(10,12,1.5);tree(-18,-7,1.5);tree(12,-7,1.4);
- function instances(geometry,material,matrices,shadow=false){const mesh=new T.InstancedMesh(geometry,material,matrices.length);matrices.forEach((m,i)=>mesh.setMatrixAt(i,m));mesh.castShadow=shadow;mesh.receiveShadow=true;garden.add(mesh);return mesh;}
- instances(new T.CylinderGeometry(.55,1,1,7),bark,branchInstances,true);
- const foliage=instances(new T.PlaneGeometry(1,1),leafMat,leafInstances,true);
- instances(new T.SphereGeometry(1,10,8),new T.MeshStandardMaterial({color:0xa93b26,roughness:.4}),fruitInstances,true);
  // Wind displaces only the leaf tips; reduced-motion keeps the same still landscape.
  const wind={value:0};
  leafMat.onBeforeCompile=shader=>{shader.uniforms.edenTime=wind;shader.vertexShader='uniform float edenTime;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n transformed.x += sin(edenTime*.7+instanceMatrix[3].x*.8+instanceMatrix[3].z)*.07*(position.y+.5);');};
 
  const pathX=z=>Math.sin((z-3)*.15)*1.5;
  function openGround(x,z){return (z< -9&&Math.abs(x-roadX)<2.5)||(x>6.8&&x<13&&z>-10.8&&z<-7.2)||(x>-4.5&&x<-1.1&&z>-8.2&&z<-5.3)||Math.hypot(x-window.showroomAmphitheaterPosition.x,z-window.showroomAmphitheaterPosition.z)<8.6||Math.hypot(x-3.1,z+5.7)<4.7||(Math.abs(x-pathX(z))<1.45&&z>-6&&z<22)||(x>-14.5&&x<-5.4&&z>-4&&z<5)||Math.pow((x-5.7)/3.8,2)+Math.pow((z-3.5)/5.6,2)<1.14;}
- const blades=[],flowers=[],stems=[];
- const grassGeometry=new T.BufferGeometry();
- grassGeometry.setAttribute('position',new T.Float32BufferAttribute([-.025,0,0,.025,0,0,.017,.5,.03,-.017,.5,.03,0,1,.13],3));grassGeometry.setIndex([0,1,2,0,2,3,3,2,4]);grassGeometry.computeVertexNormals();
- for(let i=0;i<(mobile?44000:90000);i++){
-  const x=between(-29,29),z=between(-27,25);if(openGround(x,z))continue;
-  dummy.position.set(x,-.03,z);dummy.rotation.set(0,between(0,6.28),between(-.13,.13));dummy.scale.set(between(.4,.85),between(.10,.32),1);dummy.updateMatrix();blades.push(dummy.matrix.clone());
-  if(i%10===0&&Math.abs(x)<18&&z>-15){
-   const h=between(.24,.67);dummy.position.y=h*.5;dummy.scale.set(.011,h,.011);dummy.updateMatrix();stems.push(dummy.matrix.clone());
-   dummy.position.y=h;dummy.rotation.set(Math.PI/2+between(-.3,.3),between(0,6.28),0);dummy.scale.setScalar(between(.10,.19));dummy.updateMatrix();flowers.push(dummy.matrix.clone());
-  }
- }
- const grass=instances(grassGeometry,new T.MeshStandardMaterial({color:0xffffff,side:T.DoubleSide,roughness:1,emissive:0x324815,emissiveIntensity:.12}),blades);
- for(let i=0;i<blades.length;i++)grass.setColorAt(i,new T.Color().setHSL(between(.20,.27),between(.32,.58),between(.23,.42)));
- instances(new T.CylinderGeometry(1,1,1,4),new T.MeshStandardMaterial({color:0x536b32,roughness:1}),stems);
- const bloom=canvasTexture(128,(c)=>{c.translate(64,64);for(let i=0;i<8;i++){c.rotate(Math.PI/4);c.fillStyle='#fff9f5';c.beginPath();c.ellipse(22,0,22,9,0,0,6.28);c.fill();}c.fillStyle='#eabc3d';c.beginPath();c.arc(0,0,10,0,6.28);c.fill();});
- const petals=instances(new T.PlaneGeometry(1,1),new T.MeshStandardMaterial({map:bloom,alphaTest:.4,side:T.DoubleSide,roughness:.8}),flowers);
- for(let i=0;i<flowers.length;i++)petals.setColorAt(i,new T.Color([0xffffff,0xffd4dc,0xd0b2ef,0xffffff,0xf3c85d][i%5]));
+ // Trees, shrubs, ferns, grass and wildflowers come from eden-flora.js.
+ const flora=window.createEdenFlora(T,garden,{bark,openGround,mobile});assetJobs.push(flora.ready);
 
  const pathStone=new T.CylinderGeometry(1,1.07,.065,9);
  for(let z=20;z>-6;z-=.9){for(let side=0;side<2;side++){
@@ -138,7 +93,7 @@ window.createEdenGarden=function(T,scene,{reduced=false,mobile=false,onChange=()
  const snake=window.createTreeSnake(T,scene,{bark,reduced,onChange});
  const pyramid=window.createRoadPyramid(T,scene,{roadX,roadEnd,stone,onChange,reduced});
  const district=window.createNightDistrict(T,scene,{stone,leafMat,layout:window.nightLayout,reduced});
- nightRoad=window.createNightRoad(T,scene,{sections:roadSections,roadX,roadStart,roadLength,clearingStart:-120,district,sky,bark,leafMat,stone,roadMaterial,vergeMaterial,clouds:garden.children.filter(node=>node.isSprite),reduced,mobile});
+ nightRoad=window.createNightRoad(T,scene,{sections:roadSections,roadX,roadStart,roadLength,clearingStart:-120,district,sky,bark,forest:flora.forest,stone,roadMaterial,vergeMaterial,clouds:garden.children.filter(node=>node.isSprite),reduced,mobile});
  return {snake,nightRoad,pyramid,district,ready:Promise.allSettled(assetJobs),constrain(position,previous){
   if(previous.z< -20){if(position.z< -111)pyramid.constrain(position);else{const width=T.MathUtils.lerp(2.7,50,T.MathUtils.smoothstep(-position.z,20,30));position.x=T.MathUtils.clamp(position.x,roadX-width,roadX+width);}}
   else{position.x=T.MathUtils.clamp(position.x,-20,20);if(position.z< -20&&Math.abs(position.x-roadX)>2.7)position.z=-20;}
@@ -146,6 +101,6 @@ window.createEdenGarden=function(T,scene,{reduced=false,mobile=false,onChange=()
   position.z=Math.min(position.z,26);return position;
  },road:{x:roadX,start:roadStart,end:roadEnd,inspect:()=>({first:roadFirst,sections:roadSections.length,near:roadStart-roadFirst*roadLength,far:Math.max(roadEnd,roadStart-(roadFirst+roadSections.length)*roadLength)})},update(time,viewer,active=true){
   if(viewer){updateRoad(viewer.position);sky.position.copy(viewer.position);snake.update(time,viewer,active);nightRoad.update(time,viewer,active);pyramid.update(viewer,time);district.update(time,viewer,nightRoad.amount);}
-  if(reduced)return;wind.value=time;waterUniforms.time.value=time;dust.rotation.y=Math.sin(time*.025)*.07;
- },foliage,sky};
+  if(reduced)return;wind.value=time;flora.update(time);waterUniforms.time.value=time;dust.rotation.y=Math.sin(time*.025)*.07;
+ },foliage:flora.leaves,flora,sky};
 };

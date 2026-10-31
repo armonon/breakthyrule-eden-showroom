@@ -68,9 +68,9 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   aoMaterial.uniforms.texel.value.set(1/hw,1/hh);
  }
  function render(){
-  if(!settings.enabled){renderer.render(scene,camera);return;}
+  if(!settings.enabled){renderer.info.autoReset=true;renderer.render(scene,camera);return;}
   resize();
-  const previous=renderer.getRenderTarget();
+  const previous=renderer.getRenderTarget();renderer.info.autoReset=false;renderer.info.reset(); // stats cover the whole processed frame
   renderer.setRenderTarget(sceneRT);renderer.render(scene,camera);
   if(settings.ao>0){
    const u=aoMaterial.uniforms;u.projInv.value.copy(camera.projectionMatrixInverse);u.projScale.value=camera.projectionMatrix.elements[5];u.radius.value=settings.aoRadius;u.intensity.value=settings.aoIntensity;
