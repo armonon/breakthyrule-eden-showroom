@@ -14,6 +14,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {createArena} from './arena.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((pairs, arg, i, all) => arg.startsWith('--') ? [...pairs, [arg.slice(2), all[i + 1]]] : pairs, []));
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -73,11 +74,14 @@ function touch() { version++; }
 function guestName(connectionId) { return 'Ghost ' + connectionId.slice(0, 4).toUpperCase(); }
 function setPose(connectionId, user, pose) {
   let p = presence.get(connectionId);
-  if (!p) { p = {userId: null, pose: {x: 0, z: 12, yaw: Math.PI}, seen: 0, wave: 0}; presence.set(connectionId, p); touch(); }
+  if (!p) { p = {userId: null, zone: 'garden', pose: {x: 0, z: 12, yaw: Math.PI}, seen: 0, wave: 0}; presence.set(connectionId, p); touch(); }
   if (p.userId !== (user?.id || null)) { p.userId = user?.id || null; touch(); }
   p.seen = Date.now();
   if (pose && [pose.x, pose.z, pose.yaw].every(Number.isFinite) && Math.abs(pose.x) < 500 && Math.abs(pose.z) < 500) {
-    if (pose.x !== p.pose.x || pose.z !== p.pose.z || pose.yaw !== p.pose.yaw) { p.pose = {x: +pose.x.toFixed(3), z: +pose.z.toFixed(3), yaw: +pose.yaw.toFixed(3)}; touch(); }
+    const zone = p.zone; arena.pose(p, pose);
+    const leftArena = zone === 'arena' && p.zone !== 'arena', blockedEntry = pose.zone === 'arena' && p.zone !== 'arena';
+    if (!blockedEntry && !(p.arena?.dead && p.zone === 'arena') && (pose.x !== p.pose.x || pose.z !== p.pose.z || pose.yaw !== p.pose.yaw)) { p.pose = {x: +pose.x.toFixed(3), z: +pose.z.toFixed(3), yaw: +pose.yaw.toFixed(3)}; touch(); }
+    if (zone !== p.zone || leftArena || p.zone === 'arena') touch();
   }
   return p;
 }
@@ -90,7 +94,7 @@ function people() {
     if (u && seenUsers.has(u.id)) continue; // one avatar per account even with two tabs
     if (u) seenUsers.add(u.id);
     list.push({id: u ? u.id : 'guest:' + id, name: u ? u.name : guestName(id), color: u ? u.color : '#9aa5a0', ghost: !u?.character,
-      character: u?.character || null, x: p.pose.x, z: p.pose.z, yaw: p.pose.yaw, wave: p.wave});
+      character: u?.character || null, x: p.pose.x, z: p.pose.z, yaw: p.pose.yaw, wave: p.wave, zone: p.zone || 'garden', arena: arena.publicState(p)});
   }
   return list;
 }
@@ -219,6 +223,8 @@ function onLiveMessage(connectionId, client, text) {
   if (message.t === 'pose') {
     const now = Date.now(); if (now - client.lastPose < 50) return; client.lastPose = now; // ≤20/s per client
     setPose(connectionId, userFromRequest(client.req).user, message);
+  } else if (message.t === 'attack' || message.t === 'shoot') {
+    const p = presence.get(connectionId); if (p) arena.action(connectionId, p, message);
   }
 }
 function sendSnapshot(connectionId, client) {
@@ -228,6 +234,13 @@ function sendSnapshot(connectionId, client) {
 }
 function broadcast(force = false) { for (const [id, c] of liveSockets) if (force || c.sentVersion !== version) sendSnapshot(id, c); }
 setInterval(broadcast, 50); // ~20 snapshots/s, only to clients that are behind
+
+// Arena combat events go straight out to everyone in the arena (and the snapshot carries health/scores).
+const arena = createArena({root: ROOT, presence, emit(events) {
+  const payload = frame(Buffer.from(JSON.stringify({t: 'arena', events})));
+  for (const [id, c] of liveSockets) if (presence.get(id)?.zone === 'arena') c.socket.write(payload);
+  touch();
+}});
 
 // ---------- HTTP ----------
 const TYPES = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json',

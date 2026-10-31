@@ -8,17 +8,17 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
  let characterAuth=null;
  let nightSuspended=false;
  // Live mode (local Eden server): one WebSocket carries snapshots in and poses out instead of 400 ms polling.
- const liveUrl=window.showroomDeployment?.realtime;let socket=null,socketEpoch=-1,liveRetry=0,liveTimer=0,lastPoseSent='';
+ const liveUrl=window.showroomDeployment?.realtime;let socket=null,socketEpoch=-1,liveRetry=0,liveTimer=0,lastPoseSent='';const liveListeners=new Set();
  function closeLive(){clearTimeout(liveTimer);if(socket){const old=socket;socket=null;old.onclose=null;old.close();}}
  function connectLive(){
   if(socket||document.hidden||preview)return;
   const epoch=generation,ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+liveUrl+'?connectionId='+connectionId);
   socket=ws;socketEpoch=epoch;
   ws.onopen=()=>{liveRetry=0;failures=0;$('social-error').textContent='';};
-  ws.onmessage=event=>{if(epoch!==generation||socket!==ws)return;let data;try{data=JSON.parse(event.data);}catch{return;}if(data.t==='snapshot')snapshot(data);};
+  ws.onmessage=event=>{if(epoch!==generation||socket!==ws)return;let data;try{data=JSON.parse(event.data);}catch{return;}if(data.t==='snapshot')snapshot(data);else for(const listener of liveListeners)listener(data);};
   ws.onclose=()=>{if(socket!==ws)return;socket=null;failures++;setConnected(false,'Reconnecting...');if(failures>3)clearAvatars();if(!document.hidden)liveTimer=setTimeout(poll,Math.min(10000,500*2**liveRetry++));};
  }
- if(liveUrl)setInterval(()=>{if(socket?.readyState!==1||socketEpoch!==generation)return;const pose=getPose();if(!pose)return;const key=pose.x.toFixed(2)+','+pose.z.toFixed(2)+','+pose.yaw.toFixed(2);if(key===lastPoseSent)return;lastPoseSent=key;socket.send(JSON.stringify({t:'pose',...pose}));},66);
+ if(liveUrl)setInterval(()=>{if(socket?.readyState!==1||socketEpoch!==generation)return;const pose=getPose();if(!pose)return;const key=pose.x.toFixed(2)+','+pose.z.toFixed(2)+','+pose.yaw.toFixed(2)+','+(pose.zone||'')+','+(pose.weapon||'')+','+(pose.blocking?1:0)+','+(pose.pitch??0).toFixed(2)+','+(pose.y??0).toFixed(2);if(key===lastPoseSent)return;lastPoseSent=key;socket.send(JSON.stringify({t:'pose',...pose}));},66);
  const icons=()=>window.lucide?.createIcons();
  async function api(action,data){
   if(preview)throw new Error('Accounts and shared rooms are not enabled on this public preview.');
@@ -74,7 +74,7 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
  function snapshot(data){
   selfId=data.selfId;user=data.user;accountUI();
   const signature=JSON.stringify(data.people.map(p=>[p.id,p.name,p.color]));const previous=JSON.stringify(people.map(p=>[p.id,p.name,p.color]));people=data.people;if(signature!==previous)renderPeople();
-  const ids=new Set();for(const p of people){if(p.id===selfId)continue;ids.add(p.id);let a=avatars.get(p.id);const signature=JSON.stringify([p.ghost,p.character,p.name]);if(a&&a.signature!==signature){destroyAvatar(a);a=null;}if(!a){a=avatar(p);avatars.set(p.id,a);}a.target.set(p.x,.02,p.z);a.yaw=p.yaw;a.wave=p.wave;}
+  const ids=new Set();const zone=getPose()?.zone||'garden';for(const p of people){if(p.id===selfId||(p.zone||'garden')!==zone)continue;ids.add(p.id);let a=avatars.get(p.id);const signature=JSON.stringify([p.ghost,p.character,p.name]);if(a&&a.signature!==signature){destroyAvatar(a);a=null;}if(!a){a=avatar(p);avatars.set(p.id,a);}a.target.set(p.x,.02,p.z);a.yaw=p.yaw;a.wave=p.wave;}
   for(const [id,a] of avatars)if(!ids.has(id)){destroyAvatar(a);avatars.delete(id);}
   const nextId=data.messages.at(-1)?.id||0;if(JSON.stringify(data.messages)!==JSON.stringify(messages)||firstSnapshot){if(!firstSnapshot&&$('social-panel').hidden)unread+=data.messages.filter(m=>m.id>lastId&&m.userId!==selfId&&!muted.has(m.userId)).length;messages=data.messages;lastId=nextId;firstSnapshot=false;renderMessages();}
   $('social-unread').hidden=!unread;$('social-unread').textContent=String(unread);setConnected(true,'Live room / '+people.length+' online');requestDraw();
@@ -132,6 +132,11 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
    a.moving=T.MathUtils.lerp(a.moving,distance>.02?1:0,.18);const stride=Math.sin(time*9)*.35*a.moving;
    a.animate(a.ghost&&reducedMotion?0:time,stride,Date.now()/1000-a.wave<3);
   }return active;},
+  // Arena hooks: live messaging, the room roster and visitor avatars.
+  send(message){if(socket?.readyState!==1)return false;socket.send(JSON.stringify(message));return true;},
+  onLive(listener){liveListeners.add(listener);return()=>liveListeners.delete(listener);},
+  people:()=>people,selfId:()=>selfId,avatar:id=>avatars.get(id),
+  canFight:()=>!!(liveUrl&&user?.character),live:()=>socket?.readyState===1,openAccount:gate,
   pick(raycaster,maxDistance=Infinity){const hit=raycaster.intersectObjects([...avatars.values()].map(a=>a.root),true)[0];if(!hit||hit.distance>maxDistance)return false;let n=hit.object;while(n&&!n.userData.visitorId)n=n.parent;if(n){if(!canInteract()){gate();return true;}selected=n.userData.visitorId;showPanel('people');renderPeople();return true;}return false;},
   inspect:()=>({userId:user?.id,selfId,ghost:!canInteract(),character:user?.character,people:people.map(p=>({...p})),avatars:[...avatars.keys()],connected:!preview&&!document.hidden&&!failures&&!firstSnapshot})
  };
