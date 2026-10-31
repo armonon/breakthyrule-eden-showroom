@@ -245,7 +245,7 @@ const texturePaths=[collection[0].images[0],collection[0].images[1]||collection[
 Promise.resolve(texturePaths.map(path=>{const texture=showroomAssets.texture(T,path,requestDraw);texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());return texture;})).then(async allTextures=>{
 garden.ready.then(requestDraw);
 gardenLibrary=createGardenLibrary(T,scene,requestDraw);
-gardenProps=createGardenProps(T,scene,{onLoad(){renderer.shadowMap.needsUpdate=true;requestDraw();}});
+gardenProps=createGardenProps(T,scene,{camera,renderer,onChange(){renderer.shadowMap.needsUpdate=true;requestDraw();}});
 gardenLibrary.ready.then(requestDraw);
 setShelfPage(0);
 const textures=allTextures.slice(0,2);

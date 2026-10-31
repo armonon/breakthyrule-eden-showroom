@@ -1,0 +1,167 @@
+[
+ {
+  "name": "broken column v001",
+  "url": "/assets/props/broken-column-v001.glb",
+  "job": "20261030-224000-broken-column-v001",
+  "size_m": [
+   0.734,
+   1.2,
+   0.661
+  ],
+  "radius": 0.312
+ },
+ {
+  "name": "granite boulder v001",
+  "url": "/assets/props/granite-boulder-v001.glb",
+  "job": "20261030-224000-granite-boulder-v001",
+  "size_m": [
+   0.598,
+   0.6,
+   0.597
+  ],
+  "radius": 0.254
+ },
+ {
+  "name": "limestone planter v002",
+  "url": "/assets/props/limestone-planter-v002.glb",
+  "job": "20261030-215128-limestone-planter-v002",
+  "size_m": [
+   0.431,
+   0.5,
+   0.43
+  ],
+  "radius": 0.183
+ },
+ {
+  "name": "limestone planter v003",
+  "url": "/assets/props/limestone-planter-v003.glb",
+  "job": "20261030-220036-limestone-planter-v003",
+  "size_m": [
+   0.431,
+   0.5,
+   0.43
+  ],
+  "radius": 0.183
+ },
+ {
+  "name": "limestone planter v004",
+  "url": "/assets/props/limestone-planter-v004.glb",
+  "job": "20261030-223605-limestone-planter-v004",
+  "size_m": [
+   0.431,
+   0.5,
+   0.43
+  ],
+  "radius": 0.183
+ },
+ {
+  "name": "owl statue v001",
+  "url": "/assets/props/owl-statue-v001.glb",
+  "job": "20261030-224000-owl-statue-v001",
+  "size_m": [
+   0.347,
+   0.5,
+   0.3
+  ],
+  "radius": 0.148
+ },
+ {
+  "name": "pedestal sundial v001",
+  "url": "/assets/props/pedestal-sundial-v001.glb",
+  "job": "20261030-224000-pedestal-sundial-v001",
+  "size_m": [
+   0.899,
+   0.888,
+   0.896
+  ],
+  "radius": 0.382
+ },
+ {
+  "name": "sandstone birdbath v001",
+  "url": "/assets/props/sandstone-birdbath-v001.glb",
+  "job": "20261030-220453-sandstone-birdbath-v001",
+  "size_m": [
+   0.677,
+   0.6,
+   0.676
+  ],
+  "radius": 0.288
+ },
+ {
+  "name": "sandstone birdbath v002",
+  "url": "/assets/props/sandstone-birdbath-v002.glb",
+  "job": "20261030-234008-sandstone-birdbath-v002",
+  "size_m": [
+   0.677,
+   0.6,
+   0.676
+  ],
+  "radius": 0.288
+ },
+ {
+  "name": "sandstone lantern v001",
+  "url": "/assets/props/sandstone-lantern-v001.glb",
+  "job": "20261030-224000-sandstone-lantern-v001",
+  "size_m": [
+   0.448,
+   1.0,
+   0.448
+  ],
+  "radius": 0.19
+ },
+ {
+  "name": "stone basin v001",
+  "url": "/assets/props/stone-basin-v001.glb",
+  "job": "20261030-224000-stone-basin-v001",
+  "size_m": [
+   1.158,
+   0.4,
+   1.158
+  ],
+  "radius": 0.492
+ },
+ {
+  "name": "stone bench v001",
+  "url": "/assets/props/stone-bench-v001.glb",
+  "job": "20261030-223959-stone-bench-v001",
+  "size_m": [
+   1.143,
+   0.45,
+   0.309
+  ],
+  "radius": 0.486
+ },
+ {
+  "name": "tall urn v001",
+  "url": "/assets/props/tall-urn-v001.glb",
+  "job": "20261030-224000-tall-urn-v001",
+  "size_m": [
+   0.606,
+   0.9,
+   0.61
+  ],
+  "radius": 0.259
+ },
+ {
+  "name": "terracotta pot v001",
+  "url": "/assets/props/terracotta-pot-v001.glb",
+  "job": "20261030-224000-terracotta-pot-v001",
+  "size_m": [
+   0.562,
+   0.45,
+   0.561
+  ],
+  "radius": 0.239
+ },
+ {
+  "name": "wooden planter box v001",
+  "url": "/assets/props/wooden-planter-box-v001.glb",
+  "job": "20261030-224000-wooden-planter-box-v001",
+  "size_m": [
+   0.496,
+   0.5,
+   0.495
+  ],
+  "radius": 0.211
+ }
+]
