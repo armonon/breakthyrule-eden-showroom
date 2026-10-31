@@ -1,0 +1,97 @@
+{
+  "schema": "beyond-eden-agent-handoff-v2",
+  "createdAt": "2026-10-31",
+  "project": {
+    "name": "breakthyrule-eden-showroom",
+    "localPath": "~/Projects/breakthyrule-eden-showroom",
+    "assetWorkshopPath": "~/Projects/breakthyrule-asset-workshop",
+    "baseBranch": "asset-workshop/limestone-planter",
+    "workBranch": "beyond-eden/browser-realism-proof",
+    "serverCommand": "node server/eden-server.mjs",
+    "proofUrl": "http://127.0.0.1:8777/beyond-eden.html",
+    "remoteStatus": "stale-initial-snapshot-do-not-use-as-source-of-truth"
+  },
+  "renderer": {
+    "threeVersion": "0.187.0",
+    "primary": "WebGPURenderer",
+    "fallback": "automatic WebGL2 backend",
+    "forceFallbackQuery": "?forceWebGL=1",
+    "runtimeCdnAllowed": false
+  },
+  "scope": {
+    "route": "/beyond-eden.html",
+    "landmark": "Wilshire Scottish Rite Masonic Temple and plaza",
+    "fullGameModeIncluded": false,
+    "existingGardenMigrationAllowed": false,
+    "multiplayerContractMustRemainUnchanged": true
+  },
+  "sourceComplete": [
+    "isolated route and HUD",
+    "renderer bootstrap",
+    "first-person controls",
+    "collision world",
+    "five streamed sectors",
+    "procedural temple/plaza fallback",
+    "Blender sector generator",
+    "three LOD tiers",
+    "AO and cool-indirect vertex-color bake path",
+    "meshopt and KTX2 optimization scripts",
+    "flashlight wide/focus/battery/flicker",
+    "height fog and fallback fog",
+    "beam-cone approximation",
+    "practical lights",
+    "ritual door",
+    "tree LOD and billboard runtime",
+    "quality presets and adaptive resolution",
+    "in-page benchmark",
+    "backend-independent screenshot exporter",
+    "local-only integration script",
+    "Blender/browser coordinate contract aligned",
+    "interactive ritual door excluded from static sector GLBs",
+    "benchmark HUD and status DOM updates throttled"
+  ],
+  "machineBoundRemaining": [
+    "inspect current local repository",
+    "create or resume work branch",
+    "install only approved pinned packages/tools",
+    "vendor three.js locally",
+    "run Blender sector build",
+    "run meshopt/KTX2 optimization and validation",
+    "locate and process previously approved tree source",
+    "verify existing garden and server contract",
+    "capture baseline and proof screenshots",
+    "run M4 WebGPU and WebGL2 benchmarks",
+    "write measured verdict and scaling projection"
+  ],
+  "tree": {
+    "selectionStatus": "resolved-upstream",
+    "reopenSelection": false,
+    "sourceBundled": false,
+    "fallbackAvailable": true,
+    "requiredRuntimeFiles": [
+      "assets/beyond-eden/trees/hero-tree-lod0.glb",
+      "assets/beyond-eden/trees/hero-tree-lod1.glb",
+      "assets/beyond-eden/trees/hero-tree-billboard.ktx2"
+    ]
+  },
+  "operations": {
+    "remoteWritesAllowed": false,
+    "deploymentAllowed": false,
+    "netlifyAllowed": false,
+    "newCloudServicesAllowed": false,
+    "newPackageDownloadRequiresApproval": true,
+    "oneHeavyGpuJobAtATime": true
+  },
+  "verification": {
+    "javascriptSyntax": "passed-in-handoff-environment",
+    "pythonSyntax": "passed-in-handoff-environment",
+    "shellSyntax": "passed-in-handoff-environment",
+    "jsonParse": "passed-in-handoff-environment",
+    "browserRuntime": "not-run-target-machine-required",
+    "m4Benchmark": "not-run",
+    "finalVerdict": "pending-measurement",
+    "handoffStaticChecks": "45/45 passed",
+    "standaloneStaticServe": "6/6 resources passed",
+    "syntheticApplyTest": "passed after final runtime hardening; existing garden/server files preserved; three local commits created"
+  }
+}
