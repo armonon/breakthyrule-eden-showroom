@@ -1,0 +1,673 @@
+{
+  "schema": "beyond-eden-benchmark-v1",
+  "createdAt": "2026-10-31T21:40:41.107Z",
+  "version": "proof-slice-0.2.0",
+  "threeRevision": "0.187.0",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+  "platform": "MacIntel",
+  "hardwareConcurrency": 10,
+  "deviceMemoryGiB": 16,
+  "notes": [
+    "Frame times are measured requestAnimationFrame intervals in this browser after a short path-settle interval.",
+    "Texture memory is an estimate derived from loaded texture dimensions and compression state.",
+    "Run on the target M4 with no unrelated heavy GPU job for the project verdict."
+  ],
+  "results": [
+    {
+      "preset": "high",
+      "backend": "WebGL2 fallback",
+      "samples": 890,
+      "meanFrameMs": 16.853258426966292,
+      "medianFrameMs": 16.69999999999891,
+      "p95FrameMs": 16.799999999999272,
+      "p99FrameMs": 16.80000000000291,
+      "meanFps": 59.335706761603795,
+      "onePercentLowFps": 59.523809523799216,
+      "framesOver33Ms": 4,
+      "framesOver50Ms": 1,
+      "resolution": {
+        "cssWidth": 1280,
+        "cssHeight": 800,
+        "bufferWidth": 2560,
+        "bufferHeight": 1600
+      },
+      "pixelRatio": 2,
+      "drawCalls": 216,
+      "triangles": 64776,
+      "points": 440,
+      "lines": 0,
+      "textureCountEstimated": 6,
+      "textureMemoryMiBEstimated": 3.5001220703125,
+      "sliceTransferMiB": 7.120429992675781,
+      "sliceEncodedMiB": 7.098400115966797,
+      "sliceResourceCount": 77,
+      "scene": {
+        "version": "proof-slice-0.2.0",
+        "backend": "WebGL2 fallback",
+        "quality": {
+          "name": "high",
+          "adaptive": false,
+          "pixelRatio": 2,
+          "maxPixelRatio": 2,
+          "minPixelRatio": 1,
+          "antialias": true,
+          "samples": 4,
+          "shadowMapSize": 1024,
+          "flashlightShadows": true,
+          "practicalLights": 6,
+          "fogDensity": 0.016,
+          "fogHeight": 4.5,
+          "beamSegments": 20,
+          "treeNearDistance": 24,
+          "treeImpostorDistance": 46,
+          "treeCullDistance": 118,
+          "vegetationScale": 1,
+          "lodDistanceScale": 1,
+          "targetFrameMs": 16.7
+        },
+        "player": {
+          "x": 0,
+          "y": 1.72,
+          "z": 72,
+          "yaw": 0,
+          "pitch": -0.03
+        },
+        "streaming": [
+          {
+            "id": "temple-core",
+            "state": "loaded",
+            "lod": 0,
+            "visible": true
+          },
+          {
+            "id": "plaza-center",
+            "state": "loaded",
+            "lod": 0,
+            "visible": true
+          },
+          {
+            "id": "approach-south",
+            "state": "loaded",
+            "lod": 2,
+            "visible": true
+          },
+          {
+            "id": "approach-west",
+            "state": "loaded",
+            "lod": 1,
+            "visible": true
+          },
+          {
+            "id": "approach-east",
+            "state": "loaded",
+            "lod": 1,
+            "visible": true
+          }
+        ],
+        "vegetation": {
+          "mode": "licensed-asset",
+          "sourceInstances": 48,
+          "qualityBudgetInstances": 48,
+          "nearInstances": 0,
+          "midInstances": 8,
+          "billboardInstances": 36
+        },
+        "flashlight": {
+          "enabled": true,
+          "mode": "wide",
+          "battery": 100,
+          "flickering": false
+        }
+      }
+    }
+  ],
+  "resources": {
+    "resourceCount": 77,
+    "transferBytes": 7466312,
+    "encodedBytes": 7443212,
+    "decodedBytes": 7443212,
+    "transferMiB": 7.120429992675781,
+    "encodedMiB": 7.098400115966797,
+    "resources": [
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden.css?v=1",
+        "transferSize": 6452,
+        "encodedBodySize": 6152,
+        "decodedBodySize": 6152,
+        "durationMs": 3.200000047683716
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/main.js?v=1",
+        "transferSize": 16030,
+        "encodedBodySize": 15730,
+        "decodedBodySize": 15730,
+        "durationMs": 3.299999952316284
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/config.js",
+        "transferSize": 2772,
+        "encodedBodySize": 2472,
+        "decodedBodySize": 2472,
+        "durationMs": 6.799999952316284
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/core/renderer.js",
+        "transferSize": 1779,
+        "encodedBodySize": 1479,
+        "decodedBodySize": 1479,
+        "durationMs": 8.399999976158142
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/core/quality.js",
+        "transferSize": 2966,
+        "encodedBodySize": 2666,
+        "decodedBodySize": 2666,
+        "durationMs": 8.399999976158142
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/core/asset-loader.js",
+        "transferSize": 2303,
+        "encodedBodySize": 2003,
+        "decodedBodySize": 2003,
+        "durationMs": 9.600000023841858
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/vendor/three-r187/build/three.webgpu.js",
+        "transferSize": 1351194,
+        "encodedBodySize": 1350894,
+        "decodedBodySize": 1350894,
+        "durationMs": 15.199999928474426
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/core/collisions.js",
+        "transferSize": 2750,
+        "encodedBodySize": 2450,
+        "decodedBodySize": 2450,
+        "durationMs": 9.599999904632568
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/core/controls.js",
+        "transferSize": 4795,
+        "encodedBodySize": 4495,
+        "decodedBodySize": 4495,
+        "durationMs": 9.100000023841858
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/core/streaming.js",
+        "transferSize": 4031,
+        "encodedBodySize": 3731,
+        "decodedBodySize": 3731,
+        "durationMs": 10
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/core/bench.js",
+        "transferSize": 5621,
+        "encodedBodySize": 5321,
+        "decodedBodySize": 5321,
+        "durationMs": 10.100000023841858
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/core/resource-metrics.js",
+        "transferSize": 2724,
+        "encodedBodySize": 2424,
+        "decodedBodySize": 2424,
+        "durationMs": 11.5
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/scene/materials.js",
+        "transferSize": 4390,
+        "encodedBodySize": 4090,
+        "decodedBodySize": 4090,
+        "durationMs": 11.800000071525574
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/scene/pbr-materials.js",
+        "transferSize": 4103,
+        "encodedBodySize": 3803,
+        "decodedBodySize": 3803,
+        "durationMs": 12.300000071525574
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/scene/atmosphere.js",
+        "transferSize": 5310,
+        "encodedBodySize": 5010,
+        "decodedBodySize": 5010,
+        "durationMs": 12.400000095367432
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/scene/proxy-temple.js",
+        "transferSize": 11616,
+        "encodedBodySize": 11316,
+        "decodedBodySize": 11316,
+        "durationMs": 12.400000095367432
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/scene/flashlight.js",
+        "transferSize": 5407,
+        "encodedBodySize": 5107,
+        "decodedBodySize": 5107,
+        "durationMs": 13.600000023841858
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/scene/ritual-door.js",
+        "transferSize": 2733,
+        "encodedBodySize": 2433,
+        "decodedBodySize": 2433,
+        "durationMs": 14
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/scene/practical-lights.js",
+        "transferSize": 1817,
+        "encodedBodySize": 1517,
+        "decodedBodySize": 1517,
+        "durationMs": 14.400000095367432
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/scene/vegetation.js",
+        "transferSize": 12020,
+        "encodedBodySize": 11720,
+        "decodedBodySize": 11720,
+        "durationMs": 14.5
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/vendor/three-r187/examples/jsm/loaders/GLTFLoader.js",
+        "transferSize": 120161,
+        "encodedBodySize": 119861,
+        "decodedBodySize": 119861,
+        "durationMs": 6.200000047683716
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/vendor/three-r187/examples/jsm/libs/meshopt_decoder.module.js",
+        "transferSize": 29556,
+        "encodedBodySize": 29256,
+        "decodedBodySize": 29256,
+        "durationMs": 5.799999952316284
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/vendor/three-r187/examples/jsm/loaders/KTX2Loader.js",
+        "transferSize": 37813,
+        "encodedBodySize": 37513,
+        "decodedBodySize": 37513,
+        "durationMs": 5.5
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/vendor/three-r187/build/three.tsl.js",
+        "transferSize": 1065844,
+        "encodedBodySize": 1065544,
+        "decodedBodySize": 1065544,
+        "durationMs": 5.800000071525574
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/vendor/three-r187/examples/jsm/utils/WorkerPool.js",
+        "transferSize": 3410,
+        "encodedBodySize": 3110,
+        "decodedBodySize": 3110,
+        "durationMs": 2.299999952316284
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/vendor/three-r187/examples/jsm/libs/zstddec.module.js",
+        "transferSize": 40054,
+        "encodedBodySize": 39754,
+        "decodedBodySize": 39754,
+        "durationMs": 2.700000047683716
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/vendor/three-r187/examples/jsm/libs/ktx-parse.module.js",
+        "transferSize": 20232,
+        "encodedBodySize": 19932,
+        "decodedBodySize": 19932,
+        "durationMs": 2.5
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/vendor/three-r187/examples/jsm/math/ColorSpaces.js",
+        "transferSize": 4590,
+        "encodedBodySize": 4290,
+        "decodedBodySize": 4290,
+        "durationMs": 3.799999952316284
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/vendor/three-r187/examples/jsm/utils/SkeletonUtils.js",
+        "transferSize": 11835,
+        "encodedBodySize": 11535,
+        "decodedBodySize": 11535,
+        "durationMs": 4
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/vendor/three-r187/examples/jsm/utils/BufferGeometryUtils.js",
+        "transferSize": 39453,
+        "encodedBodySize": 39153,
+        "decodedBodySize": 39153,
+        "durationMs": 3.799999952316284
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/vendor/three-r187/build/three.core.js",
+        "transferSize": 1475099,
+        "encodedBodySize": 1474799,
+        "decodedBodySize": 1474799,
+        "durationMs": 7
+      },
+      {
+        "name": "http://127.0.0.1:8777/beyond-eden/assets/tree-manifest.json",
+        "transferSize": 1114,
+        "encodedBodySize": 814,
+        "decodedBodySize": 814,
+        "durationMs": 2.3000000715255737
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/trees/hero-tree-lod1.glb",
+        "transferSize": 351968,
+        "encodedBodySize": 351668,
+        "decodedBodySize": 351668,
+        "durationMs": 2.899999976158142
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/trees/hero-tree-lod0.glb",
+        "transferSize": 399364,
+        "encodedBodySize": 399064,
+        "decodedBodySize": 399064,
+        "durationMs": 2.899999976158142
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/trees/hero-tree-billboard.ktx2",
+        "transferSize": 183865,
+        "encodedBodySize": 183565,
+        "decodedBodySize": 183565,
+        "durationMs": 2.0999999046325684
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/vendor/three-r187/examples/jsm/libs/basis/basis_transcoder.js",
+        "transferSize": 57829,
+        "encodedBodySize": 57529,
+        "decodedBodySize": 57529,
+        "durationMs": 1
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/vendor/three-r187/examples/jsm/libs/basis/basis_transcoder.wasm",
+        "transferSize": 527633,
+        "encodedBodySize": 527333,
+        "decodedBodySize": 527333,
+        "durationMs": 1.4000000953674316
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/materials/concrete_slab_wall_02_diff.ktx2",
+        "transferSize": 150471,
+        "encodedBodySize": 150171,
+        "decodedBodySize": 150171,
+        "durationMs": 2.8000000715255737
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/materials/concrete_slab_wall_02_arm.ktx2",
+        "transferSize": 101846,
+        "encodedBodySize": 101546,
+        "decodedBodySize": 101546,
+        "durationMs": 2.600000023841858
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/materials/concrete_tile_facade_diff.ktx2",
+        "transferSize": 139893,
+        "encodedBodySize": 139593,
+        "decodedBodySize": 139593,
+        "durationMs": 2.600000023841858
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/materials/concrete_tile_facade_arm.ktx2",
+        "transferSize": 71285,
+        "encodedBodySize": 70985,
+        "decodedBodySize": 70985,
+        "durationMs": 2.200000047683716
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/materials/concrete_pavers_02_diff.ktx2",
+        "transferSize": 148888,
+        "encodedBodySize": 148588,
+        "decodedBodySize": 148588,
+        "durationMs": 2.700000047683716
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/materials/concrete_pavers_02_arm.ktx2",
+        "transferSize": 80556,
+        "encodedBodySize": 80256,
+        "decodedBodySize": 80256,
+        "durationMs": 2.700000047683716
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/temple-core-lod2.glb",
+        "transferSize": 14736,
+        "encodedBodySize": 14436,
+        "decodedBodySize": 14436,
+        "durationMs": 2
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-west-lod2.glb",
+        "transferSize": 5740,
+        "encodedBodySize": 5440,
+        "decodedBodySize": 5440,
+        "durationMs": 1.7999999523162842
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/plaza-center-lod1.glb",
+        "transferSize": 56404,
+        "encodedBodySize": 56104,
+        "decodedBodySize": 56104,
+        "durationMs": 2.200000047683716
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-south-lod0.glb",
+        "transferSize": 13392,
+        "encodedBodySize": 13092,
+        "decodedBodySize": 13092,
+        "durationMs": 2.200000047683716
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-east-lod2.glb",
+        "transferSize": 5732,
+        "encodedBodySize": 5432,
+        "decodedBodySize": 5432,
+        "durationMs": 1.899999976158142
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/temple-core-lod0.glb",
+        "transferSize": 75380,
+        "encodedBodySize": 75080,
+        "decodedBodySize": 75080,
+        "durationMs": 7
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/plaza-center-lod0.glb",
+        "transferSize": 83968,
+        "encodedBodySize": 83668,
+        "decodedBodySize": 83668,
+        "durationMs": 7
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-south-lod1.glb",
+        "transferSize": 7340,
+        "encodedBodySize": 7040,
+        "decodedBodySize": 7040,
+        "durationMs": 6.200000047683716
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-west-lod1.glb",
+        "transferSize": 8928,
+        "encodedBodySize": 8628,
+        "decodedBodySize": 8628,
+        "durationMs": 7.399999976158142
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-east-lod1.glb",
+        "transferSize": 9016,
+        "encodedBodySize": 8716,
+        "decodedBodySize": 8716,
+        "durationMs": 7.5
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/temple-core-lod1.glb",
+        "transferSize": 23256,
+        "encodedBodySize": 22956,
+        "decodedBodySize": 22956,
+        "durationMs": 3.5
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-east-lod0.glb",
+        "transferSize": 22872,
+        "encodedBodySize": 22572,
+        "decodedBodySize": 22572,
+        "durationMs": 2.5
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-west-lod2.glb",
+        "transferSize": 5740,
+        "encodedBodySize": 5440,
+        "decodedBodySize": 5440,
+        "durationMs": 2.5
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/plaza-center-lod1.glb",
+        "transferSize": 56404,
+        "encodedBodySize": 56104,
+        "decodedBodySize": 56104,
+        "durationMs": 1.8000000715255737
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/temple-core-lod2.glb",
+        "transferSize": 14736,
+        "encodedBodySize": 14436,
+        "decodedBodySize": 14436,
+        "durationMs": 3.299999952316284
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-south-lod0.glb",
+        "transferSize": 13392,
+        "encodedBodySize": 13092,
+        "decodedBodySize": 13092,
+        "durationMs": 3.200000047683716
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-east-lod2.glb",
+        "transferSize": 5732,
+        "encodedBodySize": 5432,
+        "decodedBodySize": 5432,
+        "durationMs": 3.1999999284744263
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-west-lod1.glb",
+        "transferSize": 8928,
+        "encodedBodySize": 8628,
+        "decodedBodySize": 8628,
+        "durationMs": 2.899999976158142
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/temple-core-lod1.glb",
+        "transferSize": 23256,
+        "encodedBodySize": 22956,
+        "decodedBodySize": 22956,
+        "durationMs": 1.6999999284744263
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-west-lod0.glb",
+        "transferSize": 22820,
+        "encodedBodySize": 22520,
+        "decodedBodySize": 22520,
+        "durationMs": 2.899999976158142
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-south-lod1.glb",
+        "transferSize": 7340,
+        "encodedBodySize": 7040,
+        "decodedBodySize": 7040,
+        "durationMs": 2.399999976158142
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/plaza-center-lod0.glb",
+        "transferSize": 83968,
+        "encodedBodySize": 83668,
+        "decodedBodySize": 83668,
+        "durationMs": 2.200000047683716
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-east-lod1.glb",
+        "transferSize": 9016,
+        "encodedBodySize": 8716,
+        "decodedBodySize": 8716,
+        "durationMs": 0.8999999761581421
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/temple-core-lod0.glb",
+        "transferSize": 75380,
+        "encodedBodySize": 75080,
+        "decodedBodySize": 75080,
+        "durationMs": 0.8999999761581421
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-west-lod1.glb",
+        "transferSize": 8928,
+        "encodedBodySize": 8628,
+        "decodedBodySize": 8628,
+        "durationMs": 1.2000000476837158
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/temple-core-lod1.glb",
+        "transferSize": 23256,
+        "encodedBodySize": 22956,
+        "decodedBodySize": 22956,
+        "durationMs": 2.100000023841858
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-east-lod0.glb",
+        "transferSize": 22872,
+        "encodedBodySize": 22572,
+        "decodedBodySize": 22572,
+        "durationMs": 2.100000023841858
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-west-lod2.glb",
+        "transferSize": 5740,
+        "encodedBodySize": 5440,
+        "decodedBodySize": 5440,
+        "durationMs": 1.899999976158142
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/plaza-center-lod1.glb",
+        "transferSize": 56404,
+        "encodedBodySize": 56104,
+        "decodedBodySize": 56104,
+        "durationMs": 2.700000047683716
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/plaza-center-lod0.glb",
+        "transferSize": 83968,
+        "encodedBodySize": 83668,
+        "decodedBodySize": 83668,
+        "durationMs": 1.600000023841858
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/temple-core-lod0.glb",
+        "transferSize": 75380,
+        "encodedBodySize": 75080,
+        "decodedBodySize": 75080,
+        "durationMs": 2
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-west-lod1.glb",
+        "transferSize": 8928,
+        "encodedBodySize": 8628,
+        "decodedBodySize": 8628,
+        "durationMs": 1.5
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-east-lod1.glb",
+        "transferSize": 9016,
+        "encodedBodySize": 8716,
+        "decodedBodySize": 8716,
+        "durationMs": 1.7999999523162842
+      },
+      {
+        "name": "http://127.0.0.1:8777/assets/beyond-eden/optimized/approach-south-lod2.glb",
+        "transferSize": 4772,
+        "encodedBodySize": 4472,
+        "decodedBodySize": 4472,
+        "durationMs": 2.5
+      }
+    ]
+  }
+}
