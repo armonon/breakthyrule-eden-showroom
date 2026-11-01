@@ -19,22 +19,28 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
  function windowBay(p,x,y,z,w=1,h=1.8){box(p,charcoal,x,y,z,w+.2,h+.2,.13);box(p,glow,x,y,z+.08,w,h,.06);box(p,brass,x,y,z+.13,.065,h,.09);box(p,brass,x,y,z+.13,w,.055,.09);box(p,marble,x,y-h/2-.1,z+.12,w+.45,.16,.35);}
  function lantern(p,x,z,y=2.4){mesh(p,shaft,brass,x,y/2,z,.055,y,.055);box(p,glow,x,y,z,.22,.38,.22);box(p,brass,x,y+.25,z,.4,.08,.4);const v=new T.Vector3(x,y,z);p.localToWorld(v);lamps.push(v);}
  function glyphTexture(label){const c=document.createElement('canvas');c.width=512;c.height=256;const g=c.getContext('2d');g.fillStyle='#122328';g.fillRect(0,0,512,256);g.strokeStyle='#ac9564';g.lineWidth=3;g.strokeRect(10,10,492,236);g.beginPath();g.arc(256,87,31,0,Math.PI*2);g.moveTo(224,111);g.lineTo(256,40);g.lineTo(288,111);g.closePath();g.stroke();g.fillStyle='#e6d8b4';g.font='22px Georgia';g.textAlign='center';g.fillText(label.toUpperCase(),256,183,470);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;return t;}
+ // The playhouse is the Mayan Theatre: a modelled GLB (scanned stone, sculpted reliefs) replaces its shell once loaded.
+ // Until then, or if it fails, the procedural shell stands in; collision is identical either way.
+ const theatre={url:'/assets/night/mayan-theatre.glb',shell:null,model:null};
  for(const s of layout.landmarks){
   const p=new T.Group();p.name=s.name;p.position.set(s.x,0,s.z);staticRoot.add(p);p.updateWorldMatrix(true,false);
   const facade=plaster.clone();facade.color.set(s.color);
   box(p,marble,0,-.07,0,s.w+3,.12,s.d+3);
+  const isTheatre=s.id==='playhouse';
+  const shell=isTheatre?new T.Group():p;
+  if(isTheatre){shell.name='Playhouse shell (fallback)';shell.position.copy(p.position);root.add(shell);theatre.shell=shell;loadTheatre(s);}
   // Physical walls and server collision use the same doorway dimensions.
   if(s.id!=='gardens'){
    for(const side of [-1,1]){
-    box(p,facade,side*s.w/2,s.h/2,0,.5,s.h,s.d);walls.push([s.x+side*s.w/2,s.z,.5,s.d]);
-    for(const end of [-1,1]){const x=side*(s.w/4+.9),z=end*s.d/2,w=s.w/2-1.8;box(p,facade,x,s.h/2,z,w,s.h,.5);walls.push([s.x+x,s.z+z,w,.5]);}
+    box(shell,facade,side*s.w/2,s.h/2,0,.5,s.h,s.d);walls.push([s.x+side*s.w/2,s.z,.5,s.d]);
+    for(const end of [-1,1]){const x=side*(s.w/4+.9),z=end*s.d/2,w=s.w/2-1.8;box(shell,facade,x,s.h/2,z,w,s.h,.5);walls.push([s.x+x,s.z+z,w,.5]);}
    }
    const spandrel=new T.Shape();spandrel.moveTo(-1.8,s.h);spandrel.lineTo(1.8,s.h);spandrel.lineTo(1.8,2.9);spandrel.lineTo(1.65,2.9);spandrel.absarc(0,2.9,1.65,0,Math.PI,false);spandrel.lineTo(-1.8,2.9);spandrel.closePath();const archWall=new T.ExtrudeGeometry(spandrel,{depth:.5,bevelEnabled:false,curveSegments:20});
-   for(const end of [-1,1]){mesh(p,archWall,facade,0,0,end*s.d/2-.25);arch(p,0,2.9,end*(s.d/2+.28),1.65);}
-   for(const y of [.35,s.h-.5,s.h]){box(p,marble,0,y,s.d/2+.3,s.w+.7,.16,.5);box(p,marble,0,y,-s.d/2-.3,s.w+.7,.16,.5);}
-   for(let x=-s.w/2+.3;x<s.w/2;x+=.7)box(p,marble,x,s.h-.24,s.d/2+.26,.23,.26,.34);
+   for(const end of [-1,1]){mesh(shell,archWall,facade,0,0,end*s.d/2-.25);arch(shell,0,2.9,end*(s.d/2+.28),1.65);}
+   for(const y of [.35,s.h-.5,s.h]){box(shell,marble,0,y,s.d/2+.3,s.w+.7,.16,.5);box(shell,marble,0,y,-s.d/2-.3,s.w+.7,.16,.5);}
+   for(let x=-s.w/2+.3;x<s.w/2;x+=.7)box(shell,marble,x,s.h-.24,s.d/2+.26,.23,.26,.34);
   }
-  const plaque=new T.Mesh(new T.PlaneGeometry(3.8,1.9),new T.MeshStandardMaterial({map:glyphTexture(s.name),roughness:.7,emissive:0x75654b,emissiveIntensity:.14}));plaque.position.set(-s.w/2+2.3,1.75,s.d/2+.32);p.add(plaque);
+  if(!isTheatre){const plaque=new T.Mesh(new T.PlaneGeometry(3.8,1.9),new T.MeshStandardMaterial({map:glyphTexture(s.name),roughness:.7,emissive:0x75654b,emissiveIntensity:.14}));plaque.position.set(-s.w/2+2.3,1.75,s.d/2+.32);p.add(plaque);}
   for(const side of [-1,1])lantern(p,side*2.5,s.d/2+2);
   if(s.id==='temple'){
    mesh(p,shaft,marble,0,s.h+.9,0,5.7,1.8,5.7);mesh(p,dome,copper,0,s.h+1.8,0,5.6,5,5.6);mesh(p,shaft,brass,0,s.h+1.8,0,5.8,.2,5.8);
@@ -52,12 +58,12 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
    box(p,charcoal,0,.025,0,9,.04,10);for(let a=0;a<12;a++){const n=box(p,brass,Math.sin(a*Math.PI/6)*3,.065,Math.cos(a*Math.PI/6)*3,.08,.04,.4);n.rotation.y=a*Math.PI/6;}
   }else if(s.id==='playhouse'){
    for(const side of [-1,1])for(let z=-5;z<=5;z+=5){column(p,side*6.5,z,4.1,.24);arch(p,side*6.5,3.8,z,1.2);}
-   for(let x=-7;x<=7;x+=2.8){if(Math.abs(x)<2)continue;windowBay(p,x,4.8,8.3,1.3,1.6);}
+   for(let x=-7;x<=7;x+=2.8){if(Math.abs(x)<2)continue;windowBay(shell,x,4.8,8.3,1.3,1.6);}
    box(p,charcoal,0,.025,-4,12,.05,5);box(p,velvet,0,5.4,-6.6,12,1.4,.5);
    for(const side of [-1,1])for(let i=0;i<7;i++)mesh(p,shaft,velvet,side*(4.4+i*.23),2.7,-6.5,.22,5.4,.2);
    for(const side of [-1,1]){box(p,marble,side*5.8,3.6,-1,4,.25,8);for(let z=-4;z<=2;z+=1)mesh(p,shaft,brass,side*3.9,4.15,z,.035,1,.035);box(p,brass,side*3.9,4.65,-1,.09,.09,8);}
    for(const x of [-4,-2,2,4])for(const z of [-1,1.5,4]){box(p,velvet,x,.43,z,.85,.16,.8);box(p,velvet,x,.85,z+.38,.85,.9,.12);}
-   box(p,charcoal,0,6,8.7,10,.8,1.1);for(let x=-4.7;x<=4.7;x+=.4)mesh(p,orb,glow,x,5.7,9.2,.065,.065,.065);
+   box(shell,charcoal,0,6,8.7,10,.8,1.1);for(let x=-4.7;x<=4.7;x+=.4)mesh(shell,orb,glow,x,5.7,9.2,.065,.065,.065);
   }else if(s.id==='hotel'){
    box(p,charcoal,0,11.2,0,16.5,.5,20.5);
    const roof=mesh(p,new T.ConeGeometry(1,1,4),charcoal,0,14,0,11.4,5.5,14.2);roof.rotation.y=Math.PI/4;
@@ -76,6 +82,16 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
   // A pale approach is visible from the road and doubles as an escape route.
   const tx=11.7-s.x;box(p,marble,tx/2,-.012,s.d/2+3,Math.abs(tx),.04,1.8);
  }
+ function loadTheatre(s){
+  // The marquee joins the lamp pool (no extra scene light: in this renderer every light costs every lit material),
+  // so one of the three pooled point lights washes the facade from the bulbs when the viewer is near.
+  lamps.push(new T.Vector3(s.x,4.4,s.z+s.d/2+2.6));
+  window.showroomAssets?.model(theatre.url).then(gltf=>{
+   const model=gltf.scene;model.name='Playhouse / Mayan Theatre';model.position.set(s.x,0,s.z);
+   model.traverse(o=>{if(!o.isMesh)return;o.receiveShadow=true;o.castShadow=!/bulb|sign|relief/.test(o.name);});
+   root.remove(theatre.shell);root.add(model);theatre.model=model;
+  }).catch(error=>console.warn('Mayan Theatre unavailable; keeping the procedural playhouse',error));
+ }
  // Collapse repeated architecture to instanced batches, preserving real geometry at low draw cost.
  staticRoot.updateMatrixWorld(true);const batches=new Map();staticRoot.traverse(o=>{if(!o.isMesh)return;const key=o.geometry.uuid+o.material.uuid;if(!batches.has(key))batches.set(key,{geometry:o.geometry,material:o.material,matrices:[]});batches.get(key).matrices.push(o.matrixWorld.clone());});
  root.remove(staticRoot);for(const batch of batches.values()){const m=new T.InstancedMesh(batch.geometry,batch.material,batch.matrices.length);batch.matrices.forEach((matrix,i)=>m.setMatrixAt(i,matrix));m.receiveShadow=true;m.computeBoundingSphere?.();root.add(m);}
@@ -91,10 +107,10 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
  const arms=[];for(const side of [-1,1]){const arm=new T.Group();arm.position.set(side*.31,2.74,0);mesh(arm,shaft,robe,side*.08,-.75,0,.065,1.6,.065);mesh(arm,orb,mask,side*.08,-1.6,0,.055,.18,.055);arm.rotation.z=side*.10;watcher.add(arm);arms.push(arm);}
  box(watcher,brass,0,2.3,.245,.04,.75,.035);const sigil=mesh(watcher,new T.TorusGeometry(.12,.018,6,24),brass,0,2.61,.24);
  let snapshot=null;
- return {root,watcher,walls,setPages,setState(value){if(value&&value.code!==snapshot?.code)watcher.position.set(value.watcher.x,0,value.watcher.z);snapshot=value;watcher.visible=!!value&&value.phase==='playing';if(value)setPages(value.pages,value.collected);else pageRoot.visible=false;},
+ return {root,watcher,walls,lamps,setPages,setState(value){if(value&&value.code!==snapshot?.code)watcher.position.set(value.watcher.x,0,value.watcher.z);snapshot=value;watcher.visible=!!value&&value.phase==='playing';if(value)setPages(value.pages,value.collected);else pageRoot.visible=false;},
   blocks(p){return walls.some(([x,z,w,d])=>Math.abs(p.x-x)<w/2+.3&&Math.abs(p.z-z)<d/2+.3);},
-  clearGround(x,z){return layout.landmarks.some(s=>Math.abs(x-s.x)<s.w/2+3&&Math.abs(z-s.z)<s.d/2+4)||layout.landmarks.some(s=>Math.abs(z-(s.z+s.d/2+3))<1.8&&x>Math.min(s.x,11.7)-1&&x<Math.max(s.x,11.7)+1);},
+  clearGround(x,z){return layout.landmarks.some(s=>Math.abs(x-s.x)<s.w/2+3&&z-s.z>-s.d/2-4&&z-s.z<s.d/2+9)||layout.landmarks.some(s=>Math.abs(z-(s.z+s.d/2+3))<1.8&&x>Math.min(s.x,11.7)-1&&x<Math.max(s.x,11.7)+1);},
   update(time,viewer,night){root.visible=viewer.position.z<0;pageRoot.visible=!!snapshot;const nearest=lamps.map(p=>({p,d:p.distanceToSquared(viewer.position)})).sort((a,b)=>a.d-b.d);lightPool.forEach((l,i)=>{l.position.copy(nearest[i].p);l.intensity=night*10;});if(snapshot){const w=snapshot.watcher;watcher.position.lerp(new T.Vector3(w.x,0,w.z),.3);watcher.rotation.y=w.yaw;arms.forEach((a,i)=>{a.rotation.x=reduced?0:Math.sin(time*2+i*Math.PI)*.06;});sigil.material.emissive.set(0x503c22);sigil.material.emissiveIntensity=.2;}},
-  inspect:()=>({landmarks:layout.landmarks.map(s=>({name:s.name,x:s.x,z:s.z})),batches:batches.size,pages:pages.size,watcher:watcher.position.toArray()})
+  inspect:()=>({landmarks:layout.landmarks.map(s=>({name:s.name,x:s.x,z:s.z})),batches:batches.size,theatre:theatre.model?'model':'fallback',pages:pages.size,watcher:watcher.position.toArray()})
  };
 };
