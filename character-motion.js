@@ -124,7 +124,7 @@
    guard:{x:0,v:0},guardTarget:0,wave:{x:0,v:0},wade:{x:0,v:0},look:null,lookYaw:{x:0,v:0},lookPitch:{x:0,v:0},airborne:false,treadmill:0,punches:0};
   const toLocal=p=>group.worldToLocal(v3.copy(p)).clone(),toWorld=p=>group.localToWorld(p.clone());
   const api={
-   tune:{guardLift:0},
+   tune:{guardLift:0,wadeLift:0},
    // A layer asks for a hand on a world point; weight 0 lets the hand go back to swinging.
    touch(side,point,normal=null,weight=1,kind='press'){const s=sides[side==='L'?0:1];s.touch=weight>0&&point?{point:point.clone(),normal:normal?.clone()||null,kind}:s.touch;s.touchTarget=weight;},
    lookAt(point){state.look=point?point.clone():null;},
@@ -210,7 +210,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
      if(state.airborne)target.add(v3.set(s.sign*.12,.2,0));
      const lift=api.tune.guardLift;target.lerp(s.shoulder.clone().add(v3.set(-s.sign*.08,.02+lift+(i?0:.03),.3+lift*.6)),state.guard.x);
      // Wading through brush: hands rise to the chest and sweep outwards in time with the stride, parting the leaves.
-     if(state.wade.x>.001){const sweep=Math.sin((state.phase+i*.5)*Math.PI*2);target.lerp(s.shoulder.clone().add(v3.set(s.sign*(.27+.1*sweep),-.03+.05*Math.max(0,-sweep),.17+.07*sweep)),state.wade.x*.85);}
+     if(state.wade.x>.001){const sweep=Math.sin((state.phase+i*.5)*Math.PI*2);const lift=api.tune.wadeLift;target.lerp(s.shoulder.clone().add(v3.set(s.sign*(.27+.1*sweep)*(1-lift*1.5),-.03+lift+.05*Math.max(0,-sweep),.17+lift*1.4+.07*sweep)),state.wade.x*.85);}
      if(s.sign<0&&state.wave.x>.001)target.lerp(s.shoulder.clone().add(v3.set(-.34,.42+.04*Math.sin(state.time*9),.08+.07*Math.sin(state.time*7))),state.wave.x);
      scalar(s.touchWeight,s.touchTarget||0,dt,3.2,.85);
      let pose=null,hz=6,zeta=.72;
