@@ -498,15 +498,19 @@
    cloud:{file:'cloud01_8x8.webp',cols:8,frames:64},
    wisp:{file:'wispysmoke01_8x8.webp',cols:8,frames:64}
   };
-  const flipBooks={},flips=[];
-  const FLIP_VERT='uniform float rot;varying vec2 vUv;void main(){vUv=uv*.98+.01;vec4 mv=modelViewMatrix*vec4(0.,0.,0.,1.);vec2 sc=vec2(length(modelMatrix[0].xyz),length(modelMatrix[1].xyz));float c=cos(rot),s=sin(rot);vec2 p=position.xy*sc;mv.xy+=vec2(c*p.x-s*p.y,s*p.x+c*p.y);gl_Position=projectionMatrix*mv;}';
-  const FLIP_FRAG=`uniform sampler2D map;uniform float cols,frames,frame,opacity,glow,light;uniform vec3 tint;varying vec2 vUv;
+  const flipBooks={},flips=[],embers=[],heat=[];
+  // Billboards in view space. vWorldY / vDepth give cheap "soft particles": the sprite fades where it meets the
+  // ground plane under it and right in front of the camera, so smoke never shows a hard cut line.
+  const FLIP_VERT='uniform float rot;varying vec2 vUv;varying float vWorldY,vDepth;void main(){vUv=uv*.98+.01;vec4 mv=modelViewMatrix*vec4(0.,0.,0.,1.);vec2 sc=vec2(length(modelMatrix[0].xyz),length(modelMatrix[1].xyz));float c=cos(rot),s=sin(rot);vec2 p=position.xy*sc;p=vec2(c*p.x-s*p.y,s*p.x+c*p.y);mv.xy+=p;vec3 right=vec3(viewMatrix[0][0],viewMatrix[1][0],viewMatrix[2][0]),up=vec3(viewMatrix[0][1],viewMatrix[1][1],viewMatrix[2][1]);vWorldY=(modelMatrix[3].xyz+right*p.x+up*p.y).y;vDepth=-mv.z;gl_Position=projectionMatrix*mv;}';
+  const FLIP_FRAG=`uniform sampler2D map;uniform float cols,frames,frame,opacity,glow,light,groundY,soft;uniform vec3 tint;varying vec2 vUv;varying float vWorldY,vDepth;
    vec4 cell(float f){float c=mod(f,cols),r=floor(f/cols);return texture2D(map,(vec2(c,cols-1.-r)+vUv)/cols);}
    void main(){float f=clamp(frame,0.,frames-1.),f0=floor(f);vec4 a=mix(cell(f0),cell(min(f0+1.,frames-1.)),f-f0);
    #ifdef GLOW
-    float lum=max(a.r,max(a.g,a.b));gl_FragColor=vec4(a.rgb*a.rgb*smoothstep(.3,.95,lum)*a.a*glow,1.);
+    float lum=max(a.r,max(a.g,a.b));float sf=smoothstep(0.,soft,vWorldY-groundY);gl_FragColor=vec4(a.rgb*a.rgb*smoothstep(.3,.95,lum)*a.a*glow*sf,1.);
    #else
-    float lum=max(a.r,max(a.g,a.b));vec3 col=a.rgb*mix(vec3(light),vec3(1.),smoothstep(.45,.9,lum))*tint;gl_FragColor=vec4(col,a.a*opacity);
+    float lum=max(a.r,max(a.g,a.b));float fire=smoothstep(.45,.9,lum);float sun=mix(.72,1.12,smoothstep(.15,.85,vUv.y));
+    vec3 col=a.rgb*mix(vec3(light*sun),vec3(1.),fire)*mix(tint,vec3(1.),fire);
+    float sf=smoothstep(0.,soft,vWorldY-groundY)*smoothstep(.25,1.4,vDepth);gl_FragColor=vec4(col,a.a*opacity*sf);
    #endif
    }`;
   function flipBook(name){
@@ -519,7 +523,7 @@
    const fb=flipBook(name);
    let f=flips.find(x=>!x.alive&&x.name===name&&!!x.glowMesh===!!opts.glow);
    if(!f){
-    const uni=()=>({map:{value:fb.tex},cols:{value:fb.cols},frames:{value:fb.frames},frame:{value:0},opacity:{value:1},glow:{value:1},light:{value:1},tint:{value:new T.Color(1,1,1)},rot:{value:0}});
+    const uni=()=>({map:{value:fb.tex},cols:{value:fb.cols},frames:{value:fb.frames},frame:{value:0},opacity:{value:1},glow:{value:1},light:{value:1},tint:{value:new T.Color(1,1,1)},rot:{value:0},groundY:{value:-99},soft:{value:.6}});
     const m=new T.Mesh(flipGeo,new T.ShaderMaterial({uniforms:uni(),vertexShader:FLIP_VERT,fragmentShader:FLIP_FRAG,transparent:true,depthWrite:false}));
     m.frustumCulled=false;m.renderOrder=2;m.userData.noHit=true;fxGroup.add(m);
     let gm=null;if(opts.glow){gm=new T.Mesh(flipGeo,new T.ShaderMaterial({uniforms:m.material.uniforms,vertexShader:FLIP_VERT,fragmentShader:FLIP_FRAG,defines:{GLOW:1},transparent:true,depthWrite:false,blending:T.AdditiveBlending}));gm.frustumCulled=false;gm.layers.set(GLOW);m.add(gm);}
@@ -528,7 +532,7 @@
    const u=f.mesh.material.uniforms;
    f.alive=true;f.t=-(opts.delay||0);f.life=opts.life;f.s0=opts.size[0];f.s1=opts.size[1];f.curve=opts.curve||1;f.loop=opts.loop||0;f.start=opts.start||0;
    f.a0=opts.alpha??1;f.fadeIn=opts.fadeIn||0;f.drag=opts.drag??.6;f.rise=opts.rise||0;f.spin=opts.spin||0;f.night=opts.night!==false;
-   f.vel.copy(opts.vel||new T.Vector3());f.mesh.position.copy(opts.pos);u.rot.value=opts.rot??Math.random()*TAU;u.glow.value=opts.glowGain||0;if(Array.isArray(opts.tint))u.tint.value.setRGB(...opts.tint);else u.tint.value.set(opts.tint??0xffffff);
+   f.vel.copy(opts.vel||new T.Vector3());f.mesh.position.copy(opts.pos);u.rot.value=opts.rot??Math.random()*TAU;u.glow.value=opts.glowGain||0;u.groundY.value=opts.groundY??-99;u.soft.value=opts.soft??.6;if(Array.isArray(opts.tint))u.tint.value.setRGB(...opts.tint);else u.tint.value.set(opts.tint??0xffffff);
    f.mesh.visible=false;f.mesh.scale.setScalar(f.s0);return f;
   }
   function updateFlips(dt){
@@ -544,6 +548,41 @@
    }
   }
 
+  function updateEmbers(dt){
+   for(let i=embers.length-1;i>=0;i--){const e=embers[i];e.t+=dt;
+    e.vel.y-=9.8*dt;e.vel.multiplyScalar(Math.exp(-.35*dt));e.pos.addScaledVector(e.vel,dt);
+    if(e.pos.y<e.ground+.05){e.pos.y=e.ground+.05;e.vel.multiplyScalar(.3);e.vel.y=Math.abs(e.vel.y)*.3;}
+    const heatK=1-e.t/e.life;
+    spawn({map:tx.soft,additive:true,pos:e.pos,life:.09,size:[.16*heatK+.04,.1],color:0xffd08a,color1:0xff5a10});
+    e.next-=dt;if(e.next<=0&&heatK>.15){e.next=.085;spawnFlip('wisp',{groundY:e.ground,soft:.3,pos:e.pos.clone(),size:[.25,rand(.9,1.4)],life:rand(1,1.5),loop:24,start:rand(0,63),fadeIn:.05,alpha:.45*heatK+.1,vel:new T.Vector3(0,.5,0),rise:.2,drag:1.2,spin:rand(-.5,.5),tint:[.75,.72,.68]});}
+    if(e.t>=e.life)embers.splice(i,1);}
+  }
+  // Heat haze: copy the rendered frame and redraw it through a noise-displaced billboard over the fireball.
+  let heatFX=null;
+  function renderHeat(){
+   if(!heat.length)return;
+   if(!heatFX){
+    const ft=new T.FramebufferTexture(4,4);
+    const mat=new T.ShaderMaterial({uniforms:{frame:{value:ft},res:{value:new T.Vector2()},time:{value:0},amount:{value:0}},transparent:true,depthWrite:false,depthTest:true,
+     vertexShader:'varying vec2 vUv;void main(){vUv=uv;vec4 mv=modelViewMatrix*vec4(0.,0.,0.,1.);mv.xy+=position.xy*vec2(length(modelMatrix[0].xyz),length(modelMatrix[1].xyz));gl_Position=projectionMatrix*mv;}',
+     fragmentShader:`uniform sampler2D frame;uniform vec2 res;uniform float time,amount;varying vec2 vUv;
+      float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+      float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
+      void main(){vec2 c=vUv-.5;float m=smoothstep(.5,.1,length(c*vec2(1.,.8)));
+       vec2 q=vUv*6.+vec2(0.,-time*2.2);vec2 d=vec2(n(q)-.5,n(q+7.3)-.5);
+       vec2 uv=gl_FragCoord.xy/res+d*amount*m*.035;gl_FragColor=vec4(texture2D(frame,uv).rgb,m*min(1.,amount*3.));}`});
+    const mesh=new T.Mesh(new T.PlaneGeometry(1,1),mat);mesh.frustumCulled=false;const sc=new T.Scene();sc.add(mesh);
+    heatFX={ft,mat,mesh,scene:sc,size:new T.Vector2(),origin:new T.Vector2()};
+   }
+   renderer.getDrawingBufferSize(heatFX.size);
+   if(heatFX.ft.image.width!==heatFX.size.x||heatFX.ft.image.height!==heatFX.size.y){heatFX.ft.dispose();heatFX.ft=new T.FramebufferTexture(heatFX.size.x,heatFX.size.y);heatFX.mat.uniforms.frame.value=heatFX.ft;}
+   renderer.copyFramebufferToTexture(heatFX.origin,heatFX.ft);
+   heatFX.mat.uniforms.res.value.copy(heatFX.size);heatFX.mat.uniforms.time.value=lastTime;
+   const auto=renderer.autoClear;renderer.autoClear=false;
+   for(const hz of heat){const k=hz.t/hz.life;heatFX.mesh.position.copy(hz.pos);heatFX.mesh.scale.setScalar(hz.size*(.8+k*.4));heatFX.mat.uniforms.amount.value=Math.sin(Math.min(1,k*4)*Math.PI/2)*(1-k);renderer.render(heatFX.scene,camera);}
+   renderer.autoClear=auto;
+  }
+
   function explode(c){
    const p=c.group.getWorldPosition(new T.Vector3());c.group.parent?.remove(c.group);
    blastLight.position.copy(p).add(new T.Vector3(0,.6,0));state.blast=1;
@@ -552,26 +591,31 @@
    // Core flash: a very short white-hot burst that drives bloom and the lens flare.
    spawn({map:tx.soft,additive:true,pos:p.clone().add(new T.Vector3(0,.5,0)),life:.1,size:[1.4,2.6],color:0xfff6e0,color1:0xffa040});
    // Simulated fireball + secondary lobe (Houdini flipbooks), fire part also rendered into the bloom buffer.
-   spawnFlip('explosion02',{pos:p.clone().add(new T.Vector3(0,1.25,0)),size:[4.6,5.8],life:2.9,curve:.72,glow:true,glowGain:2.4*seen,vel:new T.Vector3(0,.6,0),rise:.25});
-   spawnFlip('explosion01',{pos:p.clone().add(new T.Vector3(rand(-.7,.7),1.6,rand(-.7,.7))),size:[3.4,4.6],life:2.7,curve:.8,delay:.07,glow:true,glowGain:1.6*seen,vel:new T.Vector3(rand(-.4,.4),1,rand(-.4,.4)),rise:.3});
+   spawnFlip('explosion02',{groundY:ground,soft:.9,pos:p.clone().add(new T.Vector3(0,1.25,0)),size:[4.6,5.8],life:2.9,curve:.72,glow:true,glowGain:2.4*seen,vel:new T.Vector3(0,.6,0),rise:.25});
+   spawnFlip('explosion01',{groundY:ground,soft:.9,pos:p.clone().add(new T.Vector3(rand(-.7,.7),1.6,rand(-.7,.7))),size:[3.4,4.6],life:2.7,curve:.8,delay:.07,glow:true,glowGain:1.6*seen,vel:new T.Vector3(rand(-.4,.4),1,rand(-.4,.4)),rise:.3});
    // Rolling smoke column that outlives the fireball.
-   for(let i=0;i<7;i++)spawnFlip('cloud',{pos:p.clone().add(new T.Vector3(rand(-.8,.8),rand(1,2.4),rand(-.8,.8))),size:[2.4,rand(5,7.5)],life:rand(7,10),loop:rand(5,8),start:rand(0,63),delay:rand(.35,.9),fadeIn:.12,alpha:rand(.55,.75),vel:new T.Vector3(rand(-.6,.6),rand(.6,1.4),rand(-.6,.6)),rise:.12,drag:.25,spin:rand(-.08,.08),tint:[1.55,1.45,1.35]});
+   for(let i=0;i<7;i++)spawnFlip('cloud',{groundY:ground,soft:1.4,pos:p.clone().add(new T.Vector3(rand(-.8,.8),rand(1,2.4),rand(-.8,.8))),size:[2.4,rand(5,7.5)],life:rand(7,10),loop:rand(5,8),start:rand(0,63),delay:rand(.35,.9),fadeIn:.12,alpha:rand(.55,.75),vel:new T.Vector3(rand(-.6,.6),i<3?rand(.05,.25):rand(.35,.8),rand(-.6,.6)),rise:i<3?0:.035,drag:.35,spin:rand(-.08,.08),tint:[1.55,1.45,1.35]});
    // Dust skirt kicked out along the ground by the shockwave.
-   for(let i=0;i<10;i++){const a=i/10*TAU+rand(-.2,.2);spawnFlip('cloud',{pos:new T.Vector3(p.x,ground+.95,p.z),size:[.8,rand(2.2,3)],life:rand(3,4.5),loop:6,start:rand(0,63),fadeIn:.05,alpha:.6,vel:new T.Vector3(Math.cos(a)*rand(7,10),.4,Math.sin(a)*rand(7,10)),drag:2.4,rise:.05,tint:[1.7,1.55,1.3]});}
+   for(let i=0;i<10;i++){const a=i/10*TAU+rand(-.2,.2);spawnFlip('cloud',{groundY:ground,soft:.8,pos:new T.Vector3(p.x,ground+.95,p.z),size:[.8,rand(2.2,3)],life:rand(3,4.5),loop:6,start:rand(0,63),fadeIn:.05,alpha:.6,vel:new T.Vector3(Math.cos(a)*rand(7,10),.4,Math.sin(a)*rand(7,10)),drag:2.4,rise:.05,tint:[1.7,1.55,1.3]});}
    for(let i=0;i<46;i++)spawn({map:tx.soft,additive:true,pos:p,vel:new T.Vector3(rand(-1,1),rand(.2,1.4),rand(-1,1)).normalize().multiplyScalar(rand(6,16)),life:rand(.4,1.2),size:[.07,.02],color:0xffd27a,color1:0xff4a00,gravity:9.8,drag:.6});
    for(let i=0;i<26;i++)spawn({map:tx.soft,pos:p,vel:new T.Vector3(rand(-1,1),rand(.4,1.6),rand(-1,1)).normalize().multiplyScalar(rand(3,9)),life:rand(1,1.8),size:[.05,.04],color:0x2a2620,gravity:9.8,drag:.3,spin:rand(-10,10)});
    const g=worldHits(p.clone().add(new T.Vector3(0,.5,0)),new T.Vector3(0,-1,0),3);if(g)decal(g,tx.scorch,3.2,120);
+   // Burning fragments on ballistic arcs, each trailing smoke.
+   for(let i=0;i<7;i++){const a=Math.random()*TAU,up=rand(5,11),out=rand(3,8);embers.push({pos:p.clone().add(new T.Vector3(0,.4,0)),vel:new T.Vector3(Math.cos(a)*out,up,Math.sin(a)*out),t:0,life:rand(1.6,2.8),next:0,ground});}
+   // Heat haze over the fireball.
+   heat.push({pos:p.clone().add(new T.Vector3(0,1.6,0)),t:0,life:2.2,size:7.5});
+   const dist0=camera.position.distanceTo(p);
+   if(dist0<14){hud.flash(clamp(1.15-dist0/12,.15,.95));sfx.deafen(clamp(1.2-dist0/12,.1,1));}
    for(const t of targets){const tp=t.root.getWorldPosition(new T.Vector3());const d=tp.distanceTo(p);if(d<6.5){const f=1-d/6.5;t.swing.kick(f*14*(Math.random()<.5?-1:1));t.twist.kick(f*8*(Math.random()-.5));if(d<3.2&&!t.down){t.down=1;t.downT=lastTime;t.fallDir=Math.atan2(tp.x-p.x,tp.z-p.z);}}}
    const dist=camera.position.distanceTo(p);look.shake=Math.max(look.shake,clamp(1.6-dist/20,.15,1.6));
-   if(dist<4)hud.flash(.9);
    sfx.boom(p,dist);requestFrame();
   }
 
   /* ------------------------------------------------------------ audio (procedural) */
   const sfx=(()=>{
-   let ctx=null,master,verb,noiseBuf;
+   let ctx=null,master,verb,noiseBuf,muffle=null;
    function init(){if(ctx)return ctx;const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;ctx=new C();
-    master=ctx.createDynamicsCompressor();master.threshold.value=-10;master.ratio.value=6;const out=ctx.createGain();out.gain.value=.8;master.connect(out).connect(ctx.destination);
+    master=ctx.createDynamicsCompressor();master.threshold.value=-10;master.ratio.value=6;const out=ctx.createGain();out.gain.value=.8;muffle=ctx.createBiquadFilter();muffle.type='lowpass';muffle.frequency.value=18000;master.connect(muffle).connect(out).connect(ctx.destination);
     verb=ctx.createConvolver();const len=ctx.sampleRate*2.2,ir=ctx.createBuffer(2,len,ctx.sampleRate);for(let ch=0;ch<2;ch++){const d=ir.getChannelData(ch);for(let i=0;i<len;i++){const t=i/ctx.sampleRate;d[i]=(Math.random()*2-1)*Math.exp(-t*2.6)*(t<.05?t/.05:1)*(1+.5*Math.sin(t*40));}}verb.buffer=ir;const vg=ctx.createGain();vg.gain.value=.35;verb.connect(vg).connect(master);
     noiseBuf=ctx.createBuffer(1,ctx.sampleRate*3,ctx.sampleRate);const n=noiseBuf.getChannelData(0);for(let i=0;i<n.length;i++)n[i]=Math.random()*2-1;return ctx;}
    function pan(pos){const p=ctx.createStereoPanner();if(pos){const v=pos.clone().project(camera);p.pan.value=clamp(v.x,-1,1)*.7;}return p;}
@@ -602,6 +646,8 @@
     arm:go(t=>{tone(t,{f0:1900,dur:.05,type:'square',gain:.05,send:0});}),
     boom:go((t,pos,d)=>{const far=clamp(d/40,0,1),tt=t+d/343;noise(tt,{dur:.02,type:'highpass',f0:1200,gain:1.6*(1-far*.7),send:.3});noise(tt,{dur:2.4,f0:2400*(1-far*.6),f1:60,gain:1.9,send:1.2,curve:2.2});tone(tt,{f0:62,f1:22,dur:1.6,gain:1.6});noise(tt+.25,{dur:1.8,type:'bandpass',f0:500,f1:120,q:.6,gain:.4,send:1});}),
     ring:go(t=>{tone(t,{f0:1250,dur:.12,gain:.05,send:.2});}),
+    deafen:go((t,amount)=>{if(!muffle)return;const f=muffle.frequency;f.cancelScheduledValues(t);f.setValueAtTime(lerp(9000,450,amount),t+.02);f.exponentialRampToValueAtTime(18000,t+1.2+amount*3.5);
+     const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=rand(3400,3900);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.05*amount,t+.15);g.gain.exponentialRampToValueAtTime(.0001,t+1.5+amount*3);o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+5);}),
     swap:go(t=>{noise(t,{dur:.05,type:'bandpass',f0:1600,q:2,gain:.25});noise(t+.07,{dur:.03,type:'bandpass',f0:2600,q:3,gain:.25});})
    };
   })();
@@ -874,7 +920,7 @@
    lastTime=time;
    if(!built)return;
    // Effects keep running even when holstered
-   updateParticles(dt);updateFlips(dt);updateShells(dt);updateCharges(dt);
+   updateParticles(dt);updateEmbers(dt);for(let i=heat.length-1;i>=0;i--){heat[i].t+=dt;heat[i].pos.y+=dt*.6;if(heat[i].t>=heat[i].life)heat.splice(i,1);}updateFlips(dt);updateShells(dt);updateCharges(dt);
    for(const tr of tracers){if(!tr.alive)continue;tr.t+=dt;tr.mesh.material.opacity=1-tr.t/tr.life;if(tr.t>=tr.life){tr.alive=false;tr.mesh.visible=false;}}
    for(let i=debris.length-1;i>=0;i--){const d=debris[i];d.t+=dt;const k=d.t/d.life;if(d.ring){d.mesh.scale.setScalar(1+k*9);d.mesh.material.opacity=.5*(1-k);}if(k>=1){d.mesh.parent?.remove(d.mesh);debris.splice(i,1);}}
    for(const d of decals){const age=time-d.userData.born;if(age>d.userData.life-2)d.material.opacity=Math.max(0,(d.userData.life-age)/2);if(age>d.userData.life)d.visible=false;}
@@ -943,6 +989,7 @@
 
   function render(){
    if(!built)return;
+   renderHeat();
    if(armed)renderViewmodel();
    renderPost();
   }
@@ -1046,10 +1093,10 @@
    equip,holster,enterRange,update,render,
    armed:()=>armed,
    capturing:()=>armed,
-   busy:()=>armed||(built&&(glowActive()||flips.some(f=>f.alive)||particles.some(p=>p.alive)||shells.some(s=>s.mesh.visible&&s.bounces<4)||charges.some(c=>!c.done)||targets.some(t=>Math.abs(t.swing.v)>.001||Math.abs(t.swing.x)>.001||t.down)||debris.length||tracers.some(t=>t.alive)||(state.blast||0)>0)),
+   busy:()=>armed||(built&&(glowActive()||embers.length||heat.length||flips.some(f=>f.alive)||particles.some(p=>p.alive)||shells.some(s=>s.mesh.visible&&s.bounces<4)||charges.some(c=>!c.done)||targets.some(t=>Math.abs(t.swing.v)>.001||Math.abs(t.swing.x)>.001||t.down)||debris.length||tracers.some(t=>t.alive)||(state.blast||0)>0)),
    blocks(p){for(const t of targets){const q=t.root.position;if(t.kind==='plate'?Math.abs(p.x-q.x)<.62&&Math.abs(p.z-q.z)<.25:Math.hypot(p.x-q.x,p.z-q.z)<t.radius)return true;}return false;},
    inspect:()=>({built,armed,locked,weapon:current?.id||null,ammo:current?state[current.id].ammo:null,focus:current?state[current.id].focus:0,charges:charges.filter(c=>!c.done).length,stats:{...stats},targets:targets.length,particles:particles.filter(p=>p.alive).length}),
-   _debug:{viewScene:()=>viewScene,fire:()=>{if(current)fire();},state,models,setButtons:b=>Object.assign(buttons,b),setLocked:v=>{locked=v;},detonate:()=>detonate(),reload:()=>{const l=locked;locked=true;reload();locked=l;}}
+   _debug:{explodeAt:(x,z)=>{const g=new T.Group();g.position.set(x,groundAt(x,z)+.05,z);world.add(g);state.blastSeen=1;explode({group:g});},viewScene:()=>viewScene,fire:()=>{if(current)fire();},state,models,setButtons:b=>Object.assign(buttons,b),setLocked:v=>{locked=v;},detonate:()=>detonate(),reload:()=>{const l=locked;locked=true;reload();locked=l;}}
   };
  }
  root.createCombat=createCombat;
