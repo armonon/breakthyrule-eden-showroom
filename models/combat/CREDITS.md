@@ -33,3 +33,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## Explosion and smoke flipbooks (`vfx/`)
+
+`explosion01_5x5.webp`, `explosion02_5x5.webp`, `cloud01_8x8.webp`, `wispysmoke01_8x8.webp`: Houdini
+simulations from Unity Labs' [free VFX image sequences and flipbooks](https://unity.com/blog/engine-platform/free-vfx-image-sequences-flipbooks),
+released under CC0. Converted from TGA to WebP (cloud and wisp sheets resized to 512 px).
