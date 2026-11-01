@@ -60,7 +60,7 @@ window.GardenCharacterDetails={
   }
   const texture=new T.CanvasTexture(canvas);texture.colorSpace=T.SRGBColorSpace;texture.wrapS=texture.wrapT=T.RepeatWrapping;texture.anisotropy=4;return texture;
  },
- add({T,a,morph,head,headOrigin,torso,torsoOrigin}){
+ add({T,a,skipHair=false,morph,head,headOrigin,torso,torsoOrigin}){
   const mat=(color,extra={})=>new T.MeshStandardMaterial({color,roughness:.9,...extra});
   function attach(g,m,parent,origin,name){g.translate(-origin.x,-origin.y,-origin.z);const mesh=new T.Mesh(g,m);mesh.name=name;mesh.castShadow=true;parent.add(mesh);return mesh;}
   function surface(points,indices,m,parent=head,origin=headOrigin,name='Character detail'){
@@ -80,7 +80,7 @@ window.GardenCharacterDetails={
     for(let k=0;k<=sides;k++){const phi=k/sides*Math.PI*2,v=p.clone().addScaledVector(frames.normals[j],Math.cos(phi)*radius).addScaledVector(frames.binormals[j],Math.sin(phi)*radius*depth);hp.push(...morph(v.toArray()));huv.push(k/sides,t);if(j<steps&&k<sides){const n=offset+j*(sides+1)+k;hi.push(n,n+1,n+sides+1,n+1,n+sides+2,n+sides+1);}}
    }
   }
-  const style=a.hairStyle,volume=a.hairVolume,length=a.hairLength;
+  const style=skipHair?'none':a.hairStyle,volume=a.hairVolume,length=a.hairLength;
   if(['side','slick','quiff','crop'].includes(style)){
    const count=style==='crop'?14:9;
    for(let i=0;i<count;i++){
@@ -119,7 +119,7 @@ window.GardenCharacterDetails={
    for(let i=0;i<22;i++){ctx.strokeStyle=i%3===0?'#929292':'#d6d6d6';ctx.globalAlpha=.45;ctx.lineWidth=i%3===0?1:.6;ctx.beginPath();ctx.moveTo(i*3,0);ctx.bezierCurveTo(i*3+3,40,i*3-2,85,i*3,128);ctx.stroke();}
    const map=new T.CanvasTexture(c);map.colorSpace=T.SRGBColorSpace;const hair=mat(a.hairColor,{map}),g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(hp,3));g.setAttribute('uv',new T.Float32BufferAttribute(huv,2));g.setIndex(hi);g.computeVertexNormals();attach(g,hair,head,headOrigin,'Styled hair locks');
   }
-  if(a.outfit==='resort'){
+  if(a.outfit==='resort'&&!skipHair){
    const collar=mat(a.shirtColor,{side:T.DoubleSide});
    for(const sign of [-1,1])surface([[sign*.44,5.84,.93],[sign*1.03,5.4,1.09],[sign*.78,4.76,1.48],[sign*.25,5.17,1.39],[sign*.56,5.45,1.48]], [0,1,4,1,2,4,2,3,4,3,0,4],collar,torso,torsoOrigin,'Folded resort collar');
    const buttons=mat('#ece8d5');for(const y of [3.9,2.9,1.9]){const g=new T.SphereGeometry(.014,8,6),p=new T.Vector3(...morph([0,y,1.2]));g.translate(p.x,p.y,p.z);attach(g,buttons,torso,torsoOrigin,'Shirt button');}
