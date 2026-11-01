@@ -34,7 +34,9 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  const p=terrain.geometry.attributes.position;
  for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getY(i),edge=Math.max(0,Math.hypot(x,z)-25),worldZ=-z;
   const roadClearance=worldZ<roadStart?T.MathUtils.smoothstep(Math.abs(x-roadX),60,80):1;
-  p.setZ(i,Math.sin(x*.12)*Math.cos(z*.15)*Math.min(6,edge*.15)*roadClearance);
+  // The rolling ground flattens out around the black box's valley, then sinks into it.
+  const valley=window.edenValley,settled=T.MathUtils.smoothstep(Math.hypot(x-valley.x,worldZ-valley.z),valley.rim+2,valley.rim+14);
+  p.setZ(i,Math.sin(x*.12)*Math.cos(z*.15)*Math.min(6,edge*.15)*roadClearance*settled+valley.height(x,worldZ));
  }
  terrain.geometry.computeVertexNormals();
 
@@ -56,7 +58,7 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  leafMat.onBeforeCompile=shader=>{shader.uniforms.edenTime=wind;shader.vertexShader='uniform float edenTime;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n transformed.x += sin(edenTime*.7+instanceMatrix[3].x*.8+instanceMatrix[3].z)*.07*(position.y+.5);');};
 
  const pathX=z=>Math.sin((z-3)*.15)*1.5;
- function openGround(x,z){return (z< -9&&Math.abs(x-roadX)<2.5)||(x>6.8&&x<13&&z>-10.8&&z<-7.2)||(x>-4.5&&x<-1.1&&z>-8.2&&z<-5.3)||Math.hypot(x-window.showroomAmphitheaterPosition.x,z-window.showroomAmphitheaterPosition.z)<8.6||Math.hypot(x-3.1,z+5.7)<4.7||(Math.abs(x-pathX(z))<1.45&&z>-6&&z<22)||(x>-14.6&&x<-5.4&&z>-4.2&&z<5)||(x>-9.3&&x<-6.3&&z>-4&&z<6.6)||Math.pow((x-5.7)/3.8,2)+Math.pow((z-3.5)/5.6,2)<1.14;}
+ function openGround(x,z){return (z< -9&&Math.abs(x-roadX)<2.5)||(x>6.8&&x<13&&z>-10.8&&z<-7.2)||(x>-4.5&&x<-1.1&&z>-8.2&&z<-5.3)||Math.hypot(x-window.showroomAmphitheaterPosition.x,z-window.showroomAmphitheaterPosition.z)<8.6||Math.hypot(x-3.1,z+5.7)<4.7||(Math.abs(x-pathX(z))<1.45&&z>-6&&z<22)||(x>-14.2&&x<-5.4&&z>-4.8&&z<2.8)||window.edenValley.reaches(x,z)||Math.pow((x-5.7)/3.8,2)+Math.pow((z-3.5)/5.6,2)<1.14;}
  // Trees, shrubs, ferns and wildflowers come from eden-flora.js; the lawn is the terrain texture (no grass geometry).
  // The sculpted hero apple tree and its serpent share one model (tools/blender/build_hero_tree.py).
  const heroModel=window.showroomAssets.model('/assets/eden-hero/hero-tree.glb?v=2');assetJobs.push(heroModel.catch(()=>{}));
@@ -127,7 +129,8 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
   if(previous.z< -20){if(position.z< -111)pyramid.constrain(position);else{const width=T.MathUtils.lerp(2.7,50,T.MathUtils.smoothstep(-position.z,20,30));position.x=T.MathUtils.clamp(position.x,roadX-width,roadX+width);}}
   else{position.x=T.MathUtils.clamp(position.x,-20,20);if(position.z< -20&&Math.abs(position.x-roadX)>2.7)position.z=-20;}
   if(district?.blocks(position)||pyramid?.blocks(position))position.copy(previous);
-  position.z=Math.min(position.z,26);return position;
+  if(position.z>26&&!window.edenValley.reaches(position.x,position.z)){if(previous.z>26)position.copy(previous);else position.z=26;}
+  return position;
  },road:{x:roadX,start:roadStart,end:roadEnd,inspect:()=>({first:roadFirst,sections:roadSections.length,near:roadStart-roadFirst*roadLength,far:Math.max(roadEnd,roadStart-(roadFirst+roadSections.length)*roadLength)})},update(time,viewer,active=true){
   if(viewer){lastViewer=viewer;flora.setVisible(viewer.position.z>-45);flora.lod(viewer.position);if(!nightBuilt()&&(nightSteps||nightNear(viewer.position))){buildNight();onChange();}updateRoad(viewer.position);sky.position.copy(viewer.position);snake.update(time,viewer,active);if(nightBuilt()){const near=nightNear(viewer.position);nightRoad.setEnabled(near);district.root.visible=near;nightRoad.update(time,viewer,active);pyramid.update(viewer,time);if(near)district.update(time,viewer,nightRoad.amount);}}
   if(reduced)return;wind.value=time;flora.update(time);waterUniforms.time.value=time;dust.rotation.y=Math.sin(time*.025)*.07;

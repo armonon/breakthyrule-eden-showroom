@@ -128,7 +128,7 @@ bookDialog.addEventListener('close',()=>{keys.clear();requestDraw();});
 const collection=window.showroomCollection,models=new Map(),modelJobs=new Map(),rackModels=new Map(),rackFailures=new Set();
 let productGeneration=0,wants3D=false,rackLoading=false;
 const shop=createGarmentShop({collection,onOpen(){keys.clear();if(dialog.open)dialog.close();},onSelect:index=>inspect('front',index),onClose(){keys.clear();if(state.ready)requestDraw();}});
-let collectionRack=null,collectionPavilion=null,blackBox=null;
+let collectionRack=null,pockets=null,museum=null,libraryGarden=null;
 let spinViewer=null,wallFilm=null,instagramSlideshow=null;
 let filmHint='Loading the video…',filmStatus='loading';
 function updateFilmStatus(status){
@@ -263,13 +263,13 @@ setShelfPage(0);
 const textures=allTextures.slice(0,2);
 const roomData=createWhiteRoom(T,scene,allTextures.slice(2,2+window.showroomArtwork.length),allTextures[allTextures.length-1]);
 posterMeshes=roomData.posterMeshes;
-collectionPavilion=roomData;
-blackBox=createBlackBox(T,scene,renderer,camera);
+// The black box (in the valley) and the museum (beside the library) are bigger inside: see pocket-worlds.js.
+pockets=createPocketWorlds(T,scene,renderer,camera);libraryGarden=createLibraryGarden(T,scene);createBlackBox(T,pockets);museum=createMuseum(T,pockets,{onChange:requestDraw});pickables.push(...museum.pickables);
 pickables.push(...posterMeshes);
 const galleryLinks=[window.showroomArtwork.find(poster=>poster.lookbook),window.showroomInstagramPosts[0],...window.showroomArtwork.filter(poster=>!poster.lookbook)].filter(Boolean);
 const wallSwitch=document.createElement('button');wallSwitch.id='gallery-shop-photos';wallSwitch.textContent='SHOP PHOTOS';wallSwitch.onclick=shop.open;
 $('poster-links').replaceChildren(wallSwitch,...galleryLinks.map(poster=>{const button=document.createElement('button');button.textContent=poster.lookbook?'PHOTOS · '+collection.length:poster.label;button.setAttribute('aria-label',poster.lookbook?'View all '+collection.length+' product photographs':'View '+poster.name);button.onclick=()=>showPoster(poster);return button;}));
-collectionRack=createCollectionRack(T,scene,chrome,rod);rails.push(collectionRack.rack);collectionRack.rack.traverse(node=>{if(Number.isInteger(node.userData.collectionIndex))pickables.push(node);});
+collectionRack=createCollectionRack(T,scene,chrome,rod);museum.adopt(roomData.room,collectionRack.rack);rails.push(collectionRack.rack);collectionRack.rack.traverse(node=>{if(Number.isInteger(node.userData.collectionIndex))pickables.push(node);});
 $('collection-status').textContent=collection.length+' GARMENTS / GHOST STUDIO';
 try{spinViewer=createSpinViewer({element:$('garment-viewer'),textures,onAngle:degrees=>{$('image-caption').textContent='360° / '+String(degrees).padStart(3,'0')+'°';},onInteraction:updateSpinButton});$('show-3d').disabled=!collection[state.selected].model;}catch(error){console.warn('360 viewer unavailable; photographs remain available.');}
 state.ready=true;$('spawn').disabled=false;$('approach').disabled=false;$('wall-view').disabled=false;$('loading').hidden=true;go('spawn',true);requestDraw();
@@ -284,20 +284,20 @@ const moveKeys=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrow
 const finePointer=matchMedia('(pointer: fine)').matches;
 $('movement-hint').textContent=finePointer?'W A S D TO MOVE / DRAG TO LOOK':'DRAG TO LOOK / TAP TO EXPLORE';
 function requestDraw(){if(!frame&&!document.hidden)frame=requestAnimationFrame(draw);}
-function draw(time){frame=0;if(!state.ready)return;quality.frame(time,!!previous);const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(modalOpen())walkVelocity.set(0,0,0);else if(keys.size||walkVelocity.lengthSq())move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();if(!reduced&&time-lastResidentShadow>160&&residents.walkingNear(camera.position,30)){renderer.shadowMap.needsUpdate=true;lastResidentShadow=time;}sway.remove(camera);const factor=reduced?1:1-Math.exp(-(walkVelocity.lengthSq()?12:7)*(dt||.016));if(camera.position.distanceToSquared(targetPosition)>4e4){camera.position.copy(targetPosition);aim.copy(targetAim);}camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);const leap=blackBox?.cross(camera.position);if(leap){camera.position.add(leap);aim.add(leap);targetPosition.add(leap);targetAim.add(leap);}sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false)});garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();const fighting=arena?.update(time/1000,dt||.016);blackBox?.render();post.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();if(motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||fighting||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
+function draw(time){frame=0;if(!state.ready)return;quality.frame(time,!!previous);const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(modalOpen())walkVelocity.set(0,0,0);else if(keys.size||walkVelocity.lengthSq())move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();if(!reduced&&time-lastResidentShadow>160&&residents.walkingNear(camera.position,30)){renderer.shadowMap.needsUpdate=true;lastResidentShadow=time;}sway.remove(camera);const factor=reduced?1:1-Math.exp(-(walkVelocity.lengthSq()?12:7)*(dt||.016));if(camera.position.distanceToSquared(targetPosition)>4e4){camera.position.copy(targetPosition);aim.copy(targetAim);}camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);const leap=pockets?.cross(camera.position);if(leap){camera.position.add(leap);aim.add(leap);targetPosition.add(leap);targetAim.add(leap);}sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false)});if(!pockets?.inside(camera.position))garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();const fighting=arena?.update(time/1000,dt||.016);pockets?.render();post.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();if(motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||fighting||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
 let roadCaption='';
-function updateRoadCaption(){if(state.view!=='free'){roadCaption='';return;}const place=blackBox?.inside(camera.position)?'box':garden.nightBuilt()&&garden.pyramid.gathering.inspect().inside?'gathering':camera.position.z<garden.road.start-4?'road':'garden';if(place===roadCaption)return;roadCaption=place;document.querySelector('.world-caption h1').textContent=place==='box'?'THE WHITE WORLD':place==='gathering'?'THE GATHERING':place==='road'?'THE FOREVER ROAD':'GARDEN OF EDEN';document.querySelector('.world-caption .edition').textContent=place==='box'?'BREAKTHYRULE / INSIDE THE BLACK BOX':place==='gathering'?'BREAKTHYRULE / WITHIN THE PYRAMID':place==='road'?'BREAKTHYRULE / BEYOND THE SIGN':'BREAKTHYRULE / IN THE BEGINNING';}
-function updateMusicPrompt(){const point=amphitheater.marker.clone().project(camera),button=$('music-prompt');button.hidden=modalOpen()||blackBox?.enclosed(camera.position)||!['amphitheater','free'].includes(state.view)||point.z< -1||point.z>1||Math.abs(point.x)>.9||Math.abs(point.y)>.8||camera.position.distanceTo(amphitheater.marker)>26;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,90,stage.clientWidth-90)+'px';button.style.top=T.MathUtils.clamp((1-point.y)*stage.clientHeight/2,245,stage.clientHeight-170)+'px';}}
+function updateRoadCaption(){if(state.view!=='free'){roadCaption='';return;}const pocket=pockets?.inside(camera.position),place=pocket?pocket.name:garden.nightBuilt()&&garden.pyramid.gathering.inspect().inside?'gathering':camera.position.z<garden.road.start-4?'road':'garden';if(place===roadCaption)return;roadCaption=place;document.querySelector('.world-caption h1').textContent=pocket?pocket.caption[0]:place==='gathering'?'THE GATHERING':place==='road'?'THE FOREVER ROAD':'GARDEN OF EDEN';document.querySelector('.world-caption .edition').textContent=pocket?pocket.caption[1]:place==='gathering'?'BREAKTHYRULE / WITHIN THE PYRAMID':place==='road'?'BREAKTHYRULE / BEYOND THE SIGN':'BREAKTHYRULE / IN THE BEGINNING';}
+function updateMusicPrompt(){const point=amphitheater.marker.clone().project(camera),button=$('music-prompt');button.hidden=modalOpen()||pockets?.enclosed(camera.position)||!['amphitheater','free'].includes(state.view)||point.z< -1||point.z>1||Math.abs(point.x)>.9||Math.abs(point.y)>.8||camera.position.distanceTo(amphitheater.marker)>26;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,90,stage.clientWidth-90)+'px';button.style.top=T.MathUtils.clamp((1-point.y)*stage.clientHeight/2,245,stage.clientHeight-170)+'px';}}
 function updateShelfActions(){
  const controls=$('shelf-actions');if(!gardenLibrary){controls.hidden=true;return;}
  const point=gardenLibrary.marker.clone().project(camera);
  controls.hidden=modalOpen()||!['library','spawn','free'].includes(state.view)||point.z< -1||point.z>1||Math.abs(point.x)>.96||Math.abs(point.y)>.9||camera.position.distanceTo(gardenLibrary.marker)>24;
  if(!controls.hidden){const margin=controls.offsetWidth/2+12;controls.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,margin,stage.clientWidth-margin)+'px';controls.style.top=T.MathUtils.clamp((1-point.y)*stage.clientHeight/2,145,stage.clientHeight-170)+'px';}
 }
-function updateNPCPrompt(){loadNearbyAssets();const point=librarianNPC.marker.clone().project(camera),button=$('npc-prompt');button.hidden=modalOpen()||blackBox?.enclosed(camera.position)||state.view==='film'||point.z< -1||point.z>1||Math.abs(point.x)>.85||Math.abs(point.y)>.78||camera.position.distanceTo(librarianNPC.marker)>22;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,105,stage.clientWidth-105)+'px';button.style.top=Math.max(125,(1-point.y)*stage.clientHeight/2-20)+'px';}}
+function updateNPCPrompt(){loadNearbyAssets();const point=librarianNPC.marker.clone().project(camera),button=$('npc-prompt');button.hidden=modalOpen()||pockets?.enclosed(camera.position)||state.view==='film'||point.z< -1||point.z>1||Math.abs(point.x)>.85||Math.abs(point.y)>.78||camera.position.distanceTo(librarianNPC.marker)>22;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,105,stage.clientWidth-105)+'px';button.style.top=Math.max(125,(1-point.y)*stage.clientHeight/2-20)+'px';}}
 function loadNearbyAssets(){
  if(camera.position.distanceTo(librarianNPC.marker)<16)librarianNPC.load();
- if(collectionRack&&camera.position.distanceTo(collectionRack.rack.position)<12&&!rackLoading&&!rackModels.size&&!rackFailures.size)loadRackModels();
+ if(collectionRack&&camera.position.distanceTo(collectionRack.rack.getWorldPosition(new T.Vector3()))<12&&!rackLoading&&!rackModels.size&&!rackFailures.size)loadRackModels();
 }
 function markView(){const libraryView=state.view==='library'||state.view==='librarian',musicView=state.view==='amphitheater';stage.classList.toggle('watching-film',state.view==='film');wallFilm?.setInteractive(state.view==='film');$('browse-library').hidden=!libraryView;$('talk-librarian').hidden=!libraryView;$('inspect-jacket').hidden=libraryView||musicView;$('open-music').hidden=!musicView;for(const [id,view]of[['spawn','spawn'],['library-view','library'],['approach','approach'],['wall-view','wall'],['film-view','film'],['amphitheater-view','amphitheater']]){const selected=state.view===view||(view==='wall'&&state.view==='lookbook')||(view==='library'&&state.view==='librarian');$(id).classList.toggle('selected',selected);$(id).setAttribute('aria-pressed',String(selected));}}
 function go(view,instant=false){
@@ -352,18 +352,20 @@ function move(dt){
 }
 function tryStep(step){
  if(arena?.active()){const next=targetPosition.clone().add(step);if(!arena.allowed(next))return null;next.y=1.75+motion.inspect().height;return next;}
- if(blackBox?.inside(targetPosition)){const next=targetPosition.clone().add(step);if(blackBox.blocks(next))return null;next.y=1.75+motion.inspect().height;return next;}
+ if(pockets?.inside(targetPosition)){const next=targetPosition.clone().add(step);if(pockets.blocks(next))return null;next.y=1.75+motion.inspect().height;return next;}
  const next=garden.constrain(targetPosition.clone().add(step),targetPosition);
  expedition?.constrain(next,targetPosition);
- const pond=((next.x-5.7)/4.1)**2+((next.z-3.5)/5.9)**2<1;const walls=collectionPavilion?.blocks(next);const rack=next.x<-12.6&&next.x>-13.7&&Math.abs(next.z-.5)<3.5;const trunk=Math.hypot(next.x-.5,next.z+7)<.75;
- if(pond||walls||rack||trunk||blackBox?.blocks(next)||amphitheater.blocks(next)||gardenLibrary?.blocks(next)||gardenProps?.blocks(next))return null;
- next.y=1.75+amphitheater.groundHeight(next)+motion.inspect().height;
+ const pond=((next.x-5.7)/4.1)**2+((next.z-3.5)/5.9)**2<1;const trunk=Math.hypot(next.x-.5,next.z+7)<.75;
+ if(pond||trunk||pockets?.blocks(next)||libraryGarden?.blocks(next)||amphitheater.blocks(next)||gardenLibrary?.blocks(next)||gardenProps?.blocks(next))return null;
+ next.y=1.75+groundHeight(next)+motion.inspect().height;
  return next;
 }
+// Ground under the player: the amphitheatre's tiers and the valley around the black box.
+function groundHeight(p){return amphitheater.groundHeight(p)+window.edenValley.height(p.x,p.z);}
 function shiftHeight(delta){targetPosition.y+=delta;targetAim.y+=delta;}
 function prepareWalking(){
  if(state.view==='amphitheater'){const origin=amphitheater.root.position;targetPosition.set(origin.x,1.75,origin.z+9.4);targetAim.set(origin.x,1.55,origin.z);camera.position.copy(targetPosition);aim.copy(targetAim);}
- freeView();shiftHeight(1.75+amphitheater.groundHeight(targetPosition)+motion.inspect().height-targetPosition.y);
+ freeView();shiftHeight(1.75+groundHeight(targetPosition)+motion.inspect().height-targetPosition.y);
 }
 function jump(){if(!state.ready||modalOpen()||expedition&&!expedition.canMove()||motion.inspect().airborne)return;prepareWalking();motion.jump();requestDraw();}
 function updateJump(dt){if(!motion.inspect().airborne)return;const before=motion.inspect().height;if(expedition&&!expedition.canMove())motion.reset();else motion.step(dt);shiftHeight(motion.inspect().height-before);}

@@ -177,7 +177,7 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
  const tintFrom=(h,s,l)=>()=>new T.Color().setHSL(h+between(-.02,.02),s+between(-.08,.08),l+between(-.06,.06));
 
  // Same footprint rules as the trees they replace: nothing on the road, the amphitheatre or the spawn-side clearing.
- const blocked=(x,z)=>z< -20||(z< -9&&Math.abs(x-11.7)<6)||Math.hypot(x+11,z-11)<10.5||(x>-8&&x<5&&z>19&&z<30);
+ const blocked=(x,z)=>z< -20||(z< -9&&Math.abs(x-11.7)<6)||Math.hypot(x+11,z-11)<10.5||(x>-8&&x<5&&z>19&&z<30)||window.edenValley.reaches(x,z);
  const cypresses=[],trunks=[],jacarandaSpots=[];
  // Jacarandas fill the ring (and the old orchard spots); some cypresses keep the classical rhythm closer in.
  for(let i=0;i<(mobile?90:150);i++){
@@ -191,6 +191,13 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
   jacarandaSpots.push({x,z,s:between(.7,1.05)});trunks.push([x,z]);
  }
  for(const [x,z,s] of [[-22,7,1.1],[10,12,1.15],[-18,-7,1.2],[12,-7,1.1]]){jacarandaSpots.push({x,z,s});trunks.push([x,z]);}
+ // A ring of cypresses on the black box valley's rim hides the cube; the gap faces the path down from the clearing.
+ {const v=window.edenValley,[gx,gz]=v.path[v.path.length-1],gap=Math.atan2(gz-v.z,gx-v.x);
+  for(let a=0;a<Math.PI*2;a+=3/(v.rim+2)){
+   const r=v.rim+2+Math.sin(a*5)*.4,x=v.x+Math.cos(a)*r,z=v.z+Math.sin(a)*r;
+   if(Math.abs(Math.atan2(Math.sin(a-gap),Math.cos(a-gap)))<.38||trunks.some(([tx,tz])=>Math.hypot(x-tx,z-tz)<2.5))continue;
+   cypresses.push({x,z,s:1.15+Math.sin(a*7)*.12});trunks.push([x,z]);
+  }}
  const cypressTemplates=[0,1].map(()=>buildCypress());
  plant(cypressTemplates,cypresses.map(t=>({matrix:matrix(t.x,t.z,t.s*.85)})),cypressMaterial,tintFrom(.3,.25,.85));
  // The hero apple tree keeps its trunk where the snake's branch meets it (garden x .5, z -7).

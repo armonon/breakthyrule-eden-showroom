@@ -86,5 +86,5 @@ window.createWhiteRoom=function createWhiteRoom(T,scene,posterTextures,logoTextu
     mesh.userData.poster=poster;mesh.name=poster.name;mount.add(mesh);posterMeshes.push(mesh);
   });
 
-  return {room,posterMeshes,blocks(point){return point.x>-14&&point.x<-6&&Math.abs(point.z+3.1)<.38;}};
+  return {room,posterMeshes};
 };
