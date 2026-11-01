@@ -235,6 +235,8 @@ const post=createEdenPost(T,renderer,scene,camera,{enabled:stage.clientWidth>=70
 const quality=createAdaptiveResolution(renderer,{max:Math.min(devicePixelRatio,1.5)});window.edenQuality=quality;
 try{const response=await fetch('/night-layout.json?v=1');if(!response.ok)throw new Error('Night district unavailable');window.nightLayout=await response.json();}catch(error){fallback();return;}
 const garden=createEdenGarden(T,scene,{reduced,mobile:stage.clientWidth<700,onChange:requestDraw});
+// Lens flare and god rays from the sky's sun; glare from the night district's lanterns while it is on screen.
+post.setLights({sky:garden.sky,lamps:()=>garden.nightBuilt()&&garden.district.root.visible?garden.district.lamps:null});
 const nightLaunch=document.createElement('button');nightLaunch.id='night-launch';nightLaunch.textContent='BEYOND EDEN';nightLaunch.title='Night expeditions';$('amphitheater-view').after(nightLaunch);
 const arenaLaunch=document.createElement('button');arenaLaunch.id='arena-launch';arenaLaunch.textContent='ARENA';arenaLaunch.title='PvP arena: swords and crossbows';arenaLaunch.hidden=!window.showroomDeployment?.realtime;nightLaunch.after(arenaLaunch);arenaLaunch.onclick=()=>arena?.enter();
 const amphitheater=createAmphitheater(T,scene,{reduced});
