@@ -30,6 +30,17 @@
   function gather(){
    nearby=[];scene.traverseVisible(node=>{if(!node.isMesh||node.isSkinnedMesh||node.isInstancedMesh||node.isSprite||node.material?.transparent)return;for(let p=node.parent;p;p=p.parent)if(p.userData.characterStyle)return;const g=node.geometry;if(!g?.attributes.position?.count)return;if(!g.boundingSphere){if(!g.attributes.position.array.every(Number.isFinite))return;g.computeBoundingSphere();}if(!Number.isFinite(g.boundingSphere.radius))return;sphere.copy(g.boundingSphere).applyMatrix4(node.matrixWorld);if(sphere.radius<40&&(g.index?g.index.count:g.attributes.position.count)<60000&&sphere.distanceToPoint(camera.position)<2.5)nearby.push(node);});
   }
+  // Brush: shrubs, ferns and tall grass are instanced; index every plant that reaches the waist in a 2 m grid.
+  let plants=new Map(),indexed=-1e9,brush=0;
+  function indexPlants(){
+   plants=new Map();const m=new T.Matrix4(),p=new T.Vector3(),q=new T.Quaternion(),sc=new T.Vector3();
+   scene.traverseVisible(node=>{if(!node.isInstancedMesh)return;const g=node.geometry;if(!g.boundingBox)g.computeBoundingBox();const box=g.boundingBox;if(!box||!Number.isFinite(box.max.y))return;
+    // Grass-sized meshes are skipped after a small sample, so the index stays cheap.
+    let tall=false;for(let i=0;i<Math.min(node.count,24)&&!tall;i++){node.getMatrixAt(i,m);m.premultiply(node.matrixWorld);m.decompose(p,q,sc);tall=p.y+box.max.y*sc.y>=.6;}if(!tall)return;
+    for(let i=0;i<node.count;i++){node.getMatrixAt(i,m);m.premultiply(node.matrixWorld);m.decompose(p,q,sc);const k=Math.max(sc.x,sc.z),top=p.y+box.max.y*sc.y,bottom=p.y+box.min.y*sc.y,r=Math.max(-box.min.x,box.max.x,-box.min.z,box.max.z)*k;
+     if(top<.75||top>2.4||bottom>.6||r>2.2||r<.05)continue;const key=Math.floor(p.x/2)+','+Math.floor(p.z/2);if(!plants.has(key))plants.set(key,[]);plants.get(key).push([p.x,p.z,r]);}});
+  }
+  function brushAt(x,z){let d=0;for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)for(const [px,pz,r] of plants.get((Math.floor(x/2)+i)+','+(Math.floor(z/2)+j))||[]){const gap=Math.hypot(px-x,pz-z)-r*.75;if(gap<.45)d+=clamp(1-gap/.45,0,1);}return clamp(d,0,1);}
   function wallAt(offset){
    probe.copy(camera.position).addScaledVector(left,offset);probe.y-=.4;ray.set(probe,forward);ray.far=.85;
    const hit=ray.intersectObjects(nearby,false).find(h=>h.face);if(!hit)return null;
@@ -70,6 +81,8 @@
     model.motion.airborne(airborne);
     // Walls: both palms meet the surface ahead at chest height, harder and earlier when walking into it.
     if(clock-gathered>2){gathered=clock;gather();}
+    if(clock-indexed>(plants.size?30:4)){indexed=clock;indexPlants();}
+    if(frame%4===0)brush=brushAt(camera.position.x,camera.position.z)*smooth(.4,2.5,speed);
     if(frame%3===0){const hits=[wallAt(0),wallAt(.18),wallAt(-.18)].filter(Boolean).sort((a,b)=>a.distance-b.distance);wall=hits[0]||null;}
     const along=new T.Vector3();
     for(const [side,sign] of [['L',1],['R',-1]]){
@@ -82,7 +95,7 @@
     // Reach: anything clickable inside arm's length draws the right hand towards it before it is grabbed.
     if(frame%4===0){center.set(0,0);ray.setFromCamera(center,camera);ray.far=1.25;const hit=ray.intersectObjects(pickables,false)[0];hover=hit?hit.point.clone().addScaledVector(ray.ray.direction,-.14):null;}
     const near=nearestOther(1.9);model.motion.guard(clock<guardUntil?1:near?.85:0);
-    model.motion.update(dt,{velocity});
+    model.motion.update(dt,{velocity,wade:brush});
    },
    // Click on something within reach: the hand gets there first, then the caller opens it.
    grab(point){if(!model?.root.visible||!point||point.distanceTo(camera.position)>1.6)return 0;grabPoint=point.clone();grabUntil=clock+.55;requestDraw();return 230;},
@@ -93,7 +106,7 @@
     const land=model.motion.punch(aimPoint);guardUntil=clock+2.2;requestDraw();
     if(target)setTimeout(()=>{if(!target.root.parent)return;const p=target.root.getWorldPosition(new T.Vector3());if(Math.hypot(p.x-camera.position.x,p.z-camera.position.z)<1.5)target.motion.hit(p.sub(camera.position).setY(0).normalize(),1.2);requestDraw();},land*1000);
    },
-   inspect:()=>({ready:!!model,visible:!!model?.root.visible,yaw:yaw===null?null:+yaw.toFixed(3),wall:wall?+wall.distance.toFixed(2):null,hover:!!hover,motion:model?.motion.inspect()}),
+   inspect:()=>({ready:!!model,visible:!!model?.root.visible,yaw:yaw===null?null:+yaw.toFixed(3),wall:wall?+wall.distance.toFixed(2):null,brush:+brush.toFixed(2),plants:[...plants.values()].reduce((n,a)=>n+a.length,0),hover:!!hover,motion:model?.motion.inspect()}),
    dispose(){document.removeEventListener('keydown',onKey);if(model)GardenCharacter.dispose(model);model=null;}
   };
   return api;

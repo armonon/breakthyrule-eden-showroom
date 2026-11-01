@@ -53,9 +53,71 @@
    return {name,sign,arm,leg,shoulder,hip,ankle,reach,handRest,bindHand:basis(finger,inPalm.clone()).invert(),fingers:curlers,curl:{x:.3,v:0},
     hand:{x:handRest.clone(),v:new T.Vector3()},foot:{x:ankle.clone(),v:new T.Vector3()},touch:null,touchWeight:{x:0,v:0},punch:null};
   });
+  // Ragdoll: Verlet particles at the joints, held by distance constraints, a braced torso, knee and elbow stops,
+  // ground contact and friction. While it runs it drives the bones by aiming each one at its particles; afterwards
+  // the pose blends back into the procedural animation as the character gets up.
+  const ragdoll=(()=>{
+   const order=['root','spine03','spine02','spine01','neck01','head','clavicle.L','upperarm01.L','lowerarm01.L','wrist.L','clavicle.R','upperarm01.R','lowerarm01.R','wrist.R','upperleg01.L','lowerleg01.L','foot.L','upperleg01.R','lowerleg01.R','foot.R'].map(bone).filter(Boolean);
+   const at=b=>order.indexOf(b),P=[],Q=[],links=[],stops=[];let active=false,clock=0,ground=0,acc=0,recover=0,snapshot=null,snapPelvis=new T.Vector3();
+   // Leaf bones get a tip particle so their direction is simulated too.
+   const tips=new Map();
+   for(const b of order){const child=order.find(c=>c.parent===b);if(child)continue;const t=b.name.startsWith('head')?new T.Vector3(0,.22,.02):b.name.startsWith('wrist')?local(b).sub(local(b.parent)).setLength(.17):b.name.startsWith('foot')?new T.Vector3(0,-.04,.17):new T.Vector3(0,.1,0);tips.set(b,{local:t,index:order.length+tips.size});}
+   const endOf=b=>{const child=order.find(c=>c.parent===b);return child?at(child):tips.get(b).index;};
+   const tipWorld=(b)=>{const t=tips.get(b);return b.localToWorld(v1.copy(t.local)).clone();};
+   const pick=n=>at(bone(n));
+   const bind={};
+   const capture=()=>{order.forEach((b,i)=>{P[i]=b.getWorldPosition(new T.Vector3());});for(const [b,t] of tips)P[t.index]=tipWorld(b);};
+   function start(impulse,strength){
+    group.updateMatrixWorld(true);capture();Q.length=0;
+    const up=new T.Vector3(0,1,0);P.forEach((p,i)=>{const h=clamp((p.y-group.getWorldPosition(v2).y)/1.6,0,1);Q[i]=p.clone().addScaledVector(impulse,-(.012+.03*h)*strength).addScaledVector(up,-.008*strength*h);});
+    links.length=0;stops.length=0;const add=(a,b,list=links)=>{if(a>=0&&b>=0)list.push([a,b,P[a].distanceTo(P[b])]);};
+    order.forEach((b,i)=>{if(order.includes(b.parent))add(at(b.parent),i);});for(const [b,t] of tips)add(at(b),t.index);
+    const L=pick('upperarm01.L'),R=pick('upperarm01.R'),hl=pick('upperleg01.L'),hr=pick('upperleg01.R'),chest=pick('spine01'),neck=pick('neck01'),hd=pick('head'),root=pick('root');
+    for(const [a,b] of [[L,R],[hl,hr],[L,hl],[R,hr],[L,hr],[R,hl],[neck,L],[neck,R],[hd,L],[hd,R],[chest,hl],[chest,hr],[root,L],[root,R],[tips.get(bone('head'))?.index,neck],[tips.get(bone('head'))?.index,chest]])add(a,b);
+    for(const [a,b] of [[pick('upperleg01.L'),pick('foot.L')],[pick('upperleg01.R'),pick('foot.R')],[pick('upperarm01.L'),pick('wrist.L')],[pick('upperarm01.R'),pick('wrist.R')]])if(a>=0&&b>=0)stops.push([a,b,P[a].distanceTo(P[b])*.55]);
+    ground=group.getWorldPosition(v2).y;active=true;clock=0;acc=0;recover=0;
+   }
+   function step(dt){
+    clock+=dt;acc+=dt;const h=1/90;let n=0;
+    while(acc>=h&&n++<8){acc-=h;
+     P.forEach((p,i)=>{const prev=Q[i],vx=(p.x-prev.x)*.995,vy=(p.y-prev.y)*.995,vz=(p.z-prev.z)*.995;prev.copy(p);p.x+=vx;p.y+=vy-9.8*h*h;p.z+=vz;});
+     for(let k=0;k<10;k++){
+      for(const [a,b,len] of links){const d=v1.subVectors(P[b],P[a]),l=d.length()||1e-6,c=(l-len)/l*.5;P[a].addScaledVector(d,c);P[b].addScaledVector(d,-c);}
+      for(const [a,b,min] of stops){const d=v1.subVectors(P[b],P[a]),l=d.length()||1e-6;if(l<min){const c=(l-min)/l*.5;P[a].addScaledVector(d,c);P[b].addScaledVector(d,-c);}}
+      P.forEach((p,i)=>{const floor=ground+.05;if(p.y<floor){p.y=floor;Q[i].x+=(p.x-Q[i].x)*.35;Q[i].z+=(p.z-Q[i].z)*.35;}});
+     }
+    }
+   }
+   // Pelvis and chest take their full orientation from a left-right pair and an up direction; limbs just aim.
+   const basisFrom=(xa,xb,ya,yb)=>basis(P[xa].clone().sub(P[xb]),P[ya].clone().sub(P[yb]));
+   const bindBasis=(xa,xb,ya,yb)=>basis(local(order[xa]).sub(local(order[xb])),(order[ya]?local(order[ya]):new T.Vector3()).sub(local(order[yb])));
+   for(const b of model.skeleton.bones)b.quaternion.identity();group.updateMatrixWorld(true);
+   const frames={root:[pick('upperleg01.L'),pick('upperleg01.R'),pick('spine03'),pick('root')],spine01:[pick('upperarm01.L'),pick('upperarm01.R'),pick('neck01'),pick('spine01')]};
+   for(const [name,f] of Object.entries(frames))if(f.every(i=>i>=0))bind[name]=bindBasis(...f).invert();
+   function pose(){
+    for(const b of model.skeleton.bones)b.quaternion.identity();
+    const root=order[0];root.position.copy(group.worldToLocal(P[0].clone()));group.updateMatrixWorld(true);
+    for(const [i,b] of order.entries()){
+     const f=frames[b.name];
+     if(f&&bind[b.name]){orient(b,basisFrom(...f).multiply(bind[b.name]));continue;}
+     const e=endOf(b),from=e<order.length?order[e].getWorldPosition(new T.Vector3()):tipWorld(b);
+     aim(b,b.getWorldPosition(new T.Vector3()),from,P[e]);
+    }
+    for(const s of sides)for(const f of s.fingers)f.chain.forEach((b,j)=>b.quaternion.setFromAxisAngle(f.axis,.5*(f.thumb?.4:1)));
+   }
+   return {
+    get active(){return active;},get recovering(){return recover>0;},start,
+    update(dt){step(dt);pose();
+     // Lie still for a moment, then get up: the procedural pose takes over from the ragdoll over about a second.
+     const still=Q.every((q,i)=>q.distanceToSquared(P[i])<1e-7);
+     if(clock>2.2&&(still||clock>4.5)){active=false;recover=1;snapshot=model.skeleton.bones.map(b=>b.quaternion.clone());snapPelvis.copy(order[0].position);}},
+    blend(dt){recover=Math.max(0,recover-dt/1.1);const k=smooth(0,1,1-recover);model.skeleton.bones.forEach((b,i)=>b.quaternion.slerpQuaternions(snapshot[i],b.quaternion.clone(),k));order[0].position.lerpVectors(snapPelvis,order[0].position.clone(),k);},
+    inspect:()=>active?'down':recover>0?'getting up':'standing'
+   };
+  })();
   const state={time:null,phase:0,speed:0,weight:0,velocity:new T.Vector3(),last:new T.Vector3(),lastYaw:null,yawRate:0,walkHold:0,
    lean:{x:0,v:0},bank:{x:0,v:0},hitPitch:{x:0,v:0},hitRoll:{x:0,v:0},headPitch:{x:0,v:0},stumble:{x:new T.Vector3(),v:new T.Vector3()},
-   guard:{x:0,v:0},guardTarget:0,wave:{x:0,v:0},look:null,lookYaw:{x:0,v:0},lookPitch:{x:0,v:0},airborne:false,treadmill:0,punches:0};
+   guard:{x:0,v:0},guardTarget:0,wave:{x:0,v:0},wade:{x:0,v:0},look:null,lookYaw:{x:0,v:0},lookPitch:{x:0,v:0},airborne:false,treadmill:0,punches:0};
   const toLocal=p=>group.worldToLocal(v3.copy(p)).clone(),toWorld=p=>group.localToWorld(p.clone());
   const api={
    tune:{guardLift:0},
@@ -67,9 +129,18 @@
    // Jab with the hand furthest back; returns the seconds until the fist lands.
    punch(target){const s=sides[state.punches++%2];s.punch={t:0,target:target?toLocal(target):s.shoulder.clone().add(new T.Vector3(-s.sign*.08,.02,.62))};return .12;},
    hit(direction,strength=1){const d=direction.clone().applyQuaternion(group.getWorldQuaternion(new T.Quaternion()).invert());d.y=0;if(d.lengthSq()>1e-6)d.normalize();
+    state.hits=(state.hits||[]).filter(t=>state.time-t<1.3);state.hits.push(state.time);if(!ragdoll.active&&(strength>=1.8||state.hits.length>=3)){state.hits=[];api.knockdown(direction,Math.max(strength,1.4));return;}
     state.flinch=state.time+2.5;state.hitPitch.v+=d.z*7*strength;state.hitRoll.v-=d.x*7*strength;state.headPitch.v+=d.z*11*strength;state.stumble.v.addScaledVector(d,.9*strength);},
-   update(dt,{velocity=null,treadmill=0,wave=false}={}){
-    dt=clamp(dt||0,0,1/20);const scale=group.scale.x||1;group.updateMatrixWorld(true);
+   // Knocked down: an explicit call, a hard hit, or the third hit in quick succession.
+   knockdown(direction,strength=1.5){const d=direction.clone().setY(0);if(d.lengthSq()<1e-6)d.set(0,0,-1);d.normalize();ragdoll.start(d,strength);},
+   update(dt,options={}){
+    dt=clamp(dt||0,0,1/20);
+    if(ragdoll.active){state.time=(state.time||0)+dt;ragdoll.update(dt);return;}
+    api.procedural(dt,options);
+    if(ragdoll.recovering)ragdoll.blend(dt);
+   },
+   procedural(dt,{velocity=null,treadmill=0,wave=false,wade=0}={}){
+const scale=group.scale.x||1;group.updateMatrixWorld(true);
     // Measured motion in the character's own frame, so network smoothing or player input both drive the gait.
     const worldPos=group.getWorldPosition(v1).clone();
     if(velocity)state.velocity.copy(velocity);else if(dt>0&&state.time!==null&&worldPos.distanceTo(state.last)<1.5)state.velocity.subVectors(worldPos,state.last).divideScalar(dt);else state.velocity.set(0,0,0); // a jump in position is a teleport, not a sprint
@@ -98,7 +169,7 @@
     scalar(state.bank,clamp(-state.yawRate*.05*w,-.12,.12),dt,2,.8);
     scalar(state.hitPitch,0,dt,2.4,.32);scalar(state.hitRoll,0,dt,2.4,.32);scalar(state.headPitch,0,dt,3.2,.3);
     scalar(state.guard,Math.max(state.guardTarget,state.time<(state.flinch||0)?1:0),dt,4,.9);
-    scalar(state.wave,wave?1:0,dt,3,.9);
+    scalar(state.wave,wave?1:0,dt,3,.9);scalar(state.wade,clamp(wade,0,1),dt,2.2,.8);
     let twist=0;
     for(const s of sides)if(s.punch){const t=s.punch.t;twist+=-s.sign*.42*(t<.06?-t/.06*.3:t<.2?Math.sin((t-.06)/.14*Math.PI/2):Math.max(0,1-(t-.2)/.18));}
     spineLow.rotation.set(state.lean.x+state.hitPitch.x*.6,-pelvis.rotation.y*1.6+twist*.4,state.bank.x+state.hitRoll.x*.6);
@@ -132,6 +203,8 @@
      const target=s.handRest.clone().add(v3.set(-s.sign*.03*run,.12*run+.18*Math.max(0,swing),swing+.05*run));
      if(state.airborne)target.add(v3.set(s.sign*.12,.2,0));
      const lift=api.tune.guardLift;target.lerp(s.shoulder.clone().add(v3.set(-s.sign*.08,.02+lift+(i?0:.03),.3+lift*.6)),state.guard.x);
+     // Wading through brush: hands rise to the chest and sweep outwards in time with the stride, parting the leaves.
+     if(state.wade.x>.001){const sweep=Math.sin((state.phase+i*.5)*Math.PI*2);target.lerp(s.shoulder.clone().add(v3.set(s.sign*(.27+.1*sweep),-.03+.05*Math.max(0,-sweep),.17+.07*sweep)),state.wade.x*.85);}
      if(s.sign<0&&state.wave.x>.001)target.lerp(s.shoulder.clone().add(v3.set(-.34,.42+.04*Math.sin(state.time*9),.08+.07*Math.sin(state.time*7))),state.wave.x);
      scalar(s.touchWeight,s.touchTarget||0,dt,3.2,.85);
      let pose=null,hz=6,zeta=.72;
@@ -145,7 +218,7 @@
      spring(s.hand,target,dt,hz,zeta);
      // Elbows trail behind in a swing but drop under the hands when they come up to guard, punch or touch.
      const up=Math.max(state.guard.x,s.punch?1:0,clamp(s.touchWeight.x,0,1)*.7);
-     const pole=v2.set(s.sign*.5,-.2,-1).lerp(bend.set(s.sign*.45,-1,-.1),up);
+     const pole=v2.set(s.sign*.5,-.2,-1).lerp(bend.set(s.sign*.45,-1,-.1),up).lerp(bend.set(s.sign,-.3,-.3),state.wade.x*(1-up));
      solve(s.arm,toWorld(s.hand.x),group.localToWorld(v3.copy(pole).add(s.shoulder)).sub(group.localToWorld(s.shoulder.clone())));
      // Turn the palm to suit the contact: flat on a wall, reaching into a grab, knuckles forward in a punch.
      if(!pose&&state.guard.x>.05)pose={kind:'guard'};
@@ -160,7 +233,7 @@
      }
      // Fists for guard and punches, a half grip when reaching to grab, flat palms on walls, relaxed otherwise.
      const kind=s.touch&&s.touchWeight.x>.3?s.touch.kind:null;
-     const curl=s.punch||state.guard.x>.5?1.45:kind==='grab'?.6:kind==='press'?.03:s.sign<0&&state.wave.x>.5?.08:.25;
+     const curl=s.punch||state.guard.x>.5?1.45:kind==='grab'?.6:kind==='press'?.03:state.wade.x>.4?.12:s.sign<0&&state.wave.x>.5?.08:.25;
      scalar(s.curl,curl,dt,s.punch?10:5,.85);
      // A fist closes the splay and folds the thumb across; a flat hand on a wall keeps the fingers apart.
      const close=clamp((s.curl.x-.3)/1.1,0,1);
@@ -175,7 +248,7 @@
     if(Math.abs(stride)>.015)state.walkHold=.3;else state.walkHold=Math.max(0,state.walkHold-Math.max(0,dt));
     api.update(dt>0?dt:0,{treadmill:state.walkHold>0?1.45:0,wave:waving});
    },
-   inspect:()=>({phase:+state.phase.toFixed(3),speed:+state.speed.toFixed(2),weight:+state.weight.toFixed(2),guard:+state.guard.x.toFixed(2),hit:+state.hitPitch.x.toFixed(2),touch:sides.map(s=>+s.touchWeight.x.toFixed(2)),punching:sides.some(s=>s.punch)})
+   inspect:()=>({phase:+state.phase.toFixed(3),speed:+state.speed.toFixed(2),weight:+state.weight.toFixed(2),guard:+state.guard.x.toFixed(2),ragdoll:ragdoll.inspect(),wade:+state.wade.x.toFixed(2),hit:+state.hitPitch.x.toFixed(2),touch:sides.map(s=>+s.touchWeight.x.toFixed(2)),punching:sides.some(s=>s.punch)})
   };
   return api;
  }
