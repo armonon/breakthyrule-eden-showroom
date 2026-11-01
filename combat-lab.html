@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Combat lab · viewmodel tuning</title>
+<meta name="robots" content="noindex">
+<style>html,body{margin:0;height:100%;background:#7d8f73;font:12px 'DM Sans',Arial,sans-serif;color:#fff}canvas{display:block}#ui{position:fixed;left:10px;top:10px;display:flex;gap:6px}button{background:#0008;color:#fff;border:1px solid #fff4;padding:6px 10px;cursor:pointer}</style>
+<script src="/assets/three.min.js"></script><script src="/assets/gltf-loader.js?v=1"></script><script src="/asset-loader.js?v=1"></script><script src="/combat-arms.js?v=1"></script>
+</head><body><div id="ui"></div>
+<script>
+'use strict';
+// Dev-only page: renders the first-person arms + weapons in isolation to tune grips and hip poses.
+(async()=>{
+ const T=THREE,q=new URLSearchParams(location.search);
+ const renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;document.body.appendChild(renderer.domElement);
+ const scene=new T.Scene();scene.background=new T.Color(0x9fb59a);
+ const pm=new T.PMREMGenerator(renderer),envScene=new T.Scene();
+ const sky=new T.Mesh(new T.SphereGeometry(20,32,16),new T.MeshBasicMaterial({color:0xcfd9d0,side:T.BackSide}));envScene.add(sky);
+ const sun=new T.Mesh(new T.PlaneGeometry(6,6),new T.MeshBasicMaterial({color:new T.Color(0xffe2b0).multiplyScalar(8),side:T.DoubleSide}));sun.position.set(-8,12,-14);sun.lookAt(0,0,0);envScene.add(sun);
+ const env=pm.fromScene(envScene,.03).texture;scene.environment=env;
+ scene.add(new T.HemisphereLight(0xe6f2ff,0x4a4a32,.9));const d=new T.DirectionalLight(0xfff0d0,2.6);d.position.set(-.4,.6,.5);scene.add(d);
+ const camera=new T.PerspectiveCamera(+(q.get('fov')||58),innerWidth/innerHeight,.01,10);
+ const rig=window.createCombatArms(T,{env});const status=await rig.ready;console.log('lab',JSON.stringify(status));
+ scene.add(rig.arms.group);
+ const HIP={pistol:[[.12,-.13,-.3],[0,0,0]],pump:[[.15,-.15,-.3],[0,0,0]],axe:[[.22,-.26,-.42],[-.5,0,-.3]],c4:[[.17,-.17,-.38],[0,0,0]]};
+ const holders={};for(const id in rig.weapons){const h=new T.Group();h.add(rig.weapons[id].model);h.visible=false;scene.add(h);holders[id]=h;}
+ let current=q.get('w')||'pistol';
+ const ui=document.getElementById('ui');for(const id of Object.keys(holders)){const b=document.createElement('button');b.textContent=id;b.onclick=()=>{current=id;draw();};ui.appendChild(b);}
+ let viewCam=null;
+ window.lab={view(pos,target,fov=30){viewCam=pos?{pos,target,fov}:null;draw();},rig,holders,HIP,scene,camera,renderer,set(id,pos,rot){current=id;if(pos)HIP[id][0]=pos;if(rot)HIP[id][1]=rot;draw();}};
+ function draw(){
+  for(const id in holders)holders[id].visible=id===current;
+  const h=holders[current];if(h){h.position.fromArray(HIP[current][0]);h.rotation.set(...HIP[current][1]);rig.pose(current,h);}
+  let cam=camera;if(viewCam){cam=new T.PerspectiveCamera(viewCam.fov,innerWidth/innerHeight,.01,10);cam.position.fromArray(viewCam.pos);cam.lookAt(...viewCam.target);}
+  renderer.render(scene,cam);window.labFrame=(window.labFrame||0)+1;
+ }
+ draw();addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();draw();});
+ window.labReady=true;
+})();
+</script></body></html>
