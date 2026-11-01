@@ -22,10 +22,12 @@
  // thumb = thumb-side direction, curl = degrees per finger (or per joint), all in weapon space.
  const GRIPS={
   pistol:{
+   mag:{pos:[-.03,-.075,.035],fingers:[.35,.8,-.45],thumb:[.85,-.15,.45],curl:[55,60,65,70],thumbCurl:[20,30,25]},
    right:{pos:[.024,.008,.076],fingers:[0,-.26,-.97],thumb:[0,.97,-.26],curl:[[20,35,25],70,75,80],thumbCurl:[10,25,20]},
    left:{pos:[-.042,-.002,.074],fingers:[.18,-.42,-.89],thumb:[.1,.89,-.43],curl:[60,65,70,75],thumbCurl:[10,15,15]}
   },
   pump:{
+   shell:{pos:[-.025,-.07,.045],fingers:[.3,.75,-.6],thumb:[.1,.6,.8],curl:[45,55,65,75],thumbCurl:[25,35,30]},
    right:{pos:[.024,.072,.162],fingers:[0,-.6,-.8],thumb:[0,.8,-.6],curl:[[10,30,30],70,75,80],thumbCurl:[10,25,25]},
    left:{pos:[-.04,.048,-.45],fingers:[.94,.09,-.33],thumb:[-.25,.3,-.92],curl:[55,60,65,70],thumbCurl:[5,15,15]}
   },
@@ -46,7 +48,10 @@
   const zAxis=new T.Vector3(0,0,1);
   function basisQ(x,y,out=new T.Quaternion()){const X=x.clone().normalize(),Z=new T.Vector3().crossVectors(X,y).normalize(),Y=new T.Vector3().crossVectors(Z,X);tmpM.makeBasis(X,Y,Z);return out.setFromRotationMatrix(tmpM);}
   function setWorldQ(bone,q){bone.parent.getWorldQuaternion(tmpQ).invert();bone.quaternion.copy(tmpQ.multiply(q));bone.updateMatrixWorld(true);}
-  function prep(scene,{metalBoost=1}={}){scene.traverse(o=>{if(!o.isMesh)return;o.castShadow=false;o.frustumCulled=false;const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats){if(env){m.envMap=env;m.envMapIntensity=metalBoost;}m.needsUpdate=true;}});return scene;}
+  // minRough keeps near-mirror texels from blowing out to white under direct sun.
+  function prep(scene,{metalBoost=1,minRough=0}={}){scene.traverse(o=>{if(!o.isMesh)return;o.castShadow=false;o.frustumCulled=false;const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats){if(env){m.envMap=env;m.envMapIntensity=metalBoost;}
+   if(minRough&&m.roughnessMap){m.onBeforeCompile=sh=>{sh.fragmentShader=sh.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\n\troughnessFactor = max( roughnessFactor, '+minRough.toFixed(2)+' );');};m.customProgramCacheKey=()=>'minRough'+minRough;}
+   m.needsUpdate=true;}});return scene;}
 
   /* ---------------- arms */
   let arms=null;
@@ -118,7 +123,7 @@
   const weapons={};
   function marker(parent,pos){const o=new T.Object3D();o.position.fromArray(pos);parent.add(o);return o;}
   function setupPistol(gltf){
-   const g=new T.Group();g.name='Service pistol';const scene=prep(gltf.scene,{metalBoost:1});
+   const g=new T.Group();g.name='Service pistol';const scene=prep(gltf.scene,{metalBoost:.6,minRough:.35});
    // Split the slide (everything above the frame) into its own mesh so it can cycle.
    let src=null;scene.traverse(o=>{if(o.isMesh&&!src)src=o;});
    const slide=new T.Group();g.add(scene);g.add(slide);
@@ -131,7 +136,9 @@
    weapons.pistol={model:g,parts:{slide,muzzle:marker(slide,[0,.068,-.178]),ejector:marker(g,[.012,.07,-.02]),sight:marker(g,[0,.086,-.03])}};
   }
   function setupPump(gltf){
-   const g=new T.Group();g.name='Pump shotgun';const scene=prep(gltf.scene,{metalBoost:1});g.add(scene);
+   const g=new T.Group();g.name='Pump shotgun';const scene=prep(gltf.scene,{metalBoost:.22,minRough:.55});g.add(scene);
+   // Darker blued/parkerized finish on the steel parts (the source texture is a light satin grey).
+   scene.traverse(o=>{if(!o.isMesh)return;for(const m of [].concat(o.material))if(m.name==='Mossberg500'||m.name==='MagazineTube')m.color.setScalar(.5);});
    const fore=new T.Group();g.add(fore);
    const forend=[];scene.traverse(o=>{if(o.isMesh&&(Array.isArray(o.material)?o.material[0]:o.material)?.name==='Forend')forend.push(o);});
    forend.forEach(m=>fore.attach(m));
@@ -156,6 +163,7 @@
 
   return {
    ready,weapons,grips:GRIPS,
+   gripPos(grip,space,out=new T.Vector3()){space.updateMatrixWorld(true);return out.fromArray(grip.pos).applyMatrix4(space.matrixWorld);},
    get arms(){return arms;},
    /** weapon: Object3D whose matrixWorld is weapon space in view space. overrides: {left:{away,offset}} */
    pose(id,weapon,{leftAway=0,leftOffset=null,rightAway=0,rightOffset=null,leftGrip,rightGrip,leftSpace,rightSpace}={}){

@@ -28,6 +28,13 @@
  const rand=(a,b)=>a+Math.random()*(b-a);
 
  // Critically-damped-ish spring used for every procedural motion channel.
+ // Keyframed pose curves: keys = [[time, [x,y,z,rx,ry,rz], ease]] with ease 'in' | 'out' | 'io' (default).
+ const EASE={in:t=>t*t*t,out:t=>1-(1-t)**3,io:t=>t*t*(3-2*t),lin:t=>t};
+ function keyPose(keys,t,scale=1){const out=[0,0,0,0,0,0];if(t<=keys[0][0])return keys[0][1].slice();
+  for(let i=1;i<keys.length;i++){const [t1,p1,e]=keys[i],[t0,p0]=keys[i-1];if(t<=t1){const k=(EASE[e]||EASE.io)((t-t0)/(t1-t0));for(let j=0;j<6;j++)out[j]=(p0[j]+(p1[j]-p0[j])*k)*scale;return out;}}
+  return keys[keys.length-1][1].map(v=>v*scale);}
+ // Axe chop: wind up over the right shoulder, accelerate down-left through the crosshair, follow through, recover.
+ const AXE_KEYS=[[0,[0,0,0,0,0,0]],[.15,[.02,.05,.05,.55,-.12,-.18],'out'],[.2,[.025,.06,.055,.62,-.14,-.2]],[.27,[-.13,-.02,-.12,-.55,.3,.55],'in'],[.33,[-.2,-.08,-.08,-.85,.42,.75],'out'],[.56,[0,0,0,0,0,0]]];
  function Spring(k=180,d=18){this.x=0;this.v=0;this.k=k;this.d=d;}
  Spring.prototype.step=function(target,dt){const a=this.k*(target-this.x)-this.d*this.v;this.v+=a*dt;this.x+=this.v*dt;return this.x;};
  Spring.prototype.kick=function(v){this.v+=v;};
@@ -91,7 +98,7 @@
    geo.setAttribute('color',new T.Float32BufferAttribute(colors,3));
    s.add(new T.Mesh(geo,new T.MeshBasicMaterial({vertexColors:true,side:T.BackSide})));
    const panel=(x,y,z,w,h,i,col=0xffffff)=>{const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({color:new T.Color(col).multiplyScalar(i),side:T.DoubleSide}));m.position.set(x,y,z);m.lookAt(0,0,0);s.add(m);};
-   panel(-8,12,-14,6,6,9,0xffe2b0);panel(12,6,6,10,3,2.2);panel(-14,4,8,6,8,1.4,0xdfe9ff);panel(0,-6,12,14,2,.5,0x9caa70);
+   panel(-8,12,-14,8,8,2.6,0xffe2b0);panel(12,6,6,10,3,2.2);panel(-14,4,8,6,8,1.4,0xdfe9ff);panel(0,-6,12,14,2,.5,0x9caa70);
    const rt=pm.fromScene(s,.03);pm.dispose();geo.dispose();return rt.texture;
   }
 
@@ -311,6 +318,9 @@
     const w=R.weapons[id],m=models[id];if(!w||!m)continue;
     m.model.visible=false;m.holder.add(w.model);
     const old=m.parts;m.parts={...w.parts,glb:true,shell:old.shell,trigger:null,mag:null};
+    if(id==='pistol'){const mag=new T.Group();box(.018,.095,.03,M.steelDark,mag,[0,-.004,0],null,.002);box(.022,.008,.036,M.steelDark,mag,[0,-.052,.002],null,.002);
+     mag.rotation.x=-.25;const home=new T.Vector3(0,-.012,.03);mag.position.copy(home);mag.visible=false;w.model.add(mag);
+     m.parts.mag=mag;m.parts.magHome=home;m.parts.magAxis=new T.Vector3(0,-1,0).applyEuler(mag.rotation).normalize();}
     if(old.shell){w.model.add(old.shell);old.shell.visible=false;}
     m.rig={...m.rig,...GLB_RIG[id]};
     if(m.rig.ads){const h=m.holder,pp=h.position.clone(),pr=h.rotation.clone();h.position.set(0,0,0);h.rotation.set(0,0,0);h.updateMatrixWorld(true);const sp=m.parts.sight.getWorldPosition(new T.Vector3());m.adsPos=[-sp.x,-sp.y,-m.rig.ads-sp.z];h.position.copy(pp);h.rotation.copy(pr);}
@@ -321,8 +331,16 @@
    const usable=m.parts.glb||w.id==='c4';A.group.visible=usable&&equipBlend>.02;if(!usable)return;
    const opt={};
    if(w.id==='pump')opt.leftSpace=m.parts.fore;
-   if(s.action?.leftAway){opt.leftAway=s.action.leftAway;opt.leftOffset=s.action.leftOffset;}
-   if(w.id==='c4'){const r=m.parts.remote;if(r.visible){opt.leftSpace=r;opt.leftGrip=armsRig.grips.c4.remote;}}
+   const a=s.action;
+   if(a?.leftAway!=null){opt.leftAway=a.leftAway;opt.leftOffset=a.leftOffset;}
+   if(a?.leftGrip){opt.leftGrip=a.leftGrip;opt.leftSpace=a.leftSpace;}
+   const G=armsRig.grips[w.id]||{};
+   const bend=(curl,add,idx=0)=>curl.map((c,i)=>i!==idx?c:Array.isArray(c)?c.map(v=>v+add):c+add);
+   // Trigger finger: squeeze on each shot.
+   if((w.id==='pistol'||w.id==='pump')&&G.right){const since=lastTime-s.lastFire;if(since<.09)opt.rightGrip={...G.right,curl:bend(G.right.curl,28*(1-since/.09))};}
+   // Thumb on the slide release.
+   if(a?.thumb&&G.right)opt.rightGrip={...G.right,thumbCurl:G.right.thumbCurl.map(v=>v+35)};
+   if(w.id==='c4'){const r=m.parts.remote;if(r.visible){opt.leftSpace=r;const press=lastTime-(state.c4press||-9);opt.leftGrip=press<.18?{...G.remote,thumbCurl:G.remote.thumbCurl.map(v=>v+40)}:G.remote;}}
    armsRig.pose(w.id,m.holder,opt);
   }
 
@@ -747,7 +765,7 @@
    for(let i=0;i<(w.id==='pump'?2:1);i++)spawnFlip('wisp',{pos:muzzleWorld.clone().addScaledVector(forward,.05+i*.08),size:[w.id==='pump'?.22:.14,w.id==='pump'?.75:.45],life:rand(1.1,1.6),loop:28,start:rand(0,63),fadeIn:.06,alpha:w.id==='pump'?.5:.38,vel:forward.clone().multiplyScalar(rand(.5,1.2)).add(new T.Vector3(0,.12,0)),rise:.18,drag:1.6,spin:rand(-.4,.4),tint:0xd9d4cb});
    (w.id==='pump'?sfx.pump:sfx.pistol)(isTrue);
    // Recoil
-   const rec=w.id==='pump'?{z:2.4,x:7,yaw:.06,pitch:.065}:{z:1.1,x:3.2,yaw:.012,pitch:.022};
+   const rec=w.id==='pump'?{z:1.7,x:4.6,yaw:.035,pitch:.06}:{z:1.1,x:3.2,yaw:.012,pitch:.022};
    const adsK=lerp(1,.6,adsBlend);
    anim.posZ.kick(rec.z*adsK);anim.rotX.kick(rec.x*adsK);anim.rotY.kick(rand(-1,1)*rec.x*.15);anim.rotZ.kick(rand(-1,1)*rec.x*.2);
    look.kickPitch.kick(rec.pitch*20*adsK);look.kickYaw.kick(rand(-1,1)*rec.yaw*20*adsK);
@@ -760,7 +778,7 @@
   function reload(){
    if(!current||!locked)return;const w=current,s=state[w.id];
    if(w.id==='axe'||w.id==='c4'||s.action||s.ammo>=w.mag&&(w.id!=='pump'||s.chamber))return;
-   if(w.id==='pistol'){startAction('reload',s.lockedBack?1.75:1.45,{dropped:false,inserted:false,slap:s.lockedBack});}
+   if(w.id==='pistol'){startAction('reload',s.lockedBack?1.62:1.4,{dropped:false,inserted:false,slap:s.lockedBack});}
    if(w.id==='pump'){startAction('reload',.35+(w.mag-s.ammo)*.48,{loaded:0,need:w.mag-s.ammo,wasEmpty:!s.chamber});}
   }
 
@@ -780,7 +798,23 @@
     if(t>=.12&&!a.ejected){a.ejected=true;ejectShell('pump');sfx.rack(true);}
     if(t>=.3&&!a.closed){a.closed=true;sfx.rack(false);if(s.ammo>0)s.chamber=true;}
    }
-   if(a.name==='reload'&&w.id==='pistol'){
+   if(a.name==='reload'&&w.id==='pistol'&&P.glb){
+    // Tilt the grip toward the support hand; old mag drops; hand fetches a fresh one, seats it with a slap, returns.
+    const tilt=smooth(seg(t,0,.22))*(1-smooth(seg(t,a.duration-.3,a.duration)));
+    out.ry+=.55*tilt;out.rz+=.35*tilt;out.rx+=.08*tilt;out.y+=.035*tilt;out.x+=-.05*tilt;out.z+=.03*tilt;
+    const ax=P.magAxis;
+    if(t<.5){const d=easeIn(seg(t,.16,.42));P.mag.visible=t>.16&&t<.42;P.mag.position.copy(P.magHome).addScaledVector(ax,.16*d);}
+    else{const r=1-easeOut(seg(t,.52,.92));P.mag.visible=true;P.mag.position.copy(P.magHome).addScaledVector(ax,.26*r).add(new T.Vector3(-.07*r,0,.03*r));if(t>.98&&t<1.08)P.mag.position.addScaledVector(ax,-.004);}
+    if(t>.42&&!a.dropped){a.dropped=true;sfx.click(1800,.3);spawnDroppedMag();}
+    if(t>.92&&!a.inserted){a.inserted=true;sfx.click(2400,.45);anim.posY.kick(.35);anim.rotZ.kick(-1.2);s.ammo=w.mag;}
+    if(t>=1.1)P.mag.visible=false;
+    // Left hand: support grip -> away (0.12..0.42) -> holding the new mag (0.5..1.0) -> back to support (1.0..1.2)
+    if(t<.5){a.leftGrip=undefined;a.leftAway=smooth(seg(t,.12,.42));a.leftOffset=a.leftOffset||new T.Vector3(-.14,-.48,-.08);}
+    else if(t<1.02){a.leftGrip=armsRig?.grips.pistol.mag;a.leftSpace=P.mag;a.leftAway=1-smooth(seg(t,.5,.58));a.leftOffset=a.leftOffset||new T.Vector3(-.14,-.48,-.08);if(armsRig)a.magHand=armsRig.gripPos(armsRig.grips.pistol.mag,P.mag,a.magHand);}
+    else{a.leftGrip=undefined;a.leftSpace=undefined;a.leftAway=1-smooth(seg(t,1.02,1.22));a.leftOffset=a.magHand||a.leftOffset;}
+    if(a.slap){if(t>1.28&&!a.slapped){a.slapped=true;s.lockedBack=false;s.slideT=.06;sfx.rack(false);anim.posZ.kick(-.5);anim.rotX.kick(1.5);}a.thumb=t>1.18&&t<1.34;}
+   }
+   if(a.name==='reload'&&w.id==='pistol'&&!P.glb){
     const tilt=smooth(seg(t,0,.25))*(1-smooth(seg(t,a.duration-.35,a.duration)));
     out.rz+=.42*tilt;out.rx+=.22*tilt;out.y+=-.02*tilt;out.x+=-.02*tilt;
     const drop=easeIn(seg(t,.22,.5)),rise=1-easeOut(seg(t,.62,1.02));
@@ -792,12 +826,20 @@
    }
    if(a.name==='reload'&&w.id==='pump'){
     const tilt=smooth(seg(t,0,.25))*(1-smooth(seg(t,a.duration-.25,a.duration)));
-    out.rz+=-.55*tilt;out.rx+=.18*tilt;out.y+=.01*tilt;out.x+=-.03*tilt;
-    if(P.glb){a.leftAway=tilt;a.leftOffset=a.leftOffset||new T.Vector3();P.shell.parent.localToWorld(a.leftOffset.set(.0,-.045,.075).add(P.shell.position));}
+    out.rz+=-.35*tilt;out.rx+=.15*tilt;out.y+=.03*tilt;out.x+=-.05*tilt;out.z+=.03*tilt;
     const per=.48,local=t-.3,i=Math.floor(local/per),lt=local-i*per;
+    if(P.glb&&armsRig){
+     // Hand drops from the fore-end, picks shells up from below and thumbs each one into the port.
+     const g=armsRig.grips.pump;
+     if(!a.foreHand)a.foreHand=armsRig.gripPos(g.left,P.fore);
+     a.leftGrip=g.shell;a.leftSpace=P.shell;
+     const enter=smooth(seg(t,.05,.3)),exit=smooth(seg(t,a.duration-.28,a.duration-.05));
+     a.leftAway=Math.max(1-enter,exit);a.leftOffset=a.foreHand;
+     if(local<=0||i>=a.need||a.cancel){P.shell.visible=false;P.shell.position.set(.05,-.2,.12);}
+    }
     if(local>0&&i<a.need&&!a.cancel){
-     P.shell.visible=lt<.34;const ins=easeOut(seg(lt,.0,.18)),push=easeIn(seg(lt,.2,.32));
-     if(P.glb){P.shell.position.set(.035*(1-ins),.0-.055*(1-ins)+push*.02,.03-push*.05);P.shell.rotation.set(0,Math.PI/2,0);}
+     P.shell.visible=lt<.34;const ins=easeOut(seg(lt,.0,.2)),push=easeIn(seg(lt,.22,.32));
+     if(P.glb){P.shell.visible=true;const back=smooth(seg(lt,.34,.48));P.shell.position.set(.05*(1-ins)+.05*back,-.2*(1-ins)-.005*ins+push*.02-.2*back,.12*(1-ins)+.03*ins-push*.05+.12*back);P.shell.rotation.set(0,Math.PI/2,0);P.shellHidden=lt>.32&&lt<.36;if(P.shellHidden)P.shell.visible=false;}
      else{P.shell.position.set(.12+.05*(1-ins)-push*.06,-.06+.045*ins+push*.01,.05*(1-ins));P.shell.rotation.set(0,0,Math.PI/2);}
      if(lt>.3&&a.loaded<=i){a.loaded=i+1;s.ammo=Math.min(w.mag,s.ammo+1);sfx.click(1400,.4);anim.posY.kick(.12);}
     }else P.shell.visible=false;
@@ -805,13 +847,9 @@
     if(t>=a.duration&&!s.chamber&&s.ammo>0){s.action=null;P.shell.visible=false;startAction('pump',.42);return out;}
    }
    if(a.name==='swing'){
-    const heavy=a.heavy,wind=heavy?.22:.14,strike=wind+(heavy?.1:.11);
-    const w1=easeOut(seg(t,0,wind)),st=seg(t,wind,strike),rec=smooth(seg(t,strike+.05,a.duration));
-    const strikeE=st<1?Math.sin(st*Math.PI/2):1;
-    const lift=w1*(1-strikeE)*(1-rec),slash=strikeE*(1-rec);
-    out.x+=.06*lift-.36*slash;out.y+=.17*lift-.06*slash;out.z+=.06*lift-.12*slash;
-    out.rx+=-.95*lift+1.05*slash;out.ry+=.35*lift-.75*slash;out.rz+=.35*lift-.95*slash;
-    if(st>.55&&!a.hit){a.hit=true;meleeHit(heavy);}
+    const ts=a.duration/.56,kp=keyPose(AXE_KEYS,t/ts,a.heavy?1.15:1);
+    out.x+=kp[0];out.y+=kp[1];out.z+=kp[2];out.rx+=kp[3];out.ry+=kp[4];out.rz+=kp[5];
+    if(t/ts>.26&&!a.hit){a.hit=true;meleeHit(a.heavy);}
    }
    if(a.name==='throw'){
     const back=smooth(seg(t,0,.18)),fwd=easeOut(seg(t,.18,.3)),ret=smooth(seg(t,.32,.55));
