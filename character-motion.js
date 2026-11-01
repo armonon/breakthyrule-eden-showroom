@@ -43,7 +43,13 @@
    const fingers=['thumb','index','middle','ring','pinky'].map(f=>[1,2,3].map(k=>bone(f+k+'.'+name))).filter(c=>c.every(Boolean));
    const inPalm=fingers.length===5?local(fingers[1][0]).sub(local(fingers[4][0])).cross(local(fingers[2][0]).sub(wrist)).normalize():palm.clone();
    if(fingers.length===5&&inPalm.dot(local(fingers[0][2]).sub(wrist))<0)inPalm.negate();
-   const curlers=fingers.map(chain=>{const d=local(chain[1]).sub(local(chain[0])).normalize();return {chain,thumb:chain[0].name.startsWith('thumb'),axis:d.clone().cross(inPalm).normalize()};});
+   // Each finger also knows how far it is splayed from the middle finger, so a fist can pull them together.
+   const flat=v=>v.addScaledVector(inPalm,-v.dot(inPalm)).normalize(),toward=k=>fingers.length===5?flat(local(fingers[k][1]).sub(local(fingers[k][0]))):null,middle=toward(2),index=toward(1);
+   const curlers=fingers.map(chain=>{const d=local(chain[1]).sub(local(chain[0])).normalize(),thumb=chain[0].name.startsWith('thumb'),f=flat(d.clone());
+    const aim=thumb?index:middle,spread=aim?Math.atan2(f.clone().cross(aim).dot(inPalm),f.dot(aim))*(thumb?.5:1):0;
+    // The thumb folds over the fingers by swinging about the hand's long axis, towards the palm.
+    const long=middle?middle.clone():d.clone(),wrapSign=long.clone().cross(d).dot(inPalm)>0?-1:1;
+    return {chain,thumb,axis:d.clone().cross(inPalm).normalize(),spread,across:inPalm.clone(),long,wrapSign};});
    return {name,sign,arm,leg,shoulder,hip,ankle,reach,handRest,bindHand:basis(finger,inPalm.clone()).invert(),fingers:curlers,curl:{x:.3,v:0},
     hand:{x:handRest.clone(),v:new T.Vector3()},foot:{x:ankle.clone(),v:new T.Vector3()},touch:null,touchWeight:{x:0,v:0},punch:null};
   });
@@ -156,7 +162,10 @@
      const kind=s.touch&&s.touchWeight.x>.3?s.touch.kind:null;
      const curl=s.punch||state.guard.x>.5?1.45:kind==='grab'?.6:kind==='press'?.03:s.sign<0&&state.wave.x>.5?.08:.25;
      scalar(s.curl,curl,dt,s.punch?10:5,.85);
-     for(const f of s.fingers)f.chain.forEach((b,j)=>b.quaternion.setFromAxisAngle(f.axis,s.curl.x*(f.thumb?.4:[1,1.05,.75][j])));
+     // A fist closes the splay and folds the thumb across; a flat hand on a wall keeps the fingers apart.
+     const close=clamp((s.curl.x-.3)/1.1,0,1);
+     for(const f of s.fingers)f.chain.forEach((b,j)=>{b.quaternion.setFromAxisAngle(f.axis,s.curl.x*(f.thumb?[.55,.6,.5][j]:[1.55,1.1,.7][j]));
+      if(j===0&&close>0){b.quaternion.premultiply(q1.setFromAxisAngle(f.across,f.spread*.9*close));if(f.thumb)b.quaternion.premultiply(q1.setFromAxisAngle(f.long,f.wrapSign*.85*close));}});
      if(s.touchWeight.x<.002&&!s.touchTarget)s.touch=null;
     }
    },
