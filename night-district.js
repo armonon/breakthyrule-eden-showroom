@@ -28,7 +28,17 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
   temple:{url:'/assets/night/moon-temple.glb',glow:[[0,4,0]],blocks:[...[[-7.4,-7.4],[7.4,-7.4],[-7.4,7.4],[7.4,7.4]].map(([x,z])=>[x,z,2,2]),...[0,1,2,3,4,5,6,7].map(i=>[Math.cos(Math.PI/8+i*Math.PI/4)*6.3,Math.sin(Math.PI/8+i*Math.PI/4)*6.3,.8,.8])]},
   observatory:{url:'/assets/night/shrine-observatory.glb',glow:[[0,3.2,-1]],blocks:[[-7.8,7.8,2.6,2.6],[7.8,7.8,2.6,2.6],[0,-1,2.4,2.4]]},
   hotel:{url:'/assets/night/citadel-hotel.glb',lanterns:[[-5.85,11.7],[5.85,11.7]],blocks:[...[[-8.2,-10.2],[8.2,-10.2],[-8.2,10.2],[8.2,10.2]].map(([x,z])=>[x,z,2.4,2.4]),[-3,10.9,2.8,1.9],[3,10.9,2.8,1.9],[-3,13.1,2,2.6],[3,13.1,2,2.6],...[-6,-2,2,6].flatMap(z=>[[-5.6,z,.9,.9],[5.6,z,.9,.9]])]},
-  gardens:{url:'/assets/night/egyptian-gardens.glb',lanterns:[[-3,11.2],[3,11.2]],blocks:[[-6.1,8.2,7.4,2.6],[6.1,8.2,7.4,2.6],[-2.12,8.2,.65,2.2],[2.12,8.2,.65,2.2],[-10.4,0,.6,12.4],[10.4,0,.6,12.4],[0,-7.4,12,1.4],...[-5,-2.5,0,2.5,5].flatMap(z=>[[-9,z,1.1,1.1],[9,z,1.1,1.1]]),...[4.6,-2.6].flatMap(z=>[[-5.2,z,1.6,3],[5.2,z,1.6,3]])]}
+  gardens:{url:'/assets/night/egyptian-gardens.glb',lanterns:[[-3,11.2],[3,11.2]],blocks:[[-6.1,8.2,7.4,2.6],[6.1,8.2,7.4,2.6],[-2.12,8.2,.65,2.2],[2.12,8.2,.65,2.2],[-10.4,0,.6,12.4],[10.4,0,.6,12.4],[0,-7.4,12,1.4],...[-5,-2.5,0,2.5,5].flatMap(z=>[[-9,z,1.1,1.1],[9,z,1.1,1.1]]),...[4.6,-2.6].flatMap(z=>[[-5.2,z,1.6,3],[5.2,z,1.6,3]])]},
+  // the remaining atlas buildings (original designs after each atlas reading; see assets/night/SOURCE.md)
+  girard:{url:'/assets/night/girard-gate.glb',blocks:[[-8.4,5,3.6,3.6],[8.4,5,3.6,3.6]]},
+  latheatre:{url:'/assets/night/palace-of-mirrors.glb',glow:[[0,4.2,12.6]]},
+  stjames:{url:'/assets/night/redwood-chapel.glb',blocks:[[-6.2,8,3.6,3.6]]},
+  vibiana:{url:'/assets/night/first-cathedral.glb',blocks:[[9.7,9,4,4]]},
+  methodist:{url:'/assets/night/campanile.glb',blocks:[[-9.8,8.8,4.2,4.2]]},
+  immanuel:{url:'/assets/night/high-tower.glb',blocks:[[5.8,8.8,4.6,4.6]]},
+  baptist:{url:'/assets/night/three-arches.glb',blocks:[[-11.6,7.2,3.6,3.6],[11.6,7.2,3.6,3.6],[-4,12.15,1.6,2.6],[4,12.15,1.6,2.6]]},
+  christian:{url:'/assets/night/rose-window.glb',blocks:[[-9.4,8,4,4]]},
+  firstcong:{url:'/assets/night/organ-tower.glb',lanterns:[[-4.6,16.6],[4.6,16.6]],blocks:[[-2.5,12.5,1.4,6.4],[2.5,12.5,1.4,6.4]]}
  },modelState={},pendingModels=[];
  for(const s of layout.landmarks){
   const p=new T.Group();p.name=s.name;p.position.set(s.x,0,s.z);staticRoot.add(p);p.updateWorldMatrix(true,false);
@@ -82,7 +92,7 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
    for(const side of [-1,1])for(const z of [-4,2]){box(q,marble,side*5,.35,z,3.5,.7,2);box(q,velvet,side*5,.78,z,3.3,.15,1.8);}
    // A canopy of ivy grows on the wings but leaves the entrances clear.
    const ivy=leafMat.clone();ivy.color.set(0x758f65);ivy.emissiveIntensity=.08;const leaf=new T.PlaneGeometry(1,1);for(let i=0;i<160;i++){const side=i%2?1:-1;const m=mesh(q,leaf,ivy,side*(6.6+Math.sin(i*3.1)),.5+(i%24)*.4,10.5+Math.sin(i)*.12,.9,1.1,1);m.rotation.z=Math.sin(i*2.3)*.7;}
-  }else{
+  }else if(s.id==='gardens'){
    box(q,charcoal,0,.02,0,7,.05,8);box(q,water,0,.07,0,6.5,.025,7.5);
    for(const side of [-1,1]){box(q,marble,side*3.5,.12,0,.35,.25,8.4);for(let z=-5;z<=5;z+=2.5){column(q,side*8,z,3.7,.26);}box(q,marble,side*8,3.95,0,.9,.35,12);}
    for(const z of [-4.2,4.2])box(q,marble,0,.12,z,7.4,.25,.35);
@@ -94,21 +104,31 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
  function loadModel(s,model,shell){
   // Glow points (the theatre marquee, lit interiors) join the lamp pool, so a pooled light washes them when near.
   for(const [x,y,z] of model.glow||[])lamps.push(new T.Vector3(s.x+x,y,s.z+z));
-  // Each building streams in when the viewer comes within range (2-3 MB each), not all at once with the district.
   modelState[s.id]='waiting';pendingModels.push({s,model,shell});
  }
+ // Streaming: the nearest building within 75 m loads first, one at a time (several GLBs decoding and uploading at once
+ // stalled the frame for seconds where many sites are in range); buildings over 110 m away are released again and
+ // their light procedural shell restored, so GPU memory stays bounded however far the viewer walks.
+ const loadedModels=new Map();let modelInFlight=false;
+ function releaseModel(scene){scene.traverse(o=>{if(!o.isMesh)return;o.geometry.dispose();for(const m of [].concat(o.material)){for(const v of Object.values(m))if(v?.isTexture)v.dispose();m.dispose();}});}
  function streamModels(viewer){
-  for(let i=pendingModels.length-1;i>=0;i--){const {s,model,shell}=pendingModels[i];
-   if(Math.hypot(viewer.position.x-s.x,viewer.position.z-s.z)>75)continue;
-   pendingModels.splice(i,1);fetchModel(s,model,shell);}
+  const distance=s=>Math.hypot(viewer.position.x-s.x,viewer.position.z-s.z);
+  for(const [id,entry] of loadedModels)if(distance(entry.s)>110){
+   root.remove(entry.scene);releaseModel(entry.scene);root.add(entry.shell);loadedModels.delete(id);modelState[id]='waiting';pendingModels.push(entry);}
+  if(modelInFlight)return;
+  let next=-1,nearest=75;
+  pendingModels.forEach((p,i)=>{const d=distance(p.s);if(d<nearest){nearest=d;next=i;}});
+  if(next<0)return;
+  const [p]=pendingModels.splice(next,1);fetchModel(p.s,p.model,p.shell);
  }
  function fetchModel(s,model,shell){
-  modelState[s.id]='loading';
+  modelState[s.id]='loading';modelInFlight=true;
   window.showroomAssets?.model(model.url).then(gltf=>{
    const scene=gltf.scene;scene.name=s.name+' (modelled)';scene.userData.landmarkModel=true;scene.position.set(s.x,0,s.z);
    scene.traverse(o=>{if(!o.isMesh)return;o.receiveShadow=true;o.castShadow=!/bulb|sign|relief|glass/.test(o.name+o.material?.name);});
-   root.remove(shell);root.add(scene);modelState[s.id]='model';
-  }).catch(error=>{modelState[s.id]='fallback';console.warn(s.name+' model unavailable; keeping the procedural building',error);});
+   root.remove(shell);root.add(scene);modelState[s.id]='model';loadedModels.set(s.id,{s,model,shell,scene});
+  }).catch(error=>{modelState[s.id]='fallback';console.warn(s.name+' model unavailable; keeping the procedural building',error);})
+   .finally(()=>{modelInFlight=false;});
  }
  // Collapse repeated architecture to instanced batches, preserving real geometry at low draw cost.
  staticRoot.updateMatrixWorld(true);const batches=new Map();staticRoot.traverse(o=>{if(!o.isMesh)return;const key=o.geometry.uuid+o.material.uuid;if(!batches.has(key))batches.set(key,{geometry:o.geometry,material:o.material,matrices:[]});batches.get(key).matrices.push(o.matrixWorld.clone());});

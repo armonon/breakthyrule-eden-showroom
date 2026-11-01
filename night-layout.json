@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "bounds": [-39, 62, -111, -22],
+  "version": 2,
+  "bounds": [-78, 98, -111, -22],
   "spawn": [11.7, -24],
   "exit": [11.7, -111],
   "landmarks": [
@@ -8,7 +8,16 @@
     {"id":"observatory","name":"The Observatory","x":37,"z":-42,"w":16,"d":16,"h":6,"color":"#d3d6c7"},
     {"id":"playhouse","name":"The Silent Playhouse","x":-15,"z":-74,"w":18,"d":16,"h":7,"color":"#b77f72"},
     {"id":"hotel","name":"The Hotel on the Hill","x":39,"z":-77,"w":16,"d":20,"h":11,"color":"#b2b8ad"},
-    {"id":"gardens","name":"The Sunken Gardens","x":-14,"z":-101,"w":20,"d":14,"h":4,"color":"#bac5b7"}
+    {"id":"gardens","name":"The Sunken Gardens","x":-14,"z":-101,"w":20,"d":14,"h":4,"color":"#bac5b7"},
+    {"id":"girard","name":"The False Gate","x":-46,"z":-40,"w":20,"d":12,"h":8,"color":"#cdb89c"},
+    {"id":"latheatre","name":"The Palace of Mirrors","x":-46,"z":-68,"w":16,"d":20,"h":12,"color":"#d6ccb6"},
+    {"id":"stjames","name":"The Redwood Chapel","x":-46,"z":-97,"w":14,"d":18,"h":8,"color":"#c9c2b0"},
+    {"id":"vibiana","name":"The First Cathedral","x":-68,"z":-50,"w":16,"d":22,"h":10,"color":"#d8cfbd"},
+    {"id":"methodist","name":"The Campanile","x":-68,"z":-84,"w":16,"d":22,"h":9,"color":"#d2b79a"},
+    {"id":"immanuel","name":"The High Tower","x":64,"z":-42,"w":16,"d":22,"h":10,"color":"#bdb7a8"},
+    {"id":"baptist","name":"The Three Arches","x":64,"z":-74,"w":20,"d":18,"h":10,"color":"#cdbfa6"},
+    {"id":"christian","name":"The Rose Window","x":64,"z":-100,"w":16,"d":20,"h":10,"color":"#c8bfae"},
+    {"id":"firstcong","name":"The Organ Tower","x":88,"z":-60,"w":18,"d":22,"h":11,"color":"#c4bba9"}
   ],
   "pages": [
     {"id":0,"title":"The First Threshold","site":"temple","sockets":[[-16,-44],[-8,-46]],"text":"We built the gates before we knew what stood outside."},
