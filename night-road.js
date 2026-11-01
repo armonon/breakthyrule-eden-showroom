@@ -37,13 +37,13 @@ window.createNightRoad=function(T,scene,{sections,roadX,roadStart,roadLength,cle
  parts.forEach(part=>recycle(part.section,part.section.userData.roadIndex||0));
  const starPositions=[];for(let i=0;i<280;i++){const az=noise(44,i)*Math.PI*2,y=.16+noise(44,i,1)*.8,r=Math.sqrt(1-y*y);starPositions.push(Math.cos(az)*r*149,y*149,Math.sin(az)*r*149);}
  const starGeo=new T.BufferGeometry();starGeo.setAttribute('position',new T.Float32BufferAttribute(starPositions,3));const stars=new T.Points(starGeo,new T.PointsMaterial({color:0xcfe4da,size:.16,transparent:true,opacity:0,depthWrite:false,fog:false}));sky.add(stars);
- let amount=0;
+ let amount=0,override=null;
  function update(time,viewer){
-  amount=smooth(roadStart-viewer.position.z,1,17);sky.material.uniforms.roadNight.value=amount;
+  amount=override??smooth(roadStart-viewer.position.z,1,17);sky.material.uniforms.roadNight.value=amount;
   scene.fog.color.copy(originalFog).lerp(nightFog,amount);scene.fog.density=T.MathUtils.lerp(.016,.019,amount);
   for(const state of lights){const l=state.light;l.color.copy(state.color).lerp(moonColor,amount);l.intensity=T.MathUtils.lerp(state.intensity,l.isHemisphereLight?.58:state.intensity>1?.52:.16,amount);if(state.ground)l.groundColor.copy(state.ground).lerp(moonGround,amount);}
   roadMaterial.color.copy(originalRoad).lerp(nightRoadColor,amount);vergeMaterial.color.copy(originalVerge).lerp(nightVerge,amount);
   clouds.forEach(cloud=>{cloud.material.opacity=.65*(1-amount);});stars.material.opacity=amount*.8;
  }
- return {recycle,update,blocks:district.blocks,get amount(){return amount;},inspect:()=>({night:amount,sections:parts.length,trees:parts.reduce((n,p)=>n+(p.root.visible?p.trunks.count:0),0),district:district.inspect()})};
+ return {recycle,update,setOverride(v){override=v;},blocks:district.blocks,get amount(){return amount;},inspect:()=>({night:amount,sections:parts.length,trees:parts.reduce((n,p)=>n+(p.root.visible?p.trunks.count:0),0),district:district.inspect()})};
 };

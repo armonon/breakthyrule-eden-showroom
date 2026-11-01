@@ -31,6 +31,19 @@
    right:{pos:[.024,.072,.162],fingers:[0,-.6,-.8],thumb:[0,.8,-.6],curl:[[10,30,30],70,75,80],thumbCurl:[10,25,25]},
    left:{pos:[-.04,.048,-.45],fingers:[.94,.09,-.33],thumb:[-.25,.3,-.92],curl:[55,60,65,70],thumbCurl:[5,15,15]}
   },
+  smg:{
+   right:{pos:[.022,.1,.063],fingers:[0,-.633,-.774],thumb:[0,.774,-.633],curl:[[25,40,30],65,70,75],thumbCurl:[10,20,20]},
+   left:{pos:[-.022,-.004,-.253],fingers:[0,-.1,-1],thumb:[0,1,-.1],curl:[60,65,70,75],thumbCurl:[10,20,20]}
+  },
+  rifle:{
+   right:{pos:[.022,.035,.12],fingers:[0,-.29,-.96],thumb:[0,.96,-.29],curl:[[25,40,30],65,70,75],thumbCurl:[10,20,20]},
+   left:{pos:[-.045,.035,-.21],fingers:[.94,.09,-.33],thumb:[-.25,.3,-.92],curl:[50,55,60,65],thumbCurl:[5,10,10]}
+  },
+  sniper:{
+   right:{pos:[.022,.099,.136],fingers:[0,-.6,-.8],thumb:[0,.8,-.6],curl:[[10,30,30],65,70,75],thumbCurl:[10,20,20]},
+   left:{pos:[-.045,.04,-.28],fingers:[.94,.09,-.33],thumb:[-.25,.3,-.92],curl:[50,55,60,65],thumbCurl:[5,10,10]},
+   bolt:{pos:[.06,.11,.03],fingers:[-.2,-.3,-.93],thumb:[-.3,.9,-.2],curl:[60,70,75,80],thumbCurl:[20,30,30]}
+  },
   axe:{
    right:{pos:[.0,-.02,.085],fingers:[0,-.05,-1],thumb:[0,1,0],curl:[85,90,90,90],thumbCurl:[30,45,30]},
    left:null
@@ -144,6 +157,16 @@
    forend.forEach(m=>fore.attach(m));
    weapons.pump={model:g,parts:{fore,muzzle:marker(g,[0,.1,-.645]),ejector:marker(g,[.02,.1,.02]),sight:marker(g,[0,.132,-.12]),port:marker(g,[0,.04,.02])}};
   }
+  // Generic long guns (CC0, see models/combat/CREDITS.md): weapon space, -Z forward, origin at the firing hand.
+  const GUN_POINTS={
+   smg:{muzzle:[0,.1,-.445],sight:[0,.225,-.136],ejector:[.02,.13,-.05]},
+   rifle:{muzzle:[0,.102,-.56],sight:[0,.152,-.15],ejector:[.02,.11,-.05]},
+   sniper:{muzzle:[0,.1,-.892],sight:[-.007,.135,-.04],ejector:[.02,.11,.0]}
+  };
+  function setupGun(id,gltf){
+   const g=new T.Group();g.name=id;const scene=prep(gltf.scene,{metalBoost:.45,minRough:.4});g.add(scene);const P=GUN_POINTS[id];
+   weapons[id]={model:g,parts:{muzzle:marker(g,P.muzzle),sight:marker(g,P.sight),ejector:marker(g,P.ejector)}};
+  }
   function setupAxe(gltf){
    const g=new T.Group();g.name='Hatchet';const scene=prep(gltf.scene,{metalBoost:1});
    // Handle along +Y, bit toward +Z: turn the bit forward and lean the head away from the view.
@@ -153,7 +176,8 @@
 
   const ready=(async()=>{
    const load=url=>window.showroomAssets.model(base+url);
-   const [a,p,s,h]=await Promise.allSettled([load('arms_military.glb'),load('pistol.glb'),load('shotgun.glb'),load('hatchet/hatchet_1k.gltf')]);
+   const [a,p,s,h,smg,rifle,sniper]=await Promise.allSettled([load('arms_military.glb'),load('pistol.glb'),load('shotgun.glb'),load('hatchet/hatchet_1k.gltf'),load('smg.glb'),load('rifle_ak.glb'),load('sniper.glb')]);
+   for(const [id,r] of [['smg',smg],['rifle',rifle],['sniper',sniper]])if(r.status==='fulfilled')setupGun(id,r.value);
    if(a.status==='fulfilled')setupArms(a.value);else console.warn('Combat arms unavailable',a.reason);
    if(p.status==='fulfilled')setupPistol(p.value);
    if(s.status==='fulfilled')setupPump(s.value);

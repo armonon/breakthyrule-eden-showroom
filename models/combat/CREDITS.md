@@ -39,3 +39,13 @@ SOFTWARE.
 `explosion01_5x5.webp`, `explosion02_5x5.webp`, `cloud01_8x8.webp`, `wispysmoke01_8x8.webp`: Houdini
 simulations from Unity Labs' [free VFX image sequences and flipbooks](https://unity.com/blog/engine-platform/free-vfx-image-sequences-flipbooks),
 released under CC0. Converted from TGA to WebP (cloud and wisp sheets resized to 512 px).
+
+## Arena guns
+
+| file | model | author | licence |
+|---|---|---|---|
+| `smg.glb` | Kriss Vector (without suppressor), 3D Model Haven gun pack ([archive](https://archive.org/details/gun_models.7z)) | Rajil Jose Macatangay | CC0 |
+| `rifle_ak.glb` | [AKM](https://opengameart.org/content/akm) | LonesomeDucky | CC0 |
+| `sniper.glb` | [Bolt Action Rifle 7.62](https://polyhaven.com/a/bolt_action_rifle_7_62) | Mateusz Sadek, Poly Haven | CC0 |
+
+First-person conversions from [vvanghelue/mini-cry](https://github.com/vvanghelue/mini-cry) (`public/models/fp`), with their grip data.

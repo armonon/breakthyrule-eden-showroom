@@ -49,7 +49,7 @@ posterDialog.addEventListener('close',()=>{const video=$('poster-video');video.p
 $('close-poster').onclick=()=>posterDialog.close();
 posterDialog.addEventListener('click',event=>{if(event.target===posterDialog)posterDialog.close();});
 const state={view:'spawn',side:'front',mode:'photo',ready:false,selected:0},keys=new Set();
-let multiplayer=null,pendingMultiplayerSpawn=false,expedition=null,combat=null;
+let multiplayer=null,pendingMultiplayerSpawn=false,expedition=null,combat=null,arena=null;
 let residents=null,followResident=null,lastResidentShadow=0;
 function renderResidents(){
  const entries=residents?.inspect()||window.gardenResidentDefinitions.map(d=>({...d,status:'loading'}));
@@ -230,10 +230,11 @@ const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 scene.add(new T.HemisphereLight(0xdceffc,0x5a6538,1.35));
 const light=new T.DirectionalLight(0xffe4ad,3.2);light.position.set(-23,19,-48);light.castShadow=true;light.shadow.mapSize.set(2048,2048);Object.assign(light.shadow.camera,{left:-28,right:28,top:28,bottom:-28,near:1,far:110});light.shadow.normalBias=.035;light.shadow.bias=-.00015;light.shadow.radius=3;scene.add(light);
 const fill=new T.DirectionalLight(0xe4edff,.35);fill.position.set(10,9,18);scene.add(fill);
-try{const response=await fetch('/night-layout.json?v=1');if(!response.ok)throw new Error('Night district unavailable');window.nightLayout=await response.json();}catch(error){fallback();return;}
+try{const response=await fetch('/night-layout.json?v=2');if(!response.ok)throw new Error('Night district unavailable');window.nightLayout=await response.json();}catch(error){fallback();return;}
 const garden=createEdenGarden(T,scene,{reduced,mobile:stage.clientWidth<700,onChange:requestDraw});
 const nightLaunch=document.createElement('button');nightLaunch.id='night-launch';nightLaunch.textContent='BEYOND EDEN';nightLaunch.title='Night expeditions';$('amphitheater-view').after(nightLaunch);
 const rangeLaunch=document.createElement('button');rangeLaunch.id='range-launch';rangeLaunch.textContent='RANGE';rangeLaunch.title='Firing range · 1–4 to draw a weapon';nightLaunch.after(rangeLaunch);rangeLaunch.onclick=()=>{if(state.ready)combat?.enterRange();};
+const arenaLaunch=document.createElement('button');arenaLaunch.id='arena-launch';arenaLaunch.textContent='ARENA';arenaLaunch.title='Break Thy Rule: Arena · 8 players, last one standing';rangeLaunch.after(arenaLaunch);arenaLaunch.onclick=()=>{if(state.ready&&arena){if(expedition?.active())expedition.leave();arena.start();}};
 const amphitheater=createAmphitheater(T,scene,{reduced});
 const music=createGardenMusic({requestDraw,onOpen(){keys.clear();}});
 residents=createGardenResidents(T,scene,{reduced,renderer,sky:garden.sky,onChange(){if(residentDialog.open)renderResidents();if(state.ready){renderer.shadowMap.needsUpdate=true;requestDraw();}}});
@@ -271,7 +272,7 @@ const moveKeys=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrow
 const finePointer=matchMedia('(pointer: fine)').matches;
 $('movement-hint').textContent=finePointer?'W A S D TO MOVE / DRAG TO LOOK':'DRAG TO LOOK / TAP TO EXPLORE';
 function requestDraw(){if(!frame&&!document.hidden)frame=requestAnimationFrame(draw);}
-function draw(time){frame=0;if(!state.ready)return;const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(keys.size&&!modalOpen())move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();if(!reduced&&camera.position.z> -25&&time-lastResidentShadow>160){renderer.shadowMap.needsUpdate=true;lastResidentShadow=time;}combat?.update(time/1000,dt||.016);const factor=reduced||combat?.armed()?1:1-Math.exp(-7*(dt||.016));camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);camera.lookAt(aim);garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);renderer.render(scene,camera);combat?.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();if(combat?.busy()||motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||keys.size||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
+function draw(time){frame=0;if(!state.ready)return;const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(keys.size&&!modalOpen())move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();if(!reduced&&camera.position.z> -25&&time-lastResidentShadow>160){renderer.shadowMap.needsUpdate=true;lastResidentShadow=time;}arena?.update(time/1000,dt||.016);combat?.update(time/1000,dt||.016);const factor=reduced||combat?.armed()?1:1-Math.exp(-7*(dt||.016));camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);camera.lookAt(aim);garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);combat?.preRender();renderer.render(scene,camera);combat?.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();if(arena?.active()||combat?.busy()||motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||keys.size||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
 let roadCaption='';
 function updateRoadCaption(){if(state.view!=='free'){roadCaption='';return;}const place=garden.pyramid.gathering.inspect().inside?'gathering':camera.position.z<garden.road.start-4?'road':'garden';if(place===roadCaption)return;roadCaption=place;document.querySelector('.world-caption h1').textContent=place==='gathering'?'THE GATHERING':place==='road'?'THE FOREVER ROAD':'GARDEN OF EDEN';document.querySelector('.world-caption .edition').textContent=place==='gathering'?'BREAKTHYRULE / WITHIN THE PYRAMID':place==='road'?'BREAKTHYRULE / BEYOND THE SIGN':'BREAKTHYRULE / IN THE BEGINNING';}
 function updateMusicPrompt(){const point=amphitheater.marker.clone().project(camera),button=$('music-prompt');button.hidden=modalOpen()||!['amphitheater','free'].includes(state.view)||point.z< -1||point.z>1||Math.abs(point.x)>.9||Math.abs(point.y)>.8||camera.position.distanceTo(amphitheater.marker)>26;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,90,stage.clientWidth-90)+'px';button.style.top=T.MathUtils.clamp((1-point.y)*stage.clientHeight/2,245,stage.clientHeight-170)+'px';}}
@@ -290,6 +291,7 @@ function markView(){const libraryView=state.view==='library'||state.view==='libr
 function go(view,instant=false){
  if(view==='film'||view==='lookbook')view='wall';
  if(expedition?.active())expedition.leave();
+ if(arena?.active())arena.exit();
  combat?.holster();
  followResident=null;stage.classList.remove('resident-view');
  if(view==='free')view='spawn';state.view=view;keys.clear();markView();if(!state.ready)return;motion.reset();
@@ -322,6 +324,7 @@ function focusResident(id){
 }
 function move(dt){
  if(expedition&&!expedition.canMove())return;
+ if(arena&&!arena.canMove())return;
  const z=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),x=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
  if(!x&&!z)return;
  prepareWalking();const forward=targetAim.clone().sub(targetPosition);forward.y=0;forward.normalize();const right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));
@@ -378,12 +381,19 @@ function focusVisitor(p){
 multiplayer=window.createGardenMultiplayer?.({T,scene,camera,requestDraw,enter:enterMultiplayer,inExpedition:()=>expedition?.active(),getPose:()=>state.ready&&!expedition?.active()?{x:camera.position.x,z:camera.position.z,yaw:Math.atan2(aim.x-camera.position.x,aim.z-camera.position.z)}:null,lookAt:focusVisitor,stopMoving:()=>{keys.clear();drag=null;}});
 expedition=window.createExpedition({T,scene,camera,garden,layout:window.nightLayout,getPose:()=>state.ready?{x:targetPosition.x,z:targetPosition.z,yaw:Math.atan2(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z)}:null,place(x,z,lx=x,lz=z-5){motion.reset();freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,1.75,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=60;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},stopMoving(){keys.clear();drag=null;},requestDraw,returnHome:()=>go('spawn',true)});
 combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,reduced,requestDraw,
- canAct:()=>state.ready&&!modalOpen()&&!expedition?.active(),
+ canAct:()=>state.ready&&!modalOpen()&&!expedition?.active()&&(arena?.canAct()??true),
+ shotHook:(...a)=>arena?.shotHook(...a),onExplosion:(...a)=>arena?.onExplosion(...a),
  getLook(){const d=targetAim.clone().sub(targetPosition).normalize();return {yaw:Math.atan2(d.x,-d.z),pitch:Math.asin(T.MathUtils.clamp(d.y,-1,1))};},
  setLook(yaw,pitch){freeView();targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));},
  placePlayer(x,z,lx,lz){if(expedition?.active())expedition.leave();followResident=null;stage.classList.remove('resident-view');motion.reset();freeView();targetPosition.set(x,1.75+amphitheater.groundHeight(new T.Vector3(x,0,z)),z);targetAim.set(lx,targetPosition.y,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=70;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},
  movement:()=>({sprinting:keys.has('shift'),airborne:motion.inspect().airborne})
+});arena=window.createArena?.({T,scene,camera,combat,garden,layout:window.nightLayout,requestDraw,hudHost:stage.parentElement,
+ placePlayer(x,z,lx,lz){followResident=null;stage.classList.remove('resident-view');motion.reset();freeView();targetPosition.set(x,1.75+amphitheater.groundHeight(new T.Vector3(x,0,z)),z);targetAim.set(lx,targetPosition.y,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=70;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},
+ setNight(v){garden.nightRoad?.setOverride(v);},
+ onExit(){go('spawn');},
+ openShop(){document.exitPointerLock?.();shop.open?.();}
 });
+
 $('night-dialog').addEventListener('close',()=>{if(expedition.active()&&expedition.canMove()&&!modalOpen())renderer.domElement.focus({preventScroll:true});});
-window.breakThyRuleShowroom={combat:()=>combat,go,inspect,showSide,focusResident,getState:()=>({...state,combat:combat?.inspect(),position:camera.position.toArray(),movement:{...motion.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.district.inspect(),library:gardenLibrary?.inspect(),residents:residents.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
+window.breakThyRuleShowroom={combat:()=>combat,arena:()=>arena,go,inspect,showSide,focusResident,getState:()=>({...state,combat:combat?.inspect(),position:camera.position.toArray(),movement:{...motion.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.district.inspect(),library:gardenLibrary?.inspect(),residents:residents.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
 })();
