@@ -73,7 +73,7 @@ window.GardenCharacter = {
   shoe.map=GardenCharacterDetails.shoeTexture(T);
   const skinIndices=[];
   const at=i=>data.positions.slice(i*3,i*3+3);
-  const armWeight=i=>data.weights.slice(i*4,i*4+4).reduce((s,w,k)=>s+w*([5,6,7,11,12,13].includes(data.indices[i*4+k])?1:0),0);
+  const armBones=new Set(data.bones.flatMap((b,i)=>/^(upperarm|lowerarm|wrist|thumb|index|middle|ring|pinky)/.test(b.name)?[i]:[])),armWeight=i=>data.weights.slice(i*4,i*4+4).reduce((s,w,k)=>s+w*(armBones.has(data.indices[i*4+k])?1:0),0);
   for(let j=0;j<data.body.length;j+=3){const ids=data.body.slice(j,j+3),y=ids.reduce((s,i)=>s+at(i)[1]/3,0);if(y>.7)skinIndices.push(...ids);}
   // Clip polygons at hems/hairlines, interpolating skin weights at the new vertices.
   // Selecting whole triangles here would leave visibly saw-toothed borders.

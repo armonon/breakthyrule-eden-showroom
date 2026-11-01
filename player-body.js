@@ -7,7 +7,7 @@
  const clamp=(n,l,h)=>Math.max(l,Math.min(h,n)),smooth=(l,h,n)=>{const t=clamp((n-l)/(h-l),0,1);return t*t*(3-2*t);};
  const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
  function createPlayerBody({T,scene,camera,pickables=[],enabled=()=>true,requestDraw=()=>{}}){
-  let baseFov=null,ownFov=null,model=null,signature='',defaults=null,checked=-1e9,clock=0,frame=0,yaw=null,turning=false,guardUntil=0,grabUntil=0,grabPoint=null,hover=null,wall=null;
+  let baseFov=null,ownFov=null,model=null,signature='',defaults=null,loading=null,checked=-1e9,clock=0,frame=0,yaw=null,turning=false,guardUntil=0,grabUntil=0,grabPoint=null,hover=null,wall=null;
   const forward=new T.Vector3(),left=new T.Vector3(),up=new T.Vector3(0,1,0),probe=new T.Vector3(),ray=new T.Raycaster(),center=new T.Vector2();
   // The character comes from the signed-in account, else the creator's latest draft, else the schema defaults.
   function appearance(){
@@ -16,7 +16,9 @@
    return {...defaults,...best?.appearance};
   }
   async function refresh(){
-   if(!defaults){defaults={};try{const schema=await (await fetch('/character-schema.json')).json();defaults=Object.fromEntries([['version',1],...Object.values(schema).filter(v=>v&&typeof v==='object').flatMap(g=>Object.entries(g).map(([k,s])=>[k,s.default]))]);}catch{return;}}
+   // One schema fetch shared by every refresh; a body is only built once the defaults are really in.
+   loading??=fetch('/character-schema.json').then(r=>r.json()).then(schema=>{defaults=Object.fromEntries([['version',1],...Object.values(schema).filter(v=>v&&typeof v==='object').flatMap(g=>Object.entries(g).map(([k,s])=>[k,s.default]))]);}).catch(()=>{loading=null;});
+   await loading;if(!defaults)return;
    const look=appearance(),next=JSON.stringify(look);if(next===signature)return;signature=next;
    const old=model;try{model=GardenCharacter.create(T,look);}catch{model=old;return;}
    if(old)GardenCharacter.dispose(old);
@@ -26,7 +28,7 @@
   // knee-high birdbath does not raise the hands but a wall, shelf or pillar does, with its true surface normal.
   let nearby=[],gathered=-1e9;const sphere=new T.Sphere();
   function gather(){
-   nearby=[];scene.traverseVisible(node=>{if(!node.isMesh||node.isSkinnedMesh||node.isInstancedMesh||node.isSprite||node.material?.transparent)return;for(let p=node.parent;p;p=p.parent)if(p.userData.characterStyle)return;const g=node.geometry;if(!g.boundingSphere)g.computeBoundingSphere();sphere.copy(g.boundingSphere).applyMatrix4(node.matrixWorld);if(sphere.radius<40&&(g.index?g.index.count:g.attributes.position.count)<60000&&sphere.distanceToPoint(camera.position)<2.5)nearby.push(node);});
+   nearby=[];scene.traverseVisible(node=>{if(!node.isMesh||node.isSkinnedMesh||node.isInstancedMesh||node.isSprite||node.material?.transparent)return;for(let p=node.parent;p;p=p.parent)if(p.userData.characterStyle)return;const g=node.geometry;if(!g?.attributes.position?.count)return;if(!g.boundingSphere){if(!g.attributes.position.array.every(Number.isFinite))return;g.computeBoundingSphere();}if(!Number.isFinite(g.boundingSphere.radius))return;sphere.copy(g.boundingSphere).applyMatrix4(node.matrixWorld);if(sphere.radius<40&&(g.index?g.index.count:g.attributes.position.count)<60000&&sphere.distanceToPoint(camera.position)<2.5)nearby.push(node);});
   }
   function wallAt(offset){
    probe.copy(camera.position).addScaledVector(left,offset);probe.y-=.4;ray.set(probe,forward);ray.far=.85;

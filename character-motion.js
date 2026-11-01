@@ -38,7 +38,13 @@
    // The bind pose is an A-pose: remember which way the hand points in it so reaches can turn the palm.
    const finger=wrist.clone().sub(elbow).normalize(),palm=new T.Vector3(-sign,-.35,0).addScaledVector(finger,-new T.Vector3(-sign,-.35,0).dot(finger)).normalize();
    const handRest=shoulder.clone().add(new T.Vector3(sign*.16*reach,-.92*reach,.08*reach));
-   return {name,sign,arm,leg,shoulder,hip,ankle,reach,handRest,bindHand:basis(finger,palm).invert(),
+   // Fingers (when the rig has them) curl about the axis that swings each finger towards the palm.
+   // The palm faces the side of the knuckle plane the thumb sits on.
+   const fingers=['thumb','index','middle','ring','pinky'].map(f=>[1,2,3].map(k=>bone(f+k+'.'+name))).filter(c=>c.every(Boolean));
+   const inPalm=fingers.length===5?local(fingers[1][0]).sub(local(fingers[4][0])).cross(local(fingers[2][0]).sub(wrist)).normalize():palm.clone();
+   if(fingers.length===5&&inPalm.dot(local(fingers[0][2]).sub(wrist))<0)inPalm.negate();
+   const curlers=fingers.map(chain=>{const d=local(chain[1]).sub(local(chain[0])).normalize();return {chain,thumb:chain[0].name.startsWith('thumb'),axis:d.clone().cross(inPalm).normalize()};});
+   return {name,sign,arm,leg,shoulder,hip,ankle,reach,handRest,bindHand:basis(finger,inPalm.clone()).invert(),fingers:curlers,curl:{x:.3,v:0},
     hand:{x:handRest.clone(),v:new T.Vector3()},foot:{x:ankle.clone(),v:new T.Vector3()},touch:null,touchWeight:{x:0,v:0},punch:null};
   });
   const state={time:null,phase:0,speed:0,weight:0,velocity:new T.Vector3(),last:new T.Vector3(),lastYaw:null,yawRate:0,walkHold:0,
@@ -119,7 +125,7 @@
      const swing=-offsets[i]*.55*(1+run*.4);
      const target=s.handRest.clone().add(v3.set(-s.sign*.03*run,.12*run+.18*Math.max(0,swing),swing+.05*run));
      if(state.airborne)target.add(v3.set(s.sign*.12,.2,0));
-     const lift=api.tune.guardLift;target.lerp(s.shoulder.clone().add(v3.set(-s.sign*.07,.1+lift+(i?0:.03),.3+lift*.6)),state.guard.x);
+     const lift=api.tune.guardLift;target.lerp(s.shoulder.clone().add(v3.set(-s.sign*.08,.02+lift+(i?0:.03),.3+lift*.6)),state.guard.x);
      if(s.sign<0&&state.wave.x>.001)target.lerp(s.shoulder.clone().add(v3.set(-.34,.42+.04*Math.sin(state.time*9),.08+.07*Math.sin(state.time*7))),state.wave.x);
      scalar(s.touchWeight,s.touchTarget||0,dt,3.2,.85);
      let pose=null,hz=6,zeta=.72;
@@ -136,14 +142,21 @@
      const pole=v2.set(s.sign*.5,-.2,-1).lerp(bend.set(s.sign*.45,-1,-.1),up);
      solve(s.arm,toWorld(s.hand.x),group.localToWorld(v3.copy(pole).add(s.shoulder)).sub(group.localToWorld(s.shoulder.clone())));
      // Turn the palm to suit the contact: flat on a wall, reaching into a grab, knuckles forward in a punch.
+     if(!pose&&state.guard.x>.05)pose={kind:'guard'};
      if(pose){
       const rootQ=group.getWorldQuaternion(new T.Quaternion());let finger,palm;
       if(pose.kind==='press'&&pose.normal){const n=pose.normal.clone().normalize();finger=new T.Vector3(0,1,0).addScaledVector(n,-n.y);if(finger.lengthSq()<1e-4)finger.set(0,0,1);finger.normalize().applyAxisAngle(n,s.sign*.35);palm=n.clone().negate();}
+      else if(pose.kind==='guard'){finger=new T.Vector3(0,.8,.6).applyQuaternion(rootQ);palm=new T.Vector3(-s.sign,0,-.25).applyQuaternion(rootQ);}
       else{const from=toWorld(s.shoulder),to=toWorld(s.hand.x);finger=to.sub(from).normalize();palm=new T.Vector3(0,-1,0).applyQuaternion(rootQ);if(pose.kind!=='punch')palm.lerp(new T.Vector3(-s.sign,0,0).applyQuaternion(rootQ),.6);}
       const wq=basis(finger,palm.addScaledVector(finger,-palm.dot(finger)).normalize()).multiply(s.bindHand);
-      const weight=pose.kind==='punch'?1:clamp(s.touchWeight.x,0,1);
+      const weight=pose.kind==='punch'?1:pose.kind==='guard'?clamp(state.guard.x,0,1):clamp(s.touchWeight.x,0,1);
       orient(s.arm.end,s.arm.end.getWorldQuaternion(new T.Quaternion()).slerp(wq,weight));
      }
+     // Fists for guard and punches, a half grip when reaching to grab, flat palms on walls, relaxed otherwise.
+     const kind=s.touch&&s.touchWeight.x>.3?s.touch.kind:null;
+     const curl=s.punch||state.guard.x>.5?1.45:kind==='grab'?.6:kind==='press'?.03:s.sign<0&&state.wave.x>.5?.08:.25;
+     scalar(s.curl,curl,dt,s.punch?10:5,.85);
+     for(const f of s.fingers)f.chain.forEach((b,j)=>b.quaternion.setFromAxisAngle(f.axis,s.curl.x*(f.thumb?.4:[1,1.05,.75][j])));
      if(s.touchWeight.x<.002&&!s.touchTarget)s.touch=null;
     }
    },
