@@ -239,9 +239,9 @@ const garden=createEdenGarden(T,scene,{reduced,mobile:stage.clientWidth<700,onCh
 post.setLights({sky:garden.sky,lamps:()=>garden.nightBuilt()&&garden.district.root.visible?garden.district.lamps:null});
 const nightLaunch=document.createElement('button');nightLaunch.id='night-launch';nightLaunch.textContent='BEYOND EDEN';nightLaunch.title='Night expeditions';$('amphitheater-view').after(nightLaunch);
 const arenaLaunch=document.createElement('button');arenaLaunch.id='arena-launch';arenaLaunch.textContent='ARENA';arenaLaunch.title='PvP arena: swords and crossbows';arenaLaunch.hidden=!window.showroomDeployment?.realtime;nightLaunch.after(arenaLaunch);arenaLaunch.onclick=()=>{if(battle?.active())battle.exit();arena?.enter();};
-const rangeLaunch=document.createElement('button');rangeLaunch.id='range-launch';rangeLaunch.textContent='RANGE';rangeLaunch.title='Firing range · 1–4 to draw a weapon';arenaLaunch.after(rangeLaunch);rangeLaunch.onclick=()=>{if(state.ready)combat?.enterRange();};
+const rangeLaunch=document.createElement('button');rangeLaunch.id='range-launch';rangeLaunch.textContent='RANGE';rangeLaunch.title='Firing range · 1–4 to draw a weapon';arenaLaunch.after(rangeLaunch);rangeLaunch.onclick=()=>{if(!state.ready)return;if(battle?.active())battle.exit();if(arena?.active())arena.leave?.();combat?.enterRange();};
 // Offline battle mode (battle-arena.js): the player and 7 test bots in The Commons of Beyond Eden. ARENA above is the online PvP arena.
-const battleLaunch=document.createElement('button');battleLaunch.id='battle-launch';battleLaunch.textContent='BATTLE';battleLaunch.title='Break Thy Rule: Arena · 8 players, last one standing';rangeLaunch.after(battleLaunch);battleLaunch.onclick=()=>{if(state.ready&&battle){if(expedition?.active())expedition.leave();if(arena?.active())arena.leave?.();battle.start();}};
+const battleLaunch=document.createElement('button');battleLaunch.id='battle-launch';battleLaunch.textContent='BATTLE';battleLaunch.title='Break Thy Rule: Arena · 8 players, last one standing';rangeLaunch.after(battleLaunch);battleLaunch.onclick=()=>{if(state.ready&&battle){if(expedition?.active())expedition.leave();combat?.leaveRange?.();if(arena?.active())arena.leave?.();battle.start();}};
 const amphitheater=createAmphitheater(T,scene,{reduced});
 const music=createGardenMusic({requestDraw,onOpen(){keys.clear();}});
 residents=createGardenResidents(T,scene,{reduced,renderer,sky:garden.sky,onChange(){if(residentDialog.open)renderResidents();if(state.ready){renderer.shadowMap.needsUpdate=true;requestDraw();}}});
@@ -324,6 +324,7 @@ function go(view,instant=false){
  if(view==='film'||view==='lookbook')view='wall';
  if(expedition?.active())expedition.leave();
  if(battle?.active())battle.exit();
+ combat?.leaveRange?.();
  combat?.holster();
  followResident=null;stage.classList.remove('resident-view');
  if(view==='free')view='spawn';state.view=view;keys.clear();walkVelocity.set(0,0,0);markView();if(!state.ready)return;motion.reset();
@@ -376,7 +377,8 @@ function tryStep(step){
  if(arena?.active()){const next=targetPosition.clone().add(step);if(!arena.allowed(next))return null;next.y=1.75+motion.inspect().height;return next;}
  if(pockets?.inside(targetPosition)){const next=targetPosition.clone().add(step);if(pockets.blocks(next))return null;next.y=1.75+motion.inspect().height;return next;}
  const next=garden.constrain(targetPosition.clone().add(step),targetPosition);
- expedition?.constrain(next,targetPosition);
+ // Battles and the firing range take place beyond Eden without an expedition, so its gate (and its entry screen) stays out of them.
+ if(!battle?.active()&&!combat?.inRange())expedition?.constrain(next,targetPosition);
  if(obstacle(next))return null;
  next.y=1.75+groundHeight(next)+motion.inspect().height;
  return next;
@@ -464,11 +466,15 @@ expedition=window.createExpedition({T,scene,camera,garden,layout:window.nightLay
 combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,reduced,requestDraw,
  canAct:()=>state.ready&&!modalOpen()&&!expedition?.active()&&!arena?.active()&&!pockets?.inside(camera.position)&&(battle?.canAct()??true),
  shotHook:(...a)=>battle?.shotHook(...a),onExplosion:(...a)=>battle?.onExplosion(...a),
+ // The range is on the brick road beyond the door, where night falls: keep it in daylight while it is in use.
+ onRange(on){if(on)garden.district;garden.nightRoad?.setOverride(on?0:null);},
  getLook(){const d=targetAim.clone().sub(targetPosition).normalize();return {yaw:Math.atan2(d.x,-d.z),pitch:Math.asin(T.MathUtils.clamp(d.y,-1,1))};},
  setLook(yaw,pitch){freeView();targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));},
  placePlayer(x,z,lx,lz){if(expedition?.active())expedition.leave();followResident=null;stage.classList.remove('resident-view');motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75+groundHeight(new T.Vector3(x,0,z)),z);targetAim.set(lx,targetPosition.y,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=70;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},
  movement:()=>({sprinting:keys.has('shift'),airborne:motion.inspect().airborne})
 });
+// No expeditions while a battle is on: its gate, its entry screen and the Attendant stay out of the arena.
+{const openNight=$('night-launch').onclick;$('night-launch').onclick=event=>{if(battle?.active())battle.exit();combat?.leaveRange?.();openNight?.(event);};}
 battle=window.createBattleArena?.({T,scene,camera,combat,garden,layout:window.nightLayout,requestDraw,hudHost:stage.parentElement,
  placePlayer(x,z,lx,lz){followResident=null;stage.classList.remove('resident-view');motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75+groundHeight(new T.Vector3(x,0,z)),z);targetAim.set(lx,targetPosition.y,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=70;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},
  setNight(v){if(v!=null)garden.district;garden.nightRoad?.setOverride(v);},

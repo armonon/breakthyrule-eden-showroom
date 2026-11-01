@@ -34,7 +34,8 @@
   playhouse:[{weapon:'pistol'},{weapon:'pistol'},{ammo:'pistol'},'c4','c4','armor'],
   gardens:[{weapon:'pump'},{weapon:'rifle'},{ammo:'shells'},{ammo:'rifle'},'medkit','armor']
  };
- const ZONE_PHASES=[{wait:35,shrink:30,r:52,dps:2},{wait:25,shrink:25,r:32,dps:4},{wait:20,shrink:20,r:16,dps:7},{wait:15,shrink:18,r:6,dps:11},{wait:10,shrink:15,r:0,dps:18}];
+ // The night closes in slowly: about seven minutes from the first wait to full dark, and the dark only nibbles at first.
+ const ZONE_PHASES=[{wait:70,shrink:60,r:52,dps:1},{wait:50,shrink:50,r:32,dps:2},{wait:40,shrink:40,r:16,dps:4},{wait:30,shrink:36,r:6,dps:7},{wait:20,shrink:30,r:0,dps:12}];
  const BOT_NAMES=['ADAM','LILITH','SERAPH','JUBAL','NAAMAH','ENOCH','ZILLAH','TUBAL','ADAH','IRAD','METHUSA'];
 
  function armorFromGarment(item){

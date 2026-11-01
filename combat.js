@@ -370,11 +370,14 @@
   function groundAt(x,z,from=12){const h=worldHits(new T.Vector3(x,from,z),new T.Vector3(0,-1,0),40);return h?h.point.y:0;}
   function targetOf(object){let v=object;while(v){if(v.userData.target)return v.userData.target;v=v.parent;}return null;}
 
+  let rangeOn=false,rangeRoot=null;
+  // The range lives in its own group, shown only while the player is at the range (never in a battle). It stands on the
+  // brick road beyond the sky box's hidden door (z -21.5), so everything sits 12 m further out than it first did.
   function buildRange(){
-   const roadX=11.7;
+   const roadX=11.7,DZ=-12;rangeRoot=new T.Group();rangeRoot.name='Firing range targets';rangeRoot.visible=rangeOn;world.add(rangeRoot);
    const add=(t)=>{targets.push(t);return t;};
    const plate=(x,z,kind)=>{
-    const y=groundAt(x,z),stand=new T.Group();stand.position.set(x,y,z);world.add(stand);
+    z+=DZ;const y=groundAt(x,z),stand=new T.Group();stand.position.set(x,y,z);rangeRoot.add(stand);
     const H=kind==='gong'?1.9:1.75;
     for(const s of [-1,1]){cyl(.022,.026,H,M.frameSteel,stand,[s*.42,H/2,0],null,12);mesh(new T.CylinderGeometry(.05,.07,.06,12),M.frameSteel,stand,[s*.42,.03,0]);}
     cyl(.02,.02,.9,M.frameSteel,stand,[0,H,0],[0,0,Math.PI/2],12);
@@ -389,7 +392,7 @@
     stand.userData.target=t;return t;
    };
    const post=(x,z)=>{
-    const y=groundAt(x,z),r=new T.Group();r.position.set(x,y,z);world.add(r);
+    z+=DZ;const y=groundAt(x,z),r=new T.Group();r.position.set(x,y,z);rangeRoot.add(r);
     const pivot=new T.Group();r.add(pivot);
     const log=cyl(.13,.15,1.55,M.post,pivot,[0,.775,0],null,22);log.material=M.post;
     cyl(.135,.135,.012,M.putty,pivot,[0,1.552,0],null,22);
@@ -706,12 +709,14 @@
     <div class="ch-scope" aria-hidden="true"><i></i></div>
     <div class="ch-hurt"></div>
     <div class="ch-score"></div>
-    <div class="ch-keys">LMB FIRE · HOLD RMB FOCUS · R RELOAD · 1–7 SWAP · G DETONATE · X HOLSTER</div>
-    <button class="ch-lock" type="button"><strong>CLICK TO ENGAGE</strong><span>MOUSE TO AIM · ESC TO RELEASE · X TO HOLSTER</span></button>`;
+    <div class="ch-keys">LMB FIRE · HOLD RMB FOCUS · R RELOAD · 1–7 OR WHEEL SWAP · G DETONATE · X, 0 OR SAME NUMBER PUT AWAY</div>
+    <button class="ch-lock" type="button"><strong>CLICK TO ENGAGE</strong><span>MOUSE TO AIM · ESC TO RELEASE · X TO PUT AWAY</span></button>
+    <button class="ch-putaway" type="button">PUT AWAY WEAPON <b>X</b></button>`;
    hudHost.appendChild(el);
    const q=s=>el.querySelector(s);
 
    q('.ch-lock').onclick=e=>{e.stopPropagation();requestLock();};
+   q('.ch-putaway').onclick=e=>{e.stopPropagation();holster();};
    let toastTimer=0,hitTimer=0,trueTimer=0;const cache=new Map();
    const set=(node,key,val,fn)=>{if(cache.get(key)===val)return;cache.set(key,val);fn(node,val);};
    const text=(sel,val)=>set(q(sel),sel,val,(n,v)=>{n.textContent=v;});
@@ -727,8 +732,12 @@
      if(!current)return;
      const w=current,s=state[w.id];
      text('.ch-name',w.name+' / '+w.kind);
-     const ids=slotIds();set(el,'slots',ids.join(','),()=>{const box=q('.ch-slots');box.replaceChildren(...ids.map((id,i)=>{const W=WEAPONS.find(x=>x.id===id),b=document.createElement('button');b.dataset.id=id;b.innerHTML=`<b>${i+1}</b>${W.name}`;b.onclick=e=>{e.stopPropagation();equip(id);};return b;}));cache.delete('active');});
+     const ids=slotIds();set(el,'slots',ids.join(','),()=>{const box=q('.ch-slots');
+      // Empty hands first, then every weapon carried, each with its key and what is left in it.
+      const hands=document.createElement('button');hands.dataset.id='';hands.className='ch-hands';hands.innerHTML='<b>X</b>EMPTY HANDS';hands.title='Put the weapon away (X, 0 or the same number)';hands.onclick=e=>{e.stopPropagation();holster();};
+      box.replaceChildren(hands,...ids.map((id,i)=>{const W=WEAPONS.find(x=>x.id===id),b=document.createElement('button');b.dataset.id=id;b.innerHTML=`<b>${i+1}</b><span>${W.name}</span><small></small>`;b.title=W.name+' / '+W.kind;b.onclick=e=>{e.stopPropagation();if(current?.id===id)holster();else equip(id);};return b;}));cache.delete('active');});
      set(el,'active',w.id,()=>el.querySelectorAll('.ch-slots button').forEach(b=>b.classList.toggle('active',b.dataset.id===w.id)));
+     for(const b of el.querySelectorAll('.ch-slots button[data-id]:not(.ch-hands)')){const W=WEAPONS.find(x=>x.id===b.dataset.id),st=state[W.id],r=reserveOf(W);set(b.lastChild,'ammo:'+W.id,W.id==='axe'?'':W.id==='c4'?String(arsenal?arsenal.reserve.c4||0:W.mag):st.ammo+'/'+(r===Infinity?W.mag:r),(n,v)=>{n.textContent=v;});}
      if(w.id==='axe'){text('.ch-count b','∞');text('.ch-count small','');}
      else if(w.id==='c4'){const live=charges.filter(c=>!c.done).length;text('.ch-count b',String(arsenal?arsenal.reserve.c4||0:w.mag-live));text('.ch-count small',live?` · ${live} ARMED`:` / ${w.mag}`);}
      else{const r=reserveOf(w);text('.ch-count b',String(s.ammo));text('.ch-count small',' / '+(r===Infinity?w.mag:r)+(w.id==='pump'&&s.chamber===false&&s.ammo>0?' · PUMP':''));}
@@ -940,7 +949,8 @@
   function onKey(e){
    if(e.ctrlKey||e.metaKey||e.altKey||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)||e.target.isContentEditable||document.querySelector('dialog[open]'))return;
    const k=e.key.toLowerCase();
-   if(/^[1-7]$/.test(k)){if(!o.canAct())return;const id=slotIds()[+k-1];if(!id)return;e.preventDefault();equip(id);return;}
+   if(/^[1-7]$/.test(k)){if(!o.canAct())return;const id=slotIds()[+k-1];if(!id)return;e.preventDefault();if(armed&&current?.id===id)holster();else equip(id);return;}
+   if((k==='0'||k==='`')&&armed){e.preventDefault();holster();return;}
    if(k==='g'&&armed&&current?.id==='c4'){e.preventDefault();detonate();return;}
    if(!armed)return;
    if(k==='q'){e.preventDefault();if(previous)equip(previous);}
@@ -975,6 +985,14 @@
    renderer.domElement.addEventListener('contextmenu',e=>{if(armed)e.preventDefault();});
   }
   document.addEventListener('keydown',onKey);
+  // Mouse wheel while aiming: next / previous weapon, with empty hands at either end of the list.
+  let lastWheel=0;
+  document.addEventListener('wheel',e=>{
+   if(!armed||!locked||document.querySelector('dialog[open]'))return;e.preventDefault();
+   const t=performance.now();if(t-lastWheel<140)return;lastWheel=t;
+   const ring=[null,...slotIds()],at=Math.max(0,ring.indexOf(current?.id??null)),next=ring[(at+(e.deltaY>0?1:-1)+ring.length)%ring.length];
+   if(next)equip(next);else holster();
+  },{passive:false});
 
   function slotIds(){return arsenal?arsenal.slots():WEAPONS.map(w=>w.id);}
   function equip(id){
@@ -1001,8 +1019,9 @@
    if(document.pointerLockElement===renderer.domElement)document.exitPointerLock();
    current=null;adsBlend=0;if(camera.zoom!==1){camera.zoom=1;camera.updateProjectionMatrix();}o.requestDraw();
   }
+  function setRange(on){if(rangeOn===on)return;rangeOn=on;if(rangeRoot)rangeRoot.visible=on;o.onRange?.(on);renderer.shadowMap.needsUpdate=true;o.requestDraw();}
   function enterRange(){
-   build();o.placePlayer(11.7,-12.4,11.7,-30);
+   build();setRange(true);o.placePlayer(11.7,-24.4,11.7,-42);
    const l=o.getLook();yaw=l.yaw;pitch=l.pitch;
    equip(current?.id||'pistol');
    hud.toast('THE RANGE · steel at 10, 18, 28 and 43 m · posts for the axe');
@@ -1011,6 +1030,8 @@
   function requestFrame(){o.requestDraw();}
 
   function update(time,dt){
+   // Walking back into the garden or far off down the road ends the range.
+   if(rangeOn&&(camera.position.z>-21||Math.hypot(camera.position.x-11.7,camera.position.z+40)>45))setRange(false);
    lastTime=time;
    if(!built)return;
    // Effects keep running even when holstered
@@ -1220,7 +1241,7 @@
   };
 
   return {
-   equip,holster,enterRange,update,render,preRender,remoteShot,hurt,arsenal:arsenalApi,weapons:WEAPONS,
+   equip,holster,enterRange,leaveRange(){setRange(false);},inRange:()=>rangeOn,update,render,preRender,remoteShot,hurt,arsenal:arsenalApi,weapons:WEAPONS,
    worldHits:(o2,d,f)=>{build();return worldHits(o2,d,f);},groundAt:(x,z,y)=>{build();return groundAt(x,z,y);},
    scoped:()=>scoped,
    syncLook(dPitch=0){const l=o.getLook();yaw=l.yaw;pitch=clamp(l.pitch+dPitch,-1.35,1.35);},
