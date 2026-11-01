@@ -1,0 +1,3 @@
+Poly Haven textures (CC0 1.0, no attribution required), downloaded 2026-10-31 from https://polyhaven.com/textures:
+leafy_grass (2k diffuse, 1k normal), monastery_stone_floor (1k diff, arm, nor_gl), bark_brown_02 (1k diff, arm, nor_gl).
+Diffuse maps recompressed with sips for size; normals are OpenGL convention (three.js default).

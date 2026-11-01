@@ -92,7 +92,7 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false}){
   apple:{trunk:1.9,trunkRadius:.24,forkStart:.6,children:[5,3,3],spread:[1.05,.85,.75],lift:.28,ratio:[.85,.6,.55],gnarl:.2,depth:3,leafSize:.95,clusters:3,fruit:.28},
   // Woodland trees seen at night through fog: two branching levels and fewer, larger leaf cards (~1/3 the triangles).
   forest:{trunk:3.1,trunkRadius:.3,forkStart:.5,children:[6,4],spread:[.95,.75],lift:.35,ratio:[.62,.6],gnarl:.12,depth:2,leafSize:2.1,clusters:3,cards:2,fruit:0},
-  hero:{trunk:4.4,trunkRadius:.42,forkStart:.68,children:[7,4,3],spread:[1.0,.8,.7],lift:.3,ratio:[.78,.6,.55],gnarl:.17,depth:3,leafSize:1.25,clusters:4,fruit:.3}
+  hero:{trunk:4.4,trunkRadius:.42,forkStart:.68,children:[7,4,3],spread:[1.0,.8,.7],lift:.3,ratio:[.78,.6,.55],gnarl:.24,depth:3,leafSize:1.25,clusters:4,fruit:.3,radial:[22,12,7,4],flare:1.55}
  };
  function grow(b,tips,spec,from,dir,length,radius,depth){
   const steps=[7,5,3,2][depth],points=[from.clone()],radii=[radius],d=dir.clone();
@@ -100,7 +100,9 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false}){
    const gnarl=depth?spec.gnarl:spec.gnarl*.25;d.x+=between(-1,1)*gnarl;d.z+=between(-1,1)*gnarl;if(depth>0)d.y+=spec.lift*.25;d.normalize();
    points.push(points[s-1].clone().addScaledVector(d,length/steps));radii.push(radius*(1-s/steps*(depth?.7:.45)));
   }
-  tube(b,points,radii,[9,6,4,3][depth]);
+  // Root flare: the trunk swells where it meets the ground.
+  if(!depth&&spec.flare){radii[0]*=spec.flare;radii[1]*=1+(spec.flare-1)*.35;}
+  tube(b,points,radii,(spec.radial||[9,6,4,3])[depth]);
   if(depth>=spec.depth){for(let k=0;k<spec.clusters;k++)tips.push(points[steps-(k%2)].clone().add(new T.Vector3(between(-.3,.3),between(-.1,.35),between(-.3,.3)).multiplyScalar(length)));return;}
   const count=spec.children[depth],perp=new T.Vector3(),axis=new T.Vector3(),childDir=new T.Vector3();
   for(let k=0;k<count;k++){

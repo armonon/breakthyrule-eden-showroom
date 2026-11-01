@@ -10,8 +10,11 @@ window.createEdenGarden=function(T,scene,{reduced=false,mobile=false,onChange=()
  const assetLoader=new T.TextureLoader(),assetJobs=[];
  function surface(path,repeat,color=true){let texture;assetJobs.push(new Promise(resolve=>{texture=assetLoader.load(path,resolve,undefined,resolve);}));texture.wrapS=texture.wrapT=T.RepeatWrapping;texture.repeat.set(repeat,repeat);texture.anisotropy=8;if(color)texture.colorSpace=T.SRGBColorSpace;return texture;}
  const stone=new T.MeshStandardMaterial({color:0xdad9c7,map:surface('/assets/eden-stone-color.jpg',1),normalMap:surface('/assets/eden-stone-normal.jpg',1,false),normalScale:new T.Vector2(.65,.65),roughness:.93});
- const bark=new T.MeshStandardMaterial({color:0x67513d,roughness:1});
- const terrain=new T.Mesh(new T.PlaneGeometry(240,240,100,100),new T.MeshStandardMaterial({color:0xa4bd79,map:surface('/assets/eden-grass-color.jpg',80),normalMap:surface('/assets/eden-grass-normal.jpg',80,false),normalScale:new T.Vector2(.65,.65),roughness:1}));
+ // Photographic bark (Poly Haven CC0) shared by every tree; tubes map U around the trunk and V along it.
+ const barkMap=surface('/assets/eden-textures/bark_brown_02_diff.jpg',1),barkNormal=surface('/assets/eden-textures/bark_brown_02_nor.jpg',1,false),barkRough=surface('/assets/eden-textures/bark_brown_02_arm.jpg',1,false);
+ for(const texture of [barkMap,barkNormal,barkRough])texture.repeat.set(2,1.1);
+ const bark=new T.MeshStandardMaterial({color:0xb9ab98,map:barkMap,normalMap:barkNormal,normalScale:new T.Vector2(1.2,1.2),roughnessMap:barkRough,roughness:1});
+ const terrain=new T.Mesh(new T.PlaneGeometry(240,240,100,100),new T.MeshStandardMaterial({color:0xa4bd79,map:surface('/assets/eden-textures/leafy_grass_diff.jpg',80),normalMap:surface('/assets/eden-textures/leafy_grass_nor.jpg',80,false),normalScale:new T.Vector2(.65,.65),roughness:1}));
  terrain.rotation.x=-Math.PI/2;terrain.position.y=-.09;terrain.receiveShadow=true;garden.add(terrain);
  // Break up the tiled lawn texture with large soft patches (greener / drier, lighter / darker) from world position.
  terrain.material.onBeforeCompile=shader=>{
@@ -19,7 +22,12 @@ window.createEdenGarden=function(T,scene,{reduced=false,mobile=false,onChange=()
   shader.fragmentShader=`varying vec2 vLawn;
 float lawnHash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(lawnHash(i),lawnHash(i+vec2(1,0)),f.x),mix(lawnHash(i+vec2(0,1)),lawnHash(i+vec2(1,1)),f.x),f.y);}
-`+shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+`+shader.fragmentShader.replace('#include <map_fragment>',`
+ // Anti-tiling: blend a second, rotated, larger-scale sample of the same grass through world-space noise.
+ vec2 lawnUvB=mat2(.8,-.6,.6,.8)*vMapUv*.37+vec2(.31,.67);
+ vec4 lawnSample=mix(texture2D(map,vMapUv),texture2D(map,lawnUvB),smoothstep(.3,.7,lawnNoise(vLawn*.19+4.)));
+ diffuseColor*=lawnSample;
+ diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.86,1.1,.74),.55);
  float lawnBroad=lawnNoise(vLawn*.07)*.65+lawnNoise(vLawn*.23)*.35,lawnDry=smoothstep(.55,.85,lawnNoise(vLawn*.11+17.));
  diffuseColor.rgb*=mix(.84,1.1,lawnBroad);diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(1.12,1.04,.78),lawnDry*.6);`);
  };
@@ -37,7 +45,6 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  garden.add(sky);scene.fog=new T.FogExp2(0xc7d9b8,.016);
 
  function canvasTexture(size,paint){const c=document.createElement('canvas');c.width=c.height=size;paint(c.getContext('2d'),size);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;return t;}
- const barkMap=canvasTexture(256,c=>{c.fillStyle='#93856d';c.fillRect(0,0,256,256);for(let i=0;i<450;i++){const x=between(0,256);c.strokeStyle=['#5a5145','#b2a38a','#7e725e'][i%3];c.lineWidth=between(.5,3);c.beginPath();c.moveTo(x,0);for(let y=0;y<=256;y+=12)c.lineTo(x+Math.sin(y*.07+i)*3,y);c.stroke();}});barkMap.wrapS=barkMap.wrapT=T.RepeatWrapping;barkMap.repeat.set(2,3);bark.map=barkMap;bark.bumpMap=barkMap;bark.bumpScale=.075;bark.color.set(0xd1c0a3);
  // Each foliage card contains individual leaves, with a cutout silhouette for sunlight and shadows.
  const leaves=canvasTexture(256,(c,s)=>{
   for(let i=0;i<85;i++){const a=between(0,Math.PI*2),r=Math.sqrt(random())*100,x=128+Math.cos(a)*r,y=128+Math.sin(a)*r;
