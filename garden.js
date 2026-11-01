@@ -111,7 +111,9 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  for(let i=0;i<14;i++){const cloud=new T.Sprite(new T.SpriteMaterial({map:cloudTex,transparent:true,opacity:.65,depthWrite:false,fog:false}));cloud.position.set(between(-90,90),between(27,42),between(-95,-45));cloud.scale.set(between(28,48),between(12,18),1);garden.add(cloud);}
  const dustPos=new Float32Array(90*3);for(let i=0;i<90;i++){dustPos[i*3]=between(-15,15);dustPos[i*3+1]=between(.5,6);dustPos[i*3+2]=between(-15,18);}
  const dustGeo=new T.BufferGeometry();dustGeo.setAttribute('position',new T.BufferAttribute(dustPos,3));const dust=new T.Points(dustGeo,new T.PointsMaterial({color:0xffefb8,size:.026,transparent:true,opacity:.6,depthWrite:false}));garden.add(dust);
- const snake=window.createTreeSnake(T,scene,{bark,reduced,model:heroModel,onChange});
+ // The serpent is a CC0 photogrammetry scan of a Japanese pit viper (assets/eden-hero/pit-viper-LICENSE.txt).
+ const viperModel=window.showroomAssets.model('/assets/eden-hero/pit-viper.glb?v=1');viperModel.catch(()=>{});
+ const snake=window.createTreeSnake(T,scene,{bark,reduced,model:heroModel,viper:viperModel,onChange});assetJobs.push(snake.ready);
  // The night section (pyramid court, district, night woodland) is built only when the viewer heads for the road
  // entrance or an expedition starts, one piece per frame so the build never lands as a single long stall.
  let pyramid=null,district=null,nightSteps=null,lastViewer=null;

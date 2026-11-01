@@ -1,0 +1,11 @@
+Japanese Pit Viper (Gloydius blomhoffii) 3D scan
+
+Author: ffish.asia / floraZia.com (Sketchfab: ffishAsia-and-floraZia)
+Source: https://sketchfab.com/3d-models/cc0-japanese-pit-viper-5ba0e26d08aa4228bcfee60d0c63cf6a
+License: CC0 1.0 Universal (public domain)
+License text: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+Changes: removed the crawling animation, pruned unused data and quantized the
+geometry (KHR_mesh_quantization) for the web. tree-snake.js poses the rigged
+scan bone by bone so it coils round the apple tree's snake limb, sways the head
+and adds a forked tongue.
