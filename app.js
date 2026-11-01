@@ -233,7 +233,7 @@ const fill=new T.DirectionalLight(0xe4edff,.35);fill.position.set(10,9,18);scene
 const lighting=createEdenLighting(T,renderer,scene,{sun:light,hemi,camera,mobile:stage.clientWidth<700});window.edenLighting=lighting;
 const post=createEdenPost(T,renderer,scene,camera,{enabled:stage.clientWidth>=700});window.edenPost=post;
 const quality=createAdaptiveResolution(renderer,{max:Math.min(devicePixelRatio,1.5)});window.edenQuality=quality;
-try{const response=await fetch('/night-layout.json?v=1');if(!response.ok)throw new Error('Night district unavailable');window.nightLayout=await response.json();}catch(error){fallback();return;}
+try{const response=await fetch('/night-layout.json?v=2');if(!response.ok)throw new Error('Night district unavailable');window.nightLayout=await response.json();}catch(error){fallback();return;}
 const garden=createEdenGarden(T,scene,{reduced,mobile:stage.clientWidth<700,onChange:requestDraw});
 // Lens flare and god rays from the sky's sun; glare from the night district's lanterns while it is on screen.
 post.setLights({sky:garden.sky,lamps:()=>garden.nightBuilt()&&garden.district.root.visible?garden.district.lamps:null});

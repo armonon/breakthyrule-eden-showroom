@@ -1,0 +1,123 @@
+{
+ "url": "http://127.0.0.1:8790/",
+ "measured": "2026-11-01T15:14:37.134Z",
+ "viewport": "1280x800 @2x",
+ "district": {
+  "landmarks": [
+   {
+    "name": "The Moon Temple",
+    "x": -12,
+    "z": -43
+   },
+   {
+    "name": "The Observatory",
+    "x": 37,
+    "z": -42
+   },
+   {
+    "name": "The Silent Playhouse",
+    "x": -15,
+    "z": -74
+   },
+   {
+    "name": "The Hotel on the Hill",
+    "x": 39,
+    "z": -77
+   },
+   {
+    "name": "The Sunken Gardens",
+    "x": -14,
+    "z": -101
+   }
+  ],
+  "batches": 14,
+  "theatre": "model",
+  "models": {
+   "temple": "model",
+   "observatory": "model",
+   "playhouse": "model",
+   "hotel": "loading",
+   "gardens": "model"
+  },
+  "pages": 0,
+  "watcher": [
+   0,
+   0,
+   0
+  ]
+ },
+ "results": {
+  "theatre-approach": {
+   "samples": 73,
+   "meanFps": 20.4,
+   "p50": 50,
+   "p95": 66.7,
+   "p99": 99.9,
+   "over33": 64
+  },
+  "theatre-facade": {
+   "samples": 127,
+   "meanFps": 34,
+   "p50": 33.3,
+   "p95": 33.4,
+   "p99": 66.7,
+   "over33": 19
+  },
+  "temple-approach": {
+   "samples": 152,
+   "meanFps": 39.5,
+   "p50": 33.2,
+   "p95": 33.4,
+   "p99": 50,
+   "over33": 27
+  },
+  "observatory-approach": {
+   "samples": 166,
+   "meanFps": 43.3,
+   "p50": 16.7,
+   "p95": 33.4,
+   "p99": 33.4,
+   "over33": 19
+  },
+  "hotel-approach": {
+   "samples": 156,
+   "meanFps": 40.9,
+   "p50": 16.8,
+   "p95": 33.4,
+   "p99": 33.4,
+   "over33": 15
+  },
+  "gardens-approach": {
+   "samples": 177,
+   "meanFps": 45.8,
+   "p50": 16.7,
+   "p95": 33.4,
+   "p99": 33.4,
+   "over33": 16
+  },
+  "gardens-court": {
+   "samples": 170,
+   "meanFps": 44.7,
+   "p50": 16.7,
+   "p95": 33.4,
+   "p99": 33.4,
+   "over33": 11
+  },
+  "road-to-theatre": {
+   "samples": 147,
+   "meanFps": 39,
+   "p50": 33.3,
+   "p95": 33.4,
+   "p99": 33.4,
+   "over33": 13
+  },
+  "latheatre-approach": {
+   "samples": 231,
+   "meanFps": 59.7,
+   "p50": 16.7,
+   "p95": 16.7,
+   "p99": 16.8,
+   "over33": 0
+  }
+ }
+}

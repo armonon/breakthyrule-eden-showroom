@@ -33,7 +33,7 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  };
  const p=terrain.geometry.attributes.position;
  for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getY(i),edge=Math.max(0,Math.hypot(x,z)-25),worldZ=-z;
-  const roadClearance=worldZ<roadStart?T.MathUtils.smoothstep(Math.abs(x-roadX),60,80):1;
+  const roadClearance=worldZ<roadStart?T.MathUtils.smoothstep(Math.abs(x-roadX),95,115):1;  // flat under the widened night district
   // The rolling ground flattens out around the black box's valley, then sinks into it.
   const valley=window.edenValley,settled=T.MathUtils.smoothstep(Math.hypot(x-valley.x,worldZ-valley.z),valley.rim+2,valley.rim+14);
   p.setZ(i,Math.sin(x*.12)*Math.cos(z*.15)*Math.min(6,edge*.15)*roadClearance*settled+valley.height(x,worldZ));
@@ -126,7 +126,7 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  const nightBuilt=()=>!!nightRoad;
  return {snake,get nightRoad(){return nightRoad;},get pyramid(){buildNight(true);return pyramid;},get district(){buildNight(true);return district;},nightBuilt,ready:Promise.allSettled(assetJobs),constrain(position,previous){
   if(position.z< -12&&!nightBuilt())buildNight(true);
-  if(previous.z< -20){if(position.z< -111)pyramid.constrain(position);else{const width=T.MathUtils.lerp(2.7,50,T.MathUtils.smoothstep(-position.z,20,30));position.x=T.MathUtils.clamp(position.x,roadX-width,roadX+width);}}
+  if(previous.z< -20){if(position.z< -111)pyramid.constrain(position);else{const width=T.MathUtils.lerp(2.7,90,T.MathUtils.smoothstep(-position.z,20,30));position.x=T.MathUtils.clamp(position.x,roadX-width,roadX+width);}}
   else{position.x=T.MathUtils.clamp(position.x,-20,20);if(position.z< -20&&Math.abs(position.x-roadX)>2.7)position.z=-20;}
   if(district?.blocks(position)||pyramid?.blocks(position))position.copy(previous);
   if(position.z>26&&!window.edenValley.reaches(position.x,position.z)){if(previous.z>26)position.copy(previous);else position.z=26;}

@@ -1,0 +1,241 @@
+{
+ "url": "http://127.0.0.1:8777/",
+ "measured": "2026-11-01T14:20:43.724Z",
+ "viewport": "1280x800 @2x",
+ "district": {
+  "landmarks": [
+   {
+    "name": "The Moon Temple",
+    "x": -12,
+    "z": -43
+   },
+   {
+    "name": "The Observatory",
+    "x": 37,
+    "z": -42
+   },
+   {
+    "name": "The Silent Playhouse",
+    "x": -15,
+    "z": -74
+   },
+   {
+    "name": "The Hotel on the Hill",
+    "x": 39,
+    "z": -77
+   },
+   {
+    "name": "The Sunken Gardens",
+    "x": -14,
+    "z": -101
+   },
+   {
+    "name": "The False Gate",
+    "x": -46,
+    "z": -40
+   },
+   {
+    "name": "The Palace of Mirrors",
+    "x": -46,
+    "z": -68
+   },
+   {
+    "name": "The Redwood Chapel",
+    "x": -46,
+    "z": -97
+   },
+   {
+    "name": "The First Cathedral",
+    "x": -68,
+    "z": -50
+   },
+   {
+    "name": "The Campanile",
+    "x": -68,
+    "z": -84
+   },
+   {
+    "name": "The High Tower",
+    "x": 64,
+    "z": -42
+   },
+   {
+    "name": "The Three Arches",
+    "x": 64,
+    "z": -74
+   },
+   {
+    "name": "The Rose Window",
+    "x": 64,
+    "z": -100
+   },
+   {
+    "name": "The Organ Tower",
+    "x": 88,
+    "z": -60
+   }
+  ],
+  "batches": 14,
+  "theatre": "model",
+  "models": {
+   "temple": "model",
+   "observatory": "model",
+   "playhouse": "model",
+   "hotel": "model",
+   "gardens": "model",
+   "girard": "model",
+   "latheatre": "model",
+   "stjames": "model",
+   "vibiana": "model",
+   "methodist": "model",
+   "immanuel": "waiting",
+   "baptist": "waiting",
+   "christian": "waiting",
+   "firstcong": "waiting"
+  },
+  "pages": 0,
+  "watcher": [
+   0,
+   0,
+   0
+  ]
+ },
+ "results": {
+  "theatre-approach": {
+   "samples": 172,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.7,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "theatre-facade": {
+   "samples": 172,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.7,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "temple-approach": {
+   "samples": 172,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.8,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "observatory-approach": {
+   "samples": 173,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.8,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "hotel-approach": {
+   "samples": 172,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.8,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "gardens-approach": {
+   "samples": 173,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.7,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "gardens-court": {
+   "samples": 172,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.8,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "road-to-theatre": {
+   "samples": 172,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.8,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "girard-approach": {
+   "samples": 172,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.8,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "latheatre-approach": {
+   "samples": 172,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.7,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "stjames-approach": {
+   "samples": 172,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.8,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "vibiana-approach": {
+   "samples": 172,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.8,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "methodist-approach": {
+   "samples": 172,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.8,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "immanuel-approach": {
+   "samples": 172,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.8,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "baptist-approach": {
+   "samples": 172,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.7,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "christian-approach": {
+   "samples": 172,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.7,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "firstcong-approach": {
+   "samples": 172,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.8,
+   "p99": 16.8,
+   "over33": 0
+  }
+ }
+}
