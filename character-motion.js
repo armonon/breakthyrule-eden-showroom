@@ -86,6 +86,9 @@
       for(const [a,b,min] of stops){const d=v1.subVectors(P[b],P[a]),l=d.length()||1e-6;if(l<min){const c=(l-min)/l*.5;P[a].addScaledVector(d,c);P[b].addScaledVector(d,-c);}}
       P.forEach((p,i)=>{const floor=ground+.05;if(p.y<floor){p.y=floor;Q[i].x+=(p.x-Q[i].x)*.35;Q[i].z+=(p.z-Q[i].z)*.35;}});
      }
+     // Walls and props: a joint that would enter something solid stays where it was across the floor plan.
+     const solid=root.GardenCharacterMotion.solid;
+     if(solid)P.forEach((p,i)=>{if(p.y<ground+2.2&&solid(p)&&!solid(Q[i])){p.x=Q[i].x;p.z=Q[i].z;}});
     }
    }
    // Pelvis and chest take their full orientation from a left-right pair and an up direction; limbs just aim.
@@ -129,8 +132,8 @@
    // Jab with the hand furthest back; returns the seconds until the fist lands.
    punch(target){const s=sides[state.punches++%2];s.punch={t:0,target:target?toLocal(target):s.shoulder.clone().add(new T.Vector3(-s.sign*.08,.02,.62))};return .12;},
    hit(direction,strength=1){const d=direction.clone().applyQuaternion(group.getWorldQuaternion(new T.Quaternion()).invert());d.y=0;if(d.lengthSq()>1e-6)d.normalize();
-    state.hits=(state.hits||[]).filter(t=>state.time-t<1.3);state.hits.push(state.time);if(!ragdoll.active&&(strength>=1.8||state.hits.length>=3)){state.hits=[];api.knockdown(direction,Math.max(strength,1.4));return;}
-    state.flinch=state.time+2.5;state.hitPitch.v+=d.z*7*strength;state.hitRoll.v-=d.x*7*strength;state.headPitch.v+=d.z*11*strength;state.stumble.v.addScaledVector(d,.9*strength);},
+    state.hits=(state.hits||[]).filter(t=>state.time-t<1.3);state.hits.push(state.time);if(!ragdoll.active&&(strength>=1.8||state.hits.length>=3)){state.hits=[];api.knockdown(direction,Math.max(strength,1.4));return 'down';}
+    state.flinch=state.time+2.5;state.hitPitch.v+=d.z*7*strength;state.hitRoll.v-=d.x*7*strength;state.headPitch.v+=d.z*11*strength;state.stumble.v.addScaledVector(d,.9*strength);return 'hit';},
    // Knocked down: an explicit call, a hard hit, or the third hit in quick succession.
    knockdown(direction,strength=1.5){const d=direction.clone().setY(0);if(d.lengthSq()<1e-6)d.set(0,0,-1);d.normalize();ragdoll.start(d,strength);},
    update(dt,options={}){
@@ -253,5 +256,12 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
   return api;
  }
  // bodies: every rigged character alive, so interactions can find who is within reach.
- root.GardenCharacterMotion={create,attention:null,bodies:new Set()};
+ // solid(point): optional floor-plan collision the world provides, so ragdolls stop at walls and props.
+ // applyHit: play a hit that arrived from the network on the visitor it names (a server-decided outcome wins).
+ function applyHit(visitorId,direction,{strength=1.2,knockdown=false}={}){
+  for(const body of root.GardenCharacterMotion.bodies)if(body.root.userData.visitorId===visitorId){const d=body.root.position.clone().set(direction.x,0,direction.z);
+   return knockdown?(body.motion.knockdown(d,Math.max(strength,1.4)),'down'):body.motion.hit(d,Math.min(strength,1.7));}
+  return null;
+ }
+ root.GardenCharacterMotion={create,applyHit,attention:null,bodies:new Set(),solid:null};
 })(typeof window==='object'?window:globalThis);

@@ -392,6 +392,9 @@ function focusVisitor(p){
  targetAim.set(p.x,p.ghost?.9:(p.character?.height||175)/100*.58,p.z);requestDraw();
 }
 multiplayer=window.createGardenMultiplayer?.({T,scene,camera,requestDraw,enter:enterMultiplayer,inExpedition:()=>expedition?.active(),getPose:()=>state.ready&&!expedition?.active()?{x:camera.position.x,z:camera.position.z,yaw:Math.atan2(aim.x-camera.position.x,aim.z-camera.position.z)}:null,lookAt:focusVisitor,stopMoving:()=>{keys.clear();drag=null;}});
+// Ragdolls collide with the same walls, props and pond edge that stop the player.
+const solidFar=new T.Vector3(1e6,0,1e6);
+if(window.GardenCharacterMotion)GardenCharacterMotion.solid=p=>{const q=garden.constrain(p.clone(),solidFar.clone());if(q.distanceToSquared(p)>1e-6)return true;return ((p.x-5.7)/4.1)**2+((p.z-3.5)/5.9)**2<1||!!collectionPavilion?.blocks(p)||(p.x<-12.6&&p.x>-13.7&&Math.abs(p.z-.5)<3.5)||Math.hypot(p.x-.5,p.z+7)<.75||!!amphitheater.blocks(p)||!!gardenLibrary?.blocks(p)||!!gardenProps?.blocks(p);};
 // First-person body: your own character under the camera, reaching for walls and things, guarding and punching.
 const playerBody=window.createPlayerBody?.({T,scene,camera,pickables,requestDraw,enabled:()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident});
 expedition=window.createExpedition({T,scene,camera,garden,layout:window.nightLayout,getPose:()=>state.ready?{x:targetPosition.x,z:targetPosition.z,yaw:Math.atan2(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z)}:null,place(x,z,lx=x,lz=z-5){motion.reset();freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,1.75,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=60;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},stopMoving(){keys.clear();drag=null;},requestDraw,returnHome:()=>go('spawn',true)});

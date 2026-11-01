@@ -104,7 +104,10 @@
     const target=nearestOther(1.4),head=target?.byName?.head?.getWorldPosition(new T.Vector3());
     const aimPoint=head||camera.position.clone().addScaledVector(forward,.75).add(new T.Vector3(0,-.12,0));
     const land=model.motion.punch(aimPoint);guardUntil=clock+2.2;requestDraw();
-    if(target)setTimeout(()=>{if(!target.root.parent)return;const p=target.root.getWorldPosition(new T.Vector3());if(Math.hypot(p.x-camera.position.x,p.z-camera.position.z)<1.5)target.motion.hit(p.sub(camera.position).setY(0).normalize(),1.2);requestDraw();},land*1000);
+    if(target)setTimeout(()=>{if(!target.root.parent)return;const p=target.root.getWorldPosition(new T.Vector3());if(Math.hypot(p.x-camera.position.x,p.z-camera.position.z)<1.5){const direction=p.sub(camera.position).setY(0).normalize(),result=target.motion.hit(direction,1.2);
+     // Tell the room: multiplayer can relay this so everyone sees the same hit or knockdown.
+     if(target.root.userData.visitorId)root.dispatchEvent?.(new CustomEvent('eden-punch',{detail:{visitorId:target.root.userData.visitorId,direction:{x:direction.x,z:direction.z},knockdown:result==='down'}}));}
+    requestDraw();},land*1000);
    },
    inspect:()=>({ready:!!model,visible:!!model?.root.visible,yaw:yaw===null?null:+yaw.toFixed(3),wall:wall?+wall.distance.toFixed(2):null,brush:+brush.toFixed(2),plants:[...plants.values()].reduce((n,a)=>n+a.length,0),hover:!!hover,motion:model?.motion.inspect()}),
    dispose(){document.removeEventListener('keydown',onKey);if(model)GardenCharacter.dispose(model);model=null;}
