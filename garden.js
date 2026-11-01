@@ -115,7 +115,7 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  let pyramid=null,district=null,nightSteps=null,lastViewer=null;
  const nightBuilders=[
   ()=>{pyramid=window.createRoadPyramid(T,scene,{roadX,roadEnd,stone,onChange,reduced});},
-  ()=>{district=window.createNightDistrict(T,scene,{stone,leafMat,layout:window.nightLayout,reduced});window.mergeStaticMeshes?.(T,district.root,{skip:o=>o.name.startsWith('Lost page')||o.name.startsWith('Playhouse')});},
+  ()=>{district=window.createNightDistrict(T,scene,{stone,leafMat,layout:window.nightLayout,reduced});window.mergeStaticMeshes?.(T,district.root,{skip:o=>o.name.startsWith('Lost page')||o.userData.landmarkModel});},
   ()=>{nightRoad=window.createNightRoad(T,scene,{sections:roadSections,roadX,roadStart,roadLength,clearingStart:-120,district,sky,bark,forest:flora.forest,stone,roadMaterial,vergeMaterial,clouds:garden.children.filter(node=>node.isSprite),reduced,mobile});roadFirst=-1;if(lastViewer)updateRoad(lastViewer.position);onChange();}
  ];
  // Back in the garden the night section is hidden again, exactly as before it was first built.

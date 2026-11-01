@@ -4,7 +4,7 @@
 //
 //   node tools/agent/capture-night-landmark.mjs --out DIR [--url http://127.0.0.1:8777/] [--seconds 12]
 //
-// Views are [x, z, lookX, lookY, lookZ] in world metres; the Mayan Theatre (playhouse) faces +Z at (-15, -74).
+// Views are [x, z, lookX, lookY, lookZ] in world metres; every landmark's main facade faces +Z.
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -21,8 +21,11 @@ fs.mkdirSync(out, { recursive: true });
 const views = {
   'theatre-approach': [-11, -48, -15, 6, -66],
   'theatre-facade': [-13.5, -56, -15, 5.5, -66],
-  'theatre-statue': [-19, -60.5, -22, 2.6, -64.7],
-  'theatre-doorway': [-15, -62, -15, 2.2, -74],
+  'temple-approach': [-8, -22, -12, 7, -35],
+  'observatory-approach': [33, -20, 37, 6, -34],
+  'hotel-approach': [24, -57, 39, 6, -67],
+  'gardens-approach': [1, -85, -13, 5, -93],
+  'gardens-court': [-14, -91.5, -14, 2.5, -104],
   'road-to-theatre': [11.7, -40, -15, 6, -70],
 };
 
@@ -50,6 +53,11 @@ try {
   for (let i = 0; i < 50 && !page; i++) { try { page = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(t => t.type === 'page'); } catch {} if (!page) await sleep(200); }
   ws = new WebSocket(page.webSocketDebuggerUrl);
   await new Promise(r => ws.addEventListener('open', r, { once: true }));
+  ws.addEventListener('message', e => { const m = JSON.parse(e.data);
+    // surface page errors: a silent exception otherwise shows up only as a district that never builds
+    if (m.method === 'Runtime.exceptionThrown') console.log('PAGE EXCEPTION', (m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text || '').slice(0, 400));
+    if (m.method === 'Runtime.consoleAPICalled' && ['error', 'warning'].includes(m.params.type)) console.log('PAGE', m.params.type, m.params.args.map(a => a.value ?? a.description ?? '').join(' ').slice(0, 300));
+  });
   ws.addEventListener('message', e => { const m = JSON.parse(e.data); const p = pending.get(m.id); if (p) { pending.delete(m.id); m.error ? p.reject(new Error(m.error.message)) : p.resolve(m.result); } });
   await send('Page.enable'); await send('Runtime.enable');
   await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 2, mobile: false });
@@ -60,7 +68,7 @@ try {
   // walk in so the night section builds, then wait for the theatre model
   const status = await evaluate(`new Promise(resolve => { const S = window.breakThyRuleShowroom, t0 = performance.now();
     (function wait(){ S.place(${x0}, ${z0}, ${lx0}, ${lz0}, ${ly0}); const d = S.getState().district;
-      if (d?.theatre === 'model' || performance.now() - t0 > 45000) resolve(d); else setTimeout(wait, 300); })(); })`);
+      if ((d?.models && Object.values(d.models).every(v => v === 'model' || v === 'fallback')) || performance.now() - t0 > 60000) resolve(d); else setTimeout(wait, 300); })(); })`);
   console.log('district', JSON.stringify(status));
   await sleep(3000);
   const results = {};

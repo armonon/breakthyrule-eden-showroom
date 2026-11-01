@@ -1,19 +1,25 @@
 # Night district assets
 
-## mayan-theatre.glb — The Silent Playhouse (Mayan Theatre), pilot
+Five landmarks, built locally (no cloud services) by scripted Blender in the asset workshop
+(`~/Projects/breakthyrule-asset-workshop`: `scripts/blender/btr_kit.py` + one `build_*.py` per building; sources in
+`assets/_world/mayan-theatre/v001/` and `assets/_world/night-buildings/v001/`). Each is an original design that
+translates a building from the internal *Beyond Eden Selected Architectural Atlas*; archive photographs were not
+used as inputs (prompts describe styles in words), and nothing is a replica.
 
-Built locally on 2026-10-31 by `scripts/blender/build_mayan_theatre.py` in the asset workshop
-(`~/Projects/breakthyrule-asset-workshop`, sources in `assets/_world/mayan-theatre/v001/`). No cloud services.
+| GLB | Game landmark | Atlas reading | Style |
+|---|---|---|---|
+| mayan-theatre.glb | The Silent Playhouse | Mayan Theatre | Pre-Columbian revival: sculpted masks, guardians, marquee |
+| moon-temple.glb | The Moon Temple | Wilshire Boulevard Temple | Byzantine revival: ribbed dome on an octagonal drum, triple arches |
+| shrine-observatory.glb | The Observatory | Shrine Auditorium | Moorish revival: horseshoe portal, minarets, onion dome, armillary |
+| citadel-hotel.glb | The Hotel on the Hill | Samson Tire Citadel | Assyrian revival: crenellated gate towers, glazed bands, procession reliefs |
+| egyptian-gardens.glb | The Sunken Gardens | Grauman's Egyptian Theatre | Egyptian revival: battered pylons, papyrus colonnades, sphinx avenue |
 
-- Architecture: scripted in Blender 5.0.1 on the playhouse footprint (18 x 16 m, 3.6 m doorways), so wall
-  collision and the server are unchanged. World-scale box UVs; one draw call per material.
-- Materials: Poly Haven scans, CC0 (large_sandstone_blocks, old_sandstone_02, concrete_brick_wall_001; 1k diff/arm/nor_gl).
-- Reliefs (sun mask, guardian panels, jaguar masks): original designs generated with SDXL Base 1.0 (Draw Things, local),
-  converted by Depth Anything V2 Small (Apache-2.0, local) into displaced geometry plus normal/cavity maps over the
-  sandstone scan. The design images themselves are not shipped. Prompts describe a Maya-revival style in words;
-  no archival photos were used as inputs.
-- Guardian statues: SDXL design -> Modly with Hunyuan3D Mini Turbo (local, 10 steps, octree 380), decimated to 6k
-  triangles and given the sandstone scan material.
-- Marquee lettering: Blender's built-in font, emissive.
-
-Budget: 6.98 MB GLB (JPEG textures, KHR_mesh_quantization), 35.6k triangles, 13 nodes; plain GLB for the r158 GLTFLoader.
+- Footprints, doorways and page sockets are unchanged; `night-district.js` adds collision for new solid parts.
+- Materials: Poly Haven scans, CC0 (1k diff/arm/nor_gl; see the workshop's `downloads/polyhaven/textures/SOURCE.txt`).
+- Reliefs: original designs generated with SDXL Base 1.0 (Draw Things, local), converted by Depth Anything V2 Small
+  (Apache-2.0, local) into coarse displaced geometry plus normal/cavity maps over a stone scan. The design images
+  are not shipped.
+- Statues (Mayan guardians, Assyrian winged guardians, sphinxes): SDXL design -> Modly with Hunyuan3D Mini Turbo
+  (local, 10 steps, octree 380), decimated to 5–6k triangles, given a scan material.
+- Shipping: `tools/pipeline/optimize-landmark.sh` (normal/ARM maps 512 px, JPEG 80, KHR_mesh_quantization).
+  Each GLB is ~2 MB; buildings stream in when the viewer is within 75 m.

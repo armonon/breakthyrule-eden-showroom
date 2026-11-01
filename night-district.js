@@ -19,16 +19,25 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
  function windowBay(p,x,y,z,w=1,h=1.8){box(p,charcoal,x,y,z,w+.2,h+.2,.13);box(p,glow,x,y,z+.08,w,h,.06);box(p,brass,x,y,z+.13,.065,h,.09);box(p,brass,x,y,z+.13,w,.055,.09);box(p,marble,x,y-h/2-.1,z+.12,w+.45,.16,.35);}
  function lantern(p,x,z,y=2.4){mesh(p,shaft,brass,x,y/2,z,.055,y,.055);box(p,glow,x,y,z,.22,.38,.22);box(p,brass,x,y+.25,z,.4,.08,.4);const v=new T.Vector3(x,y,z);p.localToWorld(v);lamps.push(v);}
  function glyphTexture(label){const c=document.createElement('canvas');c.width=512;c.height=256;const g=c.getContext('2d');g.fillStyle='#122328';g.fillRect(0,0,512,256);g.strokeStyle='#ac9564';g.lineWidth=3;g.strokeRect(10,10,492,236);g.beginPath();g.arc(256,87,31,0,Math.PI*2);g.moveTo(224,111);g.lineTo(256,40);g.lineTo(288,111);g.closePath();g.stroke();g.fillStyle='#e6d8b4';g.font='22px Georgia';g.textAlign='center';g.fillText(label.toUpperCase(),256,183,470);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;return t;}
- // The playhouse is the Mayan Theatre: a modelled GLB (scanned stone, sculpted reliefs) replaces its shell once loaded.
- // Until then, or if it fails, the procedural shell stands in; collision is identical either way.
- const theatre={url:'/assets/night/mayan-theatre.glb',shell:null,model:null};
+ // Modelled landmarks (scripted Blender, CC0 scans, sculpted reliefs, Modly statues; atlas-derived, original designs)
+ // replace their procedural buildings once the GLB loads; until then, or if it fails, the procedural version stands in.
+ // Footprint walls are identical either way; `blocks` adds collision for new solid parts (local [x,z,w,d]), `lanterns`
+ // moves the two approach lanterns, `glow` adds pooled-light points (no scene lights: each one costs every material).
+ const MODELS={
+  playhouse:{url:'/assets/night/mayan-theatre.glb',keepInterior:true,glow:[[0,4.4,10.6]]},
+  temple:{url:'/assets/night/moon-temple.glb',glow:[[0,4,0]],blocks:[...[[-7.4,-7.4],[7.4,-7.4],[-7.4,7.4],[7.4,7.4]].map(([x,z])=>[x,z,2,2]),...[0,1,2,3,4,5,6,7].map(i=>[Math.cos(Math.PI/8+i*Math.PI/4)*6.3,Math.sin(Math.PI/8+i*Math.PI/4)*6.3,.8,.8])]},
+  observatory:{url:'/assets/night/shrine-observatory.glb',glow:[[0,3.2,-1]],blocks:[[-7.8,7.8,2.6,2.6],[7.8,7.8,2.6,2.6],[0,-1,2.4,2.4]]},
+  hotel:{url:'/assets/night/citadel-hotel.glb',lanterns:[[-5.85,11.7],[5.85,11.7]],blocks:[...[[-8.2,-10.2],[8.2,-10.2],[-8.2,10.2],[8.2,10.2]].map(([x,z])=>[x,z,2.4,2.4]),[-3,10.9,2.8,1.9],[3,10.9,2.8,1.9],[-3,13.1,2,2.6],[3,13.1,2,2.6],...[-6,-2,2,6].flatMap(z=>[[-5.6,z,.9,.9],[5.6,z,.9,.9]])]},
+  gardens:{url:'/assets/night/egyptian-gardens.glb',lanterns:[[-3,11.2],[3,11.2]],blocks:[[-6.1,8.2,7.4,2.6],[6.1,8.2,7.4,2.6],[-2.12,8.2,.65,2.2],[2.12,8.2,.65,2.2],[-10.4,0,.6,12.4],[10.4,0,.6,12.4],[0,-7.4,12,1.4],...[-5,-2.5,0,2.5,5].flatMap(z=>[[-9,z,1.1,1.1],[9,z,1.1,1.1]]),...[4.6,-2.6].flatMap(z=>[[-5.2,z,1.6,3],[5.2,z,1.6,3]])]}
+ },modelState={},pendingModels=[];
  for(const s of layout.landmarks){
   const p=new T.Group();p.name=s.name;p.position.set(s.x,0,s.z);staticRoot.add(p);p.updateWorldMatrix(true,false);
   const facade=plaster.clone();facade.color.set(s.color);
   box(p,marble,0,-.07,0,s.w+3,.12,s.d+3);
-  const isTheatre=s.id==='playhouse';
-  const shell=isTheatre?new T.Group():p;
-  if(isTheatre){shell.name='Playhouse shell (fallback)';shell.position.copy(p.position);root.add(shell);theatre.shell=shell;loadTheatre(s);}
+  const model=MODELS[s.id];
+  const shell=model?new T.Group():p,q=model&&!model.keepInterior?shell:p;
+  if(model){shell.name=s.name+' (procedural fallback)';shell.userData.landmarkModel=true;shell.position.copy(p.position);root.add(shell);loadModel(s,model,shell);
+   for(const [x,z,w,d] of model.blocks||[])walls.push([s.x+x,s.z+z,w,d]);}
   // Physical walls and server collision use the same doorway dimensions.
   if(s.id!=='gardens'){
    for(const side of [-1,1]){
@@ -40,22 +49,22 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
    for(const y of [.35,s.h-.5,s.h]){box(shell,marble,0,y,s.d/2+.3,s.w+.7,.16,.5);box(shell,marble,0,y,-s.d/2-.3,s.w+.7,.16,.5);}
    for(let x=-s.w/2+.3;x<s.w/2;x+=.7)box(shell,marble,x,s.h-.24,s.d/2+.26,.23,.26,.34);
   }
-  if(!isTheatre){const plaque=new T.Mesh(new T.PlaneGeometry(3.8,1.9),new T.MeshStandardMaterial({map:glyphTexture(s.name),roughness:.7,emissive:0x75654b,emissiveIntensity:.14}));plaque.position.set(-s.w/2+2.3,1.75,s.d/2+.32);p.add(plaque);}
-  for(const side of [-1,1])lantern(p,side*2.5,s.d/2+2);
+  if(!model){const plaque=new T.Mesh(new T.PlaneGeometry(3.8,1.9),new T.MeshStandardMaterial({map:glyphTexture(s.name),roughness:.7,emissive:0x75654b,emissiveIntensity:.14}));plaque.position.set(-s.w/2+2.3,1.75,s.d/2+.32);p.add(plaque);}
+  for(const [x,z] of model?.lanterns||[[-2.5,s.d/2+2],[2.5,s.d/2+2]])lantern(p,x,z);
   if(s.id==='temple'){
-   mesh(p,shaft,marble,0,s.h+.9,0,5.7,1.8,5.7);mesh(p,dome,copper,0,s.h+1.8,0,5.6,5,5.6);mesh(p,shaft,brass,0,s.h+1.8,0,5.8,.2,5.8);
-   mesh(p,orb,brass,0,14.5,0,.22,.22,.22);mesh(p,shaft,brass,0,14,0,.045,1.5,.045);
-   for(const side of [-1,1]){const x=side*6.6;column(p,x,6.6,9,.55);mesh(p,dome,copper,x,9.2,6.6,.9,1.2,.9);for(let z=-5;z<=5;z+=5)column(p,side*5.7,z,4.1,.24);}
-   for(let x=-6;x<=6;x+=3){if(Math.abs(x)<2)continue;arch(p,x,3.8,8.38,1);windowBay(p,x,2.75,8.3,1.2,1.8);}
-   for(let x=-7.4;x<8;x+=.9){const m=box(p,brass,x,5.85,8.29,.42,.42,.06);m.rotation.z=Math.PI/4;}
-   box(p,copper,0,.025,0,9,.05,10);for(let x=-4;x<=4;x+=2)for(let z=-4;z<=4;z+=2){const m=box(p,marble,x,.06,z,.75,.025,.75);m.rotation.y=Math.PI/4;}
+   mesh(q,shaft,marble,0,s.h+.9,0,5.7,1.8,5.7);mesh(q,dome,copper,0,s.h+1.8,0,5.6,5,5.6);mesh(q,shaft,brass,0,s.h+1.8,0,5.8,.2,5.8);
+   mesh(q,orb,brass,0,14.5,0,.22,.22,.22);mesh(q,shaft,brass,0,14,0,.045,1.5,.045);
+   for(const side of [-1,1]){const x=side*6.6;column(q,x,6.6,9,.55);mesh(q,dome,copper,x,9.2,6.6,.9,1.2,.9);for(let z=-5;z<=5;z+=5)column(q,side*5.7,z,4.1,.24);}
+   for(let x=-6;x<=6;x+=3){if(Math.abs(x)<2)continue;arch(q,x,3.8,8.38,1);windowBay(q,x,2.75,8.3,1.2,1.8);}
+   for(let x=-7.4;x<8;x+=.9){const m=box(q,brass,x,5.85,8.29,.42,.42,.06);m.rotation.z=Math.PI/4;}
+   box(q,copper,0,.025,0,9,.05,10);for(let x=-4;x<=4;x+=2)for(let z=-4;z<=4;z+=2){const m=box(q,marble,x,.06,z,.75,.025,.75);m.rotation.y=Math.PI/4;}
   }else if(s.id==='observatory'){
-   mesh(p,shaft,marble,0,s.h+1,-1,6.2,2,6.2);mesh(p,dome,copper,0,s.h+2,-1,6,4.8,6);mesh(p,shaft,brass,0,s.h+2,-1,6.25,.2,6.25);
-   const slit=mesh(p,new T.TorusGeometry(5.95,.12,6,32,Math.PI/2),charcoal,0,s.h+2,-1);slit.rotation.y=Math.PI/2;
-   for(const side of [-1,1]){column(p,side*6.3,7.6,6,.48);mesh(p,dome,copper,side*6.3,6.3,6,.95,1.2,.95);for(let x=3;x<=6;x+=3)windowBay(p,side*x,2.7,8.29,1.25,2.1);}
-   column(p,0,-1,1.5,.45);const scope=mesh(p,shaft,brass,0,2.5,-1,.35,4,.35);scope.rotation.z=.9;
-   for(const angle of [0,Math.PI/2]){const ring=mesh(p,new T.TorusGeometry(1.3,.055,8,48),brass,0,2.6,3);ring.rotation.y=angle;}mesh(p,orb,copper,0,2.6,3,.55,.55,.55);
-   box(p,charcoal,0,.025,0,9,.04,10);for(let a=0;a<12;a++){const n=box(p,brass,Math.sin(a*Math.PI/6)*3,.065,Math.cos(a*Math.PI/6)*3,.08,.04,.4);n.rotation.y=a*Math.PI/6;}
+   mesh(q,shaft,marble,0,s.h+1,-1,6.2,2,6.2);mesh(q,dome,copper,0,s.h+2,-1,6,4.8,6);mesh(q,shaft,brass,0,s.h+2,-1,6.25,.2,6.25);
+   const slit=mesh(q,new T.TorusGeometry(5.95,.12,6,32,Math.PI/2),charcoal,0,s.h+2,-1);slit.rotation.y=Math.PI/2;
+   for(const side of [-1,1]){column(q,side*6.3,7.6,6,.48);mesh(q,dome,copper,side*6.3,6.3,6,.95,1.2,.95);for(let x=3;x<=6;x+=3)windowBay(q,side*x,2.7,8.29,1.25,2.1);}
+   column(q,0,-1,1.5,.45);const scope=mesh(q,shaft,brass,0,2.5,-1,.35,4,.35);scope.rotation.z=.9;
+   for(const angle of [0,Math.PI/2]){const ring=mesh(q,new T.TorusGeometry(1.3,.055,8,48),brass,0,2.6,3);ring.rotation.y=angle;}mesh(q,orb,copper,0,2.6,3,.55,.55,.55);
+   box(q,charcoal,0,.025,0,9,.04,10);for(let a=0;a<12;a++){const n=box(q,brass,Math.sin(a*Math.PI/6)*3,.065,Math.cos(a*Math.PI/6)*3,.08,.04,.4);n.rotation.y=a*Math.PI/6;}
   }else if(s.id==='playhouse'){
    for(const side of [-1,1])for(let z=-5;z<=5;z+=5){column(p,side*6.5,z,4.1,.24);arch(p,side*6.5,3.8,z,1.2);}
    for(let x=-7;x<=7;x+=2.8){if(Math.abs(x)<2)continue;windowBay(shell,x,4.8,8.3,1.3,1.6);}
@@ -65,32 +74,41 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
    for(const x of [-4,-2,2,4])for(const z of [-1,1.5,4]){box(p,velvet,x,.43,z,.85,.16,.8);box(p,velvet,x,.85,z+.38,.85,.9,.12);}
    box(shell,charcoal,0,6,8.7,10,.8,1.1);for(let x=-4.7;x<=4.7;x+=.4)mesh(shell,orb,glow,x,5.7,9.2,.065,.065,.065);
   }else if(s.id==='hotel'){
-   box(p,charcoal,0,11.2,0,16.5,.5,20.5);
-   const roof=mesh(p,new T.ConeGeometry(1,1,4),charcoal,0,14,0,11.4,5.5,14.2);roof.rotation.y=Math.PI/4;
-   for(const side of [-1,1]){mesh(p,shaft,facade,side*6.5,6,8,1.6,12,1.6);mesh(p,new T.ConeGeometry(2.1,4,8),copper,side*6.5,14,8);for(let y=2.5;y<11;y+=2.6){for(const x of [-4,-2,2,4])windowBay(p,x,y,10.3,.9,1.65);windowBay(p,side*6.5,y,9.65,.8,1.5);}}
-   box(p,brass,0,3.35,11.1,6,.18,3);box(p,velvet,0,.035,0,3.3,.05,20);
-   box(p,charcoal,-4,.6,-5,4,1.2,1.4);box(p,brass,-4,1.25,-5,4.3,.1,1.6);
-   for(const side of [-1,1])for(const z of [-4,2]){box(p,marble,side*5,.35,z,3.5,.7,2);box(p,velvet,side*5,.78,z,3.3,.15,1.8);}
+   box(q,charcoal,0,11.2,0,16.5,.5,20.5);
+   const roof=mesh(q,new T.ConeGeometry(1,1,4),charcoal,0,14,0,11.4,5.5,14.2);roof.rotation.y=Math.PI/4;
+   for(const side of [-1,1]){mesh(q,shaft,facade,side*6.5,6,8,1.6,12,1.6);mesh(q,new T.ConeGeometry(2.1,4,8),copper,side*6.5,14,8);for(let y=2.5;y<11;y+=2.6){for(const x of [-4,-2,2,4])windowBay(q,x,y,10.3,.9,1.65);windowBay(q,side*6.5,y,9.65,.8,1.5);}}
+   box(q,brass,0,3.35,11.1,6,.18,3);box(q,velvet,0,.035,0,3.3,.05,20);
+   box(q,charcoal,-4,.6,-5,4,1.2,1.4);box(q,brass,-4,1.25,-5,4.3,.1,1.6);
+   for(const side of [-1,1])for(const z of [-4,2]){box(q,marble,side*5,.35,z,3.5,.7,2);box(q,velvet,side*5,.78,z,3.3,.15,1.8);}
    // A canopy of ivy grows on the wings but leaves the entrances clear.
-   const ivy=leafMat.clone();ivy.color.set(0x758f65);ivy.emissiveIntensity=.08;const leaf=new T.PlaneGeometry(1,1);for(let i=0;i<160;i++){const side=i%2?1:-1;const m=mesh(p,leaf,ivy,side*(6.6+Math.sin(i*3.1)),.5+(i%24)*.4,10.5+Math.sin(i)*.12,.9,1.1,1);m.rotation.z=Math.sin(i*2.3)*.7;}
+   const ivy=leafMat.clone();ivy.color.set(0x758f65);ivy.emissiveIntensity=.08;const leaf=new T.PlaneGeometry(1,1);for(let i=0;i<160;i++){const side=i%2?1:-1;const m=mesh(q,leaf,ivy,side*(6.6+Math.sin(i*3.1)),.5+(i%24)*.4,10.5+Math.sin(i)*.12,.9,1.1,1);m.rotation.z=Math.sin(i*2.3)*.7;}
   }else{
-   box(p,charcoal,0,.02,0,7,.05,8);box(p,water,0,.07,0,6.5,.025,7.5);
-   for(const side of [-1,1]){box(p,marble,side*3.5,.12,0,.35,.25,8.4);for(let z=-5;z<=5;z+=2.5){column(p,side*8,z,3.7,.26);}box(p,marble,side*8,3.95,0,.9,.35,12);}
-   for(const z of [-4.2,4.2])box(p,marble,0,.12,z,7.4,.25,.35);
-   for(const side of [-1,1]){column(p,side*5.8,-4,1.2,.5);mesh(p,shaft,marble,side*5.8,2,-4,.24,1.4,.42);mesh(p,orb,marble,side*5.8,2.95,-4,.25,.35,.25);}
+   box(q,charcoal,0,.02,0,7,.05,8);box(q,water,0,.07,0,6.5,.025,7.5);
+   for(const side of [-1,1]){box(q,marble,side*3.5,.12,0,.35,.25,8.4);for(let z=-5;z<=5;z+=2.5){column(q,side*8,z,3.7,.26);}box(q,marble,side*8,3.95,0,.9,.35,12);}
+   for(const z of [-4.2,4.2])box(q,marble,0,.12,z,7.4,.25,.35);
+   for(const side of [-1,1]){column(q,side*5.8,-4,1.2,.5);mesh(q,shaft,marble,side*5.8,2,-4,.24,1.4,.42);mesh(q,orb,marble,side*5.8,2.95,-4,.25,.35,.25);}
   }
   // A pale approach is visible from the road and doubles as an escape route.
   const tx=11.7-s.x;box(p,marble,tx/2,-.012,s.d/2+3,Math.abs(tx),.04,1.8);
  }
- function loadTheatre(s){
-  // The marquee joins the lamp pool (no extra scene light: in this renderer every light costs every lit material),
-  // so one of the three pooled point lights washes the facade from the bulbs when the viewer is near.
-  lamps.push(new T.Vector3(s.x,4.4,s.z+s.d/2+2.6));
-  window.showroomAssets?.model(theatre.url).then(gltf=>{
-   const model=gltf.scene;model.name='Playhouse / Mayan Theatre';model.position.set(s.x,0,s.z);
-   model.traverse(o=>{if(!o.isMesh)return;o.receiveShadow=true;o.castShadow=!/bulb|sign|relief/.test(o.name);});
-   root.remove(theatre.shell);root.add(model);theatre.model=model;
-  }).catch(error=>console.warn('Mayan Theatre unavailable; keeping the procedural playhouse',error));
+ function loadModel(s,model,shell){
+  // Glow points (the theatre marquee, lit interiors) join the lamp pool, so a pooled light washes them when near.
+  for(const [x,y,z] of model.glow||[])lamps.push(new T.Vector3(s.x+x,y,s.z+z));
+  // Each building streams in when the viewer comes within range (2-3 MB each), not all at once with the district.
+  modelState[s.id]='waiting';pendingModels.push({s,model,shell});
+ }
+ function streamModels(viewer){
+  for(let i=pendingModels.length-1;i>=0;i--){const {s,model,shell}=pendingModels[i];
+   if(Math.hypot(viewer.position.x-s.x,viewer.position.z-s.z)>75)continue;
+   pendingModels.splice(i,1);fetchModel(s,model,shell);}
+ }
+ function fetchModel(s,model,shell){
+  modelState[s.id]='loading';
+  window.showroomAssets?.model(model.url).then(gltf=>{
+   const scene=gltf.scene;scene.name=s.name+' (modelled)';scene.userData.landmarkModel=true;scene.position.set(s.x,0,s.z);
+   scene.traverse(o=>{if(!o.isMesh)return;o.receiveShadow=true;o.castShadow=!/bulb|sign|relief|glass/.test(o.name+o.material?.name);});
+   root.remove(shell);root.add(scene);modelState[s.id]='model';
+  }).catch(error=>{modelState[s.id]='fallback';console.warn(s.name+' model unavailable; keeping the procedural building',error);});
  }
  // Collapse repeated architecture to instanced batches, preserving real geometry at low draw cost.
  staticRoot.updateMatrixWorld(true);const batches=new Map();staticRoot.traverse(o=>{if(!o.isMesh)return;const key=o.geometry.uuid+o.material.uuid;if(!batches.has(key))batches.set(key,{geometry:o.geometry,material:o.material,matrices:[]});batches.get(key).matrices.push(o.matrixWorld.clone());});
@@ -110,7 +128,7 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
  return {root,watcher,walls,lamps,setPages,setState(value){if(value&&value.code!==snapshot?.code)watcher.position.set(value.watcher.x,0,value.watcher.z);snapshot=value;watcher.visible=!!value&&value.phase==='playing';if(value)setPages(value.pages,value.collected);else pageRoot.visible=false;},
   blocks(p){return walls.some(([x,z,w,d])=>Math.abs(p.x-x)<w/2+.3&&Math.abs(p.z-z)<d/2+.3);},
   clearGround(x,z){return layout.landmarks.some(s=>Math.abs(x-s.x)<s.w/2+3&&z-s.z>-s.d/2-4&&z-s.z<s.d/2+9)||layout.landmarks.some(s=>Math.abs(z-(s.z+s.d/2+3))<1.8&&x>Math.min(s.x,11.7)-1&&x<Math.max(s.x,11.7)+1);},
-  update(time,viewer,night){root.visible=viewer.position.z<0;pageRoot.visible=!!snapshot;const nearest=lamps.map(p=>({p,d:p.distanceToSquared(viewer.position)})).sort((a,b)=>a.d-b.d);lightPool.forEach((l,i)=>{l.position.copy(nearest[i].p);l.intensity=night*10;});if(snapshot){const w=snapshot.watcher;watcher.position.lerp(new T.Vector3(w.x,0,w.z),.3);watcher.rotation.y=w.yaw;arms.forEach((a,i)=>{a.rotation.x=reduced?0:Math.sin(time*2+i*Math.PI)*.06;});sigil.material.emissive.set(0x503c22);sigil.material.emissiveIntensity=.2;}},
-  inspect:()=>({landmarks:layout.landmarks.map(s=>({name:s.name,x:s.x,z:s.z})),batches:batches.size,theatre:theatre.model?'model':'fallback',pages:pages.size,watcher:watcher.position.toArray()})
+  update(time,viewer,night){root.visible=viewer.position.z<0;if(root.visible)streamModels(viewer);pageRoot.visible=!!snapshot;const nearest=lamps.map(p=>({p,d:p.distanceToSquared(viewer.position)})).sort((a,b)=>a.d-b.d);lightPool.forEach((l,i)=>{l.position.copy(nearest[i].p);l.intensity=night*10;});if(snapshot){const w=snapshot.watcher;watcher.position.lerp(new T.Vector3(w.x,0,w.z),.3);watcher.rotation.y=w.yaw;arms.forEach((a,i)=>{a.rotation.x=reduced?0:Math.sin(time*2+i*Math.PI)*.06;});sigil.material.emissive.set(0x503c22);sigil.material.emissiveIntensity=.2;}},
+  inspect:()=>({landmarks:layout.landmarks.map(s=>({name:s.name,x:s.x,z:s.z})),batches:batches.size,theatre:modelState.playhouse==='model'?'model':'fallback',models:{...modelState},pages:pages.size,watcher:watcher.position.toArray()})
  };
 };

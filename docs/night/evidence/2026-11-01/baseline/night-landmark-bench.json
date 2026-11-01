@@ -1,0 +1,108 @@
+{
+ "url": "http://127.0.0.1:8790/",
+ "measured": "2026-11-01T09:20:42.634Z",
+ "viewport": "1280x800 @2x",
+ "district": {
+  "landmarks": [
+   {
+    "name": "The Moon Temple",
+    "x": -12,
+    "z": -43
+   },
+   {
+    "name": "The Observatory",
+    "x": 37,
+    "z": -42
+   },
+   {
+    "name": "The Silent Playhouse",
+    "x": -15,
+    "z": -74
+   },
+   {
+    "name": "The Hotel on the Hill",
+    "x": 39,
+    "z": -77
+   },
+   {
+    "name": "The Sunken Gardens",
+    "x": -14,
+    "z": -101
+   }
+  ],
+  "batches": 48,
+  "theatre": "fallback",
+  "pages": 0,
+  "watcher": [
+   0,
+   0,
+   0
+  ]
+ },
+ "results": {
+  "theatre-approach": {
+   "samples": 413,
+   "meanFps": 52.6,
+   "p50": 16.7,
+   "p95": 33.4,
+   "p99": 33.4,
+   "over33": 11
+  },
+  "theatre-facade": {
+   "samples": 464,
+   "meanFps": 59,
+   "p50": 16.7,
+   "p95": 16.8,
+   "p99": 33.3,
+   "over33": 2
+  },
+  "temple-approach": {
+   "samples": 466,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.7,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "observatory-approach": {
+   "samples": 465,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.7,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "hotel-approach": {
+   "samples": 465,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.8,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "gardens-approach": {
+   "samples": 472,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.7,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "gardens-court": {
+   "samples": 473,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.8,
+   "p99": 16.8,
+   "over33": 0
+  },
+  "road-to-theatre": {
+   "samples": 465,
+   "meanFps": 60,
+   "p50": 16.7,
+   "p95": 16.8,
+   "p99": 16.8,
+   "over33": 0
+  }
+ }
+}
