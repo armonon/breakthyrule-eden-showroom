@@ -62,15 +62,19 @@ window.GardenCharacter = {
   data.bones.forEach((b,i)=>{if(b.parent>=0)bones[b.parent].add(bones[i]);else root.add(bones[i]);});
   const skeleton=new T.Skeleton(bones);root.updateMatrixWorld(true);skeleton.calculateInverses();
   const byName=Object.fromEntries(bones.map(b=>[b.name,b]));
+  // Realistic MakeHuman / MPFB 2 layers (character-human-proxies.js) when their assets are loaded: they are fitted to
+  // the full-resolution hm08 body (assets/character-human-full.js), skinned to this same 52-bone rig, so the motion,
+  // punches and ragdolls drive them exactly as they drive the painted low-poly body.
+  const full=window.GardenHumanFull,realistic=!!(full&&window.GardenHumanProxies?.ready());let disposed=false;
   const baseGeometry=new T.BufferGeometry();baseGeometry.setAttribute('position',new T.Float32BufferAttribute(positions,3));baseGeometry.setIndex(data.body);baseGeometry.computeVertexNormals();
-  const skin=material('#ffffff',{vertexColors:true,map:GardenCharacterDetails.faceTexture(T,a)}),hair=material(a.hairColor,{vertexColors:true}),lips=new T.Color(a.skinTone).lerp(new T.Color('#92504b'),.24);
+  const skin=realistic?null:material('#ffffff',{vertexColors:true,map:GardenCharacterDetails.faceTexture(T,a)}),hair=material(a.hairColor,{vertexColors:true}),lips=new T.Color(a.skinTone).lerp(new T.Color('#92504b'),.24);
   const shirt=material(a.shirtColor,{vertexColors:true}),pants=material(a.pantsColor,{vertexColors:true}),shoe=material('#ebe5da',{vertexColors:true});
   // Baked key light and occlusion in bind space, as vertex colours, so the figure reads even under flat light.
   const light=new T.Vector3(.3,.75,.6).normalize();
   const bake=(x,y,z,nx,ny,nz)=>(.74+.26*Math.max(0,nx*light.x+ny*light.y+nz*light.z))*(.8+.2*smooth(-8.2,3,y))
    *(1-.28*bell(y,6.05,.28)*smooth(.1,.8,z))*(1-.18*bell(Math.abs(x),1.45,.35)*bell(y,4.85,.5))*(1-.16*bell(x,0,.35)*bell(y,.2,.9));
-  shirt.map=a.outfit==='resort'?GardenCharacterDetails.shirtTexture(T):GardenCharacterDetails.clothTexture(T,'shirt');pants.map=GardenCharacterDetails.clothTexture(T,'pants');
-  shoe.map=GardenCharacterDetails.shoeTexture(T);
+  if(!realistic){shirt.map=a.outfit==='resort'?GardenCharacterDetails.shirtTexture(T):GardenCharacterDetails.clothTexture(T,'shirt');pants.map=GardenCharacterDetails.clothTexture(T,'pants');
+  shoe.map=GardenCharacterDetails.shoeTexture(T);}
   const skinIndices=[];
   const at=i=>data.positions.slice(i*3,i*3+3);
   const armBones=new Set(data.bones.flatMap((b,i)=>/^(upperarm|lowerarm|wrist|thumb|index|middle|ring|pinky)/.test(b.name)?[i]:[])),armWeight=i=>data.weights.slice(i*4,i*4+4).reduce((s,w,k)=>s+w*(armBones.has(data.indices[i*4+k])?1:0),0);
@@ -118,6 +122,10 @@ window.GardenCharacter = {
    if(!geometry.attributes.skinIndex){geometry.setAttribute('skinIndex',new T.Uint16BufferAttribute(data.indices,4));geometry.setAttribute('skinWeight',new T.Float32BufferAttribute(data.weights,4));}
    const mesh=new T.SkinnedMesh(geometry,materials);mesh.name=name;mesh.frustumCulled=false;root.add(mesh);mesh.bind(skeleton,new T.Matrix4());return mesh;
   }
+  if(realistic){
+   const fullPositions=[];for(let i=0;i<full.positions.length;i+=3)fullPositions.push(...morph(full.positions.slice(i,i+3)));
+   GardenHumanProxies.build({T,a,data:full,positions:fullPositions,normals:null,morph,rigged,smooth,headCenter:new T.Vector3(...morph([0,7.45,.45])),isDisposed:()=>disposed});
+  }else{
   const skinGeometry=baseGeometry.clone();skinGeometry.setIndex(skinIndices);
   const faceUV=[];for(let i=0;i<positions.length/3;i++)faceUV.push(...GardenCharacterDetails.faceUV(...at(i)));skinGeometry.setAttribute('uv',new T.Float32BufferAttribute(faceUV,2));
   const colors=[],white=new T.Color('#ffffff'),skinColor=new T.Color(a.skinTone),lipTint=lips.clone();
@@ -152,6 +160,7 @@ window.GardenCharacter = {
   clothGeometry.computeVertexNormals();clothGeometry.setAttribute('color',new T.Float32BufferAttribute(clothColors,3));
   const clothes=clippedGeometry(clothGeometry,[{armCut:true,filters:[v=>6.04-(a.outfit==='resort'?1.52:.42)*bell(v.p[0],0,a.outfit==='resort'?.46:.7)*smooth(.2,.8,v.p[2])-v.p[1],v=>v.p[1]-.85]},{filters:[v=>.85-v.p[1],v=>v.p[1]+7.3]},{filters:[v=>-7.3-v.p[1]]}]);
   rigged(clothes,[shirt,pants,shoe],'Continuous clothing');clothGeometry.dispose();
+  }
   // Hair follows the actual cranial topology instead of stacked ellipsoids.
   const hairGeometry=baseGeometry.clone();const hp=hairGeometry.attributes.position,hn=hairGeometry.attributes.normal;
   const hairColors=[];
@@ -163,28 +172,29 @@ window.GardenCharacter = {
   }
   hairGeometry.computeVertexNormals();hairGeometry.setAttribute('color',new T.Float32BufferAttribute(hairColors,3));
   const hairRegions=[];
-  if(a.hairStyle!=='none')hairRegions.push({material:0,filters:[v=>{const x=Math.abs(v.p[0]),line=7.07+smooth(.35,1.1,v.p[2])*.69+.08*x;return v.p[1]-(line+(Math.max(line,7.68)-line)*smooth(.68,.82,x));}]});
-  hairRegions.push({material:0,filters:[v=>v.p[2]-1.12,v=>Math.abs(v.p[0])-.14,v=>.53-Math.abs(v.p[0]),v=>v.p[1]-7.475+.009*a.browWeight,v=>7.475+(.018+.024*Math.sin((Math.abs(v.p[0])-.14)/.39*Math.PI))*a.browWeight-v.p[1]]});
+  if(!realistic&&a.hairStyle!=='none')hairRegions.push({material:0,filters:[v=>{const x=Math.abs(v.p[0]),line=7.07+smooth(.35,1.1,v.p[2])*.69+.08*x;return v.p[1]-(line+(Math.max(line,7.68)-line)*smooth(.68,.82,x));}]});
+  if(!realistic)hairRegions.push({material:0,filters:[v=>v.p[2]-1.12,v=>Math.abs(v.p[0])-.14,v=>.53-Math.abs(v.p[0]),v=>v.p[1]-7.475+.009*a.browWeight,v=>7.475+(.018+.024*Math.sin((Math.abs(v.p[0])-.14)/.39*Math.PI))*a.browWeight-v.p[1]]});
   if(a.facialHair==='beard')hairRegions.push({material:0,filters:[v=>v.p[1]-6.04,v=>6.72-v.p[1],v=>v.p[2]-.12,v=>Math.max(Math.abs(v.p[0])-.3,6.45-v.p[1])]});
   if(a.facialHair!=='none')hairRegions.push({material:0,filters:[v=>v.p[2]-1.37,v=>v.p[1]-6.71,v=>6.8-v.p[1],v=>.31-Math.abs(v.p[0])]});
-  rigged(clippedGeometry(hairGeometry,hairRegions),hair,'Sculpted hair');hairGeometry.dispose();baseGeometry.dispose();
+  if(hairRegions.length)rigged(clippedGeometry(hairGeometry,hairRegions),hair,'Sculpted hair');hairGeometry.dispose();baseGeometry.dispose();
   const head=byName.head,headIndex=bones.indexOf(head);
   // Both eyeballs are one low-poly mesh with the iris painted into a tiny texture.
-  const eyes=GardenCharacterDetails.merge(T,data.eyes.map(point=>{const center=new T.Vector3(...morph(point)).sub(joints[headIndex]),r=.0146*a.eyeSize*1.08;return new T.SphereGeometry(r,10,8).scale(1,.86,1).translate(center.x,center.y,center.z);}));
-  const eyeMesh=new T.Mesh(eyes,material('#ffffff',{map:GardenCharacterDetails.eyeTexture(T,a)}));eyeMesh.name='Eyes';head.add(eyeMesh);
+  if(!realistic){const eyes=GardenCharacterDetails.merge(T,data.eyes.map(point=>{const center=new T.Vector3(...morph(point)).sub(joints[headIndex]),r=.0146*a.eyeSize*1.08;return new T.SphereGeometry(r,10,8).scale(1,.86,1).translate(center.x,center.y,center.z);}));
+  const eyeMesh=new T.Mesh(eyes,material('#ffffff',{map:GardenCharacterDetails.eyeTexture(T,a)}));eyeMesh.name='Eyes';head.add(eyeMesh);}
   // Blob shadow in place of a shadow-map pass, as era-typical and cheaper.
   const blob=new T.Mesh(new T.PlaneGeometry(1,1).rotateX(-Math.PI/2),new T.MeshBasicMaterial({map:GardenCharacterDetails.blobTexture(T),transparent:true,depthWrite:false,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-2}));
   blob.name='Blob shadow';blob.position.y=.006;blob.scale.set(.62+mass*.25,1,.42+mass*.2);blob.renderOrder=-1;root.add(blob);
-  GardenCharacterDetails.add({T,a,morph,head,headOrigin:joints[headIndex],torso:byName.spine01,torsoOrigin:joints[bones.indexOf(byName.spine01)]});
+  GardenCharacterDetails.add({T,a,skipHair:realistic,morph,head,headOrigin:joints[headIndex],torso:byName.spine01,torsoOrigin:joints[bones.indexOf(byName.spine01)]});
   for(const side of ['L','R'])limbs.push(byName['upperleg01.'+side],byName['upperarm01.'+side]);
-  root.scale.setScalar(a.height/175);root.userData.characterStyle='ps2-painted-human';
+  root.scale.setScalar(a.height/175);root.userData.characterStyle=realistic?'makehuman-realistic':'ps2-painted-human';
   // Procedural motion (character-motion.js) replaces the old fixed swing; animate() keeps its old signature.
-  const model={root,limbs,ghost:false,height:a.height/100,skeleton,byName};
+  const model={root,limbs,ghost:false,height:a.height/100,skeleton,byName,markDisposed(){disposed=true;}};
   model.motion=GardenCharacterMotion.create(T,model);model.animate=model.motion.animate;GardenCharacterMotion.bodies.add(model);
   model.animate(0);return model;
  },
  dispose(model){
   const geometries=new Set(),materials=new Set();model.root.traverse(n=>{if(n.geometry)geometries.add(n.geometry);if(n.material)for(const m of Array.isArray(n.material)?n.material:[n.material])materials.add(m);});
-  for(const g of geometries)g.dispose();for(const m of materials){m.map?.dispose();m.dispose();}model.skeleton?.dispose();model.root.removeFromParent();GardenCharacterMotion.bodies.delete(model);
+  model.markDisposed?.();
+  for(const g of geometries)g.dispose();for(const m of materials){if(!m.map?.userData.shared)m.map?.dispose();m.dispose();}model.skeleton?.dispose();model.root.removeFromParent();GardenCharacterMotion.bodies.delete(model);
  }
 };

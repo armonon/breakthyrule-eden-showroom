@@ -14,3 +14,6 @@ bones renamed to the showroom's names. Only the CC0 data is used, not MPFB2's GP
 Showroom adaptations: Blender-decimated low-poly body (~3.5k triangles, extra detail in hands)
 and clothing (~2.6k), body and face morphs, clothing,
 hair styling, materials and animation. No Grand Theft Auto assets used.
+Realistic avatars: assets/character-human-full.js is the full-resolution hm08 body (CC0), skinned to the
+same MPFB2 game-engine rig by transferring the low-poly body's weights (tools/build-human-full.py); the
+MakeHuman skins, eyes, brows, lashes and hair fitted to it are CC0 (assets/mh/LICENSE.txt).
