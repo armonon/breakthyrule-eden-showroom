@@ -69,7 +69,7 @@
    const capture=()=>{order.forEach((b,i)=>{P[i]=b.getWorldPosition(new T.Vector3());});for(const [b,t] of tips)P[t.index]=tipWorld(b);};
    function start(impulse,strength){
     group.updateMatrixWorld(true);capture();Q.length=0;
-    const up=new T.Vector3(0,1,0);P.forEach((p,i)=>{const h=clamp((p.y-group.getWorldPosition(v2).y)/1.6,0,1);Q[i]=p.clone().addScaledVector(impulse,-(.012+.03*h)*strength).addScaledVector(up,-.008*strength*h);});
+    const up=new T.Vector3(0,1,0);P.forEach((p,i)=>{const h=clamp((p.y-group.getWorldPosition(v2).y)/1.6,0,1);Q[i]=p.clone().addScaledVector(impulse,-(.007+.02*h)*strength).addScaledVector(up,-.008*strength*h);});
     links.length=0;stops.length=0;const add=(a,b,list=links)=>{if(a>=0&&b>=0)list.push([a,b,P[a].distanceTo(P[b])]);};
     order.forEach((b,i)=>{if(order.includes(b.parent))add(at(b.parent),i);});for(const [b,t] of tips)add(at(b),t.index);
     const L=pick('upperarm01.L'),R=pick('upperarm01.R'),hl=pick('upperleg01.L'),hr=pick('upperleg01.R'),chest=pick('spine01'),neck=pick('neck01'),hd=pick('head'),root=pick('root');
@@ -115,6 +115,7 @@
      const still=Q.every((q,i)=>q.distanceToSquared(P[i])<1e-7);
      if(clock>2.2&&(still||clock>4.5)){active=false;recover=1;snapshot=model.skeleton.bones.map(b=>b.quaternion.clone());snapPelvis.copy(order[0].position);}},
     blend(dt){recover=Math.max(0,recover-dt/1.1);const k=smooth(0,1,1-recover);model.skeleton.bones.forEach((b,i)=>b.quaternion.slerpQuaternions(snapshot[i],b.quaternion.clone(),k));order[0].position.lerpVectors(snapPelvis,order[0].position.clone(),k);},
+    get recoverLeft(){return recover;},
     inspect:()=>active?'down':recover>0?'getting up':'standing'
    };
   })();
@@ -135,6 +136,8 @@
     state.hits=(state.hits||[]).filter(t=>state.time-t<1.3);state.hits.push(state.time);if(!ragdoll.active&&!root.GardenCharacterMotion.serverDecides&&(strength>=1.8||state.hits.length>=3)){state.hits=[];api.knockdown(direction,Math.max(strength,1.4));return 'down';}
     state.flinch=state.time+2.5;state.hitPitch.v+=d.z*7*strength;state.hitRoll.v-=d.x*7*strength;state.headPitch.v+=d.z*11*strength;state.stumble.v.addScaledVector(d,.9*strength);return 'hit';},
    // Knocked down: an explicit call, a hard hit, or the third hit in quick succession.
+   // 1 while knocked down, falling to 0 as the character gets up; 0 when standing.
+   downAmount:()=>ragdoll.active?1:ragdoll.recovering?ragdoll.recoverLeft:0,
    knockdown(direction,strength=1.5){if(ragdoll.active)return;const d=direction.clone().setY(0);if(d.lengthSq()<1e-6)d.set(0,0,-1);d.normalize();ragdoll.start(d,strength);},
    update(dt,options={}){
     dt=clamp(dt||0,0,1/20);

@@ -8,6 +8,7 @@
  const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
  function createPlayerBody({T,scene,camera,pickables=[],enabled=()=>true,requestDraw=()=>{}}){
   let baseFov=null,ownFov=null,model=null,signature='',defaults=null,loading=null,checked=-1e9,clock=0,frame=0,yaw=null,turning=false,guardUntil=0,grabUntil=0,grabPoint=null,hover=null,wall=null;
+  const eye=new T.Vector3(),headQ=new T.Quaternion(),turnAround=new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),Math.PI);
   const forward=new T.Vector3(),left=new T.Vector3(),up=new T.Vector3(0,1,0),probe=new T.Vector3(),ray=new T.Raycaster(),center=new T.Vector2();
   // The character comes from the signed-in account, else the creator's latest draft, else the schema defaults.
   function appearance(){
@@ -60,7 +61,7 @@
   }
   document.addEventListener('keydown',onKey);
   // Someone else's punch landed on us: the body flinches (no first-person knockdown yet).
-  const onPunched=event=>{const d=event.detail?.direction;if(model&&d)model.motion.hit(camera.position.clone().set(d.x,0,d.z),event.detail.knockdown?1.7:1.1);requestDraw();};
+  const onPunched=event=>{const d=event.detail?.direction;if(model&&d){const dir=camera.position.clone().set(d.x,0,d.z);if(event.detail.knockdown)model.motion.knockdown(dir,1.7);else model.motion.hit(dir,1.1);}requestDraw();};
   root.addEventListener?.('eden-punched',onPunched);
   const api={
    update(dt,{aim,velocity=null,airborne=false}={}){
@@ -68,6 +69,14 @@
     if(clock-checked>1.5){checked=clock;refresh();}
     if(!model)return;
     const on=enabled();model.root.visible=on;root.GardenCharacterMotion.attention=on?camera.position:null;if(!on){yaw=null;if(ownFov!==null&&Math.abs(camera.fov-ownFov)<.01){camera.fov=baseFov;camera.updateProjectionMatrix();}ownFov=null;return;}
+    // Knocked down: the body ragdolls where it stood and the camera rides its head (eyes forward of the skull),
+    // then hands the view back to the player's camera as the body gets up.
+    const down=model.motion.downAmount();
+    if(down>0){
+     model.motion.update(dt,{});const head=model.byName.head;head.getWorldPosition(eye);head.getWorldQuaternion(headQ);
+     eye.add(probe.set(0,.035,.09).multiplyScalar(model.root.scale.x).applyQuaternion(headQ));headQ.multiply(turnAround);eye.y=Math.max(eye.y,model.root.position.y+.26); // never inside the ground
+     const k=down>=1?1:smooth(0,1,down);camera.position.lerp(eye,k);camera.quaternion.slerp(headQ,k);requestDraw();return;
+    }
     forward.subVectors(aim,camera.position);const pitch=Math.atan2(forward.y,Math.hypot(forward.x,forward.z));forward.y=0;forward.normalize();left.set(forward.z,0,-forward.x);
     // The body turns with the view only once the head is twisted far enough, or while walking, like a real neck.
     const view=Math.atan2(forward.x,forward.z),speed=velocity?Math.hypot(velocity.x,velocity.z):0;if(yaw===null)yaw=view;
@@ -101,6 +110,7 @@
     model.motion.update(dt,{velocity,wade:brush});
    },
    // Click on something within reach: the hand gets there first, then the caller opens it.
+   downed:()=>!!model&&model.motion.downAmount()>0,
    grab(point){if(!model?.root.visible||!point||point.distanceTo(camera.position)>1.6)return 0;grabPoint=point.clone();grabUntil=clock+.55;requestDraw();return 230;},
    punch(){
     if(!model)return;root.dispatchEvent?.(new CustomEvent('eden-punch-thrown'));

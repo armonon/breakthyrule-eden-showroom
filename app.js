@@ -333,7 +333,7 @@ function focusResident(id){
  document.querySelector('.world-caption h1').textContent=entry.def.name.toUpperCase();document.querySelector('.world-caption .edition').textContent=entry.def.region.toUpperCase();requestDraw();
 }
 function move(dt){
- if(expedition&&!expedition.canMove()){walkVelocity.set(0,0,0);return;}
+ if((expedition&&!expedition.canMove())||playerBody?.downed()){walkVelocity.set(0,0,0);return;}
  const z=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),x=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
  const forward=targetAim.clone().sub(targetPosition);forward.y=0;forward.normalize();const right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));
  const wish=forward.multiplyScalar(z).add(right.multiplyScalar(x));if(wish.lengthSq())wish.normalize().multiplyScalar(motion.speed(keys.has('shift')));
