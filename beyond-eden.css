@@ -1,0 +1,71 @@
+:root {
+  color-scheme: dark;
+  --paper: #e7eee9;
+  --muted: #9baaa5;
+  --ink: #071013;
+  --panel: rgba(7, 14, 17, .78);
+  --line: rgba(221, 235, 227, .19);
+  --glow: #bdffe1;
+  --danger: #ff766f;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--ink);
+  color: var(--paper);
+}
+* { box-sizing: border-box; }
+html, body, #beyond-eden-app, #scene { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body { background: radial-gradient(circle at 50% 20%, #14282a 0, #05090b 70%); }
+button, input { font: inherit; }
+button { color: inherit; }
+canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.hud { position: fixed; z-index: 5; pointer-events: none; }
+.hud button, .hud input { pointer-events: auto; }
+.hud--top { top: 22px; left: 24px; right: 24px; display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+.eyebrow { margin: 0 0 5px; color: var(--muted); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; }
+h1, h2, p { margin-top: 0; }
+h1 { margin-bottom: 0; font-family: Georgia, serif; font-size: clamp(23px, 3vw, 42px); font-weight: 400; letter-spacing: .02em; }
+h2 { margin: 0; font-family: Georgia, serif; font-weight: 400; }
+.backend { display: flex; align-items: center; gap: 8px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 999px; background: rgba(4, 10, 12, .52); backdrop-filter: blur(12px); color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+#backend-dot { width: 7px; height: 7px; border-radius: 50%; background: #dab86e; box-shadow: 0 0 11px currentColor; }
+#backend-dot.live { background: #8fffbf; }
+.hud--status { left: 24px; bottom: 25px; max-width: min(520px, calc(100vw - 48px)); }
+.hud--status p { margin: 3px 0; text-shadow: 0 2px 12px #000; }
+#status-line { font: 17px/1.25 Georgia, serif; }
+#interaction-line { color: var(--muted); font-size: 11px; letter-spacing: .04em; }
+.hud--flashlight { right: 24px; bottom: 25px; width: 190px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(5, 12, 15, .62); backdrop-filter: blur(10px); }
+.meter-row { display: flex; justify-content: space-between; font-size: 11px; letter-spacing: .12em; }
+.meter { height: 3px; margin: 8px 0; background: rgba(255,255,255,.13); overflow: hidden; }
+.meter i { display: block; width: 100%; height: 100%; background: var(--glow); transition: width .12s linear; }
+.hud--flashlight small { color: var(--muted); font-size: 9px; }
+.hud--panel { top: 86px; right: 24px; width: min(340px, calc(100vw - 48px)); padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); backdrop-filter: blur(22px) saturate(120%); box-shadow: 0 22px 70px rgba(0,0,0,.36); }
+.hud--panel[hidden] { display: none; }
+.hud--panel header, dialog header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.hud--panel header button, dialog header button { border: 0; background: transparent; font-size: 25px; line-height: 1; }
+.segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 17px 0 13px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.035); }
+.segmented button, .hud--panel > button, dialog menu button { min-height: 36px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--muted); }
+.segmented button[aria-pressed="true"] { background: rgba(196, 232, 214, .13); border-color: var(--line); color: var(--paper); }
+.check { display: flex; gap: 9px; margin: 9px 0; color: var(--muted); font-size: 12px; }
+.hud--panel > button { width: 100%; margin-top: 8px; border-color: var(--line); }
+.primary { background: var(--paper) !important; color: #071013 !important; }
+.metrics { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 15px 0 0; padding-top: 14px; border-top: 1px solid var(--line); font-size: 11px; }
+.metrics dt { color: var(--muted); }
+.metrics dd { margin: 0; font-variant-numeric: tabular-nums; }
+.icon-button { top: 26px; right: 25px; min-width: 49px; min-height: 31px; border: 1px solid var(--line); border-radius: 999px; background: rgba(5, 12, 15, .65); color: var(--muted); font-size: 10px; letter-spacing: .12em; }
+#quality-open { display: block; top: 70px; right: 25px; pointer-events: auto; }
+#reticle { position: fixed; z-index: 4; left: 50%; top: 50%; width: 5px; height: 5px; margin: -2px; border: 1px solid rgba(235, 255, 246, .78); border-radius: 50%; box-shadow: 0 0 8px rgba(194, 255, 224, .5); pointer-events: none; }
+#fade { position: fixed; z-index: 20; inset: 0; background: #020607; opacity: 1; transition: opacity 1.2s ease; pointer-events: none; }
+#fade.ready { opacity: 0; }
+#fatal { position: fixed; z-index: 30; left: 50%; top: 50%; width: min(620px, calc(100vw - 40px)); transform: translate(-50%, -50%); padding: 24px; border: 1px solid rgba(255,118,111,.45); border-radius: 14px; background: #110a0b; color: #ffd7d4; white-space: pre-wrap; }
+dialog { width: min(680px, calc(100vw - 40px)); max-height: min(80vh, 760px); padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: rgba(5, 12, 15, .96); color: var(--paper); box-shadow: 0 30px 100px #000; }
+dialog::backdrop { background: rgba(0,0,0,.62); backdrop-filter: blur(5px); }
+dialog pre { max-height: 52vh; overflow: auto; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: #030709; color: #cde6da; font: 11px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+dialog menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; margin: 14px 0 0; }
+dialog menu button { padding: 0 14px; border-color: var(--line); }
+@media (max-width: 720px) {
+  .hud--top { top: 14px; left: 14px; right: 14px; }
+  .backend { display: none; }
+  .hud--status { left: 14px; bottom: 14px; }
+  .hud--flashlight { right: 14px; bottom: 72px; width: 160px; }
+  .hud--panel { top: 58px; right: 14px; }
+  #quality-open { top: 14px; right: 14px; }
+  h1 { font-size: 23px; }
+}

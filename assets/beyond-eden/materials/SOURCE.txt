@@ -1,0 +1,2 @@
+Poly Haven textures (CC0 1.0, no attribution required), downloaded 2026-10-31 at 1k: concrete_slab_wall_02, concrete_tile_facade, concrete_pavers_02 (diff, arm, nor_gl)
+https://polyhaven.com/textures

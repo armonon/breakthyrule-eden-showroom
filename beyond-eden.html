@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#050a0c">
+  <meta name="description" content="Beyond Eden browser-realism proof slice: Scottish Rite Temple at night.">
+  <title>Beyond Eden — Scottish Rite Temple Proof Slice</title>
+  <link rel="stylesheet" href="/beyond-eden.css?v=1">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/assets/vendor/three-r187/build/three.webgpu.js",
+      "three/webgpu": "/assets/vendor/three-r187/build/three.webgpu.js",
+      "three/tsl": "/assets/vendor/three-r187/build/three.tsl.js",
+      "three/addons/": "/assets/vendor/three-r187/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <main id="beyond-eden-app" aria-label="Beyond Eden Scottish Rite Temple browser proof slice">
+    <div id="scene" aria-label="Walkable nighttime Scottish Rite Temple plaza"></div>
+
+    <header class="hud hud--top">
+      <div>
+        <p class="eyebrow">CHAPTER 01 / BROWSER REALISM PROOF</p>
+        <h1>THE SEALED TEMPLE</h1>
+      </div>
+      <div class="backend" aria-live="polite">
+        <span id="backend-dot" aria-hidden="true"></span>
+        <span id="backend-label">Starting renderer…</span>
+      </div>
+    </header>
+
+    <section class="hud hud--status" aria-label="Scene status">
+      <p id="status-line">Preparing the plaza…</p>
+      <p id="interaction-line">Click to enter · WASD move · mouse look · F flashlight · Q focus</p>
+    </section>
+
+    <section class="hud hud--flashlight" aria-label="Flashlight status">
+      <div class="meter-row">
+        <span id="flashlight-mode">WIDE</span>
+        <span id="battery-value">100%</span>
+      </div>
+      <div class="meter" role="meter" aria-label="Focused flashlight battery" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+        <i id="battery-fill"></i>
+      </div>
+      <small>F toggle · Q wide/focus · R force flicker</small>
+    </section>
+
+    <aside id="quality-panel" class="hud hud--panel" aria-label="Quality controls" hidden>
+      <header>
+        <div>
+          <p class="eyebrow">RENDER BUDGET</p>
+          <h2>Quality</h2>
+        </div>
+        <button id="quality-close" type="button" aria-label="Close quality panel">×</button>
+      </header>
+      <div class="segmented" role="group" aria-label="Quality preset">
+        <button type="button" data-quality="low">Low</button>
+        <button type="button" data-quality="medium">Medium</button>
+        <button type="button" data-quality="high" aria-pressed="true">High</button>
+      </div>
+      <label class="check"><input id="adaptive-toggle" type="checkbox" checked> Adaptive resolution</label>
+      <label class="check"><input id="streaming-toggle" type="checkbox" checked> District streaming</label>
+      <button id="run-bench" class="primary" type="button">Run all quality presets</button>
+      <button id="capture-frame" type="button">Save current frame PNG</button>
+      <button id="download-report" type="button" disabled>Download report</button>
+      <dl id="live-metrics" class="metrics"></dl>
+    </aside>
+
+    <button id="quality-open" class="hud icon-button" type="button" aria-label="Open quality panel">PERF</button>
+
+    <dialog id="bench-dialog">
+      <form method="dialog">
+        <header>
+          <div>
+            <p class="eyebrow">MEASURED IN THIS BROWSER</p>
+            <h2>Benchmark result</h2>
+          </div>
+          <button value="close" aria-label="Close benchmark result">×</button>
+        </header>
+        <pre id="bench-output"></pre>
+        <menu>
+          <button id="bench-download" value="keep-open" type="button">Download JSON</button>
+          <button value="close" class="primary">Done</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <div id="reticle" aria-hidden="true"></div>
+    <div id="fade" aria-hidden="true"></div>
+    <div id="fatal" hidden role="alert"></div>
+  </main>
+
+  <script>
+  window.addEventListener('error', event => {
+    const fatal = document.getElementById('fatal');
+    if (!fatal || fatal.hasAttribute('data-shown')) return;
+    fatal.dataset.shown = 'true';
+    fatal.hidden = false;
+    fatal.textContent = `Beyond Eden could not start.\n\n${event.message || 'Unknown module error'}\n\nConfirm that the approved three.js r187 vendor files exist under /assets/vendor/three-r187/.`;
+  });
+  window.addEventListener('unhandledrejection', event => {
+    const fatal = document.getElementById('fatal');
+    if (!fatal || fatal.hasAttribute('data-shown')) return;
+    fatal.dataset.shown = 'true';
+    fatal.hidden = false;
+    fatal.textContent = `Beyond Eden could not start.\n\n${event.reason?.stack || event.reason || 'Unhandled startup error'}`;
+  });
+  </script>
+  <script type="module" src="/beyond-eden/main.js?v=1"></script>
+</body>
+</html>

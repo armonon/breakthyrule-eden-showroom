@@ -1,0 +1,82 @@
+{
+ "WebGL2 high": {
+  "runs": 3,
+  "samples": [
+   890,
+   896,
+   896
+  ],
+  "meanFps": 59.7,
+  "low1": 59.5,
+  "p95": 16.8,
+  "p99": 16.8,
+  "over33": 3,
+  "calls": 216,
+  "tris": 64776,
+  "texMiB": 3.5,
+  "xferMiB": 7.98,
+  "buffer": "2560x1600",
+  "dpr": 2,
+  "backend": "WebGL2 fallback"
+ },
+ "high": {
+  "runs": 3,
+  "samples": [
+   900,
+   900,
+   900
+  ],
+  "meanFps": 60.0,
+  "low1": 59.5,
+  "p95": 16.7,
+  "p99": 16.8,
+  "over33": 0,
+  "calls": 216,
+  "tris": 64776,
+  "texMiB": 3.5,
+  "xferMiB": 9.12,
+  "buffer": "2560x1600",
+  "dpr": 2,
+  "backend": "WebGPU"
+ },
+ "medium": {
+  "runs": 3,
+  "samples": [
+   873,
+   873,
+   900
+  ],
+  "meanFps": 59.7,
+  "low1": 59.5,
+  "p95": 16.7,
+  "p99": 16.8,
+  "over33": 1,
+  "calls": 209,
+  "tris": 37739,
+  "texMiB": 3.5,
+  "xferMiB": 9.62,
+  "buffer": "1920x1200",
+  "dpr": 1.5,
+  "backend": "WebGPU"
+ },
+ "low": {
+  "runs": 3,
+  "samples": [
+   890,
+   901,
+   901
+  ],
+  "meanFps": 60.0,
+  "low1": 59.5,
+  "p95": 16.8,
+  "p99": 16.8,
+  "over33": 0,
+  "calls": 79,
+  "tris": 25847,
+  "texMiB": 3.5,
+  "xferMiB": 10.3,
+  "buffer": "1280x800",
+  "dpr": 1,
+  "backend": "WebGPU"
+ }
+}

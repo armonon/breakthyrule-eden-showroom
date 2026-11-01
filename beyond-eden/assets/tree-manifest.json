@@ -1,0 +1,13 @@
+{
+  "schema": "beyond-eden-tree-manifest-v2",
+  "approved": true,
+  "selectionResolvedExternally": true,
+  "source": "Use the previously approved tree asset already available in the user's local project or asset workshop.",
+  "license": "Copy the exact existing local license/receipt data into assets/beyond-eden/trees/tree-source-ledger.json before public use.",
+  "costUsd": null,
+  "lod0": "/assets/beyond-eden/trees/hero-tree-lod0.glb",
+  "lod1": "/assets/beyond-eden/trees/hero-tree-lod1.glb",
+  "billboard": "/assets/beyond-eden/trees/hero-tree-billboard.ktx2",
+  "fallback": "The runtime uses the project-owned procedural proxy if any derivative file is absent.",
+  "note": "Tree selection is already resolved. Do not restart candidate research. Locate the approved source locally and build derivatives."
+}

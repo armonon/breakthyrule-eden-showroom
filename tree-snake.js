@@ -1,29 +1,42 @@
 'use strict';
-window.createTreeSnake=function(T,scene,{bark,reduced=false,onChange=()=>{}}={}){
+window.createTreeSnake=function(T,scene,{bark,reduced=false,model=null,onChange=()=>{}}={}){
  const root=new T.Group();root.name='Apple tree snake';scene.add(root);
  const anchor=new T.Vector3(1.62,2.98,-5.92),start=new T.Vector3(.45,2.55,-6.92),end=new T.Vector3(1.65,2.88,-6.42);
  const axis=end.clone().sub(start).normalize(),normal=new T.Vector3().crossVectors(axis,new T.Vector3(0,1,0)).normalize(),binormal=new T.Vector3().crossVectors(axis,normal).normalize();
  const branch=new T.Mesh(new T.CylinderGeometry(.052,.11,start.distanceTo(end)+.45,14),bark);branch.position.copy(start).lerp(end,.5);branch.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),axis);branch.castShadow=true;branch.receiveShadow=true;root.add(branch);
- const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=512;const c=canvas.getContext('2d');c.fillStyle='#35492a';c.fillRect(0,0,1024,512);
- for(let row=0;row<16;row++)for(let column=-1;column<32;column++){
-  const x=column*32+(row%2)*16,y=row*32;c.fillStyle=['#617348','#52683e','#778254','#52613b'][(row*7+column+32)%4];
-  c.beginPath();c.moveTo(x,y);c.lineTo(x+32,y);c.quadraticCurveTo(x+35,y+20,x+16,y+38);c.quadraticCurveTo(x-3,y+20,x,y);c.fill();c.strokeStyle='#35442d';c.lineWidth=.7;c.stroke();
-  c.strokeStyle='#c6be7944';c.beginPath();c.moveTo(x+5,y+5);c.lineTo(x+23,y+6);c.stroke();
+ // Scales: U runs along the body, V around it. A dark dorsal diamond chain on olive-gold, a pale belly band, and a
+ // matching height map so every scale catches light at its edge.
+ const canvas=document.createElement('canvas'),relief=document.createElement('canvas');canvas.width=relief.width=1024;canvas.height=relief.height=256;
+ const c=canvas.getContext('2d'),h=relief.getContext('2d'),scale=16;
+ const ground=c.createLinearGradient(0,0,0,256);ground.addColorStop(0,'#c8b77a');ground.addColorStop(.18,'#7b7a3c');ground.addColorStop(.5,'#4e5426');ground.addColorStop(.82,'#7b7a3c');ground.addColorStop(1,'#c8b77a');
+ c.fillStyle=ground;c.fillRect(0,0,1024,256);h.fillStyle='#000';h.fillRect(0,0,1024,256);
+ for(let k=0;k<8;k++){const x=k*128+64;
+  for(const [w,color] of [[64,'#d8c58a'],[56,'#1f1a0e'],[40,'#3d3418']]){c.fillStyle=color;c.beginPath();c.moveTo(x-w,128);c.lineTo(x,128-w*.9);c.lineTo(x+w,128);c.lineTo(x,128+w*.9);c.fill();}
+  for(const side of [-1,1]){c.fillStyle='#2a2512';c.beginPath();c.ellipse(x+64,128+side*86,14,9,0,0,Math.PI*2);c.fill();}
  }
- const scales=new T.CanvasTexture(canvas);scales.colorSpace=T.SRGBColorSpace;scales.wrapS=scales.wrapT=T.RepeatWrapping;scales.repeat.set(5,1);scales.anisotropy=8;
- const skin=new T.MeshStandardMaterial({map:scales,bumpMap:scales,bumpScale:.008,color:0xc1bd75,roughness:.43,metalness:0});
- const points=[];
- for(let i=0;i<=100;i++){const t=i/100,angle=t*Math.PI*2*3.3,point=start.clone().lerp(end,t);point.addScaledVector(normal,Math.cos(angle)*.175).addScaledVector(binormal,Math.sin(angle)*.175);points.push(point);}
- points.push(new T.Vector3(1.80,3.08,-6.24),new T.Vector3(1.79,3.11,-6.04),anchor);
- const curve=new T.CatmullRomCurve3(points),segments=240,radial=16,geometry=new T.TubeGeometry(curve,segments,.065,radial,false),positions=geometry.attributes.position;
- for(let ring=0;ring<=segments;ring++){const center=curve.getPointAt(ring/segments),taper=.13+.87*T.MathUtils.smoothstep(ring/segments,0,.22);for(let side=0;side<=radial;side++){const index=ring*(radial+1)+side;positions.setXYZ(index,center.x+(positions.getX(index)-center.x)*taper,center.y+(positions.getY(index)-center.y)*taper,center.z+(positions.getZ(index)-center.z)*taper);}}
+ for(let row=0;row<256/scale*2;row++)for(let column=-1;column<1024/scale+1;column++){
+  const x=column*scale+(row%2)*scale/2,y=row*scale/2,shade=h.createRadialGradient(x+scale*.35,y,1,x+scale*.5,y,scale*.75);
+  shade.addColorStop(0,'#fff');shade.addColorStop(1,'#000');h.fillStyle=shade;h.beginPath();h.ellipse(x+scale*.5,y,scale*.55,scale*.42,0,0,Math.PI*2);h.fill();
+  c.strokeStyle='rgba(20,18,8,.35)';c.lineWidth=1;c.beginPath();c.ellipse(x+scale*.5,y,scale*.55,scale*.42,0,Math.PI*.35,Math.PI*1.65);c.stroke();
+ }
+ const scales=new T.CanvasTexture(canvas),scaleRelief=new T.CanvasTexture(relief);scales.colorSpace=T.SRGBColorSpace;
+ for(const texture of [scales,scaleRelief]){texture.wrapS=texture.wrapT=T.RepeatWrapping;texture.repeat.set(6,1);texture.anisotropy=8;}
+ const skin=new T.MeshStandardMaterial({map:scales,bumpMap:scaleRelief,bumpScale:.0035,roughness:.38,metalness:0});
+ // Coils hug the tapering branch: coil radius = branch radius at that point + body radius.
+ const branchLength=start.distanceTo(end)+.45,branchRadius=t=>.11+(.052-.11)*((t*start.distanceTo(end)+.225)/branchLength);
+ const bodyRadius=s=>.048*(.18+.82*T.MathUtils.smoothstep(s,0,.3))*(1-.28*T.MathUtils.smoothstep(s,.86,.97));
+ const points=[],coils=100;
+ for(let i=0;i<=coils;i++){const t=i/coils,angle=t*Math.PI*2*3,point=start.clone().lerp(end,t),reach=branchRadius(t)+bodyRadius(t*.84)*.92;point.addScaledVector(normal,Math.cos(angle)*reach).addScaledVector(binormal,Math.sin(angle)*reach);points.push(point);}
+ points.push(new T.Vector3(1.78,3.04,-6.28),new T.Vector3(1.79,3.10,-6.06),anchor);
+ const curve=new T.CatmullRomCurve3(points),segments=320,radial=18,geometry=new T.TubeGeometry(curve,segments,1,radial,false),positions=geometry.attributes.position;
+ for(let ring=0;ring<=segments;ring++){const center=curve.getPointAt(ring/segments),radius=bodyRadius(ring/segments);for(let side=0;side<=radial;side++){const index=ring*(radial+1)+side;positions.setXYZ(index,center.x+(positions.getX(index)-center.x)*radius,center.y+(positions.getY(index)-center.y)*radius,center.z+(positions.getZ(index)-center.z)*radius);}}
  geometry.computeVertexNormals();const body=new T.Mesh(geometry,skin);body.name='Coiled scaled body';body.castShadow=true;body.receiveShadow=true;root.add(body);
  const head=new T.Group();head.name='Snake head';head.position.copy(anchor);root.add(head);
- const headMap=scales.clone();headMap.repeat.set(1,1);headMap.needsUpdate=true;
- const headSkin=skin.clone();headSkin.map=headSkin.bumpMap=headMap;
+ const headMap=scales.clone(),headRelief=scaleRelief.clone();headMap.repeat.set(1.4,1);headRelief.repeat.set(1.4,1);headMap.needsUpdate=headRelief.needsUpdate=true;
+ const headSkin=skin.clone();headSkin.map=headMap;headSkin.bumpMap=headRelief;head.scale.setScalar(.82);
  function oval(parent,position,scale,material){const mesh=new T.Mesh(new T.SphereGeometry(1,24,16),material);mesh.position.set(...position);mesh.scale.set(...scale);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;}
  oval(head,[0,0,.05],[.125,.073,.195],headSkin);
- oval(head,[0,-.04,.07],[.096,.022,.158],new T.MeshStandardMaterial({color:0xb1ae7e,roughness:.62}));
+ oval(head,[0,-.04,.07],[.096,.022,.158],new T.MeshStandardMaterial({color:0xc9b98a,roughness:.55}));
  const gold=new T.MeshStandardMaterial({color:0xd0a14a,roughness:.27}),black=new T.MeshStandardMaterial({color:0x141b0c,roughness:.28});
  for(const side of [-1,1]){oval(head,[side*.107,.034,.09],[.019,.022,.023],gold);oval(head,[side*.124,.037,.10],[.005,.016,.011],black);oval(head,[side*.045,.019,.229],[.004,.003,.003],black);}
  const mouth=new T.CatmullRomCurve3([new T.Vector3(-.112,-.027,.03),new T.Vector3(-.09,-.021,.17),new T.Vector3(0,-.018,.239),new T.Vector3(.09,-.021,.17),new T.Vector3(.112,-.027,.03)]);
@@ -32,6 +45,19 @@ window.createTreeSnake=function(T,scene,{bark,reduced=false,onChange=()=>{}}={})
  const tongueMaterial=new T.MeshStandardMaterial({color:0x8b2842,roughness:.5});
  for(const points of [[[0,-.021,.21],[0,-.023,.34]],[[0,-.023,.34],[-.025,-.024,.40]],[[0,-.023,.34],[.025,-.024,.40]]])tongue.add(new T.Mesh(new T.TubeGeometry(new T.LineCurve3(new T.Vector3(...points[0]),new T.Vector3(...points[1])),1,.003,6,false),tongueMaterial));
  tongue.visible=false;
+
+ // The sculpted serpent (tools/blender/build_hero_tree.py) coils round its own limb of the sculpted tree; it swaps in for
+ // the stand-in branch, body and head shapes above, keeping this skin, the tongue and the animation.
+ model?.then(gltf=>{
+  const source=gltf.scene.getObjectByName('HeroTree'),place=new T.Group();place.position.set(.5,0,-7);root.add(place);
+  const sculpted=source.getObjectByName('SnakeBody').clone();sculpted.material=skin;sculpted.castShadow=sculpted.receiveShadow=true;place.add(sculpted);
+  const node=source.getObjectByName('SnakeHead'),pivot=new T.Group();pivot.position.copy(node.position);pivot.quaternion.copy(node.quaternion);place.add(pivot);
+  for(const old of [branch,body]){root.remove(old);old.geometry.dispose();}
+  for(const child of [...head.children])if(child!==tongue){head.remove(child);child.geometry?.dispose();}
+  for(const part of node.children){const mesh=part.clone();if(mesh.material.name==='skin')mesh.material=headSkin;mesh.castShadow=mesh.receiveShadow=true;head.add(mesh);}
+  // Larger head and bolder diamonds to match the thicker sculpted body (HEAD_SCALE in the build script).
+  head.position.set(0,0,0);head.scale.setScalar(1.2);pivot.add(head);for(const texture of [scales,scaleRelief])texture.repeat.set(4.5,1);root.updateMatrixWorld(true);pivot.getWorldPosition(anchor);onChange();
+ }).catch(error=>console.warn('Sculpted snake unavailable; keeping the stand-in.',error));
 
  const button=document.getElementById('garden-effects');let enabled=true;
  try{enabled=localStorage.getItem('eden-effects-muted')!=='1';}catch{}

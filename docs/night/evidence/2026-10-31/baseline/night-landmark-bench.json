@@ -1,0 +1,83 @@
+{
+ "url": "http://127.0.0.1:8790/",
+ "measured": "2026-11-01T02:25:20.474Z",
+ "viewport": "1280x800 @2x",
+ "district": {
+  "landmarks": [
+   {
+    "name": "The Moon Temple",
+    "x": -12,
+    "z": -43
+   },
+   {
+    "name": "The Observatory",
+    "x": 37,
+    "z": -42
+   },
+   {
+    "name": "The Silent Playhouse",
+    "x": -15,
+    "z": -74
+   },
+   {
+    "name": "The Hotel on the Hill",
+    "x": 39,
+    "z": -77
+   },
+   {
+    "name": "The Sunken Gardens",
+    "x": -14,
+    "z": -101
+   }
+  ],
+  "batches": 54,
+  "pages": 0,
+  "watcher": [
+   0,
+   0,
+   0
+  ]
+ },
+ "results": {
+  "theatre-approach": {
+   "samples": 213,
+   "meanFps": 21.9,
+   "p50": 50,
+   "p95": 66.7,
+   "p99": 83.4,
+   "over33": 135
+  },
+  "theatre-facade": {
+   "samples": 382,
+   "meanFps": 39.3,
+   "p50": 16.8,
+   "p95": 33.4,
+   "p99": 50,
+   "over33": 50
+  },
+  "theatre-statue": {
+   "samples": 437,
+   "meanFps": 44.6,
+   "p50": 16.7,
+   "p95": 33.4,
+   "p99": 50,
+   "over33": 48
+  },
+  "theatre-doorway": {
+   "samples": 349,
+   "meanFps": 35.4,
+   "p50": 33.3,
+   "p95": 50,
+   "p99": 50.1,
+   "over33": 76
+  },
+  "road-to-theatre": {
+   "samples": 337,
+   "meanFps": 37.4,
+   "p50": 33.3,
+   "p95": 33.5,
+   "p99": 50.1,
+   "over33": 50
+  }
+ }
+}

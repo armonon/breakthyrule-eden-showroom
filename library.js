@@ -2,25 +2,38 @@
 window.createGardenLibrary=function(T,scene,onChange){
  const library=new T.Group();library.name='Open library beside the apple tree';scene.add(library);
  const pickables=[],jobs=[],colliders=[];
+ // Box-built furniture is the fallback; the generated old-world set replaces it once it loads.
+ const legacy=new T.Group(),shelfFrame=new T.Group(),standFrame=new T.Group();library.add(legacy);
  const wood=new T.MeshStandardMaterial({color:0xb19b73,roughness:.83});
  const green=new T.MeshStandardMaterial({color:0x244e43,roughness:.65,metalness:.15});
  const pages=new T.MeshStandardMaterial({color:0xf4edda,roughness:1});
- const stone=new T.MeshStandardMaterial({color:0xc3c7b6,roughness:.94});
+ // Worn monastery flagstones (Poly Haven CC0, see assets/eden-textures/SOURCE.txt), about 2 m per repeat.
+ const floorLoader=new T.TextureLoader(),flagstone=(name,color=false)=>{const texture=floorLoader.load('/assets/eden-textures/monastery_stone_floor_'+name+'.jpg',onChange);texture.colorSpace=color?T.SRGBColorSpace:T.NoColorSpace;texture.wrapS=texture.wrapT=T.RepeatWrapping;texture.repeat.set(4.5,4.5);texture.anisotropy=8;return texture;};
+ const stone=new T.MeshStandardMaterial({color:0xd8cfc0,map:flagstone('diff',true),normalMap:flagstone('nor'),roughnessMap:flagstone('arm'),roughness:1});
  function box(w,h,d,x,y,z,material,parent=library){const mesh=new T.Mesh(new T.BoxGeometry(w,h,d),material);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;}
  const deck=new T.Mesh(new T.CylinderGeometry(4.5,4.6,.10,64),stone);deck.position.set(3.1,-.02,-5.7);deck.receiveShadow=true;library.add(deck);
  // Shelves face the path, with every real cover displayed face-out.
- const shelves=new T.Group();shelves.name='Founding library shelf';shelves.position.set(3.6,0,-7.4);library.add(shelves);
- box(3.9,3.12,.07,0,1.6,-.24,green,shelves);
- for(const x of [-1.98,-.66,.66,1.98])box(.07,3.3,.58,x,1.65,0,green,shelves);
- for(const y of [.20,1.19,2.18,3.20])box(4.04,.065,.62,0,y,0,wood,shelves);
- box(4.18,.09,.78,0,3.32,-.04,green,shelves);
+ const shelves=new T.Group();shelves.name='Founding library shelf';shelves.position.set(3.6,0,-7.4);library.add(shelves);shelves.add(shelfFrame);
+ box(3.9,3.12,.07,0,1.6,-.24,green,shelfFrame);
+ for(const x of [-1.98,-.66,.66,1.98])box(.07,3.3,.58,x,1.65,0,green,shelfFrame);
+ for(const y of [.20,1.19,2.18,3.20])box(4.04,.065,.62,0,y,0,wood,shelfFrame);
+ box(4.18,.09,.78,0,3.32,-.04,green,shelfFrame);
  colliders.push({minX:1.35,maxX:5.85,minZ:-8.05,maxZ:-6.85});
+ const keep=new Set([wood,green,pages,stone]);let bookTemplate=null,leathers=[];
+ // Tinted leathers are shared so the spine-out volumes on each shelf batch into a few draw calls.
+ function leatherVolume(index){const node=bookTemplate.clone();node.traverse(o=>{if(o.isMesh){o.castShadow=o.receiveShadow=true;if(o.material.name==='leather')o.material=leathers[index%leathers.length];}});return node;}
  const textureLoader=new T.TextureLoader();
  function bookTexture(book){let tex;jobs.push(new Promise(resolve=>{tex=textureLoader.load(book.cover,()=>{onChange();resolve();},undefined,()=>{const image=new Image();image.onload=()=>{tex.image=image;tex.needsUpdate=true;onChange();resolve();};image.src=window.communityLibrary.cover(book.title);});}));tex.colorSpace=T.SRGBColorSpace;tex.anisotropy=8;return tex;}
  function volume(book,index,parent,x,y,z,width=.55,height=.80){
   const group=new T.Group();group.position.set(x,y,z);parent.add(group);
   const map=bookTexture(book);
   const cover=new T.MeshStandardMaterial({map,transparent:true,roughness:.78,emissive:0xffffff,emissiveMap:map,emissiveIntensity:.32});
+  if(bookTemplate){
+   const body=leatherVolume(index);body.scale.set(width/.55,height/.80,1);group.add(body);body.traverse(o=>{if(o.isMesh){o.userData.bookIndex=index;pickables.push(o);}});
+   // Cover art is laid into the leather inside the gilt fillet frame.
+   const face=new T.Mesh(new T.PlaneGeometry(width*.86-.024,height*.88-.024),cover);face.position.set(.012*width/.55,0,.0535);face.userData.bookIndex=index;face.name=book.title;group.add(face);pickables.push(face);
+   return group;
+  }
   const binding=new T.MeshStandardMaterial({color:[0x29312b,0x672f2c,0x7f7045,0x354c63][index%4],roughness:.85});
   box(width,height,.105,0,0,0,binding,group);
   box(width-.026,height-.026,.087,.006,0,.007,pages,group);
@@ -29,16 +42,16 @@ window.createGardenLibrary=function(T,scene,onChange){
   const hit=box(width,height,.02,0,0,-.058,binding,group);hit.userData.bookIndex=index;pickables.push(hit);
   return group;
  }
- let page=0,contents=new T.Group();shelves.add(contents);
+ let page=0,contents=new T.Group();contents.userData.dynamic=true;shelves.add(contents);
  function disposeContents(group){
   const oldNodes=new Set(),materials=new Set(),textures=new Set();
-  group.traverse(node=>{oldNodes.add(node);if(node.geometry)node.geometry.dispose();if(node.material&&!([wood,green,pages,stone].includes(node.material))){materials.add(node.material);if(node.material.map)textures.add(node.material.map);}});
+  group.traverse(node=>{oldNodes.add(node);if(node.geometry)node.geometry.dispose();if(node.material&&!keep.has(node.material)){materials.add(node.material);if(node.material.map)textures.add(node.material.map);}});
   for(let i=pickables.length-1;i>=0;i--)if(oldNodes.has(pickables[i]))pickables.splice(i,1);
   materials.forEach(material=>material.dispose());textures.forEach(texture=>texture.dispose());group.clear();
  }
  function plaque(text,parent,x,y,z,width=1.15,height=.145,action={}){
   const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=160;
-  const c=canvas.getContext('2d');c.fillStyle='#eceee3';c.fillRect(0,0,1024,160);c.fillStyle='#23372d';c.textAlign='center';c.textBaseline='middle';c.font='38px Arial';c.fillText(text,512,80,960);
+  const c=canvas.getContext('2d');c.fillStyle='#e6d6b0';c.fillRect(0,0,1024,160);c.fillStyle='#3a2414';c.textAlign='center';c.textBaseline='middle';c.font='38px Georgia';c.fillText(text,512,80,960);
   const map=new T.CanvasTexture(canvas);map.colorSpace=T.SRGBColorSpace;
   const mesh=new T.Mesh(new T.PlaneGeometry(width,height),new T.MeshBasicMaterial({map}));mesh.position.set(x,y,z);mesh.userData=action;parent.add(mesh);if(Object.keys(action).length)pickables.push(mesh);return mesh;
  }
@@ -51,21 +64,25 @@ window.createGardenLibrary=function(T,scene,onChange){
   if(!book){plaque('+',contents,x,y+.43,.20,.6,.6,{uploadPDF:true});plaque('COMMUNITY PDFs',contents,x,y-.035,.325);return;}
   const index=window.showroomBooks.findIndex(item=>item.url===book.url);
   volume(book,index,contents,x,y+.44,.15);
-  for(let i=0;i<3;i++)box(.065,.48+i*.07,.20,x-.49+i*.075,y+.27+i*.035,-.07,[green,wood,pages][i],contents);
+  for(let i=0;i<3;i++){
+   if(!bookTemplate){box(.065,.48+i*.07,.20,x-.49+i*.075,y+.27+i*.035,-.07,[green,wood,pages][i],contents);continue;}
+   const spine=leatherVolume(slot+i+1);spine.rotation.y=Math.PI/2;spine.scale.set(.20/.55,(.48+i*.07)/.80,.065/.105);spine.position.set(x-.49+i*.075,y+.27+i*.035,-.07);contents.add(spine);
+  }
   const label=document.createElement('canvas');label.width=768;label.height=96;
-  const ctx=label.getContext('2d');ctx.fillStyle='#eceee3';ctx.fillRect(0,0,768,96);ctx.fillStyle='#23372d';ctx.font='24px Arial';
+  const ctx=label.getContext('2d');ctx.fillStyle='#e6d6b0';ctx.fillRect(0,0,768,96);ctx.fillStyle='#3a2414';ctx.font='25px Georgia';
   const words=(book.uploaded?'COMMUNITY / '+book.title:book.title).split(' ');let line='',lines=[];for(const word of words){if(ctx.measureText(line+' '+word).width>710){lines.push(line);line=word;}else line+=(line?' ':'')+word;}lines.push(line);
   lines.slice(0,2).forEach((text,i)=>ctx.fillText(text,22,lines.length>1?34+i*31:55));
   const texture=new T.CanvasTexture(label);texture.colorSpace=T.SRGBColorSpace;
   const labelMesh=new T.Mesh(new T.PlaneGeometry(1.15,.145),new T.MeshBasicMaterial({map:texture}));labelMesh.position.set(x,y-.035,.325);labelMesh.userData.bookIndex=index;contents.add(labelMesh);pickables.push(labelMesh);
-  });onChange();
+  });if(bookTemplate)window.mergeStaticMeshes?.(T,contents);onChange();
  }
  setPage(0);
  const sign=document.createElement('canvas');sign.width=1024;sign.height=160;
- const ctx=sign.getContext('2d');ctx.fillStyle='#e9ecdf';ctx.fillRect(0,0,1024,160);ctx.fillStyle='#24483a';ctx.textAlign='center';ctx.font='42px Georgia';ctx.fillText('THE OPEN LIBRARY',512,67);ctx.font='20px Arial';ctx.fillText('BREAKTHYRULE / THE FOUNDING SHELF',512,113);
+ const ctx=sign.getContext('2d');const vellum=ctx.createRadialGradient(512,80,60,512,80,560);vellum.addColorStop(0,'#efe2c0');vellum.addColorStop(1,'#cdb282');ctx.fillStyle=vellum;ctx.fillRect(0,0,1024,160);
+ ctx.strokeStyle='#5a3a1c';ctx.lineWidth=2;ctx.strokeRect(12,12,1000,136);ctx.fillStyle='#3a2414';ctx.textAlign='center';ctx.font='46px Georgia';ctx.fillText('THE  OPEN  LIBRARY',512,72);ctx.font='italic 21px Georgia';ctx.fillText('Breakthyrule  ·  The Founding Shelf',512,116);
  const signTexture=new T.CanvasTexture(sign);signTexture.colorSpace=T.SRGBColorSpace;
  const signMesh=new T.Mesh(new T.PlaneGeometry(3.15,.49),new T.MeshStandardMaterial({map:signTexture,roughness:1}));signMesh.position.set(0,3.67,.02);shelves.add(signMesh);
- for(const x of [-1.3,1.3])box(.035,.6,.035,x,3.55,-.03,green,shelves);
+ for(const x of [-1.3,1.3])box(.035,.6,.035,x,3.55,-.03,green,shelfFrame);
 
  const gardenSign=new T.Group();gardenSign.name='where is god ?';gardenSign.position.set(8.4,0,-15.6);library.add(gardenSign);
  const signWidth=2.2,signHeight=.72;
@@ -97,17 +114,17 @@ window.createGardenLibrary=function(T,scene,onChange){
  for(const side of [-1,1])for(const x of [-.94,.94])for(const y of [1.35,1.85]){const nail=new T.Mesh(new T.CylinderGeometry(.015,.015,.012,8),nailMaterial);nail.rotation.x=Math.PI/2;nail.position.set(x,y,side*.075);gardenSign.add(nail);}
  colliders.push({minX:gardenSign.position.x-signWidth/2-.3,maxX:gardenSign.position.x+signWidth/2+.3,minZ:gardenSign.position.z-.3,maxZ:gardenSign.position.z+.3});
 
- // Slatted table and two benches leave an aisle to reach the founding shelf.
- for(let i=0;i<7;i++)box(2.15,.065,.145,3.45,.82,-4.0+(i-3)*.16,wood);
- for(const x of [2.65,4.25])for(const z of [-4.38,-3.62])box(.075,.78,.075,x,.39,z,green);
+ // Slatted table and the librarian's bench leave an aisle to reach the founding shelf.
+ for(let i=0;i<7;i++)box(2.15,.065,.145,3.45,.82,-4.0+(i-3)*.16,wood,legacy);
+ for(const x of [2.65,4.25])for(const z of [-4.38,-3.62])box(.075,.78,.075,x,.39,z,green,legacy);
  colliders.push({minX:2.05,maxX:4.85,minZ:-4.9,maxZ:-3.1});
- function bench(x,z,rotation){const group=new T.Group();group.position.set(x,0,z);group.rotation.y=rotation;library.add(group);for(let i=0;i<4;i++)box(2.05,.055,.11,0,.49,(i-1.5)*.12,wood,group);for(let i=0;i<3;i++)box(2.05,.12,.055,0,.79+i*.145,-.28,wood,group);for(const end of [-.8,.8]){box(.055,.5,.46,end,.25,0,green,group);box(.05,.71,.05,end,.71,-.3,green,group);}return group;}
- bench(.1,-4.5,Math.PI/2);bench(6.3,-5.3,-Math.PI/2);
- colliders.push({minX:-.55,maxX:.75,minZ:-5.9,maxZ:-3.1},{minX:5.65,maxX:6.95,minZ:-6.7,maxZ:-3.9});
+ function bench(x,z,rotation){const group=new T.Group();group.position.set(x,0,z);group.rotation.y=rotation;legacy.add(group);for(let i=0;i<4;i++)box(2.05,.055,.11,0,.49,(i-1.5)*.12,wood,group);for(let i=0;i<3;i++)box(2.05,.12,.055,0,.79+i*.145,-.28,wood,group);for(const end of [-.8,.8]){box(.055,.5,.46,end,.25,0,green,group);box(.05,.71,.05,end,.71,-.3,green,group);}return group;}
+ bench(6.3,-5.3,-Math.PI/2);
+ colliders.push({minX:5.65,maxX:6.95,minZ:-6.7,maxZ:-3.9});
  const stand=new T.Group();stand.name='Shared reading stand';stand.position.set(3.45,1.28,-4);stand.rotation.x=-.35;library.add(stand);
- box(.96,.08,.20,3.45,.86,-3.8,wood);
- box(.92,.83,.055,0,0,0,wood,stand);box(.96,.055,.16,0,-.42,.055,green,stand);
- const readingContents=new T.Group();stand.add(readingContents);
+ stand.add(standFrame);box(.96,.08,.20,3.45,.86,-3.8,wood,legacy);
+ box(.92,.83,.055,0,0,0,wood,standFrame);box(.96,.055,.16,0,-.42,.055,green,standFrame);
+ const readingContents=new T.Group();readingContents.userData.dynamic=true;stand.add(readingContents);
  plaque('ON THE STAND',library,3.45,.72,-3.47,1.4,.18);
 
  let sharedState={likes:[],reading:null};
@@ -119,5 +136,21 @@ window.createGardenLibrary=function(T,scene,onChange){
   onChange();
  }
  setShared(window.communityLibrary.getState());
+ // Old-world set generated by tools/blender/build_open_library.py; node origins match the placements below.
+ jobs.push(window.showroomAssets.model('/assets/library/library-set.glb?v=1').then(gltf=>{
+  const piece=(name,parent,x,y,z,rotationY=0)=>{const node=gltf.scene.getObjectByName(name).clone();node.position.set(x,y,z);node.rotation.y=rotationY;node.traverse(o=>{if(o.isMesh){o.castShadow=o.receiveShadow=true;keep.add(o.material);}});parent.add(node);return node;};
+  for(const group of [legacy,shelfFrame,standFrame]){disposeContents(group);group.removeFromParent();}
+  signMesh.position.set(0,3.78,.014);signMesh.scale.set(3.19/3.15,.50/.49,1);
+  piece('LibBookcase',shelves,0,0,0);piece('LibTable',library,3.45,0,-4);piece('LibLectern',stand,0,0,0);
+  piece('LibBench',library,6.3,0,-5.3,-Math.PI/2);
+  piece('LibGlobe',library,6.75,0,-7.5,.6);piece('LibCandle',library,2.62,.855,-4.2);piece('LibCandle',library,4.32,.855,-4.32);
+  colliders.push({minX:6.35,maxX:7.15,minZ:-7.9,maxZ:-7.1});
+  bookTemplate=gltf.scene.getObjectByName('LibBook');bookTemplate.traverse(o=>{if(o.isMesh)keep.add(o.material);});
+  const leather=[...keep].find(material=>material.name==='leather');
+  leathers=[0x6e2a22,0x2e4632,0x2b3852,0x7c5430,0x4a2c1c].map(color=>{const tinted=leather.clone();tinted.color.set(color);keep.add(tinted);return tinted;});
+  // A few closed volumes lie stacked at the end of the table.
+  let stackY=.855;[.62,.56,.50].forEach((scale,i)=>{const volume=leatherVolume(i+2);volume.scale.setScalar(scale);volume.rotation.set(-Math.PI/2,0,[.1,-.25,.35][i]);volume.position.set(4.12,stackY+.0525*scale,-3.76);stackY+=.105*scale;library.add(volume);});
+  setPage(page);setShared(sharedState);
+ }).catch(error=>console.warn('Open library set unavailable; keeping the box furniture.',error)));
  return {pickables,ready:Promise.allSettled(jobs),setPage,setShared,getPage:()=>page,getPageCount:()=>Math.max(1,window.showroomBooks.filter(book=>book.uploaded).length),marker:new T.Vector3(5.5,.85,-7.05),inspect:()=>({uploadPage:page,reading:stand.userData.bookTitle,likes:sharedState.likes.length}),blocks(position){return colliders.some(c=>position.x>c.minX&&position.x<c.maxX&&position.z>c.minZ&&position.z<c.maxZ);}};
 };

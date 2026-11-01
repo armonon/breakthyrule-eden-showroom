@@ -1,0 +1,57 @@
+{
+  "schema": "beyond-eden-tree-source-manifest-v1",
+  "generatedAt": "2026-10-31T20:51:52.751999+00:00",
+  "source": {
+    "pathAtBuildTime": "/Users/lillypad/Projects/breakthyrule-asset-workshop/assets/_world/jacaranda/v002/export/jacaranda.glb",
+    "filename": "jacaranda.glb",
+    "bytes": 1416652,
+    "sha256": "0f96251177dbcfc34a316cc14cdc1b36d1b0c4987f56030aeb3494b6072d1136"
+  },
+  "normalization": {
+    "sourceBounds": {
+      "min": [
+        -6.28741455078125,
+        -5.043479919433594,
+        -0.022133201360702515
+      ],
+      "max": [
+        5.597437858581543,
+        5.205586910247803,
+        9.880502700805664
+      ]
+    },
+    "normalizedBounds": {
+      "min": [
+        -5.400767803192139,
+        -4.657426834106445,
+        0.0
+      ],
+      "max": [
+        5.400767803192139,
+        4.657426834106445,
+        9.0
+      ]
+    },
+    "scaleApplied": 0.9088489255705241,
+    "targetHeightMetres": 9.0
+  },
+  "sourceTrianglesAfterImport": 4099,
+  "outputs": [
+    {
+      "label": "lod0",
+      "file": "hero-tree-lod0.glb",
+      "ratioRequested": 1.0,
+      "triangles": 4099,
+      "bytes": 1443788
+    },
+    {
+      "label": "lod1",
+      "file": "hero-tree-lod1.glb",
+      "ratioRequested": 0.4,
+      "triangles": 1639,
+      "bytes": 1256940
+    }
+  ],
+  "billboardPending": true,
+  "license": "Complete tree-source-ledger.json from existing local evidence before public use."
+}

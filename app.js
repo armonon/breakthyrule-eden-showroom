@@ -49,7 +49,7 @@ posterDialog.addEventListener('close',()=>{const video=$('poster-video');video.p
 $('close-poster').onclick=()=>posterDialog.close();
 posterDialog.addEventListener('click',event=>{if(event.target===posterDialog)posterDialog.close();});
 const state={view:'spawn',side:'front',mode:'photo',ready:false,selected:0},keys=new Set();
-let multiplayer=null,pendingMultiplayerSpawn=false,expedition=null;
+let multiplayer=null,pendingMultiplayerSpawn=false,expedition=null,arena=null;
 let residents=null,followResident=null,lastResidentShadow=0;
 function renderResidents(){
  const entries=residents?.inspect()||window.gardenResidentDefinitions.map(d=>({...d,status:'loading'}));
@@ -128,7 +128,7 @@ bookDialog.addEventListener('close',()=>{keys.clear();requestDraw();});
 const collection=window.showroomCollection,models=new Map(),modelJobs=new Map(),rackModels=new Map(),rackFailures=new Set();
 let productGeneration=0,wants3D=false,rackLoading=false;
 const shop=createGarmentShop({collection,onOpen(){keys.clear();if(dialog.open)dialog.close();},onSelect:index=>inspect('front',index),onClose(){keys.clear();if(state.ready)requestDraw();}});
-let collectionRack=null,collectionPavilion=null;
+let collectionRack=null,pockets=null,museum=null,libraryGarden=null;
 let spinViewer=null,wallFilm=null,instagramSlideshow=null;
 let filmHint='Loading the video…',filmStatus='loading';
 function updateFilmStatus(status){
@@ -232,9 +232,13 @@ const light=new T.DirectionalLight(0xffe4ad,3.2);light.position.set(-23,19,-48);
 const fill=new T.DirectionalLight(0xe4edff,.35);fill.position.set(10,9,18);scene.add(fill);
 const lighting=createEdenLighting(T,renderer,scene,{sun:light,hemi,camera,mobile:stage.clientWidth<700});window.edenLighting=lighting;
 const post=createEdenPost(T,renderer,scene,camera,{enabled:stage.clientWidth>=700});window.edenPost=post;
+const quality=createAdaptiveResolution(renderer,{max:Math.min(devicePixelRatio,1.5)});window.edenQuality=quality;
 try{const response=await fetch('/night-layout.json?v=1');if(!response.ok)throw new Error('Night district unavailable');window.nightLayout=await response.json();}catch(error){fallback();return;}
 const garden=createEdenGarden(T,scene,{reduced,mobile:stage.clientWidth<700,onChange:requestDraw});
+// Lens flare and god rays from the sky's sun; glare from the night district's lanterns while it is on screen.
+post.setLights({sky:garden.sky,lamps:()=>garden.nightBuilt()&&garden.district.root.visible?garden.district.lamps:null});
 const nightLaunch=document.createElement('button');nightLaunch.id='night-launch';nightLaunch.textContent='BEYOND EDEN';nightLaunch.title='Night expeditions';$('amphitheater-view').after(nightLaunch);
+const arenaLaunch=document.createElement('button');arenaLaunch.id='arena-launch';arenaLaunch.textContent='ARENA';arenaLaunch.title='PvP arena: swords and crossbows';arenaLaunch.hidden=!window.showroomDeployment?.realtime;nightLaunch.after(arenaLaunch);arenaLaunch.onclick=()=>arena?.enter();
 const amphitheater=createAmphitheater(T,scene,{reduced});
 const music=createGardenMusic({requestDraw,onOpen(){keys.clear();}});
 residents=createGardenResidents(T,scene,{reduced,renderer,sky:garden.sky,onChange(){if(residentDialog.open)renderResidents();if(state.ready){renderer.shadowMap.needsUpdate=true;requestDraw();}}});
@@ -247,18 +251,25 @@ const texturePaths=[collection[0].images[0],collection[0].images[1]||collection[
 Promise.resolve(texturePaths.map(path=>{const texture=showroomAssets.texture(T,path,requestDraw);texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());return texture;})).then(async allTextures=>{
 garden.ready.then(requestDraw);
 gardenLibrary=createGardenLibrary(T,scene,requestDraw);
+// Batch hand-built static scenery once it has loaded (draw calls, not triangles, dominate these groups).
+Promise.allSettled([garden.ready,gardenLibrary.ready]).then(()=>{
+ const stats={};
+ for(const [name,options] of [['Garden of Eden',{skip:o=>o.name==='Endless road section'}],['Eden amphitheater',{}],['Break Thy Rule garden pavilion',{}],['Open library beside the apple tree',{skip:o=>o.userData.dynamic}]])stats[name]=mergeStaticMeshes(T,scene.getObjectByName(name),options);
+ window.edenBatching=stats;renderer.shadowMap.needsUpdate=true;requestDraw();
+});
 gardenProps=createGardenProps(T,scene,{camera,renderer,onChange(){renderer.shadowMap.needsUpdate=true;requestDraw();}});
 gardenLibrary.ready.then(requestDraw);
 setShelfPage(0);
 const textures=allTextures.slice(0,2);
 const roomData=createWhiteRoom(T,scene,allTextures.slice(2,2+window.showroomArtwork.length),allTextures[allTextures.length-1]);
 posterMeshes=roomData.posterMeshes;
-collectionPavilion=roomData;
+// The black box (in the valley) and the museum (beside the library) are bigger inside: see pocket-worlds.js.
+pockets=createPocketWorlds(T,scene,renderer,camera);libraryGarden=createLibraryGarden(T,scene);createBlackBox(T,pockets);museum=createMuseum(T,pockets,{onChange:requestDraw});pickables.push(...museum.pickables);
 pickables.push(...posterMeshes);
 const galleryLinks=[window.showroomArtwork.find(poster=>poster.lookbook),window.showroomInstagramPosts[0],...window.showroomArtwork.filter(poster=>!poster.lookbook)].filter(Boolean);
 const wallSwitch=document.createElement('button');wallSwitch.id='gallery-shop-photos';wallSwitch.textContent='SHOP PHOTOS';wallSwitch.onclick=shop.open;
 $('poster-links').replaceChildren(wallSwitch,...galleryLinks.map(poster=>{const button=document.createElement('button');button.textContent=poster.lookbook?'PHOTOS · '+collection.length:poster.label;button.setAttribute('aria-label',poster.lookbook?'View all '+collection.length+' product photographs':'View '+poster.name);button.onclick=()=>showPoster(poster);return button;}));
-collectionRack=createCollectionRack(T,scene,chrome,rod);rails.push(collectionRack.rack);collectionRack.rack.traverse(node=>{if(Number.isInteger(node.userData.collectionIndex))pickables.push(node);});
+collectionRack=createCollectionRack(T,scene,chrome,rod);museum.adopt(roomData.room,collectionRack.rack);rails.push(collectionRack.rack);collectionRack.rack.traverse(node=>{if(Number.isInteger(node.userData.collectionIndex))pickables.push(node);});
 $('collection-status').textContent=collection.length+' GARMENTS / GHOST STUDIO';
 try{spinViewer=createSpinViewer({element:$('garment-viewer'),textures,onAngle:degrees=>{$('image-caption').textContent='360° / '+String(degrees).padStart(3,'0')+'°';},onInteraction:updateSpinButton});$('show-3d').disabled=!collection[state.selected].model;}catch(error){console.warn('360 viewer unavailable; photographs remain available.');}
 state.ready=true;$('spawn').disabled=false;$('approach').disabled=false;$('wall-view').disabled=false;$('loading').hidden=true;go('spawn',true);requestDraw();
@@ -273,20 +284,20 @@ const moveKeys=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrow
 const finePointer=matchMedia('(pointer: fine)').matches;
 $('movement-hint').textContent=finePointer?'W A S D TO MOVE / DRAG TO LOOK':'DRAG TO LOOK / TAP TO EXPLORE';
 function requestDraw(){if(!frame&&!document.hidden)frame=requestAnimationFrame(draw);}
-function draw(time){frame=0;if(!state.ready)return;const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(modalOpen())walkVelocity.set(0,0,0);else if(keys.size||walkVelocity.lengthSq())move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();if(!reduced&&camera.position.z> -25&&time-lastResidentShadow>160){renderer.shadowMap.needsUpdate=true;lastResidentShadow=time;}sway.remove(camera);const factor=reduced?1:1-Math.exp(-(walkVelocity.lengthSq()?12:7)*(dt||.016));camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false)});playerBody?.update(dt||.016,{aim,velocity:walkVelocity,airborne:motion.inspect().airborne});garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();post.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();if(motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
+function draw(time){frame=0;if(!state.ready)return;quality.frame(time,!!previous);const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(modalOpen())walkVelocity.set(0,0,0);else if(keys.size||walkVelocity.lengthSq())move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();if(!reduced&&time-lastResidentShadow>160&&residents.walkingNear(camera.position,30)){renderer.shadowMap.needsUpdate=true;lastResidentShadow=time;}sway.remove(camera);const factor=reduced?1:1-Math.exp(-(walkVelocity.lengthSq()?12:7)*(dt||.016));if(camera.position.distanceToSquared(targetPosition)>4e4){camera.position.copy(targetPosition);aim.copy(targetAim);}camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);const leap=pockets?.cross(camera.position);if(leap){camera.position.add(leap);aim.add(leap);targetPosition.add(leap);targetAim.add(leap);}sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false)});playerBody?.update(dt||.016,{aim,velocity:walkVelocity,airborne:motion.inspect().airborne});if(!pockets?.inside(camera.position))garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();const fighting=arena?.update(time/1000,dt||.016);pockets?.render();post.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();if(motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||fighting||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
 let roadCaption='';
-function updateRoadCaption(){if(state.view!=='free'){roadCaption='';return;}const place=garden.pyramid.gathering.inspect().inside?'gathering':camera.position.z<garden.road.start-4?'road':'garden';if(place===roadCaption)return;roadCaption=place;document.querySelector('.world-caption h1').textContent=place==='gathering'?'THE GATHERING':place==='road'?'THE FOREVER ROAD':'GARDEN OF EDEN';document.querySelector('.world-caption .edition').textContent=place==='gathering'?'BREAKTHYRULE / WITHIN THE PYRAMID':place==='road'?'BREAKTHYRULE / BEYOND THE SIGN':'BREAKTHYRULE / IN THE BEGINNING';}
-function updateMusicPrompt(){const point=amphitheater.marker.clone().project(camera),button=$('music-prompt');button.hidden=modalOpen()||!['amphitheater','free'].includes(state.view)||point.z< -1||point.z>1||Math.abs(point.x)>.9||Math.abs(point.y)>.8||camera.position.distanceTo(amphitheater.marker)>26;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,90,stage.clientWidth-90)+'px';button.style.top=T.MathUtils.clamp((1-point.y)*stage.clientHeight/2,245,stage.clientHeight-170)+'px';}}
+function updateRoadCaption(){if(state.view!=='free'){roadCaption='';return;}const pocket=pockets?.inside(camera.position),place=pocket?pocket.name:garden.nightBuilt()&&garden.pyramid.gathering.inspect().inside?'gathering':camera.position.z<garden.road.start-4?'road':'garden';if(place===roadCaption)return;roadCaption=place;document.querySelector('.world-caption h1').textContent=pocket?pocket.caption[0]:place==='gathering'?'THE GATHERING':place==='road'?'THE FOREVER ROAD':'GARDEN OF EDEN';document.querySelector('.world-caption .edition').textContent=pocket?pocket.caption[1]:place==='gathering'?'BREAKTHYRULE / WITHIN THE PYRAMID':place==='road'?'BREAKTHYRULE / BEYOND THE SIGN':'BREAKTHYRULE / IN THE BEGINNING';}
+function updateMusicPrompt(){const point=amphitheater.marker.clone().project(camera),button=$('music-prompt');button.hidden=modalOpen()||pockets?.enclosed(camera.position)||!['amphitheater','free'].includes(state.view)||point.z< -1||point.z>1||Math.abs(point.x)>.9||Math.abs(point.y)>.8||camera.position.distanceTo(amphitheater.marker)>26;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,90,stage.clientWidth-90)+'px';button.style.top=T.MathUtils.clamp((1-point.y)*stage.clientHeight/2,245,stage.clientHeight-170)+'px';}}
 function updateShelfActions(){
  const controls=$('shelf-actions');if(!gardenLibrary){controls.hidden=true;return;}
  const point=gardenLibrary.marker.clone().project(camera);
  controls.hidden=modalOpen()||!['library','spawn','free'].includes(state.view)||point.z< -1||point.z>1||Math.abs(point.x)>.96||Math.abs(point.y)>.9||camera.position.distanceTo(gardenLibrary.marker)>24;
  if(!controls.hidden){const margin=controls.offsetWidth/2+12;controls.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,margin,stage.clientWidth-margin)+'px';controls.style.top=T.MathUtils.clamp((1-point.y)*stage.clientHeight/2,145,stage.clientHeight-170)+'px';}
 }
-function updateNPCPrompt(){loadNearbyAssets();const point=librarianNPC.marker.clone().project(camera),button=$('npc-prompt');button.hidden=modalOpen()||state.view==='film'||point.z< -1||point.z>1||Math.abs(point.x)>.85||Math.abs(point.y)>.78||camera.position.distanceTo(librarianNPC.marker)>22;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,105,stage.clientWidth-105)+'px';button.style.top=Math.max(125,(1-point.y)*stage.clientHeight/2-20)+'px';}}
+function updateNPCPrompt(){loadNearbyAssets();const point=librarianNPC.marker.clone().project(camera),button=$('npc-prompt');button.hidden=modalOpen()||pockets?.enclosed(camera.position)||state.view==='film'||point.z< -1||point.z>1||Math.abs(point.x)>.85||Math.abs(point.y)>.78||camera.position.distanceTo(librarianNPC.marker)>22;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,105,stage.clientWidth-105)+'px';button.style.top=Math.max(125,(1-point.y)*stage.clientHeight/2-20)+'px';}}
 function loadNearbyAssets(){
  if(camera.position.distanceTo(librarianNPC.marker)<16)librarianNPC.load();
- if(collectionRack&&camera.position.distanceTo(collectionRack.rack.position)<12&&!rackLoading&&!rackModels.size&&!rackFailures.size)loadRackModels();
+ if(collectionRack&&camera.position.distanceTo(collectionRack.rack.getWorldPosition(new T.Vector3()))<12&&!rackLoading&&!rackModels.size&&!rackFailures.size)loadRackModels();
 }
 function markView(){const libraryView=state.view==='library'||state.view==='librarian',musicView=state.view==='amphitheater';stage.classList.toggle('watching-film',state.view==='film');wallFilm?.setInteractive(state.view==='film');$('browse-library').hidden=!libraryView;$('talk-librarian').hidden=!libraryView;$('inspect-jacket').hidden=libraryView||musicView;$('open-music').hidden=!musicView;for(const [id,view]of[['spawn','spawn'],['library-view','library'],['approach','approach'],['wall-view','wall'],['film-view','film'],['amphitheater-view','amphitheater']]){const selected=state.view===view||(view==='wall'&&state.view==='lookbook')||(view==='library'&&state.view==='librarian');$(id).classList.toggle('selected',selected);$(id).setAttribute('aria-pressed',String(selected));}}
 function go(view,instant=false){
@@ -340,17 +351,21 @@ function move(dt){
  walkVelocity.set(0,0,0);
 }
 function tryStep(step){
+ if(arena?.active()){const next=targetPosition.clone().add(step);if(!arena.allowed(next))return null;next.y=1.75+motion.inspect().height;return next;}
+ if(pockets?.inside(targetPosition)){const next=targetPosition.clone().add(step);if(pockets.blocks(next))return null;next.y=1.75+motion.inspect().height;return next;}
  const next=garden.constrain(targetPosition.clone().add(step),targetPosition);
  expedition?.constrain(next,targetPosition);
- const pond=((next.x-5.7)/4.1)**2+((next.z-3.5)/5.9)**2<1;const walls=collectionPavilion?.blocks(next);const rack=next.x<-12.6&&next.x>-13.7&&Math.abs(next.z-.5)<3.5;const trunk=Math.hypot(next.x-.5,next.z+7)<.75;
- if(pond||walls||rack||trunk||amphitheater.blocks(next)||gardenLibrary?.blocks(next)||gardenProps?.blocks(next))return null;
- next.y=1.75+amphitheater.groundHeight(next)+motion.inspect().height;
+ const pond=((next.x-5.7)/4.1)**2+((next.z-3.5)/5.9)**2<1;const trunk=Math.hypot(next.x-.5,next.z+7)<.75;
+ if(pond||trunk||pockets?.blocks(next)||libraryGarden?.blocks(next)||amphitheater.blocks(next)||gardenLibrary?.blocks(next)||gardenProps?.blocks(next))return null;
+ next.y=1.75+groundHeight(next)+motion.inspect().height;
  return next;
 }
+// Ground under the player: the amphitheatre's tiers and the valley around the black box.
+function groundHeight(p){return amphitheater.groundHeight(p)+window.edenValley.height(p.x,p.z);}
 function shiftHeight(delta){targetPosition.y+=delta;targetAim.y+=delta;}
 function prepareWalking(){
  if(state.view==='amphitheater'){const origin=amphitheater.root.position;targetPosition.set(origin.x,1.75,origin.z+9.4);targetAim.set(origin.x,1.55,origin.z);camera.position.copy(targetPosition);aim.copy(targetAim);}
- freeView();shiftHeight(1.75+amphitheater.groundHeight(targetPosition)+motion.inspect().height-targetPosition.y);
+ freeView();shiftHeight(1.75+groundHeight(targetPosition)+motion.inspect().height-targetPosition.y);
 }
 function jump(){if(!state.ready||modalOpen()||expedition&&!expedition.canMove()||motion.inspect().airborne)return;prepareWalking();motion.jump();requestDraw();}
 function updateJump(dt){if(!motion.inspect().airborne)return;const before=motion.inspect().height;if(expedition&&!expedition.canMove())motion.reset();else motion.step(dt);shiftHeight(motion.inspect().height-before);}
@@ -375,7 +390,7 @@ $('library-view').onclick=()=>go('library');
 function selectFilm(){go('film');wallFilm?.playWithSound();}
 const raycaster=new T.Raycaster(),pointer=new T.Vector2();
 function hit(event){const r=stage.getBoundingClientRect();pointer.set((event.clientX-r.left)/r.width*2-1,-(event.clientY-r.top)/r.height*2+1);raycaster.setFromCamera(pointer,camera);return raycaster.intersectObjects(pickables,false)[0];}
-renderer.domElement.addEventListener('click',event=>{if(performance.now()<suppressClickUntil)return;const found=hit(event),residentId=residents.pick(raycaster,found?.distance);if(residentId){focusResident(residentId);return;}if(multiplayer?.pick(raycaster,found?.distance))return;if(found){const reach=playerBody?.grab(found.point);if(reach){setTimeout(()=>openPicked(found),reach);return;}openPicked(found);}});
+renderer.domElement.addEventListener('click',event=>{if(performance.now()<suppressClickUntil||arena?.active())return;const found=hit(event),residentId=residents.pick(raycaster,found?.distance);if(residentId){focusResident(residentId);return;}if(multiplayer?.pick(raycaster,found?.distance))return;if(found){const reach=playerBody?.grab(found.point);if(reach){setTimeout(()=>openPicked(found),reach);return;}openPicked(found);}});
 function openPicked(found){if(found.object.userData.uploadPDF)uploads.open();else if(found.object.userData.stemdeck)music.openDeck();else if(found.object.userData.amphitheater)music.open();else if(found.object.userData.librarian)conversation.open();else if(Number.isInteger(found.object.userData.bookIndex))showBook(found.object.userData.bookIndex);else if(found.object.userData.film)selectFilm();else if(found.object.userData.poster)showPoster(found.object.userData.poster);else if(Number.isInteger(found.object.userData.collectionIndex))inspect('front',found.object.userData.collectionIndex);}
 renderer.domElement.addEventListener('pointerdown',event=>{if(event.button!==0||!state.ready)return;const direction=targetAim.clone().sub(targetPosition).normalize();drag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:Math.atan2(direction.x,-direction.z),pitch:Math.asin(direction.y),moved:false};renderer.domElement.setPointerCapture(event.pointerId);});
 renderer.domElement.addEventListener('pointermove',event=>{if(drag){const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)drag.moved=true;if(drag.moved){freeView();const yaw=drag.yaw+dx*.0035,pitch=T.MathUtils.clamp(drag.pitch-dy*.0035,-1.35,.4);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));renderer.domElement.style.cursor='grabbing';requestDraw();}}else renderer.domElement.style.cursor=hit(event)?'pointer':'grab';});
@@ -391,13 +406,21 @@ function focusVisitor(p){
  if(offset.length()<3.5){if(offset.length()<.01)offset.set(0,0,1);offset.setLength(3.5);targetPosition.set(T.MathUtils.clamp(p.x+offset.x,-20,20),1.7,T.MathUtils.clamp(p.z+offset.z,-20,26));}
  targetAim.set(p.x,p.ghost?.9:(p.character?.height||175)/100*.58,p.z);requestDraw();
 }
-multiplayer=window.createGardenMultiplayer?.({T,scene,camera,requestDraw,enter:enterMultiplayer,inExpedition:()=>expedition?.active(),getPose:()=>state.ready&&!expedition?.active()?{x:camera.position.x,z:camera.position.z,yaw:Math.atan2(aim.x-camera.position.x,aim.z-camera.position.z)}:null,lookAt:focusVisitor,stopMoving:()=>{keys.clear();drag=null;}});
+multiplayer=window.createGardenMultiplayer?.({T,scene,camera,requestDraw,enter:enterMultiplayer,inExpedition:()=>expedition?.active(),getPose:()=>state.ready&&!expedition?.active()?{x:camera.position.x,z:camera.position.z,yaw:Math.atan2(aim.x-camera.position.x,aim.z-camera.position.z),...arena?.poseExtras()}:null,lookAt:focusVisitor,stopMoving:()=>{keys.clear();drag=null;}});
+arena=multiplayer&&window.createArena?.({T,scene,camera,renderer,multiplayer,requestDraw,
+ player:{position:targetPosition,aim:targetAim,motion,
+  place(x,z,lx,lz){motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,1.75,lz);camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();},
+  home:()=>go('spawn',true)},
+ stopMoving:()=>{keys.clear();drag=null;walkVelocity.set(0,0,0);}});
 // Ragdolls collide with the same walls, props and pond edge that stop the player.
 const solidFar=new T.Vector3(1e6,0,1e6);
-if(window.GardenCharacterMotion)GardenCharacterMotion.solid=p=>{const q=garden.constrain(p.clone(),solidFar.clone());if(q.distanceToSquared(p)>1e-6)return true;return ((p.x-5.7)/4.1)**2+((p.z-3.5)/5.9)**2<1||!!collectionPavilion?.blocks(p)||(p.x<-12.6&&p.x>-13.7&&Math.abs(p.z-.5)<3.5)||Math.hypot(p.x-.5,p.z+7)<.75||!!amphitheater.blocks(p)||!!gardenLibrary?.blocks(p)||!!gardenProps?.blocks(p);};
+if(window.GardenCharacterMotion)GardenCharacterMotion.solid=p=>{const q=garden.constrain(p.clone(),solidFar.clone());if(q.distanceToSquared(p)>1e-6)return true;return ((p.x-5.7)/4.1)**2+((p.z-3.5)/5.9)**2<1||Math.hypot(p.x-.5,p.z+7)<.75||!!pockets?.blocks(p)||!!libraryGarden?.blocks(p)||!!amphitheater.blocks(p)||!!gardenLibrary?.blocks(p)||!!gardenProps?.blocks(p);};
 // First-person body: your own character under the camera, reaching for walls and things, guarding and punching.
-const playerBody=window.createPlayerBody?.({T,scene,camera,pickables,requestDraw,enabled:()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident});
+const playerBody=window.createPlayerBody?.({T,scene,camera,pickables,requestDraw,enabled:()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident&&!arena?.active()});
 expedition=window.createExpedition({T,scene,camera,garden,layout:window.nightLayout,getPose:()=>state.ready?{x:targetPosition.x,z:targetPosition.z,yaw:Math.atan2(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z)}:null,place(x,z,lx=x,lz=z-5){motion.reset();freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,1.75,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=60;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},stopMoving(){keys.clear();drag=null;},requestDraw,returnHome:()=>go('spawn',true)});
 $('night-dialog').addEventListener('close',()=>{if(expedition.active()&&expedition.canMove()&&!modalOpen())renderer.domElement.focus({preventScroll:true});});
-window.breakThyRuleShowroom={go,inspect,showSide,focusResident,getState:()=>({...state,position:camera.position.toArray(),movement:{...motion.inspect(),velocity:walkVelocity.toArray().map(v=>+v.toFixed(3)),sway:sway.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.district.inspect(),library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),lighting:lighting.inspect(),post:post.inspect(),residents:residents.inspect(),body:playerBody?.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
+window.breakThyRuleShowroom={go,inspect,showSide,focusResident,
+ // camera placement for captures and checks: stand at (x,z) looking toward (lx,ly,lz)
+ place(x,z,lx,lz,ly=1.75){if(expedition?.active())expedition.leave();motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,ly,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.lookAt(aim);requestDraw();},
+getState:()=>({...state,position:camera.position.toArray(),arena:arena?.inspect(),movement:{...motion.inspect(),velocity:walkVelocity.toArray().map(v=>+v.toFixed(3)),sway:sway.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.nightBuilt()?garden.district.inspect():null,library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),lighting:lighting.inspect(),post:post.inspect(),quality:quality.inspect(),residents:residents.inspect(),body:playerBody?.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
 })();

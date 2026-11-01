@@ -47,18 +47,8 @@ window.createWhiteRoom=function createWhiteRoom(T,scene,posterTextures,logoTextu
     mesh.position.set(x,y,z);mesh.receiveShadow=true;room.add(mesh);return mesh;
   }
   const artWall=box(7.6,3,.18,0,1.5,-3.1);artWall.name='Pavilion rear art wall';
-  for(const x of [-3.8,3.8])for(const z of [-3.1,.5,4.1]){
-    if(x===3.8&&z!==-3.1)continue;
-    box(.42,3.6,.42,x,1.8,z);
-    box(.66,.18,.66,x,3.52,z,trim);
-    box(.62,.16,.62,x,.08,z,trim);
-  }
-  box(.48,.26,7.8,-3.8,3.7,.5,trim);
-  box(8.15,.26,.5,0,3.7,-3.1,trim);
+  // The walls, floor and ceiling around it are the black box (black-box.js).
   box(7.6,.06,.026,0,.03,-3.025,trim);
-  box(.026,.06,7.2,-3.725,.03,.5,trim);
-  const floor=new T.Mesh(new T.PlaneGeometry(7.6,7.2),new T.MeshStandardMaterial({color:0xeeeeed,roughness:.9}));
-  floor.rotation.x=-Math.PI/2;floor.position.z=.5;floor.receiveShadow=true;room.add(floor);
 
   if(logoTexture){
     const rug=new T.Group();rug.name='Break Thy Rule floor sigil';rug.position.set(1.03,0,-.9);
@@ -96,5 +86,5 @@ window.createWhiteRoom=function createWhiteRoom(T,scene,posterTextures,logoTextu
     mesh.userData.poster=poster;mesh.name=poster.name;mount.add(mesh);posterMeshes.push(mesh);
   });
 
-  return {room,posterMeshes,blocks(point){return point.x>-14&&point.x<-6&&Math.abs(point.z+3.1)<.38;}};
+  return {room,posterMeshes};
 };
