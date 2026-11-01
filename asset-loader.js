@@ -16,7 +16,8 @@ window.showroomAssets={
     const response=await fetch(url,{signal:AbortSignal.timeout(12000)});
     if(!response.ok)throw Error('Texture unavailable');
     const blob=await response.blob(),objectURL=URL.createObjectURL(blob),img=new Image();
-    try{img.src=objectURL;await img.decode();texture.image=img;texture.needsUpdate=true;onChange();}
+    // dispose() frees the 32 px placeholder on the GPU: WebGL2 texture storage cannot change size in place.
+    try{img.src=objectURL;await img.decode();texture.image=img;texture.dispose();texture.needsUpdate=true;onChange();}
     finally{URL.revokeObjectURL(objectURL);}
    }catch{if(++attempts<2)setTimeout(load,4000);}
   }
