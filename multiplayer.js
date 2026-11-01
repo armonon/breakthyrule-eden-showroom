@@ -45,6 +45,7 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
   if(preview){$('social-gate').disabled=true;$('social-gate').textContent='Accounts unavailable in preview';$('social-wave').disabled=true;}
   $('social-delete').hidden=!hosted||!user;
  }
+ const labelProbe=new T.Vector3();
  function destroyAvatar(a){GardenCharacter.dispose(a);}
  function clearAvatars(){for(const a of avatars.values())destroyAvatar(a);avatars.clear();requestDraw();}
  function avatar(person){
@@ -53,7 +54,7 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
   const labelMap=new T.CanvasTexture(label);labelMap.colorSpace=T.SRGBColorSpace;
   const name=new T.Sprite(new T.SpriteMaterial({map:labelMap,depthTest:true,toneMapped:false}));name.scale.set(1.1/root.scale.x,.21/root.scale.y,1);name.position.y=(model.height+.2)/root.scale.y;root.add(name);
   root.position.set(person.x,.02,person.z);root.rotation.y=person.yaw;scene.add(root);
-  return {...model,signature:JSON.stringify([person.ghost,person.character,person.name]),target:new T.Vector3(person.x,.02,person.z),yaw:person.yaw,wave:0,moving:0};
+  return {...model,label:name,labelRest:name.position.clone(),signature:JSON.stringify([person.ghost,person.character,person.name]),target:new T.Vector3(person.x,.02,person.z),yaw:person.yaw,wave:0,moving:0};
  }
  function setConnected(live,label){$('social-dot').classList.toggle('live',live&&!preview);$('social-status').textContent=preview?'Public preview / shared room offline':label;$('social-launch-label').textContent=preview?'Public preview':(canInteract()?'':'Ghost / ')+(live?people.length+' in the garden':failures?'Reconnecting':'Connecting');}
  function renderPeople(){
@@ -138,6 +139,10 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
    a.root.position.lerp(a.target,1-Math.exp(-10*dt));a.root.rotation.y+=Math.atan2(Math.sin(a.yaw-a.root.rotation.y),Math.cos(a.yaw-a.root.rotation.y))*(1-Math.exp(-10*dt));
    a.moving=T.MathUtils.lerp(a.moving,distance>.02?1:0,.18);const stride=Math.sin(time*9)*.35*a.moving;
    a.animate(a.ghost&&reducedMotion?0:time,stride,Date.now()/1000-a.wave<3);
+   // Knocked down: the name tag follows the head to the ground and back up instead of floating where they stood.
+   const down=a.motion?.downAmount()||0;
+   if(down>0&&a.byName?.head){const head=a.byName.head.getWorldPosition(labelProbe);head.y+=.32;a.root.worldToLocal(head);a.label.position.lerpVectors(a.labelRest,head,Math.min(1,down*1.5));}
+   else if(a.label&&!a.label.position.equals(a.labelRest))a.label.position.copy(a.labelRest);
   }return active;},
   // Arena hooks: live messaging, the room roster and visitor avatars.
   send(message){if(socket?.readyState!==1)return false;socket.send(JSON.stringify(message));return true;},
