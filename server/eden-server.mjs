@@ -5,7 +5,7 @@
 //
 // HTTP (same contract multiplayer.js already uses):  /api/social/{me,register,login,recover,logout,character,sync,
 // chat,wave,leave}.  Live: WebSocket /api/social/live?connectionId=… — the client sends {t:'pose',x,z,yaw} up to
-// 15×/s; the server pushes sync-shaped snapshots ({t:'snapshot',selfId,user,people,messages}) ~20×/s while
+// 15×/s and {t:'punch'} when it throws one (server/brawl.mjs decides hits and knockdowns); the server pushes sync-shaped snapshots ({t:'snapshot',selfId,user,people,messages}) ~20×/s while
 // anything changes and at once on chat. Also serves the static site with caching off, the prop editor's
 // PUT /assets/props/scene.json, and a local deployment.js that switches the client into live mode.
 // No dependencies: the WebSocket framing (RFC 6455) is implemented below.
@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createArena} from './arena.mjs';
+import {createBrawl} from './brawl.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((pairs, arg, i, all) => arg.startsWith('--') ? [...pairs, [arg.slice(2), all[i + 1]]] : pairs, []));
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -85,7 +86,7 @@ function setPose(connectionId, user, pose) {
   }
   return p;
 }
-function leave(connectionId) { if (presence.delete(connectionId)) touch(); }
+function leave(connectionId) { brawl.leave(connectionId); if (presence.delete(connectionId)) touch(); }
 setInterval(() => { const now = Date.now(); for (const [id, p] of presence) if (now - p.seen > PRESENCE_TTL && !liveSockets.has(id)) { presence.delete(id); touch(); } }, 2000);
 function people() {
   const seenUsers = new Set(), list = [];
@@ -225,6 +226,8 @@ function onLiveMessage(connectionId, client, text) {
     setPose(connectionId, userFromRequest(client.req).user, message);
   } else if (message.t === 'attack' || message.t === 'shoot') {
     const p = presence.get(connectionId); if (p) arena.action(connectionId, p, message);
+  } else if (message.t === 'punch') {
+    const p = presence.get(connectionId); if (p) brawl.punch(connectionId, p);
   }
 }
 function sendSnapshot(connectionId, client) {
@@ -240,6 +243,12 @@ const arena = createArena({root: ROOT, presence, emit(events) {
   const payload = frame(Buffer.from(JSON.stringify({t: 'arena', events})));
   for (const [id, c] of liveSockets) if (presence.get(id)?.zone === 'arena') c.socket.write(payload);
   touch();
+}});
+
+// Brawl events (punches, knockdowns) go to everyone in the same zone.
+const brawl = createBrawl({presence, emit(zone, events) {
+  const payload = frame(Buffer.from(JSON.stringify({t: 'brawl', events})));
+  for (const [id, c] of liveSockets) if ((presence.get(id)?.zone || 'garden') === zone) c.socket.write(payload);
 }});
 
 // ---------- HTTP ----------

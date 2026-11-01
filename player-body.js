@@ -59,6 +59,9 @@
    event.preventDefault();api.punch();
   }
   document.addEventListener('keydown',onKey);
+  // Someone else's punch landed on us: the body flinches (no first-person knockdown yet).
+  const onPunched=event=>{const d=event.detail?.direction;if(model&&d)model.motion.hit(camera.position.clone().set(d.x,0,d.z),event.detail.knockdown?1.7:1.1);requestDraw();};
+  root.addEventListener?.('eden-punched',onPunched);
   const api={
    update(dt,{aim,velocity=null,airborne=false}={}){
     clock+=dt;frame++;
@@ -100,7 +103,7 @@
    // Click on something within reach: the hand gets there first, then the caller opens it.
    grab(point){if(!model?.root.visible||!point||point.distanceTo(camera.position)>1.6)return 0;grabPoint=point.clone();grabUntil=clock+.55;requestDraw();return 230;},
    punch(){
-    if(!model)return;
+    if(!model)return;root.dispatchEvent?.(new CustomEvent('eden-punch-thrown'));
     const target=nearestOther(1.4),head=target?.byName?.head?.getWorldPosition(new T.Vector3());
     const aimPoint=head||camera.position.clone().addScaledVector(forward,.75).add(new T.Vector3(0,-.12,0));
     const land=model.motion.punch(aimPoint);guardUntil=clock+2.2;requestDraw();
@@ -110,7 +113,7 @@
     requestDraw();},land*1000);
    },
    inspect:()=>({ready:!!model,visible:!!model?.root.visible,yaw:yaw===null?null:+yaw.toFixed(3),wall:wall?+wall.distance.toFixed(2):null,brush:+brush.toFixed(2),plants:[...plants.values()].reduce((n,a)=>n+a.length,0),hover:!!hover,motion:model?.motion.inspect()}),
-   dispose(){document.removeEventListener('keydown',onKey);if(model)GardenCharacter.dispose(model);model=null;}
+   dispose(){document.removeEventListener('keydown',onKey);root.removeEventListener?.('eden-punched',onPunched);if(model)GardenCharacter.dispose(model);model=null;}
   };
   return api;
  }

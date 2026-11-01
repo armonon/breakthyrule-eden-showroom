@@ -14,9 +14,9 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
   if(socket||document.hidden||preview)return;
   const epoch=generation,ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+liveUrl+'?connectionId='+connectionId);
   socket=ws;socketEpoch=epoch;
-  ws.onopen=()=>{liveRetry=0;failures=0;$('social-error').textContent='';};
+  ws.onopen=()=>{liveRetry=0;failures=0;$('social-error').textContent='';if(window.GardenCharacterMotion)GardenCharacterMotion.serverDecides=true;};
   ws.onmessage=event=>{if(epoch!==generation||socket!==ws)return;let data;try{data=JSON.parse(event.data);}catch{return;}if(data.t==='snapshot')snapshot(data);else for(const listener of liveListeners)listener(data);};
-  ws.onclose=()=>{if(socket!==ws)return;socket=null;failures++;setConnected(false,'Reconnecting...');if(failures>3)clearAvatars();if(!document.hidden)liveTimer=setTimeout(poll,Math.min(10000,500*2**liveRetry++));};
+  ws.onclose=()=>{if(socket!==ws)return;if(window.GardenCharacterMotion)GardenCharacterMotion.serverDecides=false;socket=null;failures++;setConnected(false,'Reconnecting...');if(failures>3)clearAvatars();if(!document.hidden)liveTimer=setTimeout(poll,Math.min(10000,500*2**liveRetry++));};
  }
  if(liveUrl)setInterval(()=>{if(socket?.readyState!==1||socketEpoch!==generation)return;const pose=getPose();if(!pose)return;const key=pose.x.toFixed(2)+','+pose.z.toFixed(2)+','+pose.yaw.toFixed(2)+','+(pose.zone||'')+','+(pose.weapon||'')+','+(pose.blocking?1:0)+','+(pose.pitch??0).toFixed(2)+','+(pose.y??0).toFixed(2);if(key===lastPoseSent)return;lastPoseSent=key;socket.send(JSON.stringify({t:'pose',...pose}));},66);
  const icons=()=>window.lucide?.createIcons();
@@ -116,6 +116,13 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
  $('social-auth-form').onsubmit=async event=>{event.preventDefault();$('social-auth-submit').disabled=true;$('social-auth-error').textContent='';try{const result=await api(recovering?'recover':register?'register':'login',{name:$('social-name').value.trim(),password:$('social-password').value,recoveryCode:$('social-recovery-code').value});$('social-password').value='';$('social-recovery-code').value='';const waiting=characterAuth;characterAuth=null;setUser(result.user);$('social-auth').close();if(result.recoveryCode)await recovery.showCode(result.user.name,result.recoveryCode);recovering=false;authMode();if(waiting)waiting.resolve();else if(!result.user.character)editor.open(null);else showPanel();}catch(error){$('social-auth-error').textContent=error.message;}finally{$('social-auth-submit').disabled=false;}};
  $('social-logout').onclick=async()=>{try{await api('logout',{});setUser(null);}catch(error){$('social-error').textContent=error.message;}};
  async function send(kind){if(!canInteract()){gate();return;}const input=$('social-message'),text=input.value.trim();if(kind==='chat'&&!text)return;const button=$(kind==='chat'?'social-send':'social-wave');button.disabled=true;$('social-error').textContent='';const payload=kind==='chat'&&pendingChat?.text===text?pendingChat:{text,nonce:crypto.randomUUID()};if(kind==='chat')pendingChat=payload;try{await api(kind,payload);if(kind==='chat'){pendingChat=null;if(input.value.trim()===text)input.value='';}clearTimeout(timer);await poll();}catch(error){$('social-error').textContent=error.message;}finally{button.disabled=false;}}
+ // Brawling: the server decides who each punch hits and when it knocks them down; play what it says.
+ window.addEventListener('eden-punch-thrown',()=>{if(socket?.readyState===1&&canInteract())socket.send(JSON.stringify({t:'punch'}));});
+ liveListeners.add(data=>{if(data.t!=='brawl'||!window.GardenCharacterMotion)return;let moved=false;
+  for(const e of data.events){if(e.type!=='punch'||!e.target)continue;const dir={x:e.dir[0],z:e.dir[1]};
+   if(e.target===selfId)window.dispatchEvent(new CustomEvent('eden-punched',{detail:{direction:dir,knockdown:e.knockdown,by:e.attacker}}));
+   else if(e.attacker!==selfId||e.knockdown){GardenCharacterMotion.applyHit(e.target,dir,{knockdown:e.knockdown});moved=true;}}
+  if(moved)requestDraw();});
  $('social-chat-form').onsubmit=event=>{event.preventDefault();send('chat');};$('social-wave').onclick=()=>send('wave');
  $('social-message').onkeydown=event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();if(!$('social-send').disabled)send('chat');}};
  $('social-panel').addEventListener('focusin',stopMoving);$('social-auth').addEventListener('close',()=>{stopMoving();if(characterAuth){const waiting=characterAuth;characterAuth=null;waiting.reject(new Error('Your changes are still here. Sign in when you are ready to save and enter.'));}});
