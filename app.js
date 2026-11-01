@@ -252,7 +252,7 @@ gardenLibrary=createGardenLibrary(T,scene,requestDraw);
 // Batch hand-built static scenery once it has loaded (draw calls, not triangles, dominate these groups).
 Promise.allSettled([garden.ready,gardenLibrary.ready]).then(()=>{
  const stats={};
- for(const [name,options] of [['Garden of Eden',{skip:o=>o.name==='Endless road section'}],['Eden amphitheater',{}],['Break Thy Rule garden pavilion',{}],['Open library beside the apple tree',{}]])stats[name]=mergeStaticMeshes(T,scene.getObjectByName(name),options);
+ for(const [name,options] of [['Garden of Eden',{skip:o=>o.name==='Endless road section'}],['Eden amphitheater',{}],['Break Thy Rule garden pavilion',{}],['Open library beside the apple tree',{skip:o=>o.userData.dynamic}]])stats[name]=mergeStaticMeshes(T,scene.getObjectByName(name),options);
  window.edenBatching=stats;renderer.shadowMap.needsUpdate=true;requestDraw();
 });
 gardenProps=createGardenProps(T,scene,{camera,renderer,onChange(){renderer.shadowMap.needsUpdate=true;requestDraw();}});
