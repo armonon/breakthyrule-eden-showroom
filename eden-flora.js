@@ -4,7 +4,7 @@
 // each instanced across the garden; leaf clusters use normals bent away from the crown centre so canopies shade as
 // volumes, not as flat cards. Ground cover: rounded shrubs (kept clear of placed props), ferns at tree bases and
 // wildflower patches (grass is eden-grass.js). Leaves sway in the wind unless motion is reduced.
-window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false}){
+window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel=null}){
  let seed=90210;
  const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;},between=(a,b)=>a+(b-a)*random();
  const up=new T.Vector3(0,1,0),dummy=new T.Object3D(),time={value:0};
@@ -117,6 +117,11 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false}){
  function buildTree(spec){
   const wood=builder(),foliage=builder(),fruit=builder(),tips=[];
   grow(wood,tips,spec,new T.Vector3(0,-.15,0),new T.Vector3(between(-.04,.04),1,between(-.04,.04)).normalize(),spec.trunk+.15,spec.trunkRadius,0);
+  return {wood:toGeometry(wood),...canopy(spec,tips)};
+ }
+ // Leaf cards and apples around a set of twig tips (from grow() or from the sculpted hero tree).
+ function canopy(spec,tips){
+  const foliage=builder(),fruit=builder();
   const crown=tips.reduce((a,p)=>a.add(p),new T.Vector3()).multiplyScalar(1/tips.length);crown.y-=.4;
   const m=new T.Matrix4();
   for(const tip of tips){
@@ -124,7 +129,7 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false}){
    for(let k=0;k<(spec.cards||3);k++){const facing=out.clone().add(new T.Vector3(between(-.7,.7),between(-.4,.7),between(-.7,.7))).normalize();card(foliage,tip.clone().addScaledVector(facing,between(-.25,.25)),facing,spec.leafSize*between(.8,1.25),crown);}
    if(spec.fruit&&random()<spec.fruit){const s=between(.075,.1);m.compose(tip.clone().add(new T.Vector3(between(-.4,.4),-.35,between(-.4,.4))),new T.Quaternion(),new T.Vector3(s,s*1.08,s));appendGeometry(fruit,sphere,m);}
   }
-  return {wood:toGeometry(wood),foliage:toGeometry(foliage),fruit:fruit.p.length?toGeometry(fruit):null,height:tips.reduce((h,p)=>Math.max(h,p.y),0)};
+  return {foliage:toGeometry(foliage),fruit:fruit.p.length?toGeometry(fruit):null,height:tips.reduce((h,p)=>Math.max(h,p.y),0)};
  }
  function buildCypress(cards=150,cardScale=1){
   const wood=builder(),foliage=builder(),height=between(6.5,8),crown=new T.Vector3(0,height*.5,0);
@@ -191,9 +196,31 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false}){
  // The hero apple tree keeps its trunk where the snake's branch meets it (garden x .5, z -7).
  const hero=buildTree(species.hero);
  dummy.position.set(.5,0,-7);dummy.rotation.set(0,0,0);dummy.scale.setScalar(1.15);dummy.updateMatrix();
- const heroMatrix=[dummy.matrix.clone()];
- instance(hero.wood,bark,heroMatrix,null);leafMeshes.push(instance(hero.foliage,leafMaterial,heroMatrix,[new T.Color().setHSL(.23,.52,.9)]));instance(hero.fruit,fruitMaterial,heroMatrix,null);
+ const heroMatrix=[dummy.matrix.clone()],heroTint=[new T.Color().setHSL(.23,.52,.9)];
+ let heroMeshes=[instance(hero.wood,bark,heroMatrix,null),instance(hero.foliage,leafMaterial,heroMatrix,heroTint),instance(hero.fruit,fruitMaterial,heroMatrix,null)];leafMeshes.push(heroMeshes[1]);
  trunks.push([.5,-7]);
+ // The sculpted tree (tools/blender/build_hero_tree.py) replaces the procedural stand-in once it loads. Its wood is one
+ // continuous mesh, so the bark is projected triplanar in world space: no seams where limbs leave the trunk.
+ const heroBark=bark.clone();heroBark.roughnessMap=null;heroBark.roughness=.95;
+ heroBark.onBeforeCompile=shader=>{
+  shader.vertexShader='varying vec3 vTriPos;\nvarying vec3 vTriNormal;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n vTriPos=position;vTriNormal=normal;');
+  shader.fragmentShader='varying vec3 vTriPos;\nvarying vec3 vTriNormal;\n'+shader.fragmentShader.replace('#include <map_fragment>',`
+ vec3 triW=pow(abs(normalize(vTriNormal)),vec3(4.));triW/=triW.x+triW.y+triW.z;
+ vec2 triX=vTriPos.zy*1.1,triY=vTriPos.xz*1.1,triZ=vTriPos.xy*1.1;
+ diffuseColor*=texture2D(map,triX)*triW.x+texture2D(map,triY)*triW.y+texture2D(map,triZ)*triW.z;`).replace('#include <normal_fragment_maps>',`
+ vec3 triNX=texture2D(normalMap,triX).xyz*2.-1.,triNY=texture2D(normalMap,triY).xyz*2.-1.,triNZ=texture2D(normalMap,triZ).xyz*2.-1.;
+ vec3 triBent=normalize(normalize(vTriNormal)+(vec3(0.,triNX.y,triNX.x)*triW.x+vec3(triNY.x,0.,triNY.y)*triW.y+vec3(triNZ.x,triNZ.y,0.)*triW.z)*1.2);
+ normal=normalize((viewMatrix*vec4(triBent,0.)).xyz);`);
+ };
+ heroModel?.then(gltf=>{
+  const root=gltf.scene.getObjectByName('HeroTree'),wood=root.getObjectByName('HeroWood'),values=root.userData.tips||[],tips=[];
+  for(let i=0;i<values.length;i+=3)tips.push(new T.Vector3(values[i],values[i+1],values[i+2]));
+  const crown=canopy({...species.hero,cards:2,leafSize:1.3},tips);
+  const matrices=[new T.Matrix4().makeTranslation(.5,0,-7)];
+  for(const mesh of heroMeshes)if(mesh){garden.remove(mesh);mesh.geometry.dispose();gardenMeshes.splice(gardenMeshes.indexOf(mesh),1);if(leafMeshes.includes(mesh))leafMeshes.splice(leafMeshes.indexOf(mesh),1);}
+  heroMeshes=[instance(wood.geometry,heroBark,matrices,null),instance(crown.foliage,leafMaterial,matrices,heroTint),instance(crown.fruit,fruitMaterial,matrices,null)];leafMeshes.push(heroMeshes[1]);
+  const visible=gardenMeshes[0]?.visible??true;for(const mesh of heroMeshes)if(mesh)mesh.visible=visible;
+ }).catch(error=>console.warn('Hero tree model unavailable; keeping the procedural tree.',error));
 
  const forestTemplates=[0,1].map(()=>buildTree(species.forest)),forestCypress=buildCypress(80,1.35);
 

@@ -58,7 +58,9 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  const pathX=z=>Math.sin((z-3)*.15)*1.5;
  function openGround(x,z){return (z< -9&&Math.abs(x-roadX)<2.5)||(x>6.8&&x<13&&z>-10.8&&z<-7.2)||(x>-4.5&&x<-1.1&&z>-8.2&&z<-5.3)||Math.hypot(x-window.showroomAmphitheaterPosition.x,z-window.showroomAmphitheaterPosition.z)<8.6||Math.hypot(x-3.1,z+5.7)<4.7||(Math.abs(x-pathX(z))<1.45&&z>-6&&z<22)||(x>-14.6&&x<-5.4&&z>-4.2&&z<5)||(x>-9.3&&x<-6.3&&z>-4&&z<6.6)||Math.pow((x-5.7)/3.8,2)+Math.pow((z-3.5)/5.6,2)<1.14;}
  // Trees, shrubs, ferns and wildflowers come from eden-flora.js; the lawn is the terrain texture (no grass geometry).
- const flora=window.createEdenFlora(T,garden,{bark,openGround,mobile});assetJobs.push(flora.ready);
+ // The sculpted hero apple tree and its serpent share one model (tools/blender/build_hero_tree.py).
+ const heroModel=window.showroomAssets.model('/assets/eden-hero/hero-tree.glb?v=2');assetJobs.push(heroModel.catch(()=>{}));
+ const flora=window.createEdenFlora(T,garden,{bark,openGround,mobile,heroModel});assetJobs.push(flora.ready);
 
  const pathStone=new T.CylinderGeometry(1,1.07,.065,9);
  for(let z=20;z>-6;z-=.9){for(let side=0;side<2;side++){
@@ -107,7 +109,7 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  for(let i=0;i<14;i++){const cloud=new T.Sprite(new T.SpriteMaterial({map:cloudTex,transparent:true,opacity:.65,depthWrite:false,fog:false}));cloud.position.set(between(-90,90),between(27,42),between(-95,-45));cloud.scale.set(between(28,48),between(12,18),1);garden.add(cloud);}
  const dustPos=new Float32Array(90*3);for(let i=0;i<90;i++){dustPos[i*3]=between(-15,15);dustPos[i*3+1]=between(.5,6);dustPos[i*3+2]=between(-15,18);}
  const dustGeo=new T.BufferGeometry();dustGeo.setAttribute('position',new T.BufferAttribute(dustPos,3));const dust=new T.Points(dustGeo,new T.PointsMaterial({color:0xffefb8,size:.026,transparent:true,opacity:.6,depthWrite:false}));garden.add(dust);
- const snake=window.createTreeSnake(T,scene,{bark,reduced,onChange});
+ const snake=window.createTreeSnake(T,scene,{bark,reduced,model:heroModel,onChange});
  // The night section (pyramid court, district, night woodland) is built only when the viewer heads for the road
  // entrance or an expedition starts, one piece per frame so the build never lands as a single long stall.
  let pyramid=null,district=null,nightSteps=null,lastViewer=null;

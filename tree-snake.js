@@ -1,5 +1,5 @@
 'use strict';
-window.createTreeSnake=function(T,scene,{bark,reduced=false,onChange=()=>{}}={}){
+window.createTreeSnake=function(T,scene,{bark,reduced=false,model=null,onChange=()=>{}}={}){
  const root=new T.Group();root.name='Apple tree snake';scene.add(root);
  const anchor=new T.Vector3(1.62,2.98,-5.92),start=new T.Vector3(.45,2.55,-6.92),end=new T.Vector3(1.65,2.88,-6.42);
  const axis=end.clone().sub(start).normalize(),normal=new T.Vector3().crossVectors(axis,new T.Vector3(0,1,0)).normalize(),binormal=new T.Vector3().crossVectors(axis,normal).normalize();
@@ -45,6 +45,19 @@ window.createTreeSnake=function(T,scene,{bark,reduced=false,onChange=()=>{}}={})
  const tongueMaterial=new T.MeshStandardMaterial({color:0x8b2842,roughness:.5});
  for(const points of [[[0,-.021,.21],[0,-.023,.34]],[[0,-.023,.34],[-.025,-.024,.40]],[[0,-.023,.34],[.025,-.024,.40]]])tongue.add(new T.Mesh(new T.TubeGeometry(new T.LineCurve3(new T.Vector3(...points[0]),new T.Vector3(...points[1])),1,.003,6,false),tongueMaterial));
  tongue.visible=false;
+
+ // The sculpted serpent (tools/blender/build_hero_tree.py) coils round its own limb of the sculpted tree; it swaps in for
+ // the stand-in branch, body and head shapes above, keeping this skin, the tongue and the animation.
+ model?.then(gltf=>{
+  const source=gltf.scene.getObjectByName('HeroTree'),place=new T.Group();place.position.set(.5,0,-7);root.add(place);
+  const sculpted=source.getObjectByName('SnakeBody').clone();sculpted.material=skin;sculpted.castShadow=sculpted.receiveShadow=true;place.add(sculpted);
+  const node=source.getObjectByName('SnakeHead'),pivot=new T.Group();pivot.position.copy(node.position);pivot.quaternion.copy(node.quaternion);place.add(pivot);
+  for(const old of [branch,body]){root.remove(old);old.geometry.dispose();}
+  for(const child of [...head.children])if(child!==tongue){head.remove(child);child.geometry?.dispose();}
+  for(const part of node.children){const mesh=part.clone();if(mesh.material.name==='skin')mesh.material=headSkin;mesh.castShadow=mesh.receiveShadow=true;head.add(mesh);}
+  // Larger head and bolder diamonds to match the thicker sculpted body (HEAD_SCALE in the build script).
+  head.position.set(0,0,0);head.scale.setScalar(1.2);pivot.add(head);for(const texture of [scales,scaleRelief])texture.repeat.set(4.5,1);root.updateMatrixWorld(true);pivot.getWorldPosition(anchor);onChange();
+ }).catch(error=>console.warn('Sculpted snake unavailable; keeping the stand-in.',error));
 
  const button=document.getElementById('garden-effects');let enabled=true;
  try{enabled=localStorage.getItem('eden-effects-muted')!=='1';}catch{}
