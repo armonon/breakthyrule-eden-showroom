@@ -98,8 +98,24 @@ window.createEdenGarden=function(T,scene,{reduced=false,mobile=false,onChange=()
  // Recycled road sections lead from the sign to the distant pyramid court.
  const entrance=new T.CatmullRomCurve3([new T.Vector3(6.8,.025,-7.4),new T.Vector3(9.6,.025,-8.1),new T.Vector3(roadX,.025,roadStart)]);
  for(let i=0;i<=12;i++){const point=entrance.getPoint(i/12),slab=new T.Mesh(pathStone,stone);slab.position.copy(point);slab.scale.set(.86,1,.64);slab.rotation.y=i*.35;slab.receiveShadow=true;garden.add(slab);}
- const roadMap=surface('/assets/eden-stone-color.jpg',1),roadNormal=surface('/assets/eden-stone-normal.jpg',1,false);roadMap.repeat.set(2,12);roadNormal.repeat.set(2,12);
- const roadMaterial=new T.MeshStandardMaterial({map:roadMap,normalMap:roadNormal,normalScale:new T.Vector2(.4,.4),color:0xc8c9c0,roughness:.95});
+ let brickSeed=4421;const brickRandom=()=>{brickSeed=(brickSeed*1664525+1013904223)>>>0;return brickSeed/4294967296;};
+ // A few worn stones peter out toward the edge of the world.
+ for(let i=0;i<7;i++){if(i===3||i===5)continue;const slab=new T.Mesh(pathStone,stone);slab.position.set(roadX+(brickRandom()-.5),-.015,roadStart-1.5-i*1.45);slab.scale.set(.55-i*.03,1,.42-i*.025);slab.rotation.y=brickRandom()*6.28;slab.receiveShadow=true;garden.add(slab);}
+ // The long brick road: hand-laid running bond in ochre, terracotta and the odd gold brick.
+ const brickCanvas=document.createElement('canvas');brickCanvas.width=brickCanvas.height=1024;
+ const bricks=brickCanvas.getContext('2d'),brickHeight=1024/16,brickWidth=1024/4;
+ bricks.fillStyle='#5b4632';bricks.fillRect(0,0,1024,1024);
+ const brickBump=document.createElement('canvas');brickBump.width=brickBump.height=1024;const bump=brickBump.getContext('2d');bump.fillStyle='#000';bump.fillRect(0,0,1024,1024);
+ for(let row=0;row<16;row++)for(let col=-1;col<5;col++){
+  const x=col*brickWidth+(row%2?brickWidth/2:0)+5,y=row*brickHeight+5,w=brickWidth-10,h=brickHeight-10;
+  const tone=brickRandom(),base=tone>.9?[214,170,74]:tone>.45?[178,106,64]:[198,132,78];
+  const shade=.82+brickRandom()*.3;bricks.fillStyle='rgb('+base.map(v=>Math.min(255,v*shade|0)).join(',')+')';bricks.fillRect(x,y,w,h);
+  for(let k=0;k<26;k++){bricks.fillStyle='rgba('+(brickRandom()>.5?'255,230,190':'60,30,15')+','+(brickRandom()*.12).toFixed(3)+')';bricks.fillRect(x+brickRandom()*w,y+brickRandom()*h,2+brickRandom()*14,1+brickRandom()*5);}
+  const g=bump.createLinearGradient(0,y,0,y+h);g.addColorStop(0,'#c8c8c8');g.addColorStop(.5,'#ffffff');g.addColorStop(1,'#b4b4b4');bump.fillStyle=g;bump.fillRect(x,y,w,h);
+ }
+ const roadMap=new T.CanvasTexture(brickCanvas),roadBump=new T.CanvasTexture(brickBump);roadMap.colorSpace=T.SRGBColorSpace;
+ for(const texture of [roadMap,roadBump]){texture.wrapS=texture.wrapT=T.RepeatWrapping;texture.repeat.set(2,12);texture.anisotropy=8;}
+ const roadMaterial=new T.MeshStandardMaterial({map:roadMap,bumpMap:roadBump,bumpScale:.035,color:0xf2ece2,roughness:.88});
  const vergeMap=surface('/assets/eden-grass-color.jpg',1);vergeMap.repeat.set(60,8);
  const vergeMaterial=new T.MeshStandardMaterial({map:vergeMap,color:0xa4bd79,roughness:1});
  const roadGeometry=new T.PlaneGeometry(roadWidth,roadLength),vergeGeometry=new T.PlaneGeometry(180,roadLength);
@@ -113,9 +129,16 @@ window.createEdenGarden=function(T,scene,{reduced=false,mobile=false,onChange=()
   for(const side of [-1,1]){const edge=new T.Mesh(edgeGeometry,stone);edge.position.set(side*(roadWidth/2+.07),.025,0);edge.receiveShadow=true;section.add(edge);section.userData.roadMeshes.push(edge);}
  }
  let roadFirst=-1,nightRoad=null;
+ // The garden side of the first section is grassed over: the road only begins beyond the hidden door.
+ const doorZ=-21.5,hiddenLength=roadStart-doorZ;
+ function clipRoad(mesh,index){
+  const trimmed=index===0,length=trimmed?roadLength-hiddenLength:roadLength;
+  if(mesh.geometry===roadGeometry)mesh.scale.y=length/roadLength;else mesh.scale.z=length/roadLength;
+  mesh.position.z=trimmed?-hiddenLength/2:0;
+ }
  function updateRoad(position){
   const section=Math.floor(Math.max(0,roadStart-Math.max(roadEnd,position.z))/roadLength),first=Math.max(0,section-8);
-  if(first!==roadFirst){roadFirst=first;roadSections.forEach((part,i)=>{part.position.set(roadX,0,roadStart-(first+i+.5)*roadLength);part.userData.roadIndex=first+i;part.userData.roadMeshes.forEach(mesh=>{mesh.visible=first+i<roadSegmentCount;});nightRoad?.recycle(part,first+i);});}
+  if(first!==roadFirst){roadFirst=first;roadSections.forEach((part,i)=>{part.position.set(roadX,0,roadStart-(first+i+.5)*roadLength);part.userData.roadIndex=first+i;part.userData.roadMeshes.forEach(mesh=>{mesh.visible=first+i<roadSegmentCount;clipRoad(mesh,first+i);});nightRoad?.recycle(part,first+i);});}
  }
  updateRoad(new T.Vector3());
 
@@ -135,17 +158,19 @@ window.createEdenGarden=function(T,scene,{reduced=false,mobile=false,onChange=()
  for(let i=0;i<14;i++){const cloud=new T.Sprite(new T.SpriteMaterial({map:cloudTex,transparent:true,opacity:.65,depthWrite:false,fog:false}));cloud.position.set(between(-90,90),between(27,42),between(-95,-45));cloud.scale.set(between(28,48),between(12,18),1);garden.add(cloud);}
  const dustPos=new Float32Array(90*3);for(let i=0;i<90;i++){dustPos[i*3]=between(-15,15);dustPos[i*3+1]=between(.5,6);dustPos[i*3+2]=between(-15,18);}
  const dustGeo=new T.BufferGeometry();dustGeo.setAttribute('position',new T.BufferAttribute(dustPos,3));const dust=new T.Points(dustGeo,new T.PointsMaterial({color:0xffefb8,size:.026,transparent:true,opacity:.6,depthWrite:false}));garden.add(dust);
+ let skyMoving=false,lastTime=0;
  const snake=window.createTreeSnake(T,scene,{bark,reduced,onChange});
  const pyramid=window.createRoadPyramid(T,scene,{roadX,roadEnd,stone,onChange,reduced});
  const district=window.createNightDistrict(T,scene,{stone,leafMat,layout:window.nightLayout,reduced});
- nightRoad=window.createNightRoad(T,scene,{sections:roadSections,roadX,roadStart,roadLength,clearingStart:-120,district,sky,bark,leafMat,stone,roadMaterial,vergeMaterial,clouds:garden.children.filter(node=>node.isSprite),reduced,mobile});
- return {snake,nightRoad,pyramid,district,ready:Promise.allSettled(assetJobs),constrain(position,previous){
+ const skybox=window.createEdenSkybox(T,scene,{sky,roadX,reduced});
+ nightRoad=window.createNightRoad(T,scene,{sections:roadSections,roadX,roadStart,nightStart:skybox.door.z,roadLength,clearingStart:-120,district,sky,bark,leafMat,stone,roadMaterial,vergeMaterial,clouds:garden.children.filter(node=>node.isSprite),reduced,mobile});
+ return {snake,nightRoad,pyramid,district,skybox,ready:Promise.allSettled(assetJobs),constrain(position,previous){
   if(previous.z< -20){if(position.z< -111)pyramid.constrain(position);else{const width=T.MathUtils.lerp(2.7,50,T.MathUtils.smoothstep(-position.z,20,30));position.x=T.MathUtils.clamp(position.x,roadX-width,roadX+width);}}
   else{position.x=T.MathUtils.clamp(position.x,-20,20);if(position.z< -20&&Math.abs(position.x-roadX)>2.7)position.z=-20;}
-  if(district.blocks(position)||pyramid.blocks(position))position.copy(previous);
+  if(district.blocks(position)||pyramid.blocks(position)||skybox.blocks(position,previous))position.copy(previous);
   position.z=Math.min(position.z,26);return position;
- },road:{x:roadX,start:roadStart,end:roadEnd,inspect:()=>({first:roadFirst,sections:roadSections.length,near:roadStart-roadFirst*roadLength,far:Math.max(roadEnd,roadStart-(roadFirst+roadSections.length)*roadLength)})},update(time,viewer,active=true){
-  if(viewer){updateRoad(viewer.position);sky.position.copy(viewer.position);snake.update(time,viewer,active);nightRoad.update(time,viewer,active);pyramid.update(viewer,time);district.update(time,viewer,nightRoad.amount);}
+ },road:{x:roadX,start:roadStart,end:roadEnd,door:skybox.door.z,inspect:()=>({first:roadFirst,sections:roadSections.length,near:roadStart-roadFirst*roadLength,far:Math.max(roadEnd,roadStart-(roadFirst+roadSections.length)*roadLength)})},update(time,viewer,active=true){
+  if(viewer){updateRoad(viewer.position);sky.position.copy(viewer.position);skyMoving=skybox.update(time,viewer,Math.min(.05,Math.max(0,time-lastTime)));lastTime=time;snake.update(time,viewer,active);nightRoad.update(time,viewer,active);pyramid.update(viewer,time);district.update(time,viewer,nightRoad.amount);}
   if(reduced)return;wind.value=time;waterUniforms.time.value=time;dust.rotation.y=Math.sin(time*.025)*.07;
- },foliage,sky};
+ },get animating(){return skyMoving;},foliage,sky};
 };

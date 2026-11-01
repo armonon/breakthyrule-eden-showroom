@@ -1,5 +1,5 @@
 'use strict';
-window.createNightRoad=function(T,scene,{sections,roadX,roadStart,roadLength,clearingStart=-Infinity,district,sky,bark,leafMat,roadMaterial,vergeMaterial,clouds,mobile}){
+window.createNightRoad=function(T,scene,{sections,roadX,roadStart,nightStart=roadStart,roadLength,clearingStart=-Infinity,district,sky,bark,leafMat,roadMaterial,vergeMaterial,clouds,mobile}){
  const smooth=T.MathUtils.smoothstep,parts=[],lights=scene.children.filter(o=>o.isLight).map(light=>({light,intensity:light.intensity,color:light.color.clone(),ground:light.groundColor?.clone()}));
  const originalFog=scene.fog.color.clone(),nightFog=new T.Color(0x192a25),originalRoad=roadMaterial.color.clone(),originalVerge=vergeMaterial.color.clone();
  const moonColor=new T.Color(0xa9c8c1),moonGround=new T.Color(0x14261b),nightRoadColor=new T.Color(0x909f97),nightVerge=new T.Color(0x60775a);
@@ -39,7 +39,7 @@ window.createNightRoad=function(T,scene,{sections,roadX,roadStart,roadLength,cle
  const starGeo=new T.BufferGeometry();starGeo.setAttribute('position',new T.Float32BufferAttribute(starPositions,3));const stars=new T.Points(starGeo,new T.PointsMaterial({color:0xcfe4da,size:.16,transparent:true,opacity:0,depthWrite:false,fog:false}));sky.add(stars);
  let amount=0;
  function update(time,viewer){
-  amount=smooth(roadStart-viewer.position.z,1,17);sky.material.uniforms.roadNight.value=amount;
+  amount=smooth(nightStart-viewer.position.z,.5,15);sky.material.uniforms.roadNight.value=amount;
   scene.fog.color.copy(originalFog).lerp(nightFog,amount);scene.fog.density=T.MathUtils.lerp(.016,.019,amount);
   for(const state of lights){const l=state.light;l.color.copy(state.color).lerp(moonColor,amount);l.intensity=T.MathUtils.lerp(state.intensity,l.isHemisphereLight?.58:state.intensity>1?.52:.16,amount);if(state.ground)l.groundColor.copy(state.ground).lerp(moonGround,amount);}
   roadMaterial.color.copy(originalRoad).lerp(nightRoadColor,amount);vergeMaterial.color.copy(originalVerge).lerp(nightVerge,amount);

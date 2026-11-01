@@ -49,7 +49,7 @@ posterDialog.addEventListener('close',()=>{const video=$('poster-video');video.p
 $('close-poster').onclick=()=>posterDialog.close();
 posterDialog.addEventListener('click',event=>{if(event.target===posterDialog)posterDialog.close();});
 const state={view:'spawn',side:'front',mode:'photo',ready:false,selected:0},keys=new Set();
-let multiplayer=null,pendingMultiplayerSpawn=false,expedition=null;
+let multiplayer=null,pendingMultiplayerSpawn=false,expedition=null,combat=null,lastSkinCheck=0;
 let residents=null,followResident=null,lastResidentShadow=0;
 function renderResidents(){
  const entries=residents?.inspect()||window.gardenResidentDefinitions.map(d=>({...d,status:'loading'}));
@@ -237,7 +237,7 @@ const amphitheater=createAmphitheater(T,scene,{reduced});
 const music=createGardenMusic({requestDraw,onOpen(){keys.clear();}});
 residents=createGardenResidents(T,scene,{reduced,renderer,sky:garden.sky,onChange(){if(residentDialog.open)renderResidents();if(state.ready){renderer.shadowMap.needsUpdate=true;requestDraw();}}});
 const chrome=new T.MeshStandardMaterial({color:0xaeb0b2,metalness:.45,roughness:.3});
-const rails=[],garments=[],pickables=[...amphitheater.pickables];let posterMeshes=[];
+const rails=[],garments=[],pickables=[...amphitheater.pickables,...garden.skybox.pickables];let posterMeshes=[];
 librarianNPC=createLibrarianNPC(T,scene,{reduced,onLoad(){pickables.push(...librarianNPC.pickables);renderer.shadowMap.needsUpdate=true;requestDraw();}});
 function rod(parent,from,to,r=.014,material=chrome){const a=new T.Vector3(...from),b=new T.Vector3(...to),d=b.clone().sub(a);const mesh=new T.Mesh(new T.CylinderGeometry(r,r,d.length(),16),material);mesh.position.copy(a.add(b).multiplyScalar(.5));mesh.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d.normalize());mesh.castShadow=true;parent.add(mesh);return mesh;}
 const loader=new T.TextureLoader();
@@ -270,9 +270,25 @@ const moveKeys=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrow
 const finePointer=matchMedia('(pointer: fine)').matches;
 $('movement-hint').textContent=finePointer?'W A S D TO MOVE / DRAG TO LOOK':'DRAG TO LOOK / TAP TO EXPLORE';
 function requestDraw(){if(!frame&&!document.hidden)frame=requestAnimationFrame(draw);}
-function draw(time){frame=0;if(!state.ready)return;const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(keys.size&&!modalOpen())move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();if(!reduced&&camera.position.z> -25&&time-lastResidentShadow>160){renderer.shadowMap.needsUpdate=true;lastResidentShadow=time;}const factor=reduced?1:1-Math.exp(-7*(dt||.016));camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);camera.lookAt(aim);garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);renderer.render(scene,camera);wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();if(motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||keys.size||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
+function draw(time){frame=0;if(!state.ready)return;const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(keys.size&&!modalOpen())move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();if(!reduced&&camera.position.z> -25&&time-lastResidentShadow>160){renderer.shadowMap.needsUpdate=true;lastResidentShadow=time;}const factor=reduced?1:1-Math.exp(-7*(dt||.016));camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);camera.lookAt(aim);garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);const fighting=combat?.update(time/1000,dt||.016);if(combat&&time-lastSkinCheck>2000){lastSkinCheck=time;const tone=multiplayer?.inspect().character?.skinTone;if(tone)combat.setSkin(tone);}renderWithEffects();wallFilm?.update(camera);updateNPCPrompt();updateDoorPrompt();updateShelfActions();updateMusicPrompt();if(motion.inspect().airborne||expedition?.active()||movingVisitors||fighting||garden.animating||(!reduced&&(!modalOpen()||librarianDialog.open))||keys.size||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
 let roadCaption='';
-function updateRoadCaption(){if(state.view!=='free'){roadCaption='';return;}const place=garden.pyramid.gathering.inspect().inside?'gathering':camera.position.z<garden.road.start-4?'road':'garden';if(place===roadCaption)return;roadCaption=place;document.querySelector('.world-caption h1').textContent=place==='gathering'?'THE GATHERING':place==='road'?'THE FOREVER ROAD':'GARDEN OF EDEN';document.querySelector('.world-caption .edition').textContent=place==='gathering'?'BREAKTHYRULE / WITHIN THE PYRAMID':place==='road'?'BREAKTHYRULE / BEYOND THE SIGN':'BREAKTHYRULE / IN THE BEGINNING';}
+// Hits shake, roll and drop the view only for this frame; the walking camera underneath is untouched.
+const savedCameraPosition=new T.Vector3(),savedCameraQuaternion=new T.Quaternion();
+function renderWithEffects(){
+ const fx=combat?.cameraEffect();
+ if(!fx||(!fx.drop&&!fx.roll&&!fx.pitch&&!fx.offset.lengthSq())){renderer.render(scene,camera);return;}
+ savedCameraPosition.copy(camera.position);savedCameraQuaternion.copy(camera.quaternion);
+ camera.position.add(fx.offset);camera.position.y-=fx.drop;camera.rotateZ(fx.roll);camera.rotateX(fx.pitch);camera.updateMatrixWorld(true);
+ renderer.render(scene,camera);camera.position.copy(savedCameraPosition);camera.quaternion.copy(savedCameraQuaternion);camera.updateMatrixWorld(true);
+}
+const doorPrompt=document.createElement('button');doorPrompt.id='sky-door-prompt';doorPrompt.hidden=true;stage.after(doorPrompt);
+doorPrompt.onclick=()=>{garden.skybox.toggle();renderer.domElement.focus({preventScroll:true});requestDraw();};
+function updateDoorPrompt(){
+ const sky=garden.skybox,point=sky.marker.clone().project(camera),near=sky.distance(targetPosition);
+ doorPrompt.hidden=modalOpen()||!['free','spawn'].includes(state.view)||near>3.8||point.z< -1||point.z>1||Math.abs(point.x)>.9||Math.abs(point.y)>.85;
+ if(!doorPrompt.hidden){const label=(sky.isOpen()?'CLOSE THE DOOR':'OPEN THE DOOR')+(finePointer?'  (E)':'');if(doorPrompt.textContent!==label)doorPrompt.textContent=label;doorPrompt.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,110,stage.clientWidth-110)+'px';doorPrompt.style.top=Math.max(125,(1-point.y)*stage.clientHeight/2-10)+'px';}
+}
+function updateRoadCaption(){if(state.view!=='free'){roadCaption='';return;}const place=garden.pyramid.gathering.inspect().inside?'gathering':camera.position.z<garden.road.door-.5?'road':'garden';if(place===roadCaption)return;roadCaption=place;document.querySelector('.world-caption h1').textContent=place==='gathering'?'THE GATHERING':place==='road'?'THE LONG BRICK ROAD':'GARDEN OF EDEN';document.querySelector('.world-caption .edition').textContent=place==='gathering'?'BREAKTHYRULE / WITHIN THE PYRAMID':place==='road'?'BREAKTHYRULE / BEYOND THE SIGN':'BREAKTHYRULE / IN THE BEGINNING';}
 function updateMusicPrompt(){const point=amphitheater.marker.clone().project(camera),button=$('music-prompt');button.hidden=modalOpen()||!['amphitheater','free'].includes(state.view)||point.z< -1||point.z>1||Math.abs(point.x)>.9||Math.abs(point.y)>.8||camera.position.distanceTo(amphitheater.marker)>26;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,90,stage.clientWidth-90)+'px';button.style.top=T.MathUtils.clamp((1-point.y)*stage.clientHeight/2,245,stage.clientHeight-170)+'px';}}
 function updateShelfActions(){
  const controls=$('shelf-actions');if(!gardenLibrary){controls.hidden=true;return;}
@@ -319,23 +335,32 @@ function focusResident(id){
  document.querySelector('.world-caption h1').textContent=entry.def.name.toUpperCase();document.querySelector('.world-caption .edition').textContent=entry.def.region.toUpperCase();requestDraw();
 }
 function move(dt){
- if(expedition&&!expedition.canMove())return;
+ if(expedition&&!expedition.canMove()||combat&&!combat.canMove())return;
  const z=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),x=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
  if(!x&&!z)return;
  prepareWalking();const forward=targetAim.clone().sub(targetPosition);forward.y=0;forward.normalize();const right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));
  const step=forward.multiplyScalar(z).add(right.multiplyScalar(x));if(step.lengthSq()===0)return;step.normalize().multiplyScalar(dt*motion.speed(keys.has('shift')));const next=garden.constrain(targetPosition.clone().add(step),targetPosition);
  expedition?.constrain(next,targetPosition);
- const pond=((next.x-5.7)/4.1)**2+((next.z-3.5)/5.9)**2<1;const walls=collectionPavilion?.blocks(next);const rack=next.x<-12.6&&next.x>-13.7&&Math.abs(next.z-.5)<3.5;const trunk=Math.hypot(next.x-.5,next.z+7)<.75;
- if(pond||walls||rack||trunk||amphitheater.blocks(next)||gardenLibrary?.blocks(next))return;
+ if(obstacle(next))return;
  next.y=1.75+amphitheater.groundHeight(next)+motion.inspect().height;
  const actual=next.clone().sub(targetPosition);targetPosition.copy(next);targetAim.add(actual);
+}
+function obstacle(next){
+ const pond=((next.x-5.7)/4.1)**2+((next.z-3.5)/5.9)**2<1;const walls=collectionPavilion?.blocks(next);const rack=next.x<-12.6&&next.x>-13.7&&Math.abs(next.z-.5)<3.5;const trunk=Math.hypot(next.x-.5,next.z+7)<.75;
+ return !!(pond||walls||rack||trunk||amphitheater.blocks(next)||gardenLibrary?.blocks(next));
+}
+// Punches and tackles shove the visitor through the same collision rules as walking.
+function shove({direction,distance}){
+ if(!state.ready||expedition?.active())return;prepareWalking();
+ for(let i=0;i<6;i++){const next=garden.constrain(targetPosition.clone().addScaledVector(direction,distance/6),targetPosition);if(obstacle(next))break;next.y=targetPosition.y;const actual=next.clone().sub(targetPosition);targetPosition.copy(next);targetAim.add(actual);}
+ requestDraw();
 }
 function shiftHeight(delta){targetPosition.y+=delta;targetAim.y+=delta;}
 function prepareWalking(){
  if(state.view==='amphitheater'){const origin=amphitheater.root.position;targetPosition.set(origin.x,1.75,origin.z+9.4);targetAim.set(origin.x,1.55,origin.z);camera.position.copy(targetPosition);aim.copy(targetAim);}
  freeView();shiftHeight(1.75+amphitheater.groundHeight(targetPosition)+motion.inspect().height-targetPosition.y);
 }
-function jump(){if(!state.ready||modalOpen()||expedition&&!expedition.canMove()||motion.inspect().airborne)return;prepareWalking();motion.jump();requestDraw();}
+function jump(){if(!state.ready||modalOpen()||expedition&&!expedition.canMove()||combat&&!combat.canMove()||motion.inspect().airborne)return;prepareWalking();motion.jump();requestDraw();}
 function updateJump(dt){if(!motion.inspect().airborne)return;const before=motion.inspect().height;if(expedition&&!expedition.canMove())motion.reset();else motion.step(dt);shiftHeight(motion.inspect().height-before);}
 function setMovement(key,pressed){
  if(pressed&&(!state.ready||modalOpen()||expedition&&!expedition.canMove()))return;
@@ -345,11 +370,11 @@ function setMovement(key,pressed){
  if(pressed)keys.add(key);else keys.delete(key);
  if(state.ready)requestDraw();
 }
-document.addEventListener('keydown',event=>{if(modalOpen()||event.ctrlKey||event.metaKey||event.altKey||event.isComposing||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;const key=event.code==='Space'?'space':event.key.toLowerCase();if((moveKeys.has(key)||key==='shift'||key==='space')&&state.ready){if(key==='space'&&['BUTTON','A'].includes(event.target.tagName))return;event.preventDefault();if(!event.repeat)setMovement(key,true);}});
-document.addEventListener('keyup',event=>setMovement(event.key.toLowerCase(),false));
+document.addEventListener('keydown',event=>{if(modalOpen()||event.ctrlKey||event.metaKey||event.altKey||event.isComposing||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;const key=event.code==='Space'?'space':event.key.toLowerCase();if(state.ready&&combat&&['f','g','q'].includes(key)&&!expedition?.active()){event.preventDefault();combat.key(key,true,event.repeat);requestDraw();return;}if(state.ready&&key==='e'&&!event.repeat&&garden.skybox.distance(targetPosition)<3.8){event.preventDefault();garden.skybox.toggle();requestDraw();return;}if((moveKeys.has(key)||key==='shift'||key==='space')&&state.ready){if(key==='space'&&['BUTTON','A'].includes(event.target.tagName))return;event.preventDefault();if(!event.repeat)setMovement(key,true);}});
+document.addEventListener('keyup',event=>{const key=event.key.toLowerCase();if(combat&&['f','g','q'].includes(key))combat.key(key,false);setMovement(key,false);});
 for(const button of $('social-move').querySelectorAll('button')){button.onpointerdown=event=>{if(event.button!==0)return;event.preventDefault();button.setPointerCapture(event.pointerId);setMovement(button.dataset.key,true);};button.onpointerup=button.onpointercancel=button.onlostpointercapture=()=>setMovement(button.dataset.key,false);}
 document.addEventListener('focusin',event=>{if(modalOpen()||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName)){keys.clear();if(state.ready)requestDraw();}});
-window.addEventListener('blur',()=>{keys.clear();drag=null;if(state.ready)requestDraw();});
+window.addEventListener('blur',()=>{keys.clear();drag=null;combat?.key('q',false);if(state.ready)requestDraw();});
 dialog.addEventListener('close',()=>{keys.clear();requestDraw();});
 posterDialog.addEventListener('close',requestDraw);
 $('spawn').onclick=()=>go('spawn');$('approach').onclick=()=>go('approach');$('wall-view').onclick=()=>go('wall');$('film-view').onclick=selectFilm;
@@ -358,7 +383,7 @@ $('library-view').onclick=()=>go('library');
 function selectFilm(){go('film');wallFilm?.playWithSound();}
 const raycaster=new T.Raycaster(),pointer=new T.Vector2();
 function hit(event){const r=stage.getBoundingClientRect();pointer.set((event.clientX-r.left)/r.width*2-1,-(event.clientY-r.top)/r.height*2+1);raycaster.setFromCamera(pointer,camera);return raycaster.intersectObjects(pickables,false)[0];}
-renderer.domElement.addEventListener('click',event=>{if(performance.now()<suppressClickUntil)return;const found=hit(event),residentId=residents.pick(raycaster,found?.distance);if(residentId){focusResident(residentId);return;}if(multiplayer?.pick(raycaster,found?.distance))return;if(found){if(found.object.userData.uploadPDF)uploads.open();else if(found.object.userData.stemdeck)music.openDeck();else if(found.object.userData.amphitheater)music.open();else if(found.object.userData.librarian)conversation.open();else if(Number.isInteger(found.object.userData.bookIndex))showBook(found.object.userData.bookIndex);else if(found.object.userData.film)selectFilm();else if(found.object.userData.poster)showPoster(found.object.userData.poster);else if(Number.isInteger(found.object.userData.collectionIndex))inspect('front',found.object.userData.collectionIndex);}});
+renderer.domElement.addEventListener('click',event=>{if(performance.now()<suppressClickUntil)return;const found=hit(event),residentId=residents.pick(raycaster,found?.distance);if(residentId){if(combat?.inReach(residentId))combat.key('f',true);else focusResident(residentId);return;}if(found?.object.userData.skyDoor&&found.distance<12){garden.skybox.toggle();requestDraw();return;}if(multiplayer?.pick(raycaster,found?.distance))return;if(found){if(found.object.userData.uploadPDF)uploads.open();else if(found.object.userData.stemdeck)music.openDeck();else if(found.object.userData.amphitheater)music.open();else if(found.object.userData.librarian)conversation.open();else if(Number.isInteger(found.object.userData.bookIndex))showBook(found.object.userData.bookIndex);else if(found.object.userData.film)selectFilm();else if(found.object.userData.poster)showPoster(found.object.userData.poster);else if(Number.isInteger(found.object.userData.collectionIndex))inspect('front',found.object.userData.collectionIndex);}});
 renderer.domElement.addEventListener('pointerdown',event=>{if(event.button!==0||!state.ready)return;const direction=targetAim.clone().sub(targetPosition).normalize();drag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:Math.atan2(direction.x,-direction.z),pitch:Math.asin(direction.y),moved:false};renderer.domElement.setPointerCapture(event.pointerId);});
 renderer.domElement.addEventListener('pointermove',event=>{if(drag){const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)drag.moved=true;if(drag.moved){freeView();const yaw=drag.yaw+dx*.0035,pitch=T.MathUtils.clamp(drag.pitch-dy*.0035,-.38,.4);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));renderer.domElement.style.cursor='grabbing';requestDraw();}}else renderer.domElement.style.cursor=hit(event)?'pointer':'grab';});
 renderer.domElement.addEventListener('pointerup',event=>{if(drag){suppressClickUntil=drag.moved?performance.now()+300:0;drag=null;renderer.domElement.releasePointerCapture(event.pointerId);}});
@@ -373,8 +398,15 @@ function focusVisitor(p){
  if(offset.length()<3.5){if(offset.length()<.01)offset.set(0,0,1);offset.setLength(3.5);targetPosition.set(T.MathUtils.clamp(p.x+offset.x,-20,20),1.7,T.MathUtils.clamp(p.z+offset.z,-20,26));}
  targetAim.set(p.x,p.ghost?.9:(p.character?.height||175)/100*.58,p.z);requestDraw();
 }
-multiplayer=window.createGardenMultiplayer?.({T,scene,camera,requestDraw,enter:enterMultiplayer,inExpedition:()=>expedition?.active(),getPose:()=>state.ready&&!expedition?.active()?{x:camera.position.x,z:camera.position.z,yaw:Math.atan2(aim.x-camera.position.x,aim.z-camera.position.z)}:null,lookAt:focusVisitor,stopMoving:()=>{keys.clear();drag=null;}});
+multiplayer=window.createGardenMultiplayer?.({T,scene,camera,requestDraw,enter:enterMultiplayer,inExpedition:()=>expedition?.active(),getPose:()=>state.ready&&!expedition?.active()?{x:camera.position.x,z:camera.position.z,yaw:Math.atan2(aim.x-camera.position.x,aim.z-camera.position.z),combat:combat?.netState()}:null,lookAt:focusVisitor,stopMoving:()=>{keys.clear();drag=null;}});
+const groundPoint=new T.Vector3();
+combat=window.createFistCombat?.({T,scene,camera,residents,reduced,stage,requestDraw,
+ getPlayer:()=>state.ready&&!expedition?.active()?{position:targetPosition.clone(),forward:targetAim.clone().sub(targetPosition)}:null,
+ blocked:position=>obstacle(position)||garden.skybox.blocks(position,position),
+ groundHeight:(x,z)=>amphitheater.groundHeight(groundPoint.set(x,0,z)),
+ knockPlayer:shove,canAct:()=>state.ready&&!modalOpen()});
+if(combat&&multiplayer){combat.setNetwork({targets:()=>multiplayer.combatTargets?.()||[],hit:event=>multiplayer.sendCombat?.(event)});multiplayer.onCombat?.(event=>{combat.receive(event);requestDraw();});}
 expedition=window.createExpedition({T,scene,camera,garden,layout:window.nightLayout,getPose:()=>state.ready?{x:targetPosition.x,z:targetPosition.z,yaw:Math.atan2(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z)}:null,place(x,z,lx=x,lz=z-5){motion.reset();freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,1.75,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=60;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},stopMoving(){keys.clear();drag=null;},requestDraw,returnHome:()=>go('spawn',true)});
 $('night-dialog').addEventListener('close',()=>{if(expedition.active()&&expedition.canMove()&&!modalOpen())renderer.domElement.focus({preventScroll:true});});
-window.breakThyRuleShowroom={go,inspect,showSide,focusResident,getState:()=>({...state,position:camera.position.toArray(),movement:{...motion.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.district.inspect(),library:gardenLibrary?.inspect(),residents:residents.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
+window.breakThyRuleShowroom={go,inspect,showSide,focusResident,teleport(x,z,yaw=Math.PI){if(!state.ready)return;freeView();motion.reset();targetPosition.set(x,1.75+amphitheater.groundHeight(groundPoint.set(x,0,z)),z);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,Math.cos(yaw)).multiplyScalar(5));camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();},fight:key=>combat?.key(key,true),getState:()=>({...state,position:camera.position.toArray(),movement:{...motion.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.district.inspect(),library:gardenLibrary?.inspect(),residents:residents.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,combat:combat?.inspect(),skybox:garden.skybox.inspect(),garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
 })();

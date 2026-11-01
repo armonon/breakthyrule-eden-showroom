@@ -7,6 +7,25 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
  let user=null,selfId=null,timer=0,running=false,failures=0,generation=0,register=true,lastId=0,unread=0,firstSnapshot=true,people=[],messages=[],muted=new Set(),selected=null,pendingChat=null,spawned=false;
  let characterAuth=null;
  let nightSuspended=false;
+ // Fist fights: each visitor reports its own health/knockdown in its pose; hits travel as events.
+ let combatHandler=null,combatUnsupported=false;const seenCombat=new Set();
+ const v1=new T.Vector3(),v2=new T.Vector3(),q1=new T.Quaternion(),q2=new T.Quaternion();
+ function aimBone(bone,child,direction,weight){
+  if(!bone||!child||weight<=0)return;bone.updateWorldMatrix(true,true);
+  const from=child.getWorldPosition(v2).sub(bone.getWorldPosition(v1)).normalize();
+  q1.setFromUnitVectors(from,direction);q2.identity().slerp(q1,weight);
+  const world=bone.getWorldQuaternion(new T.Quaternion()).premultiply(q2);
+  bone.quaternion.copy(bone.parent.getWorldQuaternion(q1).invert().multiply(world));bone.updateMatrixWorld(true);
+ }
+ function syncCombat(a,c){
+  c=c&&typeof c==='object'?c:{};const t=performance.now()/1000;
+  if(c.down&&!a.ragdoll?.active&&a.skeleton&&window.createRagdoll){
+   try{a.ragdoll??=window.createRagdoll(T,{object:a.root,rig:'human'});const back=new T.Vector3(-Math.sin(a.root.rotation.y),0,-Math.cos(a.root.rotation.y));a.ragdoll.start({impulse:back.multiplyScalar(2.4),lift:1.5,spin:(Math.random()-.5)*2});}catch(error){console.warn('Visitor ragdoll unavailable',error);}
+  }
+  if(!c.down&&a.ragdoll?.active){a.ragdoll.recover();a.recoverAt=t;}
+  const seq=c.punch?.seq;if(Number.isFinite(seq)){if(a.punchSeq!=null&&seq!==a.punchSeq){a.punchAt=t;a.punchHand=c.punch.hand?'R':'L';}a.punchSeq=seq;}
+  a.combat=c;
+ }
  const icons=()=>window.lucide?.createIcons();
  async function api(action,data){
   if(preview)throw new Error('Accounts and shared rooms are not enabled on this public preview.');
@@ -41,7 +60,8 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
   const labelMap=new T.CanvasTexture(label);labelMap.colorSpace=T.SRGBColorSpace;
   const name=new T.Sprite(new T.SpriteMaterial({map:labelMap,depthTest:true,toneMapped:false}));name.scale.set(1.1/root.scale.x,.21/root.scale.y,1);name.position.y=(model.height+.2)/root.scale.y;root.add(name);
   root.position.set(person.x,.02,person.z);root.rotation.y=person.yaw;scene.add(root);
-  return {...model,signature:JSON.stringify([person.ghost,person.character,person.name]),target:new T.Vector3(person.x,.02,person.z),yaw:person.yaw,wave:0,moving:0};
+  const bones={};root.traverse(n=>{if(n.isBone)bones[n.name]=n;});
+  return {...model,bones,name:person.name,signature:JSON.stringify([person.ghost,person.character,person.name]),target:new T.Vector3(person.x,.02,person.z),yaw:person.yaw,wave:0,moving:0,combat:null,punchSeq:null,punchAt:-9,flinchAt:-9,recoverAt:-9};
  }
  function setConnected(live,label){$('social-dot').classList.toggle('live',live&&!preview);$('social-status').textContent=preview?'Public preview / shared room offline':label;$('social-launch-label').textContent=preview?'Public preview':(canInteract()?'':'Ghost / ')+(live?people.length+' in the garden':failures?'Reconnecting':'Connecting');}
  function renderPeople(){
@@ -62,8 +82,10 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
  function snapshot(data){
   selfId=data.selfId;user=data.user;accountUI();
   const signature=JSON.stringify(data.people.map(p=>[p.id,p.name,p.color]));const previous=JSON.stringify(people.map(p=>[p.id,p.name,p.color]));people=data.people;if(signature!==previous)renderPeople();
-  const ids=new Set();for(const p of people){if(p.id===selfId)continue;ids.add(p.id);let a=avatars.get(p.id);const signature=JSON.stringify([p.ghost,p.character,p.name]);if(a&&a.signature!==signature){destroyAvatar(a);a=null;}if(!a){a=avatar(p);avatars.set(p.id,a);}a.target.set(p.x,.02,p.z);a.yaw=p.yaw;a.wave=p.wave;}
+  const ids=new Set();for(const p of people){if(p.id===selfId)continue;ids.add(p.id);let a=avatars.get(p.id);const signature=JSON.stringify([p.ghost,p.character,p.name]);if(a&&a.signature!==signature){destroyAvatar(a);a=null;}if(!a){a=avatar(p);avatars.set(p.id,a);}a.target.set(p.x,.02,p.z);a.yaw=p.yaw;a.wave=p.wave;syncCombat(a,p.combat);}
   for(const [id,a] of avatars)if(!ids.has(id)){destroyAvatar(a);avatars.delete(id);}
+  for(const event of Array.isArray(data.combat)?data.combat:[]){if(!event||seenCombat.has(event.id))continue;seenCombat.add(event.id);if(!firstSnapshot&&event.target===selfId&&event.from!==selfId)combatHandler?.(event);}
+  if(seenCombat.size>400)for(const id of [...seenCombat].slice(0,200))seenCombat.delete(id);
   const nextId=data.messages.at(-1)?.id||0;if(JSON.stringify(data.messages)!==JSON.stringify(messages)||firstSnapshot){if(!firstSnapshot&&$('social-panel').hidden)unread+=data.messages.filter(m=>m.id>lastId&&m.userId!==selfId&&!muted.has(m.userId)).length;messages=data.messages;lastId=nextId;firstSnapshot=false;renderMessages();}
   $('social-unread').hidden=!unread;$('social-unread').textContent=String(unread);setConnected(true,'Live room / '+people.length+' online');requestDraw();
  }
@@ -114,12 +136,28 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
  if(preview){setUser(null);clearTimeout(timer);}else api('me').then(result=>setUser(result.user)).catch(()=>{setUser(null);setConnected(false,'Server unavailable');});icons();
  return {
   update(time,dt){let active=false;for(const a of avatars.values()){
-   a.root.visible=!inExpedition();const distance=a.root.position.distanceTo(a.target);active=active||(a.ghost&&!reducedMotion)||distance>.005||Date.now()/1000-a.wave<3;
+   a.root.visible=!inExpedition();const now=performance.now()/1000;
+   if(a.ragdoll?.active){a.ragdoll.step(dt);active=true;continue;}
+   const distance=a.root.position.distanceTo(a.target);active=active||(a.ghost&&!reducedMotion)||distance>.005||Date.now()/1000-a.wave<3;
    a.root.position.lerp(a.target,1-Math.exp(-10*dt));a.root.rotation.y+=Math.atan2(Math.sin(a.yaw-a.root.rotation.y),Math.cos(a.yaw-a.root.rotation.y))*(1-Math.exp(-10*dt));
    a.moving=T.MathUtils.lerp(a.moving,distance>.02?1:0,.18);const stride=Math.sin(time*9)*.35*a.moving;
    a.animate(a.ghost&&reducedMotion?0:time,stride,Date.now()/1000-a.wave<3);
+   if(a.ragdoll?.blending){a.ragdoll.blend((now-a.recoverAt)/.8);active=true;}
+   const punch=now-a.punchAt,flinch=now-a.flinchAt;
+   if(punch<.4&&a.bones['upperarm01.'+a.punchHand]){
+    const side=a.punchHand,w=Math.sin(Math.min(1,punch/.4)*Math.PI),forward=new T.Vector3(Math.sin(a.root.rotation.y),.08,Math.cos(a.root.rotation.y)).normalize();
+    aimBone(a.bones['upperarm01.'+side],a.bones['lowerarm01.'+side],forward,w);aimBone(a.bones['lowerarm01.'+side],a.bones['wrist.'+side],forward,w);active=true;
+   }
+   if(flinch<.35&&a.bones.spine01){a.bones.spine01.rotation.x-=Math.sin(flinch/.35*Math.PI)*.35;active=true;}
   }return active;},
+  combatTargets:()=>[...avatars].filter(([,a])=>!a.ghost&&a.root.visible).map(([id,a])=>({id,name:a.name,root:a.root,ko:!!a.combat?.down})),
+  sendCombat(event){
+   const a=avatars.get(event.target);if(a)a.flinchAt=performance.now()/1000;
+   if(preview||combatUnsupported||!canInteract())return;
+   api('combat',{...event,nonce:crypto.randomUUID()}).catch(error=>{if([400,404,405,501].includes(error.status))combatUnsupported=true;});
+  },
+  onCombat(handler){combatHandler=handler;},
   pick(raycaster,maxDistance=Infinity){const hit=raycaster.intersectObjects([...avatars.values()].map(a=>a.root),true)[0];if(!hit||hit.distance>maxDistance)return false;let n=hit.object;while(n&&!n.userData.visitorId)n=n.parent;if(n){if(!canInteract()){gate();return true;}selected=n.userData.visitorId;showPanel('people');renderPeople();return true;}return false;},
-  inspect:()=>({userId:user?.id,selfId,ghost:!canInteract(),character:user?.character,people:people.map(p=>({...p})),avatars:[...avatars.keys()],connected:!preview&&!document.hidden&&!failures&&!firstSnapshot})
+  inspect:()=>({combatServer:!combatUnsupported&&!preview,userId:user?.id,selfId,ghost:!canInteract(),character:user?.character,people:people.map(p=>({...p})),avatars:[...avatars.keys()],connected:!preview&&!document.hidden&&!failures&&!firstSnapshot})
  };
 };
