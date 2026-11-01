@@ -1,5 +1,5 @@
 'use strict';
-window.createNightRoad=function(T,scene,{sections,roadX,roadStart,roadLength,clearingStart=-Infinity,district,sky,bark,forest,roadMaterial,vergeMaterial,clouds,mobile}){
+window.createNightRoad=function(T,scene,{sections,roadX,roadStart,nightStart=roadStart,roadLength,clearingStart=-Infinity,district,sky,bark,forest,roadMaterial,vergeMaterial,clouds,mobile}){
  const smooth=T.MathUtils.smoothstep,parts=[],lights=scene.children.filter(o=>o.isLight).map(light=>({light,intensity:light.intensity,color:light.color.clone(),ground:light.groundColor?.clone()}));
  const originalFog=scene.fog.color.clone(),nightFog=new T.Color(0x192a25),originalRoad=roadMaterial.color.clone(),originalVerge=vergeMaterial.color.clone();
  const moonColor=new T.Color(0xa9c8c1),moonGround=new T.Color(0x14261b),nightRoadColor=new T.Color(0x909f97),nightVerge=new T.Color(0x60775a);
@@ -41,7 +41,7 @@ window.createNightRoad=function(T,scene,{sections,roadX,roadStart,roadLength,cle
  const starGeo=new T.BufferGeometry();starGeo.setAttribute('position',new T.Float32BufferAttribute(starPositions,3));const stars=new T.Points(starGeo,new T.PointsMaterial({color:0xcfe4da,size:.16,transparent:true,opacity:0,depthWrite:false,fog:false}));sky.add(stars);
  let amount=0,enabled=true,override=null;
  function update(time,viewer){
-  amount=override??smooth(roadStart-viewer.position.z,1,17);sky.material.uniforms.roadNight.value=amount;
+  amount=override??smooth(nightStart-viewer.position.z,.5,15);sky.material.uniforms.roadNight.value=amount;
   // Sections beyond the fog (~120 m) are not drawn at all.
   for(const part of parts)part.root.visible=enabled&&part.active&&Math.abs(part.section.position.z-viewer.position.z)<roadLength*.5+120;
   scene.fog.color.copy(originalFog).lerp(nightFog,amount);scene.fog.density=T.MathUtils.lerp(.016,.019,amount);
