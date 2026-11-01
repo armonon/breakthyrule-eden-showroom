@@ -1,0 +1,96 @@
+'use strict';
+// The local player's own body in first person: the shared character stands under the camera with its head hidden, so
+// looking down shows torso, arms, legs and feet. The procedural motion layer then reacts to the world: hands brace on
+// walls the player walks into, reach for things in arm's length and grab what is clicked, a guard comes up when
+// someone is close, and F throws alternating punches that knock the other character back.
+(function(root){
+ const clamp=(n,l,h)=>Math.max(l,Math.min(h,n)),smooth=(l,h,n)=>{const t=clamp((n-l)/(h-l),0,1);return t*t*(3-2*t);};
+ const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
+ function createPlayerBody({T,scene,camera,pickables=[],enabled=()=>true,requestDraw=()=>{}}){
+  let model=null,signature='',defaults=null,checked=-1e9,clock=0,frame=0,yaw=null,turning=false,guardUntil=0,grabUntil=0,grabPoint=null,hover=null,wall=null;
+  const forward=new T.Vector3(),left=new T.Vector3(),up=new T.Vector3(0,1,0),probe=new T.Vector3(),ray=new T.Raycaster(),center=new T.Vector2();
+  // The character comes from the signed-in account, else the creator's latest draft, else the schema defaults.
+  function appearance(){
+   if(root.GardenPlayerCharacter)return {...defaults,...root.GardenPlayerCharacter};
+   let best=null;try{for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i);if(!key.startsWith('eden-character-draft-v1-'))continue;const entry=JSON.parse(localStorage.getItem(key));if(entry?.appearance?.version===1&&(!best||entry.at>best.at))best=entry;}}catch{}
+   return {...defaults,...best?.appearance};
+  }
+  async function refresh(){
+   if(!defaults){defaults={};try{const schema=await (await fetch('/character-schema.json')).json();defaults=Object.fromEntries([['version',1],...Object.values(schema).filter(v=>v&&typeof v==='object').flatMap(g=>Object.entries(g).map(([k,s])=>[k,s.default]))]);}catch{return;}}
+   const look=appearance(),next=JSON.stringify(look);if(next===signature)return;signature=next;
+   const old=model;try{model=GardenCharacter.create(T,look);}catch{model=old;return;}
+   if(old)GardenCharacter.dispose(old);
+   model.root.name='Player body';model.byName.neck01.scale.setScalar(.001);model.motion.tune.guardLift=.05;scene.add(model.root);requestDraw();
+  }
+  // Walls are found by chest-height rays against the static meshes near the player (refreshed each second), so a
+  // knee-high birdbath does not raise the hands but a wall, shelf or pillar does, with its true surface normal.
+  let nearby=[],gathered=-1e9;const sphere=new T.Sphere();
+  function gather(){
+   nearby=[];scene.traverseVisible(node=>{if(!node.isMesh||node.isSkinnedMesh||node.isInstancedMesh||node.isSprite||node.material?.transparent)return;for(let p=node.parent;p;p=p.parent)if(p.userData.characterStyle)return;const g=node.geometry;if(!g.boundingSphere)g.computeBoundingSphere();sphere.copy(g.boundingSphere).applyMatrix4(node.matrixWorld);if(sphere.radius<40&&(g.index?g.index.count:g.attributes.position.count)<60000&&sphere.distanceToPoint(camera.position)<2.5)nearby.push(node);});
+  }
+  function wallAt(offset){
+   probe.copy(camera.position).addScaledVector(left,offset);probe.y-=.4;ray.set(probe,forward);ray.far=.85;
+   const hit=ray.intersectObjects(nearby,false).find(h=>h.face);if(!hit)return null;
+   const normal=hit.face.normal.clone().transformDirection(hit.object.matrixWorld);if(normal.dot(forward)>0)normal.negate();
+   return Math.abs(normal.y)<.55?{distance:hit.distance,point:hit.point,normal}:null;
+  }
+  const inScene=node=>{while(node.parent)node=node.parent;return node===scene;};
+  function nearestOther(range){
+   let best=null,bestDistance=range;
+   for(const other of root.GardenCharacterMotion.bodies){if(other===model||!other.root.visible||!inScene(other.root))continue;const p=other.root.getWorldPosition(new T.Vector3()),d=Math.hypot(p.x-camera.position.x,p.z-camera.position.z);
+    const facing=((p.x-camera.position.x)*forward.x+(p.z-camera.position.z)*forward.z)/Math.max(d,1e-3);if(d<bestDistance&&facing>.55){best=other;bestDistance=d;}}
+   return best;
+  }
+  function onKey(event){
+   if(event.repeat||event.ctrlKey||event.metaKey||event.altKey||event.key.toLowerCase()!=='f'||!model?.root.visible||!enabled()||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName)||event.target.isContentEditable)return;
+   event.preventDefault();api.punch();
+  }
+  document.addEventListener('keydown',onKey);
+  const api={
+   update(dt,{aim,velocity=null,airborne=false}={}){
+    clock+=dt;frame++;
+    if(clock-checked>1.5){checked=clock;refresh();}
+    if(!model)return;
+    const on=enabled();model.root.visible=on;root.GardenCharacterMotion.attention=on?camera.position:null;if(!on){yaw=null;return;}
+    forward.subVectors(aim,camera.position);const pitch=Math.atan2(forward.y,Math.hypot(forward.x,forward.z));forward.y=0;forward.normalize();left.set(forward.z,0,-forward.x);
+    // The body turns with the view only once the head is twisted far enough, or while walking, like a real neck.
+    const view=Math.atan2(forward.x,forward.z),speed=velocity?Math.hypot(velocity.x,velocity.z):0;if(yaw===null)yaw=view;
+    const diff=wrap(view-yaw);if(speed>.3||Math.abs(diff)>.75)turning=true;else if(Math.abs(diff)<.04)turning=false;
+    if(turning)yaw=wrap(yaw+diff*(1-Math.exp(-(speed>.3?11:6)*dt)));
+    model.root.rotation.y=yaw;
+    // The eyes sit ahead of the neck: looking down, the chest and toes should be below the view, not behind it.
+    const back=.05+.07*smooth(-.25,-1.1,pitch);
+    model.root.position.set(camera.position.x-Math.sin(yaw)*back,camera.position.y-1.75,camera.position.z-Math.cos(yaw)*back);
+    model.motion.airborne(airborne);
+    // Walls: both palms meet the surface ahead at chest height, harder and earlier when walking into it.
+    if(clock-gathered>2){gathered=clock;gather();}
+    if(frame%3===0){const hits=[wallAt(0),wallAt(.18),wallAt(-.18)].filter(Boolean).sort((a,b)=>a.distance-b.distance);wall=hits[0]||null;}
+    const along=new T.Vector3();
+    for(const [side,sign] of [['L',1],['R',-1]]){
+     let weight=0,point=null;
+     if(wall){weight=smooth(1.08,.78,wall.distance);along.copy(left).addScaledVector(wall.normal,-left.dot(wall.normal)).normalize();point=wall.point.clone().addScaledVector(along,sign*.19).addScaledVector(wall.normal,.025);point.y=camera.position.y-(sign>0?.42:.36);}
+     if(side==='R'&&clock<grabUntil&&grabPoint){weight=1;point=grabPoint;}
+     else if(side==='R'&&hover&&!weight){weight=.4;point=hover;}
+     model.motion.touch(side,point,wall&&point!==grabPoint&&point!==hover?wall.normal:null,weight,point===grabPoint||point===hover?'grab':'press');
+    }
+    // Reach: anything clickable inside arm's length draws the right hand towards it before it is grabbed.
+    if(frame%4===0){center.set(0,0);ray.setFromCamera(center,camera);ray.far=1.25;const hit=ray.intersectObjects(pickables,false)[0];hover=hit?hit.point.clone().addScaledVector(ray.ray.direction,-.14):null;}
+    const near=nearestOther(1.9);model.motion.guard(clock<guardUntil?1:near?.85:0);
+    model.motion.update(dt,{velocity});
+   },
+   // Click on something within reach: the hand gets there first, then the caller opens it.
+   grab(point){if(!model?.root.visible||!point||point.distanceTo(camera.position)>1.6)return 0;grabPoint=point.clone();grabUntil=clock+.55;requestDraw();return 230;},
+   punch(){
+    if(!model)return;
+    const target=nearestOther(1.4),head=target?.byName?.head?.getWorldPosition(new T.Vector3());
+    const aimPoint=head||camera.position.clone().addScaledVector(forward,.75).add(new T.Vector3(0,-.12,0));
+    const land=model.motion.punch(aimPoint);guardUntil=clock+2.2;requestDraw();
+    if(target)setTimeout(()=>{if(!target.root.parent)return;const p=target.root.getWorldPosition(new T.Vector3());if(Math.hypot(p.x-camera.position.x,p.z-camera.position.z)<1.5)target.motion.hit(p.sub(camera.position).setY(0).normalize(),1.2);requestDraw();},land*1000);
+   },
+   inspect:()=>({ready:!!model,visible:!!model?.root.visible,yaw:yaw===null?null:+yaw.toFixed(3),wall:wall?+wall.distance.toFixed(2):null,hover:!!hover,motion:model?.motion.inspect()}),
+   dispose(){document.removeEventListener('keydown',onKey);if(model)GardenCharacter.dispose(model);model=null;}
+  };
+  return api;
+ }
+ root.createPlayerBody=createPlayerBody;
+})(typeof window==='object'?window:globalThis);

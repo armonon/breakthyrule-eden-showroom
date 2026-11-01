@@ -76,7 +76,7 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
   finally{running=false;clearTimeout(timer);if(!document.hidden)timer=setTimeout(poll,failures?Math.min(15000,1000*2**failures):hosted?900:400);}
  }
  function setUser(value){
-  generation++;clearTimeout(timer);user=value;failures=0;people=[];messages=[];lastId=0;firstSnapshot=true;unread=0;pendingChat=null;$('social-message').value='';clearAvatars();muted=new Set();
+  window.GardenPlayerCharacter=value?.character||null;generation++;clearTimeout(timer);user=value;failures=0;people=[];messages=[];lastId=0;firstSnapshot=true;unread=0;pendingChat=null;$('social-message').value='';clearAvatars();muted=new Set();
   try{muted=new Set(JSON.parse(localStorage.getItem('eden-muted-'+(user?.id||'guest'))||'[]'));}catch{}
   if(!spawned){spawned=true;enter();}timer=setTimeout(poll,50);$('social-move').hidden=false;setConnected(false,'Connecting...');
   accountUI();renderMessages();renderPeople();$('social-unread').hidden=true;

@@ -178,21 +178,13 @@ window.GardenCharacter = {
   GardenCharacterDetails.add({T,a,morph,head,headOrigin:joints[headIndex],torso:byName.spine01,torsoOrigin:joints[bones.indexOf(byName.spine01)]});
   for(const side of ['L','R'])limbs.push(byName['upperleg01.'+side],byName['upperarm01.'+side]);
   root.scale.setScalar(a.height/175);root.userData.characterStyle='ps2-painted-human';
-  const model={root,limbs,ghost:false,height:a.height/100,skeleton,animate(t,stride=0,waving=false){
-   const walking=Math.abs(stride)>.015;
-   for(const [side,sign] of [['L',1],['R',-1]]){
-    const arm=byName['upperarm01.'+side],forearm=byName['lowerarm01.'+side],leg=byName['upperleg01.'+side],knee=byName['lowerleg01.'+side];
-    leg.rotation.x=stride*sign;knee.rotation.x=Math.max(0,-stride*sign)*.6;
-    arm.rotation.set(-stride*sign*.8,0,-sign*.43);forearm.rotation.set(.65,0,0);
-    if(waving&&side==='R'){arm.rotation.set(-.1,0,-1.25);forearm.rotation.set(.65,0,-1.2+Math.sin(t*7)*.18);}
-   }
-   byName.spine03.rotation.y=walking?stride*.07:Math.sin(t*.8)*.012;
-   head.rotation.y=walking?0:Math.sin(t*.55)*.025;
-  }};
+  // Procedural motion (character-motion.js) replaces the old fixed swing; animate() keeps its old signature.
+  const model={root,limbs,ghost:false,height:a.height/100,skeleton,byName};
+  model.motion=GardenCharacterMotion.create(T,model);model.animate=model.motion.animate;GardenCharacterMotion.bodies.add(model);
   model.animate(0);return model;
  },
  dispose(model){
   const geometries=new Set(),materials=new Set();model.root.traverse(n=>{if(n.geometry)geometries.add(n.geometry);if(n.material)for(const m of Array.isArray(n.material)?n.material:[n.material])materials.add(m);});
-  for(const g of geometries)g.dispose();for(const m of materials){m.map?.dispose();m.dispose();}model.skeleton?.dispose();model.root.removeFromParent();
+  for(const g of geometries)g.dispose();for(const m of materials){m.map?.dispose();m.dispose();}model.skeleton?.dispose();model.root.removeFromParent();GardenCharacterMotion.bodies.delete(model);
  }
 };
