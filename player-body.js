@@ -7,7 +7,7 @@
  const clamp=(n,l,h)=>Math.max(l,Math.min(h,n)),smooth=(l,h,n)=>{const t=clamp((n-l)/(h-l),0,1);return t*t*(3-2*t);};
  const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
  function createPlayerBody({T,scene,camera,pickables=[],enabled=()=>true,requestDraw=()=>{}}){
-  let model=null,signature='',defaults=null,checked=-1e9,clock=0,frame=0,yaw=null,turning=false,guardUntil=0,grabUntil=0,grabPoint=null,hover=null,wall=null;
+  let baseFov=null,ownFov=null,model=null,signature='',defaults=null,checked=-1e9,clock=0,frame=0,yaw=null,turning=false,guardUntil=0,grabUntil=0,grabPoint=null,hover=null,wall=null;
   const forward=new T.Vector3(),left=new T.Vector3(),up=new T.Vector3(0,1,0),probe=new T.Vector3(),ray=new T.Raycaster(),center=new T.Vector2();
   // The character comes from the signed-in account, else the creator's latest draft, else the schema defaults.
   function appearance(){
@@ -51,7 +51,7 @@
     clock+=dt;frame++;
     if(clock-checked>1.5){checked=clock;refresh();}
     if(!model)return;
-    const on=enabled();model.root.visible=on;root.GardenCharacterMotion.attention=on?camera.position:null;if(!on){yaw=null;return;}
+    const on=enabled();model.root.visible=on;root.GardenCharacterMotion.attention=on?camera.position:null;if(!on){yaw=null;if(ownFov!==null&&Math.abs(camera.fov-ownFov)<.01){camera.fov=baseFov;camera.updateProjectionMatrix();}ownFov=null;return;}
     forward.subVectors(aim,camera.position);const pitch=Math.atan2(forward.y,Math.hypot(forward.x,forward.z));forward.y=0;forward.normalize();left.set(forward.z,0,-forward.x);
     // The body turns with the view only once the head is twisted far enough, or while walking, like a real neck.
     const view=Math.atan2(forward.x,forward.z),speed=velocity?Math.hypot(velocity.x,velocity.z):0;if(yaw===null)yaw=view;
@@ -59,7 +59,11 @@
     if(turning)yaw=wrap(yaw+diff*(1-Math.exp(-(speed>.3?11:6)*dt)));
     model.root.rotation.y=yaw;
     // The eyes sit ahead of the neck: looking down, the chest and toes should be below the view, not behind it.
-    const back=.05+.07*smooth(-.25,-1.1,pitch);
+    const back=.06+.22*smooth(-.25,-1.1,pitch);
+    // Looking down widens the view like peripheral vision, so chest, legs and feet come into frame together.
+    // Whatever field of view the app set last is the base; only our own widening is undone.
+    if(ownFov===null||Math.abs(camera.fov-ownFov)>.01)baseFov=camera.fov;
+    const fov=baseFov+30*smooth(-.3,-1.2,pitch);if(Math.abs(fov-camera.fov)>.01){camera.fov=fov;camera.updateProjectionMatrix();}ownFov=camera.fov;
     model.root.position.set(camera.position.x-Math.sin(yaw)*back,camera.position.y-1.75,camera.position.z-Math.cos(yaw)*back);
     model.motion.airborne(airborne);
     // Walls: both palms meet the surface ahead at chest height, harder and earlier when walking into it.
