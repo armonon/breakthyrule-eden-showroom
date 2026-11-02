@@ -40,9 +40,14 @@
  // The forever match: no rounds and no night zone. Dying puts you back in after a few seconds; kills, headshots and
  // events add to your score; weapon pads and chests restock; an event comes round every EVENT_GAP seconds.
  const RESPAWN_PLAYER=3,SPAWN_PROTECT=2,PAD_RESTOCK=30,CHEST_RESTOCK=60,EVENT_FIRST=25,EVENT_GAP=75;
- const POINTS={kill:10,head:3,bounty:25,hillTick:3,page:15};
- // Day and night (seconds): night brings the Attendant and the lost pages.
- const CYCLE={day:300,dusk:25,night:150,dawn:25},NIGHT_MAX=.86,ATTENDANT={speed:3.9,hit:55,every:1.4,stun:150,stunFor:8};
+ const POINTS={kill:10,head:3,page:15,ceremony:50};
+ // The eight lost pages are the heart of the match. They always lie somewhere in the district; whoever carries the
+ // most is pinged to everyone every PING_EVERY seconds; a dropped page left alone PAGE_RESET seconds (or one nobody
+ // collects for PAGE_SHUFFLE) goes back to a page spot. The Moon Temple only takes pages at night; when all eight
+ // are in, whoever delivered most wins the ceremony and the pages scatter again.
+ const PAGE_COUNT=8,PAGE_RESET=45,PAGE_SHUFFLE=120,PING_EVERY=20,PING_SHOW=8,SOUL_TIME=9;
+ // Day and night (seconds): night brings the Attendant and opens the temple.
+ const CYCLE={day:180,dusk:20,night:120,dawn:20},NIGHT_MAX=.86,ATTENDANT={speed:3.9,hit:55,every:1.4,stun:150,stunFor:8};
  const SUPPLY_TABLE=[[30,{weapon:'sniper'}],[30,{weapon:'rifle'}],[20,'c4'],[20,{weapon:'smg'}]];
  const STREAKS={2:'DOUBLE KILL',3:'TRIPLE KILL',4:'OVERKILL'},SPREES={5:'KILLING SPREE',10:'RAMPAGE',15:'UNTOUCHABLE'};
  const ZONE_PHASES=[{wait:70,shrink:60,r:52,dps:1},{wait:50,shrink:50,r:32,dps:2},{wait:40,shrink:40,r:16,dps:4},{wait:30,shrink:36,r:6,dps:7},{wait:20,shrink:30,r:0,dps:12}];
@@ -62,6 +67,7 @@
   let godMode=false,built=false,active=false,phase='idle',clock=0,countdown=0,ended=null,matchStart=0;
   let player=null,bots=[],chests=[],loot=[],feed=[],zone=null,hud=null,root=null,grid=null,finder=null;
   let pads=[],event=null,nextEventAt=0,eventIndex=0,suspended=false,entering=false,savedArsenal=null;
+  let pages=[],pinged=null,pingAt=0,pingUntil=0,beacon=null,templeRing=null,round=1,bloodHit=0;
   const garments=(window.showroomCollection||[]).map(armorFromGarment).filter(Boolean);
 
   /* ---------------------------------------------------------------- helpers */
@@ -257,6 +263,7 @@
    if(target.bot&&meta.kind!=='zone')flashBot(target,shielded>0&&a<=0?'shield':'body');
    if(target.armor>0&&!raw&&a>0){const absorb=Math.min(target.armor,a*.65);target.armor-=absorb;a-=absorb;}
    target.hp-=a;target.lastHurt=clock;
+   if(target===player&&!godMode)bloodHit=Math.min(1,bloodHit+a/45+shielded/160+(a>0?.12:0));
    if(target.bot){target.seen=attacker&&attacker!==target?attacker:target.seen;if(target.state!=='fight'&&attacker&&attacker!==target){target.state='fight';target.target=attacker;target.aimT=target.reaction*.5;}
     // Hit reactions: heavy blows knock the bot down into a ragdoll (it gets back up); light ones flinch it, at most
     // every 0.7 s so a spray cannot pin it down. Either way it side-steps out of the line of fire.
@@ -288,14 +295,19 @@
     target.hand.clear();
     target.model.motion?.knockdown?.(blowDirection(target,attacker,meta),meta.kind==='zone'?1.3:(FORCE[meta.weapon]||(meta.kind==='attendant'?5.2:2.4))*(meta.head?1.15:1),{stay:true});
    }else{
-    if(player.pages){const q=posOf(player);for(let i=0;i<player.pages;i++)dropItem({type:'page',rarity:'epic',label:'LOST PAGE'},q.x+rand(-1,1),q.z+rand(-1,1));player.pages=0;}
-    combat.holster();player.respawnAt=clock+RESPAWN_PLAYER;player.killedBy=attacker&&attacker!==target?nameOf(attacker):null;
-    announce(player.killedBy?`TAKEN BY ${player.killedBy}`:'YOU FELL');o.onDeath?.();
+    combat.holster();hud?.prompt(null);player.focus=null;player.killedBy=attacker&&attacker!==target?nameOf(attacker):null;
+    // Die at night and your soul is taken to the Gathering inside the pyramid; you rise again at its gate, a long
+    // way from the temple.
+    player.soul=nightLevel()>.5;player.respawnAt=clock+(player.soul?SOUL_TIME:RESPAWN_PLAYER);
+    announce(player.soul?'YOUR SOUL IS TAKEN':player.killedBy?`TAKEN BY ${player.killedBy}`:'YOU FELL');o.onDeath?.();
+    if(player.soul)setTimeout(()=>{if(active&&player&&!player.alive&&player.soul){const g=SOUL_SPOT();o.placePlayer(g.x,g.z,g.x,g.z-12);combat.syncLook();bloodHit=0;o.onSoul?.(true);announce('THE GATHERING · YOUR SOUL WAITS');}},1100);
    }
+   dropPages(target);
    if(target.bot)target.respawnAt=clock+rand(6,10);
    hud?.update();
   }
   const nameOf=c=>c===player?'YOU':c.name;
+  const pagesOf=c=>pages.filter(pg=>pg.carrier===c).length;
 
   /* ---------------------------------------------------------------- pathfinding */
   function buildGrid(){
@@ -316,6 +328,7 @@
   /* ---------------------------------------------------------------- bot brain */
   function botWants(b,l){
    const it=l.item;
+   if(it.type==='page')return 5;
    if(it.type==='weapon'){const cur=['axe','pistol','pump','smg','rifle','sniper'].indexOf(b.weapon);return !b.weapons[it.weapon]&&['axe','pistol','pump','smg','rifle','sniper'].indexOf(it.weapon)>cur-1?3:0;}
    if(it.type==='armor')return it.armor>b.armor+5?2.5:0;
    if(it.type==='ammo')return Object.keys(b.weapons).some(id=>W(id)?.ammo===it.ammo)?1.5:0;
@@ -324,6 +337,7 @@
   }
   function botTake(b,l){
    const it=l.item;
+   if(it.type==='page'){takePage(b,l);return;}
    if(it.type==='weapon'){b.weapons[it.weapon]={loaded:it.loaded};const [t,n]=AMMO_FOR[it.weapon]||[];if(t)b.reserve[t]=(b.reserve[t]||0)+Math.round(n*.5);setBotWeapon(b,botBestWeapon(b));}
    else if(it.type==='armor'){b.armor=it.armor;b.garment=it.garment;tintBot(b);}
    else if(it.type==='ammo')b.reserve[it.ammo]=(b.reserve[it.ammo]||0)+it.count;
@@ -371,14 +385,17 @@
     // Events pull bots in: a landed supply crate within 80 m, and most of them go for the hill.
     if(event&&b.state!=='fight'){
      if(event.kind==='supply'&&!event.chest.open&&!event.chest.dropping&&event.chest.pos.distanceTo(p)<80){if(b.goal!==event.chest.pos){b.goal=event.chest.pos;b.path=findPath(p,event.chest.pos);}b.state='loot';}
-     else if(event.kind==='hill'&&(b.id.charCodeAt(b.id.length-1)+eventIndex)%5<3&&Math.hypot(p.x-event.pos.x,p.z-event.pos.z)>3){if(b.goal!==event.pos){b.goal=event.pos;b.path=findPath(p,event.pos);}b.state='roam';}
     }
+    // Pages: carriers head for the temple once it opens; the rest hunt whoever was pinged.
+    if(b.state!=='fight'){const mine=pagesOf(b);
+     if(mine&&nightLevel()>.5){const t=temple();if(!b.goal||b.goal.distanceTo(t)>1){b.goal=t;b.path=findPath(p,t);}b.state='roam';}
+     else if(pinged&&pinged!==b&&pinged.alive&&clock<pingUntil&&(b.id.charCodeAt(b.id.length-1)+round)%3<2){const tp=posOf(pinged);if(tp.distanceTo(p)<90&&(!b.goal||b.goal.distanceTo(tp)>6)){b.goal=tp.clone();b.path=findPath(p,b.goal);b.state='roam';}}}
     // Loot decisions
     if(b.state==='rush'){const c=chests.filter(c=>!c.open).sort((x,y)=>x.pos.distanceTo(p)-y.pos.distanceTo(p))[0];if(c){if(b.goal!==c.pos){b.goal=c.pos;b.path=[c.pos.clone()];}}else b.state='loot';}
     if(b.state==='loot'||b.state==='roam'){
      const want=loot.map(l=>({l,s:botWants(b,l)/(1+l.pos.distanceTo(p)*.08)})).filter(x=>x.s>.05&&x.l.pos.distanceTo(p)<70).sort((x,y)=>y.s-x.s)[0];
      if(want){if(b.goal!==want.l.pos){b.goal=want.l.pos;b.path=findPath(p,want.l.pos);}b.state='loot';}
-     else if(!b.goal||p.distanceTo(b.goal)<2.5){const lm=pick(layout.landmarks);b.goal=new T.Vector3(lm.x+rand(-3,3),0,lm.z+lm.d/2+3+rand(-2,2));if(phase==='live'&&outside(b.goal)>-3)b.goal=zone.center.clone();b.path=findPath(p,b.goal);b.state='roam';}
+     else if(!b.goal||p.distanceTo(b.goal)<2.5){const lp=pages.find(pg=>pg.loot&&(b.id.charCodeAt(3)+pg.i)%4===0);if(lp){b.goal=lp.loot.pos;b.path=findPath(p,b.goal);b.state='roam';}else{const lm=pick(layout.landmarks);b.goal=new T.Vector3(lm.x+rand(-3,3),0,lm.z+lm.d/2+3+rand(-2,2));if(phase==='live'&&outside(b.goal)>-3)b.goal=zone.center.clone();b.path=findPath(p,b.goal);b.state='roam';}}
     }
    }
    // Interact
@@ -439,7 +456,7 @@
   /* ---------------------------------------------------------------- player */
   function playerTake(l){
    const it=l.item;const ars=combat.arsenal;
-   if(it.type==='page'){player.pages=(player.pages||0)+1;toast(`LOST PAGE · ${player.pages} CARRIED · BRING THEM TO THE MOON TEMPLE`);removeLoot(l);hud.update();return;}
+   if(it.type==='page'){takePage(player,l);const n=pagesOf(player);toast(`${it.label} · ${n} CARRIED · ${nightLevel()>.5?'THE TEMPLE IS OPEN':'THE TEMPLE OPENS AT NIGHT'}`);hud.update();return;}
    if(it.type==='weapon'){
     const inv=ars.inspect();const guns=inv.owned.filter(id=>!['axe','c4'].includes(id));
     if(inv.owned.includes(it.weapon)){ars.addAmmo(W(it.weapon).ammo,it.loaded);toast('+'+it.loaded+' '+AMMO_LABEL[W(it.weapon).ammo]);removeLoot(l);return;}
@@ -466,6 +483,8 @@
    if(phase==='live'&&outside(p)>0){player.zoneTick=(player.zoneTick||0)+dt;if(player.zoneTick>=1){player.zoneTick=0;damage(player,zoneDps(),null,{kind:'zone'});}}
    if(player.healing){const h=player.healing;h.t+=dt;if(clock-player.lastHurt<.05&&h.t>.2){player.healing=null;toast('HEAL INTERRUPTED');}
     else if(h.t>=h.dur){player.heals[h.kind]--;player.hp=Math.min(h.kind==='medkit'?100:75,player.hp+(h.kind==='medkit'?60:15));player.healing=null;}}
+   // Pages are picked up just by walking over them.
+   for(const l of loot)if(l.item.type==='page'&&!l.vel&&Math.hypot(l.pos.x-p.x,l.pos.z-p.z)<1.1){playerTake(l);break;}
    // Chest + pickup prompts
    const fwd=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion);let best=null,bs=0;
    for(const c of chests){if(c.open)continue;const d=c.pos.distanceTo(p);if(d<2.2){const s=(2.2-d)+Math.max(0,fwd.dot(c.pos.clone().sub(camera.position).normalize()));if(s>bs){bs=s;best={chest:c};}}}
@@ -485,7 +504,7 @@
     <canvas class="ar-map" width="180" height="160" aria-label="Arena map"></canvas>
     <div class="ar-feed" aria-live="polite"></div>
     <div class="ar-count" aria-live="assertive"></div>
-    <div class="ar-announce"></div>
+    <div class="ar-announce"></div><div class="ar-blood" aria-hidden="true"><i></i></div><div class="ar-pages" aria-live="polite"></div>
     <div class="ar-prompt"><kbd>F</kbd><span></span></div>
     <div class="ar-vitals"><div class="ar-shimmer"></div><div class="ar-bar ar-shield"><i></i><span></span></div><div class="ar-bar ar-armor"><i></i><span></span></div><div class="ar-bar ar-hp"><i></i><span></span></div><div class="ar-heals"></div><div class="ar-heal-progress"><i></i></div></div>
     <div class="ar-end" hidden><div class="ar-end-card"><span class="ar-end-kicker"></span><h2></h2><p class="ar-end-stats"></p><div class="ar-loadout"></div><div class="ar-end-actions"><button class="ar-again">PLAY AGAIN</button><button class="ar-leave">LEAVE ARENA</button></div></div></div>
@@ -499,8 +518,10 @@
      const everyone=[player,...bots].filter(Boolean).sort((a,b)=>(b.score||0)-(a.score||0));
      q('.ar-alive').textContent=player?.score||0;q('.ar-top-label').textContent=player?`SCORE · #${everyone.indexOf(player)+1} OF ${everyone.length}`:'SCORE';
      const un=untilNight(),mm=x=>`${Math.floor(x/60)}:${String(Math.floor(x)%60).padStart(2,'0')}`;
-     q('.ar-zone').textContent=(event?`${event.label}${event.kind==='pages'?'':' · '+Math.max(0,Math.ceil(event.until-clock))+'s'}`:`NEXT EVENT IN ${Math.max(0,Math.ceil(nextEventAt-clock))}s`)+(un>0?` · NIGHT IN ${mm(un)}`:` · DAWN IN ${mm(-un)}`)+(player?.pages?` · ${player.pages} PAGE${player.pages>1?'S':''} CARRIED`:'');
-     const board=q('.ar-board');if(!board.hidden)board.innerHTML='<h3>BEYOND EDEN · OPEN MATCH</h3><table><tr><th></th><th>SCORE</th><th>KILLS</th><th>DEATHS</th></tr>'+everyone.map((c,i)=>`<tr class="${c===player?'me':''}"><td>${i+1}. ${nameOf(c)}${event?.kind==='bounty'&&event.target===c?' ★':''}</td><td>${c.score||0}</td><td>${c.kills||0}</td><td>${c.deaths||0}</td></tr>`).join('')+'</table>';
+     const open=templeOpen(),inT=pages.filter(pg=>pg.state==='delivered').length,mine=player?pagesOf(player):0;
+     q('.ar-zone').textContent=(open?`MOON TEMPLE OPEN · DAWN IN ${mm(-un)}`:`TEMPLE OPENS IN ${mm(un)}`)+(event?.kind==='supply'?` · ${event.label}`:'');
+     q('.ar-pages').innerHTML=pages.map(pg=>`<i class="pg ${pg.state}${pg.carrier===player?' mine':''}" title="${pg.state}"></i>`).join('')+`<span>${mine?`<b>${mine}</b> CARRIED · `:''}${inT}/${PAGE_COUNT} IN THE TEMPLE${pinged&&clock<pingUntil?` · <em>${pinged===player?'YOU ARE':nameOf(pinged)+' IS'} PINGED</em>`:''}</span>`;
+     const board=q('.ar-board');if(!board.hidden)board.innerHTML='<h3>BEYOND EDEN · OPEN MATCH</h3><table><tr><th></th><th>SCORE</th><th>KILLS</th><th>PAGES</th><th>DEATHS</th></tr>'+everyone.map((c,i)=>`<tr class="${c===player?'me':''}"><td>${i+1}. ${nameOf(c)}${pinged===c&&clock<pingUntil?' ◉':''}</td><td>${c.score||0}</td><td>${c.kills||0}</td><td>${c.delivered||0}${pagesOf(c)?' +'+pagesOf(c):''}</td><td>${c.deaths||0}</td></tr>`).join('')+'</table>';
      if(player){const sh=Math.max(0,player.shield||0);q('.ar-shield i').style.width=(player.shieldMax?sh/player.shieldMax*100:0)+'%';q('.ar-shield span').textContent=sh>0?'SHIELD '+Math.ceil(sh):'SHIELD DOWN';q('.ar-shield').classList.toggle('down',sh<=0);
       const hp=Math.max(0,player.hp),ar=Math.max(0,player.armor);q('.ar-hp i').style.width=hp+'%';q('.ar-hp span').textContent=Math.ceil(hp)+' HP';
       q('.ar-armor i').style.width=(player.armorMax?ar/player.armorMax*100:0)+'%';q('.ar-armor span').textContent=player.garment?`${Math.ceil(ar)} · ${player.garment.name.toUpperCase()}`:'NO ARMOR';
@@ -517,6 +538,9 @@
       map.strokeStyle='#e9e6dc';map.lineWidth=1.5;map.beginPath();map.arc(zx,zy,Math.max(0,rr),0,TAU);map.stroke();
       if(phase==='live'){const [tx,ty]=toMap(zone.to.c.x,zone.to.c.z);map.setLineDash([3,3]);map.strokeStyle='rgba(255,255,255,.7)';map.beginPath();map.arc(tx,ty,zone.to.r/(B[1]-B[0])*180,0,TAU);map.stroke();map.setLineDash([]);}}
      for(const c of chests){if(c.open)continue;const [x,y]=toMap(c.pos.x,c.pos.z);map.fillStyle='#ffd27a';map.fillRect(x-1.5,y-1.5,3,3);}
+     {const t=temple(),[x,y]=toMap(t.x,t.z);map.strokeStyle=templeOpen()?'#ffd27a':'rgba(200,90,70,.8)';map.lineWidth=2;map.beginPath();map.arc(x,y,5,0,TAU);map.stroke();}
+     for(const pg of pages){if(!pg.loot)continue;const [x,y]=toMap(pg.loot.pos.x,pg.loot.pos.z);map.fillStyle=pg.state==='loose'?'#fff':'#f3e6c4';map.fillRect(x-2,y-2.5,4,5);}
+     if(pinged&&pinged.alive&&clock<pingUntil&&pinged!==player){const q2=posOf(pinged),[x,y]=toMap(q2.x,q2.z);map.strokeStyle='#ff5a4a';map.lineWidth=1.5;map.beginPath();map.arc(x,y,4+((clock*2)%1)*6,0,TAU);map.stroke();map.fillStyle='#ff5a4a';map.beginPath();map.arc(x,y,2.5,0,TAU);map.fill();}
      if(attendant){const [x,y]=toMap(attendant.pos.x,attendant.pos.z);map.fillStyle='#b23cff';map.beginPath();map.arc(x,y,3.5+Math.sin(clock*8),0,TAU);map.fill();}
      if(event){const at=event.kind==='bounty'?(event.target?.alive?posOf(event.target):null):event.pos;if(at){const [x,y]=toMap(at.x,at.z),pulse=3+Math.sin(clock*6)*1.2;
       map.strokeStyle=map.fillStyle=event.kind==='supply'?'#ffd27a':event.kind==='hill'?'#7fe3ff':event.kind==='pages'?'#f3e6c4':'#ff6b5a';map.lineWidth=1.5;map.beginPath();
@@ -539,7 +563,10 @@
     // Your shield taking a hit: a cyan shimmer around the edge of the screen, stronger with the damage.
     shieldHit(k){const el=q('.ar-shimmer');el.style.setProperty('--k',Math.min(1,.35+k).toFixed(2));el.classList.remove('on');void el.offsetWidth;el.classList.add('on');},
     shieldBroken(){const bar=q('.ar-shield');bar.classList.remove('broke');void bar.offsetWidth;bar.classList.add('broke');},
-    hideEnd(){q('.ar-end').hidden=true;}
+    hideEnd(){q('.ar-end').hidden=true;},
+    // Modern-warfare style damage: blood splashes in from the edges when you are hit, and while your health is low it
+    // stays, pulsing with your heartbeat.
+    blood(hit,low){const v=Math.max(hit,low*(.62+.18*Math.sin(clock*(5+low*4))));if(Math.abs(v-(this._b||0))<.01)return;this._b=v;const b=q('.ar-blood');b.style.opacity=Math.min(1,v).toFixed(3);b.style.setProperty('--low',low.toFixed(2));}
    };
   }
   function toast(t){hud?.toast(t);}
@@ -548,6 +575,10 @@
 
   /* ---------------------------------------------------------------- forever match: spawns, kits, events */
   const DOOR_SPAWN=()=>new T.Vector3(11.7+rand(-1.5,1.5),0,-24.6);
+  // The Gathering inside the pyramid at the end of the road, and its gate, where a taken soul rises again.
+  const PYRAMID=()=>{const p=garden.pyramid?.inspect?.();return p?{x:p.x,z:p.z}:{x:11.7,z:-134.8};};
+  const SOUL_SPOT=()=>{const p=PYRAMID();return new T.Vector3(p.x+rand(-1,1),0,p.z+11);};
+  const GATE_SPAWN=()=>{const p=PYRAMID();return new T.Vector3(p.x+rand(-1.5,1.5),0,p.z+27.5);};
   // Landmarks near the middle of the district: event sites and bot spawns.
   function nearLandmarks(){return layout.landmarks.filter(l=>Math.hypot(l.x-CENTER.x,l.z-CENTER.z)<65);}
   function farSpawn(){
@@ -559,15 +590,16 @@
   function kitBot(b){b.weapons={axe:{loaded:0},pistol:{loaded:12}};b.reserve={pistol:24};setBotWeapon(b,'pistol');}
   function kitPlayer(){combat.arsenal.set({owned:['axe','pistol'],reserve:{pistol:24},loaded:{pistol:12}});combat.equip('pistol');}
   function respawnBot(b){
-   const i=bots.indexOf(b),keep={name:b.name,kills:b.kills||0,deaths:b.deaths||0,score:b.score||0};
+   const i=bots.indexOf(b),keep={name:b.name,kills:b.kills||0,deaths:b.deaths||0,score:b.score||0,delivered:b.delivered||0};
    b.root.parent?.remove(b.root);try{window.GardenCharacter.dispose?.(b.model);}catch{}
    const spot=farSpawn(),nb=makeBot(Number(b.id.slice(3))||0,new T.Vector3(spot.x,groundY(spot.x,spot.z),spot.z),rand(0,TAU));
    bots.pop();bots[i]=nb;Object.assign(nb,keep);kitBot(nb);nb.state='roam';
   }
   function respawnPlayer(){
-   const spot=DOOR_SPAWN();
-   Object.assign(player,{alive:true,hp:100,shield:SHIELD_PLAYER,armor:0,armorMax:0,garment:null,lastHurt:-9,healing:null,respawnAt:null,protectUntil:clock+SPAWN_PROTECT});
-   o.placePlayer(spot.x,spot.z,spot.x,spot.z-6);combat.syncLook();kitPlayer();hud.count(0);hud.update();announce('BACK IN · '+SPAWN_PROTECT+'s PROTECTED');
+   const soul=player.soul,spot=soul?GATE_SPAWN():DOOR_SPAWN();
+   if(soul)o.onSoul?.(false);
+   Object.assign(player,{soul:false,alive:true,hp:100,shield:SHIELD_PLAYER,armor:0,armorMax:0,garment:null,lastHurt:-9,healing:null,respawnAt:null,protectUntil:clock+SPAWN_PROTECT});
+   o.placePlayer(spot.x,spot.z,spot.x,soul?spot.z+6:spot.z-6);combat.syncLook();kitPlayer();hud.count(0);hud.update();announce(soul?'YOUR SOUL RETURNS · THE PYRAMID GATE':'BACK IN · '+SPAWN_PROTECT+'s PROTECTED');
   }
   function leader(){return [player,...bots].filter(c=>c&&(c.score||0)>0).sort((a,b)=>(b.score||0)-(a.score||0))[0]||null;}
   function hillRing(pos){
@@ -577,7 +609,7 @@
    g.traverse(n=>{n.userData.noHit=true;n.raycast=()=>{};});root.add(g);return g;
   }
   function startEvent(){
-   let kind=['supply','hill','bounty'][eventIndex++%3];if(kind==='bounty'&&!leader())kind='supply';
+   const kind='supply';eventIndex++;
    const lm=pick(nearLandmarks());
    if(kind==='supply'){
     const x=lm.x+rand(-3,3),z=lm.z+lm.d/2+6,c=makeChest(x,z,rand(0,TAU));c.supply=true;c.dropping=true;c.group.position.y=c.pos.y+34;
@@ -606,18 +638,75 @@
   function nightLevel(){const total=CYCLE.day+CYCLE.dusk+CYCLE.night+CYCLE.dawn;let t=clock%total;if(t<CYCLE.day)return 0;t-=CYCLE.day;if(t<CYCLE.dusk)return smooth01(t/CYCLE.dusk);t-=CYCLE.dusk;if(t<CYCLE.night)return 1;t-=CYCLE.night;return 1-smooth01(Math.min(1,t/CYCLE.dawn));}
   function untilNight(){const total=CYCLE.day+CYCLE.dusk+CYCLE.night+CYCLE.dawn,t=clock%total;return t<CYCLE.day?CYCLE.day-t:t<CYCLE.day+CYCLE.dusk+CYCLE.night?-(CYCLE.day+CYCLE.dusk+CYCLE.night-t):total-t+CYCLE.day;}
   const temple=()=>{const lm=layout.landmarks.find(l=>l.id==='temple')||layout.landmarks[0];return new T.Vector3(lm.x,0,lm.z+lm.d/2+3);};
-  function startPages(){
-   if(event)endEvent();
-   for(let i=0;i<6;i++){const lm=pick(nearLandmarks()),x=lm.x+rand(-lm.w/2,lm.w/2),z=lm.z+lm.d/2+rand(3,9);if(!blocked(new T.Vector3(x,0,z)))dropItem({type:'page',rarity:'epic',label:'LOST PAGE'},x,z);}
-   event={kind:'pages',until:clock+CYCLE.night+CYCLE.dusk,label:'LOST PAGES · BRING THEM TO THE MOON TEMPLE',pos:temple()};
+  // ---- the eight lost pages
+  const PAGE_INFO=(layout.pages||[]).slice(0,PAGE_COUNT);
+  function pageSpot(i,avoid){
+   const info=PAGE_INFO[i],sockets=(info?.sockets||[]).slice().sort(()=>Math.random()-.5);
+   for(const [x,z] of sockets){const v=new T.Vector3(x,0,z);if(!blocked(v)&&(!avoid||v.distanceTo(avoid)>2))return v;}
+   for(let k=0;k<12;k++){const lm=pick(nearLandmarks()),v=new T.Vector3(lm.x+rand(-lm.w/2,lm.w/2),0,lm.z+lm.d/2+rand(3,9));if(!blocked(v))return v;}
+   return CENTER.clone();
+  }
+  function placePage(pg,at,loose=false){
+   if(pg.loot&&loot.includes(pg.loot))removeLoot(pg.loot);
+   const title=PAGE_INFO[pg.i]?.title||'A LOST PAGE';
+   pg.loot=dropItem({type:'page',page:pg.i,rarity:'epic',label:`PAGE ${pg.i+1} · ${title.toUpperCase()}`},at.x,at.z);
+   pg.state=loose?'loose':'home';pg.carrier=null;pg.since=clock;
+  }
+  function scatterPages(){
+   for(const pg of pages)if(pg.loot&&loot.includes(pg.loot))removeLoot(pg.loot);
+   pages=[];for(let i=0;i<PAGE_COUNT;i++){const pg={i,state:'home',carrier:null,loot:null,since:clock,by:null};pages.push(pg);placePage(pg,pageSpot(i));}
+   for(const c of [player,...bots])if(c)c.delivered=0;
+  }
+  function takePage(c,l){const pg=pages.find(pg=>pg.loot===l);removeLoot(l);if(!pg)return;pg.loot=null;pg.state='carried';pg.carrier=c;pg.since=clock;}
+  function dropPages(c){
+   const p=posOf(c);let k=0;
+   for(const pg of pages)if(pg.carrier===c){const a=k++*2.1+rand(0,.5);placePage(pg,new T.Vector3(p.x+Math.cos(a)*1.1,0,p.z+Math.sin(a)*1.1),true);}
+  }
+  const templeOpen=()=>nightLevel()>.5;
+  function deliver(c){
+   const mine=pages.filter(pg=>pg.carrier===c);if(!mine.length)return;
+   for(const pg of mine){pg.state='delivered';pg.carrier=null;pg.by=c;}
+   const k=mine.length,in_=pages.filter(pg=>pg.state==='delivered').length;
+   c.score=(c.score||0)+k*POINTS.page;c.delivered=(c.delivered||0)+k;
+   announce(`${nameOf(c)} ${c===player?'DELIVERED':'DELIVERED'} ${k} PAGE${k>1?'S':''} · ${in_}/${PAGE_COUNT} IN THE TEMPLE`);
+   pushFeed(`${nameOf(c)} <i>DELIVERED ${k} PAGE${k>1?'S':''}</i>`);chime([523,659,784,1046],.07,.08);
+   if(in_>=PAGE_COUNT){
+    const best=[player,...bots].filter(Boolean).sort((a,b)=>(b.delivered||0)-(a.delivered||0))[0];
+    best.score=(best.score||0)+POINTS.ceremony;round++;
+    setTimeout(()=>{announce(`THE CEREMONY · ${best===player?'YOU WIN IT':nameOf(best)+' WINS IT'} · +${POINTS.ceremony} · THE PAGES SCATTER AGAIN`);pushFeed(`${nameOf(best)} <i>WON THE CEREMONY</i>`);},1800);
+    scatterPages();
+   }
+   hud.update();
+  }
+  function updatePages(dt){
+   // Pages left out too long go back to a page spot.
+   for(const pg of pages){
+    if(pg.state==='loose'&&clock-pg.since>PAGE_RESET){placePage(pg,pageSpot(pg.i));pushFeed(`<i>PAGE ${pg.i+1} RETURNED TO ITS PLACE</i>`);}
+    else if(pg.state==='home'&&clock-pg.since>PAGE_SHUFFLE){placePage(pg,pageSpot(pg.i,pg.loot?.pos));}
+    else if(pg.state==='carried'&&!pg.carrier?.alive)placePage(pg,pageSpot(pg.i),true);
+   }
+   // The Moon Temple: open (gold) at night, shut (dim red) by day.
+   const open=templeOpen();
+   if(templeRing){templeRing.children[0].material.color.set(open?0xffd27a:0x7a2c22);templeRing.children[0].material.opacity=open?.85:.35;templeRing.children[1].material.color.set(open?0xffd27a:0x7a2c22);templeRing.children[1].material.opacity=open?.2+.08*Math.sin(clock*3):.05;}
+   for(const c of combatants()){if(!pagesOf(c)||posOf(c).distanceTo(temple())>6)continue;
+    if(open)deliver(c);else if(c===player&&clock>(player.shutHint||0)){player.shutHint=clock+6;hud.prompt('THE MOON TEMPLE IS SHUT · IT OPENS AT NIGHT','epic');announce(`THE TEMPLE OPENS IN ${Math.ceil(untilNight())}s`);}}
+   // Ping whoever carries the most pages.
+   if(clock>=pingAt){pingAt=clock+PING_EVERY;
+    const top=combatants().map(c=>[c,pagesOf(c)]).filter(([,n])=>n>0).sort((a,b)=>b[1]-a[1])[0];
+    if(top){pinged=top[0];pingUntil=clock+PING_SHOW;announce(pinged===player?`YOU HOLD THE MOST PAGES (${top[1]}) · EVERYONE CAN SEE YOU`:`${nameOf(pinged)} HOLDS ${top[1]} PAGE${top[1]>1?'S':''} · PINGED`);chime([880,660,880],.06,.09);}
+    else pinged=null;}
+   if(beacon){const on=pinged&&pinged.alive&&clock<pingUntil&&pinged!==player;beacon.visible=!!on;if(on){const q=posOf(pinged);beacon.position.set(q.x,q.y,q.z);beacon.children[0].material.opacity=.35+.2*Math.sin(clock*8);}}
+  }
+  function makeBeacon(){
+   const M=materials(),g=new T.Group();
+   const beam=new T.Mesh(new T.CylinderGeometry(.5,.5,30,16,1,true),new T.MeshBasicMaterial({map:M.beam,color:0xff5a4a,transparent:true,opacity:.4,depthWrite:false,blending:T.AdditiveBlending,side:T.DoubleSide}));beam.position.y=15;g.add(beam);
+   g.traverse(n=>{n.userData.noHit=true;n.raycast=()=>{};});g.visible=false;root.add(g);return g;
   }
   function updateNight(dt){
    const n=nightLevel();o.setNight(n*NIGHT_MAX);
-   if(n>.5&&lastNight<=.5){announce('NIGHT FALLS · THE ATTENDANT IS HUNTING');startPages();}
-   if(n<=.5&&lastNight>.5){announce('DAWN · THE ATTENDANT RETREATS');if(event?.kind==='pages')endEvent();for(const l of loot.filter(l=>l.item.type==='page'))removeLoot(l);}
+   if(n>.5&&lastNight<=.5)announce('NIGHT FALLS · THE MOON TEMPLE IS OPEN · THE ATTENDANT HUNTS');
+   if(n<=.5&&lastNight>.5)announce('DAWN · THE TEMPLE CLOSES · HOLD ON TO YOUR PAGES');
    lastNight=n;
-   // Pages are worth points at the Moon Temple.
-   if(player?.alive&&player.pages&&posOf(player).distanceTo(temple())<6){const k=player.pages;player.score=(player.score||0)+k*POINTS.page;player.pages=0;announce(`${k} PAGE${k>1?'S':''} DELIVERED · +${k*POINTS.page}`);hud.update();}
    const w=garden.district?.watcher;if(!w)return;
    if(n<.6){if(attendant){attendant=null;w.visible=false;}return;}
    if(!attendant){const spot=farSpawn();attendant={pos:spot,stunUntil:0,hurt:0,hitT:0};w.visible=true;}
@@ -658,7 +747,7 @@
    for(const c of chests)c.group.parent?.remove(c.group);chests=[];
    for(const l of loot)l.group.parent?.remove(l.group);loot=[];feed=[];
    if(zone){zone.group.parent?.remove(zone.group);zone=null;}
-   if(event?.ring)event.ring.parent?.remove(event.ring);event=null;attendant=null;lastNight=0;if(garden.district?.watcher)garden.district.watcher.visible=false;
+   if(event?.ring)event.ring.parent?.remove(event.ring);event=null;attendant=null;pages=[];pinged=null;templeRing?.parent?.remove(templeRing);templeRing=null;beacon?.parent?.remove(beacon);beacon=null;lastNight=0;if(garden.district?.watcher)garden.district.watcher.visible=false;
   }
   // Beyond Eden is always on: walking through the hidden door starts the match (or picks it up where you left it),
   // walking back into the garden pauses it. walkIn: keep the player where they are instead of placing them.
@@ -674,10 +763,11 @@
     // Weapon pads along each building's approach: whatever is taken comes back PAD_RESTOCK seconds later.
     for(const lm of layout.landmarks){const list=LANDMARK_LOOT[lm.id]||['armor','bandage'];list.forEach((spec,i)=>{const x=lm.x-lm.w/2+1.5+(i/(list.length-1||1))*(lm.w-3),z=lm.z+lm.d/2+2.2+(i%2)*.9;const p=new T.Vector3(x,0,z);if(!blocked(p))pads.push({spec,x,z,l:dropItem(rollItem(spec),x,z),respawnAt:0});});}
     for(let i=0;i<10;i++){const x=rand(B[0]+6,B[1]-6),z=rand(B[2]+6,B[3]-6),p=new T.Vector3(x,0,z);if(blocked(p)||Math.hypot(x-CENTER.x,z-CENTER.z)<A.r)continue;dropItem(rollItem(pick(['ammo','armor','bandage',{weapon:pick(['pistol','pump','smg'])}])),x,z);}
+    templeRing=hillRing(temple());templeRing.scale.setScalar(.55);beacon=makeBeacon();pinged=null;pingAt=clock+PING_EVERY;round=1;
     player={alive:true,hp:100,shield:SHIELD_PLAYER,shieldMax:SHIELD_PLAYER,armor:0,armorMax:0,garment:null,worn:new Set(),heals:{bandage:0,medkit:0},kills:0,deaths:0,score:0,lastHurt:-9,protectUntil:SPAWN_PROTECT};
     if(!walkIn){const spot=DOOR_SPAWN();o.placePlayer(spot.x,spot.z,spot.x,spot.z-6);combat.syncLook();}
     for(let i=0;i<7;i++){const spot=farSpawn(),b=makeBot(i,new T.Vector3(spot.x,groundY(spot.x,spot.z),spot.z),rand(0,TAU));kitBot(b);b.state='roam';b.score=0;b.deaths=0;}
-    kitPlayer();hud.update();hud.feed();hud.announce('BEYOND EDEN · OPEN MATCH');
+    scatterPages();kitPlayer();hud.update();hud.feed();hud.announce('BEYOND EDEN · FIND THE 8 LOST PAGES');
    }finally{entering=false;}
   }
   function suspend(){
@@ -699,7 +789,7 @@
    if(!active)return;
    clock+=dt;
    if(phase==='countdown'){countdown-=dt;hud.count(Math.ceil(countdown));if(countdown<=0){phase='live';matchStart=clock;hud.count(0);hud.announce('GO · THE CACHE IS OPEN');}}
-   updateZone(dt);updateNight(dt);if(event?.kind!=='pages'&&nightLevel()<.5)updateEvent(dt);
+   updateZone(dt);updateNight(dt);updatePages(dt);updateEvent(dt);bloodHit=Math.max(0,bloodHit-dt*.9);
    if(Math.floor(clock)!==Math.floor(clock-dt))restock();
    if(player&&!player.alive&&player.respawnAt!=null){const left=player.respawnAt-clock;if(left<=0)respawnPlayer();else hud.count(Math.ceil(left));}
    for(const b of bots)updateBot(b,dt);
@@ -712,10 +802,14 @@
    }
    for(const c of chests){if(c.open){const k=clamp((clock-c.openT)/.45,0,1);c.lidPivot.rotation.x=-k*1.9*(1-.08*Math.sin(k*9)*(1-k));}}
    if(Math.floor(clock*4)!==Math.floor((clock-dt)*4))hud.update();
+   hud.blood(bloodHit,lowHealth());
   }
+  // 0 above 60 health, rising to 1 near death.
+  function lowHealth(){return player?.alive&&!player.soul?clamp((60-player.hp)/50,0,1):0;}
 
   return {
    start,exit,update,enter,suspend,
+   lowHealth:()=>active?Math.max(lowHealth(),bloodHit*.5):0,soul:()=>active&&!!player&&!player.alive&&!!player.soul,
    active:()=>active,busy:()=>active||entering,suspended:()=>suspended,dead:()=>active&&!!player&&!player.alive,
    canMove:()=>!active||phase==='live'||phase==='ended',
    canAct:()=>!active||(phase==='live'&&!!player?.alive),
@@ -723,10 +817,10 @@
     if(attendant){const a=attendant.pos,t=rayCapsule(origin,dir,new T.Vector3(a.x,a.y+.5,a.z),new T.Vector3(a.x,a.y+3,a.z),.45);if(t!=null&&t<maxDist&&(!h||t<h.distance))return {c:null,distance:t,head:false,point:origin.clone().addScaledVector(dir,t),apply:dmg=>{hurtAttendant(dmg);return {killed:false};}};}
     if(!h)return null;return {...h,apply:(dmg,meta)=>damage(h.c,dmg,player,{...meta,dir:dir.clone()})};},
    onExplosion(p,radius,dmg){if(!active)return;if(attendant&&attendant.pos.distanceTo(p)<radius)hurtAttendant(dmg);for(const c of combatants()){const d=posOf(c).distanceTo(p);if(d<radius&&los(p.clone().add(new T.Vector3(0,.4,0)),eyeOf(c)))damage(c,dmg*Math.pow(1-d/radius,1.2),player,{weapon:'c4',blast:true,dir:posOf(c).clone().sub(p).setY(0).normalize()});}},
-   inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,event:event&&{kind:event.kind,label:event.label},night:+nightLevel().toFixed(2),attendant:attendant&&{x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1),stunned:clock<attendant.stunUntil},pages:player?.pages||0,nextEvent:+(nextEventAt-clock).toFixed(1),pads:pads.length,player:player&&{alive:player.alive,score:player.score||0,deaths:player.deaths||0,hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
+   inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,event:event&&{kind:event.kind,label:event.label},night:+nightLevel().toFixed(2),attendant:attendant&&{x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1),stunned:clock<attendant.stunUntil},pages:player?pagesOf(player):0,pageState:pages.map(pg=>pg.state),delivered:pages.filter(pg=>pg.state==='delivered').length,pinged:pinged?nameOf(pinged):null,templeOpen:templeOpen(),soul:!!player?.soul,nextEvent:+(nextEventAt-clock).toFixed(1),pads:pads.length,player:player&&{alive:player.alive,score:player.score||0,deaths:player.deaths||0,hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
     bots:bots.map(b=>({name:b.name,score:b.score||0,kills:b.kills||0,alive:b.alive,hp:Math.round(b.hp),shield:Math.round(b.shield),down:+(b.model.motion?.downAmount?.()||0).toFixed(2),state:b.state,weapon:b.weapon,armor:b.armor,x:+b.root.position.x.toFixed(1),z:+b.root.position.z.toFixed(1)})),
     zone:zone&&{phase:zone.phase,state:zone.state,r:+zone.r.toFixed(1),x:+zone.center.x.toFixed(1),z:+zone.center.z.toFixed(1)},chests:chests.filter(c=>c.open).length+'/'+chests.length,loot:loot.length,arsenal:combat.arsenal.inspect()}),
-   _debug:{get bots(){return bots;},get player(){return player;},get loot(){return loot;},get chests(){return chests;},interact,damage,god(v=true){godMode=v;},place:(x,z,lx,lz,dp=0)=>{o.placePlayer(x,z,lx,lz);combat.syncLook(dp);},skip(t){countdown=0;clock+=t||0;},setZone(r){if(zone){zone.r=r;}}}
+   _debug:{get bots(){return bots;},get player(){return player;},get loot(){return loot;},get chests(){return chests;},interact,damage,god(v=true){godMode=v;},place:(x,z,lx,lz,dp=0)=>{o.placePlayer(x,z,lx,lz);combat.syncLook(dp);},skip(t){countdown=0;clock+=t||0;},setZone(r){if(zone){zone.r=r;}},get pages(){return pages;},deliver,night(){clock+=untilNight()+CYCLE.dusk;},blood(v){bloodHit=v;}}
   };
  }
  root.createBattleArena=createArena;

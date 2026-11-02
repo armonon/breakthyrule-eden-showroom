@@ -30,7 +30,7 @@ body:has(#battle-hud.on) .world-caption,body:has(#battle-hud.on) .world-topline,
 .ar-heal-progress i{display:block;height:100%;width:0;background:#7fd18b}
 #battle-hud.in-dark::after{content:'IN THE DARK · GET TO THE LIGHT';position:absolute;left:50%;top:24%;transform:translateX(-50%);font-size:12px;letter-spacing:.24em;color:#9fc4ff;animation:ar-blink 1s steps(2) infinite}
 @keyframes ar-blink{50%{opacity:.35}}
-.ar-exit{position:absolute;left:4.3%;top:72px;pointer-events:auto;background:rgba(10,12,10,.45);color:#f4f1ea;border:1px solid rgba(255,255,255,.2);font-size:9px;letter-spacing:.18em;padding:7px 12px;cursor:pointer}
+.ar-exit{position:absolute;left:4.3%;top:96px;pointer-events:auto;background:rgba(10,12,10,.45);color:#f4f1ea;border:1px solid rgba(255,255,255,.2);font-size:9px;letter-spacing:.18em;padding:7px 12px;cursor:pointer}
 .ar-end{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,10,9,.62);backdrop-filter:blur(6px);pointer-events:auto}
 .ar-end[hidden]{display:none}
 .ar-end-card{width:min(560px,92%);text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
@@ -79,3 +79,32 @@ body.battle-on #world>*:not(#scene):not(#battle-hud):not(#combat-hud):not(dialog
 .ar-board td{padding:5px 0;border-top:1px solid rgba(255,255,255,.08);text-align:right;font-variant-numeric:tabular-nums}
 .ar-board td:first-child{text-align:left;letter-spacing:.06em}
 .ar-board tr.me td{color:#ffd27a}
+
+/* Damage: blood splashes in from the edges when hit and stays, pulsing, while health is low (battle-arena.js hud.blood). */
+.ar-blood{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:3;
+ background:
+  radial-gradient(ellipse 34% 26% at 0% 0%,rgba(120,0,0,.95),rgba(120,0,0,0) 70%),
+  radial-gradient(ellipse 30% 30% at 100% 6%,rgba(110,0,0,.9),rgba(110,0,0,0) 70%),
+  radial-gradient(ellipse 36% 28% at 2% 100%,rgba(105,0,0,.95),rgba(105,0,0,0) 70%),
+  radial-gradient(ellipse 30% 34% at 100% 100%,rgba(120,0,0,.95),rgba(120,0,0,0) 70%),
+  radial-gradient(circle at 8% 38%,rgba(140,6,6,.55) 0 1.6%,rgba(140,6,6,0) 5%),
+  radial-gradient(circle at 93% 44%,rgba(140,6,6,.5) 0 1.2%,rgba(140,6,6,0) 4.5%),
+  radial-gradient(circle at 22% 92%,rgba(140,6,6,.5) 0 1.4%,rgba(140,6,6,0) 4.6%),
+  radial-gradient(circle at 78% 9%,rgba(140,6,6,.45) 0 1.1%,rgba(140,6,6,0) 4%),
+  radial-gradient(ellipse 75% 70% at 50% 50%,rgba(90,0,0,0) 55%,rgba(90,0,0,.75) 100%)}
+.ar-blood i{position:absolute;inset:0;opacity:var(--low,0);background:radial-gradient(ellipse 60% 55% at 50% 50%,rgba(40,0,0,0) 40%,rgba(40,0,0,.85) 100%)}
+
+/* The eight pages under the score: one slip per page (home, loose, carried, yours, delivered). */
+.ar-pages{position:absolute;left:4.3%;top:66px;display:flex;align-items:center;gap:4px;font-size:10px;letter-spacing:.18em}
+.ar-pages .pg{display:inline-block;width:11px;height:15px;border:1px solid rgba(243,230,196,.7);background:rgba(243,230,196,.12)}
+.ar-pages .pg.loose{background:rgba(255,255,255,.45)}
+.ar-pages .pg.carried{background:rgba(255,90,74,.55);border-color:#ff5a4a}
+.ar-pages .pg.mine{background:#f3e6c4;border-color:#fff;box-shadow:0 0 6px #ffcf7a}
+.ar-pages .pg.delivered{background:#ffd27a;border-color:#ffd27a}
+.ar-pages span{margin-left:10px}
+.ar-pages b{font-size:14px}
+.ar-pages em{font-style:normal;color:#ff7a6a}
+
+/* Your soul in the Gathering after dying at night. */
+body.soul-taken #battle-hud::after{content:'';position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,rgba(170,200,255,.06),rgba(20,30,70,.55));mix-blend-mode:screen;animation:soul-in 1.2s ease-out}
+@keyframes soul-in{0%{background-color:rgba(230,240,255,.9)}100%{background-color:rgba(230,240,255,0)}}
