@@ -62,9 +62,13 @@ window.createGardenResidents = function(T,scene,{reduced=false,onChange=()=>{},r
     let skins=0;gltf.scene.traverse(n=>{if(n.isSkinnedMesh)skins++;});
     if(!skins||!walk||!idle)throw new Error('Resident needs a skin and Walk / Idle clips.');
     entry.root=gltf.scene;entry.root.name=entry.def.name;
-    entry.root.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;n.frustumCulled=false;n.userData.residentId=id;
+    // Residents keep moving, so they wear a soft blob shadow instead of redrawing the whole sun shadow map as they go.
+    entry.root.traverse(n=>{if(n.isMesh){n.castShadow=false;n.receiveShadow=true;n.frustumCulled=false;n.userData.residentId=id;
      if(entry.def.assetVersion===4&&environment)for(const material of Array.isArray(n.material)?n.material:[n.material]){material.envMap=environment;material.envMapIntensity=.85;material.needsUpdate=true;}
     }});
+    const blobMap=window.GardenCharacterDetails?.blobTexture?.(T);
+    if(blobMap){const blob=new T.Mesh(new T.PlaneGeometry(1,1).rotateX(-Math.PI/2),new T.MeshBasicMaterial({map:blobMap,transparent:true,depthWrite:false,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-2}));
+     blob.name='Blob shadow';blob.position.y=.012;blob.scale.set(.85,1,.6);blob.renderOrder=-1;blob.raycast=()=>{};entry.root.add(blob);}
     entry.mixer=new T.AnimationMixer(entry.root);
     attachClips(entry,{Walk:walk,Idle:idle});
     if(entry.def.moves&&window.createJesterMoves){

@@ -2,7 +2,9 @@
 // Adaptive resolution. Learns the display's frame interval (the shortest one seen), then lowers the render pixel
 // ratio a step when frames keep arriving late and raises it again after several seconds of smooth frames. Only
 // consecutive frames count, so the idle/on-demand pauses in the render loop never read as slowness.
-window.createAdaptiveResolution=function(renderer,{max=Math.min(devicePixelRatio,1.5),min=.75,step=.25,onChange=()=>{}}={}){
+// When frames are still late at the lowest pixel ratio, onFloor() is called (at most every 2.5 s) so the host can
+// shed per-pixel effects too.
+window.createAdaptiveResolution=function(renderer,{max=Math.min(devicePixelRatio,1.5),min=.75,step=.25,onChange=()=>{},onFloor=()=>{}}={}){
  const RATES=[30,48,50,60,75,90,100,120,144,165,240];
  let ratio=max,vsync=1000/60,shortest=Infinity,average=0,smoothSince=0,lastChange=0,last=0,frames=0;
  renderer.setPixelRatio(ratio);
@@ -20,7 +22,7 @@ window.createAdaptiveResolution=function(renderer,{max=Math.min(devicePixelRatio
    shortest=Math.min(shortest,Math.max(interval,4));vsync=1000/RATES.reduce((best,hz)=>Math.abs(1000/hz-shortest)<Math.abs(1000/best-shortest)?hz:best);
    average=average?average+(interval-average)*.08:interval;
    if(time-lastChange<2500)return;
-   if(average>vsync*1.6)set(ratio-step,time);
+   if(average>vsync*1.6){if(ratio>min)set(ratio-step,time);else{lastChange=time;average=vsync;onFloor();}}
    else if(average<vsync*1.25){if(!smoothSince)smoothSince=time;else if(time-smoothSince>8000&&ratio<max)set(ratio+step,time);}
    else smoothSince=0;
   },
@@ -33,14 +35,14 @@ window.createAdaptiveResolution=function(renderer,{max=Math.min(devicePixelRatio
 // per group, removing hundreds of draw calls from hand-built scenery. Left alone: anything with userData (picking
 // and interaction tags), children, skinning, instancing, morphs, multi-materials or hidden state. Materials stay
 // shared, so material animation (lamp glow etc.) keeps working. `skip` stops the walk at subtrees that move.
-window.mergeStaticMeshes=function(T,root,{skip=()=>false,minGroup=2}={}){
+window.mergeStaticMeshes=function(T,root,{skip=()=>false,minGroup=2,ignoreNames=false}={}){
  if(!root)return {merged:0,removed:0};
  root.updateMatrixWorld(true);
  const toRoot=new T.Matrix4().copy(root.matrixWorld).invert(),groups=new Map();
  (function visit(o,visible){
   if(o!==root&&skip(o))return;const shown=visible&&o.visible;
   for(const child of o.children)visit(child,shown);
-  if(o===root||!shown||!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh||o.children.length||Array.isArray(o.material)||Object.keys(o.userData).length)return;
+  if(o===root||!shown||!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh||o.children.length||Array.isArray(o.material)||Object.keys(o.userData).some(key=>!(ignoreNames&&key==='name')))return;
   const g=o.geometry;if(!g.attributes.position||!g.attributes.normal||Object.keys(g.morphAttributes).length||o.onBeforeRender!==T.Object3D.prototype.onBeforeRender)return;
   const key=[o.material.uuid,o.castShadow,o.receiveShadow,o.renderOrder,!!g.attributes.uv,!!g.attributes.color].join('|');
   if(!groups.has(key))groups.set(key,[]);groups.get(key).push(o);

@@ -254,7 +254,7 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
   bb.setAttribute('position',new T.Float32BufferAttribute([-h,0,0, h,0,0, h,S,0, -h,S,0, 0,0,h, 0,0,-h, 0,S,-h, 0,S,h],3));
   bb.setAttribute('uv',new T.Float32BufferAttribute([0,0,.5,0,.5,1,0,1, .5,0,1,0,1,1,.5,1],2));
   bb.setAttribute('normal',new T.Float32BufferAttribute(Array(8).fill(up).flat(),3));bb.setIndex([0,1,2,0,2,3,4,5,6,4,6,7]);
-  const bbMap=new T.TextureLoader().load('/assets/flora/jacaranda_billboard.png');bbMap.colorSpace=T.SRGBColorSpace;bbMap.anisotropy=4;
+  const bbMap=new T.TextureLoader().load('/assets/flora/jacaranda_billboard.webp');bbMap.colorSpace=T.SRGBColorSpace;bbMap.anisotropy=4;
   jacaranda.far=new T.InstancedMesh(bb,new T.MeshStandardMaterial({map:bbMap,alphaTest:.5,side:T.DoubleSide,roughness:.85}),n);
   jacaranda.far.count=0;shadowed(jacaranda.far,false);gardenMeshes.push(jacaranda.far);
   // blossoms: every second frond card gets a purple blossom card, pushed slightly outward
@@ -265,7 +265,7 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
    buv.push(0,0,1,0,1,1,0,1);bi.push(o,o+1,o+2,o,o+2,o+3);
   }
   const bloomGeo=new T.BufferGeometry();bloomGeo.setAttribute('position',new T.Float32BufferAttribute(bp,3));bloomGeo.setAttribute('normal',new T.Float32BufferAttribute(bn,3));bloomGeo.setAttribute('uv',new T.Float32BufferAttribute(buv,2));bloomGeo.setIndex(bi);
-  const bloomMap=new T.TextureLoader().load('/assets/flora/jacaranda-blossom.png');bloomMap.colorSpace=T.SRGBColorSpace;bloomMap.anisotropy=4;
+  const bloomMap=new T.TextureLoader().load('/assets/flora/jacaranda-blossom.webp');bloomMap.colorSpace=T.SRGBColorSpace;bloomMap.anisotropy=4;
   jacaranda.bloom=new T.InstancedMesh(bloomGeo,windMaterial({map:bloomMap,alphaTest:.45,roughness:.7,emissive:0x2a1840,emissiveIntensity:.1},{sway:.045,flutter:.02}),n);
   jacaranda.bloom.count=0;shadowed(jacaranda.bloom,false);gardenMeshes.push(jacaranda.bloom);leafMeshes.push(jacaranda.bloom);
   jacaranda.ready=true;lastLod=null;

@@ -1,0 +1,13 @@
+{
+  "name": "showroom-asset-pipeline",
+  "private": true,
+  "type": "module",
+  "description": "Model and image optimisation for the showroom (see optimize-models.mjs, optimize-images.mjs).",
+  "dependencies": {
+    "@gltf-transform/core": "^4.0.0",
+    "@gltf-transform/extensions": "^4.0.0",
+    "@gltf-transform/functions": "^4.0.0",
+    "meshoptimizer": "^0.22.0",
+    "sharp": "^0.34.0"
+  }
+}
