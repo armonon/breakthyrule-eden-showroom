@@ -330,6 +330,8 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
  }
  function update(time,dt){
   const t=now();dt=Math.min(dt||.016,.05);let busy=false;
+  // Halo-style recovery: five seconds without taking a hit and your health climbs back.
+  if(!player.down&&player.hp<100&&t-player.lastHurt>5){player.hp=Math.min(100,player.hp+14*dt);updateHud();busy=true;}
   if(player.attack){const a=player.attack;if(!a.resolved&&t-a.start>=a.spec.impact){a.resolved=true;resolve(a);}if(t-a.start>a.spec.recover)player.attack=null;busy=true;}
   if(player.down&&t>=player.downUntil){player.down=false;if(player.ko){player.ko=false;player.hp=100;}ko.hidden=true;updateHud();}
   if(player.down){ko.querySelector('span').textContent=player.ko?'Back up in '+Math.ceil(player.downUntil-t)+'…':'';busy=true;}

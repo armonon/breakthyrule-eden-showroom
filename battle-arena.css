@@ -53,3 +53,10 @@ body.battle-on{overflow:hidden}
 body.battle-on #world{position:fixed;inset:0;height:100vh;min-height:0;z-index:40}
 body.battle-on .site-header,body.battle-on .world-footer,body.battle-on .world-topline,body.battle-on .world-caption,body.battle-on #movement-hint,body.battle-on #social-launcher,body.battle-on #social-panel,body.battle-on #music-prompt,body.battle-on #npc-prompt,body.battle-on #shelf-actions,body.battle-on .header-actions,body.battle-on #night-hud{display:none!important}
 body.battle-on #world>*:not(#scene):not(#battle-hud):not(#combat-hud):not(dialog){visibility:hidden}
+
+/* Recharging shield (battle-arena.js): a cyan bar over armour and health that flashes when it breaks. */
+.ar-shield i{background:linear-gradient(90deg,#3fd3ff,#b9f1ff);box-shadow:0 0 10px rgba(80,210,255,.55)}
+.ar-shield span{color:#06222b}
+.ar-shield.down span{color:#ff9c8a;text-shadow:0 1px 2px #000}
+.ar-shield.broke{animation:ar-shield-break .45s ease-out}
+@keyframes ar-shield-break{0%{box-shadow:0 0 0 0 rgba(120,220,255,.9);border-color:#bff2ff}100%{box-shadow:0 0 0 14px rgba(120,220,255,0);border-color:rgba(255,255,255,.15)}}

@@ -35,6 +35,8 @@
   gardens:[{weapon:'pump'},{weapon:'rifle'},{ammo:'shells'},{ammo:'rifle'},'medkit','armor']
  };
  // The night closes in slowly: about seven minutes from the first wait to full dark, and the dark only nibbles at first.
+ // Recharging shields over 100 health: the player's matches a full health bar, the bots' is half that.
+ const SHIELD_PLAYER=100,SHIELD_BOT=50,SHIELD_DELAY=4;
  const ZONE_PHASES=[{wait:70,shrink:60,r:52,dps:1},{wait:50,shrink:50,r:32,dps:2},{wait:40,shrink:40,r:16,dps:4},{wait:30,shrink:36,r:6,dps:7},{wait:20,shrink:30,r:0,dps:12}];
  const BOT_NAMES=['ADAM','LILITH','SERAPH','JUBAL','NAAMAH','ENOCH','ZILLAH','TUBAL','ADAH','IRAD','METHUSA'];
 
@@ -181,7 +183,7 @@
    const r=new T.Group();r.add(model.root);r.position.copy(pos);r.rotation.y=face;root.add(r);
    model.root.traverse(n=>{n.castShadow=true;n.userData.noHit=true;});
    const hand=new T.Group();hand.position.set(-.2,1.28,.32);r.add(hand);
-   const b={id:'bot'+i,name:BOT_NAMES[i%BOT_NAMES.length],bot:true,root:r,model,hand,hp:100,armor:0,garment:null,alive:true,kills:0,
+   const b={id:'bot'+i,name:BOT_NAMES[i%BOT_NAMES.length],bot:true,root:r,model,hand,hp:100,shield:SHIELD_BOT,shieldMax:SHIELD_BOT,dodgeT:0,lastFlinch:-9,bashT:0,armor:0,garment:null,alive:true,kills:0,
     weapons:{axe:{loaded:0}},weapon:'axe',reserve:{},heals:{bandage:0,medkit:0},
     state:'rush',target:null,goal:null,path:[],repath:0,think:rand(0,.3),fireT:0,reloadT:0,aimT:0,strafe:Math.random()<.5?1:-1,strafeT:0,stride:0,
     skill:rand(.42,.68),reaction:rand(.35,.7),seen:null,deathT:0,lastHurt:-9,heading:face,healT:0};
@@ -217,14 +219,28 @@
    if(!best)return null;best.point=origin.clone().addScaledVector(dir,best.distance);return best;
   }
 
+  // Halo-style shields: hits drain the recharging shield first, then armour soaks part of the rest, then health.
+  // The night zone ignores shields and armour. After SHIELD_DELAY seconds without damage the shield refills.
+  function chime(freqs,gain=.08,step=.07){try{const ac=chime.ac||=new (window.AudioContext||window.webkitAudioContext)();if(ac.state!=='running')return;const t=ac.currentTime;
+   freqs.forEach((f,i)=>{const o2=ac.createOscillator(),g=ac.createGain();o2.type='triangle';o2.frequency.value=f;g.gain.setValueAtTime(0,t+i*step);g.gain.linearRampToValueAtTime(gain,t+i*step+.01);g.gain.exponentialRampToValueAtTime(.0001,t+i*step+.22);o2.connect(g);g.connect(ac.destination);o2.start(t+i*step);o2.stop(t+i*step+.25);});}catch{}}
+  // How hard a killing or heavy blow throws a body, by weapon.
+  const FORCE={sniper:4.6,pump:4,rifle:2.6,smg:2.2,pistol:2.2,axe:3.4,melee:3.1,c4:6.2};
+  function blowDirection(target,attacker,meta){if(meta.dir)return meta.dir.clone().setY(0).normalize();const from=attacker&&attacker!==target?posOf(attacker):null;const d=from?posOf(target).clone().sub(from).setY(0):new T.Vector3(0,0,1);return d.lengthSq()>1e-6?d.normalize():new T.Vector3(0,0,1);}
   function damage(target,amount,attacker,meta={}){
    if(!target?.alive||phase==='ended')return {killed:false};
    if(phase==='countdown')return {killed:false};
    if(!target.bot&&godMode)return {killed:false};
-   let a=amount;if(target.armor>0&&meta.kind!=='zone'){const absorb=Math.min(target.armor,a*.65);target.armor-=absorb;a-=absorb;}
+   let a=amount,shielded=0;
+   if(target.shield>0&&meta.kind!=='zone'){shielded=Math.min(target.shield,a);target.shield-=shielded;a-=shielded;if(target.shield<=0&&target===player){chime([520,330,196],.09,.05);hud?.shieldBroken?.();}}
+   if(target.armor>0&&meta.kind!=='zone'&&a>0){const absorb=Math.min(target.armor,a*.65);target.armor-=absorb;a-=absorb;}
    target.hp-=a;target.lastHurt=clock;
-   if(target.bot){target.seen=attacker&&attacker!==target?attacker:target.seen;if(target.state!=='fight'&&attacker&&attacker!==target){target.state='fight';target.target=attacker;target.aimT=target.reaction*.5;}}
-   else{combat.hurt(attacker&&attacker!==target?eyeOf(attacker):null,a+(amount-a)*.4);if(meta.kind==='zone')combat.hurt(null,a*.4);hud.update();}
+   if(target.bot){target.seen=attacker&&attacker!==target?attacker:target.seen;if(target.state!=='fight'&&attacker&&attacker!==target){target.state='fight';target.target=attacker;target.aimT=target.reaction*.5;}
+    // Hit reactions: heavy blows knock the bot down into a ragdoll (it gets back up); light ones flinch it, at most
+    // every 0.7 s so a spray cannot pin it down. Either way it side-steps out of the line of fire.
+    if(target.hp-a>0&&meta.kind!=='zone'){const heavy=meta.blast||['sniper','axe','melee'].includes(meta.weapon)||(meta.weapon==='pump'&&amount>=30)||amount>=45;
+     const dir=blowDirection(target,attacker,meta);if(heavy){target.model.motion?.hit?.(dir,2.2);}else if(clock-target.lastFlinch>.7){target.lastFlinch=clock;target.model.motion?.hit?.(dir,.7);}
+     target.dodgeT=.38;target.strafe=Math.random()<.5?1:-1;}}
+   else{combat.hurt(attacker&&attacker!==target?eyeOf(attacker):null,a+(amount-a)*.4+shielded*.55);if(meta.kind==='zone')combat.hurt(null,a*.4);hud.update();}
    if(target.hp<=0){kill(target,attacker,meta);return {killed:true};}
    return {killed:false};
   }
@@ -240,6 +256,7 @@
     for(const [type,n] of Object.entries(target.reserve)){if(n>0&&type!=='c4'){const [x,z]=spot();dropItem({type:'ammo',ammo:type,count:n,rarity:'common',label:AMMO_LABEL[type]+' AMMO ×'+n},x,z);}}
     if(target.garment){const [x,z]=spot();dropItem({type:'armor',armor:target.garment.armor,garment:target.garment,rarity:target.garment.rarity,label:target.garment.name.toUpperCase()+' · '+target.garment.armor+' ARMOR'},x,z);}
     target.hand.clear();
+    target.model.motion?.knockdown?.(blowDirection(target,attacker,meta),meta.kind==='zone'?1.3:(FORCE[meta.weapon]||2.4)*(meta.head?1.15:1),{stay:true});
    }else{
     combat.holster();finish(false);
    }
@@ -294,11 +311,13 @@
 
   function updateBot(b,dt){
    const p=b.root.position;
-   if(!b.alive){const k=clamp((clock-b.deathT)/.6,0,1);b.root.rotation.x=-k*k*Math.PI/2*.96;b.root.position.y=groundY(p.x,p.z)+k*.15;return;}
+   if(!b.alive){if(b.model.motion?.downAmount?.()>0){b.model.animate?.(clock,0);return;}const k=clamp((clock-b.deathT)/.6,0,1);b.root.rotation.x=-k*k*Math.PI/2*.96;b.root.position.y=groundY(p.x,p.z)+k*.15;return;}
    if(b.frozen){b.model.animate?.(clock,0);return;}
    // Zone damage
    if(phase==='live'&&outside(p)>0){b.zoneTick=(b.zoneTick||0)+dt;if(b.zoneTick>=1){b.zoneTick=0;damage(b,zoneDps(),null,{kind:'zone'});if(!b.alive)return;}}
-   b.think-=dt;b.fireT-=dt;b.reloadT-=dt;b.aimT-=dt;b.strafeT-=dt;b.repath-=dt;
+   if(b.model.motion?.downAmount?.()>0){b.model.animate?.(clock,0);return;}
+   if(clock-b.lastHurt>SHIELD_DELAY&&b.shield<b.shieldMax)b.shield=Math.min(b.shieldMax,b.shield+30*dt);
+   b.think-=dt;b.fireT-=dt;b.reloadT-=dt;b.aimT-=dt;b.strafeT-=dt;b.repath-=dt;b.dodgeT-=dt;b.bashT-=dt;
    if(phase==='countdown'){b.model.animate?.(clock,0);return;}
    const eye=eyeOf(b);
    // Perception: closest visible enemy (staggered).
@@ -335,9 +354,12 @@
     const id=b.weapon,w=W(id);
     if(id==='axe'){move.copy(to);speed=5;if(dist<1.8&&b.fireT<=0){b.fireT=.75;setTimeout(()=>{if(b.alive&&b.target?.alive&&posOf(b.target).distanceTo(b.root.position)<2.2)damage(b.target,w.dmg*.8,b,{weapon:'axe'});},350);}}
     else{
-     const ideal=id==='pump'?6:id==='smg'?12:id==='pistol'?14:id==='sniper'?45:24;
-     if(b.strafeT<=0){b.strafeT=rand(.6,1.6);b.strafe*=Math.random()<.6?-1:1;}
+     let ideal=id==='pump'?6:id==='smg'?12:id==='pistol'?14:id==='sniper'?45:24;
+     if(b.target===player&&player.shield<=0)ideal*=.55; // smells blood: closes in while your shield is down
+     if(b.strafeT<=0){b.strafeT=rand(.35,1.1);b.strafe*=Math.random()<.6?-1:1;}
+     if(dist<2.2&&b.bashT<=0){b.bashT=1.1;setTimeout(()=>{if(b.alive&&b.target?.alive&&posOf(b.target).distanceTo(b.root.position)<2.6)damage(b.target,45,b,{weapon:'melee'});},180);}
      const side=new T.Vector3(to.z,0,-to.x).multiplyScalar(b.strafe);move.copy(side).addScaledVector(to,dist>ideal+4?1:dist<ideal-4?-.7:0);speed=dist>ideal+10?4.8:2.6;
+     if(b.dodgeT>0){move.copy(side).multiplyScalar(1.6).addScaledVector(to,.2);speed=6.5;}
      const gun=b.weapons[id];
      if(gun.loaded<=0&&b.reloadT<=0){const r=b.reserve[w.ammo]||0;if(r>0){b.reloadT=id==='pump'?2.4:2;b.pendingReload=true;}else{delete b.weapons[id];setBotWeapon(b,botBestWeapon(b));}}
      if(b.pendingReload&&b.reloadT<=0){const r=b.reserve[w.ammo]||0,take=Math.min(w.mag-gun.loaded,r);gun.loaded+=take;b.reserve[w.ammo]=r-take;b.pendingReload=false;}
@@ -370,7 +392,7 @@
    const far=from.clone().addScaledVector(dir,w.range||120),wt=segBlocked(from,far),wallD=wt===null?999:wt*(w.range||120);
    const th=hit?hitTest(from,dir,wallD,b):null;
    if(th){const head=Math.random()<.12;const dmg=w.dmg*(w.id==='pump'?clamp(1.3-dist/20,.3,1.2)*5:1)*(head?1.8:1);
-    combat.remoteShot({from,to:th.point,weapon:w.id});damage(th.c,dmg,b,{weapon:w.id,head});}
+    combat.remoteShot({from,to:th.point,weapon:w.id});damage(th.c,dmg,b,{weapon:w.id,head,dir});}
    else{const end=wt===null?from.clone().addScaledVector(dir,Math.min(60,dist+20)):from.clone().addScaledVector(dir,wallD);combat.remoteShot({from,to:end,weapon:w.id});}
   }
 
@@ -398,6 +420,7 @@
   function updatePlayer(dt){
    if(!player.alive)return;
    const p=posOf(player);
+   if(clock-player.lastHurt>SHIELD_DELAY&&player.shield<player.shieldMax){if(!player.recharging){player.recharging=true;chime([392,523,659],.06);}player.shield=Math.min(player.shieldMax,player.shield+45*dt);hud.update();}else if(player.shield>=player.shieldMax)player.recharging=false;
    if(player.last){player.speed=Math.hypot(p.x-player.last.x,p.z-player.last.z)/Math.max(dt,1e-3);}player.last=p.clone();
    if(phase==='live'&&outside(p)>0){player.zoneTick=(player.zoneTick||0)+dt;if(player.zoneTick>=1){player.zoneTick=0;damage(player,zoneDps(),null,{kind:'zone'});}}
    o.setNight(phase==='idle'?null:clamp((outside(p)+2)/10,0,.85));
@@ -423,7 +446,7 @@
     <div class="ar-count" aria-live="assertive"></div>
     <div class="ar-announce"></div>
     <div class="ar-prompt"><kbd>F</kbd><span></span></div>
-    <div class="ar-vitals"><div class="ar-bar ar-armor"><i></i><span></span></div><div class="ar-bar ar-hp"><i></i><span></span></div><div class="ar-heals"></div><div class="ar-heal-progress"><i></i></div></div>
+    <div class="ar-vitals"><div class="ar-bar ar-shield"><i></i><span></span></div><div class="ar-bar ar-armor"><i></i><span></span></div><div class="ar-bar ar-hp"><i></i><span></span></div><div class="ar-heals"></div><div class="ar-heal-progress"><i></i></div></div>
     <div class="ar-end" hidden><div class="ar-end-card"><span class="ar-end-kicker"></span><h2></h2><p class="ar-end-stats"></p><div class="ar-loadout"></div><div class="ar-end-actions"><button class="ar-again">PLAY AGAIN</button><button class="ar-leave">LEAVE ARENA</button></div></div></div>
     <button class="ar-exit" title="Leave the arena">LEAVE</button>`;
    host.appendChild(el);const q=s=>el.querySelector(s);
@@ -433,7 +456,8 @@
    return {el,
     update(){
      q('.ar-alive').textContent=combatants().length;
-     if(player){const hp=Math.max(0,player.hp),ar=Math.max(0,player.armor);q('.ar-hp i').style.width=hp+'%';q('.ar-hp span').textContent=Math.ceil(hp)+' HP';
+     if(player){const sh=Math.max(0,player.shield||0);q('.ar-shield i').style.width=(player.shieldMax?sh/player.shieldMax*100:0)+'%';q('.ar-shield span').textContent=sh>0?'SHIELD '+Math.ceil(sh):'SHIELD DOWN';q('.ar-shield').classList.toggle('down',sh<=0);
+      const hp=Math.max(0,player.hp),ar=Math.max(0,player.armor);q('.ar-hp i').style.width=hp+'%';q('.ar-hp span').textContent=Math.ceil(hp)+' HP';
       q('.ar-armor i').style.width=(player.armorMax?ar/player.armorMax*100:0)+'%';q('.ar-armor span').textContent=player.garment?`${Math.ceil(ar)} · ${player.garment.name.toUpperCase()}`:'NO ARMOR';
       q('.ar-heals').innerHTML=`<kbd>H</kbd> BANDAGE ×${player.heals.bandage} · MEDKIT ×${player.heals.medkit}`;
       q('.ar-heal-progress').style.opacity=player.healing?1:0;if(player.healing)q('.ar-heal-progress i').style.width=(player.healing.t/player.healing.dur*100)+'%';}
@@ -463,6 +487,7 @@
      q('.ar-loadout').querySelectorAll('button').forEach(b=>b.onclick=()=>o.openShop?.(b.dataset.id));
      document.exitPointerLock?.();
     },
+    shieldBroken(){const bar=q('.ar-shield');bar.classList.remove('broke');void bar.offsetWidth;bar.classList.add('broke');},
     hideEnd(){q('.ar-end').hidden=true;}
    };
   }
@@ -499,7 +524,7 @@
    // Ring spawn: 8 evenly spaced slots facing the cache.
    const slots=[];for(let i=0;i<8;i++){const a=i/8*TAU;let x=CENTER.x+Math.cos(a)*A.ring,z=CENTER.z+Math.sin(a)*A.ring;for(let k=0;k<6&&blocked(new T.Vector3(x,0,z));k++){x=CENTER.x+Math.cos(a)*(A.ring-k*1.5);z=CENTER.z+Math.sin(a)*(A.ring-k*1.5);}slots.push([x,z]);}
    const me=Math.random()*8|0;
-   player={alive:true,hp:100,armor:0,armorMax:0,garment:null,worn:new Set(),heals:{bandage:0,medkit:0},kills:0,lastHurt:-9};
+   player={alive:true,hp:100,shield:SHIELD_PLAYER,shieldMax:SHIELD_PLAYER,armor:0,armorMax:0,garment:null,worn:new Set(),heals:{bandage:0,medkit:0},kills:0,lastHurt:-9};
    slots.forEach(([x,z],i)=>{if(i===me){o.placePlayer(x,z,CENTER.x,CENTER.z);combat.syncLook();return;}const pos=new T.Vector3(x,groundY(x,z),z);makeBot(i,pos,Math.atan2(CENTER.x-x,CENTER.z-z));});
    combat.arsenal.set({owned:['axe'],reserve:{},loaded:{}});combat.equip('axe');
    matchStart=0;hud.update();hud.feed();hud.announce('BREAK THY RULE · ARENA');
@@ -531,10 +556,10 @@
    active:()=>active,
    canMove:()=>!active||phase==='live'||phase==='ended',
    canAct:()=>!active||(phase==='live'&&!!player?.alive),
-   shotHook(origin,dir,maxDist){if(!active)return null;const h=hitTest(origin,dir,maxDist,player);if(!h)return null;return {...h,apply:(dmg,meta)=>damage(h.c,dmg,player,meta)};},
-   onExplosion(p,radius,dmg){if(!active)return;for(const c of combatants()){const d=posOf(c).distanceTo(p);if(d<radius&&los(p.clone().add(new T.Vector3(0,.4,0)),eyeOf(c)))damage(c,dmg*Math.pow(1-d/radius,1.2),player,{weapon:'c4'});}},
-   inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,player:player&&{hp:Math.round(player.hp),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
-    bots:bots.map(b=>({name:b.name,alive:b.alive,hp:Math.round(b.hp),state:b.state,weapon:b.weapon,armor:b.armor,x:+b.root.position.x.toFixed(1),z:+b.root.position.z.toFixed(1)})),
+   shotHook(origin,dir,maxDist){if(!active)return null;const h=hitTest(origin,dir,maxDist,player);if(!h)return null;return {...h,apply:(dmg,meta)=>damage(h.c,dmg,player,{...meta,dir:dir.clone()})};},
+   onExplosion(p,radius,dmg){if(!active)return;for(const c of combatants()){const d=posOf(c).distanceTo(p);if(d<radius&&los(p.clone().add(new T.Vector3(0,.4,0)),eyeOf(c)))damage(c,dmg*Math.pow(1-d/radius,1.2),player,{weapon:'c4',blast:true,dir:posOf(c).clone().sub(p).setY(0).normalize()});}},
+   inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,player:player&&{hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
+    bots:bots.map(b=>({name:b.name,alive:b.alive,hp:Math.round(b.hp),shield:Math.round(b.shield),down:+(b.model.motion?.downAmount?.()||0).toFixed(2),state:b.state,weapon:b.weapon,armor:b.armor,x:+b.root.position.x.toFixed(1),z:+b.root.position.z.toFixed(1)})),
     zone:zone&&{phase:zone.phase,state:zone.state,r:+zone.r.toFixed(1),x:+zone.center.x.toFixed(1),z:+zone.center.z.toFixed(1)},chests:chests.filter(c=>c.open).length+'/'+chests.length,loot:loot.length,arsenal:combat.arsenal.inspect()}),
    _debug:{get bots(){return bots;},get player(){return player;},get loot(){return loot;},get chests(){return chests;},interact,damage,god(v=true){godMode=v;},place:(x,z,lx,lz,dp=0)=>{o.placePlayer(x,z,lx,lz);combat.syncLook(dp);},skip(t){countdown=0;clock+=t||0;},setZone(r){if(zone){zone.r=r;}}}
   };

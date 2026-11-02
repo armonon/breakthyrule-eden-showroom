@@ -67,7 +67,9 @@
    const pick=n=>at(bone(n));
    const bind={};
    const capture=()=>{order.forEach((b,i)=>{P[i]=b.getWorldPosition(new T.Vector3());});for(const [b,t] of tips)P[t.index]=tipWorld(b);};
-   function start(impulse,strength){
+   let stayDown=false;
+   // stay: a death; the body never gets back up (and stops simulating once it has settled).
+   function start(impulse,strength,stay=false){stayDown=stay;
     group.updateMatrixWorld(true);capture();Q.length=0;
     const up=new T.Vector3(0,1,0);P.forEach((p,i)=>{const h=clamp((p.y-group.getWorldPosition(v2).y)/1.6,0,1);Q[i]=p.clone().addScaledVector(impulse,-(.007+.02*h)*strength).addScaledVector(up,-.008*strength*h);});
     links.length=0;stops.length=0;const add=(a,b,list=links)=>{if(a>=0&&b>=0)list.push([a,b,P[a].distanceTo(P[b])]);};
@@ -110,10 +112,11 @@
    }
    return {
     get active(){return active;},get recovering(){return recover>0;},start,
-    update(dt){step(dt);pose();
+    update(dt){if(stayDown&&clock>6)return; // a settled corpse keeps its last pose
+     step(dt);pose();
      // Lie still for a moment, then get up: the procedural pose takes over from the ragdoll over about a second.
      const still=Q.every((q,i)=>q.distanceToSquared(P[i])<1e-7);
-     if(clock>2.2&&(still||clock>4.5)){active=false;recover=1;snapshot=model.skeleton.bones.map(b=>b.quaternion.clone());snapPelvis.copy(order[0].position);}},
+     if(!stayDown&&clock>2.2&&(still||clock>4.5)){active=false;recover=1;snapshot=model.skeleton.bones.map(b=>b.quaternion.clone());snapPelvis.copy(order[0].position);}},
     blend(dt){recover=Math.max(0,recover-dt/1.1);const k=smooth(0,1,1-recover);model.skeleton.bones.forEach((b,i)=>b.quaternion.slerpQuaternions(snapshot[i],b.quaternion.clone(),k));order[0].position.lerpVectors(snapPelvis,order[0].position.clone(),k);},
     get recoverLeft(){return recover;},
     inspect:()=>active?'down':recover>0?'getting up':'standing'
@@ -140,7 +143,7 @@
    // Knocked down: an explicit call, a hard hit, or the third hit in quick succession.
    // 1 while knocked down, falling to 0 as the character gets up; 0 when standing.
    downAmount:()=>ragdoll.active?1:ragdoll.recovering?ragdoll.recoverLeft:0,
-   knockdown(direction,strength=1.5){if(ragdoll.active)return;const d=direction.clone().setY(0);if(d.lengthSq()<1e-6)d.set(0,0,-1);d.normalize();ragdoll.start(d,strength);},
+   knockdown(direction,strength=1.5,{stay=false}={}){if(ragdoll.active&&!stay)return;const d=direction.clone().setY(0);if(d.lengthSq()<1e-6)d.set(0,0,-1);d.normalize();ragdoll.start(d,strength,stay);},
    update(dt,options={}){
     dt=clamp(dt||0,0,1/20);
     if(ragdoll.active){state.time=(state.time||0)+dt;ragdoll.update(dt);return;}
