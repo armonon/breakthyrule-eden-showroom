@@ -264,7 +264,7 @@ const nightLaunch=document.createElement('button');nightLaunch.id='night-launch'
 const arenaLaunch=document.createElement('button');arenaLaunch.id='arena-launch';arenaLaunch.textContent='ARENA';arenaLaunch.title='PvP arena: swords and crossbows';arenaLaunch.hidden=!window.showroomDeployment?.realtime;nightLaunch.after(arenaLaunch);arenaLaunch.onclick=()=>{if(battle?.active())battle.exit();arena?.enter();};
 const rangeLaunch=document.createElement('button');rangeLaunch.id='range-launch';rangeLaunch.textContent='RANGE';rangeLaunch.title='Firing range · 1–4 to draw a weapon';arenaLaunch.after(rangeLaunch);rangeLaunch.onclick=()=>{if(!state.ready)return;if(battle?.active())battle.exit();if(arena?.active())arena.leave?.();combat?.enterRange();};
 // Offline battle mode (battle-arena.js): the player and 7 test bots in The Commons of Beyond Eden. ARENA above is the online PvP arena.
-const battleLaunch=document.createElement('button');battleLaunch.id='battle-launch';battleLaunch.textContent='BATTLE';battleLaunch.title='Break Thy Rule: Arena · 8 players, last one standing';rangeLaunch.after(battleLaunch);battleLaunch.onclick=()=>{if(state.ready&&battle){if(expedition?.active())expedition.leave();combat?.leaveRange?.();if(arena?.active())arena.leave?.();battle.start();}};
+const battleLaunch=document.createElement('button');battleLaunch.id='battle-launch';battleLaunch.textContent='OPEN MATCH';battleLaunch.title='Beyond Eden: the open match';rangeLaunch.after(battleLaunch);battleLaunch.onclick=()=>{if(state.ready&&battle){if(expedition?.active())expedition.leave();combat?.leaveRange?.();if(arena?.active())arena.leave?.();garden.skybox.open?.();window.breakThyRuleShowroom.teleport(garden.road.x,garden.road.door-2.6,Math.PI);battle.enter();}};
 const amphitheater=createAmphitheater(T,scene,{reduced});
 const music=createGardenMusic({requestDraw,onOpen(){keys.clear();}});
 residents=createGardenResidents(T,scene,{reduced,renderer,sky:garden.sky,onChange(){if(residentDialog.open)renderResidents();if(state.ready){renderer.shadowMap.needsUpdate=true;requestDraw();}}});
@@ -348,7 +348,7 @@ function markView(){const libraryView=state.view==='library'||state.view==='libr
 function go(view,instant=false){
  if(view==='film'||view==='lookbook')view='wall';
  if(expedition?.active())expedition.leave();
- if(battle?.active())battle.exit();
+ if(battle?.active())battle.suspend();
  combat?.leaveRange?.();
  combat?.holster();
  followResident=null;stage.classList.remove('resident-view');
@@ -416,7 +416,7 @@ function tryStep(step){
  if(pockets?.inside(targetPosition)){const next=targetPosition.clone().add(step);if(pockets.blocks(next))return null;next.y=1.75+motion.inspect().height;return next;}
  const next=garden.constrain(targetPosition.clone().add(step),targetPosition);
  // Battles and the firing range take place beyond Eden without an expedition, so its gate (and its entry screen) stays out of them.
- if(!battle?.active()&&!combat?.inRange())expedition?.constrain(next,targetPosition);
+ if(!battle?.busy?.()&&!battle?.active()&&!combat?.inRange())expedition?.constrain(next,targetPosition);
  if(obstacle(next))return null;
  next.y=1.75+groundHeight(next)+motion.inspect().height;
  return next;
@@ -498,7 +498,18 @@ function wallHit(into){
  const k=Math.min(1.4,impact/6);sway.bump(k,Math.sign(into.dot(right))||0);footsteps?.land(surfaceAt(targetPosition),Math.min(1,impact/8));
  fovKick-=4*k;if(impact>5.5)hitStop(40+impact*4);{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,Math.round(3+4*k),.6);}requestDraw();
 }
+// The open match lives beyond the hidden door: stepping through starts or resumes it, stepping back into the garden
+// (or starting an expedition, the range, the online arena or a pocket world) pauses it.
+function updateMatchGate(){
+ if(!battle||!state.ready)return;
+ const elsewhere=expedition?.active()||combat?.inRange()||arena?.active()||pockets?.inside(camera.position);
+ if(battle.active()){if(elsewhere||targetPosition.z>garden.road.door+.3)battle.suspend();}
+ else if(!battle.busy()&&!elsewhere&&state.view==='free'&&targetPosition.z<garden.road.door-.8)battle.enter();
+}
+let deathDrop=0;
 function updateFeel(dt){
+ updateMatchGate();
+ deathDrop+=((battle?.dead?.()?1.25:0)-deathDrop)*(1-Math.exp(-(battle?.dead?.()?5:10)*dt));
  const speed=Math.hypot(walkVelocity.x,walkVelocity.z),airborne=motion.inspect().airborne;
  crouchAmount+=(((crouchHeld||slide?.kind==='slide')&&!arena?.active()?1:0)-crouchAmount)*(1-Math.exp(-14*dt));
  const sprinting=keys.has('shift')&&speed>4.5&&crouchAmount<.3;
@@ -509,7 +520,7 @@ function updateFeel(dt){
  wasAirborne=airborne;
  // The view leans into a slide: towards the side it is heading, and a little regardless.
  let lean=0;if(slide?.kind==='slide'){const forward=targetAim.clone().sub(targetPosition).setY(0).normalize(),right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));lean=(-slide.dir.dot(right)*.09-.03)*(1-slide.t/slide.dur);}
- return {drop:crouchAmount*.55+(slide?.kind==='slide'?.12*(1-slide.t/slide.dur):0),fov:fovKick,speed,lean};
+ return {drop:crouchAmount*.55+(slide?.kind==='slide'?.12*(1-slide.t/slide.dur):0)+deathDrop,fov:fovKick,speed,lean:lean+deathDrop*.25};
 }
 function jump(){if(!state.ready||modalOpen()||expedition&&!expedition.canMove()||fists&&!fists.canMove()||motion.inspect().airborne)return;prepareWalking();
  // Jumping out of a slide carries its speed and a little more.
@@ -586,7 +597,8 @@ fists=window.createFistCombat?.({T,scene,camera,residents,reduced,stage,requestD
  knockPlayer:shove,canAct:fistsReady,hitStop});
 expedition=window.createExpedition({T,scene,camera,garden,layout:window.nightLayout,getPose:()=>state.ready?{x:targetPosition.x,z:targetPosition.z,yaw:Math.atan2(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z)}:null,place(x,z,lx=x,lz=z-5){motion.reset();freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,1.75,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=60;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},stopMoving(){keys.clear();drag=null;},requestDraw,returnHome:()=>go('spawn',true)});
 combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,reduced,requestDraw,
- canAct:()=>state.ready&&!modalOpen()&&!expedition?.active()&&!arena?.active()&&!pockets?.inside(camera.position)&&(battle?.canAct()??true),
+ // Eden is a safe zone: weapons come out only beyond the hidden door (the open match and the firing range).
+ canAct:()=>state.ready&&!modalOpen()&&!expedition?.active()&&!arena?.active()&&!pockets?.inside(camera.position)&&targetPosition.z<garden.road.door&&(battle?.canAct()??true),
  shotHook:(...a)=>battle?.shotHook(...a),onExplosion:(...a)=>battle?.onExplosion(...a),
  // The range is on the brick road beyond the door, where night falls: keep it in daylight while it is in use.
  onRange(on){if(on)garden.district;garden.nightRoad?.setOverride(on?0:null);},
@@ -598,10 +610,12 @@ combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,
  hitStop
 });
 // No expeditions while a battle is on: its gate, its entry screen and the Attendant stay out of the arena.
-{const openNight=$('night-launch').onclick;$('night-launch').onclick=event=>{if(battle?.active())battle.exit();combat?.leaveRange?.();openNight?.(event);};}
+{const openNight=$('night-launch').onclick;$('night-launch').onclick=event=>{if(battle?.active())battle.suspend();combat?.leaveRange?.();openNight?.(event);};}
 battle=window.createBattleArena?.({T,scene,camera,combat,garden,layout:window.nightLayout,requestDraw,hudHost:stage.parentElement,
  placePlayer(x,z,lx,lz){followResident=null;stage.classList.remove('resident-view');motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75+groundHeight(new T.Vector3(x,0,z)),z);targetAim.set(lx,targetPosition.y,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=70;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},
  setNight(v){if(v!=null)garden.district;garden.nightRoad?.setOverride(v);},
+ onDeath(){sway.bump(1.5,Math.random()<.5?-1:1);hitStop(160);requestDraw();},
+ onImpact(at,k=1){const d=at.distanceTo(targetPosition);if(d<30){sway.bump(k*(1-d/30),0);const p=at.clone();puff(p,8,1.6,'stone');}},
  onExit(){go('spawn');},
  openShop(){document.exitPointerLock?.();shop.open?.();}
 });
@@ -620,8 +634,8 @@ const play=window.createPlayMenu?.({nav:document.querySelector('.view-nav'),afte
  onOpen(){keys.clear();walkVelocity.set(0,0,0);if(document.pointerLockElement)document.exitPointerLock();},onClose:requestDraw,
  context:()=>battle?.active()?'battle':arena?.active()?'arena':expedition?.active()?'expedition':combat?.armed()||combat?.inRange()?'armed':fistsEngaged()?'fists':'walk',
  items:[
-  {id:'battle',title:'BATTLE',text:'You and seven fighters in The Commons, beyond Eden. Loot the chests, find a weapon and be the last one standing before the night closes in.',keys:'F LOOT · H HEAL · 1–7 WEAPONS',available:finePointerOnly,note:'Needs a mouse and keyboard.',
-   run(){battleLaunch.click();play?.hint('battle','OPEN CHESTS WITH F · GRAB A WEAPON · STAY IN THE LIGHT · H TO HEAL');}},
+  {id:'battle',title:'OPEN MATCH',text:'Beyond Eden is always live: walk through the hidden door and you are in. Find guns, take on the bots, chase supply drops, hold the hill and claim bounties. Die and you are back in seconds.',keys:'F LOOT · H HEAL · TAB SCORES',available:finePointerOnly,note:'Needs a mouse and keyboard.',
+   run(){battleLaunch.click();play?.hint('battle','GRAB A GUN FROM THE PADS · CHASE THE EVENTS · TAB FOR SCORES · WALK BACK THROUGH THE DOOR TO REST');}},
   {id:'jester',title:'FIGHT THE JESTER',text:'The Violet Trickster dances by the museum. Punch him and he fights back: uppercuts, tackles and taunts.',keys:'F JAB · G HAYMAKER · Q BLOCK',run:goToJester},
   {id:'range',title:'FIRING RANGE',text:'Steel targets and posts on the brick road, beyond the hidden door. Try every weapon.',keys:'1–7 DRAW · CLICK FIRE · X PUT AWAY',available:finePointerOnly,note:'Needs a mouse and keyboard.',
    run(){rangeLaunch.click();play?.hint('range','1–7 DRAW · CLICK TO FIRE · WHEEL SWAPS · X PUTS IT AWAY · ? FOR ALL CONTROLS');}},

@@ -37,6 +37,12 @@
  // The night closes in slowly: about seven minutes from the first wait to full dark, and the dark only nibbles at first.
  // Recharging shields over 100 health: the player's matches a full health bar, the bots' is half that.
  const SHIELD_PLAYER=100,SHIELD_BOT=50,SHIELD_DELAY=4;
+ // The forever match: no rounds and no night zone. Dying puts you back in after a few seconds; kills, headshots and
+ // events add to your score; weapon pads and chests restock; an event comes round every EVENT_GAP seconds.
+ const RESPAWN_PLAYER=3,SPAWN_PROTECT=2,PAD_RESTOCK=30,CHEST_RESTOCK=60,EVENT_FIRST=25,EVENT_GAP=75;
+ const POINTS={kill:10,head:3,bounty:25,hillTick:3};
+ const SUPPLY_TABLE=[[30,{weapon:'sniper'}],[30,{weapon:'rifle'}],[20,'c4'],[20,{weapon:'smg'}]];
+ const STREAKS={2:'DOUBLE KILL',3:'TRIPLE KILL',4:'OVERKILL'},SPREES={5:'KILLING SPREE',10:'RAMPAGE',15:'UNTOUCHABLE'};
  const ZONE_PHASES=[{wait:70,shrink:60,r:52,dps:1},{wait:50,shrink:50,r:32,dps:2},{wait:40,shrink:40,r:16,dps:4},{wait:30,shrink:36,r:6,dps:7},{wait:20,shrink:30,r:0,dps:12}];
  const BOT_NAMES=['ADAM','LILITH','SERAPH','JUBAL','NAAMAH','ENOCH','ZILLAH','TUBAL','ADAH','IRAD','METHUSA'];
 
@@ -53,6 +59,7 @@
   const B=layout.bounds; // [minX,maxX,minZ,maxZ]
   let godMode=false,built=false,active=false,phase='idle',clock=0,countdown=0,ended=null,matchStart=0;
   let player=null,bots=[],chests=[],loot=[],feed=[],zone=null,hud=null,root=null,grid=null,finder=null;
+  let pads=[],event=null,nextEventAt=0,eventIndex=0,suspended=false,entering=false,savedArsenal=null;
   const garments=(window.showroomCollection||[]).map(armorFromGarment).filter(Boolean);
 
   /* ---------------------------------------------------------------- helpers */
@@ -159,7 +166,7 @@
    if(dir.length()>maxMove)dir.setLength(maxMove*rand(.5,.95));return cur.clone().add(dir);
   }
   function updateZone(dt){
-   if(phase!=='live')return;
+   if(phase!=='live'||!zone)return;
    const P=ZONE_PHASES[Math.max(0,zone.phase)];
    zone.t+=dt;
    if(zone.phase<0){zone.phase=0;zone.state='wait';zone.t=0;zone.to={c:nextZoneTarget(zone.center,ZONE_PHASES[0].r),r:ZONE_PHASES[0].r};zone.from={c:zone.center.clone(),r:zone.r};}
@@ -169,8 +176,8 @@
     if(k>=1&&zone.phase<ZONE_PHASES.length-1){zone.phase++;zone.state='wait';zone.t=0;const n=ZONE_PHASES[zone.phase];zone.to={c:nextZoneTarget(zone.center,n.r),r:n.r};}}
    zone.wall.scale.set(Math.max(.01,zone.r),1,Math.max(.01,zone.r));zone.group.position.set(zone.center.x,groundY(zone.center.x,zone.center.z)-2,zone.center.z);zone.mat.uniforms.time.value=clock;
   }
-  const outside=p=>Math.hypot(p.x-zone.center.x,p.z-zone.center.z)-zone.r;
-  const zoneDps=()=>ZONE_PHASES[Math.max(0,zone.phase)].dps;
+  const outside=p=>zone?Math.hypot(p.x-zone.center.x,p.z-zone.center.z)-zone.r:-999;
+  const zoneDps=()=>zone?ZONE_PHASES[Math.max(0,zone.phase)].dps:0;
 
   /* ---------------------------------------------------------------- combatants */
   function randomCharacter(){
@@ -240,6 +247,7 @@
    if(!target?.alive||phase==='ended')return {killed:false};
    if(phase==='countdown')return {killed:false};
    if(!target.bot&&godMode)return {killed:false};
+   if(target===player&&clock<(player.protectUntil||0))return {killed:false};
    let a=amount,shielded=0;
    if(target.shield>0&&meta.kind!=='zone'){shielded=Math.min(target.shield,a);target.shield-=shielded;a-=shielded;if(target===player)hud?.shieldHit?.(shielded/40+(target.shield<=0?.5:0));if(target.shield<=0&&target===player){chime([520,330,196],.09,.05);hud?.shieldBroken?.();}}
    if(target.bot&&meta.kind!=='zone')flashBot(target,shielded>0&&a<=0?'shield':'body');
@@ -257,7 +265,14 @@
   }
   function kill(target,attacker,meta){
    target.alive=false;target.hp=0;target.deathT=clock;
-   if(attacker&&attacker!==target)attacker.kills++;
+   if(attacker&&attacker!==target){
+    attacker.kills++;attacker.score=(attacker.score||0)+POINTS.kill+(meta.head?POINTS.head:0);
+    attacker.multi=clock-(attacker.lastKillT??-9)<4?(attacker.multi||1)+1:1;attacker.lastKillT=clock;attacker.streak=(attacker.streak||0)+1;
+    const call=SPREES[attacker.streak]||STREAKS[Math.min(4,attacker.multi)];
+    if(call){if(attacker===player)announce(call);else if(SPREES[attacker.streak])pushFeed(`${nameOf(attacker)} <i>${call}</i>`);}
+    if(event?.kind==='bounty'&&event.target===target){attacker.score+=POINTS.bounty;endEvent(`${nameOf(attacker)} CLAIMED THE BOUNTY · +${POINTS.bounty}`);}
+   }
+   target.deaths=(target.deaths||0)+1;target.streak=0;target.multi=0;
    const how=meta.kind==='zone'?'THE NIGHT':meta.weapon?W(meta.weapon)?.name||meta.weapon.toUpperCase():'';
    pushFeed(attacker&&attacker!==target?`${nameOf(attacker)} <i>${how}${meta.head?' · HEAD':''}</i> ${nameOf(target)}`:`${nameOf(target)} <i>${how||'FELL'}</i>`);
    // Drop what they carried.
@@ -269,9 +284,10 @@
     target.hand.clear();
     target.model.motion?.knockdown?.(blowDirection(target,attacker,meta),meta.kind==='zone'?1.3:(FORCE[meta.weapon]||2.4)*(meta.head?1.15:1),{stay:true});
    }else{
-    combat.holster();finish(false);
+    combat.holster();player.respawnAt=clock+RESPAWN_PLAYER;player.killedBy=attacker&&attacker!==target?nameOf(attacker):null;
+    announce(player.killedBy?`TAKEN BY ${player.killedBy}`:'YOU FELL');o.onDeath?.();
    }
-   if(phase==='live'&&combatants().length<=1){const last=combatants()[0];finish(last===player);}
+   if(target.bot)target.respawnAt=clock+rand(6,10);
    hud?.update();
   }
   const nameOf=c=>c===player?'YOU':c.name;
@@ -312,8 +328,10 @@
   function tintBot(b){/* garments read as a colour band on the torso */const col=new T.Color().setHSL(Math.random(),.35,.5);b.model.root.traverse(n=>{if(n.isMesh&&n.material?.name==='shirt'){n.material=n.material.clone();n.material.color.copy(col);}});}
 
   function openChest(c,by){
-   if(c.open)return;c.open=true;c.openT=clock;
+   if(c.open||c.dropping)return;c.open=true;c.openT=clock;
    const n=1+(Math.random()<.55?1:0);let any=false;
+   if(c.supply){for(const spec of [weighted(SUPPLY_TABLE),'medkit','armor',{ammo:'rifle'}]){const it=rollItem(spec);if(!it)continue;const a=rand(0,TAU);const l=dropItem(it,c.pos.x+Math.cos(a)*.2,c.pos.z+Math.sin(a)*.2,new T.Vector3(Math.cos(a)*rand(1.4,2.4),3.6,Math.sin(a)*rand(1.4,2.4)));l.y=c.pos.y+.5;l.group.position.y=l.y;}c.glow.visible=false;c.restockAt=Infinity;if(event?.kind==='supply'&&event.chest===c)endEvent(`${nameOf(by)} TOOK THE SUPPLY DROP`);return;}
+   c.restockAt=clock+CHEST_RESTOCK;
    for(let i=0;i<n;i++){const it=rollItem(weighted(CENTER_TABLE));if(!it)continue;any=true;const a=c.group.rotation.y+rand(-.8,.8)+Math.PI/2;
     const l=dropItem(it,c.pos.x+Math.cos(a)*.15,c.pos.z+Math.sin(a)*.15,new T.Vector3(Math.cos(a)*rand(1.2,2),3.2,Math.sin(a)*rand(1.2,2)));l.y=c.pos.y+.5;l.group.position.y=l.y;}
    if(!any)dropItem(rollItem('bandage'),c.pos.x+.8,c.pos.z);
@@ -323,7 +341,7 @@
   function updateBot(b,dt){
    updateFlash(b,dt);
    const p=b.root.position;
-   if(!b.alive){if(b.model.motion?.downAmount?.()>0){b.model.animate?.(clock,0);return;}const k=clamp((clock-b.deathT)/.6,0,1);b.root.rotation.x=-k*k*Math.PI/2*.96;b.root.position.y=groundY(p.x,p.z)+k*.15;return;}
+   if(!b.alive){if(b.respawnAt&&clock>=b.respawnAt){respawnBot(b);return;}if(b.model.motion?.downAmount?.()>0){b.model.animate?.(clock,0);return;}const k=clamp((clock-b.deathT)/.6,0,1);b.root.rotation.x=-k*k*Math.PI/2*.96;b.root.position.y=groundY(p.x,p.z)+k*.15;return;}
    if(b.frozen){b.model.animate?.(clock,0);return;}
    // Zone damage
    if(phase==='live'&&outside(p)>0){b.zoneTick=(b.zoneTick||0)+dt;if(b.zoneTick>=1){b.zoneTick=0;damage(b,zoneDps(),null,{kind:'zone'});if(!b.alive)return;}}
@@ -344,7 +362,12 @@
     // Heal when safe
     if(b.state!=='fight'&&b.hp<60&&(b.heals.medkit||b.heals.bandage)&&clock-b.lastHurt>4){if(b.heals.medkit){b.heals.medkit--;b.hp=Math.min(100,b.hp+60);}else{b.heals.bandage--;b.hp=Math.min(75,b.hp+15);}}
     // Zone pressure
-    if(phase==='live'&&b.state!=='fight'&&(outside(p)>-4||(zone.state==='shrink'&&Math.hypot(p.x-zone.to.c.x,p.z-zone.to.c.z)>zone.to.r-3))){b.state='zone';b.goal=zone.state==='shrink'?zone.to.c.clone():zone.center.clone();b.goal.x+=rand(-3,3);b.goal.z+=rand(-3,3);b.path=findPath(p,b.goal);}
+    if(zone&&phase==='live'&&b.state!=='fight'&&(outside(p)>-4||(zone.state==='shrink'&&Math.hypot(p.x-zone.to.c.x,p.z-zone.to.c.z)>zone.to.r-3))){b.state='zone';b.goal=zone.state==='shrink'?zone.to.c.clone():zone.center.clone();b.goal.x+=rand(-3,3);b.goal.z+=rand(-3,3);b.path=findPath(p,b.goal);}
+    // Events pull bots in: a landed supply crate within 80 m, and most of them go for the hill.
+    if(event&&b.state!=='fight'){
+     if(event.kind==='supply'&&!event.chest.open&&!event.chest.dropping&&event.chest.pos.distanceTo(p)<80){if(b.goal!==event.chest.pos){b.goal=event.chest.pos;b.path=findPath(p,event.chest.pos);}b.state='loot';}
+     else if(event.kind==='hill'&&(b.id.charCodeAt(b.id.length-1)+eventIndex)%5<3&&Math.hypot(p.x-event.pos.x,p.z-event.pos.z)>3){if(b.goal!==event.pos){b.goal=event.pos;b.path=findPath(p,event.pos);}b.state='roam';}
+    }
     // Loot decisions
     if(b.state==='rush'){const c=chests.filter(c=>!c.open).sort((x,y)=>x.pos.distanceTo(p)-y.pos.distanceTo(p))[0];if(c){if(b.goal!==c.pos){b.goal=c.pos;b.path=[c.pos.clone()];}}else b.state='loot';}
     if(b.state==='loot'||b.state==='roam'){
@@ -452,7 +475,8 @@
   /* ---------------------------------------------------------------- HUD */
   function buildHud(){
    const host=o.hudHost;const el=document.createElement('div');el.id='battle-hud';
-   el.innerHTML=`<div class="ar-top"><b class="ar-alive">8</b><span>ALIVE</span><em class="ar-zone"></em></div>
+   el.innerHTML=`<div class="ar-top"><b class="ar-alive">0</b><span class="ar-top-label">SCORE</span><em class="ar-zone"></em></div>
+    <div class="ar-board" hidden></div>
     <canvas class="ar-map" width="180" height="160" aria-label="Arena map"></canvas>
     <div class="ar-feed" aria-live="polite"></div>
     <div class="ar-count" aria-live="assertive"></div>
@@ -467,7 +491,10 @@
    const toMap=(x,z)=>[(x-B[0])/(B[1]-B[0])*180,(z-B[2])/(B[3]-B[2])*160];
    return {el,
     update(){
-     q('.ar-alive').textContent=combatants().length;
+     const everyone=[player,...bots].filter(Boolean).sort((a,b)=>(b.score||0)-(a.score||0));
+     q('.ar-alive').textContent=player?.score||0;q('.ar-top-label').textContent=player?`SCORE · #${everyone.indexOf(player)+1} OF ${everyone.length}`:'SCORE';
+     q('.ar-zone').textContent=event?`${event.label} · ${Math.max(0,Math.ceil(event.until-clock))}s`:`NEXT EVENT IN ${Math.max(0,Math.ceil(nextEventAt-clock))}s`;
+     const board=q('.ar-board');if(!board.hidden)board.innerHTML='<h3>BEYOND EDEN · OPEN MATCH</h3><table><tr><th></th><th>SCORE</th><th>KILLS</th><th>DEATHS</th></tr>'+everyone.map((c,i)=>`<tr class="${c===player?'me':''}"><td>${i+1}. ${nameOf(c)}${event?.kind==='bounty'&&event.target===c?' ★':''}</td><td>${c.score||0}</td><td>${c.kills||0}</td><td>${c.deaths||0}</td></tr>`).join('')+'</table>';
      if(player){const sh=Math.max(0,player.shield||0);q('.ar-shield i').style.width=(player.shieldMax?sh/player.shieldMax*100:0)+'%';q('.ar-shield span').textContent=sh>0?'SHIELD '+Math.ceil(sh):'SHIELD DOWN';q('.ar-shield').classList.toggle('down',sh<=0);
       const hp=Math.max(0,player.hp),ar=Math.max(0,player.armor);q('.ar-hp i').style.width=hp+'%';q('.ar-hp span').textContent=Math.ceil(hp)+' HP';
       q('.ar-armor i').style.width=(player.armorMax?ar/player.armorMax*100:0)+'%';q('.ar-armor span').textContent=player.garment?`${Math.ceil(ar)} · ${player.garment.name.toUpperCase()}`:'NO ARMOR';
@@ -484,6 +511,9 @@
       map.strokeStyle='#e9e6dc';map.lineWidth=1.5;map.beginPath();map.arc(zx,zy,Math.max(0,rr),0,TAU);map.stroke();
       if(phase==='live'){const [tx,ty]=toMap(zone.to.c.x,zone.to.c.z);map.setLineDash([3,3]);map.strokeStyle='rgba(255,255,255,.7)';map.beginPath();map.arc(tx,ty,zone.to.r/(B[1]-B[0])*180,0,TAU);map.stroke();map.setLineDash([]);}}
      for(const c of chests){if(c.open)continue;const [x,y]=toMap(c.pos.x,c.pos.z);map.fillStyle='#ffd27a';map.fillRect(x-1.5,y-1.5,3,3);}
+     if(event){const at=event.kind==='bounty'?(event.target?.alive?posOf(event.target):null):event.pos;if(at){const [x,y]=toMap(at.x,at.z),pulse=3+Math.sin(clock*6)*1.2;
+      map.strokeStyle=map.fillStyle=event.kind==='supply'?'#ffd27a':event.kind==='hill'?'#7fe3ff':'#ff6b5a';map.lineWidth=1.5;map.beginPath();
+      if(event.kind==='hill'){map.arc(x,y,event.r/(B[1]-B[0])*180+pulse*.4,0,TAU);map.stroke();}else{map.arc(x,y,pulse,0,TAU);map.fill();}}}
      if(player?.alive){const p=posOf(player),[x,y]=toMap(p.x,p.z);const f=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion);map.save();map.translate(x,y);map.rotate(Math.atan2(f.x,-f.z));map.fillStyle='#fff';map.beginPath();map.moveTo(0,-6);map.lineTo(4,4);map.lineTo(-4,4);map.fill();map.restore();}
     },
     prompt(text,rarity){const p=q('.ar-prompt');p.classList.toggle('show',!!text);if(text){p.querySelector('span').textContent=text;p.style.setProperty('--rar','#'+new T.Color(RARITY[rarity]||RARITY.common).getHexString());}},
@@ -509,6 +539,65 @@
   function announce(t){hud?.announce(t);}
   function pushFeed(html){feed.push({html,t:clock});hud?.feed();}
 
+  /* ---------------------------------------------------------------- forever match: spawns, kits, events */
+  const DOOR_SPAWN=()=>new T.Vector3(11.7+rand(-1.5,1.5),0,-24.6);
+  // Landmarks near the middle of the district: event sites and bot spawns.
+  function nearLandmarks(){return layout.landmarks.filter(l=>Math.hypot(l.x-CENTER.x,l.z-CENTER.z)<65);}
+  function farSpawn(){
+   const others=combatants().map(posOf);let best=null,bestD=-1;
+   for(let i=0;i<10;i++){const lm=pick(nearLandmarks()),p=new T.Vector3(lm.x+rand(-4,4),0,lm.z+lm.d/2+rand(4,8));if(blocked(p))continue;
+    const d=others.length?Math.min(...others.map(o2=>o2.distanceTo(p))):99;if(d>bestD){bestD=d;best=p;}}
+   return best||new T.Vector3(CENTER.x+rand(-6,6),0,CENTER.z+rand(-6,6));
+  }
+  function kitBot(b){b.weapons={axe:{loaded:0},pistol:{loaded:12}};b.reserve={pistol:24};setBotWeapon(b,'pistol');}
+  function kitPlayer(){combat.arsenal.set({owned:['axe','pistol'],reserve:{pistol:24},loaded:{pistol:12}});combat.equip('pistol');}
+  function respawnBot(b){
+   const i=bots.indexOf(b),keep={name:b.name,kills:b.kills||0,deaths:b.deaths||0,score:b.score||0};
+   b.root.parent?.remove(b.root);try{window.GardenCharacter.dispose?.(b.model);}catch{}
+   const spot=farSpawn(),nb=makeBot(Number(b.id.slice(3))||0,new T.Vector3(spot.x,groundY(spot.x,spot.z),spot.z),rand(0,TAU));
+   bots.pop();bots[i]=nb;Object.assign(nb,keep);kitBot(nb);nb.state='roam';
+  }
+  function respawnPlayer(){
+   const spot=DOOR_SPAWN();
+   Object.assign(player,{alive:true,hp:100,shield:SHIELD_PLAYER,armor:0,armorMax:0,garment:null,lastHurt:-9,healing:null,respawnAt:null,protectUntil:clock+SPAWN_PROTECT});
+   o.placePlayer(spot.x,spot.z,spot.x,spot.z-6);combat.syncLook();kitPlayer();hud.count(0);hud.update();announce('BACK IN · '+SPAWN_PROTECT+'s PROTECTED');
+  }
+  function leader(){return [player,...bots].filter(c=>c&&(c.score||0)>0).sort((a,b)=>(b.score||0)-(a.score||0))[0]||null;}
+  function hillRing(pos){
+   const M=materials(),g=new T.Group();g.position.set(pos.x,groundY(pos.x,pos.z)+.04,pos.z);
+   const ring=new T.Mesh(new T.PlaneGeometry(13,13),new T.MeshBasicMaterial({map:M.ring,color:0x7fe3ff,transparent:true,opacity:.75,depthWrite:false,blending:T.AdditiveBlending}));ring.rotation.x=-Math.PI/2;g.add(ring);
+   const beam=new T.Mesh(new T.CylinderGeometry(6,6,6,48,1,true),new T.MeshBasicMaterial({map:M.beam,color:0x7fe3ff,transparent:true,opacity:.22,depthWrite:false,blending:T.AdditiveBlending,side:T.DoubleSide}));beam.position.y=3;g.add(beam);
+   g.traverse(n=>{n.userData.noHit=true;n.raycast=()=>{};});root.add(g);return g;
+  }
+  function startEvent(){
+   let kind=['supply','hill','bounty'][eventIndex++%3];if(kind==='bounty'&&!leader())kind='supply';
+   const lm=pick(nearLandmarks());
+   if(kind==='supply'){
+    const x=lm.x+rand(-3,3),z=lm.z+lm.d/2+6,c=makeChest(x,z,rand(0,TAU));c.supply=true;c.dropping=true;c.group.position.y=c.pos.y+34;
+    event={kind,chest:c,until:clock+75,label:'SUPPLY DROP · '+lm.name.toUpperCase(),pos:c.pos.clone()};announce('SUPPLY DROP INBOUND · '+lm.name.toUpperCase());
+   }else if(kind==='hill'){
+    const pos=new T.Vector3(lm.x,0,lm.z+lm.d/2+6);event={kind,pos,r:6,until:clock+60,tick:0,ring:hillRing(pos),label:'HOLD THE HILL · '+lm.name.toUpperCase()};announce('HOLD THE HILL · '+lm.name.toUpperCase());
+   }else{const t=leader();event={kind,target:t,until:clock+60,label:'BOUNTY · '+nameOf(t)};announce(t===player?'THERE IS A BOUNTY ON YOU':`BOUNTY ON ${nameOf(t)} · +${POINTS.bounty}`);}
+   hud.update();
+  }
+  function endEvent(msg){if(!event)return;if(event.ring)event.ring.parent?.remove(event.ring);event=null;nextEventAt=clock+EVENT_GAP;if(msg)announce(msg);hud?.update();}
+  function updateEvent(dt){
+   if(!event){if(clock>=nextEventAt)startEvent();return;}
+   if(clock>event.until){endEvent(event.kind==='hill'?'THE HILL IS CLOSED':event.kind==='bounty'?'THE BOUNTY RAN OUT':'');return;}
+   if(event.kind==='supply'){const c=event.chest;if(c.dropping){c.group.position.y=Math.max(c.pos.y,c.group.position.y-dt*11);c.group.rotation.y+=dt*.6;if(c.group.position.y<=c.pos.y){c.dropping=false;announce('THE SUPPLY DROP HAS LANDED');o.onImpact?.(c.pos,.8);}}}
+   if(event.kind==='hill'){
+    event.ring.children[1].material.opacity=.16+.1*Math.sin(clock*3);event.tick+=dt;
+    if(event.tick>=1){event.tick=0;const inside=combatants().filter(c=>{const q=posOf(c);return Math.hypot(q.x-event.pos.x,q.z-event.pos.z)<event.r;});
+     if(inside.length===1){inside[0].score=(inside[0].score||0)+POINTS.hillTick;if(inside[0]===player)hud.prompt?.('HOLDING THE HILL · +'+POINTS.hillTick,'rare');}
+     else if(inside.length>1&&inside.includes(player))hud.prompt?.('CONTESTED','epic');}
+   }
+   if(event.kind==='bounty'&&!event.target)endEvent();
+  }
+  function restock(){
+   for(const pad of pads){if(loot.includes(pad.l))continue;if(!pad.respawnAt)pad.respawnAt=clock+PAD_RESTOCK;else if(clock>=pad.respawnAt){pad.l=dropItem(rollItem(pad.spec),pad.x,pad.z);pad.respawnAt=0;}}
+   for(const c of chests)if(c.open&&!c.supply&&c.restockAt&&clock>=c.restockAt){c.open=false;c.lidPivot.rotation.x=0;c.glow.visible=true;c.restockAt=0;}
+  }
+
   /* ---------------------------------------------------------------- lifecycle */
   async function build(){
    if(built)return;built=true;
@@ -516,43 +605,58 @@
    if(!window.GardenCharacterSchema){try{const r=await fetch('/character-schema.json?v=3');if(r.ok)window.GardenCharacterSchema=await r.json();}catch{}}
    buildGrid();
    hud=buildHud();
-   document.addEventListener('keydown',e=>{if(!active||e.ctrlKey||e.metaKey||['INPUT','TEXTAREA'].includes(e.target.tagName))return;const k=e.key.toLowerCase();if(k==='f'){e.preventDefault();interact();}if(k==='h'){e.preventDefault();useHeal();}});
+   document.addEventListener('keydown',e=>{if(!active||e.ctrlKey||e.metaKey||['INPUT','TEXTAREA'].includes(e.target.tagName))return;const k=e.key.toLowerCase();if(k==='f'){e.preventDefault();interact();}if(k==='h'){e.preventDefault();useHeal();}if(e.key==='Tab'){e.preventDefault();const b=hud.el.querySelector('.ar-board');b.hidden=false;hud.update();}});
+   document.addEventListener('keyup',e=>{if(e.key==='Tab'&&hud)hud.el.querySelector('.ar-board').hidden=true;});
   }
   function clearMatch(){
    for(const b of bots)b.root.parent?.remove(b.root);bots=[];
    for(const c of chests)c.group.parent?.remove(c.group);chests=[];
    for(const l of loot)l.group.parent?.remove(l.group);loot=[];feed=[];
    if(zone){zone.group.parent?.remove(zone.group);zone=null;}
+   if(event?.ring)event.ring.parent?.remove(event.ring);event=null;
   }
-  async function start(){
-   await build();hud.el.classList.add('on');hud.hideEnd();hud.el.classList.add('loading');hud.announce('PREPARING THE ARENA…');
-   await combat.ready();hud.el.classList.remove('loading');
-   clearMatch();active=true;phase='countdown';countdown=5;clock=0;ended=null;
-   o.setNight(0);combat.setHudMode('arena');document.body.classList.add('battle-on');
-   // Centre cache: one chest in the middle, six around it.
-   makeChest(CENTER.x,CENTER.z,0);for(let i=0;i<6;i++){const a=i/6*TAU+.3;makeChest(CENTER.x+Math.cos(a)*4.6,CENTER.z+Math.sin(a)*4.6,-a+Math.PI/2);}
-   // Landmark loot along each building's approach + random floor spawns.
-   for(const lm of layout.landmarks){const list=LANDMARK_LOOT[lm.id]||['armor','bandage'];list.forEach((spec,i)=>{const x=lm.x-lm.w/2+1.5+(i/(list.length-1||1))*(lm.w-3),z=lm.z+lm.d/2+2.2+(i%2)*.9;const p=new T.Vector3(x,0,z);if(!blocked(p))dropItem(rollItem(spec),x,z);});}
-   for(let i=0;i<10;i++){const x=rand(B[0]+6,B[1]-6),z=rand(B[2]+6,B[3]-6),p=new T.Vector3(x,0,z);if(blocked(p)||Math.hypot(x-CENTER.x,z-CENTER.z)<A.r)continue;dropItem(rollItem(pick(['ammo','armor','bandage',{weapon:pick(['pistol','pump','smg'])}])),x,z);}
-   zone=buildZone();
-   // Ring spawn: 8 evenly spaced slots facing the cache.
-   const slots=[];for(let i=0;i<8;i++){const a=i/8*TAU;let x=CENTER.x+Math.cos(a)*A.ring,z=CENTER.z+Math.sin(a)*A.ring;for(let k=0;k<6&&blocked(new T.Vector3(x,0,z));k++){x=CENTER.x+Math.cos(a)*(A.ring-k*1.5);z=CENTER.z+Math.sin(a)*(A.ring-k*1.5);}slots.push([x,z]);}
-   const me=Math.random()*8|0;
-   player={alive:true,hp:100,shield:SHIELD_PLAYER,shieldMax:SHIELD_PLAYER,armor:0,armorMax:0,garment:null,worn:new Set(),heals:{bandage:0,medkit:0},kills:0,lastHurt:-9};
-   slots.forEach(([x,z],i)=>{if(i===me){o.placePlayer(x,z,CENTER.x,CENTER.z);combat.syncLook();return;}const pos=new T.Vector3(x,groundY(x,z),z);makeBot(i,pos,Math.atan2(CENTER.x-x,CENTER.z-z));});
-   combat.arsenal.set({owned:['axe'],reserve:{},loaded:{}});combat.equip('axe');
-   matchStart=0;hud.update();hud.feed();hud.announce('BREAK THY RULE · ARENA');
+  // Beyond Eden is always on: walking through the hidden door starts the match (or picks it up where you left it),
+  // walking back into the garden pauses it. walkIn: keep the player where they are instead of placing them.
+  async function start({walkIn=false}={}){
+   entering=true;
+   try{
+    await build();hud.el.classList.add('on');hud.hideEnd();hud.el.classList.add('loading');hud.announce('ENTERING BEYOND EDEN…');
+    await combat.ready();hud.el.classList.remove('loading');
+    clearMatch();pads=[];event=null;eventIndex=0;active=true;suspended=false;phase='live';countdown=0;clock=0;ended=null;matchStart=0;nextEventAt=EVENT_FIRST;
+    o.setNight(0);combat.setHudMode('arena');document.body.classList.add('battle-on');
+    // Centre cache: one chest in the middle, six around it; they restock a minute after being opened.
+    makeChest(CENTER.x,CENTER.z,0);for(let i=0;i<6;i++){const a=i/6*TAU+.3;makeChest(CENTER.x+Math.cos(a)*4.6,CENTER.z+Math.sin(a)*4.6,-a+Math.PI/2);}
+    // Weapon pads along each building's approach: whatever is taken comes back PAD_RESTOCK seconds later.
+    for(const lm of layout.landmarks){const list=LANDMARK_LOOT[lm.id]||['armor','bandage'];list.forEach((spec,i)=>{const x=lm.x-lm.w/2+1.5+(i/(list.length-1||1))*(lm.w-3),z=lm.z+lm.d/2+2.2+(i%2)*.9;const p=new T.Vector3(x,0,z);if(!blocked(p))pads.push({spec,x,z,l:dropItem(rollItem(spec),x,z),respawnAt:0});});}
+    for(let i=0;i<10;i++){const x=rand(B[0]+6,B[1]-6),z=rand(B[2]+6,B[3]-6),p=new T.Vector3(x,0,z);if(blocked(p)||Math.hypot(x-CENTER.x,z-CENTER.z)<A.r)continue;dropItem(rollItem(pick(['ammo','armor','bandage',{weapon:pick(['pistol','pump','smg'])}])),x,z);}
+    player={alive:true,hp:100,shield:SHIELD_PLAYER,shieldMax:SHIELD_PLAYER,armor:0,armorMax:0,garment:null,worn:new Set(),heals:{bandage:0,medkit:0},kills:0,deaths:0,score:0,lastHurt:-9,protectUntil:SPAWN_PROTECT};
+    if(!walkIn){const spot=DOOR_SPAWN();o.placePlayer(spot.x,spot.z,spot.x,spot.z-6);combat.syncLook();}
+    for(let i=0;i<7;i++){const spot=farSpawn(),b=makeBot(i,new T.Vector3(spot.x,groundY(spot.x,spot.z),spot.z),rand(0,TAU));kitBot(b);b.state='roam';b.score=0;b.deaths=0;}
+    kitPlayer();hud.update();hud.feed();hud.announce('BEYOND EDEN · OPEN MATCH');
+   }finally{entering=false;}
   }
+  function suspend(){
+   if(!active)return;active=false;suspended=true;savedArsenal=combat.arsenal.inspect();
+   document.body.classList.remove('battle-on');hud?.el.classList.remove('on');o.setNight(null);combat.holster();combat.arsenal.set(null);combat.setHudMode('');
+  }
+  function resume(){
+   active=true;suspended=false;hud.el.classList.add('on');document.body.classList.add('battle-on');combat.setHudMode('arena');o.setNight(0);
+   combat.arsenal.set(savedArsenal&&savedArsenal.owned?.length?savedArsenal:{owned:['axe','pistol'],reserve:{pistol:24},loaded:{pistol:12}});
+   if(player&&!player.alive)player.respawnAt=Math.min(player.respawnAt??clock,clock+1);
+   hud.update();announce('BACK BEYOND EDEN');
+  }
+  async function enter(){if(active||entering)return;if(suspended&&player){resume();return;}await start({walkIn:true});}
   function finish(won){if(phase==='ended')return;phase='ended';ended={won,at:clock};setTimeout(()=>hud.end(won),won?600:1400);}
-  function exit(){
-   active=false;phase='idle';clearMatch();document.body.classList.remove('battle-on');hud?.el.classList.remove('on');hud?.hideEnd();o.setNight(null);combat.arsenal.set(null);combat.setHudMode('');combat.holster();player=null;o.onExit?.();
-  }
+  // LEAVE: back to the garden; the match waits there for you.
+  function exit(){suspend();o.onExit?.();}
 
   function update(time,dt){
    if(!active)return;
    clock+=dt;
    if(phase==='countdown'){countdown-=dt;hud.count(Math.ceil(countdown));if(countdown<=0){phase='live';matchStart=clock;hud.count(0);hud.announce('GO · THE CACHE IS OPEN');}}
-   updateZone(dt);
+   updateZone(dt);updateEvent(dt);
+   if(Math.floor(clock)!==Math.floor(clock-dt))restock();
+   if(player&&!player.alive&&player.respawnAt!=null){const left=player.respawnAt-clock;if(left<=0)respawnPlayer();else hud.count(Math.ceil(left));}
    for(const b of bots)updateBot(b,dt);
    if(player)updatePlayer(dt);
    // Loot physics + idle motion
@@ -566,14 +670,14 @@
   }
 
   return {
-   start,exit,update,
-   active:()=>active,
+   start,exit,update,enter,suspend,
+   active:()=>active,busy:()=>active||entering,suspended:()=>suspended,dead:()=>active&&!!player&&!player.alive,
    canMove:()=>!active||phase==='live'||phase==='ended',
    canAct:()=>!active||(phase==='live'&&!!player?.alive),
    shotHook(origin,dir,maxDist){if(!active)return null;const h=hitTest(origin,dir,maxDist,player);if(!h)return null;return {...h,apply:(dmg,meta)=>damage(h.c,dmg,player,{...meta,dir:dir.clone()})};},
    onExplosion(p,radius,dmg){if(!active)return;for(const c of combatants()){const d=posOf(c).distanceTo(p);if(d<radius&&los(p.clone().add(new T.Vector3(0,.4,0)),eyeOf(c)))damage(c,dmg*Math.pow(1-d/radius,1.2),player,{weapon:'c4',blast:true,dir:posOf(c).clone().sub(p).setY(0).normalize()});}},
-   inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,player:player&&{hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
-    bots:bots.map(b=>({name:b.name,alive:b.alive,hp:Math.round(b.hp),shield:Math.round(b.shield),down:+(b.model.motion?.downAmount?.()||0).toFixed(2),state:b.state,weapon:b.weapon,armor:b.armor,x:+b.root.position.x.toFixed(1),z:+b.root.position.z.toFixed(1)})),
+   inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,event:event&&{kind:event.kind,label:event.label},nextEvent:+(nextEventAt-clock).toFixed(1),pads:pads.length,player:player&&{alive:player.alive,score:player.score||0,deaths:player.deaths||0,hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
+    bots:bots.map(b=>({name:b.name,score:b.score||0,kills:b.kills||0,alive:b.alive,hp:Math.round(b.hp),shield:Math.round(b.shield),down:+(b.model.motion?.downAmount?.()||0).toFixed(2),state:b.state,weapon:b.weapon,armor:b.armor,x:+b.root.position.x.toFixed(1),z:+b.root.position.z.toFixed(1)})),
     zone:zone&&{phase:zone.phase,state:zone.state,r:+zone.r.toFixed(1),x:+zone.center.x.toFixed(1),z:+zone.center.z.toFixed(1)},chests:chests.filter(c=>c.open).length+'/'+chests.length,loot:loot.length,arsenal:combat.arsenal.inspect()}),
    _debug:{get bots(){return bots;},get player(){return player;},get loot(){return loot;},get chests(){return chests;},interact,damage,god(v=true){godMode=v;},place:(x,z,lx,lz,dp=0)=>{o.placePlayer(x,z,lx,lz);combat.syncLook(dp);},skip(t){countdown=0;clock+=t||0;},setZone(r){if(zone){zone.r=r;}}}
   };

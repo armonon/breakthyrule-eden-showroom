@@ -69,3 +69,13 @@ body.battle-on #world>*:not(#scene):not(#battle-hud):not(#combat-hud):not(dialog
 .ar-shimmer.on{animation:ar-shimmer .5s ease-out}
 @keyframes ar-shimmer{0%{opacity:var(--k,.6);transform:scale(1.015)}100%{opacity:0;transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.ar-shimmer.on{animation-duration:.01s}}
+
+/* Open match leaderboard (hold Tab). */
+.ar-board{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);min-width:min(460px,calc(100vw - 32px));padding:20px 24px;background:rgba(10,13,12,.82);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.16);color:#f4f1ea;z-index:5}
+.ar-board[hidden]{display:none}
+.ar-board h3{margin:0 0 12px;font-size:11px;letter-spacing:.2em;font-weight:600;opacity:.8}
+.ar-board table{width:100%;border-collapse:collapse;font-size:13px}
+.ar-board th{font-size:9px;letter-spacing:.16em;font-weight:500;opacity:.6;text-align:right;padding-bottom:6px}
+.ar-board td{padding:5px 0;border-top:1px solid rgba(255,255,255,.08);text-align:right;font-variant-numeric:tabular-nums}
+.ar-board td:first-child{text-align:left;letter-spacing:.06em}
+.ar-board tr.me td{color:#ffd27a}
