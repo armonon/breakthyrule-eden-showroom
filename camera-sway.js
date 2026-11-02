@@ -9,15 +9,17 @@
   return {
    // Undo last frame's offset, unless something else has since placed the camera (a view change or teleport).
    remove(camera){if(camera.position.equals(applied))camera.position.sub(offset);offset.set(0,0,0);},
-   apply(camera,aim,dt,{velocity,airborne=false,walkSpeed=3.4}={}){
-    if(reduced||!(dt>0)){camera.lookAt(aim);return;}
+   // crouch: metres the eye is lowered (crouching, sliding). Returns true on the frame a footstep lands.
+   apply(camera,aim,dt,{velocity,airborne=false,walkSpeed=3.4,crouch=0}={}){
+    if(reduced||!(dt>0)){offset.set(0,-crouch,0);camera.position.add(offset);applied.copy(camera.position);camera.lookAt(look.copy(aim).add(offset));return false;}
     clock+=dt;
     forward.subVectors(aim,camera.position);forward.y=0;forward.normalize();right.crossVectors(forward,up);
     const speed=velocity?Math.hypot(velocity.x,velocity.z):0,strafe=velocity?velocity.dot(right)/walkSpeed:0;
     intensity+=((airborne?0:Math.min(speed/walkSpeed,1.6))-intensity)*(1-Math.exp(-6*dt));
-    phase+=speed*dt*Math.PI*2/2.6; // one sway cycle = two footsteps every 2.6 m
+    const before=Math.floor(phase/Math.PI);phase+=speed*dt*Math.PI*2/2.6; // one sway cycle = two footsteps every 2.6 m
+    const footstep=!airborne&&speed>.6&&Math.floor(phase/Math.PI)!==before;
     // Landing: a damped spring kicked downward by the fall.
-    if(wasAirborne&&!airborne)landingVelocity-=.55;
+    if(wasAirborne&&!airborne)landingVelocity-=.75;
     wasAirborne=airborne;
     landingVelocity+=(-landing*140-landingVelocity*16)*dt;landing+=landingVelocity*dt;
     // Turning lean from the change in view direction.
@@ -29,9 +31,10 @@
     const sway=Math.sin(phase)*.024*intensity+Math.sin(clock*.7)*.004*rest;
     const breath=Math.sin(clock*1.55)*.006*rest;
     roll+=((-Math.sin(phase)*.007*intensity)-strafe*.014-turn-roll)*(1-Math.exp(-8*dt));
-    offset.copy(right).multiplyScalar(sway).addScaledVector(up,bob+breath+landing);
+    offset.copy(right).multiplyScalar(sway).addScaledVector(up,bob+breath+landing-crouch);
     camera.position.add(offset);applied.copy(camera.position);
     camera.lookAt(look.copy(aim).add(offset));camera.rotateZ(roll);
+    return footstep;
    },
    inspect:()=>({intensity:+intensity.toFixed(3),roll:+roll.toFixed(4),offset:offset.toArray().map(v=>+v.toFixed(4)),landing:+landing.toFixed(4)})
   };

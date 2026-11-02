@@ -32,10 +32,10 @@ window.createPlayMenu=function({nav,after,stage,items,context=()=>'walk',onOpen=
 
  // Controls card.
  const SECTIONS=[
-  ['walk','Getting around',[['W A S D','walk'],['Shift','sprint'],['Space','jump'],['Drag','look around'],['E','open the hidden door (near the sign)'],['F','punch']]],
+  ['walk','Getting around',[['Click the scene','look with the mouse'],['Esc','free the cursor'],['W A S D','walk'],['Shift','sprint'],['Space','jump'],['Hold C','crouch'],['Shift + C','slide'],['Click','use what is under the dot'],['E','open the hidden door (near the sign)'],['F','punch'],['Drag (touch)','look around']]],
   ['armed','Weapons',[['1 – 7','draw a weapon'],['Wheel','next / previous weapon'],['Click','fire'],['Hold right click','focus'],['R','reload'],['G','detonate C4'],['X, 0 or the same number','put it away'],['Esc','release the mouse']]],
-  ['fists','Fist fight with the jester',[['F','jab, then cross'],['G','haymaker'],['Hold Q','block'],['Walk away','he goes back to dancing']]],
-  ['battle','Battle',[['F','open chests, pick up loot'],['H','heal'],['1 – 7','your weapons'],['Stay in the light','the night closes in']]],
+  ['fists','Fist fight with the jester',[['F or click','jab, then cross'],['G','haymaker'],['Hold Q','block'],['Double-tap A / D','dodge to the side'],['Walk away','he goes back to dancing']]],
+  ['battle','Battle',[['F','open chests, pick up loot'],['H','heal'],['1 – 7','your weapons'],['Double-tap A / D','dodge'],['Shift + C','slide into cover'],['Stay in the light','the night closes in']]],
   ['arena','Online arena',[['Click','lock the mouse'],['1 / 2 or Q','sword / crossbow'],['Click','attack'],['Hold right click','block'],['Tab','scores']]],
   ['expedition','Beyond Eden',[['W A S D','walk'],['E','collect a page'],['F','flash']]]
  ];

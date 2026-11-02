@@ -130,6 +130,8 @@
    lookAt(point){state.look=point?point.clone():null;},
    guard(weight){state.guardTarget=clamp(weight,0,1);},
    airborne(value){state.airborne=!!value;},
+   // 0 standing .. 1 full crouch: the pelvis drops and the torso leans in; the leg IK bends the knees.
+   crouch(value){state.crouchTarget=clamp(value,0,1);},
    // Jab with the hand furthest back; returns the seconds until the fist lands.
    punch(target){const s=sides[state.punches++%2];s.punch={t:0,target:target?toLocal(target):s.shoulder.clone().add(new T.Vector3(-s.sign*.08,.02,.62))};return .12;},
    hit(direction,strength=1){const d=direction.clone().applyQuaternion(group.getWorldQuaternion(new T.Quaternion()).invert());d.y=0;if(d.lengthSq()>1e-6)d.normalize();
@@ -167,7 +169,8 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     const ph=state.phase*Math.PI*2,bob=-(.018+.03*run)*w*(.5+.5*Math.cos(2*ph)),sway=.02*w*(1-run)*Math.sin(ph);
     const breath=reduced?0:Math.sin(state.time*1.6)*.004*(1-w);
     spring(state.stumble,v3.set(0,0,0),dt,2.2,.55);
-    pelvis.position.add(v3.set(sway+state.stumble.x.x,bob+breath+(state.airborne?.06:0),state.stumble.x.z));
+    state.crouch??={x:0,v:0};scalar(state.crouch,state.crouchTarget||0,dt,9,.95);const crouch=clamp(state.crouch.x,0,1);
+    pelvis.position.add(v3.set(sway+state.stumble.x.x,bob+breath+(state.airborne?.06:0)-pelvisRest.y*.34*crouch,state.stumble.x.z+pelvisRest.y*.06*crouch));
     pelvis.rotation.set(0,.13*w*Math.sin(ph)*(1-.4*run),0);
     // Reaching for something beyond arm's length bends the whole torso towards it.
     let reachLean=0;for(const s of sides)if(s.touch&&s.touchWeight.x>.01){const t=toLocal(s.touch.point);reachLean=Math.max(reachLean,clamp((t.distanceTo(s.shoulder)-s.reach*.92)*1.6,0,.45)*clamp(s.touchWeight.x,0,1)*smooth(0,.2,t.z-s.shoulder.z));}
@@ -178,7 +181,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     scalar(state.wave,wave?1:0,dt,3,.9);scalar(state.wade,clamp(wade,0,1),dt,2.2,.8);
     let twist=0;
     for(const s of sides)if(s.punch){const t=s.punch.t;twist+=-s.sign*.42*(t<.06?-t/.06*.3:t<.2?Math.sin((t-.06)/.14*Math.PI/2):Math.max(0,1-(t-.2)/.18));}
-    spineLow.rotation.set(state.lean.x+state.hitPitch.x*.6,-pelvis.rotation.y*1.6+twist*.4,state.bank.x+state.hitRoll.x*.6);
+    spineLow.rotation.set(state.lean.x+state.hitPitch.x*.6+.38*clamp(state.crouch.x,0,1),-pelvis.rotation.y*1.6+twist*.4,state.bank.x+state.hitRoll.x*.6);
     // Head and chest share the turn towards whatever the character is looking at.
     let lookYaw=0,lookPitch=0;
     // Without a set target, glance at the local player when they come close and stand in front.

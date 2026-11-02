@@ -65,7 +65,8 @@
   const onPunched=event=>{const d=event.detail?.direction;if(model&&d){const dir=camera.position.clone().set(d.x,0,d.z);if(event.detail.knockdown)model.motion.knockdown(dir,1.7);else model.motion.hit(dir,1.1);}requestDraw();};
   root.addEventListener?.('eden-punched',onPunched);
   const api={
-   update(dt,{aim,velocity=null,airborne=false}={}){
+   // crouch: metres the eye is lowered; fovKick: degrees added while sprinting.
+   update(dt,{aim,velocity=null,airborne=false,crouch=0,fovKick=0}={}){
     clock+=dt;frame++;
     if(clock-checked>1.5){checked=clock;refresh();}
     // Plants part around you and the five nearest characters.
@@ -93,9 +94,9 @@
     // Looking down widens the view like peripheral vision, so chest, legs and feet come into frame together.
     // Whatever field of view the app set last is the base; only our own widening is undone.
     if(ownFov===null||Math.abs(camera.fov-ownFov)>.01)baseFov=camera.fov;
-    const fov=baseFov+30*smooth(-.3,-1.2,pitch);if(Math.abs(fov-camera.fov)>.01){camera.fov=fov;camera.updateProjectionMatrix();}ownFov=camera.fov;
-    model.root.position.set(camera.position.x-Math.sin(yaw)*back,camera.position.y-1.75,camera.position.z-Math.cos(yaw)*back);
-    model.motion.airborne(airborne);
+    const fov=baseFov+30*smooth(-.3,-1.2,pitch)+fovKick;if(Math.abs(fov-camera.fov)>.01){camera.fov=fov;camera.updateProjectionMatrix();}ownFov=camera.fov;
+    model.root.position.set(camera.position.x-Math.sin(yaw)*back,camera.position.y-1.75+crouch,camera.position.z-Math.cos(yaw)*back);
+    model.motion.airborne(airborne);model.motion.crouch?.(crouch/.55);
     // Walls: both palms meet the surface ahead at chest height, harder and earlier when walking into it.
     if(clock-gathered>2){gathered=clock;gather();}
     if(clock-indexed>(plants.size?30:4)){indexed=clock;indexPlants();}

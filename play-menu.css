@@ -37,3 +37,8 @@ body.combat-armed #controls-help,body.battle-on #controls-help,body.in-expeditio
 
 #play-tip{position:fixed;left:50%;top:92px;transform:translateX(-50%);z-index:60;max-width:calc(100vw - 32px);padding:12px 18px;background:rgba(14,18,16,.82);backdrop-filter:blur(8px);color:#f4f1ea;font-size:11px;letter-spacing:.16em;text-align:center;border:1px solid rgba(255,255,255,.18);cursor:pointer}
 #play-tip[hidden]{display:none}
+
+/* Mouse look (app.js): a centre dot while the mouse steers the view; weapons and the arena draw their own crosshair. */
+#look-dot{position:fixed;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.45);z-index:7;pointer-events:none;display:none}
+body.look-locked #look-dot{display:block}
+body.look-locked.combat-armed #look-dot,body.look-locked.in-arena #look-dot,body:has(dialog[open]) #look-dot{display:none}

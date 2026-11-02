@@ -793,7 +793,7 @@
     const range=w.range||160,h=worldHits(origin,dir,range);
     // Arena hook: characters are hit-tested analytically (capsules, head spheres) against the world hit.
     const ch=o.shotHook?.(origin,dir,h?h.distance:range,{weapon:w.id,player:true});
-    if(ch){if(tracerBudget-->0)tracer(muzzleWorld,ch.point,isTrue);const dmg=w.dmg*(isTrue?1.5:1)*(ch.head?(w.id==='sniper'?2.5:1.8):1)*(w.id==='pump'?clamp(1.25-ch.distance/30,.35,1.1):1);const r=ch.apply(dmg,{head:ch.head,isTrue,weapon:w.id});bloodPuff(ch.point,dir);hud.hitmarker(isTrue||ch.head,r?.killed);continue;}
+    if(ch){if(tracerBudget-->0)tracer(muzzleWorld,ch.point,isTrue);const dmg=w.dmg*(isTrue?1.5:1)*(ch.head?(w.id==='sniper'?2.5:1.8):1)*(w.id==='pump'?clamp(1.25-ch.distance/30,.35,1.1):1);const r=ch.apply(dmg,{head:ch.head,isTrue,weapon:w.id});bloodPuff(ch.point,dir);hud.hitmarker(isTrue||ch.head,r?.killed);if(r?.killed){state.hitStop=.06;o.hitStop?.(70);look.shake=Math.max(look.shake,.2);}continue;}
     const end=h?h.point:origin.clone().addScaledVector(dir,range);
     if(tracerBudget-->0)tracer(muzzleWorld,end,isTrue);
     if(h)impact(h,dir,(w.id==='pump'?.45:1)*(isTrue?2:1),isTrue);
@@ -930,7 +930,7 @@
 
   function meleeHit(heavy){
    const origin=camera.getWorldPosition(new T.Vector3()),f=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion),r=new T.Vector3(1,0,0).applyQuaternion(camera.quaternion);
-   for(const off of [0,-.2,.2]){const d=f.clone().addScaledVector(r,off).normalize();const ch=o.shotHook?.(origin,d,2.2,{weapon:'axe',player:true});if(ch){const res=ch.apply(WEAPONS[2].dmg*(heavy?1.7:1)*(ch.head?1.4:1),{head:ch.head,isTrue:heavy,weapon:'axe'});bloodPuff(ch.point,d);hud.hitmarker(heavy,res?.killed);state.hitStop=.07;look.shake=Math.max(look.shake,.25);anim.posZ.kick(1.2);sfx.wood(ch.point,.7);return;}}
+   for(const off of [0,-.2,.2]){const d=f.clone().addScaledVector(r,off).normalize();const ch=o.shotHook?.(origin,d,2.2,{weapon:'axe',player:true});if(ch){const res=ch.apply(WEAPONS[2].dmg*(heavy?1.7:1)*(ch.head?1.4:1),{head:ch.head,isTrue:heavy,weapon:'axe'});bloodPuff(ch.point,d);hud.hitmarker(heavy,res?.killed);state.hitStop=.07;o.hitStop?.(res?.killed?110:heavy?80:50);look.shake=Math.max(look.shake,.25);anim.posZ.kick(1.2);sfx.wood(ch.point,.7);return;}}
    let hit=null;for(const off of [0,-.18,.18,-.35,.35]){const d=f.clone().addScaledVector(r,off).normalize();const h=worldHits(origin,d,2.1);if(h&&(!hit||targetOf(h.object)&&!targetOf(hit.object)))hit=h;if(hit&&targetOf(hit.object))break;}
    if(!hit){return;}
    const t=impact(hit,f,heavy?3.2:1.6,heavy);
@@ -1016,7 +1016,8 @@
    if(!armed)return;armed=false;buttons.left=buttons.right=false;
    for(const k in models)models[k].holder.visible=false;if(models.c4)models.c4.parts.remote.visible=false;if(armsRig?.arms)armsRig.arms.group.visible=false;
    document.body.classList.remove('combat-armed');hud?.el.classList.remove('on');
-   if(document.pointerLockElement===renderer.domElement)document.exitPointerLock();
+   // On desktop the garden keeps mouse look after the weapon is put away (o.keepLock).
+   if(document.pointerLockElement===renderer.domElement&&!o.keepLock?.())document.exitPointerLock();
    current=null;adsBlend=0;if(camera.zoom!==1){camera.zoom=1;camera.updateProjectionMatrix();}o.requestDraw();
   }
   function setRange(on){if(rangeOn===on)return;rangeOn=on;if(rangeRoot)rangeRoot.visible=on;o.onRange?.(on);renderer.shadowMap.needsUpdate=true;o.requestDraw();}

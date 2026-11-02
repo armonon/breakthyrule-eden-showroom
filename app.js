@@ -288,9 +288,11 @@ let frame=0,previous=0,drag=null,suppressClickUntil=0;
 const motion=createPlayerMotion(),walkVelocity=new T.Vector3(),sway=createCameraSway(T,{reduced});
 const moveKeys=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright']);
 const finePointer=matchMedia('(pointer: fine)').matches;
-$('movement-hint').textContent=finePointer?'W A S D TO MOVE / DRAG TO LOOK':'DRAG TO LOOK / TAP TO EXPLORE';
+$('movement-hint').textContent=finePointer?'W A S D TO MOVE / CLICK TO LOOK · C CROUCH':'DRAG TO LOOK / TAP TO EXPLORE';
 function requestDraw(){if(!frame&&!document.hidden)frame=requestAnimationFrame(draw);}
-function draw(time){frame=0;if(!state.ready)return;quality.frame(time,!!previous);const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(modalOpen())walkVelocity.set(0,0,0);else if(keys.size||walkVelocity.lengthSq())move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();sway.remove(camera);battle?.update(time/1000,dt||.016);combat?.update(time/1000,dt||.016);const factor=reduced||combat?.armed()?1:1-Math.exp(-(walkVelocity.lengthSq()?12:7)*(dt||.016));if(camera.position.distanceToSquared(targetPosition)>4e4){camera.position.copy(targetPosition);aim.copy(targetAim);}camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);const leap=pockets?.cross(camera.position);if(leap){camera.position.add(leap);aim.add(leap);targetPosition.add(leap);targetAim.add(leap);}sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false)});playerBody?.update(dt||.016,{aim,velocity:walkVelocity,airborne:motion.inspect().airborne});if(!pockets?.inside(camera.position))garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();const fighting=arena?.update(time/1000,dt||.016);pockets?.render();const brawling=fists?.update(time/1000,dt||.016);if(fists&&time-lastSkinCheck>2000){lastSkinCheck=time;const tone=multiplayer?.inspect().character?.skinTone;if(tone)fists.setSkin(tone);}withHitEffects(()=>post.render());combat?.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();updateDoorPrompt();if(brawling||garden.animating||combat?.busy()||motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||fighting||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
+// Hit-stop: on a solid hit the picture holds for a few hundredths of a second, which is what sells the impact.
+let hitStopUntil=0;function hitStop(ms){if(!reduced)hitStopUntil=Math.max(hitStopUntil,performance.now()+ms);}
+function draw(time){frame=0;if(!state.ready)return;if(time<hitStopUntil){previous=time;frame=requestAnimationFrame(draw);return;}if(lookLocked&&modalOpen())document.exitPointerLock?.();quality.frame(time,!!previous);const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(modalOpen())walkVelocity.set(0,0,0);else if(keys.size||walkVelocity.lengthSq()||slide)move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();sway.remove(camera);battle?.update(time/1000,dt||.016);combat?.update(time/1000,dt||.016);const follow=reduced||combat?.armed()||state.view==='free',factor=follow?1:1-Math.exp(-7*(dt||.016));if(camera.position.distanceToSquared(targetPosition)>4e4){camera.position.copy(targetPosition);aim.copy(targetAim);}if(follow){const y=camera.position.y;camera.position.copy(targetPosition);aim.copy(targetAim);if(Math.abs(targetPosition.y-y)<.6&&!motion.inspect().airborne)camera.position.y=y+(targetPosition.y-y)*(1-Math.exp(-28*(dt||.016)));}else{camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);}const leap=pockets?.cross(camera.position);if(leap){camera.position.add(leap);aim.add(leap);targetPosition.add(leap);targetAim.add(leap);}const feel=updateFeel(dt||.016);if(sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false),crouch:feel.drop})&&!slide)footsteps?.step(surfaceAt(targetPosition),feel.speed*(crouchAmount>.5?.5:1));playerBody?.update(dt||.016,{aim,velocity:walkVelocity,airborne:motion.inspect().airborne,crouch:feel.drop,fovKick:feel.fov});if(!pockets?.inside(camera.position))garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();const fighting=arena?.update(time/1000,dt||.016);pockets?.render();const brawling=fists?.update(time/1000,dt||.016);if(fists&&time-lastSkinCheck>2000){lastSkinCheck=time;const tone=multiplayer?.inspect().character?.skinTone;if(tone)fists.setSkin(tone);}withHitEffects(()=>post.render());combat?.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();updateDoorPrompt();if(brawling||garden.animating||combat?.busy()||motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||fighting||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
 let roadCaption='';
 // Fist-fight hits shake, roll and drop the view only for this frame; the walking camera underneath is untouched.
 const savedCameraPosition=new T.Vector3(),savedCameraQuaternion=new T.Quaternion();
@@ -362,9 +364,16 @@ function move(dt){
  if((expedition&&!expedition.canMove())||(battle&&!battle.canMove())||(fists&&!fists.canMove())||playerBody?.downed()){walkVelocity.set(0,0,0);return;}
  const z=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),x=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
  const forward=targetAim.clone().sub(targetPosition);forward.y=0;forward.normalize();const right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));
- const wish=forward.multiplyScalar(z).add(right.multiplyScalar(x));if(wish.lengthSq())wish.normalize().multiplyScalar(motion.speed(keys.has('shift')));
+ const crouched=crouchAmount>.5&&!slide;
+ const wish=forward.multiplyScalar(z).add(right.multiplyScalar(x));if(wish.lengthSq())wish.normalize().multiplyScalar(crouched?motion.speed(false)*.45:motion.speed(keys.has('shift')));
+ if(slide){
+  // A slide keeps its own heading (steerable a little) and bleeds speed from a sprint burst down to a crawl.
+  slide.t+=dt;const k=slide.t/slide.dur;
+  if(k>=1||motion.inspect().airborne)slide=null;
+  else{if(wish.lengthSq())slide.dir.lerp(wish.clone().normalize(),Math.min(1,dt*1.6)).normalize();walkVelocity.copy(slide.dir).multiplyScalar(T.MathUtils.lerp(slide.speed,slide.kind==='dash'?2:1.6,k*k));}
+ }
  // Ease up to speed (~0.25 s) and glide to a stop instead of starting and stopping instantly; keep momentum in the air.
- walkVelocity.lerp(wish,1-Math.exp(-(motion.inspect().airborne?1.5:wish.lengthSq()?9:11)*dt));
+ if(!slide)walkVelocity.lerp(wish,1-Math.exp(-(motion.inspect().airborne?1.5:wish.lengthSq()?9:11)*dt));
  if(walkVelocity.lengthSq()<1e-4){walkVelocity.set(0,0,0);return;}
  if(x||z)prepareWalking();
  // Try the full step, then each axis alone, so walls, props and the pond edge slide the player along.
@@ -374,7 +383,7 @@ function move(dt){
   if(!keepX)walkVelocity.x=0;if(!keepZ)walkVelocity.z=0;
   const actual=next.clone().sub(targetPosition);targetPosition.copy(next);targetAim.add(actual);return;
  }
- walkVelocity.set(0,0,0);
+ walkVelocity.set(0,0,0);slide=null;
 }
 function tryStep(step){
  if(arena?.active()){const next=targetPosition.clone().add(step);if(!arena.allowed(next))return null;next.y=1.75+motion.inspect().height;return next;}
@@ -407,6 +416,43 @@ function prepareWalking(){
  if(state.view==='amphitheater'){const origin=amphitheater.root.position;targetPosition.set(origin.x,1.75,origin.z+9.4);targetAim.set(origin.x,1.55,origin.z);camera.position.copy(targetPosition);aim.copy(targetAim);}
  freeView();shiftHeight(1.75+groundHeight(targetPosition)+motion.inspect().height-targetPosition.y);
 }
+// Feel: crouch / slide eye drop, sprint widening, landing thuds and footsteps by surface (footsteps.js).
+const footsteps=window.createFootsteps?.(),SLIDE_TIME=.75;
+let crouchHeld=false,crouchAmount=0,slide=null,fovKick=0,airTime=0,wasAirborne=false;
+function startSlide(){
+ const speed=Math.hypot(walkVelocity.x,walkVelocity.z);
+ if(slide||!keys.has('shift')||speed<4.2||motion.inspect().airborne||playerBody?.downed()||modalOpen())return;
+ slide={kind:'slide',dur:SLIDE_TIME,t:0,dir:walkVelocity.clone().setY(0).normalize(),speed:Math.max(speed*1.25,7.2)};footsteps?.slide(surfaceAt(targetPosition),SLIDE_TIME);requestDraw();
+}
+// What is underfoot: the brick road beyond the door, stone paths, the library deck and the amphitheatre, else grass.
+const segmentDistance=(p,ax,az,bx,bz)=>{const dx=bx-ax,dz=bz-az,t=T.MathUtils.clamp(((p.x-ax)*dx+(p.z-az)*dz)/(dx*dx+dz*dz),0,1);return Math.hypot(p.x-ax-dx*t,p.z-az-dz*t);};
+function surfaceAt(p){
+ if(pockets?.inside(p))return 'stone';
+ if(p.z<garden.road.door-.2)return Math.abs(p.x-garden.road.x)<2.1?'brick':'grass';
+ const a=window.showroomAmphitheaterPosition;if(a&&Math.hypot(p.x-a.x,p.z-a.z)<8.6)return 'stone';
+ if(Math.hypot(p.x-3.1,p.z+5.7)<4.6)return 'wood';
+ if(p.z>-6&&p.z<22&&Math.abs(p.x-Math.sin((p.z-3)*.15)*1.5)<.95)return 'stone';
+ if(segmentDistance(p,6.8,-7.4,9.6,-8.1)<.8||segmentDistance(p,9.6,-8.1,11.7,-10.8)<.8||segmentDistance(p,-1.1,-3.5,-5.7,-1)<.7)return 'stone';
+ return 'grass';
+}
+// Dodge: double-tap A or D in a fight (the jester, a battle, a weapon drawn) for a quick side-step; blows from the
+// jester miss during it (fists.dodge()).
+const lastTap={a:0,d:0};
+function tapDodge(key){
+ const t=performance.now(),quick=t-lastTap[key]<260;lastTap[key]=quick?0:t;
+ if(!quick||slide||motion.inspect().airborne||playerBody?.downed()||!(fistsEngaged()||battle?.active()||combat?.armed()))return;
+ const forward=targetAim.clone().sub(targetPosition).setY(0).normalize(),side=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0)).multiplyScalar(key==='d'?1:-1);
+ prepareWalking();slide={kind:'dash',dur:.26,t:0,dir:side,speed:8};fists?.dodge();footsteps?.step(surfaceAt(targetPosition),7);requestDraw();
+}
+function updateFeel(dt){
+ const speed=Math.hypot(walkVelocity.x,walkVelocity.z),airborne=motion.inspect().airborne;
+ crouchAmount+=(((crouchHeld||slide?.kind==='slide')&&!arena?.active()?1:0)-crouchAmount)*(1-Math.exp(-14*dt));
+ const sprinting=keys.has('shift')&&speed>4.5&&crouchAmount<.3;
+ fovKick+=((slide?.kind==='slide'?9:slide?4:sprinting?6:0)-fovKick)*(1-Math.exp(-(slide||sprinting?6:4)*dt));
+ if(airborne)airTime+=dt;else if(wasAirborne){footsteps?.land(surfaceAt(targetPosition),Math.min(1,airTime/.7));airTime=0;}
+ wasAirborne=airborne;
+ return {drop:crouchAmount*.55+(slide?.kind==='slide'?.12*(1-slide.t/slide.dur):0),fov:fovKick,speed};
+}
 function jump(){if(!state.ready||modalOpen()||expedition&&!expedition.canMove()||fists&&!fists.canMove()||motion.inspect().airborne)return;prepareWalking();motion.jump();requestDraw();}
 function updateJump(dt){if(!motion.inspect().airborne)return;const before=motion.inspect().height;if(expedition&&!expedition.canMove())motion.reset();else motion.step(dt);shiftHeight(motion.inspect().height-before);}
 function setMovement(key,pressed){
@@ -417,11 +463,11 @@ function setMovement(key,pressed){
  if(pressed)keys.add(key);else keys.delete(key);
  if(state.ready)requestDraw();
 }
-document.addEventListener('keydown',event=>{if(modalOpen()||event.ctrlKey||event.metaKey||event.altKey||event.isComposing||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;const key=event.code==='Space'?'space':event.key.toLowerCase();if(['f','g','q'].includes(key)&&fistsEngaged()){event.preventDefault();event.stopImmediatePropagation();fists.key(key,true,event.repeat);requestDraw();return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&garden.skybox.distance(targetPosition)<3.8){event.preventDefault();garden.skybox.toggle();requestDraw();return;}if((moveKeys.has(key)||key==='shift'||key==='space')&&state.ready){if(key==='space'&&['BUTTON','A'].includes(event.target.tagName))return;event.preventDefault();if(!event.repeat)setMovement(key,true);}});
-document.addEventListener('keyup',event=>{const key=event.key.toLowerCase();if(fists&&['f','g','q'].includes(key))fists.key(key,false);setMovement(key,false);});
+document.addEventListener('keydown',event=>{if(modalOpen()||event.ctrlKey||event.metaKey||event.altKey||event.isComposing||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;const key=event.code==='Space'?'space':event.key.toLowerCase();if(['f','g','q'].includes(key)&&fistsEngaged()){event.preventDefault();event.stopImmediatePropagation();fists.key(key,true,event.repeat);requestDraw();return;}if((key==='a'||key==='d')&&state.ready&&!event.repeat&&!arena?.active())tapDodge(key);if(key==='c'&&state.ready&&!arena?.active()&&!expedition?.active()){event.preventDefault();if(!event.repeat){crouchHeld=true;startSlide();}return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&garden.skybox.distance(targetPosition)<3.8){event.preventDefault();garden.skybox.toggle();requestDraw();return;}if((moveKeys.has(key)||key==='shift'||key==='space')&&state.ready){if(key==='space'&&['BUTTON','A'].includes(event.target.tagName))return;event.preventDefault();if(!event.repeat)setMovement(key,true);}});
+document.addEventListener('keyup',event=>{const key=event.key.toLowerCase();if(key==='c')crouchHeld=false;if(fists&&['f','g','q'].includes(key))fists.key(key,false);setMovement(key,false);});
 for(const button of $('social-move').querySelectorAll('button')){button.onpointerdown=event=>{if(event.button!==0)return;event.preventDefault();button.setPointerCapture(event.pointerId);setMovement(button.dataset.key,true);};button.onpointerup=button.onpointercancel=button.onlostpointercapture=()=>setMovement(button.dataset.key,false);}
 document.addEventListener('focusin',event=>{if(modalOpen()||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName)){keys.clear();if(state.ready)requestDraw();}});
-window.addEventListener('blur',()=>{keys.clear();drag=null;fists?.key('q',false);if(state.ready)requestDraw();});
+window.addEventListener('blur',()=>{keys.clear();drag=null;crouchHeld=false;fists?.key('q',false);if(state.ready)requestDraw();});
 dialog.addEventListener('close',()=>{keys.clear();requestDraw();});
 posterDialog.addEventListener('close',requestDraw);
 $('spawn').onclick=()=>go('spawn');$('approach').onclick=()=>go('approach');$('wall-view').onclick=()=>go('wall');$('film-view').onclick=selectFilm;
@@ -429,11 +475,23 @@ $('amphitheater-view').onclick=()=>go('amphitheater');
 $('library-view').onclick=()=>go('library');
 function selectFilm(){go('film');wallFilm?.playWithSound();}
 const raycaster=new T.Raycaster(),pointer=new T.Vector2();
-function hit(event){const r=stage.getBoundingClientRect();pointer.set((event.clientX-r.left)/r.width*2-1,-(event.clientY-r.top)/r.height*2+1);raycaster.setFromCamera(pointer,camera);return raycaster.intersectObjects(pickables,false)[0];}
-renderer.domElement.addEventListener('click',event=>{if(combat?.capturing()||performance.now()<suppressClickUntil||arena?.active())return;const found=hit(event),residentId=residents.pick(raycaster,found?.distance);if(residentId){if(fistsReady()&&fists.inReach(residentId))fists.key('f',true);else focusResident(residentId);return;}if(found?.object.userData.skyDoor&&found.distance<12){garden.skybox.toggle();requestDraw();return;}if(multiplayer?.pick(raycaster,found?.distance))return;if(found){const reach=playerBody?.grab(found.point);if(reach){setTimeout(()=>openPicked(found),reach);return;}openPicked(found);}});
+// Mouse look: on a desktop the mouse steers the view directly once the scene is clicked (pointer lock); Esc frees the
+// cursor. While looking, clicks act on whatever is under the centre dot. Touch keeps drag-to-look.
+let lookLocked=false;const lookSensitivity=.0022;
+const lookDot=document.createElement('div');lookDot.id='look-dot';lookDot.setAttribute('aria-hidden','true');stage.after(lookDot);
+function lockLook(){if(!state.ready||modalOpen()||document.pointerLockElement)return;const el=renderer.domElement;try{const p=el.requestPointerLock?.({unadjustedMovement:true});p?.catch?.(()=>el.requestPointerLock?.());}catch{el.requestPointerLock?.();}}
+document.addEventListener('pointerlockchange',()=>{lookLocked=document.pointerLockElement===renderer.domElement;document.body.classList.toggle('look-locked',lookLocked);if(lookLocked){drag=null;keys.clear();}requestDraw();});
+document.addEventListener('mousemove',event=>{
+ // Weapons (combat.js) and the online arena steer the view themselves while they hold the mouse.
+ if(!lookLocked||!state.ready||modalOpen()||combat?.armed()||arena?.active())return;
+ const d=targetAim.clone().sub(targetPosition).normalize(),yaw=Math.atan2(d.x,-d.z)+event.movementX*lookSensitivity,pitch=T.MathUtils.clamp(Math.asin(T.MathUtils.clamp(d.y,-1,1))-event.movementY*lookSensitivity,-1.35,1.35);
+ freeView();targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));requestDraw();
+});
+function hit(event){const r=stage.getBoundingClientRect();if(lookLocked)pointer.set(0,0);else pointer.set((event.clientX-r.left)/r.width*2-1,-(event.clientY-r.top)/r.height*2+1);raycaster.setFromCamera(pointer,camera);return raycaster.intersectObjects(pickables,false)[0];}
+renderer.domElement.addEventListener('click',event=>{if(combat?.capturing()||performance.now()<suppressClickUntil||arena?.active())return;const found=hit(event),residentId=residents.pick(raycaster,found?.distance);if(residentId){if(fistsReady()&&fists.inReach(residentId))fists.key('f',true);else focusResident(residentId);return;}if(found?.object.userData.skyDoor&&found.distance<12){garden.skybox.toggle();requestDraw();return;}if(multiplayer?.pick(raycaster,found?.distance))return;if(found){const reach=playerBody?.grab(found.point);if(reach){setTimeout(()=>openPicked(found),reach);return;}openPicked(found);}else if(event.pointerType!=='touch'&&!lookLocked)lockLook();});
 function openPicked(found){if(found.object.userData.uploadPDF)uploads.open();else if(found.object.userData.stemdeck)music.openDeck();else if(found.object.userData.amphitheater)music.open();else if(found.object.userData.librarian)conversation.open();else if(Number.isInteger(found.object.userData.bookIndex))showBook(found.object.userData.bookIndex);else if(found.object.userData.film)selectFilm();else if(found.object.userData.poster)showPoster(found.object.userData.poster);else if(Number.isInteger(found.object.userData.collectionIndex))inspect('front',found.object.userData.collectionIndex);}
-renderer.domElement.addEventListener('pointerdown',event=>{if(event.button!==0||!state.ready||combat?.capturing())return;const direction=targetAim.clone().sub(targetPosition).normalize();drag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:Math.atan2(direction.x,-direction.z),pitch:Math.asin(direction.y),moved:false};renderer.domElement.setPointerCapture(event.pointerId);});
-renderer.domElement.addEventListener('pointermove',event=>{if(drag){const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)drag.moved=true;if(drag.moved){freeView();const yaw=drag.yaw+dx*.0035,pitch=T.MathUtils.clamp(drag.pitch-dy*.0035,-1.35,.4);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));renderer.domElement.style.cursor='grabbing';requestDraw();}}else renderer.domElement.style.cursor=hit(event)?'pointer':'grab';});
+renderer.domElement.addEventListener('pointerdown',event=>{if(event.button!==0||!state.ready||combat?.capturing()||event.pointerType==='mouse'||lookLocked)return;const direction=targetAim.clone().sub(targetPosition).normalize();drag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:Math.atan2(direction.x,-direction.z),pitch:Math.asin(direction.y),moved:false};renderer.domElement.setPointerCapture(event.pointerId);});
+renderer.domElement.addEventListener('pointermove',event=>{if(drag){const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)drag.moved=true;if(drag.moved){freeView();const yaw=drag.yaw+dx*.0035,pitch=T.MathUtils.clamp(drag.pitch-dy*.0035,-1.35,.4);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));renderer.domElement.style.cursor='grabbing';requestDraw();}}else renderer.domElement.style.cursor=lookLocked?'none':hit(event)?'pointer':event.pointerType==='mouse'?'crosshair':'grab';});
 renderer.domElement.addEventListener('pointerup',event=>{if(drag){suppressClickUntil=drag.moved?performance.now()+300:0;drag=null;renderer.domElement.releasePointerCapture(event.pointerId);}});
 renderer.domElement.addEventListener('pointercancel',()=>{drag=null;suppressClickUntil=0;});
 new ResizeObserver(()=>{renderer.setSize(stage.clientWidth,stage.clientHeight);camera.aspect=stage.clientWidth/stage.clientHeight;camera.updateProjectionMatrix();if(followResident)focusResident(followResident);else if(state.view==='free'){camera.position.copy(targetPosition);camera.lookAt(targetAim);requestDraw();}else go(state.view,true);}).observe(stage);
@@ -464,7 +522,7 @@ fists=window.createFistCombat?.({T,scene,camera,residents,reduced,stage,requestD
  getPlayer:()=>state.ready&&!expedition?.active()?{position:targetPosition.clone(),forward:targetAim.clone().sub(targetPosition)}:null,
  blocked:position=>obstacle(position)||garden.skybox.blocks(position,position),
  groundHeight:(x,z)=>groundHeight(groundPoint.set(x,0,z)),
- knockPlayer:shove,canAct:fistsReady});
+ knockPlayer:shove,canAct:fistsReady,hitStop});
 expedition=window.createExpedition({T,scene,camera,garden,layout:window.nightLayout,getPose:()=>state.ready?{x:targetPosition.x,z:targetPosition.z,yaw:Math.atan2(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z)}:null,place(x,z,lx=x,lz=z-5){motion.reset();freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,1.75,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=60;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},stopMoving(){keys.clear();drag=null;},requestDraw,returnHome:()=>go('spawn',true)});
 combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,reduced,requestDraw,
  canAct:()=>state.ready&&!modalOpen()&&!expedition?.active()&&!arena?.active()&&!pockets?.inside(camera.position)&&(battle?.canAct()??true),
@@ -474,7 +532,9 @@ combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,
  getLook(){const d=targetAim.clone().sub(targetPosition).normalize();return {yaw:Math.atan2(d.x,-d.z),pitch:Math.asin(T.MathUtils.clamp(d.y,-1,1))};},
  setLook(yaw,pitch){freeView();targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));},
  placePlayer(x,z,lx,lz){if(expedition?.active())expedition.leave();followResident=null;stage.classList.remove('resident-view');motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75+groundHeight(new T.Vector3(x,0,z)),z);targetAim.set(lx,targetPosition.y,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=70;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},
- movement:()=>({sprinting:keys.has('shift'),airborne:motion.inspect().airborne})
+ movement:()=>({sprinting:keys.has('shift'),airborne:motion.inspect().airborne}),
+ keepLock:()=>matchMedia('(pointer: fine)').matches,
+ hitStop
 });
 // No expeditions while a battle is on: its gate, its entry screen and the Attendant stay out of the arena.
 {const openNight=$('night-launch').onclick;$('night-launch').onclick=event=>{if(battle?.active())battle.exit();combat?.leaveRange?.();openNight?.(event);};}
@@ -510,5 +570,5 @@ const play=window.createPlayMenu?.({nav:document.querySelector('.view-nav'),afte
 window.breakThyRuleShowroom={scene:()=>scene,renderer:()=>renderer,combat:()=>combat,battle:()=>battle,fists:()=>fists,fight:key=>fists?.key(key,true),teleport(x,z,yaw=Math.PI){if(!state.ready)return;freeView();motion.reset();walkVelocity.set(0,0,0);targetPosition.set(x,1.75+groundHeight(groundPoint.set(x,0,z)),z);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,Math.cos(yaw)).multiplyScalar(5));camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();},go,inspect,showSide,focusResident,
  // camera placement for captures and checks: stand at (x,z) looking toward (lx,ly,lz)
  place(x,z,lx,lz,ly=1.75){if(expedition?.active())expedition.leave();motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,ly,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.lookAt(aim);requestDraw();},
-getState:()=>({...state,combat:combat?.inspect(),fists:fists?.inspect(),position:camera.position.toArray(),arena:arena?.inspect(),movement:{...motion.inspect(),velocity:walkVelocity.toArray().map(v=>+v.toFixed(3)),sway:sway.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.nightBuilt()?garden.district.inspect():null,library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),lighting:lighting.inspect(),post:post.inspect(),quality:quality.inspect(),residents:residents.inspect(),body:playerBody?.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
+getState:()=>({...state,aim:targetAim.toArray().map(v=>+v.toFixed(3)),feel:{crouch:+crouchAmount.toFixed(2),slide:slide?.kind||null,fovKick:+fovKick.toFixed(1),lookLocked},combat:combat?.inspect(),fists:fists?.inspect(),position:camera.position.toArray(),arena:arena?.inspect(),movement:{...motion.inspect(),velocity:walkVelocity.toArray().map(v=>+v.toFixed(3)),sway:sway.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.nightBuilt()?garden.district.inspect():null,library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),lighting:lighting.inspect(),post:post.inspect(),quality:quality.inspect(),residents:residents.inspect(),body:playerBody?.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
 })();
