@@ -131,7 +131,7 @@ window.createEdenSecrets=function({T,scene,camera,renderer,garden,combat,reduced
  const STAGES=[{value:0,name:'DAY',text:'The crew\'s sun comes back on.'},{value:.5,name:'DUSK',text:'The stage lights dim to dusk.'},{value:1,name:'NIGHT',text:'Someone cut the sun. Night falls on the set.'}];
  let stageIndex=0,leverAnim=0;
  function pullLever(){
-  stageIndex=(stageIndex+1)%STAGES.length;const s=STAGES[stageIndex];garden.nightRoad.setStage(s.value);leverAnim=now();sfx.lever();
+  stageIndex=(stageIndex+1)%STAGES.length;const s=STAGES[stageIndex];if(!garden.nightRoad)void garden.pyramid;garden.nightRoad?.setStage(s.value);leverAnim=now();sfx.lever();
   lamps.forEach((l,i)=>{l.material.emissiveIntensity=i===stageIndex?2.4:.15;});notify(s.text,'mystery');
   if(!progress.lever){progress.lever=true;changed();}
  }
