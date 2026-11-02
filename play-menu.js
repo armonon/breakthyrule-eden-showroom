@@ -6,13 +6,14 @@
 // Host hooks (app.js): createPlayMenu({nav, after, stage, items:[{id,title,text,keys,run,available,note}],
 //                                      context:()=>'walk'|'armed'|'range'|'battle'|'arena'|'fists'|'expedition',
 //                                      onOpen, onClose})
-window.createPlayMenu=function({nav,after,stage,items,context=()=>'walk',onOpen=()=>{},onClose=()=>{}}){
+window.createPlayMenu=function({nav,after,stage,items,graphics=null,context=()=>'walk',onOpen=()=>{},onClose=()=>{}}){
  const button=document.createElement('button');button.id='play-launch';button.type='button';button.setAttribute('aria-haspopup','dialog');button.setAttribute('aria-expanded','false');button.textContent='PLAY';
  (after||nav.lastElementChild).after(button);
 
  const menu=document.createElement('dialog');menu.id='play-menu';menu.setAttribute('aria-labelledby','play-menu-title');
  menu.innerHTML=`<header><div><small>BREAK THY RULE</small><h2 id="play-menu-title">Play</h2></div><button type="button" class="icon-button play-close" aria-label="Close" title="Close">×</button></header>
   <div class="play-items"></div>
+  <div class="play-graphics" hidden><span>GRAPHICS</span><div class="play-graphics-options" role="group" aria-label="Graphics quality"></div><small>Lower it if things feel slow.</small></div>
   <footer><button type="button" class="play-controls">CONTROLS <kbd>?</kbd></button><span>Press <kbd>Esc</kbd> to leave any game.</span></footer>`;
  document.body.append(menu);
  const list=menu.querySelector('.play-items');
@@ -24,7 +25,11 @@ window.createPlayMenu=function({nav,after,stage,items,context=()=>'walk',onOpen=
    card.onclick=()=>{menu.close();item.run();};return card;
   }));
  }
- function open(){render();if(!menu.open){onOpen();menu.showModal();button.setAttribute('aria-expanded','true');}}
+ function renderGraphics(){
+  if(!graphics)return;const box=menu.querySelector('.play-graphics'),row=box.querySelector('.play-graphics-options');box.hidden=false;
+  row.replaceChildren(...graphics.levels.map(l=>{const b=document.createElement('button');b.type='button';b.textContent=l.label;b.setAttribute('aria-pressed',String(graphics.get()===l.id));b.onclick=()=>{graphics.set(l.id);renderGraphics();};return b;}));
+ }
+ function open(){render();renderGraphics();if(!menu.open){onOpen();menu.showModal();button.setAttribute('aria-expanded','true');}}
  menu.addEventListener('close',()=>{button.setAttribute('aria-expanded','false');onClose();});
  menu.addEventListener('click',event=>{if(event.target===menu)menu.close();});
  menu.querySelector('.play-close').onclick=()=>menu.close();

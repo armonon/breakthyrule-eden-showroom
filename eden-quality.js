@@ -27,6 +27,8 @@ window.createAdaptiveResolution=function(renderer,{max=Math.min(devicePixelRatio
    else smoothSince=0;
   },
   pause(){last=0;},
+  // The graphics setting moves the ceiling; the current ratio follows it down at once, or climbs to it later.
+  setMax(next){max=next;if(ratio>max){ratio=max;renderer.setPixelRatio(ratio);onChange(ratio);}},
   inspect:()=>({pixelRatio:ratio,max,min,frameMs:+average.toFixed(1),vsyncMs:+vsync.toFixed(1)})
  };
 };

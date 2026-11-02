@@ -236,6 +236,26 @@ const post=createEdenPost(T,renderer,scene,camera,{enabled:stage.clientWidth>=70
 // then light shafts and lens flare, then bloom.
 const postSteps=[{ao:0},{rays:0,flare:0,glare:0},{bloom:0}];let postStep=0;
 const quality=createAdaptiveResolution(renderer,{max:Math.min(devicePixelRatio,1.5),onFloor(){if(postStep<postSteps.length){post.set(postSteps[postStep++]);requestDraw();}}});window.edenQuality=quality;
+// Graphics setting (PLAY menu): Low keeps laptops and phones smooth, High turns everything on. The first visit picks
+// one from the device (phones and small or low-memory machines: Low; integrated GPUs: Medium; otherwise High).
+const GRAPHICS={
+ low:{label:'LOW',post:false,samples:0,ratio:1,shadow:1024,ao:0,bloom:0,rays:0,flare:0,glare:0},
+ medium:{label:'MEDIUM',post:true,samples:2,ratio:1.25,shadow:2048,ao:0,bloom:.26,rays:0,flare:.8,glare:.9},
+ high:{label:'HIGH',post:true,samples:4,ratio:1.5,shadow:4096,ao:.8,bloom:.26,rays:.7,flare:.8,glare:.9}
+};
+function autoGraphics(){
+ if(stage.clientWidth<700||matchMedia('(pointer: coarse)').matches||(navigator.deviceMemory&&navigator.deviceMemory<=4))return 'low';
+ try{const gl=renderer.getContext(),info=gl.getExtension('WEBGL_debug_renderer_info'),name=info?gl.getParameter(info.UNMASKED_RENDERER_WEBGL):'';if(/intel|uhd|iris|mali|adreno|powervr|swiftshader|llvmpipe/i.test(name))return 'medium';}catch{}
+ return 'high';
+}
+let graphics='high';
+function setGraphics(level,{save=true}={}){
+ const q=GRAPHICS[level]||GRAPHICS.medium;graphics=GRAPHICS[level]?level:'medium';postStep=0;
+ post.set({enabled:q.post,samples:q.samples,ao:q.ao,bloom:q.bloom,rays:q.rays,flare:q.flare,glare:q.glare});
+ quality.setMax(Math.min(devicePixelRatio,q.ratio));lighting.set({shadowSize:q.shadow});renderer.shadowMap.needsUpdate=true;
+ if(save){try{localStorage.setItem('eden-graphics',graphics);}catch{}requestDraw();}
+}
+{let saved=null;try{saved=localStorage.getItem('eden-graphics');}catch{}setGraphics(GRAPHICS[saved]?saved:autoGraphics(),{save:false});}
 try{const response=await fetch('/night-layout.json?v=3');if(!response.ok)throw new Error('Night district unavailable');window.nightLayout=await response.json();}catch(error){fallback();return;}
 const garden=createEdenGarden(T,scene,{reduced,mobile:stage.clientWidth<700,onChange:requestDraw});
 // Lens flare and god rays from the sky's sun; glare from the night district's lanterns while it is on screen.
@@ -292,7 +312,7 @@ $('movement-hint').textContent=finePointer?'W A S D TO MOVE / CLICK TO LOOK · C
 function requestDraw(){if(!frame&&!document.hidden)frame=requestAnimationFrame(draw);}
 // Hit-stop: on a solid hit the picture holds for a few hundredths of a second, which is what sells the impact.
 let hitStopUntil=0;function hitStop(ms){if(!reduced)hitStopUntil=Math.max(hitStopUntil,performance.now()+ms);}
-function draw(time){frame=0;if(!state.ready)return;if(time<hitStopUntil){previous=time;frame=requestAnimationFrame(draw);return;}if(lookLocked&&modalOpen())document.exitPointerLock?.();quality.frame(time,!!previous);const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(modalOpen())walkVelocity.set(0,0,0);else if(keys.size||walkVelocity.lengthSq()||slide)move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();sway.remove(camera);battle?.update(time/1000,dt||.016);combat?.update(time/1000,dt||.016);const follow=reduced||combat?.armed()||state.view==='free',factor=follow?1:1-Math.exp(-7*(dt||.016));if(camera.position.distanceToSquared(targetPosition)>4e4){camera.position.copy(targetPosition);aim.copy(targetAim);}if(follow){const y=camera.position.y;camera.position.copy(targetPosition);aim.copy(targetAim);if(Math.abs(targetPosition.y-y)<.6&&!motion.inspect().airborne)camera.position.y=y+(targetPosition.y-y)*(1-Math.exp(-28*(dt||.016)));}else{camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);}const leap=pockets?.cross(camera.position);if(leap){camera.position.add(leap);aim.add(leap);targetPosition.add(leap);targetAim.add(leap);}const feel=updateFeel(dt||.016);if(sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false),crouch:feel.drop,lean:feel.lean})&&!slide)footsteps?.step(surfaceAt(targetPosition),feel.speed*(crouchAmount>.5?.5:1));playerBody?.update(dt||.016,{aim,velocity:walkVelocity,airborne:motion.inspect().airborne,crouch:feel.drop,fovKick:feel.fov});if(!pockets?.inside(camera.position))garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();const fighting=arena?.update(time/1000,dt||.016);pockets?.render();const brawling=fists?.update(time/1000,dt||.016);if(fists&&time-lastSkinCheck>2000){lastSkinCheck=time;const tone=multiplayer?.inspect().character?.skinTone;if(tone)fists.setSkin(tone);}withHitEffects(()=>post.render());combat?.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();updateDoorPrompt();if(brawling||garden.animating||combat?.busy()||motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||fighting||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
+function draw(time){frame=0;if(!state.ready)return;if(time<hitStopUntil){previous=time;frame=requestAnimationFrame(draw);return;}if(lookLocked&&modalOpen())document.exitPointerLock?.();quality.frame(time,!!previous);const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(modalOpen())walkVelocity.set(0,0,0);else if(keys.size||walkVelocity.lengthSq()||slide)move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();sway.remove(camera);battle?.update(time/1000,dt||.016);combat?.update(time/1000,dt||.016);const follow=reduced||combat?.armed()||state.view==='free',factor=follow?1:1-Math.exp(-7*(dt||.016));if(camera.position.distanceToSquared(targetPosition)>4e4){camera.position.copy(targetPosition);aim.copy(targetAim);}if(follow){const y=camera.position.y;camera.position.copy(targetPosition);aim.copy(targetAim);if(Math.abs(targetPosition.y-y)<.6&&!motion.inspect().airborne)camera.position.y=y+(targetPosition.y-y)*(1-Math.exp(-28*(dt||.016)));}else{camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);}const leap=pockets?.cross(camera.position);if(leap){camera.position.add(leap);aim.add(leap);targetPosition.add(leap);targetAim.add(leap);}const feel=updateFeel(dt||.016);updateDust(dt||.016);if(sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false),crouch:feel.drop,lean:feel.lean})&&!slide)footsteps?.step(surfaceAt(targetPosition),feel.speed*(crouchAmount>.5?.5:1));playerBody?.update(dt||.016,{aim,velocity:walkVelocity,airborne:motion.inspect().airborne,crouch:feel.drop,fovKick:feel.fov});if(!pockets?.inside(camera.position))garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();const fighting=arena?.update(time/1000,dt||.016);pockets?.render();const brawling=fists?.update(time/1000,dt||.016);if(fists&&time-lastSkinCheck>2000){lastSkinCheck=time;const tone=multiplayer?.inspect().character?.skinTone;if(tone)fists.setSkin(tone);}withHitEffects(()=>post.render());combat?.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();updateDoorPrompt();if(brawling||garden.animating||combat?.busy()||motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||fighting||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
 let roadCaption='';
 // Fist-fight hits shake, roll and drop the view only for this frame; the walking camera underneath is untouched.
 const savedCameraPosition=new T.Vector3(),savedCameraQuaternion=new T.Quaternion();
@@ -450,6 +470,25 @@ function tapDodge(key){
  const forward=targetAim.clone().sub(targetPosition).setY(0).normalize(),side=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0)).multiplyScalar(key==='d'?1:-1);
  prepareWalking();slide={kind:'dash',dur:.26,t:0,dir:side,speed:8};fists?.dodge();footsteps?.step(surfaceAt(targetPosition),7);requestDraw();
 }
+// Dust kicked up by slides, hard landings and wall hits: a small pool of soft puffs tinted by the surface underfoot.
+const dustPuffs=[];let dustTex=null,dustClock=0;
+const DUST_COLOR={grass:0x8d7b55,stone:0xd8d2c0,brick:0xc98a62,wood:0xb79a74};
+function puff(at,count=3,spread=.4,surface=surfaceAt(at)){
+ if(reduced)return;
+ if(!dustTex){const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),r=g.createRadialGradient(32,32,0,32,32,32);r.addColorStop(0,'rgba(255,255,255,.75)');r.addColorStop(.5,'rgba(255,255,255,.3)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,64,64);dustTex=new T.CanvasTexture(c);}
+ for(let i=0;i<count;i++){
+  let d=dustPuffs.find(x=>!x.alive);
+  if(!d){if(dustPuffs.length>=48)return;const sprite=new T.Sprite(new T.SpriteMaterial({map:dustTex,transparent:true,depthWrite:false}));sprite.raycast=()=>{};scene.add(sprite);d={sprite};dustPuffs.push(d);}
+  d.alive=true;d.t=0;d.life=.55+Math.random()*.5;d.sprite.visible=true;d.sprite.material.color.set(DUST_COLOR[surface]||DUST_COLOR.grass);
+  d.sprite.position.set(at.x+(Math.random()-.5)*spread,at.y+.08+Math.random()*.1,at.z+(Math.random()-.5)*spread);
+  d.vel=new T.Vector3((Math.random()-.5)*.8,.35+Math.random()*.5,(Math.random()-.5)*.8);d.size=.25+Math.random()*.25;
+ }
+}
+function updateDust(dt){
+ if(slide?.kind==='slide'){dustClock+=dt;if(dustClock>.035){dustClock=0;const feet=targetPosition.clone();feet.y-=1.72;feet.addScaledVector(slide.dir,-.3);puff(feet,2,.5);}}
+ for(const d of dustPuffs){if(!d.alive)continue;d.t+=dt;const k=d.t/d.life;if(k>=1){d.alive=false;d.sprite.visible=false;continue;}
+  d.sprite.position.addScaledVector(d.vel,dt);d.vel.multiplyScalar(1-dt*2.2);const s=d.size*(1+k*2.2);d.sprite.scale.set(s,s,s);d.sprite.material.opacity=.55*(1-k)*Math.min(1,k*8);}
+}
 // Running or sliding into something: a jolt through the view (rolled towards the side that hit), a thud, and on a
 // hard hit a short frame hold.
 let lastBump=0,bumpCount=0;
@@ -457,14 +496,14 @@ function wallHit(into){
  const impact=into.length(),t=performance.now();if(impact<2.4||t-lastBump<300)return;lastBump=t;bumpCount++;
  const forward=targetAim.clone().sub(targetPosition).setY(0).normalize(),right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));
  const k=Math.min(1.4,impact/6);sway.bump(k,Math.sign(into.dot(right))||0);footsteps?.land(surfaceAt(targetPosition),Math.min(1,impact/8));
- fovKick-=4*k;if(impact>5.5)hitStop(40+impact*4);requestDraw();
+ fovKick-=4*k;if(impact>5.5)hitStop(40+impact*4);{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,Math.round(3+4*k),.6);}requestDraw();
 }
 function updateFeel(dt){
  const speed=Math.hypot(walkVelocity.x,walkVelocity.z),airborne=motion.inspect().airborne;
  crouchAmount+=(((crouchHeld||slide?.kind==='slide')&&!arena?.active()?1:0)-crouchAmount)*(1-Math.exp(-14*dt));
  const sprinting=keys.has('shift')&&speed>4.5&&crouchAmount<.3;
  fovKick+=((slide?.kind==='slide'?9:slide?4:sprinting?6:0)-fovKick)*(1-Math.exp(-(slide||sprinting?6:4)*dt));
- if(airborne)airTime+=dt;else if(wasAirborne){footsteps?.land(surfaceAt(targetPosition),Math.min(1,airTime/.7));airTime=0;
+ if(airborne)airTime+=dt;else if(wasAirborne){footsteps?.land(surfaceAt(targetPosition),Math.min(1,airTime/.7));if(airTime>.45){const feet=targetPosition.clone();feet.y-=1.72;puff(feet,5,.7);}airTime=0;
   // Land with C held at speed and you go straight into a slide.
   if(crouchHeld&&!slide&&speed>4.2){slide={kind:'slide',dur:SLIDE_TIME,t:0,dir:walkVelocity.clone().setY(0).normalize(),speed:speed*1.15};footsteps?.slide(surfaceAt(targetPosition),SLIDE_TIME);}}
  wasAirborne=airborne;
@@ -577,6 +616,7 @@ function goToJester(){
  play?.hint('jester','WALK UP TO HIM · F JAB · G HAYMAKER · HOLD Q TO BLOCK · ? FOR ALL CONTROLS');
 }
 const play=window.createPlayMenu?.({nav:document.querySelector('.view-nav'),after:$('amphitheater-view'),stage,
+ graphics:{levels:Object.entries(GRAPHICS).map(([id,q])=>({id,label:q.label})),get:()=>graphics,set:setGraphics},
  onOpen(){keys.clear();walkVelocity.set(0,0,0);if(document.pointerLockElement)document.exitPointerLock();},onClose:requestDraw,
  context:()=>battle?.active()?'battle':arena?.active()?'arena':expedition?.active()?'expedition':combat?.armed()||combat?.inRange()?'armed':fistsEngaged()?'fists':'walk',
  items:[

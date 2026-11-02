@@ -42,3 +42,11 @@ body.combat-armed #controls-help,body.battle-on #controls-help,body.in-expeditio
 #look-dot{position:fixed;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.45);z-index:7;pointer-events:none;display:none}
 body.look-locked #look-dot{display:block}
 body.look-locked.combat-armed #look-dot,body.look-locked.in-arena #look-dot,body:has(dialog[open]) #look-dot{display:none}
+
+/* Graphics quality picker in the PLAY menu. */
+.play-graphics{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;letter-spacing:.14em}
+.play-graphics[hidden]{display:none}
+.play-graphics small{font-size:11px;letter-spacing:0;color:var(--secondary)}
+.play-graphics-options{display:flex;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.play-graphics-options button{border:0;background:#fff;padding:8px 14px;font-size:11px;letter-spacing:.12em;cursor:pointer;color:var(--secondary)}
+.play-graphics-options button[aria-pressed="true"]{background:#294a38;color:#fff}

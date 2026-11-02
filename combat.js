@@ -447,7 +447,11 @@
     const dust=col.clone().lerp(new T.Color(0xb8aa8a),.5);
     for(let i=0;i<6;i++)spawn({map:tx.puff,pos:hit.point,vel:n.clone().multiplyScalar(rand(.4,1.6)).add(new T.Vector3(rand(-.4,.4),rand(.2,1.2),rand(-.4,.4))),life:rand(.6,1.2),size:[.06,.42],alpha:.55,color:dust,gravity:-.1,drag:2.2});
     for(let i=0;i<6;i++)spawn({map:tx.soft,pos:hit.point,vel:n.clone().multiplyScalar(rand(1,3)).add(new T.Vector3(rand(-1,1),rand(.5,2.5),rand(-1,1))),life:rand(.3,.6),size:[.02,.012],color:col.clone().multiplyScalar(.6),gravity:9.8,drag:.3});
-    if(hit.object.isMesh&&!hit.object.isInstancedMesh)decal(hit,tx.hole,.04);
+    // Hard surfaces spark and scorch: a few hot streaks off the face and a sooty ring around the hole.
+    const hard=!/grass|leaf|foliage|flower/i.test(hit.object.name||'')&&(mat?.roughness??1)<.97;
+    if(hard){for(let i=0;i<4+Math.round(3*power);i++)spawn({map:tx.soft,additive:true,pos:hit.point,vel:n.clone().multiplyScalar(rand(2,5)).add(new T.Vector3(rand(-2.5,2.5),rand(-.5,3),rand(-2.5,2.5))),life:rand(.08,.22),size:[.022,.005],color:0xffe0a0,color1:0xff6a18,gravity:12,drag:.5});
+     spawn({map:tx.soft,additive:true,pos:hit.point,life:.05,size:[.1,.18],color:0xffe6b8});}
+    if(hit.object.isMesh&&!hit.object.isInstancedMesh){decal(hit,tx.hole,.04);if(hard)decal(hit,tx.scorch,.16,30);}
     sfx.dirt(hit.point);
    }
    if(t){

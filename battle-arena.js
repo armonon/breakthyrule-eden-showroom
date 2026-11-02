@@ -226,12 +226,23 @@
   // How hard a killing or heavy blow throws a body, by weapon.
   const FORCE={sniper:4.6,pump:4,rifle:2.6,smg:2.2,pistol:2.2,axe:3.4,melee:3.1,c4:6.2};
   function blowDirection(target,attacker,meta){if(meta.dir)return meta.dir.clone().setY(0).normalize();const from=attacker&&attacker!==target?posOf(attacker):null;const d=from?posOf(target).clone().sub(from).setY(0):new T.Vector3(0,0,1);return d.lengthSq()>1e-6?d.normalize():new T.Vector3(0,0,1);}
+  // Bots flash when hit: cyan off the shield, white on the body.
+  const FLASH={shield:new T.Color(0x45d6ff),body:new T.Color(0xffffff)};
+  function flashBot(b,kind){
+   if(!b.flashMats){b.flashMats=[];b.model.root.traverse(n=>{for(const m of n.isMesh?(Array.isArray(n.material)?n.material:[n.material]):[])if(m?.emissive&&!b.flashMats.includes(m)){m.userData.baseEmissive??=m.emissive.clone();b.flashMats.push(m);}});}
+   b.flashT=.14;b.flashColor=FLASH[kind];
+  }
+  function updateFlash(b,dt){
+   if(!(b.flashT>0))return;b.flashT=Math.max(0,b.flashT-dt);const k=b.flashT/.14;
+   for(const m of b.flashMats)m.emissive.copy(m.userData.baseEmissive).lerp(b.flashColor,k*.85);
+  }
   function damage(target,amount,attacker,meta={}){
    if(!target?.alive||phase==='ended')return {killed:false};
    if(phase==='countdown')return {killed:false};
    if(!target.bot&&godMode)return {killed:false};
    let a=amount,shielded=0;
-   if(target.shield>0&&meta.kind!=='zone'){shielded=Math.min(target.shield,a);target.shield-=shielded;a-=shielded;if(target.shield<=0&&target===player){chime([520,330,196],.09,.05);hud?.shieldBroken?.();}}
+   if(target.shield>0&&meta.kind!=='zone'){shielded=Math.min(target.shield,a);target.shield-=shielded;a-=shielded;if(target===player)hud?.shieldHit?.(shielded/40+(target.shield<=0?.5:0));if(target.shield<=0&&target===player){chime([520,330,196],.09,.05);hud?.shieldBroken?.();}}
+   if(target.bot&&meta.kind!=='zone')flashBot(target,shielded>0&&a<=0?'shield':'body');
    if(target.armor>0&&meta.kind!=='zone'&&a>0){const absorb=Math.min(target.armor,a*.65);target.armor-=absorb;a-=absorb;}
    target.hp-=a;target.lastHurt=clock;
    if(target.bot){target.seen=attacker&&attacker!==target?attacker:target.seen;if(target.state!=='fight'&&attacker&&attacker!==target){target.state='fight';target.target=attacker;target.aimT=target.reaction*.5;}
@@ -310,6 +321,7 @@
   }
 
   function updateBot(b,dt){
+   updateFlash(b,dt);
    const p=b.root.position;
    if(!b.alive){if(b.model.motion?.downAmount?.()>0){b.model.animate?.(clock,0);return;}const k=clamp((clock-b.deathT)/.6,0,1);b.root.rotation.x=-k*k*Math.PI/2*.96;b.root.position.y=groundY(p.x,p.z)+k*.15;return;}
    if(b.frozen){b.model.animate?.(clock,0);return;}
@@ -446,7 +458,7 @@
     <div class="ar-count" aria-live="assertive"></div>
     <div class="ar-announce"></div>
     <div class="ar-prompt"><kbd>F</kbd><span></span></div>
-    <div class="ar-vitals"><div class="ar-bar ar-shield"><i></i><span></span></div><div class="ar-bar ar-armor"><i></i><span></span></div><div class="ar-bar ar-hp"><i></i><span></span></div><div class="ar-heals"></div><div class="ar-heal-progress"><i></i></div></div>
+    <div class="ar-vitals"><div class="ar-shimmer"></div><div class="ar-bar ar-shield"><i></i><span></span></div><div class="ar-bar ar-armor"><i></i><span></span></div><div class="ar-bar ar-hp"><i></i><span></span></div><div class="ar-heals"></div><div class="ar-heal-progress"><i></i></div></div>
     <div class="ar-end" hidden><div class="ar-end-card"><span class="ar-end-kicker"></span><h2></h2><p class="ar-end-stats"></p><div class="ar-loadout"></div><div class="ar-end-actions"><button class="ar-again">PLAY AGAIN</button><button class="ar-leave">LEAVE ARENA</button></div></div></div>
     <button class="ar-exit" title="Leave the arena">LEAVE</button>`;
    host.appendChild(el);const q=s=>el.querySelector(s);
@@ -487,6 +499,8 @@
      q('.ar-loadout').querySelectorAll('button').forEach(b=>b.onclick=()=>o.openShop?.(b.dataset.id));
      document.exitPointerLock?.();
     },
+    // Your shield taking a hit: a cyan shimmer around the edge of the screen, stronger with the damage.
+    shieldHit(k){const el=q('.ar-shimmer');el.style.setProperty('--k',Math.min(1,.35+k).toFixed(2));el.classList.remove('on');void el.offsetWidth;el.classList.add('on');},
     shieldBroken(){const bar=q('.ar-shield');bar.classList.remove('broke');void bar.offsetWidth;bar.classList.add('broke');},
     hideEnd(){q('.ar-end').hidden=true;}
    };

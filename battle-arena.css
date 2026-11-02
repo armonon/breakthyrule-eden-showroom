@@ -60,3 +60,12 @@ body.battle-on #world>*:not(#scene):not(#battle-hud):not(#combat-hud):not(dialog
 .ar-shield.down span{color:#ff9c8a;text-shadow:0 1px 2px #000}
 .ar-shield.broke{animation:ar-shield-break .45s ease-out}
 @keyframes ar-shield-break{0%{box-shadow:0 0 0 0 rgba(120,220,255,.9);border-color:#bff2ff}100%{box-shadow:0 0 0 14px rgba(120,220,255,0);border-color:rgba(255,255,255,.15)}}
+
+/* Shield shimmer: a cyan ripple around the screen edge when your shield absorbs a hit. */
+.ar-shimmer{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:2;
+ background:radial-gradient(ellipse at center,rgba(70,210,255,0) 52%,rgba(70,210,255,.28) 78%,rgba(150,235,255,.55) 100%),
+  repeating-linear-gradient(60deg,rgba(150,235,255,.07) 0 2px,transparent 2px 14px),repeating-linear-gradient(-60deg,rgba(150,235,255,.07) 0 2px,transparent 2px 14px);
+ -webkit-mask:radial-gradient(ellipse at center,transparent 48%,#000 80%);mask:radial-gradient(ellipse at center,transparent 48%,#000 80%)}
+.ar-shimmer.on{animation:ar-shimmer .5s ease-out}
+@keyframes ar-shimmer{0%{opacity:var(--k,.6);transform:scale(1.015)}100%{opacity:0;transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.ar-shimmer.on{animation-duration:.01s}}
