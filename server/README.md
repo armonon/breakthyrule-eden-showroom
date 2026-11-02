@@ -22,4 +22,8 @@ node server/eden-server.mjs --port 8780 --data /path/to/data
 To try two players, open the garden in two browsers (or one normal + one private window, since each needs its own
 cookie), create an account and a character in each, then walk around and chat.
 
+- **Shared garden state** (`server/world.mjs`): the stage-weather lever is shared by the room, Fight Night results go on
+  a Fools' Ladder per account, and progress through the garden's secrets follows the account across devices. See
+  `docs/fist-combat-protocol.md` for the messages and endpoints. Tests: `node --test server/world.test.mjs`.
+
 Not here yet: hosting for players outside this machine, persistence of chat history, and the PvP arena.

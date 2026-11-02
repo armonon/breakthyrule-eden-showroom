@@ -635,8 +635,11 @@
   // ---- night: the Attendant hunts and the lost pages scatter
   let attendant=null,lastNight=0,beatAt=0;
   const smooth01=t=>t*t*(3-2*t);
-  function nightLevel(){const total=CYCLE.day+CYCLE.dusk+CYCLE.night+CYCLE.dawn;let t=clock%total;if(t<CYCLE.day)return 0;t-=CYCLE.day;if(t<CYCLE.dusk)return smooth01(t/CYCLE.dusk);t-=CYCLE.dusk;if(t<CYCLE.night)return 1;t-=CYCLE.night;return 1-smooth01(Math.min(1,t/CYCLE.dawn));}
-  function untilNight(){const total=CYCLE.day+CYCLE.dusk+CYCLE.night+CYCLE.dawn,t=clock%total;return t<CYCLE.day?CYCLE.day-t:t<CYCLE.day+CYCLE.dusk+CYCLE.night?-(CYCLE.day+CYCLE.dusk+CYCLE.night-t):total-t+CYCLE.day;}
+  // One independent clock: the day/night cycle runs on real time, the same for everyone and whether or not you are
+  // in the match, so walking in never resets it.
+  const worldClock=()=>Date.now()/1000;
+  function nightLevel(){const total=CYCLE.day+CYCLE.dusk+CYCLE.night+CYCLE.dawn;let t=worldClock()%total;if(t<CYCLE.day)return 0;t-=CYCLE.day;if(t<CYCLE.dusk)return smooth01(t/CYCLE.dusk);t-=CYCLE.dusk;if(t<CYCLE.night)return 1;t-=CYCLE.night;return 1-smooth01(Math.min(1,t/CYCLE.dawn));}
+  function untilNight(){const total=CYCLE.day+CYCLE.dusk+CYCLE.night+CYCLE.dawn,t=worldClock()%total;return t<CYCLE.day?CYCLE.day-t:t<CYCLE.day+CYCLE.dusk+CYCLE.night?-(CYCLE.day+CYCLE.dusk+CYCLE.night-t):total-t+CYCLE.day;}
   const temple=()=>{const lm=layout.landmarks.find(l=>l.id==='temple')||layout.landmarks[0];return new T.Vector3(lm.x,0,lm.z+lm.d/2+3);};
   // ---- the eight lost pages
   const PAGE_INFO=(layout.pages||[]).slice(0,PAGE_COUNT);
