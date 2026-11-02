@@ -41,12 +41,12 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
  // ---------- DOM: HUD, vignette, knockout banner, touch pad ----------
  const world=stage.closest('#world')||stage.parentElement;
  const hud=document.createElement('div');hud.id='fight-hud';hud.hidden=true;
- hud.innerHTML='<div class="fight-bar fight-you"><span>YOU</span><div class="fight-meter"><i></i></div></div><div class="fight-bar fight-foe" hidden><span>VIOLET TRICKSTER</span><div class="fight-meter"><i></i></div></div><p class="fight-keys">F PUNCH · G HAYMAKER · HOLD Q BLOCK</p>';
+ hud.innerHTML='<div class="fight-bar fight-you"><span>YOU</span><div class="fight-meter"><i></i><b class="fight-stamina"></b></div></div><div class="fight-bar fight-foe" hidden><span>VIOLET TRICKSTER</span><div class="fight-meter"><i></i></div></div><p class="fight-keys">F PUNCH · G HAYMAKER · HOLD Q BLOCK (TAP TO PARRY) · DOUBLE-TAP A/D DODGE</p>';
  const pop=document.createElement('div');pop.id='fight-pop';pop.setAttribute('aria-live','polite');
  const vignette=document.createElement('div');vignette.id='fight-vignette';
  const ko=document.createElement('div');ko.id='fight-ko';ko.hidden=true;ko.innerHTML='<strong>KNOCKED OUT</strong><span></span><div class="fight-stars"><b>★</b><b>★</b><b>★</b></div>';
  const pad=document.createElement('div');pad.id='fight-pad';pad.setAttribute('aria-label','Fight controls');
- pad.innerHTML='<button data-fight="f" aria-label="Punch">PUNCH</button><button data-fight="g" aria-label="Haymaker">POWER</button><button data-fight="q" aria-label="Block">BLOCK</button>';
+ pad.innerHTML='<button data-fight="f" aria-label="Punch">PUNCH</button><button data-fight="g" aria-label="Haymaker">POWER</button><button data-fight="q" aria-label="Block">BLOCK</button><button data-fight="c" aria-label="Dodge">DODGE</button>';
  world.append(hud,pop,vignette,ko,pad);
  for(const button of pad.querySelectorAll('button')){
   button.onpointerdown=event=>{event.preventDefault();button.setPointerCapture(event.pointerId);key(button.dataset.fight,true);};
@@ -84,11 +84,15 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
  function setSkin(character){arms.setSkin(character);}
  // ---------- Player state ----------
  const stats={swings:0,landed:0,missed:0,last:null};
- const player={dodgeUntil:0,landedAt:-9,hp:100,downStart:0,downUntil:0,down:false,ko:false,blocking:false,attack:null,readyAt:0,nextHand:0,combo:0,comboUntil:0,flash:0,shake:0,rollSign:1,fightUntil:0,seq:0,lastHurt:-9};
+ const player={dodgeUntil:0,hp:100,landedAt:-9,downStart:0,downUntil:0,down:false,ko:false,blocking:false,attack:null,readyAt:0,nextHand:0,combo:0,comboUntil:0,flash:0,shake:0,rollSign:1,fightUntil:0,seq:0,lastHurt:-9,stamina:100,blockStart:-9,dodgeStart:-9,dodgeSide:1,counterUntil:-9,tiredUntil:0};
+ const listeners={};
+ function emit(name,data){for(const fn of listeners[name]||[])try{fn(data);}catch(error){console.warn(error);}}
+ function spend(amount){if(player.stamina<amount){player.tiredUntil=now()+1.2;shout('WINDED','block');return false;}player.stamina-=amount;return true;}
  let network=null;
  function fighting(){return now()<player.fightUntil||jester.mode!=='path'||player.down;}
  function key(name,pressed,repeat=false){
-  if(name==='q'){if(pressed&&(!canAct()||player.down))return true;player.blocking=pressed;if(pressed){player.attack=null;player.fightUntil=now()+8;}requestDraw();return true;}
+  if(name==='q'){if(pressed&&(!canAct()||player.down))return true;if(pressed&&!player.blocking)player.blockStart=now();player.blocking=pressed;if(pressed){player.attack=null;player.fightUntil=now()+8;}requestDraw();return true;}
+  if(name==='c'){if(pressed&&!repeat)dodge();return true;}
   if(!pressed||repeat)return name==='f'||name==='g';
   if(name==='f')punch(player.nextHand?'cross':'jab');else if(name==='g')punch('power');else return false;
   return true;
@@ -97,16 +101,24 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
   const t=now();if(!canAct()||player.down||t<player.readyAt)return false;
   if(player.attack&&!player.attack.resolved){player.attack.resolved=true;resolve(player.attack);}
   const spec=PUNCHES[kind],hand=kind==='jab'?0:1;player.nextHand=kind==='jab'?1:0;
-  const attack={kind,spec,hand,start:t,resolved:false};player.blocking=false;player.attack=attack;
+  const tired=!spend({jab:10,cross:14,power:28}[kind]);
+  const attack={kind,spec,hand,start:t,resolved:false,tired};player.blocking=false;player.attack=attack;
   // Impact is timed, not frame-bound, so punches still land on slow devices.
-  setTimeout(()=>{if(!attack.resolved){attack.resolved=true;resolve(attack);requestDraw();}},spec.impact*1000);player.readyAt=t+spec.recover*.85;player.fightUntil=t+8;player.seq++;
+  setTimeout(()=>{if(!attack.resolved){attack.resolved=true;resolve(attack);requestDraw();}},spec.impact*1000);player.readyAt=t+spec.recover*(tired?1.4:.85);player.fightUntil=t+8;player.seq++;
   sfx('whoosh');requestDraw();return true;
+ }
+ // Sidestep: a quick slip that briefly makes incoming punches and tackles miss.
+ function dodge(side){
+  const t=now(),p=getPlayer();if(!canAct()||player.down||!p||t-player.dodgeStart<.5)return false;if(!spend(16))return false;
+  player.dodgeSide=side??(Math.random()<.5?-1:1);player.dodgeStart=t;player.fightUntil=t+8;player.blocking=false;
+  const forward=forwardOf(p).clone(),right=new T.Vector3(-forward.z,0,forward.x);
+  knockPlayer({direction:right.multiplyScalar(player.dodgeSide),distance:.85});sfx('whoosh');requestDraw();return true;
  }
  function forwardOf(p){return tmp2.copy(p.forward).setY(0).normalize();}
  function resolve(attack){
   const p=getPlayer();if(!p)return;const forward=forwardOf(p).clone(),feet=new T.Vector3(p.position.x,0,p.position.z);
   const t=now();if(t>player.comboUntil)player.combo=0;
-  const multiplier=Math.min(1.6,1+player.combo*.15),damage=Math.round(attack.spec.damage*multiplier);
+  const countered=t<player.counterUntil,multiplier=Math.min(1.6,1+player.combo*.15)*(countered?1.5:1)*(attack.tired?.55:1),damage=Math.round(attack.spec.damage*multiplier);if(countered)player.counterUntil=0;
   const candidates=[];
   const root=jester.entry?.root;
   if(root){const at=jester.ragdoll?.active?jester.ragdoll.pelvisPosition():root.position;const d=Math.hypot(at.x-feet.x,at.z-feet.z);candidates.push({type:'jester',at,d});}
@@ -125,14 +137,18 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
   sfx(attack.kind==='power'||outcome==='ko'?'heavy':'hit');flash(contact,attack.kind==='power');
   // Impact: a short frame hold scaled to the blow, and a jolt through your own view.
   hitStop(outcome==='ko'?170:{jab:45,cross:65,power:110}[attack.kind]||50);player.shake=Math.max(player.shake,attack.kind==='power'||outcome==='ko'?.3:.14);
-  shout(outcome==='ko'?'K.O.!':player.combo>2?player.combo+' HIT COMBO':attack.spec.label,outcome==='ko'?'ko':'hit');
+  shout(outcome==='ko'?'K.O.!':countered?'COUNTER!':player.combo>2?player.combo+' HIT COMBO':attack.spec.label,outcome==='ko'?'ko':'hit');emit('landed',{kind:attack.kind,damage,outcome,target:hit.type});
  }
  function hurt({damage,direction,kind='jab',from='jester'}){
   if(player.down)return 'down';const t=now(),p=getPlayer();if(!p)return 'none';
-  // Inside a dodge the blow whiffs past.
-  if(t<player.dodgeUntil){player.fightUntil=t+8;sfx('whoosh');shout('DODGED','block');return 'dodged';}
-  const forward=forwardOf(p);player.fightUntil=t+8;player.lastHurt=t;
-  if(player.blocking&&kind!=='tackle'&&forward.dot(direction)<-.2){damage*=.2;player.shake=.12;sfx('block');shout('BLOCKED','block');}
+  const forward=forwardOf(p);player.fightUntil=t+8;
+  // Inside a dodge (double-tap A/D, or the touch button) the blow whiffs past.
+  if(t<player.dodgeUntil||t-player.dodgeStart<.38){shout('SLIPPED!','block');sfx('whoosh');emit('dodged',{kind,from});return 'dodged';}
+  const facing=forward.dot(direction)<-.2;
+  // Parry: a block raised just before the blow lands deflects it and opens a counter.
+  if(player.blocking&&kind!=='tackle'&&facing&&t-player.blockStart<.25){player.counterUntil=t+1.3;player.shake=.08;sfx('block');shout('PARRY!','block');hitStop(60);if(from==='jester')jester.parried();emit('parry',{from});return 'parried';}
+  player.lastHurt=t;
+  if(player.blocking&&kind!=='tackle'&&facing){damage*=.2;player.stamina=Math.max(0,player.stamina-8);player.shake=.12;sfx('block');shout('BLOCKED','block');}
   else{player.flash=1;player.shake=kind==='uppercut'||kind==='power'?.65:.38;sfx(kind==='tackle'?'thud':'hit');hitStop(kind==='uppercut'||kind==='power'||kind==='tackle'?120:70);}
   player.hp=Math.max(0,player.hp-damage);
   knockPlayer({direction,distance:kind==='tackle'?1.4:kind==='uppercut'||kind==='power'?.8:.3});
@@ -141,12 +157,12 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
  }
  function knockDown(duration,out){
   const t=now();player.down=true;player.ko=out;player.downStart=t;player.downUntil=t+duration;player.attack=null;player.blocking=false;player.rollSign=Math.random()<.5?-1:1;
-  if(out){ko.hidden=false;sfx('thud');}
+  if(out){ko.hidden=false;sfx('thud');emit('playerKO',{});}
   jester.onPlayerDown(out);
  }
  // ---------- The Violet Trickster's fight brain ----------
  const jester={entry:null,ragdoll:null,hp:100,mode:'path',since:0,layers:new Map(),current:'',lastProvoked:-99,attackReady:0,tackleReady:0,koUntil:0,afterKo:false,tackle:null,attack:null,push:new T.Vector3(),danceRound:-1,
-  takeHit,onPlayerDown};
+  takeHit,onPlayerDown,parried(){if(['engage','attack'].includes(jester.mode)){setMode('hit');play('Hit',{fade:.05});jester.push.set(0,0,0);if(Math.random()<.5)say('Whoa—!',true);}},bout:false};
  function ensureJester(){
   if(jester.entry?.root)return true;const entry=residents.get(jesterId);if(!entry?.root||!entry.moves)return false;
   jester.entry=entry;entry.controller={active:false,mode:'path',animation:''};
@@ -196,7 +212,7 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
   if(jester.hp<=0){
    jester.hp=0;jester.afterKo=true;
    if(jester.ragdoll){jester.ragdoll.start({impulse:direction.clone().multiplyScalar(kind==='power'?4.6:3.2),lift:kind==='power'?3.4:1.8,at:contact,spin:rand(-1.5,1.5)});setMode('ko');jester.koUntil=t+4;}
-   say('ko',true);sfx('boing');return 'ko';
+   say('ko',true);sfx('boing');emit('jesterKO',{kind});return 'ko';
   }
   setMode('hit');play('Hit',{fade:.05});jester.push.copy(direction).multiplyScalar(kind==='power'?1.6:.7);
   if(fresh)say('provoked',true);else if(Math.random()<.45)say('hurt');
@@ -282,7 +298,7 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
    return true;
   }
   // engage
-  if(!p||dist>19||(t-jester.lastProvoked>15&&dist>5)){setMode('return');play('Walk',{fade:.3});return true;}
+  if(!p||(!jester.bout&&(dist>19||(t-jester.lastProvoked>15&&dist>5)))){setMode('return');play('Walk',{fade:.3});return true;}
   if(player.down){face(feet,dt,4);if(jester.current!=='Taunt')play('Taunt',{fade:.3});return true;}
   face(feet,dt);
   if(dist>2.6&&dist<7.5&&t>jester.tackleReady&&since>.8&&Math.random()<dt*.5){
@@ -296,7 +312,7 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
  // ---------- HUD + view effects ----------
  function updateHud(){
   hud.querySelector('.fight-you i').style.width=player.hp+'%';
-  hud.querySelector('.fight-you').classList.toggle('low',player.hp<30);
+  hud.querySelector('.fight-you').classList.toggle('low',player.hp<30);hud.querySelector('.fight-stamina').style.width=player.stamina+'%';
   const foe=hud.querySelector('.fight-foe');foe.hidden=jester.mode==='path'||jester.mode==='return';foe.querySelector('i').style.width=Math.max(0,jester.hp)+'%';
  }
  function updateFists(t,dt){
@@ -311,6 +327,7 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
   if(player.attack){const a=player.attack;if(!a.resolved&&t-a.start>=a.spec.impact){a.resolved=true;resolve(a);}if(t-a.start>a.spec.recover+(a.freeze||0))player.attack=null;busy=true;}
   if(player.down&&t>=player.downUntil){player.down=false;if(player.ko){player.ko=false;player.hp=100;}ko.hidden=true;updateHud();}
   if(player.down){ko.querySelector('span').textContent=player.ko?'Back up in '+Math.ceil(player.downUntil-t)+'…':'';busy=true;}
+  const regen=player.blocking?-6:t<player.tiredUntil?12:30;player.stamina=clamp(player.stamina+regen*dt,0,100);
   if(!player.down&&t-player.lastHurt>6&&player.hp<100){player.hp=Math.min(100,player.hp+dt*6);updateHud();busy=true;}
   player.flash=Math.max(0,player.flash-dt*2.2);player.shake=Math.max(0,player.shake-dt*1.8);
   vignette.style.opacity=String(Math.max(player.flash*.85,player.hp<30?.25+.1*Math.sin(t*6):0));
@@ -334,6 +351,7 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
    const bounce=fall<1?1-Math.pow(1-fall,3):1+Math.sin((t-player.downStart-.42)*14)*Math.exp(-(t-player.downStart-.42)*6)*.04;
    const amount=bounce*(1-rise*rise*(3-2*rise));drop=1.42*amount;roll+=.95*amount*player.rollSign;pitch+=.55*amount;
   }
+  const slip=t-player.dodgeStart;if(slip<.38&&!reduced){const k=Math.sin(slip/.38*Math.PI);drop+=.22*k;roll-=player.dodgeSide*.13*k;}
   return {offset,drop,roll,pitch,yaw};
  }
  return {
@@ -348,6 +366,18 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
   netState:()=>({hp:Math.round(player.hp),down:player.down,ko:player.ko,block:player.blocking,punch:{seq:player.seq,hand:player.attack?.hand??player.nextHand,kind:player.attack?.kind||'jab'}}),
   inReach(id){if(id!==jesterId||!jester.entry?.root)return false;const p=getPlayer();return !!p&&Math.hypot(p.position.x-jester.entry.root.position.x,p.position.z-jester.entry.root.position.z)<2.3;},
   provoke(){if(ensureJester()){activate();jester.lastProvoked=now();say('provoked',true);requestDraw();}},
-  inspect:()=>({stats:{...stats},player:{hp:Math.round(player.hp),down:player.down,ko:player.ko,blocking:player.blocking,combo:player.combo,attack:player.attack?.kind||null},jester:{mode:jester.mode,hp:Math.round(jester.hp),animation:jester.current,ragdoll:jester.ragdoll?.inspect()||null},bubble:bubble.visible?bubbleText:null,arms:arms.inspect()})
+  on(name,fn){(listeners[name]??=[]).push(fn);},
+  jesterSay(text){if(ensureJester()){say(text,true);requestDraw();}},
+  jesterPosition:()=>jester.entry?.root?.position.clone()||null,
+  // Ring bouts: the jester is moved to the ring, healed, and stays engaged until someone drops.
+  startBout(at,yaw=0){
+   if(!ensureJester()||jester.ragdoll?.active)return false;const root=jester.entry.root;
+   if(jester.mode==='path')activate();root.position.set(at.x,groundHeight(at.x,at.z),at.z);root.rotation.set(0,yaw,0);
+   jester.hp=100;jester.afterKo=false;jester.bout=true;jester.lastProvoked=now();setMode('engage');play('Guard',{fade:.1});
+   player.hp=100;player.stamina=100;player.fightUntil=now()+10;updateHud();say('Ladies, gents and fools… FIGHT!',true);requestDraw();return true;
+  },
+  endBout(){jester.bout=false;jester.lastProvoked=-99;},
+  setWraps(on){arms.setWraps?.(on);},
+  inspect:()=>({stats:{...stats},player:{stamina:Math.round(player.stamina),hp:Math.round(player.hp),down:player.down,ko:player.ko,blocking:player.blocking,combo:player.combo,attack:player.attack?.kind||null},jester:{bout:jester.bout,mode:jester.mode,hp:Math.round(jester.hp),animation:jester.current,ragdoll:jester.ragdoll?.inspect()||null},bubble:bubble.visible?bubbleText:null,arms:arms.inspect()})
  };
 };

@@ -64,14 +64,34 @@
   }
   const frameVector=([f,s,b])=>forward0.clone().multiplyScalar(f).addScaledVector(side0,s).addScaledVector(back0,b);
   const thumbRest=[1,2,3].map(i=>{const b=byName['finger1-'+i+'.R'];return V(b.tail).sub(V(b.head)).normalize();});
+  // Fool's Wraps (an unlockable): violet tape over the wrist and knuckles, offset along the skin
+  // normal and skinned to the same bones so it moves with every finger.
+  const wrapMask=new Float32Array(geometry.attributes.position.count),wrapBand=new Float32Array(wrapMask.length);
+  {const p=geometry.attributes.position,si=geometry.attributes.skinIndex,sw=geometry.attributes.skinWeight,thumb=new Set([1,2,3].map(i=>byName['finger1-'+i+'.R'].index));
+   const k2=head('finger2-1'),k5=head('finger5-1'),v=new T.Vector3(),line=k2.clone().sub(k5),lineLength=line.length();line.normalize();
+   for(let i=0;i<p.count;i++){
+    v.fromBufferAttribute(p,i);let thumbWeight=0;for(let j=0;j<4;j++)if(thumb.has(si.getComponent(i,j)))thumbWeight+=sw.getComponent(i,j);
+    const along=v.clone().sub(wrist0).dot(forward0),wrist=along>-.075&&along<.03?1:0;
+    const rel=v.clone().sub(k5),t=rel.dot(line),closest=k5.clone().addScaledVector(line,Math.max(-.006,Math.min(lineLength+.006,t)));
+    const offset=v.clone().sub(closest),knuckle=offset.dot(forward0)>-.03&&offset.dot(forward0)<.004&&offset.length()<.03?1:0;
+    wrapMask[i]=thumbWeight>.4?0:Math.max(wrist,knuckle);wrapBand[i]=wrist?along*90:t*120;
+   }}
+  geometry.setAttribute('wrapMask',new T.BufferAttribute(wrapMask,1));geometry.setAttribute('wrapBand',new T.BufferAttribute(wrapBand,1));
+  const wrapMaterial=new T.MeshStandardMaterial({color:0x6b2ea3,roughness:.78,fog:false,transparent:true,opacity:1});
+  wrapMaterial.onBeforeCompile=shader=>{
+   shader.vertexShader='attribute float wrapMask;attribute float wrapBand;varying float vWrapMask;varying float vWrapBand;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n transformed+=objectNormal*.0032*wrapMask;vWrapMask=wrapMask;vWrapBand=wrapBand;');
+   shader.fragmentShader='varying float vWrapMask;varying float vWrapBand;\n'+shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\n if(vWrapMask<.5)discard;float stripe=smoothstep(.42,.5,abs(fract(vWrapBand)-.5));diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.93,.9,.84),stripe*.85);');
+  };
+  let wrapsOn=false;
   const arms=[];
   for(const side of [-1,1]){
    const holder=new T.Group();holder.scale.set(side*SCALE,SCALE,SCALE);rig.add(holder);
    const bones=data.bones.map(b=>{const bone=new T.Bone();bone.name=b.name;return bone;});
    data.bones.forEach((b,i)=>{const p=V(b.head);if(b.parent){const parent=byName[b.parent];p.sub(V(parent.head));bones[parent.index].add(bones[i]);}else holder.add(bones[i]);bones[i].position.copy(p);});
    const mesh=new T.SkinnedMesh(geometry,skin);mesh.frustumCulled=false;mesh.renderOrder=999;mesh.name=(side<0?'Left':'Right')+' arm';holder.add(mesh);
-   holder.updateMatrixWorld(true);mesh.bind(new T.Skeleton(bones),mesh.matrixWorld);
-   arms.push({side,holder,mesh,bones:Object.fromEntries(bones.map(b=>[b.name.replace('.R',''),b])),pos:new T.Vector3(),rot:new T.Euler(),clench:.9});
+   holder.updateMatrixWorld(true);const skeleton=new T.Skeleton(bones);mesh.bind(skeleton,mesh.matrixWorld);
+   const wraps=new T.SkinnedMesh(geometry,wrapMaterial);wraps.frustumCulled=false;wraps.renderOrder=1000;wraps.visible=false;holder.add(wraps);wraps.bind(skeleton,mesh.matrixWorld);
+   arms.push({side,holder,mesh,wraps,bones:Object.fromEntries(bones.map(b=>[b.name.replace('.R',''),b])),pos:new T.Vector3(),rot:new T.Euler(),clench:.9});
   }
   const q=new T.Quaternion(),q2=new T.Quaternion();
   function twistAbout(rotation,axis){const r=new T.Vector3(rotation.x,rotation.y,rotation.z),p=axis.clone().multiplyScalar(r.dot(axis));const t=new T.Quaternion(p.x,p.y,p.z,rotation.w);return t.lengthSq()<1e-10?new T.Quaternion():t.normalize();}
@@ -156,8 +176,9 @@
   setSkin('#c68e6a');
   return {
    update,setSkin,
+   setWraps(on){wrapsOn=!!on;for(const a of arms)a.wraps.visible=wrapsOn;},
    camera:()=>({yaw:reduced?0:twist,roll:reduced?0:-twist*.35,pitch:reduced?0:-lean,lunge:reduced?0:lunge}),
-   inspect:()=>({visible:rig.visible,model:'makehuman-arm',hands:arms.map(a=>({side:a.side,position:a.pos.toArray().map(v=>+v.toFixed(3)),clench:+a.clench.toFixed(2)}))})
+   inspect:()=>({visible:rig.visible,model:'makehuman-arm',wraps:wrapsOn,hands:arms.map(a=>({side:a.side,position:a.pos.toArray().map(v=>+v.toFixed(3)),clench:+a.clench.toFixed(2)}))})
   };
  }
  root.createFistViewModel=createFistViewModel;

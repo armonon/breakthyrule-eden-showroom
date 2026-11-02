@@ -35,3 +35,20 @@ back through its pose; the victim's client is the authority on its own health.
 
 Until the endpoint exists the client notices the 404, stops sending, and
 fighting other visitors only shows local hit effects.
+
+## Other shared-room upgrades (optional)
+
+These features work today per visitor (saved in the browser). To make them
+shared, the social API would need:
+
+- **Weather lever** (`eden-secrets.js`): store the current stage (`day` /
+  `dusk` / `night`) in the room and return it in `sync`; clients call
+  `garden.nightRoad.setStage()` with it.
+- **Fools' Ladder** (`eden-extras.js`): `POST /api/social/ladder` with
+  `{result, seconds}` after a bout, and a top-10 list in `sync`.
+- **Road distance**: add each visitor's `roadMeters` to a room total for a
+  "the world has walked N km" mile marker.
+- **Unlocks** (`progress.wraps`, hidden garments found): store on the account
+  so they follow the visitor across devices.
+
+The hourly Drop needs nothing: every client derives it from the clock.
