@@ -79,8 +79,9 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
  function say(group,force=false){if(!force&&now()<bubbleUntil-1.2)return;const text=typeof group==='string'&&!LINES[group]?group:pick(LINES[group]);if(text!==bubbleText)bubble.userData.draw(text);bubbleText=text;bubbleUntil=now()+2.1;}
  // ---------- First-person fists ----------
  if(!camera.parent)scene.add(camera);
- const arms=window.createFistViewModel(T,camera,{reduced});
- function setSkin(hex){arms.setSkin(hex);}
+ let arms;
+ try{arms=window.createFistViewModel(T,camera,{reduced});}catch(error){console.warn('First-person arms unavailable',error);arms={update(){},setSkin(){},camera:()=>({yaw:0,roll:0,pitch:0,lunge:0}),inspect:()=>({visible:false})};}
+ function setSkin(character){arms.setSkin(character);}
  // ---------- Player state ----------
  const stats={swings:0,landed:0,missed:0,last:null};
  const player={dodgeUntil:0,landedAt:-9,hp:100,downStart:0,downUntil:0,down:false,ko:false,blocking:false,attack:null,readyAt:0,nextHand:0,combo:0,comboUntil:0,flash:0,shake:0,rollSign:1,fightUntil:0,seq:0,lastHurt:-9};
