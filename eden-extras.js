@@ -107,10 +107,13 @@ window.createEdenExtras=function({T,scene,camera,garden,combat,secrets,collectio
  }
  secrets.register({position:TOLL.clone().setX(TOLL.x+1.2),radius:2.6,height:1.4,enabled:()=>!progress.toll,label:'ANSWER THE FOOL\'S TOLL',action:askRiddle});
  // ---------- Fight Night ----------
+ let sharedLadder=[];
  const bellAt=new T.Vector3(theater.x+5.6,0,theater.z+4.4);
  const bellPost=new T.Mesh(new T.CylinderGeometry(.06,.08,1.6,10),iron);bellPost.position.set(bellAt.x,.8,bellAt.z);scene.add(bellPost);
  const bell=new T.Mesh(new T.CylinderGeometry(.08,.22,.26,20,1,true),new T.MeshStandardMaterial({color:0xd6b14a,metalness:.9,roughness:.25,side:T.DoubleSide}));bell.position.set(bellAt.x,1.72,bellAt.z);scene.add(bell);
- const board=textPlane(1.2,.8,(c,w,h)=>{const r=progress.ring;c.fillStyle='#1e1a2b';c.fillRect(0,0,w,h);c.fillStyle='#f3d27a';c.textAlign='center';c.font='700 46px Georgia';c.fillText('FOOLS\' LADDER',w/2,64);c.font='30px Georgia';c.fillStyle='#efe7ff';c.fillText('Wins '+r.wins+'   ·   Losses '+r.losses,w/2,130);c.fillText(r.best?'Fastest K.O. '+r.best.toFixed(1)+'s':'No K.O. yet',w/2,180);c.font='italic 24px Georgia';c.fillStyle='#bcb2d6';c.fillText('Ring the bell to fight the Trickster',w/2,240);c.fillText('(your record, on this device)',w/2,280);},480);
+ const board=textPlane(1.2,.8,(c,w,h)=>{const r=progress.ring;c.fillStyle='#1e1a2b';c.fillRect(0,0,w,h);c.fillStyle='#f3d27a';c.textAlign='center';c.font='700 46px Georgia';c.fillText('FOOLS\' LADDER',w/2,64);
+  if(sharedLadder.length){c.font='26px Georgia';c.fillStyle='#efe7ff';sharedLadder.slice(0,4).forEach((e,i)=>c.fillText((i+1)+'. '+e.name+' · '+e.wins+'W'+(e.best?' · '+e.best.toFixed(1)+'s':''),w/2,112+i*36,w-30));c.font='italic 22px Georgia';c.fillStyle='#bcb2d6';c.fillText('You: '+r.wins+'W '+r.losses+'L'+(r.best?' · best '+r.best.toFixed(1)+'s':''),w/2,282);return;}
+  c.font='30px Georgia';c.fillStyle='#efe7ff';c.fillText('Wins '+r.wins+'   ·   Losses '+r.losses,w/2,130);c.fillText(r.best?'Fastest K.O. '+r.best.toFixed(1)+'s':'No K.O. yet',w/2,180);c.font='italic 24px Georgia';c.fillStyle='#bcb2d6';c.fillText('Ring the bell to fight the Trickster',w/2,240);c.fillText(secrets.online?'(the room\'s ladder appears after a bout)':'(your record, on this device)',w/2,280);},480);
  board.position.set(bellAt.x+.9,1.25,bellAt.z);board.rotation.y=-Math.PI/4;scene.add(board);
  const boardPost=new T.Mesh(new T.BoxGeometry(.08,1.2,.08),iron);boardPost.position.set(bellAt.x+.9,.6,bellAt.z-.05);scene.add(boardPost);
  const banner=document.createElement('div');banner.id='eden-bout';banner.hidden=true;world.append(banner);
@@ -125,6 +128,8 @@ window.createEdenExtras=function({T,scene,camera,garden,combat,secrets,collectio
   if(!bout)return;const seconds=now()-bout.start,r=progress.ring;bout=null;combat.endBout();ambience?.setCrowd?.(0);
   if(result==='win'){r.wins++;r.best=r.best?Math.min(r.best,seconds):seconds;}else r.losses++;
   r.history=[{result,seconds:+seconds.toFixed(1),at:Date.now()},...(r.history||[])].slice(0,10);secrets.changed();board.userData.redraw();
+  // Signed in to the Eden server: the bout goes on the room's ladder (server/world.mjs).
+  if(secrets.online)secrets.call('ladder',{result,seconds:+seconds.toFixed(1)}).then(d=>{sharedLadder=d.ladder||[];board.userData.redraw();}).catch(()=>{});
   banner.textContent=result==='win'?'YOU WIN · K.O. IN '+seconds.toFixed(1)+'s':result==='decision'?'DECISION · THE JUDGES SCORE IT YOURS':'THE FOOL WINS';banner.className='show '+result;
   setTimeout(()=>{banner.hidden=true;banner.className='';},4000);
   if(result!=='loss'&&!progress.wraps){progress.wraps=true;secrets.changed();combat.setWraps(true);setTimeout(()=>secrets.notify('Unlocked: the Fool\'s Wraps. Your hands are taped in violet.','found'),1500);}
@@ -133,6 +138,8 @@ window.createEdenExtras=function({T,scene,camera,garden,combat,secrets,collectio
  combat?.on('jesterKO',()=>{if(bout)endBout('win');});
  combat?.on('playerKO',()=>{if(bout)endBout('loss');});
  if(progress.wraps)combat?.setWraps(true);
+ secrets.onChange(p=>{if(p.wraps)combat?.setWraps(true);});
+ secrets.onWorld(data=>{if(Array.isArray(data.ladder)){sharedLadder=data.ladder;board.userData.redraw();}});
  secrets.register({position:bellAt,radius:2.6,height:1.9,enabled:()=>!bout,label:'RING THE BELL · FIGHT NIGHT',action:ringBell});
  bell.userData.onPick=()=>{const p=getPlayer();if(p&&Math.hypot(p.position.x-bellAt.x,p.position.z-bellAt.z)<4)ringBell();};addPickable(bell);
  const ROUND=120;

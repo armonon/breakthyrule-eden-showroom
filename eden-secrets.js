@@ -3,7 +3,7 @@
 // backstage sits behind the north wall (with a weather lever), the Gilded Sentinel guards the door
 // until you have proven you see through it, and the Azure Oracle reads your progress back as fortune.
 // Progress is kept per visitor (localStorage); interactables share one on-screen prompt and the E key.
-window.createEdenSecrets=function({T,scene,camera,renderer,garden,combat,reduced=false,stage,getPlayer,requestDraw=()=>{},canAct=()=>true,addPickable=()=>{}}){
+window.createEdenSecrets=function({T,scene,camera,renderer,garden,combat,reduced=false,stage,getPlayer,requestDraw=()=>{},canAct=()=>true,addPickable=()=>{},shared=null}){
  const now=()=>performance.now()/1000,rand=(a,b)=>a+Math.random()*(b-a),pick=list=>list[Math.floor(Math.random()*list.length)];
  const sky=garden.skybox,door=sky.door,world=stage.closest('#world')||stage.parentElement;
  // ---------- Progress ----------
@@ -11,7 +11,26 @@ window.createEdenSecrets=function({T,scene,camera,renderer,garden,combat,reduced
  const progress=(()=>{let data={};try{data=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch{}
   data.glitches??=[];data.found??=[];data.ring??={wins:0,losses:0,best:null,history:[]};return data;})();
  function save(){try{localStorage.setItem(KEY,JSON.stringify(progress));}catch{}}
- const changeListeners=[];function changed(){save();for(const fn of changeListeners)fn(progress);}
+ // On the Eden server (server/world.mjs) progress also follows the account, and only ever grows.
+ const api=window.showroomDeployment?.socialApi,online=!!api&&window.showroomDeployment?.mode!=='preview';
+ async function call(action,body){
+  const response=await fetch(api+action,{method:body?'POST':'GET',credentials:'same-origin',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});
+  const data=await response.json().catch(()=>({}));if(!response.ok)throw Object.assign(new Error(data.error||'Request failed'),{status:response.status});return data;
+ }
+ const SYNCED=['jesterBeaten','doorOpened','lever','toll','wraps'];
+ const changeListeners=[];
+ function adopt(remote){
+  if(!remote||typeof remote!=='object')return;let grew=false;
+  for(const key of ['glitches','found'])for(const v of remote[key]||[])if(!progress[key].includes(v)){progress[key].push(v);grew=true;}
+  for(const key of SYNCED)if(remote[key]&&!progress[key]){progress[key]=true;grew=true;}
+  if((remote.roadMeters||0)>(progress.roadMeters||0)){progress.roadMeters=remote.roadMeters;grew=true;}
+  if(grew){save();for(const fn of changeListeners)fn(progress);}
+ }
+ let pushTimer=0,signedIn=false;
+ function push(){if(!online||!signedIn)return;clearTimeout(pushTimer);pushTimer=setTimeout(()=>{const {glitches,found,roadMeters}=progress;call('progress',{progress:{glitches,found,roadMeters,...Object.fromEntries(SYNCED.map(k=>[k,!!progress[k]]))}}).then(d=>adopt(d.progress)).catch(error=>{if(error.status===401)signedIn=false;});},1500);}
+ function checkAccount(){if(online)call('me').then(d=>{signedIn=!!d.user;if(d.user?.progress)adopt(d.user.progress);push();}).catch(()=>{});}
+ checkAccount();setInterval(checkAccount,60000);
+ function changed(){save();for(const fn of changeListeners)fn(progress);push();}
  const worthy=()=>progress.glitches.length>=3||progress.jesterBeaten||progress.doorOpened;
  // ---------- Toasts ----------
  const toast=document.createElement('div');toast.id='eden-toast';toast.setAttribute('role','status');world.append(toast);
@@ -130,9 +149,18 @@ window.createEdenSecrets=function({T,scene,camera,renderer,garden,combat,reduced
  back.traverse(n=>{if(n.isMesh){n.castShadow=false;n.receiveShadow=true;}});
  const STAGES=[{value:0,name:'DAY',text:'The crew\'s sun comes back on.'},{value:.5,name:'DUSK',text:'The stage lights dim to dusk.'},{value:1,name:'NIGHT',text:'Someone cut the sun. Night falls on the set.'}];
  let stageIndex=0,leverAnim=0;
+ function setWeather(index){stageIndex=index;const s=STAGES[index];if(!garden.nightRoad)void garden.pyramid;garden.nightRoad?.setStage(s.value);leverAnim=now();sfx.lever();lamps.forEach((l,i)=>{l.material.emissiveIntensity=i===index?2.4:.15;});requestDraw();}
+ const worldListeners=[];
+ shared?.onLive?.(data=>{
+  if(data.t!=='world')return;
+  const index=STAGES.findIndex(s=>s.value===data.weather?.stage);
+  if(index>=0&&index!==stageIndex){setWeather(index);if(data.weather.by)notify(data.weather.by+' pulled the weather lever: '+STAGES[index].name+'.','mystery');}
+  for(const fn of worldListeners)fn(data);
+ });
  function pullLever(){
-  stageIndex=(stageIndex+1)%STAGES.length;const s=STAGES[stageIndex];if(!garden.nightRoad)void garden.pyramid;garden.nightRoad?.setStage(s.value);leverAnim=now();sfx.lever();
-  lamps.forEach((l,i)=>{l.material.emissiveIntensity=i===stageIndex?2.4:.15;});notify(s.text,'mystery');
+  setWeather((stageIndex+1)%STAGES.length);notify(STAGES[stageIndex].text,'mystery');
+  // In the shared room everyone's sky follows the lever (server/world.mjs).
+  if(shared?.live?.()&&shared.canFight?.())shared.send({t:'weather',stage:STAGES[stageIndex].value});
   if(!progress.lever){progress.lever=true;changed();}
  }
  register({position:new T.Vector3(7.2,0,-24.6),radius:2.4,height:1.3,label:()=>'PULL THE WEATHER LEVER · '+STAGES[(stageIndex+1)%3].name,action:pullLever});
@@ -212,11 +240,12 @@ window.createEdenSecrets=function({T,scene,camera,renderer,garden,combat,reduced
  }
  return {
   update,interact,register,notify,tryDoor,progress,changed,onChange(fn){changeListeners.push(fn);},worthy,
+  onWorld(fn){worldListeners.push(fn);},call,get online(){return online&&signedIn;},
   blocks(p){
    if(Math.hypot(p.x-sentinelAt.x,p.z-sentinelAt.z)<.8||Math.hypot(p.x-oracleAt.x,p.z-oracleAt.z)<.75)return true;
    const b=booth.position;if(Math.abs(p.x-b.x)<1.6&&Math.abs(p.z-b.z)<1.4)return true;
    return false;
   },
-  inspect:()=>({progress:JSON.parse(JSON.stringify(progress)),worthy:worthy(),stage:STAGES[stageIndex].name,bird:flight?.phase||null,statues:{sentinel:!!sentinel,oracle:!!oracle},interactables:interactables.length})
+  inspect:()=>({progress:JSON.parse(JSON.stringify(progress)),worthy:worthy(),stage:STAGES[stageIndex].name,online:online&&signedIn,bird:flight?.phase||null,statues:{sentinel:!!sentinel,oracle:!!oracle},interactables:interactables.length})
  };
 };

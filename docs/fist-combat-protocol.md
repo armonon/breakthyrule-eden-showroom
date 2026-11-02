@@ -1,54 +1,30 @@
-# Fist combat: shared-room protocol
+# Online fist fights and shared garden state
 
-Fighting the Violet Trickster runs entirely in the browser. Player-vs-player
-fights need two small additions to the social API (`/api/social/*`, which
-lives outside this repository).
+## Fist fights between visitors: `server/brawl.mjs` (the one protocol)
 
-## 1. Pass `pose.combat` through `sync`
+Visitor-vs-visitor punching is decided on the server. The client only says it threw a punch
+(`{t:'punch'}` on the live socket, sent by `player-body.js`); `server/brawl.mjs` picks the nearest
+signed-in character within reach in front of the puncher, and the third punch on the same person
+within 1.3 s knocks them down. Everyone in the zone receives `{t:'brawl', events}` and plays it.
 
-Each client already posts `{pose:{x,z,yaw}}`. It now also sends:
+The jester fights in `fist-combat.js` are single-player (PvE) and run in the browser; they do not
+use the shared room. The older client-decided protocol that used to be described here was never
+wired up and has been dropped.
 
-```json
-"combat": {"hp": 84, "down": false, "ko": false, "block": false,
-           "punch": {"seq": 12, "hand": 1, "kind": "cross"}}
-```
+## Shared garden state: `server/world.mjs`
 
-Echo it back on that person's entry in `people[]` as `combat`. Other clients
-use it to ragdoll knocked-down visitors and animate their punches.
+| What | How |
+| --- | --- |
+| **Weather lever** | Live message `{t:'weather', stage}` with `stage` 0 (day), 0.5 (dusk) or 1 (night). Needs a signed-in visitor with a character; 4 pulls per 30 s. Every live client receives `{t:'world', weather:{stage,by,at}, ladder}` (also sent on connect). |
+| **Fools' Ladder** | `POST /api/social/ladder {result:'win'\|'loss'\|'decision', seconds}` after a Fight Night bout. Needs a character; one bout per 20 s; seconds 3–130. Returns `{record, ladder}` and broadcasts the top 10 (wins, then fastest knockout). |
+| **Progress** | `POST /api/social/progress {progress}` merges glitches seen, garments found, `jesterBeaten`, `doorOpened`, `lever`, `toll`, `wraps` and `roadMeters` into the account. Progress only grows; it comes back on `me` as `user.progress`. |
+| **Current state** | `GET /api/social/world` |
 
-## 2. `POST /api/social/combat`
+Clients keep everything in `localStorage` too, so the public preview (no server) still works; on the
+Eden server the browser merges the account's progress in at load and pushes changes as they happen.
 
-Body: `{target, kind: "jab"|"cross"|"power", damage, direction:[x,z], nonce, connectionId}`.
+Ladder results are reported by the browser after a fight with the jester, so treat the ladder as a
+friendly scoreboard rather than anti-cheat proof.
 
-The server should check the sender is signed in with a character, the target
-is in the room and within ~2.5 m of the sender's last pose, clamp `damage` to
-25, rate-limit (about 4 per second), and then queue an event:
-
-```json
-{"id": "evt_…", "from": "<senderId>", "target": "<targetId>", "kind": "cross",
- "damage": 12, "direction": [0.6, -0.8], "time": 1730500000}
-```
-
-Return recent events (last ~5 s) as `combat: [...]` in every `sync` response.
-The target's client applies the damage to itself and reports `down`/`ko`
-back through its pose; the victim's client is the authority on its own health.
-
-Until the endpoint exists the client notices the 404, stops sending, and
-fighting other visitors only shows local hit effects.
-
-## Other shared-room upgrades (optional)
-
-These features work today per visitor (saved in the browser). To make them
-shared, the social API would need:
-
-- **Weather lever** (`eden-secrets.js`): store the current stage (`day` /
-  `dusk` / `night`) in the room and return it in `sync`; clients call
-  `garden.nightRoad.setStage()` with it.
-- **Fools' Ladder** (`eden-extras.js`): `POST /api/social/ladder` with
-  `{result, seconds}` after a bout, and a top-10 list in `sync`.
-- **Road distance**: add each visitor's `roadMeters` to a room total for a
-  "the world has walked N km" mile marker.
-- **Unlocks** (`progress.wraps`, hidden garments found): store on the account
-  so they follow the visitor across devices.
-
-The hourly Drop needs nothing: every client derives it from the clock.
+Tests: `node --test server/world.test.mjs` (unit tests plus an end-to-end run against a real server
+with two accounts and live sockets).
