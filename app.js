@@ -318,9 +318,9 @@ let roadCaption='';
 const savedCameraPosition=new T.Vector3(),savedCameraQuaternion=new T.Quaternion();
 function withHitEffects(render){
  const fx=fists?.cameraEffect();
- if(!fx||(!fx.drop&&!fx.roll&&!fx.pitch&&!fx.offset.lengthSq())){render();return;}
+ if(!fx||(!fx.drop&&!fx.roll&&!fx.pitch&&!fx.yaw&&!fx.offset.lengthSq())){render();return;}
  savedCameraPosition.copy(camera.position);savedCameraQuaternion.copy(camera.quaternion);
- camera.position.add(fx.offset);camera.position.y-=fx.drop;camera.rotateZ(fx.roll);camera.rotateX(fx.pitch);camera.updateMatrixWorld(true);
+ camera.position.add(fx.offset);camera.position.y-=fx.drop;camera.rotateY(fx.yaw||0);camera.rotateZ(fx.roll);camera.rotateX(fx.pitch);camera.updateMatrixWorld(true);
  render();camera.position.copy(savedCameraPosition);camera.quaternion.copy(savedCameraQuaternion);camera.updateMatrixWorld(true);
 }
 // The hidden door in the sky box behind the "where is god ?" sign (eden-skybox.js).
