@@ -59,9 +59,9 @@ window.createEdenExtras=function({T,scene,camera,garden,combat,secrets,collectio
   if(s.live){
    const fall=Math.min(1,s.age/6),ease=1-(1-fall)**3;crate.position.set(DROP_AT.x,30*(1-ease),DROP_AT.z);crate.rotation.y=reduced?0:t*.3;
    beam.material.opacity=.22*(fall<1?1:Math.max(.25,1-(s.age-6)/30));
-   chip.hidden=false;chip.textContent='THE DROP · LIVE · '+collection[s.featured].name.toUpperCase();
+   chip.hidden=expeditionActive();chip.textContent='THE DROP · LIVE · '+collection[s.featured].name.toUpperCase();
    if(!dropAnnounced){dropAnnounced=true;secrets.notify('THE DROP is falling into the garden: '+collection[s.featured].name,'found');}
-  }else{dropAnnounced=false;chip.hidden=s.untilNext>600;chip.textContent='NEXT DROP · '+format(s.untilNext);}
+  }else{dropAnnounced=false;chip.hidden=s.untilNext>600||expeditionActive();chip.textContent='NEXT DROP · '+format(s.untilNext);}
   return s.live&&s.age<7;
  }
  // ---------- Mile marker ----------
