@@ -2,7 +2,7 @@
 #fight-hud[hidden],#fight-ko[hidden],.fight-bar[hidden]{display:none}
 .fight-bar{display:flex;align-items:center;gap:8px;flex:1 1 220px;max-width:290px}
 .fight-bar span{white-space:nowrap;font-weight:600}
-.fight-meter{flex:1;height:9px;border-radius:5px;background:#1d241f99;border:1px solid #ffffffb0;overflow:hidden}
+.fight-meter{position:relative;flex:1;height:9px;border-radius:5px;background:#1d241f99;border:1px solid #ffffffb0;overflow:hidden}
 .fight-meter i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#7fd36b,#c3ec6c);transition:width .18s ease-out}
 .fight-foe .fight-meter i{background:linear-gradient(90deg,#b05cf0,#ef6bc4)}
 .fight-you.low .fight-meter i{background:linear-gradient(90deg,#e8483f,#f29a48)}
@@ -31,3 +31,4 @@ body:has(dialog[open]) #fight-pad{display:none}
 #sky-door-prompt:hover{background:#3a2f4d}
 #sky-door-prompt[hidden]{display:none}
 @media(prefers-reduced-motion:reduce){#fight-pop.show,#fight-ko strong,.fight-stars{animation:none}#fight-pop.show{opacity:1;transform:translate(-50%,-50%)}}
+.fight-stamina{position:absolute;left:0;bottom:0;height:2px;width:100%;background:#fff6c4;transition:width .1s linear}

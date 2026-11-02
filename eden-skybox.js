@@ -9,14 +9,15 @@ window.createEdenSkybox=function(T,scene,{sky,roadX,reduced=false,bounds={minX:-
  const uniforms={
   roadNight:sky.material.uniforms.roadNight,time:{value:0},
   doorRect:{value:new T.Vector4(door.x-door.width/2,0,door.x+door.width/2,door.height)},
-  doorZ:{value:door.z},doorGlow:{value:0}
+  doorZ:{value:door.z},doorGlow:{value:0},
+  glitch:{value:0},flicker:{value:0},flash:{value:0},flashAt:{value:new T.Vector3()}
  };
  const vertexShader='varying vec3 vWorld;void main(){vec4 p=modelMatrix*vec4(position,1.);vWorld=p.xyz;gl_Position=projectionMatrix*viewMatrix*p;}';
- const fragmentShader=`varying vec3 vWorld;uniform float roadNight,time,doorZ,doorGlow;uniform vec4 doorRect;
+ const fragmentShader=`varying vec3 vWorld;uniform float roadNight,time,doorZ,doorGlow,glitch,flicker,flash;uniform vec3 flashAt;uniform vec4 doorRect;
  float hash(float n){return fract(sin(n)*43758.5453);}
  float noise(float x){float i=floor(x),f=fract(x);f=f*f*(3.-2.*f);return mix(hash(i),hash(i+1.),f);}
  vec3 skyColor(vec3 d){float h=max(d.y,0.);vec3 c=mix(vec3(.87,.91,.79),vec3(.24,.58,.79),pow(h,.55));
-  vec3 sun=normalize(vec3(-.38,.32,-.8));float s=max(dot(d,sun),0.);c+=vec3(1.,.72,.34)*pow(s,45.)*.36;c+=vec3(1.,.92,.7)*smoothstep(.9993,.9998,s)*2.;
+  vec3 sun=normalize(vec3(-.38+glitch*.09*sign(sin(time*37.)),.32+glitch*.05*sign(sin(time*23.)),-.8));float s=max(dot(d,sun),0.);c+=vec3(1.,.72,.34)*pow(s,45.)*.36;c+=vec3(1.,.92,.7)*smoothstep(.9993,.9998,s)*2.;
   vec3 night=mix(vec3(.075,.11,.095),vec3(.009,.019,.023),pow(h,.45));float moon=max(dot(d,normalize(vec3(-.38,.62,-.64))),0.);night+=vec3(.72,.83,.71)*smoothstep(.99965,.9999,moon)*1.4;return mix(c,night,roadNight);}
  void main(){
   float u=vWorld.x+vWorld.z,y=vWorld.y,dist=distance(cameraPosition,vWorld);
@@ -31,7 +32,7 @@ window.createEdenSkybox=function(T,scene,{sky,roadX,reduced=false,bounds={minX:-
    float crowns=.012+.016*(.5+.5*sin(5.*az+2.)*sin(11.*az))+.01*abs(sin(47.*az+2.*sin(17.*az)))+.004*sin(131.*az);
    if(e<crowns)col=mix(col,forest,.78-.3*max(e,0.)/crowns);
    if(e<0.)col=mix(col,meadow,smoothstep(0.,-.06,e));
-   float near=1.-smoothstep(3.5,10.5,dist);
+   float near=max(1.-smoothstep(3.5,10.5,dist),flicker*.85);
    vec2 g=abs(fract(vec2(u,y)/3.)-.5);float seam=smoothstep(.484,.497,max(g.x,g.y));
    col=mix(col,col*.74,seam*near);col+=vec3(.55,.8,1.)*seam*near*(.16+.1*sin(time*2.+y*.7+u*.3));
    col+=vec3(.6,.78,1.)*near*.05*smoothstep(.96,1.,sin(y*11.-time*2.6));
@@ -41,6 +42,9 @@ window.createEdenSkybox=function(T,scene,{sky,roadX,reduced=false,bounds={minX:-
    float frame=inside*onDoor*(1.-smoothstep(.018,.05,min(dd.x,dd.y)));
    float doorNear=1.-smoothstep(2.5,8.,dist);
    col=mix(col,vec3(1.,.93,.7),frame*clamp(doorNear*.6+doorGlow,0.,.8));
+   // Glitches: the painted sky tears in horizontal bands, and impacts light up the panels.
+   float row=floor(y*1.6+time*24.);float tear=step(.93,fract(sin(row*91.7)*43758.5))*glitch;
+   col=mix(col,col.brg*1.15,tear);col+=vec3(.6,.85,1.)*flash*exp(-distance(vWorld,flashAt)*.9);
    gl_FragColor=vec4(col,1.);
   }else{
    // The outside is plain scaffold panelling, like the back of a stage set.
@@ -80,7 +84,7 @@ window.createEdenSkybox=function(T,scene,{sky,roadX,reduced=false,bounds={minX:-
  // Warm light spills through the gap when the door opens.
  const spill=new T.PointLight(0xffd9a0,0,9,1.6);spill.position.set(door.x,2.2,door.z-.8);root.add(spill);
  root.traverse(n=>{if(n.isMesh){n.castShadow=false;n.frustumCulled=n.material!==material;}});
- let open=0,target=0,found=false,lastNear=0;
+ let open=0,target=0,found=false,lastNear=0;const glitches=[];
  const marker=new T.Vector3(door.x,1.75,door.z+.35);
  function passable(){return open>.72;}
  return {
@@ -99,6 +103,11 @@ window.createEdenSkybox=function(T,scene,{sky,roadX,reduced=false,bounds={minX:-
    return !(passable()&&Math.abs(next.x-door.x)<halfGap);
   },
   update(time,viewer,dt=.016){
+   const clock=performance.now()/1000;let g=0,f=0,fl=0;
+   for(let i=glitches.length-1;i>=0;i--){const e=glitches[i],age=clock-e.start,life=e.kind==='flash'?.8:e.kind==='seams'?1.6:1.1;if(age>life){glitches.splice(i,1);continue;}
+    const k=e.strength*(1-age/life)*(age<.05?age/.05:1);
+    if(e.kind==='sun')g=Math.max(g,k*(Math.sin(age*60)>0?1:.3));if(e.kind==='seams')f=Math.max(f,k*(Math.sin(age*31)>-.2?1:0));if(e.kind==='flash'){fl=Math.max(fl,k);uniforms.flashAt.value.copy(e.at);}}
+   uniforms.glitch.value=g;uniforms.flicker.value=f;uniforms.flash.value=fl;
    uniforms.time.value=reduced?0:time;
    const step=reduced?1:Math.min(1,dt*1.4);open+=Math.sign(target-open)*Math.min(Math.abs(target-open),step);
    const eased=open*open*(3-2*open);hinge.rotation.y=eased*1.72;spill.intensity=eased*6;
@@ -107,8 +116,10 @@ window.createEdenSkybox=function(T,scene,{sky,roadX,reduced=false,bounds={minX:-
    uniforms.doorGlow.value=found?.25:0;
    // Close quietly once everyone has wandered away again.
    if(target&&near>26&&viewer.position.z>door.z){if(!lastNear)lastNear=time;else if(time-lastNear>6)target=0;}else lastNear=0;
-   return Math.abs(target-open)>.001;
+   return Math.abs(target-open)>.001||glitches.length>0;
   },
-  inspect:()=>({bounds:{...bounds},door:{...door},open:+open.toFixed(3),target,found})
+  // Brief faults in the painted sky, driven by eden-secrets.js.
+  glitch(kind,{at,strength=1}={}){if(reduced)return;glitches.push({kind,start:performance.now()/1000,strength,at:at?.clone()});},
+  inspect:()=>({bounds:{...bounds},door:{...door},open:+open.toFixed(3),target,found,glitches:glitches.length})
  };
 };
