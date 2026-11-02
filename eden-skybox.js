@@ -50,7 +50,9 @@ window.createEdenSkybox=function(T,scene,{sky,roadX,reduced=false,bounds={minX:-
    gl_FragColor=vec4(col,1.);
   }
  }`;
- const material=new T.ShaderMaterial({uniforms,vertexShader,fragmentShader,side:T.DoubleSide});
+ // Front faces only: the walls face into the garden, so from beyond Eden (the brick road, the battle) the box is
+ // invisible instead of showing its back as grey scaffold panelling.
+ const material=new T.ShaderMaterial({uniforms,vertexShader,fragmentShader,side:T.FrontSide});
  function wall(width,x,z,rotation,y=height/2,h=height){
   const mesh=new T.Mesh(new T.PlaneGeometry(width,h),material);mesh.position.set(x,y,z);mesh.rotation.y=rotation;mesh.name='Sky box wall';root.add(mesh);return mesh;
  }

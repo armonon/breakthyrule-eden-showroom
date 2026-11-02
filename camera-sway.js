@@ -5,12 +5,16 @@
 (function(root){
  function createCameraSway(T,{reduced=false}={}){
   const offset=new T.Vector3(),applied=new T.Vector3(),right=new T.Vector3(),forward=new T.Vector3(),up=new T.Vector3(0,1,0),look=new T.Vector3();
-  let phase=0,intensity=0,roll=0,clock=0,landing=0,landingVelocity=0,wasAirborne=false,lastYaw=null,turn=0;
+  let phase=0,intensity=0,roll=0,clock=0,landing=0,landingVelocity=0,wasAirborne=false,lastYaw=null,turn=0,shake=0,rollKick=0,rollKickV=0;
   return {
    // Undo last frame's offset, unless something else has since placed the camera (a view change or teleport).
    remove(camera){if(camera.position.equals(applied))camera.position.sub(offset);offset.set(0,0,0);},
    // crouch: metres the eye is lowered (crouching, sliding). Returns true on the frame a footstep lands.
-   apply(camera,aim,dt,{velocity,airborne=false,walkSpeed=3.4,crouch=0}={}){
+   // A jolt (running or sliding into a wall, a heavy landing): drops and rolls the view and shakes it briefly.
+   // strength ~0..1.5; side -1 left .. 1 right.
+   bump(strength=1,side=0){landingVelocity-=.55*strength;rollKickV+=side*1.4*strength;shake=Math.min(1,shake+.55*strength);},
+   // lean: radians the view rolls into a slide.
+   apply(camera,aim,dt,{velocity,airborne=false,walkSpeed=3.4,crouch=0,lean=0}={}){
     if(reduced||!(dt>0)){offset.set(0,-crouch,0);camera.position.add(offset);applied.copy(camera.position);camera.lookAt(look.copy(aim).add(offset));return false;}
     clock+=dt;
     forward.subVectors(aim,camera.position);forward.y=0;forward.normalize();right.crossVectors(forward,up);
@@ -30,10 +34,12 @@
     const bob=(Math.abs(Math.sin(phase))-.64)*.045*intensity; // centred on the mean of |sin| so eye height is unchanged
     const sway=Math.sin(phase)*.024*intensity+Math.sin(clock*.7)*.004*rest;
     const breath=Math.sin(clock*1.55)*.006*rest;
-    roll+=((-Math.sin(phase)*.007*intensity)-strafe*.014-turn-roll)*(1-Math.exp(-8*dt));
-    offset.copy(right).multiplyScalar(sway).addScaledVector(up,bob+breath+landing-crouch);
+    roll+=((-Math.sin(phase)*.007*intensity)-strafe*.014-turn+lean-roll)*(1-Math.exp(-8*dt));
+    rollKickV+=(-rollKick*160-rollKickV*14)*dt;rollKick+=rollKickV*dt;
+    shake=Math.max(0,shake-dt*3.2);const jitter=shake*shake*.035;
+    offset.copy(right).multiplyScalar(sway+(Math.random()-.5)*jitter).addScaledVector(up,bob+breath+landing-crouch+(Math.random()-.5)*jitter);
     camera.position.add(offset);applied.copy(camera.position);
-    camera.lookAt(look.copy(aim).add(offset));camera.rotateZ(roll);
+    camera.lookAt(look.copy(aim).add(offset));camera.rotateZ(roll+rollKick*.06);
     return footstep;
    },
    inspect:()=>({intensity:+intensity.toFixed(3),roll:+roll.toFixed(4),offset:offset.toArray().map(v=>+v.toFixed(4)),landing:+landing.toFixed(4)})

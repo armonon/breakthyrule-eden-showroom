@@ -292,7 +292,7 @@ $('movement-hint').textContent=finePointer?'W A S D TO MOVE / CLICK TO LOOK · C
 function requestDraw(){if(!frame&&!document.hidden)frame=requestAnimationFrame(draw);}
 // Hit-stop: on a solid hit the picture holds for a few hundredths of a second, which is what sells the impact.
 let hitStopUntil=0;function hitStop(ms){if(!reduced)hitStopUntil=Math.max(hitStopUntil,performance.now()+ms);}
-function draw(time){frame=0;if(!state.ready)return;if(time<hitStopUntil){previous=time;frame=requestAnimationFrame(draw);return;}if(lookLocked&&modalOpen())document.exitPointerLock?.();quality.frame(time,!!previous);const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(modalOpen())walkVelocity.set(0,0,0);else if(keys.size||walkVelocity.lengthSq()||slide)move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();sway.remove(camera);battle?.update(time/1000,dt||.016);combat?.update(time/1000,dt||.016);const follow=reduced||combat?.armed()||state.view==='free',factor=follow?1:1-Math.exp(-7*(dt||.016));if(camera.position.distanceToSquared(targetPosition)>4e4){camera.position.copy(targetPosition);aim.copy(targetAim);}if(follow){const y=camera.position.y;camera.position.copy(targetPosition);aim.copy(targetAim);if(Math.abs(targetPosition.y-y)<.6&&!motion.inspect().airborne)camera.position.y=y+(targetPosition.y-y)*(1-Math.exp(-28*(dt||.016)));}else{camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);}const leap=pockets?.cross(camera.position);if(leap){camera.position.add(leap);aim.add(leap);targetPosition.add(leap);targetAim.add(leap);}const feel=updateFeel(dt||.016);if(sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false),crouch:feel.drop})&&!slide)footsteps?.step(surfaceAt(targetPosition),feel.speed*(crouchAmount>.5?.5:1));playerBody?.update(dt||.016,{aim,velocity:walkVelocity,airborne:motion.inspect().airborne,crouch:feel.drop,fovKick:feel.fov});if(!pockets?.inside(camera.position))garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();const fighting=arena?.update(time/1000,dt||.016);pockets?.render();const brawling=fists?.update(time/1000,dt||.016);if(fists&&time-lastSkinCheck>2000){lastSkinCheck=time;const tone=multiplayer?.inspect().character?.skinTone;if(tone)fists.setSkin(tone);}withHitEffects(()=>post.render());combat?.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();updateDoorPrompt();if(brawling||garden.animating||combat?.busy()||motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||fighting||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
+function draw(time){frame=0;if(!state.ready)return;if(time<hitStopUntil){previous=time;frame=requestAnimationFrame(draw);return;}if(lookLocked&&modalOpen())document.exitPointerLock?.();quality.frame(time,!!previous);const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(modalOpen())walkVelocity.set(0,0,0);else if(keys.size||walkVelocity.lengthSq()||slide)move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();sway.remove(camera);battle?.update(time/1000,dt||.016);combat?.update(time/1000,dt||.016);const follow=reduced||combat?.armed()||state.view==='free',factor=follow?1:1-Math.exp(-7*(dt||.016));if(camera.position.distanceToSquared(targetPosition)>4e4){camera.position.copy(targetPosition);aim.copy(targetAim);}if(follow){const y=camera.position.y;camera.position.copy(targetPosition);aim.copy(targetAim);if(Math.abs(targetPosition.y-y)<.6&&!motion.inspect().airborne)camera.position.y=y+(targetPosition.y-y)*(1-Math.exp(-28*(dt||.016)));}else{camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);}const leap=pockets?.cross(camera.position);if(leap){camera.position.add(leap);aim.add(leap);targetPosition.add(leap);targetAim.add(leap);}const feel=updateFeel(dt||.016);if(sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false),crouch:feel.drop,lean:feel.lean})&&!slide)footsteps?.step(surfaceAt(targetPosition),feel.speed*(crouchAmount>.5?.5:1));playerBody?.update(dt||.016,{aim,velocity:walkVelocity,airborne:motion.inspect().airborne,crouch:feel.drop,fovKick:feel.fov});if(!pockets?.inside(camera.position))garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();const fighting=arena?.update(time/1000,dt||.016);pockets?.render();const brawling=fists?.update(time/1000,dt||.016);if(fists&&time-lastSkinCheck>2000){lastSkinCheck=time;const tone=multiplayer?.inspect().character?.skinTone;if(tone)fists.setSkin(tone);}withHitEffects(()=>post.render());combat?.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();updateDoorPrompt();if(brawling||garden.animating||combat?.busy()||motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||fighting||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
 let roadCaption='';
 // Fist-fight hits shake, roll and drop the view only for this frame; the walking camera underneath is untouched.
 const savedCameraPosition=new T.Vector3(),savedCameraQuaternion=new T.Quaternion();
@@ -378,12 +378,18 @@ function move(dt){
  if(x||z)prepareWalking();
  // Try the full step, then each axis alone, so walls, props and the pond edge slide the player along.
  const step=walkVelocity.clone().multiplyScalar(dt);
- for(const [candidate,keepX,keepZ] of [[step,1,1],[new T.Vector3(step.x,0,0),1,0],[new T.Vector3(0,0,step.z),0,1]]){
-  if(candidate.lengthSq()<1e-10)continue;const next=tryStep(candidate);if(!next)continue;
-  if(!keepX)walkVelocity.x=0;if(!keepZ)walkVelocity.z=0;
-  const actual=next.clone().sub(targetPosition);targetPosition.copy(next);targetAim.add(actual);return;
- }
- walkVelocity.set(0,0,0);slide=null;
+ const commit=next=>{const actual=next.clone().sub(targetPosition);targetPosition.copy(next);targetAim.add(actual);};
+ const full=step.lengthSq()>1e-10?tryStep(step):null;
+ if(full){commit(full);return;}
+ // Blocked. Find which way the wall faces, react to the hit, bounce off it and keep moving along it: a slide is
+ // redirected along the bounce instead of ending.
+ const byX=Math.abs(step.x)>1e-7?tryStep(new T.Vector3(step.x,0,0)):null,byZ=Math.abs(step.z)>1e-7?tryStep(new T.Vector3(0,0,step.z)):null;
+ const into=new T.Vector3(byX?0:walkVelocity.x,0,byZ?0:walkVelocity.z);wallHit(into);
+ const bounce=slide?.38:into.length()>4?.18:0;
+ if(!byX)walkVelocity.x*=-bounce;if(!byZ)walkVelocity.z*=-bounce;
+ if(slide){if(walkVelocity.lengthSq()>.25){slide.dir.copy(walkVelocity).setY(0).normalize();slide.speed=Math.max(2.4,slide.speed*.62);}else slide=null;}
+ const along=byX&&byZ?(Math.abs(step.x)>Math.abs(step.z)?byX:byZ):byX||byZ;
+ if(along)commit(along);else if(walkVelocity.lengthSq()<.04){walkVelocity.set(0,0,0);slide=null;}
 }
 function tryStep(step){
  if(arena?.active()){const next=targetPosition.clone().add(step);if(!arena.allowed(next))return null;next.y=1.75+motion.inspect().height;return next;}
@@ -444,16 +450,32 @@ function tapDodge(key){
  const forward=targetAim.clone().sub(targetPosition).setY(0).normalize(),side=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0)).multiplyScalar(key==='d'?1:-1);
  prepareWalking();slide={kind:'dash',dur:.26,t:0,dir:side,speed:8};fists?.dodge();footsteps?.step(surfaceAt(targetPosition),7);requestDraw();
 }
+// Running or sliding into something: a jolt through the view (rolled towards the side that hit), a thud, and on a
+// hard hit a short frame hold.
+let lastBump=0,bumpCount=0;
+function wallHit(into){
+ const impact=into.length(),t=performance.now();if(impact<2.4||t-lastBump<300)return;lastBump=t;bumpCount++;
+ const forward=targetAim.clone().sub(targetPosition).setY(0).normalize(),right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));
+ const k=Math.min(1.4,impact/6);sway.bump(k,Math.sign(into.dot(right))||0);footsteps?.land(surfaceAt(targetPosition),Math.min(1,impact/8));
+ fovKick-=4*k;if(impact>5.5)hitStop(40+impact*4);requestDraw();
+}
 function updateFeel(dt){
  const speed=Math.hypot(walkVelocity.x,walkVelocity.z),airborne=motion.inspect().airborne;
  crouchAmount+=(((crouchHeld||slide?.kind==='slide')&&!arena?.active()?1:0)-crouchAmount)*(1-Math.exp(-14*dt));
  const sprinting=keys.has('shift')&&speed>4.5&&crouchAmount<.3;
  fovKick+=((slide?.kind==='slide'?9:slide?4:sprinting?6:0)-fovKick)*(1-Math.exp(-(slide||sprinting?6:4)*dt));
- if(airborne)airTime+=dt;else if(wasAirborne){footsteps?.land(surfaceAt(targetPosition),Math.min(1,airTime/.7));airTime=0;}
+ if(airborne)airTime+=dt;else if(wasAirborne){footsteps?.land(surfaceAt(targetPosition),Math.min(1,airTime/.7));airTime=0;
+  // Land with C held at speed and you go straight into a slide.
+  if(crouchHeld&&!slide&&speed>4.2){slide={kind:'slide',dur:SLIDE_TIME,t:0,dir:walkVelocity.clone().setY(0).normalize(),speed:speed*1.15};footsteps?.slide(surfaceAt(targetPosition),SLIDE_TIME);}}
  wasAirborne=airborne;
- return {drop:crouchAmount*.55+(slide?.kind==='slide'?.12*(1-slide.t/slide.dur):0),fov:fovKick,speed};
+ // The view leans into a slide: towards the side it is heading, and a little regardless.
+ let lean=0;if(slide?.kind==='slide'){const forward=targetAim.clone().sub(targetPosition).setY(0).normalize(),right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));lean=(-slide.dir.dot(right)*.09-.03)*(1-slide.t/slide.dur);}
+ return {drop:crouchAmount*.55+(slide?.kind==='slide'?.12*(1-slide.t/slide.dur):0),fov:fovKick,speed,lean};
 }
-function jump(){if(!state.ready||modalOpen()||expedition&&!expedition.canMove()||fists&&!fists.canMove()||motion.inspect().airborne)return;prepareWalking();motion.jump();requestDraw();}
+function jump(){if(!state.ready||modalOpen()||expedition&&!expedition.canMove()||fists&&!fists.canMove()||motion.inspect().airborne)return;prepareWalking();
+ // Jumping out of a slide carries its speed and a little more.
+ if(slide?.kind==='slide'){walkVelocity.multiplyScalar(1.12);slide=null;}
+ motion.jump();requestDraw();}
 function updateJump(dt){if(!motion.inspect().airborne)return;const before=motion.inspect().height;if(expedition&&!expedition.canMove())motion.reset();else motion.step(dt);shiftHeight(motion.inspect().height-before);}
 function setMovement(key,pressed){
  if(pressed&&(!state.ready||modalOpen()||expedition&&!expedition.canMove()))return;
@@ -570,5 +592,5 @@ const play=window.createPlayMenu?.({nav:document.querySelector('.view-nav'),afte
 window.breakThyRuleShowroom={scene:()=>scene,renderer:()=>renderer,combat:()=>combat,battle:()=>battle,fists:()=>fists,fight:key=>fists?.key(key,true),teleport(x,z,yaw=Math.PI){if(!state.ready)return;freeView();motion.reset();walkVelocity.set(0,0,0);targetPosition.set(x,1.75+groundHeight(groundPoint.set(x,0,z)),z);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,Math.cos(yaw)).multiplyScalar(5));camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();},go,inspect,showSide,focusResident,
  // camera placement for captures and checks: stand at (x,z) looking toward (lx,ly,lz)
  place(x,z,lx,lz,ly=1.75){if(expedition?.active())expedition.leave();motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,ly,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.lookAt(aim);requestDraw();},
-getState:()=>({...state,aim:targetAim.toArray().map(v=>+v.toFixed(3)),feel:{crouch:+crouchAmount.toFixed(2),slide:slide?.kind||null,fovKick:+fovKick.toFixed(1),lookLocked},combat:combat?.inspect(),fists:fists?.inspect(),position:camera.position.toArray(),arena:arena?.inspect(),movement:{...motion.inspect(),velocity:walkVelocity.toArray().map(v=>+v.toFixed(3)),sway:sway.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.nightBuilt()?garden.district.inspect():null,library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),lighting:lighting.inspect(),post:post.inspect(),quality:quality.inspect(),residents:residents.inspect(),body:playerBody?.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
+getState:()=>({...state,aim:targetAim.toArray().map(v=>+v.toFixed(3)),feel:{bumps:bumpCount,crouch:+crouchAmount.toFixed(2),slide:slide?.kind||null,fovKick:+fovKick.toFixed(1),lookLocked},combat:combat?.inspect(),fists:fists?.inspect(),position:camera.position.toArray(),arena:arena?.inspect(),movement:{...motion.inspect(),velocity:walkVelocity.toArray().map(v=>+v.toFixed(3)),sway:sway.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.nightBuilt()?garden.district.inspect():null,library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),lighting:lighting.inspect(),post:post.inspect(),quality:quality.inspect(),residents:residents.inspect(),body:playerBody?.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
 })();
