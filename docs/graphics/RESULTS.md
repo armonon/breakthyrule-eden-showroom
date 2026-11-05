@@ -64,5 +64,7 @@ asset compression). Merged before release. Decisions:
 Measured against the live site in the same script on the same M4 (calls): spawn 319 vs 314, vault 268 vs 265, librarian
 604 vs 688, open match 575 vs 583. Over budget as live already is.
 
-Not re-baked: the light bake predates main's sky box, statues and secrets, so these get probe light but cast no baked
-shadow. Re-run tools/blender/bake_garden_light.py to include them.
+Re-baked after the merge, so main's statues, toll, secrets and hidden garments block light. The sky box and its backstage
+are left out on purpose (`export-static-scene.mjs`): from inside the garden they read as open sky, and as geometry they
+would darken it. Grass and blob shadows are left out too. Settings: 2048 terrain, 192 samples, 128 per probe. Run
+Blender by its full path (`/Applications/Blender.app/Contents/MacOS/Blender`), since it is not on PATH.

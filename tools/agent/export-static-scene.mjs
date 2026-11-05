@@ -2,6 +2,8 @@
 // Dump the live garden's static geometry for baking: world-space triangles grouped by material, with average albedo.
 //   node tools/agent/export-static-scene.mjs --url http://127.0.0.1:8790/ --out DIR
 // Writes DIR/scene.json (buckets) and DIR/scene.bin (Float32 xyz, non-indexed). Characters and animated things are left out.
+// The sky box and its backstage are left out too: from inside the garden they read as open sky, so they must not block it.
+// Grass and fake blob shadows would only darken the ground under them.
 import fs from 'node:fs';
 import path from 'node:path';
 import { openPage, sleep } from './headless-chrome.mjs';
@@ -13,7 +15,7 @@ const names = await page.evaluate(`edenScene.children.map(o=>o.name||o.type)`); 
 const census = await page.evaluate(`(()=>{const rows=[];edenScene.traverse(o=>{if(o.isMesh&&o.visible&&o.geometry?.attributes?.position){const g=o.geometry,t=(g.index?g.index.count:g.attributes.position.count)/3*(o.isInstancedMesh?o.count:1);rows.push([o.name||o.parent?.name||'mesh',Math.round(t),o.isInstancedMesh?o.count:1]);}});rows.sort((a,b)=>b[1]-a[1]);return {meshes:rows.length,total:rows.reduce((s,r)=>s+r[1],0),top:rows.slice(0,8)};})()`);
 console.log('census', JSON.stringify(census));
 await page.evaluate(`(()=>{
- const T=THREE,buckets=new Map(),m=new T.Matrix4(),im=new T.Matrix4(),v=new T.Vector3(),skip=/resident|jester|character|avatar|snake|multiplayer|visitor|player|violet/i;
+ const T=THREE,buckets=new Map(),m=new T.Matrix4(),im=new T.Matrix4(),v=new T.Vector3(),skip=/resident|jester|character|avatar|snake|multiplayer|visitor|player|violet|bird|eden grass|sky box|backstage of the sky/i;
  const canvas=document.createElement('canvas');canvas.width=canvas.height=8;const ctx=canvas.getContext('2d',{willReadFrequently:true});
  function albedo(mat){const c=mat.color?mat.color.clone():new T.Color(.5,.5,.5);const img=mat.map?.image;let a=null;
   if(img&&!mat.map.isCompressedTexture){try{ctx.clearRect(0,0,8,8);ctx.drawImage(img,0,0,8,8);const d=ctx.getImageData(0,0,8,8).data;let r=0,g=0,b=0,n=0;for(let i=0;i<d.length;i+=4){if(d[i+3]<128)continue;r+=d[i];g+=d[i+1];b+=d[i+2];n++;}if(n)a=new T.Color().setRGB(r/n/255,g/n/255,b/n/255,T.SRGBColorSpace);}catch{}}
@@ -23,7 +25,7 @@ await page.evaluate(`(()=>{
   if(o.isMesh&&o.geometry?.attributes?.position){
    const mat=Array.isArray(o.material)?o.material[0]:o.material;const custom=mat.isShaderMaterial;
    const isTerrain=o.geometry.parameters?.width===240;const sky=custom&&mat.side===T.BackSide;
-   if(!sky&&!(mat.transparent&&mat.opacity<.5&&!mat.map)){
+   if(!sky&&!/blob shadow/i.test(mat.name||o.name)&&!(mat.transparent&&mat.opacity<.5&&!mat.map)){
     const key=isTerrain?'terrain':(custom?'water':mat.uuid);
     if(!buckets.has(key))buckets.set(key,{name:isTerrain?'terrain':(custom?'water':(mat.name||o.name||'mesh')),albedo:custom?[.05,.12,.12]:albedo(mat),cutout:!!mat.alphaTest&&mat.alphaTest>0,emissive:mat.emissiveIntensity&&mat.emissive?mat.emissive.toArray().map(x=>x*mat.emissiveIntensity):[0,0,0],chunks:[],n:0});
     const b=buckets.get(key),g=o.geometry,p=g.attributes.position,ix=g.index?.array,tri=ix?ix.length:p.count,count=o.isInstancedMesh?o.count:1,a=new Float32Array(tri*3*count);let w=0;
