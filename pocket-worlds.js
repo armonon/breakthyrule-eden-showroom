@@ -94,7 +94,7 @@ window.createPocketWorlds=function createPocketWorlds(T,scene,renderer,camera){
   real.position.copy(position);real.rotation.y=rotation;far.position.copy(position).add(offset);far.rotation.y=rotation;
   scene.add(real,far);real.updateMatrixWorld();far.updateMatrixWorld();
   const toReal=real.matrixWorld.clone().invert(),toFar=far.matrixWorld.clone().invert(),back=offset.clone().negate();
-  const target=new T.WebGLRenderTarget(1,1,{type:T.HalfFloatType,samples:renderer.capabilities.isWebGL2?4:0});
+  const target=new T.WebGLRenderTarget(1,1,{type:T.HalfFloatType,samples:4});
   target.texture.colorSpace=T.SRGBColorSpace;target.isXRRenderTarget=true; // tone-mapped and encoded exactly like the canvas
   const material=new T.ShaderMaterial({toneMapped:false,fog:false,uniforms:{map:{value:target.texture},resolution:{value:size}},
    vertexShader:'void main(){gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:view});

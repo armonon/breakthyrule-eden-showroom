@@ -1,3 +1,5 @@
 Poly Haven textures (CC0 1.0, no attribution required), downloaded 2026-10-31 from https://polyhaven.com/textures:
 leafy_grass (2k diffuse, 1k normal), monastery_stone_floor (1k diff, arm, nor_gl), bark_brown_02 (1k diff, arm, nor_gl).
 Diffuse maps recompressed with sips for size; normals are OpenGL convention (three.js default).
+Poly Haven (CC0 1.0), graphics plan: forest_leaves_02, grass_path_2, cobblestone_floor_04 (1k).
+Foliage cards (assets/eden-textures/foliage) are composed by tools/pipeline/build-foliage-cards.py from Poly Haven tree_small_02, grass_bermuda_01, grass_medium_01, fern_02 (CC0 1.0).

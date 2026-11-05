@@ -4,7 +4,7 @@
  const scene=new T.Scene();scene.background=new T.Color('#dbe1df');
  scene.add(new T.HemisphereLight(0xffffff,0x88968b,1.8));
  for(const [x,y,z,intensity,color] of [[-3,5,4,2.3,0xfff6e9],[4,2,-3,1.8,0xe3f3ff],[3,1,4,.45,0xffffff]]){const light=new T.DirectionalLight(color,intensity);light.position.set(x,y,z);scene.add(light);}
- const renderer=new T.WebGLRenderer({canvas:$('canvas'),antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1;
+ const renderer=new T.WebGLRenderer({canvas:$('canvas'),antialias:true,preserveDrawingBuffer:true});window.showroomEnableKTX2?.(renderer);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1;
  const camera=new T.PerspectiveCamera(32,1,.01,20);let model,angle=.5,zoom=1,drag=null,spinning=false,generation=0,size=new T.Vector3(.8,.7,.2),frame=0;
  window.shirtStudy={ready:false,error:null};
  const qa=new URLSearchParams(location.search).has('qa');let lastProbe=0;

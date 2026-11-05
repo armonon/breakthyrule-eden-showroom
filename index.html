@@ -15,9 +15,9 @@
  <link rel="stylesheet" href="/tree-snake.css?v=1">
  <link rel="stylesheet" href="/expedition.css?v=1">
  <link rel="stylesheet" href="/shop.css?v=1">
- <script defer="" src="/assets/three.min.js"></script>
- <script defer="" src="/assets/gltf-loader.js?v=1"></script>
+ <script defer="" src="/assets/three.min.js?v=187"></script>
  <script defer="" src="/asset-loader.js?v=2"></script>
+ <script defer="" src="/eden-baked-light.js?v=1"></script>
  <script defer="" src="/assets/lucide.min.js"></script>
  <script defer="" src="/collection.js?v=10"></script>
  <script defer="" src="/garment-catalog.js?v=10"></script>
@@ -41,11 +41,12 @@
  <script defer="" src="/road-pyramid.js?v=4"></script>
  <script defer="" src="/night-district.js?v=4"></script>
  <script defer="" src="/night-road.js?v=8"></script>
- <script defer="" src="/eden-flora.js?v=12"></script>
-<script defer="" src="/garden.js?v=31"></script>
+ <script defer="" src="/eden-grass.js?v=1"></script>
+ <script defer="" src="/eden-flora.js?v=13"></script>
+<script defer="" src="/garden.js?v=32"></script>
  <script defer="" src="/garden-props.js?v=7"></script>
 <script defer="" src="/eden-lighting.js?v=2"></script>
-<script defer="" src="/eden-post.js?v=13"></script>
+<script defer="" src="/eden-post.js?v=14"></script>
 <script defer="" src="/eden-quality.js?v=4"></script>
  <script defer="" src="/amphitheater.js?v=3"></script>
  <script defer="" src="/live-music.js?v=3"></script>
@@ -106,7 +107,7 @@
     <button id="add-shelf-pdf" class="icon-button" aria-label="Add PDFs to the library" title="Add PDFs to the library"><i data-lucide="plus"></i></button>
    </div>
    <div id="loading" role="status"><span class="loading-line"></span>Entering Eden</div>
-   <div id="fallback" hidden=""><img src="/products/war-tee-front.png" alt="WAR / Witnesses Tee product photo"><p>The vault is ready to explore.</p><button class="solid-button" id="fallback-inspect">Inspect vault</button></div>
+   <div id="fallback" hidden=""><img src="/products/war-tee-front.webp" alt="WAR / Witnesses Tee product photo"><p>The vault is ready to explore.</p><button class="solid-button" id="fallback-inspect">Inspect vault</button></div>
    <div class="world-caption"><span class="edition">BREAKTHYRULE / 12 PHOTO PIECES</span><h1>THE VAULT</h1><p id="world-hint" aria-live="polite">Explore the room. Select a piece to look closer.</p><nav id="poster-links" aria-label="View media" hidden=""></nav><button id="retry-film" class="text-button" hidden="">RETRY VIDEO ↻</button><a id="film-link" href="https://breakthyrule-co.netlify.app" target="_blank" rel="noopener noreferrer" hidden="">OPEN BREAKTHYRULE ↗</a></div>
   </section>
   <footer class="world-footer">
@@ -163,7 +164,7 @@
    <div class="product-layout">
     <div class="product-visual">
      <div id="garment-viewer" tabindex="0" aria-label="360 degree garment viewer. Drag to rotate. Arrow keys turn the garment." hidden=""></div>
-     <div class="image-scroll" id="image-scroll" tabindex="0" aria-label="Product photograph. Zoom in, then drag or scroll to explore details."><div id="zoom-surface"><img id="detail-image" src="/products/war-tee-front.png" draggable="false" alt="WAR / Witnesses Tee product photo"></div></div>
+     <div class="image-scroll" id="image-scroll" tabindex="0" aria-label="Product photograph. Zoom in, then drag or scroll to explore details."><div id="zoom-surface"><img id="detail-image" src="/products/war-tee-front.webp" draggable="false" alt="WAR / Witnesses Tee product photo"></div></div>
      <div class="image-annotation"><span id="image-caption">01 / FRONT</span><span id="image-help">DRAG TO ROTATE</span><button id="auto-spin" aria-pressed="false" hidden="">START SPIN ↻</button></div>
      <div class="image-toolbar">
       <div class="side-switch" role="group" aria-label="Jacket view"><button id="show-3d" aria-pressed="false" disabled="">360° VIEW</button><button id="show-front" class="active" aria-pressed="true">FRONT</button><button id="show-back" aria-pressed="false">BACK</button></div>
@@ -224,7 +225,7 @@
  </aside>
  <dialog id="social-auth" aria-labelledby="social-auth-title"><header><h2 id="social-auth-title">Create an account</h2><button id="social-auth-close" class="icon-button" aria-label="Close sign in" title="Close sign in"><i data-lucide="x"></i></button></header><form id="social-auth-form"><label>Username<input id="social-name" autocomplete="username" pattern="[a-zA-Z0-9_]{3,24}" minlength="3" maxlength="24" required=""></label><label>Password<input id="social-password" type="password" autocomplete="new-password" minlength="10" maxlength="128" required=""></label><label id="social-recovery-field" hidden="">Recovery code<input id="social-recovery-code" autocomplete="off" maxlength="100" spellcheck="false"></label><p id="social-auth-error" role="alert"></p><button id="social-auth-submit" type="submit">Create account</button><button id="social-auth-switch" type="button">Already have an account? Sign in</button><button id="social-recover" type="button" hidden="">Recover account</button><p class="social-privacy">Your saved character, username and garden messages are public. Chat is retained for up to 24 hours. Keep your recovery code private.</p></form></dialog>
  <div id="social-move" class="social-move" aria-label="Move around the garden" hidden=""><button data-key="w" aria-label="Walk forward" title="Walk forward"><i data-lucide="arrow-up"></i></button><button data-key="a" aria-label="Walk left" title="Walk left"><i data-lucide="arrow-left"></i></button><button data-key="s" aria-label="Walk backward" title="Walk backward"><i data-lucide="arrow-down"></i></button><button data-key="d" aria-label="Walk right" title="Walk right"><i data-lucide="arrow-right"></i></button><button data-key="space" aria-label="Jump" title="Jump"><i data-lucide="arrow-up-from-line"></i></button><button data-key="shift" aria-label="Sprint" title="Sprint" aria-pressed="false"><i data-lucide="footprints"></i></button></div>
- <noscript><div class="noscript"><p>Explore Break Thy Rule product photographs.</p><a href="/products/war-tee-front.png">Featured piece</a></div></noscript>
+ <noscript><div class="noscript"><p>Explore Break Thy Rule product photographs.</p><a href="/products/war-tee-front.webp">Featured piece</a></div></noscript>
 
 
 </body></html>
