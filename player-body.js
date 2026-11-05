@@ -106,7 +106,8 @@
     const along=new T.Vector3();
     for(const [side,sign] of [['L',1],['R',-1]]){
      let weight=0,point=null;
-     if(wall){weight=smooth(1.08,.78,wall.distance);along.copy(left).addScaledVector(wall.normal,-left.dot(wall.normal)).normalize();point=wall.point.clone().addScaledVector(along,sign*.19).addScaledVector(wall.normal,.025);point.y=camera.position.y-(sign>0?.42:.36);}
+     if(wall){weight=smooth(1.08,.78,wall.distance);along.copy(left).addScaledVector(wall.normal,-left.dot(wall.normal)).normalize();// Centred on the view and high on the wall: this close, the wall fills the frame and lower hands would be off-screen.
+      point=camera.position.clone().addScaledVector(wall.normal,-camera.position.clone().sub(wall.point).dot(wall.normal)).addScaledVector(along,sign*.13).addScaledVector(wall.normal,.025);point.y=camera.position.y-(sign>0?.19:.15);}
      if(side==='R'&&clock<grabUntil&&grabPoint){weight=1;point=grabPoint;}
      else if(side==='R'&&hover&&!weight){weight=.4;point=hover;}
      model.motion.touch(side,point,wall&&point!==grabPoint&&point!==hover?wall.normal:null,weight,point===grabPoint||point===hover?'grab':'press');
