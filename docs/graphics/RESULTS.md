@@ -29,7 +29,7 @@ Not measured: GPU memory, and real low-end hardware. Device classes change viewp
 3. Bake: `tools/agent/export-static-scene.mjs` -> `tools/blender/bake_garden_light.py` (Cycles) ->
    `tools/pipeline/encode-garden-light.py`. `eden-baked-light.js` gives the terrain a lightmap and every physical material
    a 3D probe grid, moving things included. The sun stays live, with baked visibility beyond the shadow frustum.
-4. Scanned materials: cobbled road, leaf litter in canopy shade, worn earth around stones, foliage cards from CC0 scans
+4. Scanned materials: leaf litter in canopy shade, worn earth around stones, foliage cards from CC0 scans
    (`tools/pipeline/build-foliage-cards.py`).
 5. Vegetation: `eden-grass.js`, translucent leaves, alpha-to-coverage.
 6. Engine: three.js r158 -> r187 (`tools/pipeline/build-three-bundle.mjs`), temporal AA, AO varied per frame, AgX, grading
@@ -47,3 +47,22 @@ Not measured: GPU memory, and real low-end hardware. Device classes change viewp
 - 39 MB in 10 s is still over the 25 MB budget, though first view (17.9 MB) is under it.
 - Pavilion draw calls can spike (660-1050 seen) while the rack loads; 329 once settled.
 - The bake covers daytime in the garden. Re-run it when garden geometry moves.
+
+
+## Merge with main (2026-11-05)
+
+Main moved 36 commits while this branch was in progress (open match, shared weather, HDR sky, graphics setting, its own
+asset compression). Merged before release. Decisions:
+
+- Road: main's brick road stays (The Long Brick Road), so the scanned cobble was removed.
+- Props and the Violet Trickster: main's simplified WebP models. Library set and jacaranda: this branch's KTX2 versions.
+- HDR sky: its reflections are kept; its diffuse light is replaced by the bake inside the probe grid.
+- World textures use main's small `products/web/` copies; the shop uses the full-size WebP files.
+- Colour: pocket worlds (museum, vault, black box) use Neutral tone mapping without the LUT so garments match their photos;
+  the garden keeps AgX. TAA reprojection now uses one matrix multiplied in doubles, which fixed blur in pocket worlds.
+
+Measured against the live site in the same script on the same M4 (calls): spawn 319 vs 314, vault 268 vs 265, librarian
+604 vs 688, open match 575 vs 583. Over budget as live already is.
+
+Not re-baked: the light bake predates main's sky box, statues and secrets, so these get probe light but cast no baked
+shadow. Re-run tools/blender/bake_garden_light.py to include them.

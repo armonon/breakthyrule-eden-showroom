@@ -1,0 +1,81 @@
+/* Eden combat HUD */
+#combat-hud{position:absolute;inset:0;pointer-events:none;z-index:6;display:none;color:#f4f1ea;font-family:'DM Sans',Arial,sans-serif;--gap:10px;--gold:#ffc24a}
+#combat-hud.on{display:block}
+body.combat-armed .world-caption,body.combat-armed .world-topline,body.combat-armed #movement-hint,body.combat-armed #npc-prompt,body.combat-armed #shelf-actions,body.combat-armed #music-prompt,body.combat-armed .world-footer,body.combat-armed #sky-door-prompt{opacity:0;pointer-events:none;transition:opacity .25s}
+body.combat-armed #scene canvas{cursor:crosshair}
+
+.ch-cross{position:absolute;left:50%;top:50%;width:0;height:0;transition:opacity .15s}
+.ch-cross i{position:absolute;background:#fff;box-shadow:0 0 2px rgba(0,0,0,.8);transition:transform .06s linear}
+.ch-cross .ch-t,.ch-cross .ch-b{width:2px;height:9px;left:-1px}
+.ch-cross .ch-l,.ch-cross .ch-r{width:9px;height:2px;top:-1px}
+.ch-cross .ch-t{top:calc(-9px - var(--gap))}.ch-cross .ch-b{top:var(--gap)}
+.ch-cross .ch-l{left:calc(-9px - var(--gap))}.ch-cross .ch-r{left:var(--gap)}
+.ch-cross .ch-dot{width:3px;height:3px;left:-1.5px;top:-1.5px;border-radius:50%}
+#combat-hud.ads .ch-cross .ch-t,#combat-hud.ads .ch-cross .ch-b,#combat-hud.ads .ch-cross .ch-l,#combat-hud.ads .ch-cross .ch-r{opacity:0}
+#combat-hud.melee .ch-cross i:not(.ch-dot){opacity:.35}
+
+.ch-ring{position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;opacity:0;transition:opacity .12s;overflow:visible}
+.ch-ring circle{fill:none;stroke-width:1.6}
+.ch-ring-target{stroke:rgba(255,255,255,.55);stroke-dasharray:2 3}
+.ch-ring-live{stroke:rgba(255,255,255,.85);filter:drop-shadow(0 0 2px rgba(0,0,0,.7))}
+#combat-hud.focusing .ch-ring{opacity:1}
+#combat-hud.window .ch-ring-live,#combat-hud.window .ch-ring-target{stroke:var(--gold);stroke-width:2.4;stroke-dasharray:none;filter:drop-shadow(0 0 6px rgba(255,194,74,.9))}
+#combat-hud.window .ch-cross .ch-dot{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+#combat-hud.winded .ch-ring-live{stroke:#ff6b5a}
+
+.ch-hit{position:absolute;left:50%;top:50%;opacity:0}
+.ch-hit i{position:absolute;width:11px;height:2px;background:#fff;box-shadow:0 0 2px #000}
+.ch-hit i:nth-child(1){transform:translate(-17px,-13px) rotate(45deg)}.ch-hit i:nth-child(2){transform:translate(6px,-13px) rotate(-45deg)}
+.ch-hit i:nth-child(3){transform:translate(-17px,11px) rotate(-45deg)}.ch-hit i:nth-child(4){transform:translate(6px,11px) rotate(45deg)}
+.ch-hit.show{animation:ch-hit .18s ease-out}
+.ch-hit.gold i{background:var(--gold);box-shadow:0 0 6px var(--gold)}
+@keyframes ch-hit{0%{opacity:1;transform:scale(1.35)}100%{opacity:0;transform:scale(1)}}
+
+.ch-true{position:absolute;left:50%;top:calc(50% + 46px);transform:translateX(-50%);font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-weight:700;letter-spacing:.32em;font-size:15px;color:var(--gold);text-shadow:0 0 12px rgba(255,194,74,.8),0 1px 2px #000;opacity:0}
+.ch-true.show{animation:ch-true .7s ease-out}
+@keyframes ch-true{0%{opacity:0;letter-spacing:.6em}15%{opacity:1;letter-spacing:.32em}70%{opacity:1}100%{opacity:0}}
+
+.ch-toast{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-size:11px;letter-spacing:.16em;text-transform:uppercase;background:rgba(10,12,10,.55);backdrop-filter:blur(6px);padding:9px 16px;opacity:0;transition:opacity .25s;white-space:nowrap}
+.ch-toast.show{opacity:1}
+.ch-flash{position:absolute;inset:0;background:#fff3d6;opacity:0;will-change:opacity}
+
+.ch-ammo{position:fixed;right:4.3%;bottom:86px;text-align:right;display:flex;flex-direction:column;gap:2px;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.ch-name{font-size:10px;letter-spacing:.2em;opacity:.85}
+.ch-count b{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:54px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.ch-count small{font-size:13px;letter-spacing:.08em;opacity:.75}
+.ch-state{font-size:10px;letter-spacing:.2em;color:var(--gold);min-height:12px}
+
+.ch-slots{position:fixed;left:16px;right:16px;bottom:34px;display:flex;gap:5px;pointer-events:none;flex-wrap:wrap;justify-content:center}
+.ch-slots button{pointer-events:auto}
+.ch-slots button{background:rgba(12,14,12,.5);backdrop-filter:blur(6px);color:#f4f1ea;border:1px solid rgba(255,255,255,.16);font-size:10px;letter-spacing:.1em;padding:7px 10px 6px;min-width:0;display:grid;grid-template-columns:auto 1fr;column-gap:8px;row-gap:2px;align-items:baseline;text-align:left;cursor:pointer}
+.ch-slots button b{font-size:10px;opacity:.6;grid-row:span 2}
+.ch-slots button small{font-size:10px;letter-spacing:.06em;opacity:.7;font-variant-numeric:tabular-nums}
+.ch-slots button:hover{border-color:rgba(255,255,255,.5)}
+.ch-slots button.active{background:rgba(244,241,234,.94);color:#151515;border-color:transparent}
+.ch-slots button.active small{opacity:.8}
+.ch-slots .ch-hands{min-width:0;border-style:dashed;opacity:.85}
+.ch-putaway{position:absolute;left:50%;top:calc(50% + 74px);transform:translateX(-50%);pointer-events:auto;background:rgba(10,12,10,.55);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);color:#f4f1ea;padding:10px 18px;font-size:11px;letter-spacing:.16em;cursor:pointer}
+.ch-putaway b{margin-left:8px;opacity:.6}
+#combat-hud.locked .ch-putaway{display:none}
+.ch-score{position:absolute;left:4.3%;top:28px;font-size:10px;letter-spacing:.2em;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.ch-keys{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);font-size:9px;letter-spacing:.18em;opacity:.7;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+
+.ch-lock{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:auto;background:rgba(10,12,10,.6);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);color:#f4f1ea;padding:22px 34px;display:flex;flex-direction:column;gap:8px;align-items:center;cursor:pointer}
+.ch-lock strong{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:28px;letter-spacing:.14em;font-weight:600}
+.ch-lock span{font-size:9px;letter-spacing:.18em;opacity:.75}
+#combat-hud.locked .ch-lock{display:none}
+#combat-hud:not(.locked) .ch-cross,#combat-hud:not(.locked) .ch-ring{opacity:0}
+
+#range-launch{position:relative}
+@media (pointer:coarse){#range-launch{display:none}}
+@media (prefers-reduced-motion:reduce){.ch-hit.show,.ch-true.show{animation-duration:.01s}}
+
+/* Arena-era additions: sniper scope, damage direction, kill hitmarker */
+.ch-scope{position:absolute;inset:0;display:none;pointer-events:none}
+#combat-hud.scoped .ch-scope{display:block;background:radial-gradient(circle at 50% 50%,transparent 0,transparent min(34vh,34vw),rgba(0,0,0,.92) calc(min(34vh,34vw) + 2px),#000 100%)}
+.ch-scope i{position:absolute;left:50%;top:50%;width:min(68vh,68vw);height:min(68vh,68vw);transform:translate(-50%,-50%);border-radius:50%;box-shadow:inset 0 0 40px rgba(0,0,0,.7);
+ background:linear-gradient(#111,#111) center/100% 1px no-repeat,linear-gradient(#111,#111) center/1px 100% no-repeat,radial-gradient(circle,#c22 0 2px,transparent 3px)}
+#combat-hud.scoped .ch-cross,#combat-hud.scoped .ch-ring{opacity:0!important}
+.ch-hurt{position:absolute;inset:0;opacity:0;--a:0rad;background:radial-gradient(ellipse at calc(50% + 46% * sin(var(--a))) calc(50% - 46% * cos(var(--a))),rgba(170,10,10,.75),transparent 55%),radial-gradient(circle,transparent 55%,rgba(120,0,0,.45))}
+.ch-hit.kill i{background:#ff3b30;box-shadow:0 0 8px #ff3b30;width:15px}
+#combat-hud[data-mode="arena"] .ch-score,#combat-hud[data-mode="arena"] .ch-keys{display:none}

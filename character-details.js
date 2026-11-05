@@ -94,7 +94,7 @@ window.GardenCharacterDetails={
   }
   return this.retro(T,canvas,128,128,'Painted palm resort print',true);
  },
- add({T,a,morph,head,headOrigin,torso,torsoOrigin}){
+ add({T,a,skipHair=false,morph,head,headOrigin,torso,torsoOrigin}){
   const mat=(color,extra={})=>this.material(T,color,extra);
   function attach(g,m,parent,origin,name){g.translate(-origin.x,-origin.y,-origin.z);const mesh=new T.Mesh(g,m);mesh.name=name;parent.add(mesh);return mesh;}
   // Closed, tapered lock volumes keep every hairstyle readable from the back and side.
@@ -111,7 +111,7 @@ window.GardenCharacterDetails={
     for(let k=0;k<=sides;k++){const phi=k/sides*Math.PI*2,v=p.clone().addScaledVector(frames.normals[j],Math.cos(phi)*radius).addScaledVector(frames.binormals[j],Math.sin(phi)*radius*depth);hp.push(...morph(v.toArray()));huv.push(k/sides,t);if(j<steps&&k<sides){const n=offset+j*(sides+1)+k;hi.push(n,n+1,n+sides+1,n+1,n+sides+2,n+sides+1);}}
    }
   }
-  const style=a.hairStyle,volume=a.hairVolume,length=a.hairLength;
+  const style=skipHair?'none':a.hairStyle,volume=a.hairVolume,length=a.hairLength;
   if(['side','slick','quiff','crop'].includes(style)){
    const count=style==='crop'?14:9;
    for(let i=0;i<count;i++){
@@ -151,7 +151,7 @@ window.GardenCharacterDetails={
    const hair=mat(a.hairColor,{map:this.retro(T,c,16,32,'Painted hair strands')}),g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(hp,3));g.setAttribute('uv',new T.Float32BufferAttribute(huv,2));g.setIndex(hi);g.computeVertexNormals();attach(g,hair,head,headOrigin,'Styled hair locks');
   }
   const shape=(points,indices)=>{const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(points.flatMap(morph),3));g.setIndex(indices);g.computeVertexNormals();return g;};
-  if(a.outfit==='resort'){
+  if(a.outfit==='resort'&&!skipHair){
    // Collar flaps and buttons share one vertex-coloured mesh and draw call.
    const tint=(g,color)=>{g.deleteAttribute('uv');g.setAttribute('color',new T.Float32BufferAttribute(Array.from({length:g.attributes.position.count},()=>color.toArray()).flat(),3));return g;};
    const shirt=new T.Color(a.shirtColor),button=new T.Color('#ece8d5').multiplyScalar(.9),parts=[];

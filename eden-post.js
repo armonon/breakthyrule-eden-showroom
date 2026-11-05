@@ -5,7 +5,7 @@
 // targets): it then holds exactly what the canvas used to show, including garden.js's sky and water shaders, which
 // write display-referred colour directly (clamped here, as the canvas used to clip it: the sky's sun disc is ~3x white).
 window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
- const settings={enabled,ao:.8,aoRadius:.7,aoIntensity:4.5,bloom:.26,bloomThreshold:.9,warmth:.025,saturation:1.06,vignette:.22,flare:.8,rays:.7,glare:.9,taa:true,taaFeedback:.88,sharpen:.6,grain:.028,lut:1};
+ const settings={enabled,ao:.8,aoRadius:.7,aoIntensity:4.5,bloom:.26,bloomThreshold:.9,warmth:.025,saturation:1.06,vignette:.22,flare:.8,rays:.7,glare:.9,contrast:.12,split:.035,taa:true,taaFeedback:.88,sharpen:.6,grain:.028,lut:1};
  const webgl2=true,size=new T.Vector2(),last=new T.Vector2();
  const target=(type=T.HalfFloatType,extra={})=>new T.WebGLRenderTarget(1,1,{type,depthBuffer:false,...extra});
  const depth=new T.DepthTexture(1,1);depth.type=T.UnsignedIntType;
@@ -77,9 +77,9 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   gl_FragColor=vec4(sum/total,1.);}`,{tSrc:{value:null},sun:{value:sunUv},span:{value:1},decay:{value:1}});
  // Final pass: AO, bloom (screen blend so highlights never clip), lens effects, warm grade, saturation, vignette.
  const composite=new T.ShaderMaterial({vertexShader,depthTest:false,depthWrite:false,toneMapped:false,
-  uniforms:{tScene:{value:sceneRT.texture},tAO:{value:aoA.texture},tBloom:{value:up[0].texture},tRays:{value:rayA.texture},tVisible:{value:visible.texture},ao:{value:0},bloom:{value:0},warmth:{value:0},saturation:{value:1},vignette:{value:0},view:{value:0},
+  uniforms:{tScene:{value:sceneRT.texture},tAO:{value:aoA.texture},tBloom:{value:up[0].texture},tRays:{value:rayA.texture},tVisible:{value:visible.texture},ao:{value:0},bloom:{value:0},warmth:{value:0},saturation:{value:1},vignette:{value:0},contrast:{value:0},split:{value:0},view:{value:0},
    sun:{value:sunUv},sunGate:{value:0},flare:{value:0},rays:{value:0},glare:{value:0},aspect:{value:1},lamps:{value:Array.from({length:LAMPS},()=>new T.Vector4())},lampColors:{value:Array.from({length:LAMPS},()=>new T.Color())}},
-  fragmentShader:`varying vec2 vUv;uniform sampler2D tScene,tAO,tBloom,tRays,tVisible;uniform float ao,bloom,warmth,saturation,vignette,view,sunGate,flare,rays,glare,aspect;uniform vec2 sun;uniform vec4 lamps[${LAMPS}];uniform vec3 lampColors[${LAMPS}];
+  fragmentShader:`varying vec2 vUv;uniform sampler2D tScene,tAO,tBloom,tRays,tVisible;uniform float ao,bloom,warmth,saturation,vignette,contrast,split,view,sunGate,flare,rays,glare,aspect;uniform vec2 sun;uniform vec4 lamps[${LAMPS}];uniform vec3 lampColors[${LAMPS}];
  // A ghost is the sun reflected between lens elements: a soft disc with a brighter rim, each colour a slightly different size.
  vec3 ghost(vec2 centre,float r){float d=length((vUv-centre)*vec2(aspect,1.));vec3 rr=r*vec3(1.,1.05,1.1);
   return smoothstep(rr,rr*.45,vec3(d))*.5+smoothstep(rr,rr*.9,vec3(d))*smoothstep(rr*.76,rr*.94,vec3(d))*.5;}
@@ -101,6 +101,9 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   vec3 lens=vec3(0.);if(sunGate>0.){if(flare>0.)lens+=lensFlare()*flare*sunGate;if(rays>0.)lens+=texture2D(tRays,vUv).rgb*vec3(1.,.86,.62)*rays*sunGate;}if(glare>0.)lens+=lampGlare()*glare;
   c=1.-(1.-c)*(1.-clamp(lens,0.,1.));
   c*=vec3(1.+warmth,1.,1.-warmth);c=max(mix(vec3(dot(c,vec3(.2126,.7152,.0722))),c,saturation),0.);
+  // Film-like grade: a gentle S-curve for contrast, cool shadows and warm highlights (split toning).
+  {float l=dot(c,vec3(.2126,.7152,.0722));vec3 s=c*c*(3.-2.*clamp(c,0.,1.));c=mix(c,s,contrast);
+   c+=split*(mix(vec3(-.35,.05,.45),vec3(.5,.18,-.4),smoothstep(.15,.75,l)))*(1.-abs(l*2.-1.)*.5);}
   vec2 q=vUv-.5;c*=1.-vignette*dot(q,q)*2.;
   gl_FragColor=vec4(clamp(c,0.,1.),s.a);
  }`});
@@ -111,8 +114,10 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
  const taaCurrent=target(),taaHistory=[target(),target()];let taaIndex=0,taaValid=false,taaStill=0;
  const halton=(i,b)=>{let f=1,r=0;while(i>0){f/=b;r+=f*(i%b);i=Math.floor(i/b);}return r;};
  const JITTER=Array.from({length:8},(_,i)=>[halton(i+1,2)-.5,halton(i+1,3)-.5]);
- const viewProj=new T.Matrix4(),prevViewProj=new T.Matrix4(),invViewProj=new T.Matrix4(),lastCam=new T.Vector3();
- const resolve=raw(`varying vec2 vUv;uniform sampler2D tCur,tHist,tDepth;uniform mat4 inv,prev;uniform vec2 texel;uniform float feedback;
+ // prev × inverse(current) is multiplied here in doubles and sent as one matrix: pocket worlds sit hundreds of metres from
+ // the origin, where a 32-bit inverse followed by a 32-bit reprojection in the shader turns the history blocky.
+ const viewProj=new T.Matrix4(),prevViewProj=new T.Matrix4(),invViewProj=new T.Matrix4(),reproject=new T.Matrix4(),lastCam=new T.Vector3();
+ const resolve=raw(`varying vec2 vUv;uniform sampler2D tCur,tHist,tDepth;uniform mat4 reproject;uniform vec2 texel;uniform float feedback;
  vec3 toY(vec3 c){return vec3(dot(c,vec3(.25,.5,.25)),dot(c,vec3(.5,0.,-.5)),dot(c,vec3(-.25,.5,-.25)));}
  vec3 toR(vec3 c){return vec3(c.x+c.y-c.z,c.x+c.z,c.x-c.y-c.z);}
  // Catmull-Rom history sampling (5 taps): bilinear blurs the image a little more every frame the camera moves or sways.
@@ -122,11 +127,11 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
  void main(){vec3 cur=texture2D(tCur,vUv).rgb,m=vec3(0.),q=vec3(0.);
   float d=1.;vec2 dv=vec2(0.);for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 o=vec2(float(x),float(y))*texel;vec3 c=toY(texture2D(tCur,vUv+o).rgb);m+=c;q+=c*c;float z=texture2D(tDepth,vUv+o).x;if(z<d){d=z;dv=o;}}
   m/=9.;vec3 sd=sqrt(max(q/9.-m*m,0.))*1.25;
-  vec4 w=inv*vec4(vec3(vUv+dv,d)*2.-1.,1.);w/=w.w;vec4 p=prev*w;vec2 uv=p.xy/p.w*.5+.5-dv;
+  vec4 p=reproject*vec4(vec3(vUv+dv,d)*2.-1.,1.);vec2 uv=p.xy/p.w*.5+.5-dv;
   if(uv.x<0.||uv.x>1.||uv.y<0.||uv.y>1.){gl_FragColor=vec4(cur,1.);return;}
   vec3 h=toY(catmull(uv));vec3 e=h-m;vec3 u=e/max(sd,vec3(1e-4));float k=max(max(abs(u.x),abs(u.y)),abs(u.z));if(k>1.)h=m+e/k;
   float speed=length((uv-vUv)/texel);float keep=feedback*(1.-smoothstep(1.5,24.,speed)*.5);
-  gl_FragColor=vec4(mix(toR(toY(cur)),toR(h),keep),1.);}`,{tCur:{value:taaCurrent.texture},tHist:{value:null},tDepth:{value:depth},inv:{value:invViewProj},prev:{value:prevViewProj},texel:{value:new T.Vector2()},feedback:{value:.9}});
+  gl_FragColor=vec4(mix(toR(toY(cur)),toR(h),keep),1.);}`,{tCur:{value:taaCurrent.texture},tHist:{value:null},tDepth:{value:depth},reproject:{value:reproject},texel:{value:new T.Vector2()},feedback:{value:.9}});
  const LUT_SIZE=24,lutData=new Uint8Array(LUT_SIZE**3*4);{let n=0;const smooth=x=>x*x*(3-2*x);
   for(let b=0;b<LUT_SIZE;b++)for(let g=0;g<LUT_SIZE;g++)for(let r=0;r<LUT_SIZE;r++){const c=[r,g,b].map(v=>v/(LUT_SIZE-1)),l=c[0]*.2126+c[1]*.7152+c[2]*.0722;
    // film look: a gentle S curve, cool lifted shadows, warm highlights and a little more colour
@@ -207,13 +212,13 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
     rayBlurMaterial.uniforms.tSrc.value=rayA.texture;rayBlurMaterial.uniforms.span.value=.9/24;rayBlurMaterial.uniforms.decay.value=1;pass(rayBlurMaterial,rayB);
    }
   }
-  const c=composite.uniforms;c.ao.value=settings.ao;c.bloom.value=settings.bloom;c.warmth.value=settings.warmth;c.saturation.value=settings.saturation;c.vignette.value=settings.vignette;
+  const c=composite.uniforms;c.ao.value=settings.ao;c.bloom.value=settings.bloom;c.warmth.value=settings.warmth;c.saturation.value=settings.saturation;c.vignette.value=settings.vignette;c.contrast.value=settings.contrast;c.split.value=settings.split;
   c.sunGate.value=sunGate;c.flare.value=settings.flare;c.rays.value=settings.rays;c.glare.value=lampCount?settings.glare:0;c.tRays.value=rayB.texture;
   if(!taa){pass(composite,previous);return;}
   e[8]=baseX;e[9]=baseY;camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
   pass(composite,taaCurrent);
   camera.getWorldPosition(tmp);const moved=tmp.distanceTo(lastCam);lastCam.copy(tmp);if(moved>6)taaValid=false;taaStill=moved>.0005?0:taaStill+1;
-  viewProj.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);invViewProj.copy(viewProj).invert();
+  viewProj.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);invViewProj.copy(viewProj).invert();reproject.multiplyMatrices(prevViewProj,invViewProj);
   const dest=taaHistory[taaIndex&1],hist=taaHistory[(taaIndex&1)^1],r=resolve.uniforms;
   r.tHist.value=hist.texture;r.feedback.value=taaValid?settings.taaFeedback:0;pass(resolve,dest);prevViewProj.copy(viewProj);taaValid=true;
   const f=finish.uniforms;f.tSrc.value=dest.texture;f.sharpen.value=settings.sharpen;f.grain.value=settings.grain;f.lutMix.value=settings.lut;f.seed.value=(taaIndex%64)*7.13;pass(finish,previous);
@@ -223,7 +228,7 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   render,
   // Still scenes need a few more frames for the temporal filter to converge (reduced-motion idle stops the loop).
   settling:()=>settings.enabled&&settings.taa&&taaStill<16,
-  set(next={}){Object.assign(settings,next);},
+  set(next={}){if(next.samples!==undefined&&webgl2&&next.samples!==sceneRT.samples){sceneRT.samples=next.samples;sceneRT.dispose();}Object.assign(settings,next);},
   // sky: garden.js's sky dome (its sun disc and night fade); lamps: () => world positions of lit lanterns, or null;
   // torches: () => [{position, direction, strength}] flashlights, or null.
   setLights(next){lights={...lights,...next};},

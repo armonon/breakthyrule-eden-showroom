@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Combat sandbox</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/combat.css?v=3">
+<style>html,body{margin:0;height:100%;overflow:hidden;background:#000}#world{position:relative;width:100vw;height:100vh}#scene{position:absolute;inset:0}#scene canvas{display:block}</style>
+<script src="/assets/three.min.js?v=187"></script><script src="/asset-loader.js?v=4"></script><script src="/combat-arms.js?v=9"></script><script src="/combat.js?v=14"></script>
+</head><body><div id="world"><div id="scene"></div></div>
+<script>
+'use strict';
+// Dev sandbox: the full combat system on a plain field, without the garden. Press 1-4, click to engage.
+(()=>{
+ const T=THREE,stage=document.getElementById('scene');
+ const renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(stage.clientWidth,stage.clientHeight);
+ renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.shadowMap.enabled=true;stage.appendChild(renderer.domElement);
+ const scene=new T.Scene();scene.background=new T.Color(0xa9c4d6);scene.fog=new T.Fog(0xa9c4d6,30,120);
+ const camera=new T.PerspectiveCamera(70,stage.clientWidth/stage.clientHeight,.05,220);
+ scene.add(new T.HemisphereLight(0xdceffc,0x5a6538,1.35));
+ const sun=new T.DirectionalLight(0xffe4ad,3.2);sun.position.set(-23,19,-48);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-30,right:30,top:30,bottom:-30,near:1,far:120});scene.add(sun);
+ const fill=new T.DirectionalLight(0xe4edff,.35);fill.position.set(10,9,18);scene.add(fill);
+ const ground=new T.Mesh(new T.PlaneGeometry(200,200),new T.MeshStandardMaterial({color:0x6d7d4a,roughness:1}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+ const road=new T.Mesh(new T.PlaneGeometry(3.8,80),new T.MeshStandardMaterial({color:0x9a988e,roughness:.95}));road.rotation.x=-Math.PI/2;road.position.set(11.7,.02,-40);road.receiveShadow=true;scene.add(road);
+ for(let i=0;i<8;i++){const b=new T.Mesh(new T.BoxGeometry(1,1,1),new T.MeshStandardMaterial({color:0x8b7a60,roughness:.9}));b.position.set(11.7+(i%2?4:-4),.5,-16-i*5);b.castShadow=b.receiveShadow=true;scene.add(b);}
+ const pos=new T.Vector3(0,1.75,0),aim=new T.Vector3(0,1.75,-5),keys=new Set();let airborne=false;
+ let combat;
+ combat=window.createCombat({T,scene,camera,renderer,stage,fill,reduced:false,requestDraw(){},
+  canAct:()=>true,
+  getLook(){const d=aim.clone().sub(pos).normalize();return {yaw:Math.atan2(d.x,-d.z),pitch:Math.asin(d.y)};},
+  setLook(yaw,pitch){aim.copy(pos).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));},
+  placePlayer(x,z,lx,lz){pos.set(x,1.75,z);aim.set(lx,1.75,lz);},
+  movement:()=>({sprinting:keys.has('shift'),airborne})
+ });
+ addEventListener('keydown',e=>keys.add(e.key.toLowerCase()));addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
+ let last=0;
+ function frame(time){
+  const dt=Math.min(.05,(time-(last||time))/1000);last=time;
+  const f=aim.clone().sub(pos);f.y=0;f.normalize();const r=new T.Vector3().crossVectors(f,new T.Vector3(0,1,0));
+  const mv=new T.Vector3().addScaledVector(f,(keys.has('w')?1:0)-(keys.has('s')?1:0)).addScaledVector(r,(keys.has('d')?1:0)-(keys.has('a')?1:0));
+  if(mv.lengthSq()){mv.normalize().multiplyScalar(dt*(keys.has('shift')?6:3.4));pos.add(mv);aim.add(mv);}
+  combat.update(time/1000,dt||.016);camera.position.copy(pos);camera.lookAt(aim);
+  combat.preRender();renderer.render(scene,camera);combat.render();window.sandboxFrame=(window.sandboxFrame||0)+1;
+  if(!window.sandboxManual)requestAnimationFrame(frame);
+ }
+ window.sandbox={combat,step(ms=16){last=performance.now()-ms;frame(performance.now());},pos,aim};
+ requestAnimationFrame(frame);
+ addEventListener('resize',()=>{renderer.setSize(stage.clientWidth,stage.clientHeight);camera.aspect=stage.clientWidth/stage.clientHeight;camera.updateProjectionMatrix();});
+})();
+</script></body></html>

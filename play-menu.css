@@ -1,0 +1,52 @@
+/* PLAY menu, controls card and tip banner (play-menu.js). */
+#play-launch{font-weight:600;color:var(--ink)!important;letter-spacing:.12em}
+.view-nav .play-moved{display:none}
+body.in-expedition .view-nav #night-launch.play-moved{display:inline-flex}
+
+#play-menu,#controls-card{width:min(640px,calc(100vw - 28px));max-height:calc(100dvh - 40px);margin:auto;padding:24px;background:#f8f9f4;color:var(--ink);border:1px solid var(--line);border-radius:4px;overflow:auto}
+#play-menu::backdrop,#controls-card::backdrop{background:rgb(16 24 20 / .55);backdrop-filter:blur(3px)}
+#play-menu header,#controls-card header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+#play-menu h2,#controls-card h2{font:400 30px Georgia,serif;margin:4px 0 0}
+#play-menu small,#controls-card small{font-size:10px;letter-spacing:.14em;color:var(--secondary)}
+.play-close{font-size:22px;line-height:1}
+
+.play-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.play-item{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:16px;min-height:132px;background:#fff;border:1px solid var(--line);border-radius:3px;color:var(--ink);cursor:pointer;transition:border-color .15s,transform .15s}
+.play-item:hover:not(:disabled),.play-item:focus-visible{border-color:#294a38;transform:translateY(-1px)}
+.play-item strong{font:600 13px 'DM Sans',Arial,sans-serif;letter-spacing:.14em}
+.play-text{font-size:13px;line-height:1.45;color:var(--secondary)}
+.play-keys{margin-top:auto;font-size:10px;letter-spacing:.12em;color:#294a38}
+.play-item:disabled{cursor:not-allowed;opacity:.55;background:#f1f2ed}
+
+#play-menu footer,#controls-card footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;font-size:12px;color:var(--secondary)}
+.play-controls{border:1px solid var(--line);background:#fff;padding:9px 14px;font-size:11px;letter-spacing:.12em;cursor:pointer}
+kbd{display:inline-block;min-width:1.6em;padding:1px 5px;border:1px solid #cfd3c8;border-bottom-width:2px;border-radius:3px;background:#fff;font:600 11px 'DM Sans',Arial,sans-serif;text-align:center}
+
+.controls-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.controls-grid section{background:#fff;border:1px solid var(--line);border-radius:3px;padding:14px 16px}
+.controls-grid section.current{border-color:#294a38;box-shadow:0 0 0 1px #294a38;grid-column:1/-1}
+.controls-grid h3{margin:0 0 10px;font-size:11px;letter-spacing:.16em;font-weight:600}
+.controls-grid section.current h3::after{content:'  ·  NOW';color:#294a38}
+.controls-grid dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:13px}
+.controls-grid dt{font-weight:600;white-space:nowrap}
+.controls-grid dd{margin:0;color:var(--secondary)}
+
+#controls-help{position:absolute;left:46px;top:192px;z-index:5;width:40px;height:40px;background:#f7faf2e8;color:#294a38;border-color:#c1cbbb;font-weight:700;font-size:16px}
+@media (max-width:700px){#controls-help{left:18px;top:171px}}
+body.combat-armed #controls-help,body.battle-on #controls-help,body.in-expedition #controls-help{opacity:.55}
+
+#play-tip{position:fixed;left:50%;top:92px;transform:translateX(-50%);z-index:60;max-width:calc(100vw - 32px);padding:12px 18px;background:rgba(14,18,16,.82);backdrop-filter:blur(8px);color:#f4f1ea;font-size:11px;letter-spacing:.16em;text-align:center;border:1px solid rgba(255,255,255,.18);cursor:pointer}
+#play-tip[hidden]{display:none}
+
+/* Mouse look (app.js): a centre dot while the mouse steers the view; weapons and the arena draw their own crosshair. */
+#look-dot{position:fixed;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.45);z-index:7;pointer-events:none;display:none}
+body.look-locked #look-dot{display:block}
+body.look-locked.combat-armed #look-dot,body.look-locked.in-arena #look-dot,body:has(dialog[open]) #look-dot{display:none}
+
+/* Graphics quality picker in the PLAY menu. */
+.play-graphics{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;letter-spacing:.14em}
+.play-graphics[hidden]{display:none}
+.play-graphics small{font-size:11px;letter-spacing:0;color:var(--secondary)}
+.play-graphics-options{display:flex;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.play-graphics-options button{border:0;background:#fff;padding:8px 14px;font-size:11px;letter-spacing:.12em;cursor:pointer;color:var(--secondary)}
+.play-graphics-options button[aria-pressed="true"]{background:#294a38;color:#fff}

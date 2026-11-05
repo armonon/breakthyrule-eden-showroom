@@ -76,7 +76,9 @@ window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{}}={}){
  }
  function load(frame){
   frame.loaded=true;const file=frame.picture.file;
-  if(!textures.has(file))textures.set(file,new Promise(resolve=>loader.load(file,texture=>{texture.colorSpace=T.SRGBColorSpace;texture.anisotropy=4;resolve(texture);},undefined,()=>resolve(null))));
+  // The WebP copy of the photograph first (showroomAssets.web), the original if it is missing.
+  const ready=texture=>{texture.colorSpace=T.SRGBColorSpace;texture.anisotropy=4;return texture;},light=window.showroomAssets?.web(file)||file;
+  if(!textures.has(file))textures.set(file,new Promise(resolve=>loader.load(light,texture=>resolve(ready(texture)),undefined,()=>light===file?resolve(null):loader.load(file,texture=>resolve(ready(texture)),undefined,()=>resolve(null)))));
   textures.get(file).then(texture=>{if(!texture)return;frame.mesh.material.map=texture;frame.mesh.material.color.set(0xffffff);frame.mesh.material.needsUpdate=true;
    fit(frame,texture.image.width/texture.image.height);onChange();});
  }

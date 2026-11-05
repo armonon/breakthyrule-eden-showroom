@@ -74,7 +74,10 @@ window.createGardenLibrary=function(T,scene,onChange){
   lines.slice(0,2).forEach((text,i)=>ctx.fillText(text,22,lines.length>1?34+i*31:55));
   const texture=new T.CanvasTexture(label);texture.colorSpace=T.SRGBColorSpace;
   const labelMesh=new T.Mesh(new T.PlaneGeometry(1.15,.145),new T.MeshBasicMaterial({map:texture}));labelMesh.position.set(x,y-.035,.325);labelMesh.userData.bookIndex=index;contents.add(labelMesh);pickables.push(labelMesh);
-  });if(bookTemplate)window.mergeStaticMeshes?.(T,contents);onChange();
+  });
+  // Shelf books are too small to read in the sun's shadow map; leaving them out halves their draw calls whenever shadows redraw.
+  contents.traverse(node=>{if(node.isMesh)node.castShadow=false;});
+  if(bookTemplate)window.mergeStaticMeshes?.(T,contents,{ignoreNames:true});onChange();
  }
  setPage(0);
  const sign=document.createElement('canvas');sign.width=1024;sign.height=160;

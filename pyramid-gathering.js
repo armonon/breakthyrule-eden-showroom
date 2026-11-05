@@ -41,7 +41,7 @@ window.createPyramidGathering=function(T,parent,{stone,onChange=()=>{},reduced=f
  let loaded=false,failed=false,inside=false;
  let resolveReady;const ready=new Promise(resolve=>{resolveReady=resolve;});
  const materials=[];
- new T.TextureLoader().load('/assets/pyramid-masked-guests.png',atlas=>{
+ new T.TextureLoader().load('/assets/pyramid-masked-guests.webp',atlas=>{
   atlas.colorSpace=T.SRGBColorSpace;atlas.anisotropy=4;
   for(let i=0;i<6;i++){const map=atlas.clone();map.repeat.set(1/6,1);map.offset.set(i/6,0);map.needsUpdate=true;materials.push(new T.MeshBasicMaterial({map,alphaTest:.12,side:T.DoubleSide,color:0xc3b6a4,toneMapped:false}));}
   function guest(x,z,variant,h){const card=new T.Mesh(plane,materials[variant]);card.name='Masked guest image card';card.scale.set(h*(2120/6/742),h,1);card.position.set(x,h/2+.04,z);card.userData.variant=variant;hall.add(card);guests.push(card);}
