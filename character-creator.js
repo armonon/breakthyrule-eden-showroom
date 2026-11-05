@@ -8,7 +8,7 @@ window.createCharacterEditor=function({T,save,stopMoving,draftOwner=()=> 'guest'
  document.body.append(dialog);
  const $=id=>document.getElementById(id),stage=$('character-stage');
  const bases={
-  Boulevard:{height:182,weight:82,build:.7,shoulders:1.14,waist:.96,hips:.97,faceWidth:1.09,faceHeight:.97,jawWidth:1.2,cheekWidth:1.04,chinLength:1.09,eyeSize:.92,noseWidth:1.06,noseLength:1.13,mouthWidth:1.02,faceDefinition:.9,age:.36,skinTone:'#ba8564',hairStyle:'slick',hairColor:'#302821',outfit:'resort',shirtColor:'#68bdb0',pantsColor:'#586778'},
+  Boulevard:{character:'boulevard',height:182,weight:82,build:.7,shoulders:1.14,waist:.96,hips:.97,faceWidth:1.09,faceHeight:.97,jawWidth:1.2,cheekWidth:1.04,chinLength:1.09,eyeSize:.92,noseWidth:1.06,noseLength:1.13,mouthWidth:1.02,faceDefinition:.9,age:.36,skinTone:'#ba8564',hairStyle:'slick',hairColor:'#302821',outfit:'resort',shirtColor:'#68bdb0',pantsColor:'#586778'},
   Riviera:{height:170,weight:61,build:.23,shoulders:.87,waist:.85,hips:1.12,faceWidth:.94,faceHeight:1.02,jawWidth:.8,cheekWidth:1.06,chinLength:.9,noseWidth:.84,noseLength:.92,lipFullness:1.19,faceDefinition:.3,browWeight:.72,skinTone:'#dfb393',hairStyle:'bob',hairColor:'#302821',outfit:'sleeveless',shirtColor:'#e9e8e2',pantsColor:'#3b4048'},
   Harbor:{height:188,weight:94,build:.84,shoulders:1.18,waist:1.04,hips:1.02,faceWidth:1.12,faceHeight:1.05,jawWidth:1.2,cheekWidth:1.06,noseWidth:1.2,lipFullness:1.18,faceDefinition:.8,age:.3,skinTone:'#754630',hairStyle:'locs',hairColor:'#19191b',outfit:'tee',shirtColor:'#e9e8e2',pantsColor:'#586778'},
   Sunset:{height:174,weight:63,build:.3,shoulders:.94,waist:.9,hips:1.05,faceWidth:.98,faceHeight:1.03,jawWidth:.91,cheekWidth:1.1,noseWidth:.97,lipFullness:1.13,faceDefinition:.44,skinTone:'#9a6349',hairStyle:'curls',hairColor:'#70482c',outfit:'resort',shirtColor:'#d885a8',pantsColor:'#dedbd2'},
@@ -16,12 +16,12 @@ window.createCharacterEditor=function({T,save,stopMoving,draftOwner=()=> 'guest'
   Marina:{height:168,weight:59,build:.2,shoulders:.86,waist:.84,hips:1.12,faceWidth:.93,faceHeight:.99,jawWidth:.84,cheekWidth:1.12,noseWidth:.86,lipFullness:1.17,faceDefinition:.38,browWeight:.8,skinTone:'#482d24',hairStyle:'ponytail',hairColor:'#19191b',outfit:'sleeveless',shirtColor:'#b18a42',pantsColor:'#dedbd2'}
  };
  let schema,draft,original,renderer,scene,camera,model,angle=0,closeup=false,busy=false,opened=0,drag=null,rebuildFrame=0;
- let moving=false,motionFrame=0;
+ let moving=false,motionFrame=0,rebuildWanted=0;
  let draftKey='',draftStored=false;
  function storeDraft(){if(!draft||!draftKey)return;try{localStorage.setItem(draftKey,JSON.stringify({at:Date.now(),appearance:draft}));draftStored=true;}catch{draftStored=false;}}
  function restoreDraft(){try{const entry=JSON.parse(localStorage.getItem(draftKey)||'null');if(!entry||!Number.isFinite(entry.at)||entry.at>Date.now()+60000||Date.now()-entry.at>30*86400000||entry.appearance?.version!==1)return null;const value=entry.appearance;
   for(const [key,s] of Object.entries(schema.numbers))if(typeof value[key]!=='number'||!Number.isFinite(value[key])||value[key]<s.min||value[key]>s.max)return null;
-  for(const [key,s] of Object.entries(schema.choices))if(!Object.hasOwn(s.options,value[key]))return null;
+  for(const [key,s] of Object.entries(schema.choices))if(value[key]===undefined&&s.optional)value[key]=s.default;else if(!Object.hasOwn(s.options,value[key]))return null;
   for(const key of Object.keys(schema.colors))if(!/^#[0-9a-f]{6}$/i.test(value[key]))return null;
   return Object.fromEntries(['version',...Object.keys(schema.numbers),...Object.keys(schema.choices),...Object.keys(schema.colors)].map(k=>[k,value[k]]));
  }catch{return null;}}
@@ -29,7 +29,7 @@ window.createCharacterEditor=function({T,save,stopMoving,draftOwner=()=> 'guest'
  function animatePreview(){if(!moving||!dialog.open)return;draw();motionFrame=requestAnimationFrame(animatePreview);}
  motion.onclick=()=>{moving=!moving;motion.setAttribute('aria-pressed',String(moving));cancelAnimationFrame(motionFrame);if(moving)animatePreview();else draw();};
  let schemaPromise;
- function loadSchema(){return schemaPromise||=fetch('/character-schema.json?v=2',{signal:AbortSignal.timeout(10000)}).then(r=>{if(!r.ok)throw Error('Character settings could not load. Close and reopen to retry.');return r.json();}).catch(error=>{schemaPromise=null;throw error;});}
+ function loadSchema(){return schemaPromise||=fetch('/character-schema.json?v=3',{signal:AbortSignal.timeout(10000)}).then(r=>{if(!r.ok)throw Error('Character settings could not load. Close and reopen to retry.');return r.json();}).catch(error=>{schemaPromise=null;throw error;});}
  const defaults=()=>Object.fromEntries([['version',1],...Object.values(schema).filter(v=>v&&typeof v==='object').flatMap(group=>Object.entries(group).map(([key,s])=>[key,s.default]))]);
  function initScene(){
   if(renderer)return;
@@ -45,7 +45,7 @@ window.createCharacterEditor=function({T,save,stopMoving,draftOwner=()=> 'guest'
   renderer.domElement.onpointerup=renderer.domElement.onpointercancel=renderer.domElement.onlostpointercapture=()=>drag=null;
   renderer.domElement.onkeydown=e=>{if(['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();angle+=(e.key==='ArrowLeft'?-1:1)*.2;draw();}};
   renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();$('character-error').textContent='3D preview interrupted. Reload the page to continue.';$('character-save').disabled=true;});
-  new ResizeObserver(draw).observe(stage);
+  new ResizeObserver(draw).observe(stage);window.GardenCharacterRocketbox?.textureListeners.add(draw);
  }
  function draw(){
   if(!renderer||!dialog.open||!model)return;
@@ -57,11 +57,12 @@ window.createCharacterEditor=function({T,save,stopMoving,draftOwner=()=> 'guest'
  }
  function rebuild(){
   storeDraft();
-  cancelAnimationFrame(rebuildFrame);rebuildFrame=requestAnimationFrame(()=>{if(!draft||!dialog.open)return;if(model)GardenCharacter.dispose(model);model=GardenCharacter.create(T,draft);scene.add(model.root);$('character-measure').textContent=draft.height+' cm / '+draft.weight+' kg';draw();});
+  cancelAnimationFrame(rebuildFrame);const wanted=++rebuildWanted;rebuildFrame=requestAnimationFrame(async()=>{if(!draft||!dialog.open)return;$('character-loading').hidden=window.GardenCharacterRocketbox?.loaded(GardenCharacterRocketbox.idFor(draft))??true;try{await GardenCharacter.load(draft);}catch{$('character-error').textContent='This character could not load. Showing a simple stand-in.';}if(wanted!==rebuildWanted||!draft||!dialog.open)return;$('character-loading').hidden=true;if(model)GardenCharacter.dispose(model);model=GardenCharacter.create(T,draft);scene.add(model.root);$('character-measure').textContent=draft.height+' cm / '+draft.weight+' kg';draw();});
  }
  function syncFields(){
   for(const [key,spec] of Object.entries(schema.numbers)){const input=$('character-'+key);input.value=draft[key];$('value-'+key).value=spec.unit?draft[key]+' '+spec.unit:Math.round(draft[key]*100)+'%';}
   for(const key of Object.keys(schema.choices))$('character-'+key).value=draft[key];
+  for(const b of dialog.querySelectorAll('[data-character]'))b.setAttribute('aria-pressed',String(b.dataset.character===draft.character));
   for(const key of ['hairLength','hairVolume'])$('character-'+key).disabled=draft.hairStyle==='none';
   for(const key of Object.keys(schema.colors)){$('character-'+key).value=draft[key];for(const b of dialog.querySelectorAll('[data-color-key="'+key+'"]'))b.setAttribute('aria-pressed',String(b.dataset.color===draft[key]));}
  }
@@ -70,10 +71,12 @@ window.createCharacterEditor=function({T,save,stopMoving,draftOwner=()=> 'guest'
   const tabs=dialog.querySelector('.character-tabs'),panels=$('character-panels');tabs.replaceChildren();panels.replaceChildren();
   for(const [tab,title] of [['body','Body'],['face','Face'],['hair','Hair'],['style','Style']]){
    const button=document.createElement('button');button.type='button';const icon=document.createElement('i');icon.dataset.lucide={body:'person-standing',face:'scan-face',hair:'scissors',style:'shirt'}[tab];icon.setAttribute('aria-hidden','true');const label=document.createElement('span');label.textContent=title;button.append(icon,label);button.id='character-tab-'+tab;button.setAttribute('role','tab');button.setAttribute('aria-controls','character-fields-'+tab);button.onclick=()=>selectTab(tab);tabs.append(button);
-   button.onkeydown=e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const buttons=[...tabs.children],index=buttons.indexOf(button),next=e.key==='Home'?0:e.key==='End'?3:(index+(e.key==='ArrowLeft'?3:1))%4;buttons[next].click();buttons[next].focus();}};
+   button.onkeydown=e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const buttons=[...tabs.children].filter(b=>!b.hidden),index=buttons.indexOf(button),last=buttons.length-1,next=e.key==='Home'?0:e.key==='End'?last:(index+(e.key==='ArrowLeft'?last:1))%buttons.length;buttons[next].click();buttons[next].focus();}};
    const panel=document.createElement('div');panel.className='character-fields';panel.id='character-fields-'+tab;panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby',button.id);panels.append(panel);
+   // Only the body tab applies: a character's face, hair and clothes are part of who they are.
+   if(tab!=='body'){button.hidden=true;panel.hidden=true;}
    if(tab==='body'){
-    const baseLabel=document.createElement('label');baseLabel.className='character-field';baseLabel.textContent='Character base';const base=document.createElement('select');base.id='character-base';base.setAttribute('aria-label','Character base');for(const name of ['Custom',...Object.keys(bases)]){const option=document.createElement('option');option.textContent=name;base.append(option);}baseLabel.append(base);panel.append(baseLabel);
+    const baseLabel=document.createElement('label');baseLabel.className='character-field';baseLabel.textContent='Character base';const base=document.createElement('select');base.id='character-base';base.setAttribute('aria-label','Character base');for(const name of ['Custom',...Object.keys(bases)]){const option=document.createElement('option');option.textContent=name;base.append(option);}baseLabel.append(base);baseLabel.hidden=true;panel.append(baseLabel);
     base.onchange=()=>{if(!bases[base.value])return;draft={...defaults(),...bases[base.value]};syncFields();$('character-preset').value='Custom';rebuild();};
     const label=document.createElement('label');label.className='character-field';label.textContent='Starting shape';const select=document.createElement('select');select.id='character-preset';select.setAttribute('aria-label','Starting shape');for(const name of ['Custom','Balanced','Lean','Athletic','Soft']){const o=document.createElement('option');o.textContent=name;select.append(o);}label.append(select);panel.append(label);
     select.onchange=()=>{const presets={Balanced:{weight:72,build:.35,shoulders:1,waist:1,hips:1},Lean:{weight:55,build:.2,shoulders:.94,waist:.85,hips:.94},Athletic:{weight:85,build:.9,shoulders:1.18,waist:.9,hips:1},Soft:{weight:108,build:.12,shoulders:1,waist:1.12,hips:1.2}};Object.assign(draft,presets[select.value]||{});$('character-base').value='Custom';syncFields();rebuild();};
@@ -82,7 +85,13 @@ window.createCharacterEditor=function({T,save,stopMoving,draftOwner=()=> 'guest'
     const label=document.createElement('label');label.className='character-field';label.htmlFor='character-'+key;const row=document.createElement('span');row.append(document.createTextNode(spec.label));const out=document.createElement('output');out.id='value-'+key;out.htmlFor='character-'+key;row.append(out);
     const input=document.createElement('input');input.type='range';input.id='character-'+key;input.min=spec.min;input.max=spec.max;input.step=spec.step;input.oninput=()=>{change(key,Number(input.value));$('character-preset').value='Custom';};label.append(row,input);panel.append(label);
    }
-   for(const [key,spec] of Object.entries(schema.choices).filter(([,s])=>s.tab===tab)){
+   for(const [key,spec] of Object.entries(schema.choices).filter(([,s])=>s.tab===tab&&s.picker)){
+    const field=document.createElement('div');field.className='character-field';const label=document.createElement('span');label.textContent=spec.label;const grid=document.createElement('div');grid.className='character-people';grid.setAttribute('role','group');grid.setAttribute('aria-label',spec.label);
+    const value=document.createElement('input');value.type='hidden';value.id='character-'+key;
+    for(const [id,name] of Object.entries(spec.options)){const b=document.createElement('button');b.type='button';b.dataset.character=id;b.title=name;b.setAttribute('aria-label',name);const img=document.createElement('img');img.src=GardenCharacterRocketbox.thumb(id);img.alt='';img.loading='lazy';const caption=document.createElement('span');caption.textContent=name;b.append(img,caption);b.onclick=()=>change(key,id);grid.append(b);}
+    field.append(label,value,grid);panel.prepend(field);
+   }
+   for(const [key,spec] of Object.entries(schema.choices).filter(([,s])=>s.tab===tab&&!s.picker)){
     const label=document.createElement('label');label.className='character-field';label.htmlFor='character-'+key;const row=document.createElement('span');row.textContent=spec.label;const select=document.createElement('select');select.id='character-'+key;
     for(const [value,name] of Object.entries(spec.options)){const option=document.createElement('option');option.value=value;option.textContent=name;select.append(option);}select.onchange=()=>change(key,select.value);label.append(row,select);panel.append(label);
    }
@@ -103,10 +112,10 @@ window.createCharacterEditor=function({T,save,stopMoving,draftOwner=()=> 'guest'
  $('character-close').onclick=close;dialog.addEventListener('cancel',e=>{e.preventDefault();close();});dialog.addEventListener('close',()=>{opened++;cancelAnimationFrame(rebuildFrame);cancelAnimationFrame(motionFrame);moving=false;motion.setAttribute('aria-pressed','false');if(model){GardenCharacter.dispose(model);model=null;}stopMoving();});
  $('character-left').onclick=()=>{angle-=Math.PI/4;draw();};$('character-right').onclick=()=>{angle+=Math.PI/4;draw();};$('character-front').onclick=()=>{angle=0;draw();};$('character-face').onclick=()=>{closeup=!closeup;$('character-face').setAttribute('aria-pressed',String(closeup));draw();};
  $('character-reset').onclick=()=>{draft=structuredClone(original);$('character-base').value='Custom';$('character-preset').value='Custom';syncFields();rebuild();};
- $('character-random').onclick=()=>{draft=defaults();for(const [key,s] of Object.entries(schema.numbers)){const value=s.min+Math.random()*(s.max-s.min);draft[key]=Number((Math.round(value/s.step)*s.step).toFixed(2));}for(const [key,s] of Object.entries(schema.colors))draft[key]=s.swatches[Math.floor(Math.random()*s.swatches.length)];for(const [key,s] of Object.entries(schema.choices)){const options=Object.keys(s.options);draft[key]=options[Math.floor(Math.random()*options.length)];}$('character-base').value='Custom';$('character-preset').value='Custom';syncFields();rebuild();};
+ $('character-random').onclick=()=>{draft=defaults();for(const [key,s] of Object.entries(schema.numbers)){const value=s.min+Math.random()*(s.max-s.min);draft[key]=Number((Math.round(value/s.step)*s.step).toFixed(2));}for(const [key,s] of Object.entries(schema.colors))draft[key]=s.swatches[Math.floor(Math.random()*s.swatches.length)];for(const [key,s] of Object.entries(schema.choices)){const options=Object.keys(s.options);draft[key]=options[Math.floor(Math.random()*options.length)];}draft.weight=Math.round(50+Math.random()*60);draft.height=Math.round(155+Math.random()*40);$('character-base').value='Custom';$('character-preset').value='Custom';syncFields();rebuild();};
  $('character-save').onclick=async()=>{if(busy||!draft)return;if(preview){storeDraft();$('character-error').textContent=draftStored?'Character saved on this device. Online entry is not available yet.':'This browser cannot save your draft. Keep this window open.';return;}busy=true;const submitted=structuredClone(draft);$('character-save').disabled=true;$('character-save').textContent='Saving...';$('character-error').textContent='';try{await save(submitted);original=submitted;try{localStorage.removeItem(draftKey);}catch{}dialog.close();}catch(e){storeDraft();$('character-error').textContent=e.message;}finally{busy=false;$('character-save').disabled=false;$('character-save').textContent='Save & enter garden';}};
  return {async open(character){
   if(dialog.open)return;const epoch=++opened;dialog.showModal();stopMoving();draft=null;$('character-loading').hidden=false;$('character-error').textContent='';$('character-save').disabled=true;$('character-title').textContent=character?'Edit your character':'Create your character';
-  try{schema=await loadSchema();if(epoch!==opened)return;draftKey='eden-character-draft-v1-'+draftOwner();original={...defaults(),...(character||bases.Boulevard)};const restored=restoreDraft();draft=restored||structuredClone(original);buildFields();if(!character&&!restored)$('character-base').value='Boulevard';syncFields();initScene();angle=0;closeup=false;rebuild();$('character-save').disabled=false;$('character-save').textContent=preview?'Save on this device':'Save & enter garden';$('character-title').textContent=preview?'Preview your character':character?'Edit your character':'Create your character';$('character-error').textContent=preview?'Online entry is not available yet.':restored?'Restored your saved draft.':'';$('character-loading').hidden=true;window.lucide?.createIcons();}catch(e){$('character-loading').hidden=true;$('character-error').textContent=e.message;}
+  try{schema=await loadSchema();if(epoch!==opened)return;draftKey='eden-character-draft-v1-'+draftOwner();original={...defaults(),...(character||bases.Boulevard)};original.character=character?.character&&schema.choices.character.options[character.character]?character.character:character?GardenCharacterRocketbox.idFor(character):original.character;const restored=restoreDraft();draft=restored||structuredClone(original);buildFields();if(!character&&!restored)$('character-base').value='Boulevard';syncFields();initScene();angle=0;closeup=false;rebuild();$('character-save').disabled=false;$('character-save').textContent=preview?'Save on this device':'Save & enter garden';$('character-title').textContent=preview?'Preview your character':character?'Edit your character':'Create your character';$('character-error').textContent=preview?'Online entry is not available yet.':restored?'Restored your saved draft.':'';$('character-loading').hidden=true;window.lucide?.createIcons();}catch(e){$('character-loading').hidden=true;$('character-error').textContent=e.message;}
  }};
 };

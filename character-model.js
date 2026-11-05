@@ -1,7 +1,40 @@
 'use strict';
 // One rigged human is shared by the creator and multiplayer. Schema keys stay stable.
 window.GardenCharacter = {
+ // People are Rocketbox characters. The original low-poly body remains for ghosts, stands in while a character's mesh
+ // downloads, and stays if that download fails; the swap happens in place, so anyone holding the model keeps working.
  create(T,a,ghost=false){
+  const rocketbox=window.GardenCharacterRocketbox;
+  if(ghost||!a||!rocketbox)return this.createClassic(T,a,ghost);
+  const id=rocketbox.idFor(a),holder=rocketbox.loaded(id)?this.createHolder(T,a):this.createClassic(T,a,false);
+  const handle={motion:holder.motion,skeleton:holder.skeleton,parts:[...holder.root.children],owner:holder,disposed:false};
+  holder.handle=handle;holder.motion=new Proxy({},{get:(_,key)=>handle.motion[key]});holder.animate=(...args)=>handle.motion.animate(...args);
+  GardenCharacterMotion.bodies.add(holder);
+  if(rocketbox.loaded(id))this.fit(T,holder,id,a);
+  else rocketbox.load(id).then(()=>{if(!handle.disposed)this.fit(T,holder,id,a);}).catch(()=>{});
+  return holder;
+ },
+ // A model with no parts yet, for a character whose mesh is already here.
+ createHolder(T,a){const root=new T.Group();root.scale.setScalar(a.height/175);return {root,limbs:[],ghost:false,height:a.height/100,skeleton:null,byName:{}};},
+ fit(T,model,id,a){
+  const handle=model.handle,previous=handle.parts,tune=handle.motion?.tune;
+  this.disposeParts(previous);handle.skeleton?.dispose();
+  const built=GardenCharacterRocketbox.build(T,id,a,model.root);
+  handle.parts=built.parts;handle.skeleton=model.skeleton=built.skeleton;
+  for(const key of Object.keys(model.byName))delete model.byName[key];Object.assign(model.byName,built.byName);
+  model.limbs.length=0;for(const side of ['L','R'])model.limbs.push(built.byName['upperleg01.'+side],built.byName['upperarm01.'+side]);
+  model.root.userData.characterStyle='rocketbox';model.characterId=id;
+  handle.motion=GardenCharacterMotion.create(T,{root:model.root,skeleton:built.skeleton});if(tune)Object.assign(handle.motion.tune,tune);
+  handle.motion.animate(0);
+ },
+ // Load a character before create(), for callers that would rather wait than show the stand-in.
+ load(a){const rocketbox=window.GardenCharacterRocketbox;return rocketbox&&a?rocketbox.load(rocketbox.idFor(a)):Promise.resolve();},
+ disposeParts(parts){
+  const geometries=new Set(),materials=new Set();
+  for(const part of parts){part.traverse?.(n=>{if(n.geometry)geometries.add(n.geometry);if(n.material)for(const m of Array.isArray(n.material)?n.material:[n.material])materials.add(m);});part.removeFromParent();}
+  for(const g of geometries)g.dispose();for(const m of materials){if(m.userData.shared)continue;m.map?.dispose();m.dispose();}
+ },
+ createClassic(T,a,ghost=false){
   const root=new T.Group(),limbs=[];
   // PS2-era shading: simple per-light Lambert over painted textures and baked vertex light.
   const material=(color,extra={})=>GardenCharacterDetails.material(T,color,extra);
@@ -184,7 +217,8 @@ window.GardenCharacter = {
   model.animate(0);return model;
  },
  dispose(model){
-  const geometries=new Set(),materials=new Set();model.root.traverse(n=>{if(n.geometry)geometries.add(n.geometry);if(n.material)for(const m of Array.isArray(n.material)?n.material:[n.material])materials.add(m);});
-  for(const g of geometries)g.dispose();for(const m of materials){m.map?.dispose();m.dispose();}model.skeleton?.dispose();model.root.removeFromParent();GardenCharacterMotion.bodies.delete(model);
+  const handle=model.handle;if(handle)handle.disposed=true;
+  this.disposeParts([model.root]);(handle?handle.skeleton:model.skeleton)?.dispose();model.root.removeFromParent();
+  GardenCharacterMotion.bodies.delete(handle?.owner||model);
  }
 };
