@@ -312,7 +312,7 @@ $('movement-hint').textContent=finePointer?'W A S D TO MOVE / CLICK TO LOOK · C
 function requestDraw(){if(!frame&&!document.hidden)frame=requestAnimationFrame(draw);}
 // Hit-stop: on a solid hit the picture holds for a few hundredths of a second, which is what sells the impact.
 let hitStopUntil=0;function hitStop(ms){if(!reduced)hitStopUntil=Math.max(hitStopUntil,performance.now()+ms);}
-function draw(time){frame=0;if(!state.ready)return;if(time<hitStopUntil){previous=time;frame=requestAnimationFrame(draw);return;}if(lookLocked&&modalOpen())document.exitPointerLock?.();quality.frame(time,!!previous);const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(modalOpen())walkVelocity.set(0,0,0);else if(keys.size||walkVelocity.lengthSq()||slide)move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();sway.remove(camera);battle?.update(time/1000,dt||.016);combat?.update(time/1000,dt||.016);const follow=reduced||combat?.armed()||state.view==='free',factor=follow?1:1-Math.exp(-7*(dt||.016));if(camera.position.distanceToSquared(targetPosition)>4e4){camera.position.copy(targetPosition);aim.copy(targetAim);}if(follow){const y=camera.position.y;camera.position.copy(targetPosition);aim.copy(targetAim);if(Math.abs(targetPosition.y-y)<.6&&!motion.inspect().airborne)camera.position.y=y+(targetPosition.y-y)*(1-Math.exp(-28*(dt||.016)));}else{camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);}const leap=pockets?.cross(camera.position);if(leap){camera.position.add(leap);aim.add(leap);targetPosition.add(leap);targetAim.add(leap);}const feel=updateFeel(dt||.016);updateDust(dt||.016);if(sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false),crouch:feel.drop,lean:feel.lean,slide:feel.slide,sprint:feel.sprint})&&!slide)footsteps?.step(surfaceAt(targetPosition),feel.speed*(crouchAmount>.5?.5:1));playerBody?.update(dt||.016,{aim,velocity:walkVelocity,airborne:motion.inspect().airborne,crouch:feel.drop,fovKick:feel.fov});if(!pockets?.inside(camera.position))garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();const fighting=arena?.update(time/1000,dt||.016);pockets?.render();const brawling=fists?.update(time/1000,dt||.016);const exploring=secrets?.update(time/1000,dt||.016);const extrasBusy=extras?.update(time/1000,dt||.016);ambience?.update(targetPosition,{night:garden.nightRoad?.amount||0,theater:window.showroomAmphitheaterPosition});if(fists&&time-lastSkinCheck>2000){lastSkinCheck=time;const character=multiplayer?.inspect().character;if(character?.skinTone)fists.setSkin(character);}withHitEffects(()=>post.render());combat?.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();updateDoorPrompt();if(brawling||exploring||extrasBusy||garden.animating||combat?.busy()||motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||fighting||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
+function draw(time){frame=0;if(!state.ready)return;if(time<hitStopUntil){previous=time;frame=requestAnimationFrame(draw);return;}if(lookLocked&&modalOpen())document.exitPointerLock?.();quality.frame(time,!!previous);const dt=Math.min((time-(previous||time))/1000,.05);previous=time;if(modalOpen())walkVelocity.set(0,0,0);else if(keys.size||walkVelocity.lengthSq()||slide)move(dt||.016);updateJump(dt||.016);$('social-move').querySelector('[data-key="shift"]').setAttribute('aria-pressed',String(keys.has('shift')));residents.update();if(followResident)frameResident();removeThird();sway.remove(camera);battle?.update(time/1000,dt||.016);combat?.update(time/1000,dt||.016);const follow=reduced||combat?.armed()||state.view==='free',factor=follow?1:1-Math.exp(-7*(dt||.016));if(camera.position.distanceToSquared(targetPosition)>4e4){camera.position.copy(targetPosition);aim.copy(targetAim);}if(follow){const y=camera.position.y;camera.position.copy(targetPosition);aim.copy(targetAim);if(Math.abs(targetPosition.y-y)<.6&&!motion.inspect().airborne)camera.position.y=y+(targetPosition.y-y)*(1-Math.exp(-28*(dt||.016)));}else{camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);}const leap=pockets?.cross(camera.position);if(leap){camera.position.add(leap);aim.add(leap);targetPosition.add(leap);targetAim.add(leap);}const feel=updateFeel(dt||.016);updateDust(dt||.016);if(sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false),crouch:feel.drop,lean:feel.lean,slide:feel.slide,sprint:feel.sprint,weight:feel.weight,ads:feel.ads})&&!slide)footsteps?.step(surfaceAt(targetPosition),feel.speed*(crouchAmount>.5?.5:1));playerBody?.update(dt||.016,{aim,velocity:walkVelocity,airborne:motion.inspect().airborne,crouch:feel.drop,fovKick:feel.fov});applyThird(dt||.016);if(!pockets?.inside(camera.position))garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();const fighting=arena?.update(time/1000,dt||.016);pockets?.render();const brawling=fists?.update(time/1000,dt||.016);const exploring=secrets?.update(time/1000,dt||.016);const extrasBusy=extras?.update(time/1000,dt||.016);ambience?.update(targetPosition,{night:garden.nightRoad?.amount||0,theater:window.showroomAmphitheaterPosition});if(fists&&time-lastSkinCheck>2000){lastSkinCheck=time;const character=multiplayer?.inspect().character;if(character?.skinTone)fists.setSkin(character);}withHitEffects(()=>post.render());combat?.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();updateDoorPrompt();if(brawling||exploring||extrasBusy||garden.animating||combat?.busy()||motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||fighting||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001)requestDraw();else previous=0;}
 let roadCaption='';
 // Fist-fight hits shake, roll and drop the view only for this frame; the walking camera underneath is untouched.
 const savedCameraPosition=new T.Vector3(),savedCameraQuaternion=new T.Quaternion();
@@ -387,7 +387,7 @@ function move(dt){
  const z=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),x=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
  const forward=targetAim.clone().sub(targetPosition);forward.y=0;forward.normalize();const right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));
  const crouched=crouchAmount>.5&&!slide;
- const wish=forward.multiplyScalar(z).add(right.multiplyScalar(x));if(wish.lengthSq())wish.normalize().multiplyScalar(crouched?motion.speed(false)*.45:motion.speed(keys.has('shift')));
+ const wish=forward.multiplyScalar(z).add(right.multiplyScalar(x));if(wish.lengthSq())wish.normalize().multiplyScalar((crouched?motion.speed(false)*.45:motion.speed(keys.has('shift')))*(1-.13*(combat?.weight?.()||0))*(1-.38*(combat?.ads?.()||0))*(proneT>0?.35:1));
  if(slide){
   // A slide keeps its own heading (steerable a little) and bleeds speed from a sprint burst down to a crawl.
   slide.t+=dt;const k=slide.t/slide.dur;
@@ -446,7 +446,29 @@ function prepareWalking(){
 }
 // Feel: crouch / slide eye drop, sprint widening, landing thuds and footsteps by surface (footsteps.js).
 const footsteps=window.createFootsteps?.(),SLIDE_TIME=.75;
-let crouchHeld=false,crouchAmount=0,slide=null,fovKick=0,airTime=0,wasAirborne=false;
+let crouchHeld=false,crouchAmount=0,slide=null,fovKick=0,airTime=0,wasAirborne=false,dive=null,proneT=0,diveCount=0,tackleCount=0;
+// Hold C through the start of a slide and you launch into a dolphin dive: a low flat leap that lands on your chest
+// and skids. Sliding or diving into someone in the open match tackles them: they go down and drop their weapon.
+const DIVE_HOLD=.16;
+function startDive(){
+ const speed=Math.hypot(walkVelocity.x,walkVelocity.z),dir=slide.dir.clone();slide=null;
+ dive={t:0,dir,speed:Math.max(speed,6.5)*1.15};walkVelocity.copy(dir).multiplyScalar(dive.speed);motion.jump(4.3);diveCount++;
+ combat?.dropAim?.();sway.bump(.5,0);fovKick+=5;footsteps?.step(surfaceAt(targetPosition),8);requestDraw();
+}
+function landDive(){
+ const speed=Math.hypot(walkVelocity.x,walkVelocity.z);
+ sway.bump(1.1,Math.random()<.5?-1:1);footsteps?.land(surfaceAt(targetPosition),1);hitStop(45);
+ {const feet=targetPosition.clone();feet.y-=1.72;puff(feet,9,.9);}
+ slide={kind:'slide',dur:.55,t:0,dir:dive.dir.clone(),speed:Math.max(3.2,speed*.7),belly:true};footsteps?.slide(surfaceAt(targetPosition),.55);
+ proneT=.75;dive=null;
+}
+function tryTackle(){
+ if(!battle?.active?.()||!(slide?.kind==='slide'||dive))return;
+ const speed=Math.hypot(walkVelocity.x,walkVelocity.z);if(speed<4)return;
+ const feet=targetPosition.clone();feet.y-=1.75;
+ const hit=battle.tackle?.(feet,walkVelocity.clone().setY(0).normalize(),speed);
+ if(hit){tackleCount++;sway.bump(.9,0);hitStop(70);footsteps?.land('grass',.8);walkVelocity.multiplyScalar(.45);if(slide)slide.speed*=.45;if(dive)dive.speed*=.45;}
+}
 function startSlide(){
  const speed=Math.hypot(walkVelocity.x,walkVelocity.z);
  if(slide||!keys.has('shift')||speed<4.2||motion.inspect().airborne||playerBody?.downed()||modalOpen())return;
@@ -520,15 +542,20 @@ function updateFeel(dt){
  const speed=Math.hypot(walkVelocity.x,walkVelocity.z),airborne=motion.inspect().airborne;
  crouchAmount+=(((crouchHeld||slide?.kind==='slide')&&!arena?.active()?1:0)-crouchAmount)*(1-Math.exp(-14*dt));
  const sprinting=keys.has('shift')&&speed>4.5&&crouchAmount<.3;
- fovKick+=((slide?.kind==='slide'?13:slide?5:sprinting?8:0)-fovKick)*(1-Math.exp(-(slide||sprinting?6:4)*dt));
+ fovKick+=((dive?15:slide?.kind==='slide'?13:slide?5:sprinting?8:0)-fovKick)*(1-Math.exp(-(slide||sprinting?6:4)*dt));
  if(airborne)airTime+=dt;else if(wasAirborne){footsteps?.land(surfaceAt(targetPosition),Math.min(1,airTime/.7));if(airTime>.45){const feet=targetPosition.clone();feet.y-=1.72;puff(feet,5,.7);}airTime=0;
+  if(dive)landDive();
   // Land with C held at speed and you go straight into a slide.
-  if(crouchHeld&&!slide&&speed>4.2){slide={kind:'slide',dur:SLIDE_TIME,t:0,dir:walkVelocity.clone().setY(0).normalize(),speed:speed*1.15};footsteps?.slide(surfaceAt(targetPosition),SLIDE_TIME);}}
+  else if(crouchHeld&&!slide&&speed>4.2){slide={kind:'slide',dur:SLIDE_TIME,t:0,dir:walkVelocity.clone().setY(0).normalize(),speed:speed*1.15,noDive:true};footsteps?.slide(surfaceAt(targetPosition),SLIDE_TIME);}}
  wasAirborne=airborne;
+ if(slide?.kind==='slide'&&!slide.belly&&crouchHeld&&slide.t>DIVE_HOLD&&slide.t<.4&&!airborne&&!slide.noDive)startDive();
+ if(dive)dive.t+=dt;proneT=Math.max(0,proneT-dt);
+ tryTackle();
  // The view leans into a slide: towards the side it is heading, and a little regardless.
  let lean=0;if(slide?.kind==='slide'){const forward=targetAim.clone().sub(targetPosition).setY(0).normalize(),right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));lean=(-slide.dir.dot(right)*.16-.05)*(1-slide.t/slide.dur*.7);}
  const slideK=slide?.kind==='slide'?Math.min(1,speed/7)*(1-slide.t/slide.dur*.5):slide?.kind==='dash'?.5:0;
- return {drop:crouchAmount*.55+(slide?.kind==='slide'?.16*(1-slide.t/slide.dur):0)+deathDrop,fov:fovKick,speed,lean:lean+deathDrop*.25,slide:slideK,sprint:sprinting?1:0};
+ const diveDrop=dive?Math.min(1,dive.t*5)*.55:0,prone=proneT>0?Math.min(1,proneT/.25)*.75:0;
+ return {drop:crouchAmount*.55+(slide?.kind==='slide'&&!slide.belly?.16*(1-slide.t/slide.dur):0)+Math.max(diveDrop,prone)+deathDrop,fov:fovKick,speed,lean:lean+deathDrop*.25+(dive?.04:0),slide:Math.max(slideK,dive?.35:0),sprint:sprinting?1:0,weight:combat?.weight?.()||0,ads:combat?.ads?.()||0};
 }
 function jump(){if(!state.ready||modalOpen()||expedition&&!expedition.canMove()||fists&&!fists.canMove()||motion.inspect().airborne)return;prepareWalking();
  // Jumping out of a slide carries its speed and a little more.
@@ -594,7 +621,36 @@ arena=multiplayer&&window.createArena?.({T,scene,camera,renderer,multiplayer,req
 const solidFar=new T.Vector3(1e6,0,1e6);
 if(window.GardenCharacterMotion)GardenCharacterMotion.solid=p=>{const q=garden.constrain(p.clone(),solidFar.clone());if(q.distanceToSquared(p)>1e-6)return true;return ((p.x-5.7)/4.1)**2+((p.z-3.5)/5.9)**2<1||Math.hypot(p.x-.5,p.z+7)<.75||!!pockets?.blocks(p)||!!libraryGarden?.blocks(p)||!!amphitheater.blocks(p)||!!gardenLibrary?.blocks(p)||!!gardenProps?.blocks(p);};
 // First-person body: your own character under the camera, reaching for walls and things, guarding and punching.
-const playerBody=window.createPlayerBody?.({T,scene,camera,pickables,requestDraw,enabled:()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident&&!arena?.active()&&!battle?.active()&&!combat?.armed()&&!fistsEngaged()});
+// Third person: scroll out on foot, or past hip-fire with a gun, and the camera pulls back over your shoulder so you see
+// your own character (holding what you hold); scroll in to come back to first person (and further in to aim).
+const thirdCheck={at:0,near:Infinity,room:9};let thirdK=0,thirdOn=false,thirdOffset=null,lastThirdToggle=0,heldWeapon=null;
+const thirdAllowed=()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident&&!arena?.active()&&!expedition?.active()&&!fistsEngaged()&&!battle?.dead?.();
+function setThird(on){const t=performance.now();if(on===thirdOn||t-lastThirdToggle<260)return false;if(on&&!thirdAllowed())return false;lastThirdToggle=t;thirdOn=on;if(on)combat?.zoom?.(0);requestDraw();return true;}
+const playerBody=window.createPlayerBody?.({T,scene,camera,pickables,requestDraw,enabled:()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident&&!arena?.active()&&(thirdK>.05||!battle?.active()&&!combat?.armed()&&!fistsEngaged())});
+function applyThird(dt){
+ if(thirdOn&&!thirdAllowed())thirdOn=false;
+ thirdK+=((thirdOn?1:0)-thirdK)*(1-Math.exp(-(reduced?40:9)*dt));if(thirdK<.002&&!thirdOn)thirdK=0;
+ if(thirdK>0&&Math.abs((thirdOn?1:0)-thirdK)>.002)requestDraw();else if(thirdOn)thirdK=1;
+ playerBody?.third?.(thirdK);
+ // What you hold shows in your character's hand.
+ const want=thirdK>.3&&combat?.armed()?combat.inspect().weapon:null;
+ if(want!==heldWeapon){heldWeapon=want;playerBody?.hold?.(want?combat.weaponModel(want):null,want);}
+ if(!thirdK)return;
+ const f=new T.Vector3();camera.getWorldDirection(f);const right=new T.Vector3(-f.z,0,f.x).normalize();
+ const offset=f.clone().multiplyScalar(-2.7).addScaledVector(new T.Vector3(0,1,0),.28).addScaledVector(right,.62).multiplyScalar(thirdK);
+ // Keep the camera out of walls and trunks: pull it in front of whatever is between it and your head.
+ const len=offset.length(),dir=offset.clone().divideScalar(len||1);
+ const t=performance.now();if(t-thirdCheck.at>90){thirdCheck.at=t;const h=combat?.worldHits?.(camera.position.clone(),dir,3.3);thirdCheck.near=h?h.distance:Infinity;}
+ // Pull in fast, ease back out.
+ thirdCheck.room+=((thirdCheck.near-.3)-thirdCheck.room)*(thirdCheck.near-.3<thirdCheck.room?1:1-Math.exp(-4*dt));
+ if(thirdCheck.room<len)offset.setLength(Math.max(.2,thirdCheck.room));
+ // ...and inside the walkable world (the sky wall at the door is too big for the wall check).
+ for(const k of [1,.75,.5,.3,0]){const want=camera.position.clone().addScaledVector(offset,k),kept=garden.constrain(want.clone(),camera.position.clone());if(k===0||kept.distanceTo(want)<.05||Math.hypot(kept.x-camera.position.x,kept.z-camera.position.z)>.4){offset.x=kept.x-camera.position.x;offset.z=kept.z-camera.position.z;break;}}
+ camera.position.add(offset);thirdOffset={offset,at:camera.position.clone()};
+}
+function removeThird(){if(thirdOffset&&camera.position.equals(thirdOffset.at))camera.position.sub(thirdOffset.offset);thirdOffset=null;}
+// On foot (mouse locked or in the match) the wheel moves between first and third person.
+document.addEventListener('wheel',e=>{if(!state.ready||combat?.armed()||modalOpen()||e.target!==renderer.domElement&&!lookLocked)return;if(!lookLocked&&!battle?.active())return;e.preventDefault();const dy=e.deltaMode===1?e.deltaY*33:e.deltaY;if(Math.abs(dy)<4)return;setThird(dy>0);},{passive:false});
 // Fist fights with the Violet Trickster (fist-combat.js, jester-moves.js, ragdoll.js). Online brawling between visitors
 // stays with player-body.js and the server, so the fists are not wired to the shared room.
 const groundPoint=new T.Vector3();
@@ -612,7 +668,7 @@ try{
  if(secrets)extras=window.createEdenExtras?.({T,scene,camera,garden,combat:fists,secrets,collection,reduced,stage,getPlayer:playerView,inspectGarment:index=>inspect('front',index),expeditionActive:()=>!!expedition?.active()||!!battle?.active(),ambience,requestDraw,addPickable,shared:multiplayer});
 }catch(error){console.warn('Garden secrets unavailable',error);}
 expedition=window.createExpedition({T,scene,camera,garden,layout:window.nightLayout,getPose:()=>state.ready?{x:targetPosition.x,z:targetPosition.z,yaw:Math.atan2(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z)}:null,place(x,z,lx=x,lz=z-5){motion.reset();freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,1.75,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=60;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},stopMoving(){keys.clear();drag=null;},requestDraw,returnHome:()=>go('spawn',true)});
-combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,reduced,requestDraw,
+combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,reduced,requestDraw,thirdPerson:()=>thirdK,setThird,
  // Eden is a safe zone: weapons come out only beyond the hidden door (the open match and the firing range).
  canAct:()=>state.ready&&!modalOpen()&&!expedition?.active()&&!arena?.active()&&!pockets?.inside(camera.position)&&targetPosition.z<garden.road.door&&(battle?.canAct()??true),
  shotHook:(...a)=>battle?.shotHook(...a),onExplosion:(...a)=>battle?.onExplosion(...a),
@@ -663,5 +719,5 @@ const play=window.createPlayMenu?.({nav:document.querySelector('.view-nav'),afte
 window.breakThyRuleShowroom={scene:()=>scene,renderer:()=>renderer,combat:()=>combat,battle:()=>battle,fists:()=>fists,fight:key=>fists?.key(key,true),teleport(x,z,yaw=Math.PI){if(!state.ready)return;freeView();motion.reset();walkVelocity.set(0,0,0);targetPosition.set(x,1.75+groundHeight(groundPoint.set(x,0,z)),z);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,Math.cos(yaw)).multiplyScalar(5));camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();},go,inspect,showSide,focusResident,
  // camera placement for captures and checks: stand at (x,z) looking toward (lx,ly,lz)
  place(x,z,lx,lz,ly=1.75){if(expedition?.active())expedition.leave();motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,ly,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.lookAt(aim);requestDraw();},
-getState:()=>({...state,secrets:secrets?.inspect(),extras:extras?.inspect(),ambience:ambience?.inspect(),aim:targetAim.toArray().map(v=>+v.toFixed(3)),feel:{bumps:bumpCount,crouch:+crouchAmount.toFixed(2),slide:slide?.kind||null,fovKick:+fovKick.toFixed(1),lookLocked},combat:combat?.inspect(),fists:fists?.inspect(),position:camera.position.toArray(),arena:arena?.inspect(),movement:{...motion.inspect(),velocity:walkVelocity.toArray().map(v=>+v.toFixed(3)),sway:sway.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.nightBuilt()?garden.district.inspect():null,library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),lighting:lighting.inspect(),post:post.inspect(),quality:quality.inspect(),residents:residents.inspect(),body:playerBody?.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
+third:on=>{lastThirdToggle=0;return setThird(!!on);},sprintTo:v=>{const f=targetAim.clone().sub(targetPosition).setY(0).normalize();walkVelocity.copy(f).multiplyScalar(v||7);},getState:()=>({...state,secrets:secrets?.inspect(),extras:extras?.inspect(),ambience:ambience?.inspect(),aim:targetAim.toArray().map(v=>+v.toFixed(3)),third:+thirdK.toFixed(2),feel:{dive:!!dive,dives:diveCount,tackles:tackleCount,prone:+proneT.toFixed(2),bumps:bumpCount,crouch:+crouchAmount.toFixed(2),slide:slide?.kind||null,fovKick:+fovKick.toFixed(1),lookLocked},combat:combat?.inspect(),fists:fists?.inspect(),position:camera.position.toArray(),arena:arena?.inspect(),movement:{...motion.inspect(),velocity:walkVelocity.toArray().map(v=>+v.toFixed(3)),sway:sway.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.nightBuilt()?garden.district.inspect():null,library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),lighting:lighting.inspect(),post:post.inspect(),quality:quality.inspect(),residents:residents.inspect(),body:playerBody?.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
 })();

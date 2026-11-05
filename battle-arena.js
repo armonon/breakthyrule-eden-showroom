@@ -429,6 +429,9 @@
    }else if(b.goal&&b.state!=='fight'){b.path=findPath(p,b.goal);}
    // Steering + collisions (with separation so bots don't stack)
    for(const o2 of bots){if(o2===b||!o2.alive)continue;const dx=p.x-o2.root.position.x,dz=p.z-o2.root.position.z,d=Math.hypot(dx,dz);if(d<1.1&&d>1e-4){move.x+=dx/d*(1.1-d)*2.2;move.z+=dz/d*(1.1-d)*2.2;}}
+   // Walking into a bot shoulders it aside; running into it staggers it.
+   if(player?.alive){const q=posOf(player),dx=p.x-q.x,dz=p.z-q.z,d=Math.hypot(dx,dz);if(d<.9&&d>1e-4){const push=(.9-d)*(1+(player.speed||0)*.4);const np=p.clone();np.x+=dx/d*push*dt*6;np.z+=dz/d*push*dt*6;if(!blocked(np)){p.x=np.x;p.z=np.z;}
+    if((player.speed||0)>4.8&&clock-b.lastFlinch>.9){b.lastFlinch=clock;b.model.motion?.hit?.(new T.Vector3(dx/d,0,dz/d),.9);}}}
    if(move.lengthSq()>0){move.normalize().multiplyScalar(speed*dt);const next=p.clone().add(move);
     if(!blocked(next)&&next.x>B[0]+1&&next.x<B[1]-1&&next.z>B[2]+1&&next.z<B[3]-1){p.x=next.x;p.z=next.z;}
     else if(b.goal&&b.repath<=0){b.repath=1.5;b.path=findPath(p,b.goal);}
@@ -735,6 +738,25 @@
    for(const c of chests)if(c.open&&!c.supply&&c.restockAt&&clock>=c.restockAt){c.open=false;c.lidPivot.rotation.x=0;c.glow.visible=true;c.restockAt=0;}
   }
 
+  // A slide or dive into someone: they go down (and get back up) and their weapon flies out of their hands.
+  function disarm(b,dir){
+   const id=b.weapon;if(!id||id==='axe'||!b.weapons[id])return null;
+   const it=rollItem({weapon:id});it.loaded=b.weapons[id].loaded;delete b.weapons[id];setBotWeapon(b,botBestWeapon(b));
+   const p=posOf(b),l=dropItem(it,p.x,p.z,new T.Vector3(dir.x*2.6+rand(-.6,.6),3.4,dir.z*2.6+rand(-.6,.6)));if(l){l.y=p.y+1.1;l.group.position.y=l.y;}
+   return id;
+  }
+  function tackle(feet,dir,speed){
+   if(!active||!player?.alive)return null;
+   for(const b of bots){if(!b.alive||clock<(b.tackledUntil||0))continue;const q=b.root.position,to=q.clone().sub(feet).setY(0),d=to.length();
+    if(d>1.35||d<1e-3||to.normalize().dot(dir)<.25)continue;
+    b.tackledUntil=clock+2.5;b.model.motion?.knockdown?.(dir.clone(),1.6+speed*.12);
+    const lost=disarm(b,dir);damage(b,12,player,{weapon:'melee',dir:dir.clone()});
+    b.state='fight';b.target=player;b.aimT=b.reaction+1.2;b.fireT=Math.max(b.fireT,1.4);
+    announce(lost?`TACKLED ${b.name} · ${W(lost)?.name||lost.toUpperCase()} DROPPED`:`TACKLED ${b.name}`);chime([140,98],.12,.05);
+    return {name:b.name,dropped:lost};}
+   return null;
+  }
+
   /* ---------------------------------------------------------------- lifecycle */
   async function build(){
    if(built)return;built=true;
@@ -800,7 +822,9 @@
    // Loot physics + idle motion
    for(const l of loot){
     if(l.vel){l.vel.y-=9.8*dt;l.group.position.addScaledVector(l.vel,dt);const gy=groundY(l.group.position.x,l.group.position.z);if(l.group.position.y<=gy){l.group.position.y=gy;l.vel=null;l.pos.copy(l.group.position);l.y=gy;}}
-    else{l.group.position.y=l.y+.08+Math.sin(clock*2+l.phase)*.04;l.group.children[0].rotation.y=clock*.8+l.phase;}
+    else{l.group.position.y=l.y+.08+Math.sin(clock*2+l.phase)*.04;l.group.children[0].rotation.y=clock*.8+l.phase;
+     // Run, slide or dive through loot and you send it skittering.
+     if(player?.alive&&(player.speed||0)>5.2&&l.item.type!=='page'){const q=posOf(player),dx=l.pos.x-q.x,dz=l.pos.z-q.z,d=Math.hypot(dx,dz);if(d<.75&&d>1e-3){const k=(player.speed||0)*.45;l.vel=new T.Vector3(dx/d*k+rand(-.4,.4),1.6+rand(0,.8),dz/d*k+rand(-.4,.4));l.y+=.05;}}}
     if(l.group.userData.beam)l.group.userData.beam.lookAt(camera.position.x,l.group.userData.beam.getWorldPosition(new T.Vector3()).y,camera.position.z);
    }
    for(const c of chests){if(c.open){const k=clamp((clock-c.openT)/.45,0,1);c.lidPivot.rotation.x=-k*1.9*(1-.08*Math.sin(k*9)*(1-k));}}
@@ -819,6 +843,7 @@
    shotHook(origin,dir,maxDist){if(!active)return null;const h=hitTest(origin,dir,maxDist,player);
     if(attendant){const a=attendant.pos,t=rayCapsule(origin,dir,new T.Vector3(a.x,a.y+.5,a.z),new T.Vector3(a.x,a.y+3,a.z),.45);if(t!=null&&t<maxDist&&(!h||t<h.distance))return {c:null,distance:t,head:false,point:origin.clone().addScaledVector(dir,t),apply:dmg=>{hurtAttendant(dmg);return {killed:false};}};}
     if(!h)return null;return {...h,apply:(dmg,meta)=>damage(h.c,dmg,player,{...meta,dir:dir.clone()})};},
+   tackle,
    onExplosion(p,radius,dmg){if(!active)return;if(attendant&&attendant.pos.distanceTo(p)<radius)hurtAttendant(dmg);for(const c of combatants()){const d=posOf(c).distanceTo(p);if(d<radius&&los(p.clone().add(new T.Vector3(0,.4,0)),eyeOf(c)))damage(c,dmg*Math.pow(1-d/radius,1.2),player,{weapon:'c4',blast:true,dir:posOf(c).clone().sub(p).setY(0).normalize()});}},
    inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,event:event&&{kind:event.kind,label:event.label},night:+nightLevel().toFixed(2),attendant:attendant&&{x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1),stunned:clock<attendant.stunUntil},pages:player?pagesOf(player):0,pageState:pages.map(pg=>pg.state),delivered:pages.filter(pg=>pg.state==='delivered').length,pinged:pinged?nameOf(pinged):null,templeOpen:templeOpen(),soul:!!player?.soul,nextEvent:+(nextEventAt-clock).toFixed(1),pads:pads.length,player:player&&{alive:player.alive,score:player.score||0,deaths:player.deaths||0,hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
     bots:bots.map(b=>({name:b.name,score:b.score||0,kills:b.kills||0,alive:b.alive,hp:Math.round(b.hp),shield:Math.round(b.shield),down:+(b.model.motion?.downAmount?.()||0).toFixed(2),state:b.state,weapon:b.weapon,armor:b.armor,x:+b.root.position.x.toFixed(1),z:+b.root.position.z.toFixed(1)})),

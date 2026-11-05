@@ -15,7 +15,7 @@
    bump(strength=1,side=0){landingVelocity-=.55*strength;rollKickV+=side*1.4*strength;shake=Math.min(1,shake+.55*strength);},
    // lean: radians the view rolls into a slide.
    // slide: 0..1 how hard a slide is scraping along (a rattling judder and rocking roll); sprint: 0/1, a heavier stride.
-   apply(camera,aim,dt,{velocity,airborne=false,walkSpeed=3.4,crouch=0,lean=0,slide=0,sprint=0}={}){
+   apply(camera,aim,dt,{velocity,airborne=false,walkSpeed=3.4,crouch=0,lean=0,slide=0,sprint=0,weight=0,ads=0}={}){
     if(reduced||!(dt>0)){offset.set(0,-crouch,0);camera.position.add(offset);applied.copy(camera.position);camera.lookAt(look.copy(aim).add(offset));return false;}
     clock+=dt;
     forward.subVectors(aim,camera.position);forward.y=0;forward.normalize();right.crossVectors(forward,up);
@@ -33,8 +33,9 @@
     lastYaw=yaw;
     const rest=Math.max(0,1-intensity);
     slideK+=(slide-slideK)*(1-Math.exp(-10*dt));sprintK+=(sprint-sprintK)*(1-Math.exp(-4*dt));
-    const bob=(Math.abs(Math.sin(phase))-.64)*(.045+.025*sprintK)*intensity*(1-slideK); // centred on the mean of |sin| so eye height is unchanged
-    const sway=Math.sin(phase)*(.024+.012*sprintK)*intensity*(1-slideK)+Math.sin(clock*.7)*.004*rest+Math.sin(clock*9.3)*.03*slideK;
+    const carry=(1+weight*.55)*(1-ads*.65);
+    const bob=(Math.abs(Math.sin(phase))-.64)*(.045+.025*sprintK)*intensity*(1-slideK)*carry; // centred on the mean of |sin| so eye height is unchanged
+    const sway=Math.sin(phase)*(.024+.012*sprintK)*intensity*(1-slideK)*carry+Math.sin(clock*.7)*.004*rest+Math.sin(clock*9.3)*.03*slideK;
     // Sliding: the ground rattles up through the view, and it rocks side to side.
     const judder=slideK*((Math.random()-.5)*.03+Math.sin(clock*23)*.012),rock=slideK*(Math.sin(clock*7.1)*.035+Math.sin(clock*17.3)*.012);
     const breath=Math.sin(clock*1.55)*.006*rest;

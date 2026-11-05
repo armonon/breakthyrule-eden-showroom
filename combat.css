@@ -79,3 +79,26 @@ body.combat-armed #scene canvas{cursor:crosshair}
 .ch-hurt{position:absolute;inset:0;opacity:0;--a:0rad;background:radial-gradient(ellipse at calc(50% + 46% * sin(var(--a))) calc(50% - 46% * cos(var(--a))),rgba(170,10,10,.75),transparent 55%),radial-gradient(circle,transparent 55%,rgba(120,0,0,.45))}
 .ch-hit.kill i{background:#ff3b30;box-shadow:0 0 8px #ff3b30;width:15px}
 #combat-hud[data-mode="arena"] .ch-score,#combat-hud[data-mode="arena"] .ch-keys{display:none}
+
+/* ---- HUD refresh: outlined, rounded crosshair that breathes with the spread; zoom readout; magazine bar ---- */
+.ch-cross i{background:#fff;border-radius:1px;box-shadow:0 0 0 1px rgba(0,0,0,.55),0 0 6px rgba(0,0,0,.35);transition:transform .06s linear,top .08s ease-out,left .08s ease-out,opacity .15s}
+.ch-cross .ch-t,.ch-cross .ch-b{width:2px;height:10px;left:-1px}
+.ch-cross .ch-l,.ch-cross .ch-r{width:10px;height:2px;top:-1px}
+.ch-cross .ch-t{top:calc(-10px - var(--gap))}.ch-cross .ch-l{left:calc(-10px - var(--gap))}
+.ch-cross .ch-dot{width:4px;height:4px;left:-2px;top:-2px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 8px rgba(255,255,255,.35)}
+.ch-cross::before{content:'';position:absolute;left:calc(-14px - var(--gap));top:calc(-14px - var(--gap));width:calc(28px + var(--gap) * 2);height:calc(28px + var(--gap) * 2);border-radius:50%;border:1px solid rgba(255,255,255,.14);transition:all .08s ease-out;pointer-events:none}
+#combat-hud.ads .ch-cross::before{opacity:0}
+#combat-hud.ads .ch-cross .ch-dot{width:3px;height:3px;left:-1.5px;top:-1.5px;background:#ff5a4a;box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 6px #ff5a4a}
+.ch-hit i{width:13px;height:2.5px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.5)}
+.ch-hit.show{animation:ch-hit .22s cubic-bezier(.2,.9,.3,1)}
+@keyframes ch-hit{0%{opacity:1;transform:scale(1.6) rotate(-8deg)}60%{opacity:1}100%{opacity:0;transform:scale(1) rotate(0)}}
+.ch-hit.kill.show{animation-duration:.42s}
+.ch-zoom{position:absolute;left:calc(50% + 38px);top:calc(50% + 22px);font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:15px;font-weight:600;letter-spacing:.08em;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);opacity:.85}
+#combat-hud.scoped .ch-zoom{left:calc(50% + min(34vh,34vw) - 60px);top:calc(50% + 10px)}
+.ch-ammo{padding:10px 14px 10px 22px;background:linear-gradient(270deg,rgba(8,10,9,.62),rgba(8,10,9,0));border-right:2px solid rgba(255,255,255,.75)}
+.ch-count b{text-shadow:0 2px 10px rgba(0,0,0,.6)}
+.ch-mag{display:block;height:3px;width:120px;margin-left:auto;background:rgba(255,255,255,.18);border-radius:2px;overflow:hidden}
+.ch-mag i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#f4f1ea,#fff);transition:width .12s}
+.ch-mag.low i{background:linear-gradient(90deg,#ff5a4a,#ff9c8a)}
+.ch-slots button{border-radius:3px;transition:transform .12s,background .12s}
+.ch-slots button.active{transform:translateY(-3px);box-shadow:0 6px 18px rgba(0,0,0,.35)}

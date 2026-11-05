@@ -108,3 +108,14 @@ body.battle-on #world>*:not(#scene):not(#battle-hud):not(#combat-hud):not(dialog
 /* Your soul in the Gathering after dying at night. */
 body.soul-taken #battle-hud::after{content:'';position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,rgba(170,200,255,.06),rgba(20,30,70,.55));mix-blend-mode:screen;animation:soul-in 1.2s ease-out}
 @keyframes soul-in{0%{background-color:rgba(230,240,255,.9)}100%{background-color:rgba(230,240,255,0)}}
+
+/* ---- HUD refresh: glass panel vitals with slanted bars and a soft glow ---- */
+.ar-vitals{padding:12px 14px 10px;background:linear-gradient(90deg,rgba(8,10,9,.6),rgba(8,10,9,0));border-left:2px solid rgba(255,255,255,.75)}
+.ar-bar{height:14px;background:rgba(255,255,255,.08);border:0;transform:skewX(-14deg);border-radius:2px;overflow:hidden}
+.ar-bar span{transform:skewX(14deg);top:0;line-height:14px}
+.ar-hp i{background:linear-gradient(90deg,#f1ede3,#fff);box-shadow:0 0 10px rgba(255,255,255,.35)}
+.ar-shield i{background:linear-gradient(90deg,#1fb7ff,#9ff0ff);box-shadow:0 0 14px rgba(80,210,255,.7)}
+.ar-armor i{background:linear-gradient(90deg,#3e7cd0,#8cc2ff)}
+.ar-map{border-radius:6px;border:1px solid rgba(255,255,255,.28);box-shadow:0 6px 22px rgba(0,0,0,.35)}
+.ar-feed div{border-left:2px solid rgba(255,194,74,.8);backdrop-filter:blur(4px)}
+.ar-top b{text-shadow:0 2px 12px rgba(0,0,0,.6)}

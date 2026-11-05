@@ -24,7 +24,7 @@
    const look=appearance(),next=JSON.stringify(look);if(next===signature)return;signature=next;
    const old=model;try{model=GardenCharacter.create(T,look);}catch{model=old;return;}
    if(old)GardenCharacter.dispose(old);
-   model.root.name='Player body';model.byName.neck01.scale.setScalar(.001);model.motion.tune.guardLift=.05;model.motion.tune.wadeLift=.33;scene.add(model.root);requestDraw();
+   model.root.name='Player body';model.root.userData.noHit=true;model.byName.neck01.scale.setScalar(.001);model.motion.tune.guardLift=.05;model.motion.tune.wadeLift=.33;scene.add(model.root);requestDraw();
   }
   // Walls are found by chest-height rays against the static meshes near the player (refreshed each second), so a
   // knee-high birdbath does not raise the hands but a wall, shelf or pillar does, with its true surface normal.
@@ -117,6 +117,12 @@
    },
    // Click on something within reach: the hand gets there first, then the caller opens it.
    downed:()=>!!model&&model.motion.downAmount()>0,
+   // Third person (app.js): the head shows once the camera has pulled back.
+   third(k){if(!model)return;const show=k>.15;if(show!==!!model.root.userData.third){model.root.userData.third=show;model.byName.neck01.scale.setScalar(show?1:.001);}},
+   // What you hold, in the right hand (same placement as the match's bots).
+   hold(mesh,id){if(!model)return;model.root.userData.hand?.parent?.remove(model.root.userData.hand);model.root.userData.hand=null;if(!mesh)return;
+    const hand=new T.Group();hand.position.set(-.2,1.28,.32);if(id==='axe'){mesh.rotation.set(-1.2,0,0);mesh.position.set(0,-.05,-.1);}else mesh.rotation.set(0,Math.PI,0);
+    mesh.traverse(n=>{n.userData.noHit=true;n.castShadow=true;n.raycast=()=>{};});hand.add(mesh);model.root.add(hand);model.root.userData.hand=hand;requestDraw();},
    grab(point){if(!model?.root.visible||!point||point.distanceTo(camera.position)>1.6)return 0;grabPoint=point.clone();grabUntil=clock+.55;requestDraw();return 230;},
    punch(){
     if(!model)return;root.dispatchEvent?.(new CustomEvent('eden-punch-thrown'));
