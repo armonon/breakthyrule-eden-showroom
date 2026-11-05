@@ -20,12 +20,12 @@
  <link rel="stylesheet" href="/fist-combat.css?v=2">
  <link rel="stylesheet" href="/play-menu.css?v=3">
  <link rel="stylesheet" href="/eden-secrets.css?v=1">
- <script defer="" src="/assets/three.min.js"></script>
- <script defer="" src="/assets/gltf-loader.js?v=1"></script>
- <script defer="" src="/asset-loader.js?v=3"></script>
+ <script defer="" src="/assets/three.min.js?v=187"></script>
+ <script defer="" src="/asset-loader.js?v=4"></script>
+ <script defer="" src="/eden-baked-light.js?v=1"></script>
  <script defer="" src="/assets/lucide.min.js"></script>
- <script defer="" src="/collection.js?v=10"></script>
- <script defer="" src="/garment-catalog.js?v=10"></script>
+ <script defer="" src="/collection.js?v=11"></script>
+ <script defer="" src="/garment-catalog.js?v=11"></script>
  <script defer="" src="/shop.js?v=1"></script>
  <script defer="" src="/books.js?v=3"></script>
  <script defer="" src="/community-library.js?v=1"></script>
@@ -35,9 +35,9 @@
  <script defer="" src="/librarian-client.js?v=1"></script>
  <script defer="" src="/librarian-npc.js?v=4"></script>
  <script defer="" src="/librarian-dialog.js?v=2"></script>
- <script defer="" src="/spin-viewer.js?v=2"></script>
- <script defer="" src="/room.js?v=33"></script>
- <script defer="" src="/pocket-worlds.js?v=1"></script>
+ <script defer="" src="/spin-viewer.js?v=3"></script>
+ <script defer="" src="/room.js?v=34"></script>
+ <script defer="" src="/pocket-worlds.js?v=2"></script>
  <script defer="" src="/black-box.js?v=3"></script>
  <script defer="" src="/museum.js?v=4"></script>
  <script defer="" src="/library-garden.js?v=3"></script>
@@ -47,11 +47,12 @@
  <script defer="" src="/night-district.js?v=5"></script>
  <script defer="" src="/night-road.js?v=11"></script>
  <script defer="" src="/eden-skybox.js?v=4"></script>
- <script defer="" src="/eden-flora.js?v=13"></script>
-<script defer="" src="/garden.js?v=33"></script>
+ <script defer="" src="/eden-grass.js?v=1"></script>
+ <script defer="" src="/eden-flora.js?v=14"></script>
+<script defer="" src="/garden.js?v=34"></script>
  <script defer="" src="/garden-props.js?v=7"></script>
-<script defer="" src="/eden-lighting.js?v=4"></script>
-<script defer="" src="/eden-post.js?v=14"></script>
+<script defer="" src="/eden-lighting.js?v=5"></script>
+<script defer="" src="/eden-post.js?v=16"></script>
 <script defer="" src="/eden-quality.js?v=6"></script>
  <script defer="" src="/amphitheater.js?v=3"></script>
  <script defer="" src="/live-music.js?v=3"></script>
@@ -91,7 +92,7 @@
  <script defer="" src="/battle-arena.js?v=10"></script>
  <script defer="" src="/footsteps.js?v=1"></script>
  <script defer="" src="/play-menu.js?v=8"></script>
-<script defer="" src="/app.js?v=88"></script>
+<script defer="" src="/app.js?v=89"></script>
 </head>
 <body>
  <header class="site-header">
@@ -185,7 +186,7 @@
    <div class="product-layout">
     <div class="product-visual">
      <div id="garment-viewer" tabindex="0" aria-label="360 degree garment viewer. Drag to rotate. Arrow keys turn the garment." hidden=""></div>
-     <div class="image-scroll" id="image-scroll" tabindex="0" aria-label="Product photograph. Zoom in, then drag or scroll to explore details."><div id="zoom-surface"><img id="detail-image" src="/products/web/war-tee-front.webp" draggable="false" alt="WAR / Witnesses Tee product photo"></div></div>
+     <div class="image-scroll" id="image-scroll" tabindex="0" aria-label="Product photograph. Zoom in, then drag or scroll to explore details."><div id="zoom-surface"><img id="detail-image" src="/products/war-tee-front.webp" draggable="false" alt="WAR / Witnesses Tee product photo"></div></div>
      <div class="image-annotation"><span id="image-caption">01 / FRONT</span><span id="image-help">DRAG TO ROTATE</span><button id="auto-spin" aria-pressed="false" hidden="">START SPIN ↻</button></div>
      <div class="image-toolbar">
       <div class="side-switch" role="group" aria-label="Jacket view"><button id="show-3d" aria-pressed="false" disabled="">360° VIEW</button><button id="show-front" class="active" aria-pressed="true">FRONT</button><button id="show-back" aria-pressed="false">BACK</button></div>
@@ -246,7 +247,7 @@
  </aside>
  <dialog id="social-auth" aria-labelledby="social-auth-title"><header><h2 id="social-auth-title">Create an account</h2><button id="social-auth-close" class="icon-button" aria-label="Close sign in" title="Close sign in"><i data-lucide="x"></i></button></header><form id="social-auth-form"><label>Username<input id="social-name" autocomplete="username" pattern="[a-zA-Z0-9_]{3,24}" minlength="3" maxlength="24" required=""></label><label>Password<input id="social-password" type="password" autocomplete="new-password" minlength="10" maxlength="128" required=""></label><label id="social-recovery-field" hidden="">Recovery code<input id="social-recovery-code" autocomplete="off" maxlength="100" spellcheck="false"></label><p id="social-auth-error" role="alert"></p><button id="social-auth-submit" type="submit">Create account</button><button id="social-auth-switch" type="button">Already have an account? Sign in</button><button id="social-recover" type="button" hidden="">Recover account</button><p class="social-privacy">Your saved character, username and garden messages are public. Chat is retained for up to 24 hours. Keep your recovery code private.</p></form></dialog>
  <div id="social-move" class="social-move" aria-label="Move around the garden" hidden=""><button data-key="w" aria-label="Walk forward" title="Walk forward"><i data-lucide="arrow-up"></i></button><button data-key="a" aria-label="Walk left" title="Walk left"><i data-lucide="arrow-left"></i></button><button data-key="s" aria-label="Walk backward" title="Walk backward"><i data-lucide="arrow-down"></i></button><button data-key="d" aria-label="Walk right" title="Walk right"><i data-lucide="arrow-right"></i></button><button data-key="space" aria-label="Jump" title="Jump"><i data-lucide="arrow-up-from-line"></i></button><button data-key="shift" aria-label="Sprint" title="Sprint" aria-pressed="false"><i data-lucide="footprints"></i></button></div>
- <noscript><div class="noscript"><p>Explore Break Thy Rule product photographs.</p><a href="/products/war-tee-front.png">Featured piece</a></div></noscript>
+ <noscript><div class="noscript"><p>Explore Break Thy Rule product photographs.</p><a href="/products/war-tee-front.webp">Featured piece</a></div></noscript>
 
 
 </body></html>

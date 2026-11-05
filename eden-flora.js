@@ -9,34 +9,15 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
  const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;},between=(a,b)=>a+(b-a)*random();
  const up=new T.Vector3(0,1,0),dummy=new T.Object3D(),time={value:0};
 
- // ---- textures (painted once on canvases) ----
+ // ---- textures: cards composed from photographic CC0 scans (tools/pipeline/build-foliage-cards.py) ----
  function canvasTexture(w,h,paint){const c=document.createElement('canvas');c.width=w;c.height=h;paint(c.getContext('2d'));const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;t.anisotropy=4;return t;}
- function leaf(c,x,y,length,width,angle,base,tip){
-  c.save();c.translate(x,y);c.rotate(angle);const g=c.createLinearGradient(0,0,length,0);g.addColorStop(0,base);g.addColorStop(1,tip);c.fillStyle=g;
-  c.beginPath();c.moveTo(0,0);c.quadraticCurveTo(length*.45,-width,length,0);c.quadraticCurveTo(length*.45,width,0,0);c.fill();
-  c.strokeStyle='rgba(232,238,186,.32)';c.lineWidth=.9;c.beginPath();c.moveTo(length*.06,0);c.lineTo(length*.88,0);c.stroke();c.restore();
- }
- const broadleafMap=canvasTexture(512,512,c=>{
-  c.strokeStyle='#5b4a35';c.lineCap='round';
-  for(let i=0;i<9;i++){const a=between(0,6.28);c.lineWidth=between(2,4);c.beginPath();c.moveTo(256,256);c.quadraticCurveTo(256+Math.cos(a+.4)*90,256+Math.sin(a+.4)*90,256+Math.cos(a)*190,256+Math.sin(a)*190);c.stroke();}
-  const tones=[['#3f5f26','#7f9c45'],['#4c6d2c','#98ae55'],['#33521f','#6f8d3c'],['#557532','#a7bb63']];
-  for(let i=0;i<120;i++){const a=between(0,6.28),r=Math.pow(random(),.6)*205,t=tones[i%4];leaf(c,256+Math.cos(a)*r,256+Math.sin(a)*r,between(34,58),between(11,18),a+between(-.9,.9),t[0],t[1]);}
- });
- const cypressMap=canvasTexture(256,256,c=>{
-  for(let i=0;i<900;i++){const a=between(0,6.28),r=Math.pow(random(),.5)*118,x=128+Math.cos(a)*r,y=128+Math.sin(a)*r;
-   c.strokeStyle=['#22381c','#2d4724','#3b5a2c','#1b2e17'][i%4];c.lineWidth=between(2,4);c.lineCap='round';c.beginPath();c.moveTo(x,y);c.lineTo(x+between(-7,7),y+between(-9,3));c.stroke();}
- });
- const fernMap=canvasTexture(128,512,c=>{
-  c.strokeStyle='#3d5a26';c.lineWidth=3;c.beginPath();c.moveTo(64,512);c.quadraticCurveTo(60,260,64,8);c.stroke();
-  for(let y=490;y>20;y-=13){const span=Math.sin((512-y)/512*Math.PI)*52+6;for(const s of [-1,1]){
-   c.save();c.translate(64,y);c.rotate(s*-1.15);const g=c.createLinearGradient(0,0,span,0);g.addColorStop(0,'#3e6326');g.addColorStop(1,'#86a84a');c.fillStyle=g;
-   c.beginPath();c.moveTo(0,0);c.quadraticCurveTo(span*.5,-6,span,0);c.quadraticCurveTo(span*.5,6,0,0);c.fill();c.restore();}}
- });
+ const scanned=name=>{const t=new T.TextureLoader().load('/assets/eden-textures/foliage/'+name+'.webp');t.colorSpace=T.SRGBColorSpace;t.anisotropy=4;return t;};
+ const broadleafMap=scanned('broadleaf-card'),cypressMap=scanned('cypress-card'),fernMap=scanned('fern-card');
 
  // ---- materials ----
  // Double-sided leaves keep their outward crown normals on back faces (three would flip them inward).
  function windMaterial(params,{sway=.05,flutter=.025,keepNormals=true}={}){
-  const material=new T.MeshStandardMaterial({side:T.DoubleSide,alphaTest:.45,roughness:.85,...params});
+  const material=new T.MeshStandardMaterial({side:T.DoubleSide,alphaTest:.45,alphaToCoverage:!mobile,roughness:.85,...params});
   material.onBeforeCompile=shader=>{
    shader.uniforms.edenTime=time;
    shader.vertexShader='uniform float edenTime;\n'+shader.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
@@ -44,6 +25,7 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
     transformed.x+=sin(edenTime*.8+edenRoot.x*.35+edenRoot.z*.2)*${sway.toFixed(3)}*edenH*.18+sin(edenTime*3.1+position.x*4.+position.z*3.)*${flutter.toFixed(3)};
     transformed.z+=cos(edenTime*.65+edenRoot.z*.3)*${sway.toFixed(3)}*edenH*.1;`);
    if(keepNormals)shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_begin>',T.ShaderChunk.normal_fragment_begin.replace('normal *= faceDirection;',''));
+   window.edenTranslucency?.(shader,.35);
   };
   return material;
  }

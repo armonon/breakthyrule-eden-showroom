@@ -4,12 +4,12 @@ window.showroomArtwork=[
   {name:'Colour Collage',label:'COLLAGE',file:'/assets/colour-collage-0524.jpg',alt:'Vivid multicoloured collage of fantasy figures, angels and eye-bearing apples.',mount:'canvas',width:1.64,height:1.64*1152/1179,x:0,y:1.55},
   {name:'BREAKTHYRULE Codex',label:'CODEX',file:'/assets/og-default.jpg',width:1.34,height:.70,x:-3,y:2.12},
   {name:'House Sigil',label:'SIGIL',file:'/logo.png',width:.86,height:.90,x:-1.72,y:2.06,transparent:true},
-  {name:'WAR / Witnesses',label:'WAR',file:'/products/war-tee-front.png',width:.72,height:.92,x:1.72,y:2.06},
-  {name:'God Loves You',label:'GOD',file:'/products/god-loves-you-tee.png',width:.72,height:.92,x:3,y:2.06},
-  {name:'Dance To Your Vibration',label:'VIBRATION',file:'/products/dance-to-your-vibration-tee.png',width:.72,height:.92,x:-3,y:.82},
-  {name:'Cross Tee',label:'CROSS',file:'/products/000-6B49F5B5-3F27-4F32-B604-01645A7AE0CD.png',width:.72,height:.92,x:-1.72,y:.82},
-  {name:'Blackmarket Baby',label:'BLACKMARKET',file:'/products/003-black-market-baby.png',width:.72,height:.92,x:1.72,y:.82},
-  {name:'#Family Maxi Tank',label:'FAMILY',file:'/products/005-fm.png',width:.72,height:.92,x:3,y:.82}
+  {name:'WAR / Witnesses',label:'WAR',file:'/products/war-tee-front.webp',width:.72,height:.92,x:1.72,y:2.06},
+  {name:'God Loves You',label:'GOD',file:'/products/god-loves-you-tee.webp',width:.72,height:.92,x:3,y:2.06},
+  {name:'Dance To Your Vibration',label:'VIBRATION',file:'/products/dance-to-your-vibration-tee.webp',width:.72,height:.92,x:-3,y:.82},
+  {name:'Cross Tee',label:'CROSS',file:'/products/000-6B49F5B5-3F27-4F32-B604-01645A7AE0CD.webp',width:.72,height:.92,x:-1.72,y:.82},
+  {name:'Blackmarket Baby',label:'BLACKMARKET',file:'/products/003-black-market-baby.webp',width:.72,height:.92,x:1.72,y:.82},
+  {name:'#Family Maxi Tank',label:'FAMILY',file:'/products/005-fm.webp',width:.72,height:.92,x:3,y:.82}
 ];
 window.showroomArtwork.push(...window.showroomCollection.slice(0,12).map((item,index)=>({
   name:'Vault Photo / '+item.id,label:item.id,lookbook:true,page:index+1,

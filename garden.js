@@ -17,7 +17,13 @@ window.createEdenGarden=function(T,scene,{reduced=false,mobile=false,onChange=()
  const terrain=new T.Mesh(new T.PlaneGeometry(240,240,100,100),new T.MeshStandardMaterial({color:0xa4bd79,map:surface('/assets/eden-textures/leafy_grass_diff.jpg',80),normalMap:surface('/assets/eden-textures/leafy_grass_nor.jpg',80,false),normalScale:new T.Vector2(.65,.65),roughness:1}));
  terrain.rotation.x=-Math.PI/2;terrain.position.y=-.09;terrain.receiveShadow=true;garden.add(terrain);
  // Break up the tiled lawn texture with large soft patches (greener / drier, lighter / darker) from world position.
+ const bakedSun=window.edenBaked?.applyToTerrain(terrain.material);
+ const groundMap=(path,repeat)=>{const t=surface(path,repeat);t.anisotropy=8;return t;};
+ const groundLitter=groundMap('/assets/eden-textures/ground/forest_leaves_02_diff.jpg',1),groundEarth=groundMap('/assets/eden-textures/ground/grass_path_2_diff.jpg',1);
+ const groundWear=new T.TextureLoader().load('/assets/eden-bake/grass-mask.png');groundWear.colorSpace=T.NoColorSpace;groundWear.generateMipmaps=true;groundWear.minFilter=T.LinearMipmapLinearFilter;
  terrain.material.onBeforeCompile=shader=>{
+  if(bakedSun){shader.uniforms.edenLitter={value:groundLitter};shader.uniforms.edenEarth={value:groundEarth};shader.uniforms.edenWear={value:groundWear};shader.fragmentShader='uniform sampler2D edenLitter,edenEarth,edenWear;\n'+shader.fragmentShader;shader.uniforms.edenSun={value:bakedSun};shader.fragmentShader='uniform sampler2D edenSun;\n'+shader.fragmentShader.replace('#include <aomap_fragment>',`#include <aomap_fragment>
+  reflectedLight.directDiffuse*=mix(1.,texture2D(edenSun,vec2(vLawn.x/240.+.5,.5-vLawn.y/240.)).r,edenBake.x*smoothstep(16.,24.,length(vLawn-cameraPosition.xz)));`);}
   shader.vertexShader='varying vec2 vLawn;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n vLawn=(modelMatrix*vec4(transformed,1.)).xz;');
   shader.fragmentShader=`varying vec2 vLawn;
 float lawnHash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
@@ -29,7 +35,13 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  diffuseColor*=lawnSample;
  diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.86,1.1,.74),.55);
  float lawnBroad=lawnNoise(vLawn*.07)*.65+lawnNoise(vLawn*.23)*.35,lawnDry=smoothstep(.55,.85,lawnNoise(vLawn*.11+17.));
- diffuseColor.rgb*=mix(.84,1.1,lawnBroad);diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(1.12,1.04,.78),lawnDry*.6);`);
+ diffuseColor.rgb*=mix(.84,1.1,lawnBroad);diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(1.12,1.04,.78),lawnDry*.6);
+ // Scanned ground blends: leaf litter where the bake says canopy shade falls, worn earth around stones and plinths.
+ vec2 edenBakeUv=vec2(vLawn.x/240.+.5,.5-vLawn.y/240.);
+ float edenShade=(1.-smoothstep(.45,.85,texture2D(edenSun,edenBakeUv).r))*smoothstep(.25,.6,lawnNoise(vLawn*.55+9.)+.25);
+ float edenWorn=smoothstep(.05,.5,textureLod(edenWear,vec2(edenBakeUv.x,1.-edenBakeUv.y),3.2).r)*smoothstep(.2,.6,lawnNoise(vLawn*1.3+3.)+.3);
+ diffuseColor.rgb=mix(diffuseColor.rgb,texture2D(edenLitter,vLawn*.42).rgb*.8,edenShade*.85);
+ diffuseColor.rgb=mix(diffuseColor.rgb,texture2D(edenEarth,vLawn*.36).rgb,edenWorn*.8);`);
  };
  const p=terrain.geometry.attributes.position;
  for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getY(i),edge=Math.max(0,Math.hypot(x,z)-25),worldZ=-z;
@@ -48,10 +60,7 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
 
  function canvasTexture(size,paint){const c=document.createElement('canvas');c.width=c.height=size;paint(c.getContext('2d'),size);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;return t;}
  // Each foliage card contains individual leaves, with a cutout silhouette for sunlight and shadows.
- const leaves=canvasTexture(256,(c,s)=>{
-  for(let i=0;i<85;i++){const a=between(0,Math.PI*2),r=Math.sqrt(random())*100,x=128+Math.cos(a)*r,y=128+Math.sin(a)*r;
-   c.save();c.translate(x,y);c.rotate(a+between(-1,1));c.fillStyle=['#91a951','#6c8838','#b1bd66','#44682e'][i%4];c.beginPath();c.ellipse(0,0,between(8,17),between(3,7),0,0,Math.PI*2);c.fill();c.strokeStyle='#d2d48a';c.lineWidth=.7;c.beginPath();c.moveTo(-9,0);c.lineTo(9,0);c.stroke();c.restore();}
- });
+ const leaves=new T.TextureLoader().load('/assets/eden-textures/foliage/broadleaf-card.webp');leaves.colorSpace=T.SRGBColorSpace;leaves.anisotropy=4;
  const leafMat=new T.MeshStandardMaterial({map:leaves,alphaTest:.45,side:T.DoubleSide,roughness:.88,emissive:0x34421a,emissiveIntensity:.18});
  // Wind displaces only the leaf tips; reduced-motion keeps the same still landscape.
  const wind={value:0};
@@ -63,6 +72,8 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  // The sculpted hero apple tree and its serpent share one model (tools/blender/build_hero_tree.py).
  const heroModel=window.showroomAssets.model('/assets/eden-hero/hero-tree.glb?v=2');assetJobs.push(heroModel.catch(()=>{}));
  const flora=window.createEdenFlora(T,garden,{bark,openGround,mobile,heroModel});assetJobs.push(flora.ready);
+ const terrainHeight=(x,worldZ)=>{const z=-worldZ,edge=Math.max(0,Math.hypot(x,z)-25),roadClearance=worldZ<roadStart?T.MathUtils.smoothstep(Math.abs(x-roadX),95,115):1,valley=window.edenValley,settled=T.MathUtils.smoothstep(Math.hypot(x-valley.x,worldZ-valley.z),valley.rim+2,valley.rim+14);return terrain.position.y+Math.sin(x*.12)*Math.cos(z*.15)*Math.min(6,edge*.15)*roadClearance*settled+valley.height(x,worldZ);};
+ const grass=window.createEdenGrass(T,garden,{openGround,height:terrainHeight,mobile,wind});
 
  const pathStone=new T.CylinderGeometry(1,1.07,.065,9);
  for(let z=20;z>-6;z-=.9){for(let side=0;side<2;side++){
@@ -160,7 +171,7 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
   if(position.z>26&&!window.edenValley.reaches(position.x,position.z)){if(previous.z>26)position.copy(previous);else position.z=26;}
   return position;
  },road:{x:roadX,start:roadStart,end:roadEnd,door:skybox.door.z,inspect:()=>({first:roadFirst,sections:roadSections.length,near:roadStart-roadFirst*roadLength,far:Math.max(roadEnd,roadStart-(roadFirst+roadSections.length)*roadLength)})},update(time,viewer,active=true){
-  if(viewer){lastViewer=viewer;flora.setVisible(viewer.position.z>-45);flora.lod(viewer.position);if(!nightBuilt()&&(nightSteps||nightNear(viewer.position))){buildNight();onChange();}updateRoad(viewer.position);sky.position.copy(viewer.position);skyMoving=skybox.update(time,viewer,Math.min(.05,Math.max(0,time-lastTime)));lastTime=time;snake.update(time,viewer,active);if(nightBuilt()){const near=nightNear(viewer.position);nightRoad.setEnabled(near);district.root.visible=near;nightRoad.update(time,viewer,active);pyramid.update(viewer,time);if(near)district.update(time,viewer,nightRoad.amount);}}
+  if(viewer){lastViewer=viewer;if(grass.update(viewer.position))onChange();flora.setVisible(viewer.position.z>-45);flora.lod(viewer.position);if(!nightBuilt()&&(nightSteps||nightNear(viewer.position))){buildNight();onChange();}updateRoad(viewer.position);sky.position.copy(viewer.position);skyMoving=skybox.update(time,viewer,Math.min(.05,Math.max(0,time-lastTime)));lastTime=time;snake.update(time,viewer,active);if(nightBuilt()){const near=nightNear(viewer.position);nightRoad.setEnabled(near);district.root.visible=near;nightRoad.update(time,viewer,active);pyramid.update(viewer,time);if(near)district.update(time,viewer,nightRoad.amount);}}
   if(reduced)return;wind.value=time;flora.update(time);waterUniforms.time.value=time;dust.rotation.y=Math.sin(time*.025)*.07;
  },get animating(){return skyMoving;},foliage:flora.leaves,flora,sky};
 };

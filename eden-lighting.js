@@ -69,6 +69,7 @@ window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=fals
  return {
   update(){
    const night=nightAmount();
+   window.edenBaked?.setNight(night);
    if(settings.environment&&(Math.abs(night-bakedNight)>.04||(night!==bakedNight&&(night===0||night===1)))){uniforms.night.value=night;bakeEnvironment();}
    if(!settings.followShadow)return;
    // Centre the frustum a little ahead of the viewer, snapped to a whole-texel grid in light space so shadow

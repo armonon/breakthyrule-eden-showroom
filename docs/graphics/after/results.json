@@ -1,0 +1,927 @@
+{
+ "url": "http://127.0.0.1:8790/",
+ "date": "2026-11-05T16:50:24.537Z",
+ "classes": {
+  "desktop": {
+   "firstViewMs": 612,
+   "bytesAtFirstView": 18816191,
+   "coldBytesAfter10s": 40913310,
+   "coldRequests": 206,
+   "largest": [
+    [
+     "/residents/violet-trickster.glb?v=4",
+     3407318
+    ],
+    [
+     "/assets/eden-textures/leafy_grass_diff.jpg",
+     2203771
+    ],
+    [
+     "/assets/eden-hero/hero-tree.glb?v=2",
+     1877286
+    ],
+    [
+     "/assets/eden-grass-color.jpg",
+     1195573
+    ],
+    [
+     "/logo.png",
+     1100583
+    ],
+    [
+     "/assets/eden-textures/monastery_stone_floor_nor.jpg",
+     1063294
+    ],
+    [
+     "/assets/eden-textures/bark_brown_02_nor.jpg",
+     1015802
+    ],
+    [
+     "/assets/three.min.js?v=187",
+     894877
+    ]
+   ],
+   "views": {
+    "spawn": {
+     "ms": 11.65,
+     "calls": 337,
+     "ktris": 669,
+     "top": [
+      {
+       "name": "Open library beside the apple tree",
+       "calls": 187,
+       "ktris": 38
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 65,
+       "ktris": 318
+      },
+      {
+       "name": "Library west garden",
+       "calls": 28,
+       "ktris": 4
+      },
+      {
+       "name": "Museum",
+       "calls": 26,
+       "ktris": 1
+      },
+      {
+       "name": "Workshop garden props",
+       "calls": 9,
+       "ktris": 144
+      },
+      {
+       "name": "Apple tree snake",
+       "calls": 6,
+       "ktris": 19
+      }
+     ],
+     "pixelRatio": 1.5,
+     "post": [
+      2160,
+      1350
+     ],
+     "mem": 92,
+     "shot": true
+    },
+    "apple-tree": {
+     "ms": 12.07,
+     "calls": 337,
+     "ktris": 582,
+     "top": [
+      {
+       "name": "Open library beside the apple tree",
+       "calls": 187,
+       "ktris": 38
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 67,
+       "ktris": 293
+      },
+      {
+       "name": "Library west garden",
+       "calls": 28,
+       "ktris": 4
+      },
+      {
+       "name": "Museum",
+       "calls": 25,
+       "ktris": 1
+      },
+      {
+       "name": "Apple tree snake",
+       "calls": 6,
+       "ktris": 19
+      },
+      {
+       "name": "Workshop garden props",
+       "calls": 6,
+       "ktris": 72
+      }
+     ],
+     "pixelRatio": 1.5,
+     "post": [
+      2160,
+      1350
+     ],
+     "mem": 87,
+     "shot": true
+    },
+    "lawn": {
+     "ms": 9.29,
+     "calls": 350,
+     "ktris": 773,
+     "top": [
+      {
+       "name": "Open library beside the apple tree",
+       "calls": 187,
+       "ktris": 38
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 64,
+       "ktris": 324
+      },
+      {
+       "name": "Library west garden",
+       "calls": 28,
+       "ktris": 4
+      },
+      {
+       "name": "Museum",
+       "calls": 26,
+       "ktris": 1
+      },
+      {
+       "name": "Workshop garden props",
+       "calls": 16,
+       "ktris": 228
+      },
+      {
+       "name": "Apple tree snake",
+       "calls": 6,
+       "ktris": 19
+      }
+     ],
+     "pixelRatio": 1.25,
+     "post": [
+      1800,
+      1125
+     ],
+     "mem": 86,
+     "shot": true
+    },
+    "pavilion": {
+     "ms": 10.46,
+     "calls": 329,
+     "ktris": 839,
+     "top": [
+      {
+       "name": "Open library beside the apple tree",
+       "calls": 187,
+       "ktris": 38
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 87,
+       "ktris": 627
+      },
+      {
+       "name": "Rigged 3D librarian",
+       "calls": 26,
+       "ktris": 4
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 58
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 32
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 79
+      }
+     ],
+     "pixelRatio": 1.25,
+     "post": [
+      1800,
+      1125
+     ],
+     "mem": 104,
+     "shot": true
+    },
+    "road": {
+     "ms": 12.48,
+     "calls": 320,
+     "ktris": 751,
+     "top": [
+      {
+       "name": "Beyond Eden / the old civilization",
+       "calls": 196,
+       "ktris": 110
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 77,
+       "ktris": 486
+      },
+      {
+       "name": "Rigged 3D librarian",
+       "calls": 26,
+       "ktris": 4
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 5
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 58
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 32
+      }
+     ],
+     "pixelRatio": 1.5,
+     "post": [
+      2160,
+      1350
+     ],
+     "mem": 100,
+     "shot": true
+    },
+    "theatre": {
+     "ms": 14.05,
+     "calls": 474,
+     "ktris": 616,
+     "top": [
+      {
+       "name": "Pyramid at the end of the road",
+       "calls": 315,
+       "ktris": 12
+      },
+      {
+       "name": "Beyond Eden / the old civilization",
+       "calls": 63,
+       "ktris": 98
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 53,
+       "ktris": 351
+      },
+      {
+       "name": "Rigged 3D librarian",
+       "calls": 26,
+       "ktris": 4
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 79
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 8,
+       "ktris": 32
+      }
+     ],
+     "pixelRatio": 1.5,
+     "post": [
+      2160,
+      1350
+     ],
+     "mem": 116,
+     "shot": true
+    }
+   },
+   "problems": []
+  },
+  "laptop": {
+   "firstViewMs": 807,
+   "bytesAtFirstView": 18816192,
+   "coldBytesAfter10s": 40913083,
+   "coldRequests": 205,
+   "largest": [
+    [
+     "/residents/violet-trickster.glb?v=4",
+     3407318
+    ],
+    [
+     "/assets/eden-textures/leafy_grass_diff.jpg",
+     2203771
+    ],
+    [
+     "/assets/eden-hero/hero-tree.glb?v=2",
+     1877286
+    ],
+    [
+     "/assets/eden-grass-color.jpg",
+     1195573
+    ],
+    [
+     "/logo.png",
+     1100583
+    ],
+    [
+     "/assets/eden-textures/monastery_stone_floor_nor.jpg",
+     1063294
+    ],
+    [
+     "/assets/eden-textures/bark_brown_02_nor.jpg",
+     1015802
+    ],
+    [
+     "/assets/three.min.js?v=187",
+     894877
+    ]
+   ],
+   "views": {
+    "spawn": {
+     "ms": 4.88,
+     "calls": 337,
+     "ktris": 673,
+     "top": [
+      {
+       "name": "Open library beside the apple tree",
+       "calls": 187,
+       "ktris": 38
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 65,
+       "ktris": 322
+      },
+      {
+       "name": "Library west garden",
+       "calls": 28,
+       "ktris": 4
+      },
+      {
+       "name": "Museum",
+       "calls": 26,
+       "ktris": 1
+      },
+      {
+       "name": "Workshop garden props",
+       "calls": 9,
+       "ktris": 144
+      },
+      {
+       "name": "Apple tree snake",
+       "calls": 6,
+       "ktris": 19
+      }
+     ],
+     "pixelRatio": 1,
+     "post": [
+      1280,
+      720
+     ],
+     "mem": 91,
+     "shot": true
+    },
+    "apple-tree": {
+     "ms": 4.51,
+     "calls": 337,
+     "ktris": 582,
+     "top": [
+      {
+       "name": "Open library beside the apple tree",
+       "calls": 187,
+       "ktris": 38
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 67,
+       "ktris": 293
+      },
+      {
+       "name": "Library west garden",
+       "calls": 28,
+       "ktris": 4
+      },
+      {
+       "name": "Museum",
+       "calls": 25,
+       "ktris": 1
+      },
+      {
+       "name": "Apple tree snake",
+       "calls": 6,
+       "ktris": 19
+      },
+      {
+       "name": "Workshop garden props",
+       "calls": 6,
+       "ktris": 72
+      }
+     ],
+     "pixelRatio": 1,
+     "post": [
+      1280,
+      720
+     ],
+     "mem": 99,
+     "shot": true
+    },
+    "lawn": {
+     "ms": 5.03,
+     "calls": 350,
+     "ktris": 773,
+     "top": [
+      {
+       "name": "Open library beside the apple tree",
+       "calls": 187,
+       "ktris": 38
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 64,
+       "ktris": 324
+      },
+      {
+       "name": "Library west garden",
+       "calls": 28,
+       "ktris": 4
+      },
+      {
+       "name": "Museum",
+       "calls": 26,
+       "ktris": 1
+      },
+      {
+       "name": "Workshop garden props",
+       "calls": 16,
+       "ktris": 228
+      },
+      {
+       "name": "Apple tree snake",
+       "calls": 6,
+       "ktris": 19
+      }
+     ],
+     "pixelRatio": 1,
+     "post": [
+      1280,
+      720
+     ],
+     "mem": 94,
+     "shot": true
+    },
+    "pavilion": {
+     "ms": 4.19,
+     "calls": 329,
+     "ktris": 839,
+     "top": [
+      {
+       "name": "Open library beside the apple tree",
+       "calls": 187,
+       "ktris": 38
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 87,
+       "ktris": 627
+      },
+      {
+       "name": "Rigged 3D librarian",
+       "calls": 26,
+       "ktris": 4
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 58
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 32
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 79
+      }
+     ],
+     "pixelRatio": 0.75,
+     "post": [
+      960,
+      540
+     ],
+     "mem": 117,
+     "shot": true
+    },
+    "road": {
+     "ms": 5.31,
+     "calls": 320,
+     "ktris": 751,
+     "top": [
+      {
+       "name": "Beyond Eden / the old civilization",
+       "calls": 196,
+       "ktris": 110
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 77,
+       "ktris": 486
+      },
+      {
+       "name": "Rigged 3D librarian",
+       "calls": 26,
+       "ktris": 4
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 5
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 58
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 32
+      }
+     ],
+     "pixelRatio": 1,
+     "post": [
+      1280,
+      720
+     ],
+     "mem": 100,
+     "shot": true
+    },
+    "theatre": {
+     "ms": 6.39,
+     "calls": 474,
+     "ktris": 616,
+     "top": [
+      {
+       "name": "Pyramid at the end of the road",
+       "calls": 315,
+       "ktris": 12
+      },
+      {
+       "name": "Beyond Eden / the old civilization",
+       "calls": 63,
+       "ktris": 98
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 53,
+       "ktris": 351
+      },
+      {
+       "name": "Rigged 3D librarian",
+       "calls": 26,
+       "ktris": 4
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 79
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 8,
+       "ktris": 32
+      }
+     ],
+     "pixelRatio": 1,
+     "post": [
+      1280,
+      720
+     ],
+     "mem": 119,
+     "shot": true
+    }
+   },
+   "problems": []
+  },
+  "phone": {
+   "firstViewMs": 1818,
+   "bytesAtFirstView": 18816192,
+   "coldBytesAfter10s": 40913083,
+   "coldRequests": 205,
+   "largest": [
+    [
+     "/residents/violet-trickster.glb?v=4",
+     3407318
+    ],
+    [
+     "/assets/eden-textures/leafy_grass_diff.jpg",
+     2203771
+    ],
+    [
+     "/assets/eden-hero/hero-tree.glb?v=2",
+     1877286
+    ],
+    [
+     "/assets/eden-grass-color.jpg",
+     1195573
+    ],
+    [
+     "/logo.png",
+     1100583
+    ],
+    [
+     "/assets/eden-textures/monastery_stone_floor_nor.jpg",
+     1063294
+    ],
+    [
+     "/assets/eden-textures/bark_brown_02_nor.jpg",
+     1015802
+    ],
+    [
+     "/assets/three.min.js?v=187",
+     894877
+    ]
+   ],
+   "views": {
+    "spawn": {
+     "ms": 3.53,
+     "calls": 311,
+     "ktris": 607,
+     "top": [
+      {
+       "name": "Open library beside the apple tree",
+       "calls": 187,
+       "ktris": 38
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 64,
+       "ktris": 244
+      },
+      {
+       "name": "Library west garden",
+       "calls": 28,
+       "ktris": 4
+      },
+      {
+       "name": "Museum",
+       "calls": 15,
+       "ktris": 0
+      },
+      {
+       "name": "Workshop garden props",
+       "calls": 10,
+       "ktris": 156
+      },
+      {
+       "name": "Apple tree snake",
+       "calls": 6,
+       "ktris": 19
+      }
+     ],
+     "pixelRatio": 1.5,
+     "post": [
+      0,
+      0
+     ],
+     "mem": 87,
+     "shot": true
+    },
+    "apple-tree": {
+     "ms": 3.17,
+     "calls": 306,
+     "ktris": 524,
+     "top": [
+      {
+       "name": "Open library beside the apple tree",
+       "calls": 187,
+       "ktris": 38
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 65,
+       "ktris": 235
+      },
+      {
+       "name": "Library west garden",
+       "calls": 28,
+       "ktris": 4
+      },
+      {
+       "name": "Museum",
+       "calls": 7,
+       "ktris": 0
+      },
+      {
+       "name": "Apple tree snake",
+       "calls": 6,
+       "ktris": 19
+      },
+      {
+       "name": "Workshop garden props",
+       "calls": 6,
+       "ktris": 72
+      }
+     ],
+     "pixelRatio": 1.5,
+     "post": [
+      0,
+      0
+     ],
+     "mem": 85,
+     "shot": true
+    },
+    "lawn": {
+     "ms": 2.76,
+     "calls": 134,
+     "ktris": 630,
+     "top": [
+      {
+       "name": "Garden of Eden",
+       "calls": 51,
+       "ktris": 225
+      },
+      {
+       "name": "Library west garden",
+       "calls": 28,
+       "ktris": 4
+      },
+      {
+       "name": "Museum",
+       "calls": 26,
+       "ktris": 1
+      },
+      {
+       "name": "Workshop garden props",
+       "calls": 15,
+       "ktris": 216
+      },
+      {
+       "name": "Open library beside the apple tree",
+       "calls": 6,
+       "ktris": 12
+      },
+      {
+       "name": "Player body",
+       "calls": 5,
+       "ktris": 6
+      }
+     ],
+     "pixelRatio": 1.5,
+     "post": [
+      0,
+      0
+     ],
+     "mem": 110,
+     "shot": true
+    },
+    "pavilion": {
+     "ms": 5.82,
+     "calls": 686,
+     "ktris": 656,
+     "top": [
+      {
+       "name": "Beyond Eden / the old civilization",
+       "calls": 412,
+       "ktris": 39
+      },
+      {
+       "name": "Open library beside the apple tree",
+       "calls": 180,
+       "ktris": 33
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 82,
+       "ktris": 413
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 32
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 40
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 7,
+       "ktris": 18
+      }
+     ],
+     "pixelRatio": 1.5,
+     "post": [
+      0,
+      0
+     ],
+     "mem": 112,
+     "shot": true
+    },
+    "road": {
+     "ms": 3.44,
+     "calls": 200,
+     "ktris": 495,
+     "top": [
+      {
+       "name": "Beyond Eden / the old civilization",
+       "calls": 102,
+       "ktris": 74
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 66,
+       "ktris": 265
+      },
+      {
+       "name": "Rigged 3D librarian",
+       "calls": 26,
+       "ktris": 4
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 32
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 9,
+       "ktris": 40
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 7,
+       "ktris": 18
+      }
+     ],
+     "pixelRatio": 1.5,
+     "post": [
+      0,
+      0
+     ],
+     "mem": 116,
+     "shot": true
+    },
+    "theatre": {
+     "ms": 3.68,
+     "calls": 270,
+     "ktris": 458,
+     "top": [
+      {
+       "name": "Pyramid at the end of the road",
+       "calls": 144,
+       "ktris": 5
+      },
+      {
+       "name": "Beyond Eden / the old civilization",
+       "calls": 51,
+       "ktris": 93
+      },
+      {
+       "name": "Garden of Eden",
+       "calls": 43,
+       "ktris": 205
+      },
+      {
+       "name": "Rigged 3D librarian",
+       "calls": 26,
+       "ktris": 4
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 7,
+       "ktris": 40
+      },
+      {
+       "name": "  Endless road section",
+       "calls": 6,
+       "ktris": 32
+      }
+     ],
+     "pixelRatio": 1.5,
+     "post": [
+      0,
+      0
+     ],
+     "mem": 120,
+     "shot": true
+    }
+   },
+   "problems": []
+  }
+ }
+}

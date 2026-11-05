@@ -3,7 +3,7 @@ window.createSpinViewer=function createSpinViewer({element,textures,onAngle,onIn
   const T=THREE, scene=new T.Scene(), renderer=new T.WebGLRenderer({antialias:true,alpha:false});
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0xffffff);
   renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;
-  renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
+  renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;
   renderer.domElement.setAttribute('aria-hidden','true');element.appendChild(renderer.domElement);
   const camera=new T.PerspectiveCamera(35,1,.05,40);
   scene.add(new T.HemisphereLight(0xffffff,0x8d8583,2));

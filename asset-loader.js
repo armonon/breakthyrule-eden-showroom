@@ -1,9 +1,9 @@
 'use strict';
 window.showroomAssets={
  // World textures use <=1024 px WebP copies of product photos and the logo (tools/asset-pipeline/optimize-images.mjs);
- // the originals stay for the shop and the full-size poster view.
+ // the full-size WebP files stay for the shop and the full-size poster view.
  web(url){
-  const match=/^\/(?:products\/)?([^/?]+)\.(?:png|jpe?g)(\?.*)?$/i.exec(url||'');
+  const match=/^\/(?:products\/)?([^/?]+)\.(?:png|jpe?g|webp)(\?.*)?$/i.exec(url||'');
   return match&&(url.startsWith('/products/')||url.startsWith('/logo.png'))?'/products/web/'+match[1].toLowerCase()+'.webp':url;
  },
  async model(url){
