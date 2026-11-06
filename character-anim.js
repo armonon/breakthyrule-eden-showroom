@@ -50,7 +50,7 @@
   if(!data||!layers.length)return;const r=rig(T,model);const B=r.bones.length;
   for(const L of layers){const c=clip(L.id);if(!c||L.weight<=.001)continue;const hip=poseWorld(T,r,c,L.t),m=L.mask||masks().full;
    for(let i=0;i<B;i++){const b=r.bones[i];if(!b||!m[i])continue;const p=r.parent[i];
-    const local=r.l[i].copy(p<0?r.q[i]:r.q[p].clone().invert().multiply(r.q[i]));b.quaternion.slerp(local,L.weight*m[i]);}
+    const local=p<0?r.l[i].copy(r.q[i]):r.l[i].copy(r.q[p]).invert().multiply(r.q[i]);b.quaternion.slerp(local,L.weight*m[i]);}
    if(m[0]&&r.pelvis)r.pelvis.position.y+=hip*L.weight;}
  }
  root.GardenAnim={load,ready:()=>!!data,clip,masks:()=>data?masks():null,apply,duration:id=>data?.clips[id]?.duration||0,phase0:id=>data?.clips[id]?.phase0||0,has:id=>!!data?.clips[id]};
