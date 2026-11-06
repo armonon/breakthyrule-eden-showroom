@@ -1,0 +1,4 @@
+Photoreal setting sources, all from Poly Haven under CC0 1.0 (public domain), checked 2026-11-05 at https://polyhaven.com/license:
+pretoria_gardens (8k HDR panorama, Dimitrios Savva and Jarod Guest; https://polyhaven.com/a/pretoria_gardens), sky.webp via tools/pipeline/build-photoreal-sky.py.
+jacaranda_tree (2k, Rico Cilliers; Rob Tuytel, guidance; https://polyhaven.com/a/jacaranda_tree) and tree_small_02 leaves (1k, Rico Cilliers; https://polyhaven.com/a/tree_small_02), via tools/pipeline/build-photoreal-flora.py.
+rock_moss_set_01 (2k, Kless Gyzen; https://polyhaven.com/a/rock_moss_set_01), via the same script.

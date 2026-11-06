@@ -819,7 +819,7 @@
   async function build(){
    if(built)return;built=true;
    root=new T.Group();root.name='Arena';scene.add(root);
-   if(!window.GardenCharacterSchema){try{const r=await fetch('/character-schema.json?v=3');if(r.ok)window.GardenCharacterSchema=await r.json();}catch{}}
+   if(!window.GardenCharacterSchema){try{const r=await fetch('/character-schema.json?v=4');if(r.ok)window.GardenCharacterSchema=await r.json();}catch{}}
    buildGrid();
    hud=buildHud();
    document.addEventListener('keydown',e=>{if(!active||e.ctrlKey||e.metaKey||['INPUT','TEXTAREA'].includes(e.target.tagName))return;const k=e.key.toLowerCase();if(k==='f'){e.preventDefault();interact();}if(k==='h'){e.preventDefault();useHeal();}if(e.key==='Tab'){e.preventDefault();const b=hud.el.querySelector('.ar-board');b.hidden=false;hud.update();}});

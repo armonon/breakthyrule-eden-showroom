@@ -168,8 +168,8 @@ window.createEdenSecrets=function({T,scene,camera,renderer,garden,combat,reduced
  async function statue({spec,material,at,yaw}){
   if(!window.GardenCharacter)return null;
   let defaults={};
-  try{const schema=await (await fetch('/character-schema.json?v=3')).json();for(const group of Object.values(schema))if(group&&typeof group==='object')for(const [k,s] of Object.entries(group))if(s&&typeof s==='object'&&'default' in s)defaults[k]=s.default;defaults.version=1;}catch{return null;}
-  const model=window.GardenCharacter.create(T,{...defaults,...spec},false);model.animate(0);
+  try{const schema=await (await fetch('/character-schema.json?v=4')).json();for(const group of Object.values(schema))if(group&&typeof group==='object')for(const [k,s] of Object.entries(group))if(s&&typeof s==='object'&&'default' in s)defaults[k]=s.default;defaults.version=1;}catch{return null;}
+  const model=window.GardenCharacter.createClassic(T,{...defaults,...spec},false);model.animate(0);
   model.root.traverse(n=>{if(n.isMesh){n.material=material;n.castShadow=true;n.receiveShadow=true;}});
   model.root.position.copy(at);model.root.rotation.y=yaw;scene.add(model.root);
   const bones={};model.root.traverse(n=>{if(n.isBone)bones[n.name]=n;});return {...model,bones};

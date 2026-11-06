@@ -8,6 +8,7 @@
  const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
  function createPlayerBody({T,scene,camera,pickables=[],enabled=()=>true,requestDraw=()=>{}}){
   const push=root.createFoliagePush?.(T,scene);
+  root.GardenCharacterRocketbox?.textureListeners.add(requestDraw);
   let handsOn=false,heldMesh=null,heldId=null,baseFov=null,ownFov=null,model=null,signature='',defaults=null,loading=null,checked=-1e9,clock=0,frame=0,yaw=null,turning=false,guardUntil=0,grabUntil=0,grabPoint=null,hover=null,wall=null;
   const eye=new T.Vector3(),headQ=new T.Quaternion(),turnAround=new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),Math.PI);
   const forward=new T.Vector3(),left=new T.Vector3(),up=new T.Vector3(0,1,0),probe=new T.Vector3(),ray=new T.Raycaster(),center=new T.Vector2();
@@ -22,9 +23,10 @@
    loading??=fetch('/character-schema.json').then(r=>r.json()).then(schema=>{defaults=Object.fromEntries([['version',1],...Object.values(schema).filter(v=>v&&typeof v==='object').flatMap(g=>Object.entries(g).map(([k,s])=>[k,s.default]))]);}).catch(()=>{loading=null;});
    await loading;if(!defaults)return;
    const look=appearance(),next=JSON.stringify(look);if(next===signature)return;signature=next;
+   try{await GardenCharacter.load(look);}catch{}if(next!==signature)return;
    const old=model;try{model=GardenCharacter.create(T,look);}catch{model=old;return;}
    if(old)GardenCharacter.dispose(old);
-   model.root.name='Player body';model.root.userData.noHit=true;model.byName.neck01.scale.setScalar(.001);model.motion.tune.guardLift=.05;model.motion.tune.wadeLift=.33;scene.add(model.root);requestDraw();
+   model.root.name='Player body';model.root.userData.noHit=true;model.byName.neck01?.scale.setScalar(.001);model.motion.tune.guardLift=.05;model.motion.tune.wadeLift=.33;scene.add(model.root);requestDraw();
   }
   // Walls are found by chest-height rays against the static meshes near the player (refreshed each second), so a
   // knee-high birdbath does not raise the hands but a wall, shelf or pillar does, with its true surface normal.
@@ -106,7 +108,8 @@
     const along=new T.Vector3();
     for(const [side,sign] of [['L',1],['R',-1]]){
      let weight=0,point=null;
-     if(wall){weight=smooth(1.08,.78,wall.distance);along.copy(left).addScaledVector(wall.normal,-left.dot(wall.normal)).normalize();point=wall.point.clone().addScaledVector(along,sign*.19).addScaledVector(wall.normal,.025);point.y=camera.position.y-(sign>0?.42:.36);}
+     if(wall){weight=smooth(1.08,.78,wall.distance);along.copy(left).addScaledVector(wall.normal,-left.dot(wall.normal)).normalize();// Centred on the view and high on the wall: this close, the wall fills the frame and lower hands would be off-screen.
+      point=camera.position.clone().addScaledVector(wall.normal,-camera.position.clone().sub(wall.point).dot(wall.normal)).addScaledVector(along,sign*.13).addScaledVector(wall.normal,.025);point.y=camera.position.y-(sign>0?.19:.15);}
      if(side==='R'&&clock<grabUntil&&grabPoint){weight=1;point=grabPoint;}
      else if(side==='R'&&hover&&!weight){weight=.4;point=hover;}
      model.motion.touch(side,point,wall&&point!==grabPoint&&point!==hover?wall.normal:null,weight,point===grabPoint||point===hover?'grab':'press');

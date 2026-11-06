@@ -7,13 +7,13 @@ window.createEdenSkybox=function(T,scene,{sky,roadX,reduced=false,bounds={minX:-
  const door={x:roadX,z:bounds.minZ,width:2.2,height:3.3};
  const root=new T.Group();root.name='Eden sky box';scene.add(root);
  const uniforms={
-  roadNight:sky.material.uniforms.roadNight,time:{value:0},
+  roadNight:sky.material.uniforms.roadNight,photoMap:sky.material.uniforms.photoMap,photoSky:sky.material.uniforms.photoSky,photoSun:sky.material.uniforms.photoSun,time:{value:0},
   doorRect:{value:new T.Vector4(door.x-door.width/2,0,door.x+door.width/2,door.height)},
   doorZ:{value:door.z},doorGlow:{value:0},
   glitch:{value:0},flicker:{value:0},flash:{value:0},flashAt:{value:new T.Vector3()}
  };
  const vertexShader='varying vec3 vWorld;void main(){vec4 p=modelMatrix*vec4(position,1.);vWorld=p.xyz;gl_Position=projectionMatrix*viewMatrix*p;}';
- const fragmentShader=`varying vec3 vWorld;uniform float roadNight,time,doorZ,doorGlow,glitch,flicker,flash;uniform vec3 flashAt;uniform vec4 doorRect;
+ const fragmentShader=`varying vec3 vWorld;uniform float roadNight,time,doorZ,doorGlow,glitch,flicker,flash;uniform vec3 flashAt;uniform vec4 doorRect;${window.edenPhotoSkyChunk}
  float hash(float n){return fract(sin(n)*43758.5453);}
  float noise(float x){float i=floor(x),f=fract(x);f=f*f*(3.-2.*f);return mix(hash(i),hash(i+1.),f);}
  vec3 skyColor(vec3 d){float h=max(d.y,0.);vec3 c=mix(vec3(.87,.91,.79),vec3(.24,.58,.79),pow(h,.55));
@@ -32,6 +32,7 @@ window.createEdenSkybox=function(T,scene,{sky,roadX,reduced=false,bounds={minX:-
    float crowns=.012+.016*(.5+.5*sin(5.*az+2.)*sin(11.*az))+.01*abs(sin(47.*az+2.*sin(17.*az)))+.004*sin(131.*az);
    if(e<crowns)col=mix(col,forest,.78-.3*max(e,0.)/crowns);
    if(e<0.)col=mix(col,meadow,smoothstep(0.,-.06,e));
+   if(photoSky.x>.5)col=mix(edenPhotoSky(dir),col,roadNight);
    float near=max(1.-smoothstep(3.5,10.5,dist),flicker*.85);
    vec2 g=abs(fract(vec2(u,y)/3.)-.5);float seam=smoothstep(.484,.497,max(g.x,g.y));
    col=mix(col,col*.74,seam*near);col+=vec3(.55,.8,1.)*seam*near*(.16+.1*sin(time*2.+y*.7+u*.3));

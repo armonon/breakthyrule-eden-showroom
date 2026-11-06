@@ -34,6 +34,7 @@
     "pantsColor": {"label":"Trouser color","hidden":true,"default":"#3b4048","tab":"style","swatches":["#3b4048","#586778","#a4a69e","#dedbd2","#466056","#6b4f60"]}
   },
   "choices": {
+    "character": {"label":"Character","default":"boulevard","optional":true,"tab":"body","picker":true,"options":{"boulevard":"Boulevard","harbor":"Harbor","midnight":"Midnight","coast":"Coast","riviera":"Riviera","marina":"Marina","garden":"Garden","sunset":"Sunset"}},
     "hairStyle": {"label":"Hairstyle","default":"side","tab":"hair","options":{"none":"Shaved","crop":"Textured crop","side":"Swept side part","slick":"Slick back","quiff":"High quiff","curls":"Sculpted curls","bob":"Chin-length bob","long":"Layered long","bun":"Side braid","ponytail":"Ponytail","locs":"Blunt bob"}},
     "facialHair": {"label":"Facial hair","default":"none","tab":"hair","options":{"none":"None","mustache":"Mustache","beard":"Beard"}},
     "outfit": {"label":"Top","hidden":true,"default":"resort","tab":"style","options":{"resort":"Palm resort shirt","tee":"Essential tee","sleeveless":"Sleeveless","longsleeve":"Long sleeve"}},
