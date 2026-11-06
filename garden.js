@@ -52,9 +52,9 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  }
  terrain.geometry.computeVertexNormals();
 
- const sky=new T.Mesh(new T.SphereGeometry(160,40,24),new T.ShaderMaterial({side:T.BackSide,depthWrite:false,uniforms:{roadNight:{value:0}},vertexShader:'varying vec3 vWorld;void main(){vWorld=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`varying vec3 vWorld;uniform float roadNight;
+ const sky=new T.Mesh(new T.SphereGeometry(160,40,24),new T.ShaderMaterial({side:T.BackSide,depthWrite:false,uniforms:{roadNight:{value:0},photoMap:{value:null},photoSky:{value:new T.Vector4(0,0,0,1)},photoSun:{value:new T.Vector3(0,1,0)}},vertexShader:'varying vec3 vWorld;void main(){vWorld=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`varying vec3 vWorld;uniform float roadNight;${window.edenPhotoSkyChunk}
  void main(){vec3 d=normalize(vWorld);float h=max(d.y,0.);vec3 c=mix(vec3(.87,.91,.79),vec3(.24,.58,.79),pow(h,.55));
- vec3 sun=normalize(vec3(-.38,.32,-.8));float s=max(dot(d,sun),0.);c+=vec3(1.,.72,.34)*pow(s,45.)*.36;c+=vec3(1.,.92,.7)*smoothstep(.9993,.9998,s)*2.;
+ vec3 sun=normalize(vec3(-.38,.32,-.8));float s=max(dot(d,sun),0.);c+=vec3(1.,.72,.34)*pow(s,45.)*.36;c+=vec3(1.,.92,.7)*smoothstep(.9993,.9998,s)*2.;if(photoSky.x>.5)c=edenPhotoSky(d);
  vec3 night=mix(vec3(.075,.11,.095),vec3(.009,.019,.023),pow(h,.45));float moon=max(dot(d,normalize(vec3(-.38,.62,-.64))),0.);night+=vec3(.72,.83,.71)*smoothstep(.99965,.9999,moon)*1.4;c=mix(c,night,roadNight);gl_FragColor=vec4(c,1.);}`}));
  garden.add(sky);scene.fog=new T.FogExp2(0xc7d9b8,.016);
 
@@ -74,13 +74,16 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  const flora=window.createEdenFlora(T,garden,{bark,openGround,mobile,heroModel});assetJobs.push(flora.ready);
  const terrainHeight=(x,worldZ)=>{const z=-worldZ,edge=Math.max(0,Math.hypot(x,z)-25),roadClearance=worldZ<roadStart?T.MathUtils.smoothstep(Math.abs(x-roadX),95,115):1,valley=window.edenValley,settled=T.MathUtils.smoothstep(Math.hypot(x-valley.x,worldZ-valley.z),valley.rim+2,valley.rim+14);return terrain.position.y+Math.sin(x*.12)*Math.cos(z*.15)*Math.min(6,edge*.15)*roadClearance*settled+valley.height(x,worldZ);};
  const grass=window.createEdenGrass(T,garden,{openGround,height:terrainHeight,mobile,wind});
+ let activeGrass=grass,denseGrass=null;
 
+ // Stepping stones and pond rim sit in their own group: the Photoreal setting swaps them for scanned rock (positions kept here).
+ const stones=new T.Group();stones.name='Eden stones';garden.add(stones);const stoneSpots={path:[],rim:[]};
  const pathStone=new T.CylinderGeometry(1,1.07,.065,9);
  for(let z=20;z>-6;z-=.9){for(let side=0;side<2;side++){
-  const slab=new T.Mesh(pathStone,stone);slab.position.set(pathX(z)+(side-.5)*.92,-.015,z+between(-.1,.1));slab.scale.set(between(.45,.58),1,between(.38,.5));slab.rotation.y=between(0,6.28);slab.receiveShadow=true;garden.add(slab);
+  const slab=new T.Mesh(pathStone,stone);slab.position.set(pathX(z)+(side-.5)*.92,-.015,z+between(-.1,.1));slab.scale.set(between(.45,.58),1,between(.38,.5));slab.rotation.y=between(0,6.28);slab.receiveShadow=true;stones.add(slab);stoneSpots.path.push(slab);
  }}
  // A second path connects the garden to the product pavilion.
- for(let i=0;i<13;i++){const slab=new T.Mesh(pathStone,stone);slab.position.set(-i*.7,-.015,7-i*.22);slab.scale.set(.48,1,.44);slab.rotation.y=i*.8;slab.receiveShadow=true;garden.add(slab);}
+ for(let i=0;i<13;i++){const slab=new T.Mesh(pathStone,stone);slab.position.set(-i*.7,-.015,7-i*.22);slab.scale.set(.48,1,.44);slab.rotation.y=i*.8;slab.receiveShadow=true;stones.add(slab);stoneSpots.path.push(slab);}
 
  // Recycled road sections lead from the sign to the distant pyramid court.
  const entrance=new T.CatmullRomCurve3([new T.Vector3(6.8,.025,-7.4),new T.Vector3(9.6,.025,-8.1),new T.Vector3(roadX,.025,roadStart)]);
@@ -137,9 +140,9 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  color+=vec3(.1,.16,.09)*pow(max(0.,sin(p.x*12.+sin(p.y*8.+time))),18.)*.35;gl_FragColor=vec4(color,1.);}`}));
  water.rotation.x=-Math.PI/2;water.position.set(5.7,-.005,3.5);water.scale.set(3.8,5.6,1);garden.add(water);
  const rockGeo=new T.DodecahedronGeometry(1,1);
- for(let i=0;i<68;i++){const a=i/68*Math.PI*2,rock=new T.Mesh(rockGeo,stone);rock.position.set(5.7+Math.cos(a)*3.9,between(-.02,.08),3.5+Math.sin(a)*5.7);rock.scale.set(between(.23,.48),between(.12,.27),between(.25,.45));rock.rotation.set(random(),random(),random());rock.castShadow=true;rock.receiveShadow=true;garden.add(rock);}
- const lilyMat=new T.MeshStandardMaterial({color:0x497238,roughness:.55,side:T.DoubleSide});
- for(let i=0;i<20;i++){const lily=new T.Mesh(new T.CircleGeometry(between(.12,.28),20,0,Math.PI*1.9),lilyMat);lily.rotation.set(-Math.PI/2,0,random()*6.28);lily.position.set(5.7+between(-2.5,2.5),.006,3.5+between(-3.5,3.5));garden.add(lily);}
+ for(let i=0;i<68;i++){const a=i/68*Math.PI*2,rock=new T.Mesh(rockGeo,stone);rock.position.set(5.7+Math.cos(a)*3.9,between(-.02,.08),3.5+Math.sin(a)*5.7);rock.scale.set(between(.23,.48),between(.12,.27),between(.25,.45));rock.rotation.set(random(),random(),random());rock.castShadow=true;rock.receiveShadow=true;stones.add(rock);stoneSpots.rim.push(rock);}
+ const lilyMat=new T.MeshStandardMaterial({color:0x497238,roughness:.55,side:T.DoubleSide}),lilies=new T.Group();lilies.name='Eden lilies';garden.add(lilies);
+ for(let i=0;i<20;i++){const lily=new T.Mesh(new T.CircleGeometry(between(.12,.28),20,0,Math.PI*1.9),lilyMat);lily.rotation.set(-Math.PI/2,0,random()*6.28);lily.position.set(5.7+between(-2.5,2.5),.006,3.5+between(-3.5,3.5));lilies.add(lily);}
 
  const cloudTex=canvasTexture(256,(c)=>{for(let i=0;i<28;i++){const x=between(35,221),y=between(85,165),r=between(20,48),g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,'rgba(255,255,255,.28)');g.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=g;c.fillRect(x-r,y-r,r*2,r*2);}});
  for(let i=0;i<14;i++){const cloud=new T.Sprite(new T.SpriteMaterial({map:cloudTex,transparent:true,opacity:.65,depthWrite:false,fog:false}));cloud.position.set(between(-90,90),between(27,42),between(-95,-45));cloud.scale.set(between(28,48),between(12,18),1);garden.add(cloud);}
@@ -171,7 +174,9 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
   if(position.z>26&&!window.edenValley.reaches(position.x,position.z)){if(previous.z>26)position.copy(previous);else position.z=26;}
   return position;
  },road:{x:roadX,start:roadStart,end:roadEnd,door:skybox.door.z,inspect:()=>({first:roadFirst,sections:roadSections.length,near:roadStart-roadFirst*roadLength,far:Math.max(roadEnd,roadStart-(roadFirst+roadSections.length)*roadLength)})},update(time,viewer,active=true){
-  if(viewer){lastViewer=viewer;if(grass.update(viewer.position))onChange();flora.setVisible(viewer.position.z>-45);flora.lod(viewer.position);if(!nightBuilt()&&(nightSteps||nightNear(viewer.position))){buildNight();onChange();}updateRoad(viewer.position);sky.position.copy(viewer.position);skyMoving=skybox.update(time,viewer,Math.min(.05,Math.max(0,time-lastTime)));lastTime=time;snake.update(time,viewer,active);if(nightBuilt()){const near=nightNear(viewer.position);nightRoad.setEnabled(near);district.root.visible=near;nightRoad.update(time,viewer,active);pyramid.update(viewer,time);if(near)district.update(time,viewer,nightRoad.amount);}}
+  if(viewer){lastViewer=viewer;if(activeGrass.update(viewer.position))onChange();flora.setVisible(viewer.position.z>-45);flora.lod(viewer.position);if(!nightBuilt()&&(nightSteps||nightNear(viewer.position))){buildNight();onChange();}updateRoad(viewer.position);sky.position.copy(viewer.position);skyMoving=skybox.update(time,viewer,Math.min(.05,Math.max(0,time-lastTime)));lastTime=time;snake.update(time,viewer,active);if(nightBuilt()){const near=nightNear(viewer.position);nightRoad.setEnabled(near);district.root.visible=near;nightRoad.update(time,viewer,active);pyramid.update(viewer,time);if(near)district.update(time,viewer,nightRoad.amount);}}
   if(reduced)return;wind.value=time;flora.update(time);waterUniforms.time.value=time;dust.rotation.y=Math.sin(time*.025)*.07;
- },get animating(){return skyMoving;},foliage:flora.leaves,flora,sky};
+ },get animating(){return skyMoving;},foliage:flora.leaves,flora,sky,get grassMesh(){return activeGrass.mesh;},pond:{water,lilies,time:waterUniforms.time,bed:groundLitter},stones,stoneSpots,
+  // Photoreal: a denser, taller field of the same scanned blades, built the first time it is asked for.
+  setDenseGrass(on){denseGrass??=on?window.createEdenGrass(T,garden,{openGround,height:terrainHeight,mobile,wind,cell:.36,radius:24,tall:1.35}):null;const next=on&&denseGrass?denseGrass:grass;if(next===activeGrass)return;activeGrass.mesh.visible=false;activeGrass=next;activeGrass.reset();onChange();}};
 };
