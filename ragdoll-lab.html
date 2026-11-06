@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ragdoll Lab</title>
+<style>
+ :root{color-scheme:light dark;--bg:#d7d9d3;--ink:#1c1f1e;--panel:#ffffffd9;--line:#0000002e}
+ @media (prefers-color-scheme:dark){:root{--bg:#1d2120;--ink:#eef0ea;--panel:#20262499;--line:#ffffff33}}
+ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.35 system-ui,sans-serif;overflow:hidden}
+ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+ #ui{position:fixed;left:16px;right:16px;top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+ button{font:inherit;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:inherit;cursor:pointer}
+ .side{position:fixed;bottom:12px;padding:4px 8px;border-radius:4px;background:var(--panel);font-weight:600}
+ #left{left:16px}#right{right:16px}
+ #out{position:fixed;left:16px;right:16px;top:70px;margin:0;max-height:45%;overflow:auto;background:var(--panel);padding:8px;border-radius:6px;white-space:pre-wrap;font:12px/1.4 ui-monospace,Menlo,monospace}
+ #out:empty{display:none}
+</style>
+<script src="/assets/three.min.js?v=187"></script>
+<script src="/assets/character-human-base.js?v=3"></script>
+<script src="/assets/character-human-full.js?v=1"></script>
+<script src="/assets/character-human-assets.js?v=1"></script>
+<script src="/character-details.js?v=4"></script>
+<script src="/character-human-proxies.js?v=2"></script>
+<script src="/character-motion.js?v=11"></script>
+<script src="/character-rocketbox.js?v=5"></script>
+<script src="/character-model.js?v=9"></script>
+</head>
+<body>
+<div id="ui">
+ <button data-run="fall">Fall</button>
+ <button data-run="wall">Fall into wall</button>
+ <button data-run="stagger">Stagger</button>
+ <button data-run="bench">Benchmark</button>
+</div>
+<pre id="out"></pre>
+<div class="side" id="left">Current ragdoll</div>
+<div class="side" id="right">Jolt</div>
+<script type="module" src="/ragdoll-lab.js"></script>
+</body>
+</html>
