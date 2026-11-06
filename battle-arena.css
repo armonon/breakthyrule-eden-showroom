@@ -119,3 +119,14 @@ body.soul-taken #battle-hud::after{content:'';position:fixed;inset:0;pointer-eve
 .ar-map{border-radius:6px;border:1px solid rgba(255,255,255,.28);box-shadow:0 6px 22px rgba(0,0,0,.35)}
 .ar-feed div{border-left:2px solid rgba(255,194,74,.8);backdrop-filter:blur(4px)}
 .ar-top b{text-shadow:0 2px 12px rgba(0,0,0,.6)}
+
+/* Power (battle-arena.js): the meter under the pages, and a red glow round the screen while you glow for everyone. */
+.ar-power{position:absolute;left:4.3%;top:132px;display:flex;flex-direction:column;gap:2px;font-size:10px;letter-spacing:.16em}
+.ar-power b{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:18px;letter-spacing:.08em;color:#ff6a5a;text-shadow:0 0 10px rgba(255,42,26,.6),0 1px 3px #000}
+.ar-power em{font-style:normal;color:#ff6a5a}
+.ar-power small{font-size:9px;opacity:.85;color:#ffb3a8}
+.ar-power-glow{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .6s;box-shadow:inset 0 0 90px 18px rgba(255,30,20,.45);animation:ar-power-pulse 1.6s ease-in-out infinite}
+#battle-hud.powered .ar-power-glow{opacity:1}
+@keyframes ar-power-pulse{0%,100%{box-shadow:inset 0 0 80px 14px rgba(255,30,20,.38)}50%{box-shadow:inset 0 0 120px 26px rgba(255,30,20,.55)}}
+.ar-board td.glow{color:#ff6a5a;font-weight:700}
+@media (prefers-reduced-motion:reduce){.ar-power-glow{animation:none}}

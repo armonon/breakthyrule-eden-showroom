@@ -37,6 +37,9 @@
  // The night closes in slowly: about seven minutes from the first wait to full dark, and the dark only nibbles at first.
  // Recharging shields over 100 health: the player's matches a full health bar, the bots' is half that.
  const SHIELD_PLAYER=100,SHIELD_BOT=50,SHIELD_DELAY=4;
+ // Power: every kill makes you stronger (+12% damage and +10 shield a level, up to 8). From level 3 you glow red for
+ // everyone (an aura, and a pulsing dot on every map) and bots hunt you first. Whoever kills you takes all of it.
+ const POWER_MAX=8,POWER_GLOW=3,POWER_DMG=.12,POWER_SHIELD=10;
  // The forever match: no rounds and no night zone. Dying puts you back in after a few seconds; kills, headshots and
  // events add to your score; weapon pads and chests restock; an event comes round every EVENT_GAP seconds.
  const RESPAWN_PLAYER=3,SPAWN_PROTECT=2,PAD_RESTOCK=30,CHEST_RESTOCK=60,EVENT_FIRST=25,EVENT_GAP=75;
@@ -260,6 +263,7 @@
    if(target===player&&clock<(player.protectUntil||0))return {killed:false};
    // Finisher: melee on a bot that is down (tackled, knocked over) hits twice as hard.
    const finisher=target.bot&&attacker===player&&['melee','axe'].includes(meta.weapon)&&(target.model.motion?.downAmount?.()||0)>.3;if(finisher){amount*=2;meta={...meta,finisher:true};}
+   if(attacker&&attacker!==target&&attacker.power)amount*=1+POWER_DMG*Math.min(POWER_MAX,attacker.power);
    let a=amount,shielded=0;
    const raw=meta.kind==='zone'||meta.kind==='attendant'||meta.kind==='fall';
    if(target.shield>0&&!raw){shielded=Math.min(target.shield,a);target.shield-=shielded;a-=shielded;if(target===player)hud?.shieldHit?.(shielded/40+(target.shield<=0?.5:0));if(target.shield<=0&&target===player){chime([520,330,196],.09,.05);hud?.shieldBroken?.();}}
@@ -286,6 +290,15 @@
     if(call){if(attacker===player)announce(call);else if(SPREES[attacker.streak])pushFeed(`${nameOf(attacker)} <i>${call}</i>`);}
     if(event?.kind==='bounty'&&event.target===target){attacker.score+=POINTS.bounty;endEvent(`${nameOf(attacker)} CLAIMED THE BOUNTY · +${POINTS.bounty}`);}
    }
+   // Power changes hands: the killer takes the victim's power plus a level for the kill; other deaths lose it.
+   {const had=target.power||0;
+    if(attacker&&attacker!==target){const before=attacker.power||0;setPower(attacker,before+1+had);
+     if(had>=2)pushFeed(`${nameOf(attacker)} <i>TOOK ${had} POWER FROM</i> ${nameOf(target)}`);
+     if(attacker===player&&had>=2)announce(`YOU TOOK ${nameOf(target)}'S POWER · LEVEL ${attacker.power}`);
+     else if(target===player&&had>=2)setTimeout(()=>announce(`${nameOf(attacker)} TOOK YOUR POWER`),900);
+     else if(attacker===player&&attacker.power>=POWER_GLOW&&before<POWER_GLOW)setTimeout(()=>announce('YOU GLOW RED · EVERYONE CAN SEE YOU'),700);}
+    else if(had>=2&&target===player)setTimeout(()=>announce('YOUR POWER IS LOST'),900);
+    setPower(target,0);}
    target.deaths=(target.deaths||0)+1;target.streak=0;target.multi=0;
    const how=meta.kind==='fall'?'THE FALL':meta.kind==='attendant'?'THE ATTENDANT':meta.kind==='zone'?'THE NIGHT':meta.weapon?W(meta.weapon)?.name||meta.weapon.toUpperCase():'';
    pushFeed(attacker&&attacker!==target?`${nameOf(attacker)} <i>${how}${meta.head?' · HEAD':''}</i> ${nameOf(target)}`:`${nameOf(target)} <i>${how||'FELL'}</i>`);
@@ -310,6 +323,22 @@
    hud?.update();
   }
   const nameOf=c=>c===player?'YOU':c.name;
+  function setPower(c,v){if(!c)return;if(c.aura&&v<POWER_GLOW)c.aura.visible=false;c.power=Math.min(POWER_MAX*3,Math.max(0,v));const lv=Math.min(POWER_MAX,c.power);c.shieldMax=(c===player?SHIELD_PLAYER:SHIELD_BOT)+POWER_SHIELD*lv;if(c.alive)c.shield=Math.min(c.shieldMax,(c.shield||0)+POWER_SHIELD);hud?.update();}
+  // The red glow: a ground ring and a column of red light around anyone at POWER_GLOW or more, stronger with power.
+  function aura(){const M=materials(),g=new T.Group();
+   const ring=new T.Mesh(new T.PlaneGeometry(2.6,2.6),new T.MeshBasicMaterial({map:M.ring,color:0xff2a1a,transparent:true,opacity:.7,depthWrite:false,blending:T.AdditiveBlending}));ring.rotation.x=-Math.PI/2;ring.position.y=.04;g.add(ring);
+   const beam=new T.Mesh(new T.CylinderGeometry(.55,.75,2.4,20,1,true),new T.MeshBasicMaterial({map:M.beam,color:0xff2a1a,transparent:true,opacity:.35,depthWrite:false,blending:T.AdditiveBlending,side:T.DoubleSide}));beam.position.y=1.2;g.add(beam);
+   g.traverse(n=>{n.userData.noHit=true;n.raycast=()=>{};});g.visible=false;root.add(g);return g;}
+  function updateAura(c){
+   const on=c.alive&&(c.power||0)>=POWER_GLOW;if(!c.aura&&!on)return;c.aura||=aura();c.aura.visible=on;if(!on)return;
+   const p=posOf(c),k=Math.min(1,((c.power||0)-POWER_GLOW+1)/(POWER_MAX-POWER_GLOW+1)),pulse=.75+.25*Math.sin(clock*(4+k*4));
+   c.aura.position.set(p.x,p.y,p.z);c.aura.children[0].material.opacity=(.45+.4*k)*pulse;c.aura.children[0].scale.setScalar(1+k*.6);
+   // In first person your own column would sit on the camera: only the ring for you (the screen glows instead).
+   c.aura.children[1].visible=c!==player||(o.thirdPerson?.()||0)>.5;c.aura.children[1].material.opacity=(.18+.3*k)*pulse;c.aura.children[1].scale.set(1+k*.3,1+k*.6,1+k*.3);c.aura.children[1].position.y=1.2*(1+k*.6);
+  }
+  // A bot with less power goes after whoever glows brightest (power 4 or more, within 110 m).
+  function huntStrongest(b,p){const top=strongest();if(!top||top===b||(top.power||0)<4||(b.power||0)>=top.power)return false;const tp=posOf(top);if(tp.distanceTo(p)>110)return false;if(!b.goal||b.goal.distanceTo(tp)>6){b.goal=tp.clone();b.path=findPath(p,b.goal);b.state='roam';}return true;}
+  const strongest=()=>combatants().filter(c=>(c.power||0)>=POWER_GLOW).sort((a,b)=>(b.power||0)-(a.power||0))[0]||null;
   const pagesOf=c=>pages.filter(pg=>pg.carrier===c).length;
 
   /* ---------------------------------------------------------------- pathfinding */
@@ -377,7 +406,7 @@
     let best=null,bd=1e9;const sight=b.weapon==='sniper'?120:b.weapon==='rifle'?70:45;
     const attacked=b.seen&&b.seen.alive&&clock-b.lastHurt<4?b.seen:null;
     const reach=b.state==='rush'?4.5:b.weapon==='axe'?9:sight;
-    for(const c of combatants()){if(c===b)continue;const d=posOf(c).distanceTo(p);if((d<reach||c===attacked&&d<sight)&&d<bd&&los(eye,eyeOf(c))){best=c;bd=d;}}
+    for(const c of combatants()){if(c===b)continue;const d=posOf(c).distanceTo(p)/(1+Math.min(POWER_MAX,c.power||0)*.25),glow=(c.power||0)>=POWER_GLOW;if((d<reach*(glow?1.6:1)||c===attacked&&d<sight)&&d<bd&&los(eye,eyeOf(c))){best=c;bd=d;}}
     if(best&&(b.state!=='fight'||b.target!==best)){if(b.target!==best)b.aimT=b.reaction;b.target=best;b.state='fight';}
     if(b.state==='fight'&&b.target&&!attacked&&b.weapon==='axe'&&posOf(b.target).distanceTo(p)>12){b.state='loot';b.target=null;b.goal=null;}
     if(!best&&b.state==='fight'&&(!b.target?.alive||posOf(b.target).distanceTo(p)>60)){b.state='roam';b.target=null;b.goal=null;}
@@ -392,6 +421,7 @@
     // Pages: carriers head for the temple once it opens; the rest hunt whoever was pinged.
     if(b.state!=='fight'){const mine=pagesOf(b);
      if(mine&&nightLevel()>.5){const t=temple();if(!b.goal||b.goal.distanceTo(t)>1){b.goal=t;b.path=findPath(p,t);}b.state='roam';}
+     else if(huntStrongest(b,p)){}
      else if(pinged&&pinged!==b&&pinged.alive&&clock<pingUntil&&(b.id.charCodeAt(b.id.length-1)+round)%3<2){const tp=posOf(pinged);if(tp.distanceTo(p)<90&&(!b.goal||b.goal.distanceTo(tp)>6)){b.goal=tp.clone();b.path=findPath(p,b.goal);b.state='roam';}}}
     // Loot decisions
     if(b.state==='rush'){const c=chests.filter(c=>!c.open).sort((x,y)=>x.pos.distanceTo(p)-y.pos.distanceTo(p))[0];if(c){if(b.goal!==c.pos){b.goal=c.pos;b.path=[c.pos.clone()];}}else b.state='loot';}
@@ -519,7 +549,7 @@
     <canvas class="ar-map" width="180" height="160" aria-label="Arena map"></canvas>
     <div class="ar-feed" aria-live="polite"></div>
     <div class="ar-count" aria-live="assertive"></div>
-    <div class="ar-announce"></div><div class="ar-blood" aria-hidden="true"><i></i></div><div class="ar-pages" aria-live="polite"></div>
+    <div class="ar-announce"></div><div class="ar-blood" aria-hidden="true"><i></i></div><div class="ar-pages" aria-live="polite"></div><div class="ar-power"></div><div class="ar-power-glow" aria-hidden="true"></div>
     <div class="ar-prompt"><kbd>F</kbd><span></span></div>
     <div class="ar-vitals"><div class="ar-shimmer"></div><div class="ar-bar ar-shield"><i></i><span></span></div><div class="ar-bar ar-armor"><i></i><span></span></div><div class="ar-bar ar-hp"><i></i><span></span></div><div class="ar-heals"></div><div class="ar-heal-progress"><i></i></div></div>
     <div class="ar-end" hidden><div class="ar-end-card"><span class="ar-end-kicker"></span><h2></h2><p class="ar-end-stats"></p><div class="ar-loadout"></div><div class="ar-end-actions"><button class="ar-again">PLAY AGAIN</button><button class="ar-leave">LEAVE ARENA</button></div></div></div>
@@ -536,7 +566,9 @@
      const open=templeOpen(),inT=pages.filter(pg=>pg.state==='delivered').length,mine=player?pagesOf(player):0;
      q('.ar-zone').textContent=(open?`MOON TEMPLE OPEN · DAWN IN ${mm(-un)}`:`TEMPLE OPENS IN ${mm(un)}`)+(event?.kind==='supply'?` · ${event.label}`:'');
      q('.ar-pages').innerHTML=pages.map(pg=>`<i class="pg ${pg.state}${pg.carrier===player?' mine':''}" title="${pg.state}"></i>`).join('')+`<span>${mine?`<b>${mine}</b> CARRIED · `:''}${inT}/${PAGE_COUNT} IN THE TEMPLE${pinged&&clock<pingUntil?` · <em>${pinged===player?'YOU ARE':nameOf(pinged)+' IS'} PINGED</em>`:''}</span>`;
-     const board=q('.ar-board');if(!board.hidden)board.innerHTML='<h3>BEYOND EDEN · OPEN MATCH</h3><table><tr><th></th><th>SCORE</th><th>KILLS</th><th>PAGES</th><th>DEATHS</th></tr>'+everyone.map((c,i)=>`<tr class="${c===player?'me':''}"><td>${i+1}. ${nameOf(c)}${pinged===c&&clock<pingUntil?' ◉':''}</td><td>${c.score||0}</td><td>${c.kills||0}</td><td>${c.delivered||0}${pagesOf(c)?' +'+pagesOf(c):''}</td><td>${c.deaths||0}</td></tr>`).join('')+'</table>';
+     {const pw=player?.power||0,lv=Math.min(POWER_MAX,pw);q('.ar-power').innerHTML=pw?`<b>POWER ${pw}</b><span>+${Math.round(lv*POWER_DMG*100)}% DAMAGE · +${lv*POWER_SHIELD} SHIELD${pw>=POWER_GLOW?' · <em>YOU GLOW RED</em>':''}</span>`:'';
+      const top=strongest();if(top&&top!==player)q('.ar-power').innerHTML+=`<small>STRONGEST: ${nameOf(top)} · POWER ${top.power}</small>`;}
+     const board=q('.ar-board');if(!board.hidden)board.innerHTML='<h3>BEYOND EDEN · OPEN MATCH</h3><table><tr><th></th><th>SCORE</th><th>KILLS</th><th>PAGES</th><th>POWER</th><th>DEATHS</th></tr>'+everyone.map((c,i)=>`<tr class="${c===player?'me':''}"><td>${i+1}. ${nameOf(c)}${pinged===c&&clock<pingUntil?' ◉':''}</td><td>${c.score||0}</td><td>${c.kills||0}</td><td>${c.delivered||0}${pagesOf(c)?' +'+pagesOf(c):''}</td><td${(c.power||0)>=POWER_GLOW?' class="glow"':''}>${c.power||0}</td><td>${c.deaths||0}</td></tr>`).join('')+'</table>';
      if(player){const sh=Math.max(0,player.shield||0);q('.ar-shield i').style.width=(player.shieldMax?sh/player.shieldMax*100:0)+'%';q('.ar-shield span').textContent=sh>0?'SHIELD '+Math.ceil(sh):'SHIELD DOWN';q('.ar-shield').classList.toggle('down',sh<=0);
       const hp=Math.max(0,player.hp),ar=Math.max(0,player.armor);q('.ar-hp i').style.width=hp+'%';q('.ar-hp span').textContent=Math.ceil(hp)+' HP';
       q('.ar-armor i').style.width=(player.armorMax?ar/player.armorMax*100:0)+'%';q('.ar-armor span').textContent=player.garment?`${Math.ceil(ar)} · ${player.garment.name.toUpperCase()}`:'NO ARMOR';
@@ -556,6 +588,7 @@
      {const t=temple(),[x,y]=toMap(t.x,t.z);map.strokeStyle=templeOpen()?'#ffd27a':'rgba(200,90,70,.8)';map.lineWidth=2;map.beginPath();map.arc(x,y,5,0,TAU);map.stroke();}
      for(const pg of pages){if(!pg.loot)continue;const [x,y]=toMap(pg.loot.pos.x,pg.loot.pos.z);map.fillStyle=pg.state==='loose'?'#fff':'#f3e6c4';map.fillRect(x-2,y-2.5,4,5);}
      if(pinged&&pinged.alive&&clock<pingUntil&&pinged!==player){const q2=posOf(pinged),[x,y]=toMap(q2.x,q2.z);map.strokeStyle='#ff5a4a';map.lineWidth=1.5;map.beginPath();map.arc(x,y,4+((clock*2)%1)*6,0,TAU);map.stroke();map.fillStyle='#ff5a4a';map.beginPath();map.arc(x,y,2.5,0,TAU);map.fill();}
+     for(const c of combatants()){if(c===player||(c.power||0)<POWER_GLOW)continue;const q2=posOf(c),[x,y]=toMap(q2.x,q2.z),r0=2.5+Math.min(POWER_MAX,c.power)*.35;map.fillStyle=`rgba(255,42,26,${.55+.45*Math.sin(clock*7)})`;map.beginPath();map.arc(x,y,r0,0,TAU);map.fill();}
      if(attendant){const [x,y]=toMap(attendant.pos.x,attendant.pos.z);map.fillStyle='#b23cff';map.beginPath();map.arc(x,y,3.5+Math.sin(clock*8),0,TAU);map.fill();}
      if(event){const at=event.kind==='bounty'?(event.target?.alive?posOf(event.target):null):event.pos;if(at){const [x,y]=toMap(at.x,at.z),pulse=3+Math.sin(clock*6)*1.2;
       map.strokeStyle=map.fillStyle=event.kind==='supply'?'#ffd27a':event.kind==='hill'?'#7fe3ff':event.kind==='pages'?'#f3e6c4':'#ff6b5a';map.lineWidth=1.5;map.beginPath();
@@ -613,7 +646,7 @@
   function respawnPlayer(){
    const soul=player.soul,spot=soul?GATE_SPAWN():DOOR_SPAWN();
    if(soul)o.onSoul?.(false);
-   Object.assign(player,{soul:false,alive:true,hp:100,shield:SHIELD_PLAYER,armor:0,armorMax:0,garment:null,lastHurt:-9,healing:null,respawnAt:null,protectUntil:clock+SPAWN_PROTECT});
+   Object.assign(player,{soul:false,alive:true,hp:100,shield:SHIELD_PLAYER,shieldMax:SHIELD_PLAYER,armor:0,armorMax:0,garment:null,lastHurt:-9,healing:null,respawnAt:null,protectUntil:clock+SPAWN_PROTECT});
    o.placePlayer(spot.x,spot.z,spot.x,soul?spot.z+6:spot.z-6);combat.syncLook();kitPlayer();hud.count(0);hud.update();announce(soul?'YOUR SOUL RETURNS · THE PYRAMID GATE':'BACK IN · '+SPAWN_PROTECT+'s PROTECTED');
   }
   function leader(){return [player,...bots].filter(c=>c&&(c.score||0)>0).sort((a,b)=>(b.score||0)-(a.score||0))[0]||null;}
@@ -826,6 +859,7 @@
    document.addEventListener('keyup',e=>{if(e.key==='Tab'&&hud)hud.el.querySelector('.ar-board').hidden=true;});
   }
   function clearMatch(){
+   for(const c of [player,...bots])c?.aura?.parent?.remove(c.aura);
    for(const b of bots)b.root.parent?.remove(b.root);bots=[];
    for(const c of chests)c.group.parent?.remove(c.group);chests=[];
    for(const l of loot)l.group.parent?.remove(l.group);loot=[];feed=[];
@@ -888,6 +922,8 @@
    for(const c of chests){if(c.jolt>0){c.jolt=Math.max(0,c.jolt-dt*1.5);c.group.position.y=c.pos.y+Math.abs(Math.sin(c.jolt*18))*c.jolt*.5;c.group.rotation.z=Math.sin(c.jolt*23)*c.jolt*.25;if(!c.jolt){c.group.position.y=c.pos.y;c.group.rotation.z=0;}}if(c.open){const k=clamp((clock-c.openT)/.45,0,1);c.lidPivot.rotation.x=-k*1.9*(1-.08*Math.sin(k*9)*(1-k));}}
    if(Math.floor(clock*4)!==Math.floor((clock-dt)*4))hud.update();
    hud.blood(bloodHit,lowHealth());
+   for(const c of [player,...bots])if(c)updateAura(c);
+   hud.el.classList.toggle('powered',!!player?.alive&&(player.power||0)>=POWER_GLOW);
   }
   // 0 above 60 health, rising to 1 near death.
   function lowHealth(){return player?.alive&&!player.soul?clamp((60-player.hp)/50,0,1):0;}
@@ -910,10 +946,10 @@
     for(const l of loot){if(l.item.type==='page')continue;const d=l.group.position.distanceTo(p);if(d<radius*1.3){const out=l.group.position.clone().sub(p).setY(0);if(out.lengthSq()<1e-4)out.set(rand(-1,1),0,rand(-1,1));out.normalize().multiplyScalar(6*(1-d/(radius*1.3))+1);l.vel=out.add(new T.Vector3(0,4+rand(0,2),0));l.y+=.05;}}
     for(const c of chests){const d=c.pos.distanceTo(p);if(d<radius){c.jolt=.5*(1-d/radius)+.15;}}
     for(const dr of doors){const dd=Math.hypot(dr.x-p.x,dr.z-p.z);if(dd<radius+1)smashDoor(dr,new T.Vector3(dr.x-p.x,0,dr.z-p.z),9*(1-dd/(radius+1))+3);}if(attendant&&attendant.pos.distanceTo(p)<radius)hurtAttendant(dmg);for(const c of combatants()){const d=posOf(c).distanceTo(p);if(d<radius&&los(p.clone().add(new T.Vector3(0,.4,0)),eyeOf(c)))damage(c,dmg*Math.pow(1-d/radius,1.2),player,{weapon:'c4',blast:true,dir:posOf(c).clone().sub(p).setY(0).normalize()});}},
-   inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,event:event&&{kind:event.kind,label:event.label},night:+nightLevel().toFixed(2),attendant:attendant&&{x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1),stunned:clock<attendant.stunUntil},pages:player?pagesOf(player):0,pageState:pages.map(pg=>pg.state),delivered:pages.filter(pg=>pg.state==='delivered').length,pinged:pinged?nameOf(pinged):null,templeOpen:templeOpen(),soul:!!player?.soul,nextEvent:+(nextEventAt-clock).toFixed(1),pads:pads.length,player:player&&{alive:player.alive,score:player.score||0,deaths:player.deaths||0,hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
+   inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,event:event&&{kind:event.kind,label:event.label},night:+nightLevel().toFixed(2),attendant:attendant&&{x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1),stunned:clock<attendant.stunUntil},pages:player?pagesOf(player):0,power:player?.power||0,pageState:pages.map(pg=>pg.state),delivered:pages.filter(pg=>pg.state==='delivered').length,pinged:pinged?nameOf(pinged):null,templeOpen:templeOpen(),soul:!!player?.soul,nextEvent:+(nextEventAt-clock).toFixed(1),pads:pads.length,player:player&&{alive:player.alive,score:player.score||0,deaths:player.deaths||0,hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
     bots:bots.map(b=>({name:b.name,score:b.score||0,kills:b.kills||0,alive:b.alive,hp:Math.round(b.hp),shield:Math.round(b.shield),down:+(b.model.motion?.downAmount?.()||0).toFixed(2),state:b.state,weapon:b.weapon,armor:b.armor,x:+b.root.position.x.toFixed(1),z:+b.root.position.z.toFixed(1)})),
     zone:zone&&{phase:zone.phase,state:zone.state,r:+zone.r.toFixed(1),x:+zone.center.x.toFixed(1),z:+zone.center.z.toFixed(1)},chests:chests.filter(c=>c.open).length+'/'+chests.length,loot:loot.length,arsenal:combat.arsenal.inspect()}),
-   _debug:{get bots(){return bots;},get player(){return player;},get loot(){return loot;},get chests(){return chests;},interact,damage,god(v=true){godMode=v;},place:(x,z,lx,lz,dp=0)=>{o.placePlayer(x,z,lx,lz);combat.syncLook(dp);},skip(t){countdown=0;clock+=t||0;},setZone(r){if(zone){zone.r=r;}},get pages(){return pages;},deliver,night(){const u=untilNight();if(u>0)worldOffset+=u+CYCLE.dusk+1;},blood(v){bloodHit=v;}}
+   _debug:{get bots(){return bots;},get player(){return player;},get loot(){return loot;},get chests(){return chests;},interact,damage,god(v=true){godMode=v;},place:(x,z,lx,lz,dp=0)=>{o.placePlayer(x,z,lx,lz);combat.syncLook(dp);},skip(t){countdown=0;clock+=t||0;},setZone(r){if(zone){zone.r=r;}},get pages(){return pages;},deliver,setPower,night(){const u=untilNight();if(u>0)worldOffset+=u+CYCLE.dusk+1;},blood(v){bloodHit=v;}}
   };
  }
  root.createBattleArena=createArena;
