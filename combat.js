@@ -53,7 +53,7 @@
  function createCombat(o){
   const {T,scene,camera,renderer,stage}=o;
   const hudHost=stage.parentElement;
-  let built=false,armed=false,locked=false,current=null,previous=null,lastTime=0,scoped=false,arsenal=null;
+  let touchMode=false,built=false,armed=false,locked=false,current=null,previous=null,lastTime=0,scoped=false,arsenal=null;
   let yaw=0,pitch=0,buttons={left:false,right:false},pendingFire=false;
   const look={kickPitch:new Spring(120,16),kickYaw:new Spring(120,16),shake:0};
   const stats={hits:0,trueShots:0,shots:0};
@@ -733,7 +733,7 @@
     hurt(a,angle){const f=q('.ch-hurt');f.style.setProperty('--a',angle.toFixed(2)+'rad');f.style.transition='none';f.style.opacity=Math.min(1,a);requestAnimationFrame(()=>{f.style.transition='opacity .7s ease-out';f.style.opacity=0;});},
     flash(a){const f=q('.ch-flash');f.style.transition='none';f.style.opacity=a;requestAnimationFrame(()=>{f.style.transition='opacity .9s ease-out';f.style.opacity=0;});},
     update(){
-     cls('locked',locked);
+     cls('locked',locked||touchMode);
      if(!current)return;
      const w=current,s=state[w.id];
      text('.ch-name',w.name+' / '+w.kind);
@@ -756,20 +756,27 @@
      set(ring,'ring',Math.max(8.5,r).toFixed(1),(n,v)=>n.setAttribute('r',v));
      cls('focusing',false); // the crosshair gap shows the spread; a gold dot means settled (TRUE SHOT)
      cls('window',inWindow());cls('winded',(s.breath||0)>.05);
-     cls('ads',adsBlend>.6&&w.id!=='axe');text('.ch-zoom',adsBlend>.05&&ZOOM[w.id]?(1+(ZOOM[w.id]-1)*adsBlend).toFixed(1)+'×':'');
+     cls('ads',adsBlend>.6&&w.id!=='axe');text('.ch-zoom',adsBlend>.05&&ZOOM[w.id]?(1+(ZOOM[w.id]-1)*adsBlend).toFixed(1)+'×'+(scoped?(breath.tired>0?' · RECOVERING':shiftHeld&&breath.hold>0?' · HOLDING '+Math.ceil(BREATH_HOLD-breath.hold):' · SHIFT STEADY'):''):'');
      set(q('.ch-mag i'),'mag',w.mag&&w.id!=='axe'&&w.id!=='c4'?(s.ammo/w.mag*100).toFixed(0):'0',(n,v)=>{n.style.width=v+'%';n.parentNode.classList.toggle('low',+v<=25);});cls('melee',w.id==='axe'||w.id==='c4');
     }
    };
   }
 
   /* ------------------------------------------------------------ weapon state machine */
-  let adsBlend=0,sprintBlend=0,equipBlend=0,zoomTarget=0,lateral=0,stepDip=0;
+  let adsBlend=0,sprintBlend=0,equipBlend=0,zoomTarget=0,lateral=0,stepDip=0,shiftHeld=false,breath={hold:0,tired:0},sprayIndex=0;
+  // Sniper: hold Shift while scoped to steady your breath (4 s), then the sway comes back stronger while you recover.
+  const BREATH_HOLD=4,BREATH_TIRED=3;
+  // Rifle and SMG recoil you can learn while aiming: the muzzle climbs, then walks right, left and right again.
+  const SPRAY=[0,.2,.45,.6,.35,-.1,-.5,-.75,-.55,-.1,.35,.7,.8,.5,.1,-.3,-.6,-.6,-.3,0];
+  document.addEventListener('keydown',e=>{if(e.key==='Shift')shiftHeld=true;});document.addEventListener('keyup',e=>{if(e.key==='Shift')shiftHeld=false;});window.addEventListener('blur',()=>{shiftHeld=false;});
   // Zoom by scrolling the wheel, a two-finger trackpad scroll or pinch, or pinching a touch screen: the weapon comes up
   // to the sights and the view narrows to the weapon's magnification. Heavier weapons sway more, bob harder, swing
   // further behind your turns, come up to the sights slower and slow you down.
   const ZOOM={pistol:1.35,smg:1.55,pump:1.3,rifle:2.2,sniper:4.6};
   const WEIGHT={pistol:.2,smg:.45,pump:.62,rifle:.72,sniper:.95,axe:.55,c4:.15};
   const zoomable=()=>!!(current&&ZOOM[current.id]);
+  const setting=(k,d)=>window.edenSettings?.get(k)??d;
+  const lookScale=()=>setting('sens',1)*lerp(1,setting('adsSens',1),adsBlend),ySign=()=>setting('invertY',false)?-1:1;
   function nudgeZoom(d){if(!zoomable())return false;zoomTarget=clamp(zoomTarget+d,0,1);if(zoomTarget<.04)zoomTarget=0;requestFrame();return true;}
   const anim={posX:new Spring(220,22),posY:new Spring(220,22),posZ:new Spring(260,20),rotX:new Spring(240,20),rotY:new Spring(200,20),rotZ:new Spring(200,20),swayX:new Spring(90,12),swayY:new Spring(90,12),land:new Spring(140,10)};
   function resetState(){for(const w of WEAPONS)state[w.id]={ammo:w.mag,chamber:true,focus:0,windowT:0,breath:0,action:null,lastFire:-9,slide:0};}
@@ -785,7 +792,7 @@
   }
   function movementInfo(){const m=o.movement?.()||{};return {speed:speedSmoothed,sprinting:!!m.sprinting&&speedSmoothed>1,airborne:!!m.airborne};}
   function startAction(name,duration,data={}){const s=state[current.id];s.action={name,t:0,duration,...data};}
-  function canFire(){if(!current||!locked||!o.canAct())return false;const s=state[current.id];if(equipBlend<.85)return false;if(s.action&&!(s.action.name==='reload'&&current.id==='pump'))return false;return lastTime-s.lastFire>=current.interval;}
+  function canFire(){if(!current||!(locked||touchMode)||!o.canAct())return false;const s=state[current.id];if(equipBlend<.85)return false;if(s.action&&!(s.action.name==='reload'&&current.id==='pump'))return false;return lastTime-s.lastFire>=current.interval*(current.id==='pump'?lerp(1,.72,adsBlend):1);}
   function reserveOf(w){if(!w.ammo)return Infinity;if(!arsenal)return Infinity;return arsenal.reserve[w.ammo]||0;}
 
   function fire(){
@@ -824,18 +831,20 @@
    const rec=w.rec||(w.id==='pump'?{z:1.7,x:4.6,yaw:.035,pitch:.06}:{z:1.1,x:3.2,yaw:.012,pitch:.022});
    const adsK=lerp(1,.6,adsBlend);
    anim.posZ.kick(rec.z*adsK);anim.rotX.kick(rec.x*adsK);anim.rotY.kick(rand(-1,1)*rec.x*.15);anim.rotZ.kick(rand(-1,1)*rec.x*.2);
-   look.kickPitch.kick(rec.pitch*20*adsK);look.kickYaw.kick(rand(-1,1)*rec.yaw*20*adsK);
+   if(lastTime-(state.lastSprayShot??-9)>.35)sprayIndex=0;state.lastSprayShot=lastTime;
+   const patterned=(w.id==='rifle'||w.id==='smg')&&adsBlend>.3;
+   look.kickPitch.kick(rec.pitch*20*adsK*(patterned?1.15:1));look.kickYaw.kick((patterned?SPRAY[Math.min(sprayIndex,SPRAY.length-1)]*1.4:rand(-1,1))*rec.yaw*20*adsK);sprayIndex++;
    look.shake=Math.max(look.shake,{pump:.34,sniper:.42,rifle:.13,smg:.09,pistol:.11}[w.id]||.1);
    s.focus=Math.min(s.focus,.25);s.windowT=0;s.breath=0;
    if(w.id==='pistol'){s.slideT=0;ejectShell('pistol');if(s.ammo===0)s.lockedBack=true;}
    if(w.id==='smg'||w.id==='rifle')ejectShell('pistol');
    if(w.id==='sniper'&&s.ammo>0)setTimeout(()=>{if(current?.id==='sniper'&&!state.sniper.action)startAction('bolt',.85);},260);
-   if(w.id==='pump'){s.chamber=false;if(s.ammo>0)setTimeout(()=>{if(current?.id==='pump'&&!state.pump.action)startAction('pump',.42);},170);}
+   if(w.id==='pump'){s.chamber=false;const quick=lerp(1,.72,adsBlend);if(s.ammo>0)setTimeout(()=>{if(current?.id==='pump'&&!state.pump.action)startAction('pump',.42*quick);},170*quick);}
    requestFrame();
   }
 
   function reload(){
-   if(!current||!locked)return;const w=current,s=state[w.id];
+   if(!current||!(locked||touchMode))return;const w=current,s=state[w.id];
    if(w.id==='axe'||w.id==='c4'||s.action||s.ammo>=w.mag&&(w.id!=='pump'||s.chamber))return;
    const have=reserveOf(w);if(have<=0){hud.toast('NO '+w.ammo.toUpperCase()+' AMMO');return;}
    if(w.id==='pistol'){startAction('reload',s.lockedBack?1.62:1.4,{dropped:false,inserted:false,slap:s.lockedBack});}
@@ -976,9 +985,9 @@
   /* ------------------------------------------------------------ input */
   function requestLock(){if(!armed)return;sfx.init();const el=renderer.domElement;try{const p=el.requestPointerLock?.({unadjustedMovement:true});p?.catch?.(()=>el.requestPointerLock?.());}catch{el.requestPointerLock?.();}}
   function onLockChange(){locked=document.pointerLockElement===renderer.domElement;if(!locked){buttons.left=buttons.right=false;}hud?.update();requestFrame();}
-  function onMouseMove(e){if(!locked||!armed||!o.canAct())return;const z=ZOOM[current?.id]||1,sens=.0021*lerp(1,Math.min(.7,1.35/z),adsBlend);yaw+=e.movementX*sens;pitch=clamp(pitch-e.movementY*sens,-1.35,1.35);const heavy=1+(WEIGHT[current?.id]||0)*1.6;anim.swayX.kick(-e.movementX*.012*heavy*(1-adsBlend*.6));anim.swayY.kick(e.movementY*.012*heavy*(1-adsBlend*.6));requestFrame();}
-  function onMouseDown(e){if(!armed)return;if(!locked){if(e.target===renderer.domElement&&e.button===0)requestLock();return;}e.preventDefault();if(e.button===0){buttons.left=true;pendingFire=true;}if(e.button===2){buttons.right=true;if(current?.id==='c4')detonate();else bash();}requestFrame();}
-  function onMouseUp(e){if(e.button===0)buttons.left=false;if(e.button===2)buttons.right=false;}
+  function onMouseMove(e){if(!locked||!armed||!o.canAct())return;const z=ZOOM[current?.id]||1,sens=.0021*lerp(1,Math.min(.7,1.35/z),adsBlend)*lookScale();yaw+=e.movementX*sens;pitch=clamp(pitch-e.movementY*sens*ySign(),-1.35,1.35);const heavy=1+(WEIGHT[current?.id]||0)*1.6;anim.swayX.kick(-e.movementX*.012*heavy*(1-adsBlend*.6));anim.swayY.kick(e.movementY*.012*heavy*(1-adsBlend*.6));requestFrame();}
+  function onMouseDown(e){if(!armed)return;if(!locked){if(e.target===renderer.domElement&&e.button===0)requestLock();return;}e.preventDefault();if(e.button===0){buttons.left=true;pendingFire=true;}if(e.button===2){buttons.right=true;if(current?.id==='c4')detonate();else if(setting('aim','wheel')==='hold'&&zoomable()){zoomTarget=1;o.setThird?.(false);}else bash();}requestFrame();}
+  function onMouseUp(e){if(e.button===0)buttons.left=false;if(e.button===2){buttons.right=false;if(setting('aim','wheel')==='hold')zoomTarget=0;}}
   function onKey(e){
    if(e.ctrlKey||e.metaKey||e.altKey||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)||e.target.isContentEditable||document.querySelector('dialog[open]'))return;
    const k=e.key.toLowerCase();
@@ -988,6 +997,7 @@
    if(!armed)return;
    if(k==='q'){e.preventDefault();if(previous)equip(previous);}
    if(k==='r'){e.preventDefault();reload();}
+   if(k==='b'){e.preventDefault();if(current?.id==='c4')detonate();else bash();}
    if(k==='x'){e.preventDefault();holster();}
   }
 
@@ -1052,7 +1062,7 @@
    current=w;equipBlend=0;zoomTarget=0;models[id].holder.visible=true;buttons.right=false;
    const s=state[id];s.focus=0;s.windowT=0;s.breath=0;
    sfx.swap();hud.update();
-   if(!locked)requestLock();
+   if(!locked&&!touchMode)requestLock();
    requestFrame();
   }
   function holster(){
@@ -1126,9 +1136,12 @@
    look.shake=Math.max(0,look.shake-dt*1.8);
    const sh=look.shake*look.shake;const shx=(Math.sin(time*61)+Math.sin(time*37))*.012*sh,shy=(Math.sin(time*53)+Math.sin(time*29))*.012*sh;
    // Aiming breathes: the sights drift a little, more with heavy weapons and when zoomed in further.
-   const breathSway=adsBlend*(.0012+(WEIGHT[w.id]||0)*.0022)*((ZOOM[w.id]||1)>3?.6:1),idle=.003*(1-adsBlend);
+   if(scoped&&shiftHeld&&breath.tired<=0&&speedSmoothed<1.2){breath.hold+=dt;if(breath.hold>=BREATH_HOLD){breath.tired=BREATH_TIRED;breath.hold=0;hud.toast('OUT OF BREATH');}}
+   else{if(breath.hold>0&&!shiftHeld)breath.hold=Math.max(0,breath.hold-dt*2);breath.tired=Math.max(0,breath.tired-dt);}
+   const steady=scoped&&shiftHeld&&breath.tired<=0&&breath.hold>0;
+   const breathSway=adsBlend*(.0012+(WEIGHT[w.id]||0)*.0022)*((ZOOM[w.id]||1)>3?1.4:1)*(steady?.08:breath.tired>0?2.6:1),idle=.003*(1-adsBlend);
    const swayYaw=Math.sin(time*1.1)*idle+Math.sin(time*2.3)*breathSway,swayPitch=Math.sin(time*1.7)*idle*.8+Math.cos(time*1.9)*breathSway;
-   o.setLook(yaw+ky*.05+shx,clamp(pitch+kp*.05+shy,-1.4,1.4));
+   o.setLook(yaw+ky*.05+shx+swayYaw*adsBlend*4,clamp(pitch+kp*.05+shy+swayPitch*adsBlend*4,-1.4,1.4));
 
    // Procedural viewmodel pose
    const m=models[w.id],rig=m.rig,act=updateAction(dt);
@@ -1281,7 +1294,9 @@
   function hurt(fromPos,amount){
    if(!built)return;const d=fromPos?fromPos.clone().sub(camera.position):new T.Vector3(0,0,-1);
    const local=d.applyQuaternion(camera.quaternion.clone().invert());const ang=Math.atan2(local.x,-local.z);
-   hud.hurt(.35+amount/40,ang);look.kickPitch.kick(amount*.055+.15);look.kickYaw.kick(rand(-1,1)*amount*.035+Math.sin(ang)*amount*.02);look.shake=Math.max(look.shake,Math.min(.75,.18+amount/45));sfx.hurt(amount);if(amount>=18)o.hitStop?.(Math.min(140,40+amount*2));
+   // Shot while aiming down the sights: the sights get knocked off target (flank people who are scoped in).
+   const flinch=1+adsBlend*(ZOOM[current?.id]>3?2.2:1.2);
+   hud.hurt(.35+amount/40,ang);look.kickPitch.kick((amount*.055+.15)*flinch);if(adsBlend>.2)look.kickYaw.kick(rand(-1,1)*amount*.05*adsBlend);look.kickYaw.kick(rand(-1,1)*amount*.035+Math.sin(ang)*amount*.02);look.shake=Math.max(look.shake,Math.min(.75,.18+amount/45));sfx.hurt(amount);if(amount>=18)o.hitStop?.(Math.min(140,40+amount*2));
   }
   const arsenalApi={
    set(a){build();if(!a){arsenal=null;resetState();hud.update();return;}
@@ -1298,6 +1313,12 @@
   return {
    equip,holster,enterRange,leaveRange(){setRange(false);},inRange:()=>rangeOn,update,render,preRender,remoteShot,hurt,arsenal:arsenalApi,weapons:WEAPONS,
    worldHits:(o2,d,f)=>{build();return worldHits(o2,d,f);},groundAt:(x,z,y)=>{build();return groundAt(x,z,y);},
+   // Touch screens (touch-controls.js): no pointer lock; look, fire, melee and zoom come from on-screen controls.
+   setTouch(on){touchMode=!!on;hud?.update();},
+   touchLook(dx,dy){if(!armed||!o.canAct())return;const z=ZOOM[current?.id]||1,sens=.0042*lerp(1,Math.min(.7,1.35/z),adsBlend)*lookScale();yaw+=dx*sens;pitch=clamp(pitch-dy*sens*ySign(),-1.35,1.35);anim.swayX.kick(-dx*.02);anim.swayY.kick(dy*.02);requestFrame();},
+   touchFire(on){if(!armed)return;buttons.left=!!on;if(on)pendingFire=true;requestFrame();},
+   touchMelee(){if(!armed)return;if(current?.id==='c4')detonate();else bash();},
+   toggleZoom(){if(!zoomable())return false;zoomTarget=zoomTarget>.5?0:1;requestFrame();return true;},
    scoped:()=>scoped,ads:()=>armed?adsBlend:0,weight:()=>armed&&current?WEIGHT[current.id]||0:0,zoom:(v)=>{if(v!=null){zoomTarget=clamp(v,0,1);requestFrame();}return zoomTarget;},
    // Knocked flat (tackled, dived): the sights drop.
    dropAim(){zoomTarget=0;},
@@ -1309,7 +1330,7 @@
    capturing:()=>armed,
    busy:()=>armed||(built&&(glowActive()||embers.length||heat.length||flips.some(f=>f.alive)||particles.some(p=>p.alive)||shells.some(s=>s.mesh.visible&&s.bounces<4)||charges.some(c=>!c.done)||targets.some(t=>Math.abs(t.swing.v)>.001||Math.abs(t.swing.x)>.001||t.down)||debris.length||tracers.some(t=>t.alive)||(state.blast||0)>0)),
    blocks(p){for(const t of targets){const q=t.root.position;if(t.kind==='plate'?Math.abs(p.x-q.x)<.62&&Math.abs(p.z-q.z)<.25:Math.hypot(p.x-q.x,p.z-q.z)<t.radius)return true;}return false;},
-   inspect:()=>({built,armed,locked,weapon:current?.id||null,ammo:current?state[current.id].ammo:null,focus:current?state[current.id].focus:0,charges:charges.filter(c=>!c.done).length,stats:{...stats},targets:targets.length,particles:particles.filter(p=>p.alive).length}),
+   inspect:()=>({action:current?state[current.id]?.action?.name||null:null,built,armed,locked,weapon:current?.id||null,ammo:current?state[current.id].ammo:null,focus:current?state[current.id].focus:0,charges:charges.filter(c=>!c.done).length,stats:{...stats},targets:targets.length,particles:particles.filter(p=>p.alive).length}),
    _debug:{explodeAt:(x,z)=>{const g=new T.Group();g.position.set(x,groundAt(x,z)+.05,z);world.add(g);state.blastSeen=1;explode({group:g});},viewScene:()=>viewScene,fire:()=>{if(current)fire();},state,models,setButtons:b=>Object.assign(buttons,b),setLocked:v=>{locked=v;},detonate:()=>detonate(),reload:()=>{const l=locked;locked=true;reload();locked=l;}}
   };
  }

@@ -8,7 +8,7 @@
  const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
  function createPlayerBody({T,scene,camera,pickables=[],enabled=()=>true,requestDraw=()=>{}}){
   const push=root.createFoliagePush?.(T,scene);
-  let baseFov=null,ownFov=null,model=null,signature='',defaults=null,loading=null,checked=-1e9,clock=0,frame=0,yaw=null,turning=false,guardUntil=0,grabUntil=0,grabPoint=null,hover=null,wall=null;
+  let heldMesh=null,heldId=null,baseFov=null,ownFov=null,model=null,signature='',defaults=null,loading=null,checked=-1e9,clock=0,frame=0,yaw=null,turning=false,guardUntil=0,grabUntil=0,grabPoint=null,hover=null,wall=null;
   const eye=new T.Vector3(),headQ=new T.Quaternion(),turnAround=new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),Math.PI);
   const forward=new T.Vector3(),left=new T.Vector3(),up=new T.Vector3(0,1,0),probe=new T.Vector3(),ray=new T.Raycaster(),center=new T.Vector2();
   // The character comes from the signed-in account, else the creator's latest draft, else the schema defaults.
@@ -66,7 +66,8 @@
   root.addEventListener?.('eden-punched',onPunched);
   const api={
    // crouch: metres the eye is lowered; fovKick: degrees added while sprinting.
-   update(dt,{aim,velocity=null,airborne=false,crouch=0,fovKick=0}={}){
+   // pose: {dive 0..1 (lying forward in the air), slide 0..1 (leaning back into a slide)}.
+   update(dt,{aim,velocity=null,airborne=false,crouch=0,fovKick=0,pose=null}={}){
     clock+=dt;frame++;
     if(clock-checked>1.5){checked=clock;refresh();}
     // Plants part around you and the five nearest characters.
@@ -113,6 +114,11 @@
     // Reach: anything clickable inside arm's length draws the right hand towards it before it is grabbed.
     if(frame%4===0){center.set(0,0);ray.setFromCamera(center,camera);ray.far=1.25;const hit=ray.intersectObjects(pickables,false)[0];hover=hit?hit.point.clone().addScaledVector(ray.ray.direction,-.14):null;}
     const near=nearestOther(1.9);model.motion.guard(clock<guardUntil?1:near?.85:0);
+    // The gun (third person) and the slide / dive pose.
+    if(model.motion.held?.()?.mesh!==heldMesh)model.motion.hold?.(heldMesh,heldId);
+    if(heldMesh)model.motion.aimAt?.(aim);
+    model.root.rotation.order='YXZ';const pitchTo=pose?(pose.dive||0)*1.25-(pose.slide||0)*.32:0;model.root.rotation.x+=(pitchTo-model.root.rotation.x)*(1-Math.exp(-10*dt));
+    if(pose?.dive)model.root.position.y+=.35*pose.dive;
     model.motion.update(dt,{velocity,wade:brush});
    },
    // Click on something within reach: the hand gets there first, then the caller opens it.
@@ -120,9 +126,8 @@
    // Third person (app.js): the head shows once the camera has pulled back.
    third(k){if(!model)return;const show=k>.15;if(show!==!!model.root.userData.third){model.root.userData.third=show;model.byName.neck01.scale.setScalar(show?1:.001);}},
    // What you hold, in the right hand (same placement as the match's bots).
-   hold(mesh,id){if(!model)return;model.root.userData.hand?.parent?.remove(model.root.userData.hand);model.root.userData.hand=null;if(!mesh)return;
-    const hand=new T.Group();hand.position.set(-.2,1.28,.32);if(id==='axe'){mesh.rotation.set(-1.2,0,0);mesh.position.set(0,-.05,-.1);}else mesh.rotation.set(0,Math.PI,0);
-    mesh.traverse(n=>{n.userData.noHit=true;n.castShadow=true;n.raycast=()=>{};});hand.add(mesh);model.root.add(hand);model.root.userData.hand=hand;requestDraw();},
+   // What you hold, gripped in both hands and pointed where you look (character-motion.js hold/aimAt).
+   hold(mesh,id){heldMesh=mesh;heldId=id;if(model)model.motion.hold?.(mesh,id);requestDraw();},
    grab(point){if(!model?.root.visible||!point||point.distanceTo(camera.position)>1.6)return 0;grabPoint=point.clone();grabUntil=clock+.55;requestDraw();return 230;},
    punch(){
     if(!model)return;root.dispatchEvent?.(new CustomEvent('eden-punch-thrown'));

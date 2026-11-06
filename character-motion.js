@@ -124,7 +124,7 @@
   })();
   const state={time:null,phase:0,speed:0,weight:0,velocity:new T.Vector3(),last:new T.Vector3(),lastYaw:null,yawRate:0,walkHold:0,
    lean:{x:0,v:0},bank:{x:0,v:0},hitPitch:{x:0,v:0},hitRoll:{x:0,v:0},headPitch:{x:0,v:0},stumble:{x:new T.Vector3(),v:new T.Vector3()},
-   guard:{x:0,v:0},guardTarget:0,wave:{x:0,v:0},wade:{x:0,v:0},look:null,lookYaw:{x:0,v:0},lookPitch:{x:0,v:0},airborne:false,treadmill:0,punches:0};
+   guard:{x:0,v:0},guardTarget:0,wave:{x:0,v:0},wade:{x:0,v:0},look:null,lookYaw:{x:0,v:0},lookPitch:{x:0,v:0},airborne:false,treadmill:0,punches:0,hold:{x:0,v:0},held:null,aimPoint:null};
   const toLocal=p=>group.worldToLocal(v3.copy(p)).clone(),toWorld=p=>group.localToWorld(p.clone());
   const api={
    tune:{guardLift:0,wadeLift:0},
@@ -135,6 +135,11 @@
    airborne(value){state.airborne=!!value;},
    // 0 standing .. 1 full crouch: the pelvis drops and the torso leans in; the leg IK bends the knees.
    crouch(value){state.crouchTarget=clamp(value,0,1);},
+   // Hold a weapon in both hands (mesh: a model whose barrel points down its -z; kind: its weapon id) and point it at
+   // aimAt's world point. The mesh lives beside the character (in its parent) and follows the right hand every frame.
+   hold(mesh,kind=null){if(state.held?.mesh&&state.held.mesh!==mesh)state.held.mesh.parent?.remove(state.held.mesh);state.held=mesh?{mesh,kind}:null;if(mesh){mesh.traverse(n=>{n.userData.noHit=true;n.raycast=()=>{};});mesh.visible=false;}},
+   held:()=>state.held,
+   aimAt(point){state.aimPoint=point?point.clone():null;},
    // Jab with the hand furthest back; returns the seconds until the fist lands.
    punch(target){const s=sides[state.punches++%2];s.punch={t:0,target:target?toLocal(target):s.shoulder.clone().add(new T.Vector3(-s.sign*.08,.02,.62))};return .12;},
    hit(direction,strength=1){const d=direction.clone().applyQuaternion(group.getWorldQuaternion(new T.Quaternion()).invert());d.y=0;if(d.lengthSq()>1e-6)d.normalize();
@@ -146,7 +151,7 @@
    knockdown(direction,strength=1.5,{stay=false}={}){if(ragdoll.active&&!stay)return;const d=direction.clone().setY(0);if(d.lengthSq()<1e-6)d.set(0,0,-1);d.normalize();ragdoll.start(d,strength,stay);},
    update(dt,options={}){
     dt=clamp(dt||0,0,1/20);
-    if(ragdoll.active){state.time=(state.time||0)+dt;ragdoll.update(dt);return;}
+    if(ragdoll.active){state.time=(state.time||0)+dt;ragdoll.update(dt);if(state.held)state.held.mesh.visible=false;return;}
     api.procedural(dt,options);
     if(ragdoll.recovering)ragdoll.blend(dt);
    },
@@ -181,18 +186,20 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     scalar(state.bank,clamp(-state.yawRate*.05*w,-.12,.12),dt,2,.8);
     scalar(state.hitPitch,0,dt,2.4,.32);scalar(state.hitRoll,0,dt,2.4,.32);scalar(state.headPitch,0,dt,3.2,.3);
     scalar(state.guard,Math.max(state.guardTarget,state.time<(state.flinch||0)?1:0),dt,4,.9);
-    scalar(state.wave,wave?1:0,dt,3,.9);scalar(state.wade,clamp(wade,0,1),dt,2.2,.8);
+    scalar(state.wave,wave?1:0,dt,3,.9);scalar(state.hold,state.held&&state.held.kind!=='axe'&&state.held.kind!=='c4'?1:0,dt,4,.9);
+    // Holding a gun: the chest and head follow the aim.
+    const aimLocal=state.aimPoint&&state.hold.x>.01?toLocal(state.aimPoint):null;scalar(state.wade,clamp(wade,0,1),dt,2.2,.8);
     let twist=0;
     for(const s of sides)if(s.punch){const t=s.punch.t;twist+=-s.sign*.42*(t<.06?-t/.06*.3:t<.2?Math.sin((t-.06)/.14*Math.PI/2):Math.max(0,1-(t-.2)/.18));}
     spineLow.rotation.set(state.lean.x+state.hitPitch.x*.6+.38*clamp(state.crouch.x,0,1),-pelvis.rotation.y*1.6+twist*.4,state.bank.x+state.hitRoll.x*.6);
     // Head and chest share the turn towards whatever the character is looking at.
     let lookYaw=0,lookPitch=0;
     // Without a set target, glance at the local player when they come close and stand in front.
-    let focus=state.look;const near=root.GardenCharacterMotion.attention;
+    let focus=aimLocal?state.aimPoint:state.look;const near=root.GardenCharacterMotion.attention;
     if(!focus&&near){const d=toLocal(near).sub(headRest);const r=Math.hypot(d.x,d.z)*scale;if(r>.6&&r<4.5&&d.z>0)focus=near;}
     if(focus){const t=toLocal(focus).sub(headRest);lookYaw=clamp(Math.atan2(t.x,t.z),-1.1,1.1);lookPitch=clamp(-Math.atan2(t.y,Math.hypot(t.x,t.z)),-.6,.6);if(Math.abs(Math.atan2(t.x,t.z))>1.9)lookYaw=lookPitch=0;}
     scalar(state.lookYaw,lookYaw,dt,1.6,.85);scalar(state.lookPitch,lookPitch,dt,1.6,.85);
-    spineHigh.rotation.set(state.lookPitch.x*.2+state.hitPitch.x*.4+breath*2,state.lookYaw.x*.25+twist*.6,state.hitRoll.x*.4);
+    spineHigh.rotation.set(state.lookPitch.x*(.2+.25*state.hold.x)+state.hitPitch.x*.4+breath*2,state.lookYaw.x*(.25+.35*state.hold.x)+twist*.6,state.hitRoll.x*.4);
     neck.rotation.set(state.lookPitch.x*.35,state.lookYaw.x*.3,0);
     head.rotation.set(state.lookPitch.x*.45+state.headPitch.x,state.lookYaw.x*.45,0);
     group.updateMatrixWorld(true);
@@ -220,6 +227,13 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
      if(s.sign<0&&state.wave.x>.001)target.lerp(s.shoulder.clone().add(v3.set(-.34,.42+.04*Math.sin(state.time*9),.08+.07*Math.sin(state.time*7))),state.wave.x);
      scalar(s.touchWeight,s.touchTarget||0,dt,3.2,.85);
      let pose=null,hz=6,zeta=.72;
+     // Gun grip: right hand on the grip under the right shoulder, left hand forward on the barrel (a pistol is held out
+     // in both hands), both turned up or down to the aim's pitch.
+     if(state.hold.x>.01){const R=sides[1],pistol=state.held?.kind==='pistol',sh=R.shoulder;
+      const off=pistol?(s===R?v3.set(.06,-.1,.44):v3.set(.1,-.12,.4)):(s===R?v3.set(.04,-.16,.26):v3.set(.2,-.15,.56));
+      let pitch=0;if(aimLocal){const d=aimLocal.clone().sub(sh);pitch=clamp(Math.atan2(d.y,Math.hypot(d.x,d.z)),-.9,.9);}
+      const y=off.y*Math.cos(pitch)+off.z*Math.sin(pitch),z=off.z*Math.cos(pitch)-off.y*Math.sin(pitch);
+      target.lerp(bend.set(sh.x+off.x,sh.y+y,sh.z+z),state.hold.x);hz=10;zeta=.8;}
      if(s.touch&&s.touchWeight.x>.001){const t=toLocal(s.touch.point);target.lerp(t,clamp(s.touchWeight.x,0,1));pose=s.touch;hz=8;}
      if(s.punch){
       const t=s.punch.t,guardPos=s.shoulder.clone().add(v3.set(-s.sign*.07,.1+api.tune.guardLift,.24+api.tune.guardLift*.6));
@@ -229,7 +243,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
      }
      spring(s.hand,target,dt,hz,zeta);
      // Elbows trail behind in a swing but drop under the hands when they come up to guard, punch or touch.
-     const up=Math.max(state.guard.x,s.punch?1:0,clamp(s.touchWeight.x,0,1)*.7);
+     const up=Math.max(state.guard.x,s.punch?1:0,clamp(s.touchWeight.x,0,1)*.7,state.hold.x);
      const pole=v2.set(s.sign*.5,-.2,-1).lerp(bend.set(s.sign*.45,-1,-.1),up).lerp(bend.set(s.sign,-.3,-.3),state.wade.x*(1-up));
      solve(s.arm,toWorld(s.hand.x),group.localToWorld(v3.copy(pole).add(s.shoulder)).sub(group.localToWorld(s.shoulder.clone())));
      // Turn the palm to suit the contact: flat on a wall, reaching into a grab, knuckles forward in a punch.
@@ -245,7 +259,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
      }
      // Fists for guard and punches, a half grip when reaching to grab, flat palms on walls, relaxed otherwise.
      const kind=s.touch&&s.touchWeight.x>.3?s.touch.kind:null;
-     const curl=s.punch||state.guard.x>.5?1.45:kind==='grab'?.6:kind==='press'?.03:state.wade.x>.4?.12:s.sign<0&&state.wave.x>.5?.08:.25;
+     const curl=state.hold.x>.5?1.15:s.punch||state.guard.x>.5?1.45:kind==='grab'?.6:kind==='press'?.03:state.wade.x>.4?.12:s.sign<0&&state.wave.x>.5?.08:.25;
      scalar(s.curl,curl,dt,s.punch?10:5,.85);
      // A fist closes the splay and folds the thumb across; a flat hand on a wall keeps the fingers apart.
      const close=clamp((s.curl.x-.3)/1.1,0,1);
@@ -253,6 +267,12 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
       if(j===0&&close>0){b.quaternion.premultiply(q1.setFromAxisAngle(f.across,f.spread*.9*close));if(f.thumb)b.quaternion.premultiply(q1.setFromAxisAngle(f.long,f.wrapSign*.85*close));}});
      if(s.touchWeight.x<.002&&!s.touchTarget)s.touch=null;
     }
+    // The held weapon follows the right hand: a gun points from the grip at the aim, the axe hangs from the hand.
+    if(state.held){const m=state.held.mesh,par=group.parent;if(par){if(m.parent!==par)par.add(m);m.visible=true;group.updateMatrixWorld(true);
+     const hand=sides[1].arm.end.getWorldPosition(new T.Vector3()),fwd=new T.Vector3(0,0,1).applyQuaternion(group.getWorldQuaternion(new T.Quaternion()));
+     m.position.copy(par.worldToLocal(hand.clone()));
+     if(state.hold.x>.01){const aim=state.aimPoint&&state.aimPoint.distanceTo(hand)>1.2?state.aimPoint:hand.clone().addScaledVector(fwd,10);m.lookAt(aim);m.rotateY(Math.PI);}
+     else{m.quaternion.copy(group.getWorldQuaternion(new T.Quaternion()));if(par.parent)m.quaternion.premultiply(par.getWorldQuaternion(new T.Quaternion()).invert());m.rotateX(-1.2);m.position.y-=.05;}}}
    },
    // The old animate(t, stride, waving) signature: callers that only know "walking or not" still get a full gait.
    animate(t,stride=0,waving=false){

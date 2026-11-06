@@ -40,7 +40,7 @@
  // The forever match: no rounds and no night zone. Dying puts you back in after a few seconds; kills, headshots and
  // events add to your score; weapon pads and chests restock; an event comes round every EVENT_GAP seconds.
  const RESPAWN_PLAYER=3,SPAWN_PROTECT=2,PAD_RESTOCK=30,CHEST_RESTOCK=60,EVENT_FIRST=25,EVENT_GAP=75;
- const POINTS={kill:10,head:3,page:15,ceremony:50};
+ const POINTS={kill:10,head:3,page:15,ceremony:50,finisher:8};
  // The eight lost pages are the heart of the match. They always lie somewhere in the district; whoever carries the
  // most is pinged to everyone every PING_EVERY seconds; a dropped page left alone PAGE_RESET seconds (or one nobody
  // collects for PAGE_SHUFFLE) goes back to a page spot. The Moon Temple only takes pages at night; when all eight
@@ -67,7 +67,7 @@
   let godMode=false,built=false,active=false,phase='idle',clock=0,countdown=0,ended=null,matchStart=0;
   let player=null,bots=[],chests=[],loot=[],feed=[],zone=null,hud=null,root=null,grid=null,finder=null;
   let pads=[],event=null,nextEventAt=0,eventIndex=0,suspended=false,entering=false,savedArsenal=null;
-  let pages=[],pinged=null,pingAt=0,pingUntil=0,beacon=null,templeRing=null,round=1,bloodHit=0;
+  let doors=[],pages=[],pinged=null,pingAt=0,pingUntil=0,beacon=null,templeRing=null,round=1,bloodHit=0;
   const garments=(window.showroomCollection||[]).map(armorFromGarment).filter(Boolean);
 
   /* ---------------------------------------------------------------- helpers */
@@ -206,8 +206,9 @@
    setBotWeapon(b,'axe');bots.push(b);return b;
   }
   function setBotWeapon(b,id){
+   // The gun is gripped in both hands and aimed (character-motion.js hold/aimAt); b.hand stays as the muzzle marker.
    b.weapon=id;b.hand.clear();const m=combat.weaponModel(id);
-   if(m){if(id==='axe'){m.rotation.set(-1.2,0,0);m.position.set(0,-.05,-.1);}else{m.rotation.set(0,Math.PI,0);}b.hand.add(m);m.traverse(n=>{n.userData.noHit=true;n.castShadow=true;});}
+   if(m){m.traverse(n=>{n.userData.noHit=true;n.castShadow=true;});if(b.model.motion?.hold)b.model.motion.hold(m,id);else{m.rotation.set(0,Math.PI,0);b.hand.add(m);}}
   }
   const W=id=>combat.weapons.find(w=>w.id===id);
   function botBestWeapon(b){const order=['sniper','rifle','smg','pump','pistol','axe'];for(const id of order){if(b.weapons[id]&&(id==='axe'||b.weapons[id].loaded>0||(b.reserve[W(id).ammo]||0)>0))return id;}return 'axe';}
@@ -257,6 +258,8 @@
    if(phase==='countdown')return {killed:false};
    if(!target.bot&&godMode)return {killed:false};
    if(target===player&&clock<(player.protectUntil||0))return {killed:false};
+   // Finisher: melee on a bot that is down (tackled, knocked over) hits twice as hard.
+   const finisher=target.bot&&attacker===player&&['melee','axe'].includes(meta.weapon)&&(target.model.motion?.downAmount?.()||0)>.3;if(finisher){amount*=2;meta={...meta,finisher:true};}
    let a=amount,shielded=0;
    const raw=meta.kind==='zone'||meta.kind==='attendant';
    if(target.shield>0&&!raw){shielded=Math.min(target.shield,a);target.shield-=shielded;a-=shielded;if(target===player)hud?.shieldHit?.(shielded/40+(target.shield<=0?.5:0));if(target.shield<=0&&target===player){chime([520,330,196],.09,.05);hud?.shieldBroken?.();}}
@@ -277,7 +280,7 @@
   function kill(target,attacker,meta){
    target.alive=false;target.hp=0;target.deathT=clock;
    if(attacker&&attacker!==target){
-    attacker.kills++;attacker.score=(attacker.score||0)+POINTS.kill+(meta.head?POINTS.head:0);
+    attacker.kills++;attacker.score=(attacker.score||0)+POINTS.kill+(meta.head?POINTS.head:0)+(meta.finisher?POINTS.finisher:0);if(meta.finisher&&attacker===player)setTimeout(()=>announce(`FINISHER · +${POINTS.finisher}`),700);
     attacker.multi=clock-(attacker.lastKillT??-9)<4?(attacker.multi||1)+1:1;attacker.lastKillT=clock;attacker.streak=(attacker.streak||0)+1;
     const call=SPREES[attacker.streak]||STREAKS[Math.min(4,attacker.multi)];
     if(call){if(attacker===player)announce(call);else if(SPREES[attacker.streak])pushFeed(`${nameOf(attacker)} <i>${call}</i>`);}
@@ -292,7 +295,7 @@
     for(const id of Object.keys(target.weapons)){if(id==='axe')continue;const [x,z]=spot();const it=rollItem({weapon:id});it.loaded=target.weapons[id].loaded;dropItem(it,x,z);}
     for(const [type,n] of Object.entries(target.reserve)){if(n>0&&type!=='c4'){const [x,z]=spot();dropItem({type:'ammo',ammo:type,count:n,rarity:'common',label:AMMO_LABEL[type]+' AMMO ×'+n},x,z);}}
     if(target.garment){const [x,z]=spot();dropItem({type:'armor',armor:target.garment.armor,garment:target.garment,rarity:target.garment.rarity,label:target.garment.name.toUpperCase()+' · '+target.garment.armor+' ARMOR'},x,z);}
-    target.hand.clear();
+    target.hand.clear();target.model.motion?.hold?.(null);
     target.model.motion?.knockdown?.(blowDirection(target,attacker,meta),meta.kind==='zone'?1.3:(FORCE[meta.weapon]||(meta.kind==='attendant'?5.2:2.4))*(meta.head?1.15:1),{stay:true});
    }else{
     combat.holster();hud?.prompt(null);player.focus=null;player.killedBy=attacker&&attacker!==target?nameOf(attacker):null;
@@ -407,7 +410,7 @@
    let move=new T.Vector3(),speed=3.6;
    if(b.state==='fight'&&b.target?.alive){
     const tp=posOf(b.target),to=tp.clone().sub(p);to.y=0;const dist=to.length();to.normalize();
-    b.heading=Math.atan2(to.x,to.z);
+    b.heading=Math.atan2(to.x,to.z);b.model.motion?.aimAt?.(eyeOf(b.target).add(new T.Vector3(0,-.3,0)));
     const id=b.weapon,w=W(id);
     if(id==='axe'){move.copy(to);speed=5;if(dist<1.8&&b.fireT<=0){b.fireT=.75;setTimeout(()=>{if(b.alive&&b.target?.alive&&posOf(b.target).distanceTo(b.root.position)<2.2)damage(b.target,w.dmg*.8,b,{weapon:'axe'});},350);}}
     else{
@@ -415,15 +418,22 @@
      if(b.target===player&&player.shield<=0)ideal*=.55; // smells blood: closes in while your shield is down
      if(b.strafeT<=0){b.strafeT=rand(.35,1.1);b.strafe*=Math.random()<.6?-1:1;}
      if(dist<2.2&&b.bashT<=0){b.bashT=1.1;setTimeout(()=>{if(b.alive&&b.target?.alive&&posOf(b.target).distanceTo(b.root.position)<2.6)damage(b.target,45,b,{weapon:'melee'});},180);}
-     const side=new T.Vector3(to.z,0,-to.x).multiplyScalar(b.strafe);move.copy(side).addScaledVector(to,dist>ideal+4?1:dist<ideal-4?-.7:0);speed=dist>ideal+10?4.8:2.6;
-     if(b.dodgeT>0){move.copy(side).multiplyScalar(1.6).addScaledVector(to,.2);speed=6.5;}
+     // Smelling blood (you are reloading or your shield is down) and close: the bot charges in for a tackle.
+     if(b.target===player&&!b.lunge&&dist>1.8&&dist<6&&clock>(b.lungeCd||0)&&(player.shield<=0||combat.inspect().action==='reload')&&Math.random()<dt*1.2){b.lunge={t:0,dir:to.clone()};b.lungeCd=clock+7;}
+     if(b.lunge){b.lunge.t+=dt;move.copy(b.lunge.dir);speed=9;b.heading=Math.atan2(b.lunge.dir.x,b.lunge.dir.z);
+      if(dist<1.15){const dir=b.lunge.dir.clone();b.lunge=null;
+       if(o.dodging?.()){announce('DODGED');b.model.motion?.knockdown?.(dir,1.5);b.tackledUntil=clock+2;chime([660,880],.06,.05);}
+       else tackled(b,dir);}
+      else if(b.lunge.t>.7)b.lunge=null;}
+     const side=new T.Vector3(to.z,0,-to.x).multiplyScalar(b.strafe);if(!b.lunge){move.copy(side).addScaledVector(to,dist>ideal+4?1:dist<ideal-4?-.7:0);speed=dist>ideal+10?4.8:2.6;}
+     if(b.dodgeT>0&&!b.lunge){move.copy(side).multiplyScalar(1.6).addScaledVector(to,.2);speed=6.5;}
      const gun=b.weapons[id];
      if(gun.loaded<=0&&b.reloadT<=0){const r=b.reserve[w.ammo]||0;if(r>0){b.reloadT=id==='pump'?2.4:2;b.pendingReload=true;}else{delete b.weapons[id];setBotWeapon(b,botBestWeapon(b));}}
      if(b.pendingReload&&b.reloadT<=0){const r=b.reserve[w.ammo]||0,take=Math.min(w.mag-gun.loaded,r);gun.loaded+=take;b.reserve[w.ammo]=r-take;b.pendingReload=false;}
      if(b.aimT<=0&&b.fireT<=0&&gun.loaded>0&&b.reloadT<=0&&dist<(w.range||80)){
       b.fireT=Math.max(w.interval,id==='sniper'?2.2:id==='pump'?1:w.auto?w.interval*1.6:.42)*rand(1,1.4);gun.loaded--;botShoot(b,b.target,w,dist);}
     }
-   }else if(b.path.length){
+   }else if(b.path.length){b.model.motion?.aimAt?.(null);
     const wp=b.path[0];const to=wp.clone().sub(p);to.y=0;if(to.length()<.8){b.path.shift();}else{move.copy(to.normalize());b.heading=Math.atan2(move.x,move.z);}
     speed=b.state==='rush'||b.state==='zone'?5:3.6;
    }else if(b.goal&&b.state!=='fight'){b.path=findPath(p,b.goal);}
@@ -441,7 +451,7 @@
    b.model.animate?.(clock,Math.min(1,b.stride*(speed/4.2)));
   }
   function botShoot(b,target,w,dist){
-   const from=b.hand.getWorldPosition(new T.Vector3()).add(new T.Vector3(0,.05,0));
+   const held=b.model.motion?.held?.()?.mesh,from=(held?.parent?held:b.hand).getWorldPosition(new T.Vector3()).add(new T.Vector3(0,.05,0));
    const aim=eyeOf(target);aim.y-=rand(.1,.55);
    const moving=target===player?(player.speed||0):target.stride*3.6;
    let p=b.skill*clamp(1.15-dist/((w.range||80)*.8),.12,1)*(1-clamp(moving/7,0,.45));
@@ -491,12 +501,14 @@
    // Chest + pickup prompts
    const fwd=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion);let best=null,bs=0;
    for(const c of chests){if(c.open)continue;const d=c.pos.distanceTo(p);if(d<2.2){const s=(2.2-d)+Math.max(0,fwd.dot(c.pos.clone().sub(camera.position).normalize()));if(s>bs){bs=s;best={chest:c};}}}
+   // A gun in the air within reach can be caught.
+   for(const l of loot){if(!l.vel||l.item.type==='page')continue;const g=l.group.position;const d=Math.hypot(g.x-p.x,g.z-p.z);if(d<2.4&&g.y>p.y+.4){const s=4+(2.4-d);if(s>bs){bs=s;best={loot:l,catch:true};}}}
    for(const l of loot){if(l.vel)continue;const d=Math.hypot(l.pos.x-p.x,l.pos.z-p.z);if(d<2){const s=(2-d)+Math.max(0,fwd.dot(l.pos.clone().sub(camera.position).normalize()))*1.2;if(s>bs){bs=s;best={loot:l};}}}
-   player.focus=best;hud.prompt(best?best.chest?'OPEN CHEST':(best.loot.item.type==='weapon'&&combat.arsenal.inspect().owned.filter(id=>!['axe','c4'].includes(id)).length>=2&&!combat.arsenal.inspect().owned.includes(best.loot.item.weapon)?'SWAP FOR ':'PICK UP ')+best.loot.item.label:null,best?.loot?.item.rarity);
+   player.focus=best;hud.prompt(best?.catch?'CATCH '+best.loot.item.label:best?best.chest?'OPEN CHEST':(best.loot.item.type==='weapon'&&combat.arsenal.inspect().owned.filter(id=>!['axe','c4'].includes(id)).length>=2&&!combat.arsenal.inspect().owned.includes(best.loot.item.weapon)?'SWAP FOR ':'PICK UP ')+best.loot.item.label:null,best?.loot?.item.rarity);
   }
   function interact(){
    if(phase!=='live'||!player?.alive)return;const f=player.focus;if(!f)return;
-   if(f.chest)openChest(f.chest,player);else playerTake(f.loot);
+   if(f.chest)openChest(f.chest,player);else{if(f.catch){if(!loot.includes(f.loot))return;announce('CAUGHT · '+f.loot.item.label);chime([523,784],.06,.05);}playerTake(f.loot);}
   }
 
   /* ---------------------------------------------------------------- HUD */
@@ -745,6 +757,45 @@
    const p=posOf(b),l=dropItem(it,p.x,p.z,new T.Vector3(dir.x*2.6+rand(-.6,.6),3.4,dir.z*2.6+rand(-.6,.6)));if(l){l.y=p.y+1.1;l.group.position.y=l.y;}
    return id;
   }
+  // Doors in every building's front and back arch: pushed open by whoever walks through, smashed off their hinges by
+  // anyone charging through (sprint, slide, dive) or by a blast; re-hung a minute later.
+  function buildDoors(){
+   const M=materials();doors=[];
+   for(const lm of layout.landmarks){if(lm.id==='gardens')continue;
+    for(const end of [-1,1]){const z=lm.z+end*lm.d/2,g=new T.Group();g.position.set(lm.x,groundY(lm.x,z),z);root.add(g);
+     const leaves=[-1,1].map(side=>{const pivot=new T.Group();pivot.position.set(side*1.62,0,0);g.add(pivot);const leaf=box(1.58,2.82,.07,M.wood,pivot,-side*.8,1.41,0);box(.06,.18,.12,M.brass,pivot,-side*1.45,1.15,0);return {pivot,leaf,side,a:0,v:0,gone:false};});
+     g.traverse(n=>{n.userData.noHit=true;});doors.push({g,end,lm,leaves,x:lm.x,z,brokenAt:0});}}
+  }
+  function smashDoor(d,dir,force=6){
+   if(d.leaves.every(l=>l.gone))return false;
+   for(const l of d.leaves){if(l.gone)continue;l.gone=true;const w=l.leaf.getWorldPosition(new T.Vector3());const q=l.leaf.getWorldQuaternion(new T.Quaternion());l.pivot.remove(l.leaf);root.add(l.leaf);l.leaf.position.copy(root.worldToLocal(w));l.leaf.quaternion.copy(q);
+    l.debris={vel:dir.clone().setY(0).normalize().multiplyScalar(force*rand(.8,1.2)).add(new T.Vector3(l.side*rand(.5,1.5),rand(1.5,3),0)),spin:new T.Vector3(rand(-4,4),rand(-3,3),rand(-4,4)),t:0};}
+   d.brokenAt=clock;chime([180,120,90],.12,.03);o.onImpact?.(new T.Vector3(d.x,0,d.z),.5);return true;
+  }
+  function updateDoors(dt){
+   const people=combatants();
+   for(const d of doors){
+    // Re-hang a minute after a smash.
+    if(d.brokenAt&&clock-d.brokenAt>60){for(const l of d.leaves){l.leaf.parent?.remove(l.leaf);l.leaf.position.set(-l.side*.8,1.41,0);l.leaf.rotation.set(0,0,0);l.pivot.add(l.leaf);l.gone=false;l.debris=null;l.a=0;l.v=0;}d.brokenAt=0;}
+    let push=0;
+    for(const c of people){const p=posOf(c),dx=p.x-d.x,dz=p.z-d.z;if(Math.abs(dx)>1.9||Math.abs(dz)>1.6)continue;
+     const sp=c===player?(player.speed||0):c.stride*3.6;
+     if(c===player&&sp>6.2&&Math.abs(dz)<.9&&d.leaves.some(l=>!l.gone&&Math.abs(l.a)<.7)){const dir=new T.Vector3(0,0,-Math.sign(dz)||1);smashDoor(d,dir,sp);announce('SMASHED THROUGH');continue;}
+     push=-Math.sign(dz)*(1.45)*(1-Math.max(0,Math.abs(dz)-.6)/1);}
+    for(const l of d.leaves){
+     if(l.gone){if(l.debris&&l.debris.t<20){const b=l.debris;b.t+=dt;if(l.leaf.position.y>.06||b.vel.y>0){b.vel.y-=9.8*dt;l.leaf.position.addScaledVector(b.vel,dt);l.leaf.rotation.x+=b.spin.x*dt;l.leaf.rotation.y+=b.spin.y*dt;l.leaf.rotation.z+=b.spin.z*dt;if(l.leaf.position.y<.06){l.leaf.position.y=.06;b.vel.multiplyScalar(.3);b.vel.y=Math.abs(b.vel.y)>1.2?-b.vel.y*.3:0;b.spin.multiplyScalar(.4);}}}continue;}
+     // Each leaf swings away from whoever pushes it (the end sign turns "outward" into the right rotation) and springs shut.
+     const target=push*l.side*d.end;l.v+=((target-l.a)*40-l.v*7)*dt;l.a+=l.v*dt;l.pivot.rotation.y=l.a;}
+   }
+  }
+  // A bot tackles you: you go down, take a hit and your gun flies out (catch it in the air with F).
+  function tackled(b,dir){
+   if(!player?.alive||clock<(player.protectUntil||0))return;
+   const cur=combat.inspect().weapon;let lost=null;
+   if(cur&&cur!=='axe'&&cur!=='c4'){const loaded=combat.arsenal.drop(cur);const it=rollItem({weapon:cur});it.loaded=loaded;const p=posOf(player);const l=dropItem(it,p.x,p.z,new T.Vector3(dir.x*2.2+rand(-.5,.5),3.8,dir.z*2.2+rand(-.5,.5)));if(l){l.y=p.y+1.3;l.group.position.y=l.y;}lost=W(cur)?.name||cur;}
+   damage(player,15,b,{weapon:'melee',dir:dir.clone()});o.onTackled?.(dir);
+   announce(lost?`${b.name} TACKLED YOU · ${lost} KNOCKED LOOSE · F TO CATCH`:`${b.name} TACKLED YOU`);chime([120,80],.14,.05);
+  }
   function tackle(feet,dir,speed){
    if(!active||!player?.alive)return null;
    for(const b of bots){if(!b.alive||clock<(b.tackledUntil||0))continue;const q=b.root.position,to=q.clone().sub(feet).setY(0),d=to.length();
@@ -772,7 +823,7 @@
    for(const c of chests)c.group.parent?.remove(c.group);chests=[];
    for(const l of loot)l.group.parent?.remove(l.group);loot=[];feed=[];
    if(zone){zone.group.parent?.remove(zone.group);zone=null;}
-   if(event?.ring)event.ring.parent?.remove(event.ring);event=null;attendant=null;pages=[];pinged=null;templeRing?.parent?.remove(templeRing);templeRing=null;beacon?.parent?.remove(beacon);beacon=null;lastNight=0;if(garden.district?.watcher)garden.district.watcher.visible=false;
+   if(event?.ring)event.ring.parent?.remove(event.ring);event=null;attendant=null;pages=[];pinged=null;templeRing?.parent?.remove(templeRing);templeRing=null;for(const d of doors){d.g.parent?.remove(d.g);for(const l of d.leaves)l.leaf.parent?.remove(l.leaf);}doors=[];beacon?.parent?.remove(beacon);beacon=null;lastNight=0;if(garden.district?.watcher)garden.district.watcher.visible=false;
   }
   // Beyond Eden is always on: walking through the hidden door starts the match (or picks it up where you left it),
   // walking back into the garden pauses it. walkIn: keep the player where they are instead of placing them.
@@ -788,7 +839,7 @@
     // Weapon pads along each building's approach: whatever is taken comes back PAD_RESTOCK seconds later.
     for(const lm of layout.landmarks){const list=LANDMARK_LOOT[lm.id]||['armor','bandage'];list.forEach((spec,i)=>{const x=lm.x-lm.w/2+1.5+(i/(list.length-1||1))*(lm.w-3),z=lm.z+lm.d/2+2.2+(i%2)*.9;const p=new T.Vector3(x,0,z);if(!blocked(p))pads.push({spec,x,z,l:dropItem(rollItem(spec),x,z),respawnAt:0});});}
     for(let i=0;i<10;i++){const x=rand(B[0]+6,B[1]-6),z=rand(B[2]+6,B[3]-6),p=new T.Vector3(x,0,z);if(blocked(p)||Math.hypot(x-CENTER.x,z-CENTER.z)<A.r)continue;dropItem(rollItem(pick(['ammo','armor','bandage',{weapon:pick(['pistol','pump','smg'])}])),x,z);}
-    templeRing=hillRing(temple());templeRing.scale.setScalar(.55);beacon=makeBeacon();pinged=null;pingAt=clock+PING_EVERY;round=1;
+    buildDoors();templeRing=hillRing(temple());templeRing.scale.setScalar(.55);beacon=makeBeacon();pinged=null;pingAt=clock+PING_EVERY;round=1;
     player={alive:true,hp:100,shield:SHIELD_PLAYER,shieldMax:SHIELD_PLAYER,armor:0,armorMax:0,garment:null,worn:new Set(),heals:{bandage:0,medkit:0},kills:0,deaths:0,score:0,lastHurt:-9,protectUntil:SPAWN_PROTECT};
     if(!walkIn){const spot=DOOR_SPAWN();o.placePlayer(spot.x,spot.z,spot.x,spot.z-6);combat.syncLook();}
     for(let i=0;i<7;i++){const spot=farSpawn(),b=makeBot(i,new T.Vector3(spot.x,groundY(spot.x,spot.z),spot.z),rand(0,TAU));kitBot(b);b.state='roam';b.score=0;b.deaths=0;}
@@ -814,7 +865,7 @@
    if(!active)return;
    clock+=dt;
    if(phase==='countdown'){countdown-=dt;hud.count(Math.ceil(countdown));if(countdown<=0){phase='live';matchStart=clock;hud.count(0);hud.announce('GO · THE CACHE IS OPEN');}}
-   updateZone(dt);updateNight(dt);updatePages(dt);updateEvent(dt);bloodHit=Math.max(0,bloodHit-dt*.9);
+   updateZone(dt);updateNight(dt);updatePages(dt);updateEvent(dt);updateDoors(dt);bloodHit=Math.max(0,bloodHit-dt*.9);
    if(Math.floor(clock)!==Math.floor(clock-dt))restock();
    if(player&&!player.alive&&player.respawnAt!=null){const left=player.respawnAt-clock;if(left<=0)respawnPlayer();else hud.count(Math.ceil(left));}
    for(const b of bots)updateBot(b,dt);
@@ -827,7 +878,7 @@
      if(player?.alive&&(player.speed||0)>5.2&&l.item.type!=='page'){const q=posOf(player),dx=l.pos.x-q.x,dz=l.pos.z-q.z,d=Math.hypot(dx,dz);if(d<.75&&d>1e-3){const k=(player.speed||0)*.45;l.vel=new T.Vector3(dx/d*k+rand(-.4,.4),1.6+rand(0,.8),dz/d*k+rand(-.4,.4));l.y+=.05;}}}
     if(l.group.userData.beam)l.group.userData.beam.lookAt(camera.position.x,l.group.userData.beam.getWorldPosition(new T.Vector3()).y,camera.position.z);
    }
-   for(const c of chests){if(c.open){const k=clamp((clock-c.openT)/.45,0,1);c.lidPivot.rotation.x=-k*1.9*(1-.08*Math.sin(k*9)*(1-k));}}
+   for(const c of chests){if(c.jolt>0){c.jolt=Math.max(0,c.jolt-dt*1.5);c.group.position.y=c.pos.y+Math.abs(Math.sin(c.jolt*18))*c.jolt*.5;c.group.rotation.z=Math.sin(c.jolt*23)*c.jolt*.25;if(!c.jolt){c.group.position.y=c.pos.y;c.group.rotation.z=0;}}if(c.open){const k=clamp((clock-c.openT)/.45,0,1);c.lidPivot.rotation.x=-k*1.9*(1-.08*Math.sin(k*9)*(1-k));}}
    if(Math.floor(clock*4)!==Math.floor((clock-dt)*4))hud.update();
    hud.blood(bloodHit,lowHealth());
   }
@@ -840,11 +891,17 @@
    active:()=>active,busy:()=>active||entering,suspended:()=>suspended,dead:()=>active&&!!player&&!player.alive,
    canMove:()=>!active||phase==='live'||phase==='ended',
    canAct:()=>!active||(phase==='live'&&!!player?.alive),
-   shotHook(origin,dir,maxDist){if(!active)return null;const h=hitTest(origin,dir,maxDist,player);
+   shotHook(origin,dir,maxDist,meta={}){if(!active)return null;const h=hitTest(origin,dir,maxDist,player);
+    // Shots that pass by loot knock it about.
+    if(meta.weapon&&meta.weapon!=='melee'&&meta.weapon!=='axe'){const lim=h?h.distance:maxDist;for(const l of loot){if(l.vel||l.item.type==='page')continue;const c=l.group.position.clone().add(new T.Vector3(0,.15,0)),t=c.clone().sub(origin).dot(dir);if(t<0||t>lim)continue;if(origin.clone().addScaledVector(dir,t).distanceTo(c)<.3){l.vel=dir.clone().setY(0).multiplyScalar(2.6).add(new T.Vector3(0,2.4,0));l.y+=.05;}}}
     if(attendant){const a=attendant.pos,t=rayCapsule(origin,dir,new T.Vector3(a.x,a.y+.5,a.z),new T.Vector3(a.x,a.y+3,a.z),.45);if(t!=null&&t<maxDist&&(!h||t<h.distance))return {c:null,distance:t,head:false,point:origin.clone().addScaledVector(dir,t),apply:dmg=>{hurtAttendant(dmg);return {killed:false};}};}
     if(!h)return null;return {...h,apply:(dmg,meta)=>damage(h.c,dmg,player,{...meta,dir:dir.clone()})};},
-   tackle,
-   onExplosion(p,radius,dmg){if(!active)return;if(attendant&&attendant.pos.distanceTo(p)<radius)hurtAttendant(dmg);for(const c of combatants()){const d=posOf(c).distanceTo(p);if(d<radius&&los(p.clone().add(new T.Vector3(0,.4,0)),eyeOf(c)))damage(c,dmg*Math.pow(1-d/radius,1.2),player,{weapon:'c4',blast:true,dir:posOf(c).clone().sub(p).setY(0).normalize()});}},
+   tackle,doors:()=>doors.map(d=>({x:d.x,z:d.z,open:+Math.max(...d.leaves.map(l=>Math.abs(l.a))).toFixed(2),broken:d.leaves.every(l=>l.gone)})),smashDoor:i=>smashDoor(doors[i],new T.Vector3(0,0,1)),
+   onExplosion(p,radius,dmg){if(!active)return;
+    // The blast throws loot and jolts chests.
+    for(const l of loot){if(l.item.type==='page')continue;const d=l.group.position.distanceTo(p);if(d<radius*1.3){const out=l.group.position.clone().sub(p).setY(0);if(out.lengthSq()<1e-4)out.set(rand(-1,1),0,rand(-1,1));out.normalize().multiplyScalar(6*(1-d/(radius*1.3))+1);l.vel=out.add(new T.Vector3(0,4+rand(0,2),0));l.y+=.05;}}
+    for(const c of chests){const d=c.pos.distanceTo(p);if(d<radius){c.jolt=.5*(1-d/radius)+.15;}}
+    for(const dr of doors){const dd=Math.hypot(dr.x-p.x,dr.z-p.z);if(dd<radius+1)smashDoor(dr,new T.Vector3(dr.x-p.x,0,dr.z-p.z),9*(1-dd/(radius+1))+3);}if(attendant&&attendant.pos.distanceTo(p)<radius)hurtAttendant(dmg);for(const c of combatants()){const d=posOf(c).distanceTo(p);if(d<radius&&los(p.clone().add(new T.Vector3(0,.4,0)),eyeOf(c)))damage(c,dmg*Math.pow(1-d/radius,1.2),player,{weapon:'c4',blast:true,dir:posOf(c).clone().sub(p).setY(0).normalize()});}},
    inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,event:event&&{kind:event.kind,label:event.label},night:+nightLevel().toFixed(2),attendant:attendant&&{x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1),stunned:clock<attendant.stunUntil},pages:player?pagesOf(player):0,pageState:pages.map(pg=>pg.state),delivered:pages.filter(pg=>pg.state==='delivered').length,pinged:pinged?nameOf(pinged):null,templeOpen:templeOpen(),soul:!!player?.soul,nextEvent:+(nextEventAt-clock).toFixed(1),pads:pads.length,player:player&&{alive:player.alive,score:player.score||0,deaths:player.deaths||0,hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
     bots:bots.map(b=>({name:b.name,score:b.score||0,kills:b.kills||0,alive:b.alive,hp:Math.round(b.hp),shield:Math.round(b.shield),down:+(b.model.motion?.downAmount?.()||0).toFixed(2),state:b.state,weapon:b.weapon,armor:b.armor,x:+b.root.position.x.toFixed(1),z:+b.root.position.z.toFixed(1)})),
     zone:zone&&{phase:zone.phase,state:zone.state,r:+zone.r.toFixed(1),x:+zone.center.x.toFixed(1),z:+zone.center.z.toFixed(1)},chests:chests.filter(c=>c.open).length+'/'+chests.length,loot:loot.length,arsenal:combat.arsenal.inspect()}),

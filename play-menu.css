@@ -50,3 +50,17 @@ body.look-locked.combat-armed #look-dot,body.look-locked.in-arena #look-dot,body
 .play-graphics-options{display:flex;border:1px solid var(--line);border-radius:3px;overflow:hidden}
 .play-graphics-options button{border:0;background:#fff;padding:8px 14px;font-size:11px;letter-spacing:.12em;cursor:pointer;color:var(--secondary)}
 .play-graphics-options button[aria-pressed="true"]{background:#294a38;color:#fff}
+
+/* Settings in the PLAY menu. */
+.play-settings{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.play-settings summary{cursor:pointer;font-size:11px;letter-spacing:.14em;font-weight:600}
+.play-settings-grid{display:grid;gap:10px;margin-top:12px}
+.ps-row{display:grid;grid-template-columns:190px 1fr auto;align-items:center;gap:12px;font-size:10px;letter-spacing:.14em}
+.ps-row input[type=range]{width:100%;accent-color:#294a38}
+.ps-row output{font-size:11px;min-width:44px;text-align:right;font-variant-numeric:tabular-nums}
+.ps-choice{display:flex;border:1px solid var(--line);border-radius:3px;overflow:hidden;width:max-content}
+.ps-choice button{border:0;background:#fff;padding:7px 12px;font-size:10px;letter-spacing:.12em;cursor:pointer;color:var(--secondary)}
+.ps-choice button[aria-pressed="true"]{background:#294a38;color:#fff}
+.ps-reset{justify-self:start;border:1px solid var(--line);background:#fff;padding:7px 14px;font-size:10px;letter-spacing:.12em;cursor:pointer}
+.play-settings-grid small{font-size:11px;color:var(--secondary)}
+@media (max-width:560px){.ps-row{grid-template-columns:1fr auto}.ps-row input[type=range]{grid-column:1/-1}}
