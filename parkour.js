@@ -94,13 +94,13 @@
    stats.hangs++;P.sway.bump(.45,0);P.footsteps?.land('stone',.35);P.requestDraw();
   }
   function startClimb(ledge,quick){
-   state={kind:'climb',t:0,dur:quick?.38:.72,from:P.pos.clone().setY(feetOf()),ledge,quick};P.motion.reset();P.vel.set(0,0,0);stats.climbs++;P.footsteps?.land('stone',.3);P.requestDraw();
+   state={kind:'climb',t:0,dur:quick?.38:.72,from:P.pos.clone().setY(feetOf()),ledge,quick,entry:Math.hypot(P.vel.x,P.vel.z)};P.motion.reset();P.vel.set(0,0,0);stats.climbs++;P.footsteps?.land('stone',.3);P.requestDraw();
   }
-  function startWarp(to,{dur,arc,then,ledge=null}){state={kind:'warp',t:0,dur,arc,from:P.pos.clone().setY(feetOf()),to:to.clone(),then,ledge};P.motion.reset();stats.leaps++;P.sway.bump(.35,0);P.requestDraw();}
+  function startWarp(to,{dur,arc,then,ledge=null}){state={kind:'warp',t:0,dur,arc,from:P.pos.clone().setY(feetOf()),to:to.clone(),then,ledge,entry:Math.hypot(P.vel.x,P.vel.z)};P.motion.reset();stats.leaps++;P.sway.bump(.35,0);P.requestDraw();}
 
   // Jump pressed. Returns true if parkour took it.
-  function onJump(){
-   const f=feetOf(),w=wish(),{f:fwd}=view(),air=P.motion.inspect().airborne;
+  function onJump({late=false}={}){
+   const f=feetOf(),w=wish(),{f:fwd}=view(),air=P.motion.inspect().airborne&&!late;
    if(state?.kind==='hang'){hangJump(w);return true;}
    if(state?.kind==='wallrun'){const s=state;const v=s.tangent.clone().multiplyScalar(s.speed*.9).addScaledVector(s.normal,4.6);state=null;release(v,5.2);cool.wallrun=clock+.35;P.sway.bump(.5,s.side);P.footsteps?.step(P.surface(),7);return true;}
    if(state)return true;if(air)return false;
@@ -142,7 +142,7 @@
    if(state)return;const f=feetOf(),w=wish(),v=P.vel,speed=Math.hypot(v.x,v.z),mv=P.motion.inspect();
    const dir=speed>.8?flat(v):view().f;
    // Grab: moving into a ledge that the hands can reach.
-   if(clock>cool.grab&&(w.z>0||speed>2)){const ledge=ledgeAhead(P.pos,f,dir,.25,REACH,.55);
+   if(clock>cool.grab&&(w.z>0||speed>2)){const reach=REACH+(mv.velocity<0?.25:0),lookDir=view().f;let ledge=ledgeAhead(P.pos,f,dir,.25,reach,.75);if(!ledge&&w.z>0&&lookDir.dot(dir)<.98)ledge=ledgeAhead(P.pos,f,lookDir,.25,reach,.75);
     if(ledge&&!(ledge.top-f<MANTLE&&mv.velocity>2)){stats.grabs++;cool.grab=clock+.4;if(ledge.top-f<=MANTLE||w.z>0)startClimb(ledge,ledge.top-f<=MANTLE);else startHang(ledge);return;}}
    // Wall-run: holding forward at speed with a tall wall beside you, running roughly along it.
    if(clock>cool.wallrun&&w.z>0&&speed>4.2){const {r}=view();for(const side of [1,-1]){const wall=wallBeside(P.pos,f,r,side);if(!wall)continue;
@@ -168,7 +168,7 @@
   function land(height,speed){
    if(height<2.2)return null;
    if(clock-crouchAt<.38){stats.rolls++;P.sway.bump(.6,Math.random()<.5?-1:1);P.footsteps?.land(P.surface(),.6);return {kind:'roll'};}
-   stats.hard++;P.sway.bump(Math.min(1.6,.6+height*.15),0);P.footsteps?.land(P.surface(),1);P.vel.multiplyScalar(.25);
+   stats.hard++;stats.lastFall=+height.toFixed(2);P.sway.bump(Math.min(1.6,.6+height*.15),0);P.footsteps?.land(P.surface(),1);P.vel.multiplyScalar(height<4?.55:.25);
    if(height>5.5)P.onFall?.(Math.round((height-5.5)*10));return {kind:'hard',stun:Math.min(.7,.2+height*.06)};
   }
 
@@ -185,7 +185,7 @@
     place(nx,Math.max(f,fl),nz);
     s.step+=dt;if(s.step>.2){s.step=0;P.footsteps?.step('stone',7);}
     if(fl>=f-.02){stand();P.vel.copy(s.tangent).multiplyScalar(s.speed*.8);return true;}
-    if(!wall||s.t>1.25||P.keys.has('s')){release(s.tangent.clone().multiplyScalar(s.speed),s.vy);cool.wallrun=clock+.3;}
+    if(!wall||s.t>1.25||wish().z<0){release(s.tangent.clone().multiplyScalar(s.speed),s.vy);cool.wallrun=clock+.3;}
     P.requestDraw();return true;
    }
    if(s.kind==='scramble'){
@@ -202,17 +202,17 @@
     const wallX=L.point.x+L.normal.x*.3,wallZ=L.point.z+L.normal.z*.3;
     const x=a.x+(wallX-a.x)*Math.min(1,upK*1.3)+(L.stand.x-wallX)*overK,z=a.z+(wallZ-a.z)*Math.min(1,upK*1.3)+(L.stand.z-wallZ)*overK;
     const feet=a.y+(L.top-a.y)*Math.min(1,upK*1.08);place(x,feet-(1-overK)*.5*(1-e*.2),z);
-    if(k>=1){place(L.stand.x,L.top,L.stand.z);stand();P.vel.copy(L.normal).multiplyScalar(-1.4);P.footsteps?.step(P.surface(),3);}
+    if(k>=1){place(L.stand.x,L.top,L.stand.z);stand();P.vel.copy(L.normal).multiplyScalar(-Math.max(1.4,s.entry*(s.quick?.8:.5)));P.footsteps?.step(P.surface(),3);}
     P.requestDraw();return true;
    }
    if(s.kind==='hang'){
     const L=s.ledge,w=wish();
     // Let go: S, or a fresh press of C (holding C from walking off the edge does not drop you).
     if(!P.crouchHeld())s.cReady=true;
-    if(w.z<0&&P.keys.has('s')&&s.t>.25||P.crouchHeld()&&s.cReady&&s.t>.25){cool.grab=clock+.5;release(L.normal.clone().multiplyScalar(.6),0);return true;}
+    if(w.z<0&&s.t>.25||P.crouchHeld()&&s.cReady&&s.t>.25){cool.grab=clock+.5;release(L.normal.clone().multiplyScalar(.6),0);return true;}
     // Climb on a fresh press of W (so holding W while dropping onto a ledge does not climb straight back up).
-    if(!P.keys.has('w'))s.wReady=true;
-    if(w.z>0&&s.t>.3&&P.keys.has('w')&&s.wReady){tryClimb();return true;}
+    const held=P.keys.has('w')||P.keys.has('arrowup');if(!held)s.wReady=true;
+    if(w.z>0&&s.t>.3&&s.wReady){tryClimb();return true;}
     // Shimmy along the edge, as long as there is edge.
     if(w.x){const s2=Math.sign(w.x)*(L.tangent.dot(view().r)>0?1:-1),np=L.point.clone().addScaledVector(L.tangent,s2*1.5*dt),q=np.clone().addScaledVector(L.normal,-.1);
      if((L.box.field?Math.abs((fieldH(L.box.field,q.x,q.z)??-9)-L.top)<.4:inside(L.box,q.x,q.z))||boxes.some(b=>Math.abs(b.top-L.top)<.15&&inside(b,q.x,q.z))){L.point.copy(np);L.stand.addScaledVector(L.tangent,s2*1.5*dt);place(np.x+L.normal.x*.38,hangFeet(L.top),np.z+L.normal.z*.38);s.shimmy=(s.shimmy||0)+dt;if(s.shimmy>.4){s.shimmy=0;P.footsteps?.step('stone',2);}}}
@@ -220,7 +220,7 @@
    }
    if(s.kind==='warp'){
     const k=Math.min(1,s.t/s.dur),e=smooth(k),p=s.from.clone().lerp(s.to,e);p.y+=Math.sin(k*Math.PI)*s.arc;place(p.x,p.y,p.z);
-    if(k>=1){if(s.then==='hang'&&s.ledge)startHang(s.ledge,'leap');else{stand();const d=flat(s.to.clone().sub(s.from));P.vel.copy(d).multiplyScalar(4);P.footsteps?.land(P.surface(),.5);}}
+    if(k>=1){if(s.then==='hang'&&s.ledge)startHang(s.ledge,'leap');else{stand();const d=flat(s.to.clone().sub(s.from));P.vel.copy(d).multiplyScalar(Math.max(4,s.entry*.9));P.footsteps?.land(P.surface(),.5);}}
     P.requestDraw();return true;
    }
    return false;
@@ -229,7 +229,7 @@
   function hands(){const s=state;if(!s)return null;const L=s.ledge;if(s.kind==='hang'||s.kind==='climb'&&s.t/s.dur<.6){return [L.point.clone().addScaledVector(L.tangent||new T.Vector3(L.normal.z,0,-L.normal.x),.24),L.point.clone().addScaledVector(L.tangent||new T.Vector3(L.normal.z,0,-L.normal.x),-.24)];}return null;}
 
   return {wallBeside,wallAhead,floorAt,solid,ledgeAhead,update,onJump,air,land,dropToHang,hands,
-   crouchPressed(){crouchAt=clock;},active:()=>!!state,kind:()=>state?.kind||null,lean:()=>lean,fov:()=>fov,
+   crouchPressed(){crouchAt=clock;},active:()=>!!state,busy:()=>['climb','warp','scramble'].includes(state?.kind),kind:()=>state?.kind||null,lean:()=>lean,fov:()=>fov,
    reset(){state=null;},inspect:()=>({state:state?.kind||null,boxes:boxes.length,fields:fields.length,stats:{...stats}})};
  };
 })(window);

@@ -329,8 +329,8 @@ function draw(time){frame=0;if(!state.ready)return;if(time<hitStopUntil){previou
  // Movement and the match run in steps of at most 50 ms, so a long frame catches up instead of slowing the game down
  // and snapping back (what reads as rubber banding when the frame rate dips).
  const steps=Math.max(1,Math.ceil(raw/.05-1e-6)),sdt=(raw||.016)/steps;
- for(let i=0;i<steps;i++){if(modalOpen())walkVelocity.set(0,0,0);else if(keys.size||walkVelocity.lengthSq()||slide||vault||parkour?.active())move(sdt);updateJump(sdt);if(i<steps-1)battle?.update(time/1000,sdt);}
- const shiftDown=keys.has('shift');if(shiftDown!==lastShiftShown){lastShiftShown=shiftDown;socialShift??=$('social-move').querySelector('[data-key="shift"]');socialShift?.setAttribute('aria-pressed',String(shiftDown));}residents.update();if(followResident)frameResident();removeThird();sway.remove(camera);battle?.update(time/1000,steps>1?sdt:dt||.016);combat?.update(time/1000,dt||.016);const follow=reduced||combat?.armed()||state.view==='free',factor=follow?1:1-Math.exp(-7*(dt||.016));if(camera.position.distanceToSquared(targetPosition)>4e4){camera.position.copy(targetPosition);aim.copy(targetAim);}if(follow){const y=camera.position.y;camera.position.copy(targetPosition);aim.copy(targetAim);if(Math.abs(targetPosition.y-y)<.6&&!motion.inspect().airborne)camera.position.y=y+(targetPosition.y-y)*(1-Math.exp(-28*(dt||.016)));}else{camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);}const leap=pockets?.cross(camera.position);if(leap){camera.position.add(leap);aim.add(leap);targetPosition.add(leap);targetAim.add(leap);}const feel=updateFeel(dt||.016);updateDust(dt||.016);if(sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false),crouch:feel.drop,lean:feel.lean,slide:feel.slide,sprint:feel.sprint,weight:feel.weight,ads:feel.ads})&&!slide)footsteps?.step(surfaceAt(targetPosition),feel.speed*(crouchAmount>.5?.5:1));playerBody?.update(dt||.016,{aim,velocity:walkVelocity,airborne:motion.inspect().airborne,crouch:Math.min(feel.drop,.55),fovKick:feel.fov,hands:parkour?.hands?.()||null,pose:{dive:dive?Math.min(1,dive.t*4):proneT>0?Math.min(1,proneT/.4):0,slide:slide?.kind==='slide'&&!slide.belly?1-slide.t/slide.dur:0}});applyThird(dt||.016);applyFovSetting();if(!pockets?.inside(camera.position))garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();const fighting=arena?.update(time/1000,dt||.016);pockets?.render();const brawling=fists?.update(time/1000,dt||.016);const exploring=secrets?.update(time/1000,dt||.016);const extrasBusy=extras?.update(time/1000,dt||.016);ambience?.update(targetPosition,{night:garden.nightRoad?.amount||0,theater:window.showroomAmphitheaterPosition});if(fists&&time-lastSkinCheck>2000){lastSkinCheck=time;const character=multiplayer?.inspect().character;if(character?.skinTone)fists.setSkin(character);}photoreal?.update();updateGrade();withHitEffects(()=>post.render());combat?.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();updateDoorPrompt();if(brawling||exploring||extrasBusy||garden.animating||combat?.busy()||motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||fighting||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001||post.settling())requestDraw();else previous=0;}
+ for(let i=0;i<steps;i++){if(modalOpen())walkVelocity.set(0,0,0);else if(movement.needsStep())movement.move(sdt);movement.updateJump(sdt);if(i<steps-1)battle?.update(time/1000,sdt);}
+ const shiftDown=keys.has('shift');if(shiftDown!==lastShiftShown){lastShiftShown=shiftDown;socialShift??=$('social-move').querySelector('[data-key="shift"]');socialShift?.setAttribute('aria-pressed',String(shiftDown));}residents.update();if(followResident)frameResident();removeThird();sway.remove(camera);battle?.update(time/1000,steps>1?sdt:dt||.016);combat?.update(time/1000,dt||.016);const follow=reduced||combat?.armed()||state.view==='free',factor=follow?1:1-Math.exp(-7*(dt||.016));if(camera.position.distanceToSquared(targetPosition)>4e4){camera.position.copy(targetPosition);aim.copy(targetAim);}if(follow){const y=camera.position.y;camera.position.copy(targetPosition);aim.copy(targetAim);if(Math.abs(targetPosition.y-y)<.6&&!motion.inspect().airborne)camera.position.y=y+(targetPosition.y-y)*(1-Math.exp(-28*(dt||.016)));}else{camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);}const leap=pockets?.cross(camera.position);if(leap){camera.position.add(leap);aim.add(leap);targetPosition.add(leap);targetAim.add(leap);}const feel=updateFeel(dt||.016);updateDust(dt||.016);if(sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false),crouch:feel.drop,lean:feel.lean,slide:feel.slide,sprint:feel.sprint,weight:feel.weight,ads:feel.ads})&&!movement.slide)footsteps?.step(surfaceAt(targetPosition),feel.speed*(movement.crouchAmount>.5?.5:1));playerBody?.update(dt||.016,{aim,velocity:walkVelocity,airborne:motion.inspect().airborne,crouch:Math.min(feel.drop,.55),fovKick:feel.fov,hands:parkour?.hands?.()||null,pose:{dive:movement.dive?Math.min(1,movement.dive.t*4):movement.proneT>0?Math.min(1,movement.proneT/.4):0,slide:movement.slide?.kind==='slide'&&!movement.slide.belly?1-movement.slide.t/movement.slide.dur:0}});applyThird(dt||.016);applyFovSetting();if(!pockets?.inside(camera.position))garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();const fighting=arena?.update(time/1000,dt||.016);pockets?.render();const brawling=fists?.update(time/1000,dt||.016);const exploring=secrets?.update(time/1000,dt||.016);const extrasBusy=extras?.update(time/1000,dt||.016);ambience?.update(targetPosition,{night:garden.nightRoad?.amount||0,theater:window.showroomAmphitheaterPosition});if(fists&&time-lastSkinCheck>2000){lastSkinCheck=time;const character=multiplayer?.inspect().character;if(character?.skinTone)fists.setSkin(character);}photoreal?.update();updateGrade();withHitEffects(()=>post.render());combat?.render();wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();updateDoorPrompt();if(brawling||exploring||extrasBusy||garden.animating||combat?.busy()||motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||fighting||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001||post.settling())requestDraw();else previous=0;}
 let roadCaption='';
 // Clothes are for sale: inside a pocket world (museum, vault, black box) colour has to match the product photos, so those
 // rooms use Neutral tone mapping without the film LUT. The garden keeps AgX and the grade.
@@ -404,70 +404,6 @@ function focusResident(id){
  camera.fov=44;camera.updateProjectionMatrix();frameResident();camera.position.copy(targetPosition);aim.copy(targetAim);
  document.querySelector('.world-caption h1').textContent=entry.def.name.toUpperCase();document.querySelector('.world-caption .edition').textContent=entry.def.region.toUpperCase();requestDraw();
 }
-function move(dt){
- if(parkour?.active()){if(parkourOn())parkour.update(dt);else parkour.reset();return;}
- if(updateVault(dt))return;
- if((expedition&&!expedition.canMove())||(battle&&!battle.canMove())||(fists&&!fists.canMove())||playerBody?.downed()){walkVelocity.set(0,0,0);return;}
- const z=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),x=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
- const forward=targetAim.clone().sub(targetPosition);forward.y=0;forward.normalize();const right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));
- const crouched=crouchAmount>.5&&!slide;
- const wish=forward.multiplyScalar(z).add(right.multiplyScalar(x));if(wish.lengthSq())wish.normalize().multiplyScalar((crouched?motion.speed(false)*.45:motion.speed(keys.has('shift')))*(1-.13*(combat?.weight?.()||0))*(1-.38*(combat?.ads?.()||0))*(proneT>0?.35:1));
- if(slide){
-  // A slide keeps its own heading (steerable a little) and bleeds speed from a sprint burst down to a crawl.
-  slide.t+=dt;const k=slide.t/slide.dur;
-  if(k>=1||motion.inspect().airborne)slide=null;
-  else{
-   // Downhill slides keep going and pick up speed; uphill ones bleed out sooner.
-   if(slide.kind==='slide'){const dh=groundHeight(targetPosition.clone().addScaledVector(slide.dir,.6))-groundHeight(targetPosition);slide.speed=Math.min(11,Math.max(1.5,slide.speed-dh*14*dt));if(dh<-.01)slide.t=Math.max(0,slide.t-dt*Math.min(.85,-dh*12));}
-   if(wish.lengthSq())slide.dir.lerp(wish.clone().normalize(),Math.min(1,dt*1.6)).normalize();walkVelocity.copy(slide.dir).multiplyScalar(T.MathUtils.lerp(slide.speed,slide.kind==='dash'?2:1.6,k*k));}
- }
- // Ease up to speed (~0.25 s) and glide to a stop instead of starting and stopping instantly; keep momentum in the air.
- if(!slide)walkVelocity.lerp(wish,1-Math.exp(-(motion.inspect().airborne?1.5:wish.lengthSq()?9:11)*dt));
- if(walkVelocity.lengthSq()<1e-4){walkVelocity.set(0,0,0);return;}
- if(x||z)prepareWalking();
- // Try the full step, then each axis alone, so walls, props and the pond edge slide the player along.
- const step=walkVelocity.clone().multiplyScalar(dt);
- const commit=next=>{const actual=next.clone().sub(targetPosition);targetPosition.copy(next);targetAim.add(actual);};
- const full=step.lengthSq()>1e-10?tryStep(step):null;
- if(full){commit(full);return;}
- if(parkour?.active())return; // the step was taken over (caught an edge)
- // Blocked. Find which way the wall faces, react to the hit, bounce off it and keep moving along it: a slide is
- // redirected along the bounce instead of ending.
- const byX=Math.abs(step.x)>1e-7?tryStep(new T.Vector3(step.x,0,0)):null,byZ=Math.abs(step.z)>1e-7?tryStep(new T.Vector3(0,0,step.z)):null;
- const into=new T.Vector3(byX?0:walkVelocity.x,0,byZ?0:walkVelocity.z);
- // Jumping (or diving) into something low vaults it.
- if((motion.inspect().airborne||dive||keys.has('space'))&&tryVault(walkVelocity))return;
- // A slide that clips a wall at a glancing angle pops off it, keeping (and adding to) the speed along it.
- const sp=Math.hypot(walkVelocity.x,walkVelocity.z),glance=sp>0?into.length()/sp:1;
- if(slide?.kind==='slide'&&!slide.belly&&sp>4&&glance>.15&&glance<.75&&!motion.inspect().airborne){const along=walkVelocity.clone().sub(into);const n=into.clone().normalize().multiplyScalar(-1.8);walkVelocity.copy(along.multiplyScalar(1.12)).add(n);slide=null;motion.jump(3.6);wallPops++;sway.bump(.7,Math.sign(into.dot(right))||0);fovKick+=4;footsteps?.land(surfaceAt(targetPosition),.6);requestDraw();return;}
- wallHit(into);
- const bounce=slide?.38:into.length()>4?.18:0;
- if(!byX)walkVelocity.x*=-bounce;if(!byZ)walkVelocity.z*=-bounce;
- if(slide){if(walkVelocity.lengthSq()>.25){slide.dir.copy(walkVelocity).setY(0).normalize();slide.speed=Math.max(2.4,slide.speed*.62);}else slide=null;}
- const along=byX&&byZ?(Math.abs(step.x)>Math.abs(step.z)?byX:byZ):byX||byZ;
- if(along)commit(along);else if(walkVelocity.lengthSq()<.04){walkVelocity.set(0,0,0);slide=null;}
-}
-function tryStep(step){
- if(parkour?.active())return null;
- if(arena?.active()){const next=targetPosition.clone().add(step);if(!arena.allowed(next))return null;next.y=1.75+motion.inspect().height;return next;}
- if(pockets?.inside(targetPosition)){const next=targetPosition.clone().add(step);if(pockets.blocks(next))return null;next.y=1.75+motion.inspect().height;return next;}
- const feet=targetPosition.y-1.75,P=pk();
- const next=garden.constrain(targetPosition.clone().add(step),targetPosition,P?feet:null);
- // Battles and the firing range take place beyond Eden without an expedition, so its gate (and its entry screen) stays out of them.
- if(!battle?.busy?.()&&!battle?.active()&&!combat?.inRange())expedition?.constrain(next,targetPosition);
- if(obstacle(next))return null;
- if(P){
-  // Stand on the highest surface under you (roofs, crates, wall tops); walk off an edge and you fall (or, holding C,
-  // catch it and hang); land on whatever is under you mid-air.
-  if(P.solid(next.x,next.z,feet,feet+1.7,.2))return null;
-  const floor=P.floorAt(next.x,next.z,feet+.45),m=motion.inspect();
-  if(!m.airborne&&floor<feet-.4){if(crouchHeld&&!slide&&P.dropToHang(targetPosition,next,feet))return null;motion.set(feet-floor,0);airPeak=feet;}
-  else if(m.airborne)motion.set(Math.max(0,feet-floor),m.velocity);
-  next.y=1.75+floor+motion.inspect().height;return next;
- }
- next.y=1.75+groundHeight(next)+motion.inspect().height;
- return next;
-}
 function obstacle(next){
  const pond=((next.x-5.7)/4.1)**2+((next.z-3.5)/5.9)**2<1;const trunk=Math.hypot(next.x-.5,next.z+7)<.75;
  return !!(pond||trunk||pockets?.blocks(next)||libraryGarden?.blocks(next)||amphitheater.blocks(next)||gardenLibrary?.blocks(next)||gardenProps?.blocks(next)||combat?.blocks(next)||secrets?.blocks(next)||extras?.blocks(next));
@@ -494,63 +430,14 @@ function prepareWalking(){
 // Feel: crouch / slide eye drop, sprint widening, landing thuds and footsteps by surface (footsteps.js).
 // Parkour (parkour.js): roofs, crate staircases and walls with height beyond the door; wall-runs, climbs, hangs.
 const parkourOn=()=>garden.nightBuilt()&&targetPosition.z<garden.road.door-.2&&!arena?.active()&&!pockets?.inside(targetPosition)&&!expedition?.active();
-let parkour=null,airPeak=0;
+let parkour=null;
 function makeParkour(){if(parkour||!window.createParkour)return parkour;parkour=window.createParkour({T,walls:()=>garden.nightBuilt()?garden.district.walls:[],surfaces:()=>garden.nightBuilt()?garden.district.surfaces:[],ground:(x,z)=>groundHeight(new T.Vector3(x,0,z)),
- player:{pos:targetPosition,aim:targetAim,vel:walkVelocity,motion,keys,crouchHeld:()=>crouchHeld,sway,footsteps:window.createFootsteps?{step:(...a)=>footsteps?.step(...a),land:(...a)=>footsteps?.land(...a)}:null,surface:()=>surfaceAt(targetPosition),requestDraw,onFall:d=>battle?.fallDamage?.(d)}});return parkour;}
+ player:{pos:targetPosition,aim:targetAim,vel:walkVelocity,motion,keys,crouchHeld:()=>movement.crouchHeld,sway,footsteps:window.createFootsteps?{step:(...a)=>footsteps?.step(...a),land:(...a)=>footsteps?.land(...a)}:null,surface:()=>surfaceAt(targetPosition),requestDraw,onFall:d=>battle?.fallDamage?.(d)}});return parkour;}
 const pk=()=>parkourOn()?makeParkour():null;
-const footsteps=window.createFootsteps?.(),SLIDE_TIME=.75;
-let crouchHeld=false,crouchAmount=0,slide=null,fovKick=0,airTime=0,wasAirborne=false,dive=null,proneT=0,diveCount=0,tackleCount=0;
-// Hold C through the start of a slide and you launch into a dolphin dive: a low flat leap that lands on your chest
-// and skids. Sliding or diving into someone in the open match tackles them: they go down and drop their weapon.
-const DIVE_HOLD=.16;
-function startDive(){
- const speed=Math.hypot(walkVelocity.x,walkVelocity.z),dir=slide.dir.clone();slide=null;
- dive={t:0,dir,speed:Math.max(speed,6.5)*1.15};walkVelocity.copy(dir).multiplyScalar(dive.speed);motion.jump(4.3);diveCount++;
- combat?.dropAim?.();sway.bump(.5,0);fovKick+=5;footsteps?.step(surfaceAt(targetPosition),8);requestDraw();
-}
-function landDive(){
- const speed=Math.hypot(walkVelocity.x,walkVelocity.z);
- // Holding a direction as you land turns the belly flop into a roll: back on your feet almost at once, still moving.
- if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].some(k=>keys.has(k))){rolls++;sway.bump(.6,Math.random()<.5?-1:1);footsteps?.land(surfaceAt(targetPosition),.7);{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,6,.7);}
-  slide={kind:'slide',dur:.4,t:0,dir:dive.dir.clone(),speed:Math.max(4.5,speed*.85),belly:true,roll:true};proneT=.22;fovKick+=3;dive=null;return;}
- sway.bump(1.1,Math.random()<.5?-1:1);footsteps?.land(surfaceAt(targetPosition),1);hitStop(45);
- {const feet=targetPosition.clone();feet.y-=1.72;puff(feet,9,.9);}
- slide={kind:'slide',dur:.55,t:0,dir:dive.dir.clone(),speed:Math.max(3.2,speed*.7),belly:true};footsteps?.slide(surfaceAt(targetPosition),.55);
- proneT=.75;dive=null;
-}
-// Vault: jump into something low (a chest, a low wall, a bench) and you hop over it to the far side.
-let vault=null,vaultCount=0,wallPops=0,rolls=0;
-function tryVault(dir){
- if(vault||!combat?.worldHits||arena?.active())return false;
- const feet=targetPosition.y-1.75-motion.inspect().height,d=dir.clone().setY(0);if(d.lengthSq()<1e-4)return false;d.normalize();
- // Open above: nothing at head height just ahead...
- const head=new T.Vector3(targetPosition.x,feet+1.5,targetPosition.z);if(combat.worldHits(head,d,1.1))return false;
- // ...and something low there: a top surface between knee and chest height.
- let top=null;for(const k of [.35,.55,.8]){const h=combat.worldHits(head.clone().addScaledVector(d,k),new T.Vector3(0,-1,0),1.5);if(h&&h.point.y>=feet+.3&&h.point.y<=feet+1.3){top=h;break;}}
- if(!top)return false;
- for(const k of [1,1.3,1.6,1.9,2.2]){const to=tryStep(d.clone().multiplyScalar(k));if(to){vault={from:targetPosition.clone(),to,aim:targetAim.clone(),t:0,dur:.42,lift:top.point.y-feet+.25,speed:Math.max(3.5,Math.hypot(walkVelocity.x,walkVelocity.z))};vaultCount++;slide=null;dive=null;motion.reset();sway.bump(.35,0);footsteps?.step(surfaceAt(targetPosition),6);requestDraw();return true;}}
- return false;
-}
-function updateVault(dt){
- if(!vault)return false;vault.t+=dt;const k=Math.min(1,vault.t/vault.dur),e=k*k*(3-2*k);
- const p=vault.from.clone().lerp(vault.to,e);p.y+=Math.sin(k*Math.PI)*vault.lift;const delta=p.clone().sub(targetPosition);targetPosition.copy(p);targetAim.add(delta);
- if(k>=1){const d=vault.to.clone().sub(vault.from).setY(0).normalize();walkVelocity.copy(d).multiplyScalar(vault.speed);footsteps?.land(surfaceAt(targetPosition),.4);sway.bump(.3,0);vault=null;}
- requestDraw();return true;
-}
-function tryTackle(){
- if(!battle?.active?.()||!(slide?.kind==='slide'||dive))return;
- const speed=Math.hypot(walkVelocity.x,walkVelocity.z);if(speed<4)return;
- const feet=targetPosition.clone();feet.y-=1.75;
- const hit=battle.tackle?.(feet,walkVelocity.clone().setY(0).normalize(),speed);
- if(hit){tackleCount++;playerBody?.anim?.('dash',{fade:.05,speed:1.4});sway.bump(.9,0);hitStop(70);footsteps?.land('grass',.8);walkVelocity.multiplyScalar(.45);if(slide)slide.speed*=.45;if(dive)dive.speed*=.45;}
-}
-function startSlide(){
- const speed=Math.hypot(walkVelocity.x,walkVelocity.z);
- if(slide||!keys.has('shift')||speed<4.2||motion.inspect().airborne||playerBody?.downed()||modalOpen())return;
- slide={kind:'slide',dur:SLIDE_TIME,t:0,dir:walkVelocity.clone().setY(0).normalize(),speed:Math.max(speed*1.25,7.2)};footsteps?.slide(surfaceAt(targetPosition),SLIDE_TIME);
- // Dropping into a slide: the view dips and kicks to one side.
- sway.bump(.45,Math.random()<.5?-1:1);fovKick+=3;requestDraw();
-}
+const footsteps=window.createFootsteps?.();
+let fovKick=0;
+const movement=window.createPlayerMovement({T,targetPosition,targetAim,walkVelocity,motion,keys,sway,footsteps,surfaceAt,puff,hitStop,requestDraw,obstacle,groundHeight,prepareWalking,shiftHeight,kick:n=>{fovKick+=n;},state,modalOpen,fistsEngaged,parkour:()=>parkour,pk,parkourOn,
+ get garden(){return garden;},get combat(){return combat;},get battle(){return battle;},get fists(){return fists;},get expedition(){return expedition;},get arena(){return arena;},get pockets(){return pockets;},get playerBody(){return playerBody;}});
 // What is underfoot: the brick road beyond the door, stone paths, the library deck and the amphitheatre, else grass.
 const segmentDistance=(p,ax,az,bx,bz)=>{const dx=bx-ax,dz=bz-az,t=T.MathUtils.clamp(((p.x-ax)*dx+(p.z-az)*dz)/(dx*dx+dz*dz),0,1);return Math.hypot(p.x-ax-dx*t,p.z-az-dz*t);};
 function surfaceAt(p){
@@ -561,15 +448,6 @@ function surfaceAt(p){
  if(p.z>-6&&p.z<22&&Math.abs(p.x-Math.sin((p.z-3)*.15)*1.5)<.95)return 'stone';
  if(segmentDistance(p,6.8,-7.4,9.6,-8.1)<.8||segmentDistance(p,9.6,-8.1,11.7,-10.8)<.8||segmentDistance(p,-1.1,-3.5,-5.7,-1)<.7)return 'stone';
  return 'grass';
-}
-// Dodge: double-tap A or D in a fight (the jester, a battle, a weapon drawn) for a quick side-step; blows from the
-// jester miss during it (fists.dodge()).
-const lastTap={a:0,d:0};
-function tapDodge(key){
- const t=performance.now(),quick=t-lastTap[key]<260;lastTap[key]=quick?0:t;
- if(!quick||slide||motion.inspect().airborne||playerBody?.downed()||!(fistsEngaged()||battle?.active()||combat?.armed()))return;
- const forward=targetAim.clone().sub(targetPosition).setY(0).normalize(),side=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0)).multiplyScalar(key==='d'?1:-1);
- prepareWalking();slide={kind:'dash',dur:.26,t:0,dir:side,speed:8};fists?.dodge();footsteps?.step(surfaceAt(targetPosition),7);requestDraw();
 }
 // Dust kicked up by slides, hard landings and wall hits: a small pool of soft puffs tinted by the surface underfoot.
 const dustPuffs=[];let dustTex=null,dustClock=0;
@@ -586,18 +464,9 @@ function puff(at,count=3,spread=.4,surface=surfaceAt(at)){
  }
 }
 function updateDust(dt){
- if(slide?.kind==='slide'){dustClock+=dt;if(dustClock>.035){dustClock=0;const feet=targetPosition.clone();feet.y-=1.72;feet.addScaledVector(slide.dir,-.3);puff(feet,2,.5);}}
+ if(movement.slide?.kind==='slide'){dustClock+=dt;if(dustClock>.035){dustClock=0;const feet=targetPosition.clone();feet.y-=1.72;feet.addScaledVector(movement.slide.dir,-.3);puff(feet,2,.5);}}
  for(const d of dustPuffs){if(!d.alive)continue;d.t+=dt;const k=d.t/d.life;if(k>=1){d.alive=false;d.sprite.visible=false;continue;}
   d.sprite.position.addScaledVector(d.vel,dt);d.vel.multiplyScalar(1-dt*2.2);const s=d.size*(1+k*2.2);d.sprite.scale.set(s,s,s);d.sprite.material.opacity=.55*(1-k)*Math.min(1,k*8);}
-}
-// Running or sliding into something: a jolt through the view (rolled towards the side that hit), a thud, and on a
-// hard hit a short frame hold.
-let lastBump=0,bumpCount=0;
-function wallHit(into){
- const impact=into.length(),t=performance.now();if(impact<2.4||t-lastBump<300)return;lastBump=t;bumpCount++;
- const forward=targetAim.clone().sub(targetPosition).setY(0).normalize(),right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));
- const k=Math.min(1.4,impact/6);sway.bump(k,Math.sign(into.dot(right))||0);footsteps?.land(surfaceAt(targetPosition),Math.min(1,impact/8));
- fovKick-=4*k;if(impact>5.5)hitStop(40+impact*4);{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,Math.round(3+4*k),.6);}requestDraw();
 }
 // The open match lives beyond the hidden door: stepping through starts or resumes it, stepping back into the garden
 // (or starting an expedition, the range, the online arena or a pocket world) pauses it.
@@ -613,7 +482,7 @@ const bodyAnim={slide:false,dive:false,air:false,climb:false,prone:false,emote:n
 const EMOTES=['wave','cheer','clap','danceCool','dance','nod'];let emoteIndex=0;
 function playEmote(){if(!playerBody?.anim||!state.ready)return;const id=EMOTES[emoteIndex++%EMOTES.length];if(bodyAnim.emote)playerBody.stopAnim(bodyAnim.emote,.2);bodyAnim.emote=playerBody.anim(id,{fade:.25,loop:id==='danceCool'||id==='dance'})?id:null;bodyAnim.emoteAt=performance.now();if(bodyAnim.emote&&!thirdOn){lastThirdToggle=0;setThird(true);}}
 function updateBodyAnim(){
- const B=playerBody;if(!B?.anim)return;const air=motion.inspect().airborne,sl=slide?.kind==='slide',dv=!!dive,cl=parkour?.kind?.()==='climb',pr=proneT>0;
+ const B=playerBody;if(!B?.anim)return;const air=motion.inspect().airborne,sl=movement.slide?.kind==='slide',dv=!!movement.dive,cl=parkour?.kind?.()==='climb',pr=movement.proneT>0;
  if(sl&&!bodyAnim.slide)B.anim('slideLoop',{fade:.1});if(!sl&&bodyAnim.slide){B.stopAnim('slideLoop',.15);B.anim('slideExit',{fade:.08,speed:1.3});}
  if(dv&&!bodyAnim.dive)B.anim('dash',{fade:.08,speed:1.3});if(!dv&&bodyAnim.dive)B.stopAnim('dash',.1);
  if(pr&&!bodyAnim.prone&&!dv)B.anim('getUp',{fade:.1,speed:2});
@@ -632,46 +501,29 @@ function updateFeel(dt){
  // Low health drains the colour and closes the vignette (the blood itself is battle-arena.js's HUD).
  const low=battle?.lowHealth?.()||0;if(Math.abs(low-lowShown)>.01){lowShown=low;post.set({saturation:1.06-.75*low,vignette:.22+.45*low});}
  const speed=Math.hypot(walkVelocity.x,walkVelocity.z),airborne=motion.inspect().airborne;
- crouchAmount+=(((crouchHeld||slide?.kind==='slide')&&!arena?.active()?1:0)-crouchAmount)*(1-Math.exp(-14*dt));
- const sprinting=keys.has('shift')&&speed>4.5&&crouchAmount<.3;
- fovKick+=((dive?15:slide?.kind==='slide'?13:slide?5:sprinting?8:0)+(parkour?.fov()||0)-fovKick)*(1-Math.exp(-(slide||sprinting?6:4)*dt));
- const Pk=parkourOn()?parkour:null;if(Pk&&!Pk.active()){Pk.update(dt);if(airborne)Pk.air(dt);}
- if(airborne){airTime+=dt;airPeak=Math.max(airPeak,targetPosition.y-1.75);}else if(wasAirborne){
-  const fell=airPeak-(targetPosition.y-1.75),res=Pk?.land(fell);airPeak=targetPosition.y-1.75;
-  if(res?.kind==='roll'){proneT=0;fovKick+=4;playerBody?.anim?.('roll',{fade:.06,speed:1.9});{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,8,.8);}}else if(res?.kind==='hard'){proneT=res.stun;playerBody?.anim?.('jumpLand',{fade:.06,speed:1.6});}footsteps?.land(surfaceAt(targetPosition),Math.min(1,airTime/.7));if(airTime>.45){const feet=targetPosition.clone();feet.y-=1.72;puff(feet,5,.7);}airTime=0;
-  if(dive)landDive();
-  // Land with C held at speed and you go straight into a slide.
-  else if(crouchHeld&&!slide&&speed>4.2){slide={kind:'slide',dur:SLIDE_TIME,t:0,dir:walkVelocity.clone().setY(0).normalize(),speed:speed*1.15,noDive:true};footsteps?.slide(surfaceAt(targetPosition),SLIDE_TIME);}}
- wasAirborne=airborne;
- if(slide?.kind==='slide'&&!slide.belly&&crouchHeld&&slide.t>DIVE_HOLD&&slide.t<.4&&!airborne&&!slide.noDive)startDive();
- if(dive)dive.t+=dt;proneT=Math.max(0,proneT-dt);
- tryTackle();
+ movement.updateCrouch(dt);
+ const sprinting=keys.has('shift')&&speed>4.5&&movement.crouchAmount<.3;
+ fovKick+=((movement.dive?15:movement.slide?.kind==='slide'?13:movement.slide?5:sprinting?8:0)+(parkour?.fov()||0)-fovKick)*(1-Math.exp(-(movement.slide||sprinting?6:4)*dt));
+ movement.updateAir(dt,speed,airborne);
  // The view leans into a slide: towards the side it is heading, and a little regardless.
- let lean=0;if(slide?.kind==='slide'){const forward=targetAim.clone().sub(targetPosition).setY(0).normalize(),right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));lean=(-slide.dir.dot(right)*.16-.05)*(1-slide.t/slide.dur*.7);}
- const slideK=slide?.kind==='slide'?Math.min(1,speed/7)*(1-slide.t/slide.dur*.5):slide?.kind==='dash'?.5:0;
- const diveDrop=dive?Math.min(1,dive.t*5)*.55:0,prone=proneT>0?Math.min(1,proneT/.25)*.75:0;
- return {drop:crouchAmount*.55+(slide?.kind==='slide'&&!slide.belly?.16*(1-slide.t/slide.dur):0)+Math.max(diveDrop,prone)+deathDrop,fov:fovKick,speed,lean:lean+deathDrop*.25+(dive?.04:0)+(parkour?.lean()||0),slide:Math.max(slideK,dive?.35:0),sprint:sprinting?1:0,weight:combat?.weight?.()||0,ads:combat?.ads?.()||0};
+ let lean=0;if(movement.slide?.kind==='slide'){const forward=targetAim.clone().sub(targetPosition).setY(0).normalize(),right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));lean=(-movement.slide.dir.dot(right)*.16-.05)*(1-movement.slide.t/movement.slide.dur*.7);}
+ const slideK=movement.slide?.kind==='slide'?Math.min(1,speed/7)*(1-movement.slide.t/movement.slide.dur*.5):movement.slide?.kind==='dash'?.5:0;
+ const diveDrop=movement.dive?Math.min(1,movement.dive.t*5)*.55:0,prone=movement.proneT>0?Math.min(1,movement.proneT/.25)*.75:0;
+ return {drop:movement.crouchAmount*.55+(movement.slide?.kind==='slide'&&!movement.slide.belly?.16*(1-movement.slide.t/movement.slide.dur):0)+Math.max(diveDrop,prone)+deathDrop,fov:fovKick,speed,lean:lean+deathDrop*.25+(movement.dive?.04:0)+(parkour?.lean()||0),slide:Math.max(slideK,movement.dive?.35:0),sprint:sprinting?1:0,weight:combat?.weight?.()||0,ads:combat?.ads?.()||0};
 }
-function jump(){if(!state.ready||modalOpen()||expedition&&!expedition.canMove()||fists&&!fists.canMove())return;
- if(pk()?.onJump()){slide=null;dive=null;requestDraw();return;}
- if(motion.inspect().airborne)return;prepareWalking();
- // Jumping out of a slide carries its speed and a little more.
- if(slide?.kind==='slide'){walkVelocity.multiplyScalar(1.12);slide=null;}
- motion.jump();airPeak=targetPosition.y-1.75;requestDraw();}
-function updateJump(dt){if(!motion.inspect().airborne)return;const before=motion.inspect().height;if(expedition&&!expedition.canMove())motion.reset();else motion.step(dt);shiftHeight(motion.inspect().height-before);}
 function setMovement(key,pressed){
  if(pressed&&(!state.ready||modalOpen()||expedition&&!expedition.canMove()))return;
- if(key==='space'){if(pressed)jump();return;}
+ if(key==='space'){if(pressed)movement.jump();return;}
  if(!moveKeys.has(key)&&key!=='shift')return;
  if(pressed&&moveKeys.has(key))renderer.domElement.focus({preventScroll:true});
  if(pressed)keys.add(key);else keys.delete(key);
  if(state.ready)requestDraw();
 }
-document.addEventListener('keydown',event=>{if(modalOpen()||event.ctrlKey||event.metaKey||event.altKey||event.isComposing||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;const key=event.code==='Space'?'space':event.key.toLowerCase();if(['f','g','q'].includes(key)&&fistsEngaged()){event.preventDefault();event.stopImmediatePropagation();fists.key(key,true,event.repeat);requestDraw();return;}if((key==='a'||key==='d')&&state.ready&&!event.repeat&&!arena?.active())tapDodge(key);if(key==='t'&&!event.repeat&&!combat?.armed()){event.preventDefault();playEmote();return;}if(key==='v'&&thirdOn&&!event.repeat){event.preventDefault();thirdSide*=-1;requestDraw();return;}if(key==='c'&&!event.repeat)parkour?.crouchPressed();if(key==='c'&&state.ready&&!arena?.active()&&!expedition?.active()){event.preventDefault();if(!event.repeat){crouchHeld=true;startSlide();}return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&garden.skybox.distance(targetPosition)<3.8){event.preventDefault();toggleDoor();return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&!battle?.active()&&secrets?.interact()){event.preventDefault();return;}if(state.ready&&key==='m'&&!event.repeat&&ambience){ambience.setMuted(!ambience.muted);secrets?.notify(ambience.muted?'Garden ambience muted (M)':'Garden ambience on (M)');return;}if((moveKeys.has(key)||key==='shift'||key==='space')&&state.ready){if(key==='space'&&['BUTTON','A'].includes(event.target.tagName))return;event.preventDefault();if(!event.repeat)setMovement(key,true);}});
-document.addEventListener('keyup',event=>{const key=event.key.toLowerCase();if(key==='c')crouchHeld=false;if(fists&&['f','g','q'].includes(key))fists.key(key,false);setMovement(key,false);});
+document.addEventListener('keydown',event=>{if(modalOpen()||event.ctrlKey||event.metaKey||event.altKey||event.isComposing||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;const key=event.code==='Space'?'space':event.key.toLowerCase();if(['f','g','q'].includes(key)&&fistsEngaged()){event.preventDefault();event.stopImmediatePropagation();fists.key(key,true,event.repeat);requestDraw();return;}if((key==='a'||key==='d')&&state.ready&&!event.repeat&&!arena?.active())movement.tapDodge(key);if(key==='t'&&!event.repeat&&!combat?.armed()){event.preventDefault();playEmote();return;}if(key==='v'&&thirdOn&&!event.repeat){event.preventDefault();thirdSide*=-1;requestDraw();return;}if(key==='c'&&!event.repeat)parkour?.crouchPressed();if(key==='c'&&state.ready&&!arena?.active()&&!expedition?.active()){event.preventDefault();if(!event.repeat){movement.crouchHeld=true;movement.startSlide();}return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&garden.skybox.distance(targetPosition)<3.8){event.preventDefault();toggleDoor();return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&!battle?.active()&&secrets?.interact()){event.preventDefault();return;}if(state.ready&&key==='m'&&!event.repeat&&ambience){ambience.setMuted(!ambience.muted);secrets?.notify(ambience.muted?'Garden ambience muted (M)':'Garden ambience on (M)');return;}if((moveKeys.has(key)||key==='shift'||key==='space')&&state.ready){if(key==='space'&&['BUTTON','A'].includes(event.target.tagName))return;event.preventDefault();if(!event.repeat)setMovement(key,true);}});
+document.addEventListener('keyup',event=>{const key=event.key.toLowerCase();if(key==='c')movement.crouchHeld=false;if(fists&&['f','g','q'].includes(key))fists.key(key,false);setMovement(key,false);});
 for(const button of $('social-move').querySelectorAll('button')){button.onpointerdown=event=>{if(event.button!==0)return;event.preventDefault();button.setPointerCapture(event.pointerId);setMovement(button.dataset.key,true);};button.onpointerup=button.onpointercancel=button.onlostpointercapture=()=>setMovement(button.dataset.key,false);}
 document.addEventListener('focusin',event=>{if(modalOpen()||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName)){keys.clear();if(state.ready)requestDraw();}});
-window.addEventListener('blur',()=>{keys.clear();drag=null;crouchHeld=false;fists?.key('q',false);if(state.ready)requestDraw();});
+window.addEventListener('blur',()=>{keys.clear();drag=null;movement.crouchHeld=false;fists?.key('q',false);if(state.ready)requestDraw();});
 dialog.addEventListener('close',()=>{keys.clear();requestDraw();});
 posterDialog.addEventListener('close',requestDraw);
 $('spawn').onclick=()=>go('spawn');$('approach').onclick=()=>go('approach');$('wall-view').onclick=()=>go('wall');$('film-view').onclick=selectFilm;
@@ -789,8 +641,8 @@ battle=window.createBattleArena?.({T,scene,camera,combat,garden,terrainY:(x,z)=>
  placePlayer(x,z,lx,lz){followResident=null;stage.classList.remove('resident-view');motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75+groundHeight(new T.Vector3(x,0,z)),z);targetAim.set(lx,targetPosition.y,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=70;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},
  setNight(v){if(v!=null)garden.district;garden.nightRoad?.setOverride(v);},
  onDeath(){sway.bump(1.5,Math.random()<.5?-1:1);hitStop(160);requestDraw();},
- dodging:()=>slide?.kind==='dash'||!!dive||!!vault,
- onTackled(dir){playerBody?.anim?.('knockback',{fade:.05});proneT=1;slide=null;dive=null;walkVelocity.copy(dir).setY(0).multiplyScalar(4.5);sway.bump(1.4,Math.random()<.5?-1:1);hitStop(90);footsteps?.land(surfaceAt(targetPosition),1);requestDraw();},
+ dodging:()=>movement.slide?.kind==='dash'||!!movement.dive||!!movement.vault,
+ onTackled(dir){playerBody?.anim?.('knockback',{fade:.05});movement.proneT=1;movement.slide=null;movement.dive=null;walkVelocity.copy(dir).setY(0).multiplyScalar(4.5);sway.bump(1.4,Math.random()<.5?-1:1);hitStop(90);footsteps?.land(surfaceAt(targetPosition),1);requestDraw();},
  onSoul(on){document.body.classList.toggle('soul-taken',!!on);requestDraw();},
  onImpact(at,k=1){const d=at.distanceTo(targetPosition);if(d<30){sway.bump(k*(1-d/30),0);const p=at.clone();puff(p,8,1.6,'stone');}},
  onExit(){go('spawn');},
@@ -828,6 +680,7 @@ window.breakThyRuleShowroom={scene:()=>scene,renderer:()=>renderer,combat:()=>co
  // camera placement for captures and checks: stand at (x,z) looking toward (lx,ly,lz)
  place(x,z,lx,lz,ly=1.75){if(expedition?.active())expedition.leave();motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,ly,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.lookAt(aim);requestDraw();},
 third:on=>{lastThirdToggle=0;return setThird(!!on);},bodyAnim:()=>({...bodyAnim,playing:['slideLoop','jumpLoop','dash','roll','climbUp','getUp','wave','cheer'].filter(id=>playerBody?.animPlaying?.(id))}),bodyClip:(id,o)=>playerBody?.anim?.(id,o),climbs:()=>garden.nightBuilt()?garden.district.climbs:[],parkour:()=>pk(),// Run the movement logic n steps of dt with keys held (and Space pressed on the first step), without drawing.
-sim:(n=30,dt=1/30,hold=[],jumpFirst=false,jumpAt=[],{holdC=false,crouchAt=[]}={})=>{for(const k of hold)keys.add(k);const hadC=crouchHeld;if(holdC)crouchHeld=true;for(let i=0;i<n;i++){if(crouchAt.includes(i))parkour?.crouchPressed();if((jumpFirst&&i===0)||jumpAt.includes(i))jump();updateJump(dt);if(keys.size||walkVelocity.lengthSq()||slide||vault||parkour?.active())move(dt);updateFeel(dt);}for(const k of hold)keys.delete(k);if(holdC)crouchHeld=hadC;return {pos:targetPosition.toArray().map(v=>+v.toFixed(2)),feet:+(targetPosition.y-1.75).toFixed(2),pk:parkour?.inspect()};},
-face:yaw=>{targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,-Math.cos(yaw)).multiplyScalar(5));requestDraw();},vault:(x,z)=>tryVault(new T.Vector3(x,0,z)),touch:()=>touch?.inspect?.()||null,sprintTo:v=>{const f=targetAim.clone().sub(targetPosition).setY(0).normalize();walkVelocity.copy(f).multiplyScalar(v||7);},getState:()=>({...state,secrets:secrets?.inspect(),extras:extras?.inspect(),ambience:ambience?.inspect(),aim:targetAim.toArray().map(v=>+v.toFixed(3)),third:+thirdK.toFixed(2),parkour:parkour?.inspect()||null,feel:{vaults:vaultCount,wallPops,rolls,vault:!!vault,dive:!!dive,dives:diveCount,tackles:tackleCount,prone:+proneT.toFixed(2),bumps:bumpCount,crouch:+crouchAmount.toFixed(2),slide:slide?.kind||null,fovKick:+fovKick.toFixed(1),lookLocked},combat:combat?.inspect(),fists:fists?.inspect(),position:camera.position.toArray(),arena:arena?.inspect(),movement:{...motion.inspect(),velocity:walkVelocity.toArray().map(v=>+v.toFixed(3)),sway:sway.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.nightBuilt()?garden.district.inspect():null,library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),lighting:lighting.inspect(),post:post.inspect(),quality:quality.inspect(),residents:residents.inspect(),body:playerBody?.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
+// Test hook: drop from h metres above the floor at (x, z), looking at (lx, lz).
+dropAt:(x,z,h,lx,lz)=>{const floor=pk()?.floorAt(x,z)??groundHeight(new T.Vector3(x,0,z));walkVelocity.set(0,0,0);targetPosition.set(x,1.75+floor+h,z);targetAim.set(lx,targetPosition.y,lz);motion.set(h,0);camera.position.copy(targetPosition);aim.copy(targetAim);},sim:(n=30,dt=1/30,hold=[],jumpFirst=false,jumpAt=[],{holdC=false,crouchAt=[]}={})=>{for(const k of hold)keys.add(k);const hadC=movement.crouchHeld;if(holdC)movement.crouchHeld=true;for(let i=0;i<n;i++){if(crouchAt.includes(i))parkour?.crouchPressed();if((jumpFirst&&i===0)||jumpAt.includes(i))movement.jump();movement.updateJump(dt);if(movement.needsStep())movement.move(dt);updateFeel(dt);}for(const k of hold)keys.delete(k);if(holdC)movement.crouchHeld=hadC;return {pos:targetPosition.toArray().map(v=>+v.toFixed(2)),feet:+(targetPosition.y-1.75).toFixed(2),pk:parkour?.inspect()};},
+face:yaw=>{targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,-Math.cos(yaw)).multiplyScalar(5));requestDraw();},vault:(x,z)=>movement.tryVault(new T.Vector3(x,0,z)),touch:()=>touch?.inspect?.()||null,sprintTo:v=>{const f=targetAim.clone().sub(targetPosition).setY(0).normalize();walkVelocity.copy(f).multiplyScalar(v||7);},getState:()=>({...state,secrets:secrets?.inspect(),extras:extras?.inspect(),ambience:ambience?.inspect(),aim:targetAim.toArray().map(v=>+v.toFixed(3)),third:+thirdK.toFixed(2),parkour:parkour?.inspect()||null,feel:{mode:movement.state(),...movement.counts(),vault:!!movement.vault,dive:!!movement.dive,prone:+movement.proneT.toFixed(2),crouch:+movement.crouchAmount.toFixed(2),slide:movement.slide?.kind||null,fovKick:+fovKick.toFixed(1),lookLocked},combat:combat?.inspect(),fists:fists?.inspect(),position:camera.position.toArray(),arena:arena?.inspect(),movement:{...motion.inspect(),vy:motion.inspect().velocity,velocity:walkVelocity.toArray().map(v=>+v.toFixed(3)),sway:sway.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.nightBuilt()?garden.district.inspect():null,library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),lighting:lighting.inspect(),post:post.inspect(),quality:quality.inspect(),residents:residents.inspect(),body:playerBody?.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
 })();
