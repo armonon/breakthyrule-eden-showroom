@@ -8,8 +8,8 @@ window.edenTranslucency=(shader,strength=.7)=>{
  {vec3 edenSunV=normalize((viewMatrix*vec4(-.38,.32,-.8,0.)).xyz);float edenBack=pow(clamp(dot(-normalize(vViewPosition),edenSunV),0.,1.),3.)*.8+.2;
  reflectedLight.directDiffuse+=diffuseColor.rgb*vec3(1.,.93,.62)*edenBack*${strength.toFixed(2)}*max(edenBake.x,0.)*(.35+.65*smoothstep(.3,1.,length(reflectedLight.directDiffuse)));}`);
 };
-window.createEdenGrass=function(T,garden,{openGround,height,mobile=false,wind,zMax=-9.2}){
- const R=mobile?16:30,CELL=mobile?.95:.58,capacity=Math.ceil(Math.PI*R*R/(CELL*CELL)*1.15);
+window.createEdenGrass=function(T,garden,{openGround,height,mobile=false,wind,zMax=-9.2,cell=0,radius=0,tall=1}){
+ const R=radius||(mobile?16:30),CELL=cell||(mobile?.95:.58),capacity=Math.ceil(Math.PI*R*R/(CELL*CELL)*1.15);
  const quad=(ax,az)=>[[-.5*ax,0,-.5*az,0,0],[.5*ax,0,.5*az,1,0],[.5*ax,1,.5*az,1,1],[-.5*ax,1,-.5*az,0,1]];
  const p=[],n=[],uv=[],ix=[];let base=0;
  for(const [ax,az] of [[1,0],[.5,.866],[.5,-.866]]){for(const v of quad(ax,az)){p.push(v[0],v[1],v[2]);n.push(0,1,0);uv.push(v[3],v[4]);}ix.push(base,base+1,base+2,base,base+2,base+3);base+=4;}
@@ -36,11 +36,11 @@ window.createEdenGrass=function(T,garden,{openGround,height,mobile=false,wind,zM
    const px=(i+hash(i,j,1))*CELL,pz=(j+hash(i,j,2))*CELL;if(pz<zMax)continue;const d=Math.hypot(px-x,pz-z);if(d>R)continue;
    if(blocked(px,pz)||openGround(px,pz))continue;
    const fade=1-T.MathUtils.smoothstep(d,R*.72,R),density=hash(i,j,5);if(density<.12+.2*T.MathUtils.smoothstep(d,R*.4,R))continue;
-   const s=(.6+hash(i,j,3)*.5)*(.25+.75*fade);pos.set(px,height(px,pz)-.02,pz);q.setFromEuler(e.set(0,hash(i,j,4)*6.283,0));scl.set(s*1.1,s*.4,s*1.1);m.compose(pos,q,scl);mesh.setMatrixAt(count++,m);
+   const s=(.6+hash(i,j,3)*.5)*(.25+.75*fade);pos.set(px,height(px,pz)-.02,pz);q.setFromEuler(e.set(0,hash(i,j,4)*6.283,0));scl.set(s*1.1,s*.4*tall,s*1.1);m.compose(pos,q,scl);mesh.setMatrixAt(count++,m);
   }
   mesh.count=count;mesh.instanceMatrix.needsUpdate=true;
  }
- return {ready,mesh,
+ return {ready,mesh,reset(){cx=cz=Infinity;},
   update(viewer){if(!mask||!N)return false;const far=viewer.z<zMax-R;mesh.visible=!far;if(far||Math.hypot(viewer.x-cx,viewer.z-cz)<3)return false;cx=viewer.x;cz=viewer.z;rebuild(cx,cz);return true;},
   inspect:()=>({count:mesh.count,capacity,radius:R})};
 };

@@ -16,7 +16,7 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
 
  // ---- materials ----
  // Double-sided leaves keep their outward crown normals on back faces (three would flip them inward).
- function windMaterial(params,{sway=.05,flutter=.025,keepNormals=true}={}){
+ function windMaterial(params,{sway=.05,flutter=.025,keepNormals=true,glow=.35,shadeCurve=0,tint='',through=0}={}){
   const material=new T.MeshStandardMaterial({side:T.DoubleSide,alphaTest:.45,alphaToCoverage:!mobile,roughness:.85,...params});
   material.onBeforeCompile=shader=>{
    shader.uniforms.edenTime=time;
@@ -25,8 +25,14 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
     transformed.x+=sin(edenTime*.8+edenRoot.x*.35+edenRoot.z*.2)*${sway.toFixed(3)}*edenH*.18+sin(edenTime*3.1+position.x*4.+position.z*3.)*${flutter.toFixed(3)};
     transformed.z+=cos(edenTime*.65+edenRoot.z*.3)*${sway.toFixed(3)}*edenH*.1;`);
    if(keepNormals)shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_begin>',T.ShaderChunk.normal_fragment_begin.replace('normal *= faceDirection;',''));
-   window.edenTranslucency?.(shader,.35);
+   // Scanned leaves carry baked crown shade in vertex colours: a curve keeps the interior dark without going black.
+   if(shadeCurve)shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`diffuseColor.rgb*=pow(max(vColor.rgb,vec3(.001)),vec3(${shadeCurve.toFixed(2)}))${tint};`);
+   // Sun through thin leaves: faces turned away from the sun are still lit from behind, so a backlit crown never goes black.
+   if(through)shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+   totalEmissiveRadiance+=diffuseColor.rgb*vec3(1.,1.05,.55)*${through.toFixed(2)}*max(edenBake.x,0.);`);
+   window.edenTranslucency?.(shader,glow);
   };
+  if(shadeCurve)material.customProgramCacheKey=()=>'eden-photo-leaf'+shadeCurve+tint+sway+flutter+through;
   return material;
  }
  const leafMaterial=windMaterial({map:broadleafMap,emissive:0x2c3a16,emissiveIntensity:.14});
@@ -255,9 +261,39 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
   for(const m of shrubMeshes)m.material=jacaranda.leafMaterial;
  }).catch(error=>console.warn('Jacaranda model unavailable',error));
  let lastLod=null;const lodAt=new T.Vector3();
+ // ---- Photoreal setting: the scanned jacaranda at two levels of detail (tools/pipeline/build-photoreal-flora.py) and real
+ // leaves on the hero tree. Empty until the setting is first picked; the card trees stay for every other setting.
+ const PHOTO_NEAR=15,photo={on:false,built:false,near:[],mid:[],hero:null};
+ function buildPhotoTrees({near,mid,heroLeaves,maps}){
+  const n=jacarandaSpots.length,leaf=windMaterial({map:maps.leaves,normalMap:maps.leavesNormal,vertexColors:true,alphaTest:.5,roughness:.6},{sway:.045,flutter:.012,glow:.6,shadeCurve:.55,tint:'*vec3(1.35,1.4,1.)',through:.22});
+  const trunk=new T.MeshStandardMaterial({map:maps.trunk,normalMap:maps.trunkNormal,roughness:.95,color:0xa8a29c}),branch=new T.MeshStandardMaterial({map:maps.branches,roughness:.92,color:0xa8a29c});
+  const level=parts=>[[parts.trunk,trunk,false],[parts.branches,branch,false],[parts.leaves,leaf,true]].map(([geometry,material,isLeaf])=>{const m=new T.InstancedMesh(geometry,material,n);m.count=0;shadowed(m,true);gardenMeshes.push(m);if(isLeaf)leafMeshes.push(m);return m;});
+  photo.near=level(near);photo.mid=level(mid);
+  const heroLeaf=windMaterial({map:maps.heroLeaves,vertexColors:true,alphaTest:.5,roughness:.55},{sway:.03,flutter:.01,glow:.7,shadeCurve:.5,tint:'*vec3(1.45,1.55,.9)',through:.42});
+  photo.hero=new T.InstancedMesh(heroLeaves,heroLeaf,1);photo.hero.setMatrixAt(0,new T.Matrix4().makeTranslation(.5,0,-7));photo.hero.setColorAt(0,new T.Color(1,1,1));photo.hero.count=0;photo.hero.computeBoundingSphere();shadowed(photo.hero,true);gardenMeshes.push(photo.hero);leafMeshes.push(photo.hero);
+  photo.built=true;
+ }
+ function setPhotoTrees(on){
+  photo.on=!!on&&photo.built;if(!photo.built)return;
+  if(heroMeshes[1])heroMeshes[1].count=photo.on?0:1;photo.hero.count=photo.on?1:0;
+  lastLod=null;if(lastLodSeen)updateLod(lodAt.clone());
+ }
+ let lastLodSeen=false;
+ function updatePhotoLod(){
+  const [nearTrunk,nearBranch,nearLeaves]=photo.near,[midTrunk,midBranch,midLeaves]=photo.mid,far=jacaranda.far;let near=0,mid=0,distant=0;const tmp=new T.Color();
+  jacarandaSpots.forEach((t,i)=>{const d=Math.hypot(t.x-lodAt.x,t.z-lodAt.z);
+   if(d<PHOTO_NEAR){nearTrunk.setMatrixAt(near,spotMatrices[i]);nearBranch.setMatrixAt(near,spotMatrices[i]);nearLeaves.setMatrixAt(near,spotMatrices[i]);nearLeaves.setColorAt(near,jacaranda.tints[i]);near++;}
+   else if(d<LOD_NEAR*(.9+t.s*.1)){midTrunk.setMatrixAt(mid,spotMatrices[i]);midBranch.setMatrixAt(mid,spotMatrices[i]);midLeaves.setMatrixAt(mid,spotMatrices[i]);midLeaves.setColorAt(mid,jacaranda.tints[i]);mid++;}
+   else{far.setMatrixAt(distant,spotMatrices[i]);far.setColorAt(distant,t.bloom?tmp.copy(jacaranda.tints[i]).lerp(lilac,.45):jacaranda.tints[i]);distant++;}
+  });
+  for(const m of photo.near)m.count=near;for(const m of photo.mid)m.count=mid;far.count=distant;
+  for(const m of [...photo.near,...photo.mid,far]){m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;m.computeBoundingSphere();}
+ }
  function updateLod(position){
   if(!jacaranda.ready)return;
-  if(lastLod&&lodAt.distanceToSquared(position)<4)return;lodAt.copy(position);lastLod=true; // re-split after moving ~2 m
+  if(lastLod&&lodAt.distanceToSquared(position)<4)return;lodAt.copy(position);lastLod=true;lastLodSeen=true; // re-split after moving ~2 m
+  if(photo.on){for(const m of [...jacaranda.near,jacaranda.bloom])m.count=0;updatePhotoLod();return;}
+  if(photo.built)for(const m of [...photo.near,...photo.mid])m.count=0;
   const [wood,leaves]=jacaranda.near,far=jacaranda.far,bloom=jacaranda.bloom;let near=0,distant=0,blooming=0;const tmpTint=new T.Color();
   jacarandaSpots.forEach((t,i)=>{
    if(Math.hypot(t.x-position.x,t.z-position.z)<LOD_NEAR*(0.9+t.s*.1)){wood.setMatrixAt(near,spotMatrices[i]);leaves.setMatrixAt(near,spotMatrices[i]);leaves.setColorAt(near,jacaranda.tints[i]);near++;if(t.bloom)bloom.setMatrixAt(blooming++,spotMatrices[i]);}
@@ -317,6 +353,9 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
   // Templates for other woodland (the night road streams its own instances of these).
   get forest(){return {trees:(jacaranda.ready?[{wood:jacaranda.wood,foliage:jacaranda.leaves,material:jacaranda.leafMaterial,woodMaterial:jacaranda.woodMaterial,height:jacaranda.height}]:[[forestTemplates[0],leafMaterial],[forestTemplates[1],leafMaterial]].map(([t,material])=>({wood:t.wood,foliage:t.foliage,material,height:t.height}))).concat([{wood:forestCypress.wood,foliage:forestCypress.foliage,material:cypressMaterial,height:forestCypress.height}]),fern:{geometry:fern,material:fernMaterial}};},
   update(t){time.value=t;},
+  buildPhotoTrees,setPhotoTrees,photoLeaves:()=>photo.built?[photo.near[2].geometry,photo.mid[2].geometry,photo.hero.geometry]:[],
+  // Low plants left out of the Photoreal pond's reflection.
+  groundCover:()=>flowerMeshes,
   lod(position){updateLod(position);},
   // Hide the garden's own trees and ground cover (not the road woodland, which uses its own instances).
   setVisible(value){if(gardenMeshes[0]?.visible===value)return;for(const mesh of gardenMeshes)mesh.visible=value;},

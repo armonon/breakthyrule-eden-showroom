@@ -68,3 +68,31 @@ Re-baked after the merge, so main's statues, toll, secrets and hidden garments b
 are left out on purpose (`export-static-scene.mjs`): from inside the garden they read as open sky, and as geometry they
 would darken it. Grass and blob shadows are left out too. Settings: 2048 terrain, 192 samples, 128 per probe. Run
 Blender by its full path (`/Applications/Blender.app/Contents/MacOS/Blender`), since it is not on PATH.
+
+
+## Photoreal test (spawn view, 2026-11-05)
+
+A fourth graphics setting, PHOTOREAL, for testing how close the garden gets to a photograph. It is only ever picked by
+hand; its 17 MB of assets load only then. Low, Medium and High keep the original scene. See `photoreal-slice/comparison.jpg`.
+
+- **Sky and horizon:** real panorama `pretoria_gardens` replaces the gradient and painted hills, on the dome and the sky box
+  walls. Its sun stands at 52 degrees against the scene's 20, so the scene's sun keeps its own glow.
+- **Pond:** planar reflection, small ripples, depth shading and a sun glint. Refreshes every other frame, with 30% of the leaves.
+- **Trees:** the full jacaranda scan's real fronds at two levels (190k and 36k triangles) with crown shade baked per frond.
+  The hero tree keeps its sculpted wood and serpent, with 25,920 real leaves. Distant billboards are still the old ones.
+- **Ground:** scanned rocks for the path and pond rim; denser, taller grass.
+- **Grade:** exposure 1.8, saturation 1.3, contrast .17.
+
+| Image measure (spawn) | Before (High) | Photoreal | Real garden photo |
+|---|---|---|---|
+| Darkest tones (luma, 2nd percentile) | .16 | .05 | .06 |
+| Median luma | .52 | .32 | .34 |
+| Contrast (standard deviation) | .204 | .270 | .279 |
+| Mean saturation | .296 | .312 | .437 |
+
+Cost at 1600x900 on an Apple M4, spawn view, GPU finished, Photoreal on and off in one page, while other work kept the
+machine's load average near 100: fastest frame about 38 ms against 24 ms, median about 50 ms against 37 ms. Triangles 2.6 to 3.9M
+against .6M. These timings are noisy, and no unloaded run or other GPU has been measured. Sub-60 fps here is expected.
+
+Not done: real play with the mouse, level-of-detail popping while walking, other GPUs. Still clearly CG: the museum, AI-made
+props and flower cards, the Trickster and statues, and cypress cards.
