@@ -1,0 +1,27 @@
+/* Phone and tablet controls (touch-controls.js). */
+#touch-controls{position:fixed;inset:0;z-index:30;pointer-events:none;touch-action:none;user-select:none;-webkit-user-select:none}
+#touch-controls[hidden]{display:none}
+#touch-controls>*{pointer-events:auto;touch-action:none}
+.tc-look{position:absolute;right:0;top:0;width:55%;height:100%;background:transparent}
+.tc-stick{position:absolute;left:28px;bottom:34px;width:132px;height:132px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.08),rgba(255,255,255,.02));border:1.5px solid rgba(255,255,255,.35);backdrop-filter:blur(4px)}
+.tc-stick i{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(244,241,234,.85);box-shadow:0 4px 14px rgba(0,0,0,.4);transition:transform .05s}
+#touch-controls button{position:absolute;border-radius:50%;border:1.5px solid rgba(255,255,255,.4);background:rgba(10,12,10,.4);backdrop-filter:blur(6px);color:#f4f1ea;font:600 11px 'DM Sans',Arial,sans-serif;letter-spacing:.1em;width:58px;height:58px;padding:0}
+#touch-controls button.on{background:rgba(244,241,234,.85);color:#151515}
+.tc-fire{right:30px;bottom:110px;width:84px!important;height:84px!important;font-size:13px!important;border-color:rgba(255,90,74,.8)!important}
+.tc-aim{right:128px;bottom:150px}
+.tc-jump{right:36px;bottom:24px}
+.tc-slide{right:110px;bottom:44px}
+.tc-use{right:184px;bottom:70px}
+.tc-reload{right:196px;bottom:156px;width:46px!important;height:46px!important}
+.tc-melee{right:46px;bottom:200px;width:50px!important;height:50px!important}
+.tc-swap{left:176px;bottom:40px;width:52px!important;height:52px!important;font-size:9px!important}
+.tc-third{left:180px;bottom:104px;width:44px!important;height:44px!important;font-size:9px!important}
+#touch-controls:not(.armed) .tc-aim,#touch-controls:not(.armed) .tc-reload,#touch-controls:not(.armed) .tc-melee{right:46px;bottom:200px;width:50px!important;height:50px!important}
+#touch-controls:not(.armed) .tc-fire{font-size:11px!important}
+#touch-controls:not(.armed) .tc-fire::after{content:''}
+body.touch-play .ch-slots{bottom:auto;top:92px;left:50%;right:auto;transform:translateX(-50%);flex-wrap:nowrap;transform-origin:top center;scale:.82}
+body.touch-play .ch-ammo{bottom:auto;top:24px;right:210px;scale:.7;transform-origin:top right}
+body.touch-play .ch-keys,body.touch-play .ch-putaway,body.touch-play .ch-lock{display:none}
+body.touch-play .ar-vitals{bottom:auto;top:132px;transform:scale(.75);transform-origin:left top}
+body.touch-play .ar-map{transform:scale(.7);transform-origin:right top}
+body.touch-play .ar-feed{top:150px}

@@ -18,7 +18,7 @@ window.GardenCharacter = {
  createHolder(T,a){const root=new T.Group();root.scale.setScalar(a.height/175);return {root,limbs:[],ghost:false,height:a.height/100,skeleton:null,byName:{}};},
  fit(T,model,id,a){
   // Skinned parts include stand-in hair that loaded after the model was made; labels and held items stay.
-  const handle=model.handle,previous=[...new Set([...handle.parts,...model.root.children.filter(c=>c.isSkinnedMesh)])],tune=handle.motion?.tune;
+  const handle=model.handle,previous=[...new Set([...handle.parts,...model.root.children.filter(c=>c.isSkinnedMesh)])],tune=handle.motion?.tune,held=handle.motion?.held?.();
   model.markDisposed?.();this.disposeParts(previous);handle.skeleton?.dispose();
   const built=GardenCharacterRocketbox.build(T,id,a,model.root);
   handle.parts=built.parts;handle.skeleton=model.skeleton=built.skeleton;
@@ -26,7 +26,7 @@ window.GardenCharacter = {
   for(const key of Object.keys(model.byName))delete model.byName[key];Object.assign(model.byName,built.byName);
   model.limbs.length=0;for(const side of ['L','R'])model.limbs.push(built.byName['upperleg01.'+side],built.byName['upperarm01.'+side]);
   model.root.userData.characterStyle='rocketbox';model.characterId=id;
-  handle.motion=GardenCharacterMotion.create(T,{root:model.root,skeleton:built.skeleton});if(tune)Object.assign(handle.motion.tune,tune);
+  handle.motion=GardenCharacterMotion.create(T,{root:model.root,skeleton:built.skeleton});if(tune)Object.assign(handle.motion.tune,tune);if(held)handle.motion.hold(held.mesh,held.kind);
   handle.motion.animate(0);
  },
  // Load a character before create(), for callers that would rather wait than show the stand-in.
