@@ -1,0 +1,9 @@
+Eden sky lighting (assets/eden-sky.hdr)
+
+Source: "Kloofendal 48d Partly Cloudy (Pure Sky)" by Greg Zaal, Poly Haven
+https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky
+License: CC0 1.0 Universal (public domain)
+
+Changes: 1k HDR box-downsampled to 512x256, sun clamped, written as flat RGBE by
+tools/asset-pipeline/shrink-hdr.py. eden-lighting.js turns it so its sun sits over the scene's sun
+and uses it for image-based lighting and reflections.

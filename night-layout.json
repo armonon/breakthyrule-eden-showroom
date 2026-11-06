@@ -2,6 +2,7 @@
   "version": 2,
   "bounds": [-78, 98, -111, -22],
   "spawn": [11.7, -24],
+  "arena": {"name":"The Commons","x":12,"z":-62,"r":24,"ring":15},
   "exit": [11.7, -111],
   "landmarks": [
     {"id":"temple","name":"The Moon Temple","x":-12,"z":-43,"w":16,"d":16,"h":7,"color":"#b9c4bb"},

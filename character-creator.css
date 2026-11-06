@@ -8,7 +8,7 @@
 .character-header small{font-size:10px;letter-spacing:0;color:var(--aqua);display:block;margin-bottom:6px;font-weight:700}
 #character-dialog .character-header .icon-button{width:44px;height:44px;flex:0 0 44px;border:1px solid var(--edge);border-radius:2px;background:#192222;color:#fff}
 .character-layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;min-height:0}
-.character-stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:#19252a url('/assets/character-miami-backdrop.png?v=2') center center/cover no-repeat;touch-action:none}
+.character-stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:#19252a url('/assets/character-miami-backdrop.webp?v=3') center center/cover no-repeat;touch-action:none}
 /* PS2-era presentation: the low-res render and backdrop upscale softly, under faint CRT scanlines. */
 .character-stage::after{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(180deg,#0000 0 2px,#00000017 2px 3px)}
 .character-tools,.character-measure,.character-studio-name,.character-loading{z-index:2}

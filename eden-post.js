@@ -5,8 +5,8 @@
 // targets): it then holds exactly what the canvas used to show, including garden.js's sky and water shaders, which
 // write display-referred colour directly (clamped here, as the canvas used to clip it: the sky's sun disc is ~3x white).
 window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
- const settings={enabled,ao:.8,aoRadius:.7,aoIntensity:4.5,bloom:.26,bloomThreshold:.9,warmth:.025,saturation:1.06,vignette:.22,flare:.8,rays:.7,glare:.9};
- const webgl2=renderer.capabilities.isWebGL2,size=new T.Vector2(),last=new T.Vector2();
+ const settings={enabled,ao:.8,aoRadius:.7,aoIntensity:4.5,bloom:.26,bloomThreshold:.9,warmth:.025,saturation:1.06,vignette:.22,flare:.8,rays:.7,glare:.9,contrast:.12,split:.035,taa:true,taaFeedback:.88,sharpen:.6,grain:.028,lut:1};
+ const webgl2=true,size=new T.Vector2(),last=new T.Vector2();
  const target=(type=T.HalfFloatType,extra={})=>new T.WebGLRenderTarget(1,1,{type,depthBuffer:false,...extra});
  const depth=new T.DepthTexture(1,1);depth.type=T.UnsignedIntType;
  const sceneRT=new T.WebGLRenderTarget(1,1,{type:T.HalfFloatType,samples:webgl2?4:0,depthTexture:depth});sceneRT.texture.colorSpace=T.SRGBColorSpace;sceneRT.isXRRenderTarget=true;
@@ -27,7 +27,7 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
  // Alchemy-style AO from depth alone: view-space position from depth, normal from the flatter neighbour on each
  // axis (so silhouettes do not smear), 12 spiral samples in a world-space radius rotated by a 4x4 ordered pattern
  // (which the 9-tap blur fully removes; random rotation left stipple), faded out with distance (fog).
- const aoMaterial=raw(`varying vec2 vUv;uniform sampler2D tDepth;uniform mat4 projInv;uniform vec2 texel;uniform float radius,projScale,intensity;
+ const aoMaterial=raw(`varying vec2 vUv;uniform sampler2D tDepth;uniform mat4 projInv;uniform vec2 texel;uniform float radius,projScale,intensity,frameTurn;
  vec3 viewPos(vec2 uv){float d=texture2D(tDepth,uv).x;vec4 p=projInv*vec4(vec3(uv,d)*2.-1.,1.);return p.xyz/p.w;}
  void main(){
   float d=texture2D(tDepth,vUv).x;if(d>=1.){gl_FragColor=vec4(1.,1e4,0.,1.);return;}
@@ -35,12 +35,12 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   vec3 r=viewPos(vUv+vec2(texel.x,0.))-p,l=p-viewPos(vUv-vec2(texel.x,0.)),u=viewPos(vUv+vec2(0.,texel.y))-p,b=p-viewPos(vUv-vec2(0.,texel.y));
   vec3 n=normalize(cross(abs(r.z)<abs(l.z)?r:l,abs(u.z)<abs(b.z)?u:b));if(dot(n,p)>0.)n=-n;
   float screenRadius=radius*projScale*.5/-p.z,occ=0.;
-  vec2 cell=mod(floor(gl_FragCoord.xy),4.);float turn=(dot(cell,vec2(4.,1.))*7.+.5)/16.*6.2832,jitter=mod(cell.x+cell.y*2.,4.)/4.;
+  vec2 cell=mod(floor(gl_FragCoord.xy),4.);float turn=(dot(cell,vec2(4.,1.))*7.+.5)/16.*6.2832+frameTurn,jitter=mod(cell.x+cell.y*2.,4.)/4.;
   for(int i=0;i<12;i++){float t=(float(i)+jitter)/12.;float a=turn+t*18.85;vec2 s=vUv+vec2(cos(a),sin(a))*screenRadius*t;
    vec3 v=viewPos(s)-p;float len=length(v);occ+=max(0.,dot(v/len,n)-.12)*clamp(1.-len/radius,0.,1.);}
   float ao=clamp(1.-occ/12.*intensity,0.,1.);
   gl_FragColor=vec4(mix(ao,1.,smoothstep(22.,40.,-p.z)),-p.z,0.,1.);}`,
-  {tDepth:{value:depth},projInv:{value:new T.Matrix4()},texel:{value:new T.Vector2()},radius:{value:settings.aoRadius},projScale:{value:1},intensity:{value:1}});
+  {tDepth:{value:depth},projInv:{value:new T.Matrix4()},texel:{value:new T.Vector2()},radius:{value:settings.aoRadius},projScale:{value:1},intensity:{value:1},frameTurn:{value:0}});
  // Depth-aware separable blur so AO never bleeds across silhouettes.
  const blurMaterial=raw(`varying vec2 vUv;uniform sampler2D tAO;uniform vec2 dir;
  void main(){vec2 c=texture2D(tAO,vUv).xy;float sum=c.x,w=1.;
@@ -77,9 +77,9 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   gl_FragColor=vec4(sum/total,1.);}`,{tSrc:{value:null},sun:{value:sunUv},span:{value:1},decay:{value:1}});
  // Final pass: AO, bloom (screen blend so highlights never clip), lens effects, warm grade, saturation, vignette.
  const composite=new T.ShaderMaterial({vertexShader,depthTest:false,depthWrite:false,toneMapped:false,
-  uniforms:{tScene:{value:sceneRT.texture},tAO:{value:aoA.texture},tBloom:{value:up[0].texture},tRays:{value:rayA.texture},tVisible:{value:visible.texture},ao:{value:0},bloom:{value:0},warmth:{value:0},saturation:{value:1},vignette:{value:0},view:{value:0},
+  uniforms:{tScene:{value:sceneRT.texture},tAO:{value:aoA.texture},tBloom:{value:up[0].texture},tRays:{value:rayA.texture},tVisible:{value:visible.texture},ao:{value:0},bloom:{value:0},warmth:{value:0},saturation:{value:1},vignette:{value:0},contrast:{value:0},split:{value:0},view:{value:0},
    sun:{value:sunUv},sunGate:{value:0},flare:{value:0},rays:{value:0},glare:{value:0},aspect:{value:1},lamps:{value:Array.from({length:LAMPS},()=>new T.Vector4())},lampColors:{value:Array.from({length:LAMPS},()=>new T.Color())}},
-  fragmentShader:`varying vec2 vUv;uniform sampler2D tScene,tAO,tBloom,tRays,tVisible;uniform float ao,bloom,warmth,saturation,vignette,view,sunGate,flare,rays,glare,aspect;uniform vec2 sun;uniform vec4 lamps[${LAMPS}];uniform vec3 lampColors[${LAMPS}];
+  fragmentShader:`varying vec2 vUv;uniform sampler2D tScene,tAO,tBloom,tRays,tVisible;uniform float ao,bloom,warmth,saturation,vignette,contrast,split,view,sunGate,flare,rays,glare,aspect;uniform vec2 sun;uniform vec4 lamps[${LAMPS}];uniform vec3 lampColors[${LAMPS}];
  // A ghost is the sun reflected between lens elements: a soft disc with a brighter rim, each colour a slightly different size.
  vec3 ghost(vec2 centre,float r){float d=length((vUv-centre)*vec2(aspect,1.));vec3 rr=r*vec3(1.,1.05,1.1);
   return smoothstep(rr,rr*.45,vec3(d))*.5+smoothstep(rr,rr*.9,vec3(d))*smoothstep(rr*.76,rr*.94,vec3(d))*.5;}
@@ -101,14 +101,56 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   vec3 lens=vec3(0.);if(sunGate>0.){if(flare>0.)lens+=lensFlare()*flare*sunGate;if(rays>0.)lens+=texture2D(tRays,vUv).rgb*vec3(1.,.86,.62)*rays*sunGate;}if(glare>0.)lens+=lampGlare()*glare;
   c=1.-(1.-c)*(1.-clamp(lens,0.,1.));
   c*=vec3(1.+warmth,1.,1.-warmth);c=max(mix(vec3(dot(c,vec3(.2126,.7152,.0722))),c,saturation),0.);
+  // Film-like grade: a gentle S-curve for contrast, cool shadows and warm highlights (split toning).
+  {float l=dot(c,vec3(.2126,.7152,.0722));vec3 s=c*c*(3.-2.*clamp(c,0.,1.));c=mix(c,s,contrast);
+   c+=split*(mix(vec3(-.35,.05,.45),vec3(.5,.18,-.4),smoothstep(.15,.75,l)))*(1.-abs(l*2.-1.)*.5);}
   vec2 q=vUv-.5;c*=1.-vignette*dot(q,q)*2.;
   gl_FragColor=vec4(clamp(c,0.,1.),s.a);
  }`});
 
+ // Temporal anti-aliasing: the projection is jittered a sub-pixel each frame (Halton 2,3) and the frames accumulate along
+ // depth-based reprojection, with history clipped to the current neighbourhood so moving leaves do not ghost. It removes
+ // the shimmer of grass and leaf edges. Then sharpening (TAA softens), the grading LUT and a little film grain.
+ const taaCurrent=target(),taaHistory=[target(),target()];let taaIndex=0,taaValid=false,taaStill=0;
+ const halton=(i,b)=>{let f=1,r=0;while(i>0){f/=b;r+=f*(i%b);i=Math.floor(i/b);}return r;};
+ const JITTER=Array.from({length:8},(_,i)=>[halton(i+1,2)-.5,halton(i+1,3)-.5]);
+ // prev × inverse(current) is multiplied here in doubles and sent as one matrix: pocket worlds sit hundreds of metres from
+ // the origin, where a 32-bit inverse followed by a 32-bit reprojection in the shader turns the history blocky.
+ const viewProj=new T.Matrix4(),prevViewProj=new T.Matrix4(),invViewProj=new T.Matrix4(),reproject=new T.Matrix4(),lastCam=new T.Vector3();
+ const resolve=raw(`varying vec2 vUv;uniform sampler2D tCur,tHist,tDepth;uniform mat4 reproject;uniform vec2 texel;uniform float feedback;
+ vec3 toY(vec3 c){return vec3(dot(c,vec3(.25,.5,.25)),dot(c,vec3(.5,0.,-.5)),dot(c,vec3(-.25,.5,-.25)));}
+ vec3 toR(vec3 c){return vec3(c.x+c.y-c.z,c.x+c.z,c.x-c.y-c.z);}
+ // Catmull-Rom history sampling (5 taps): bilinear blurs the image a little more every frame the camera moves or sways.
+ vec3 catmull(vec2 uv){vec2 size=1./texel,p=uv*size-.5,i=floor(p),f=p-i;vec2 w0=f*(-.5+f*(1.-.5*f)),w1=1.+f*f*(-2.5+1.5*f),w2=f*(.5+f*(2.-1.5*f)),w3=f*f*(-.5+.5*f),w12=w1+w2,t0=(i-.5)*texel,t3=(i+2.5)*texel,t12=(i+.5+w2/w12)*texel;
+  vec3 c=texture2D(tHist,vec2(t12.x,t0.y)).rgb*(w12.x*w0.y)+texture2D(tHist,vec2(t0.x,t12.y)).rgb*(w0.x*w12.y)+texture2D(tHist,t12).rgb*(w12.x*w12.y)+texture2D(tHist,vec2(t3.x,t12.y)).rgb*(w3.x*w12.y)+texture2D(tHist,vec2(t12.x,t3.y)).rgb*(w12.x*w3.y);
+  return max(c/(w12.x*w0.y+w0.x*w12.y+w12.x*w12.y+w3.x*w12.y+w12.x*w3.y),vec3(0.));}
+ void main(){vec3 cur=texture2D(tCur,vUv).rgb,m=vec3(0.),q=vec3(0.);
+  float d=1.;vec2 dv=vec2(0.);for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 o=vec2(float(x),float(y))*texel;vec3 c=toY(texture2D(tCur,vUv+o).rgb);m+=c;q+=c*c;float z=texture2D(tDepth,vUv+o).x;if(z<d){d=z;dv=o;}}
+  m/=9.;vec3 sd=sqrt(max(q/9.-m*m,0.))*1.25;
+  vec4 p=reproject*vec4(vec3(vUv+dv,d)*2.-1.,1.);vec2 uv=p.xy/p.w*.5+.5-dv;
+  if(uv.x<0.||uv.x>1.||uv.y<0.||uv.y>1.){gl_FragColor=vec4(cur,1.);return;}
+  vec3 h=toY(catmull(uv));vec3 e=h-m;vec3 u=e/max(sd,vec3(1e-4));float k=max(max(abs(u.x),abs(u.y)),abs(u.z));if(k>1.)h=m+e/k;
+  float speed=length((uv-vUv)/texel);float keep=feedback*(1.-smoothstep(1.5,24.,speed)*.5);
+  gl_FragColor=vec4(mix(toR(toY(cur)),toR(h),keep),1.);}`,{tCur:{value:taaCurrent.texture},tHist:{value:null},tDepth:{value:depth},reproject:{value:reproject},texel:{value:new T.Vector2()},feedback:{value:.9}});
+ const LUT_SIZE=24,lutData=new Uint8Array(LUT_SIZE**3*4);{let n=0;const smooth=x=>x*x*(3-2*x);
+  for(let b=0;b<LUT_SIZE;b++)for(let g=0;g<LUT_SIZE;g++)for(let r=0;r<LUT_SIZE;r++){const c=[r,g,b].map(v=>v/(LUT_SIZE-1)),l=c[0]*.2126+c[1]*.7152+c[2]*.0722;
+   // film look: a gentle S curve, cool lifted shadows, warm highlights and a little more colour
+   const out=c.map((v,i)=>{let x=v+(l-v)*-.14;x=x+(smooth(Math.min(1,Math.max(0,x)))-x)*.5;const shadow=(1-l)*(1-l),light=l*l;return x+[-.008,.0,.014][i]*shadow+[.007,.002,-.008][i]*light;});
+   for(const v of out)lutData[n++]=Math.round(Math.min(1,Math.max(0,v))*255);lutData[n++]=255;}}
+ const lut=new T.Data3DTexture(lutData,LUT_SIZE,LUT_SIZE,LUT_SIZE);lut.format=T.RGBAFormat;lut.minFilter=lut.magFilter=T.LinearFilter;lut.wrapS=lut.wrapT=lut.wrapR=T.ClampToEdgeWrapping;lut.needsUpdate=true;
+ const finish=raw(`varying vec2 vUv;uniform sampler2D tSrc;uniform highp sampler3D tLut;uniform vec2 texel;uniform float sharpen,grain,lutMix,seed;
+ float hash(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
+ void main(){vec3 c=texture2D(tSrc,vUv).rgb,n=texture2D(tSrc,vUv+vec2(0.,texel.y)).rgb,s=texture2D(tSrc,vUv-vec2(0.,texel.y)).rgb,e=texture2D(tSrc,vUv+vec2(texel.x,0.)).rgb,w=texture2D(tSrc,vUv-vec2(texel.x,0.)).rgb;
+  // contrast-adaptive sharpening: weaker where the neighbourhood is already contrasty, so edges do not ring
+  vec3 lo=min(c,min(n,min(s,min(e,w)))),hi=max(c,max(n,max(s,max(e,w))));vec3 amp=sqrt(clamp(min(lo,1.-hi)/max(hi,vec3(1e-3)),0.,1.));
+  vec3 wgt=-amp*sharpen*.2;c=clamp((c+(n+s+e+w)*wgt)/(1.+4.*wgt),0.,1.);
+  vec3 scale=vec3(${((LUT_SIZE-1)/LUT_SIZE).toFixed(6)}),off=vec3(${(.5/LUT_SIZE).toFixed(6)});c=mix(c,texture(tLut,c*scale+off).rgb,lutMix);
+  float l=dot(c,vec3(.2126,.7152,.0722));c+=(hash(gl_FragCoord.xy+seed)-.5)*grain*(1.-l*.7);
+  gl_FragColor=vec4(c,1.);}`,{tSrc:{value:null},tLut:{value:lut},texel:{value:new T.Vector2()},sharpen:{value:0},grain:{value:0},lutMix:{value:1},seed:{value:0}});
  function resize(){
   renderer.getDrawingBufferSize(size);if(size.equals(last))return;last.copy(size);
   const w=size.x,h=size.y,hw=Math.max(1,w>>1),hh=Math.max(1,h>>1);
-  sceneRT.setSize(w,h);aoA.setSize(hw,hh);aoB.setSize(hw,hh);
+  sceneRT.setSize(w,h);taaCurrent.setSize(w,h);taaHistory.forEach(t=>t.setSize(w,h));taaValid=false;resolve.uniforms.texel.value.set(1/w,1/h);finish.uniforms.texel.value.set(1/w,1/h);aoA.setSize(hw,hh);aoB.setSize(hw,hh);
   down.forEach((t,i)=>t.setSize(Math.max(1,w>>(i+1)),Math.max(1,h>>(i+1))));up[0].setSize(hw,hh);up[1].setSize(Math.max(1,w>>2),Math.max(1,h>>2));
   rayA.setSize(Math.max(1,w>>2),Math.max(1,h>>2));rayB.setSize(Math.max(1,w>>2),Math.max(1,h>>2));
   aoMaterial.uniforms.texel.value.set(1/hw,1/hh);
@@ -148,6 +190,8 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   if(!settings.enabled){renderer.info.autoReset=true;renderer.render(scene,camera);return;}
   resize();
   const previous=renderer.getRenderTarget();renderer.info.autoReset=false;renderer.info.reset(); // stats cover the whole processed frame
+  const taa=settings.taa&&composite.uniforms.view.value===0,e=camera.projectionMatrix.elements,baseX=e[8],baseY=e[9];
+  if(taa){const j=JITTER[taaIndex%8];e[8]=baseX+j[0]*1.1/size.x;e[9]=baseY+j[1]*1.1/size.y;camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();aoMaterial.uniforms.frameTurn.value=(taaIndex%8)*2.399963;}
   renderer.setRenderTarget(sceneRT);renderer.render(scene,camera);
   if(settings.ao>0){
    const u=aoMaterial.uniforms;u.projInv.value.copy(camera.projectionMatrixInverse);u.projScale.value=camera.projectionMatrix.elements[5];u.radius.value=settings.aoRadius;u.intensity.value=settings.aoIntensity;
@@ -168,13 +212,23 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
     rayBlurMaterial.uniforms.tSrc.value=rayA.texture;rayBlurMaterial.uniforms.span.value=.9/24;rayBlurMaterial.uniforms.decay.value=1;pass(rayBlurMaterial,rayB);
    }
   }
-  const c=composite.uniforms;c.ao.value=settings.ao;c.bloom.value=settings.bloom;c.warmth.value=settings.warmth;c.saturation.value=settings.saturation;c.vignette.value=settings.vignette;
+  const c=composite.uniforms;c.ao.value=settings.ao;c.bloom.value=settings.bloom;c.warmth.value=settings.warmth;c.saturation.value=settings.saturation;c.vignette.value=settings.vignette;c.contrast.value=settings.contrast;c.split.value=settings.split;
   c.sunGate.value=sunGate;c.flare.value=settings.flare;c.rays.value=settings.rays;c.glare.value=lampCount?settings.glare:0;c.tRays.value=rayB.texture;
-  pass(composite,previous);
+  if(!taa){pass(composite,previous);return;}
+  e[8]=baseX;e[9]=baseY;camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+  pass(composite,taaCurrent);
+  camera.getWorldPosition(tmp);const moved=tmp.distanceTo(lastCam);lastCam.copy(tmp);if(moved>6)taaValid=false;taaStill=moved>.0005?0:taaStill+1;
+  viewProj.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);invViewProj.copy(viewProj).invert();reproject.multiplyMatrices(prevViewProj,invViewProj);
+  const dest=taaHistory[taaIndex&1],hist=taaHistory[(taaIndex&1)^1],r=resolve.uniforms;
+  r.tHist.value=hist.texture;r.feedback.value=taaValid?settings.taaFeedback:0;pass(resolve,dest);prevViewProj.copy(viewProj);taaValid=true;
+  const f=finish.uniforms;f.tSrc.value=dest.texture;f.sharpen.value=settings.sharpen;f.grain.value=settings.grain;f.lutMix.value=settings.lut;f.seed.value=(taaIndex%64)*7.13;pass(finish,previous);
+  taaIndex++;
  }
  return {
   render,
-  set(next={}){Object.assign(settings,next);},
+  // Still scenes need a few more frames for the temporal filter to converge (reduced-motion idle stops the loop).
+  settling:()=>settings.enabled&&settings.taa&&taaStill<16,
+  set(next={}){if(next.samples!==undefined&&webgl2&&next.samples!==sceneRT.samples){sceneRT.samples=next.samples;sceneRT.dispose();}Object.assign(settings,next);},
   // sky: garden.js's sky dome (its sun disc and night fade); lamps: () => world positions of lit lanterns, or null;
   // torches: () => [{position, direction, strength}] flashlights, or null.
   setLights(next){lights={...lights,...next};},

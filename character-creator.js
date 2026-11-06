@@ -29,7 +29,7 @@ window.createCharacterEditor=function({T,save,stopMoving,draftOwner=()=> 'guest'
  function animatePreview(){if(!moving||!dialog.open)return;draw();motionFrame=requestAnimationFrame(animatePreview);}
  motion.onclick=()=>{moving=!moving;motion.setAttribute('aria-pressed',String(moving));cancelAnimationFrame(motionFrame);if(moving)animatePreview();else draw();};
  let schemaPromise;
- function loadSchema(){return schemaPromise||=fetch('/character-schema.json?v=3',{signal:AbortSignal.timeout(10000)}).then(r=>{if(!r.ok)throw Error('Character settings could not load. Close and reopen to retry.');return r.json();}).catch(error=>{schemaPromise=null;throw error;});}
+ function loadSchema(){return schemaPromise||=fetch('/character-schema.json?v=4',{signal:AbortSignal.timeout(10000)}).then(r=>{if(!r.ok)throw Error('Character settings could not load. Close and reopen to retry.');return r.json();}).catch(error=>{schemaPromise=null;throw error;});}
  const defaults=()=>Object.fromEntries([['version',1],...Object.values(schema).filter(v=>v&&typeof v==='object').flatMap(group=>Object.entries(group).map(([key,s])=>[key,s.default]))]);
  function initScene(){
   if(renderer)return;
@@ -60,11 +60,12 @@ window.createCharacterEditor=function({T,save,stopMoving,draftOwner=()=> 'guest'
   cancelAnimationFrame(rebuildFrame);const wanted=++rebuildWanted;rebuildFrame=requestAnimationFrame(async()=>{if(!draft||!dialog.open)return;$('character-loading').hidden=window.GardenCharacterRocketbox?.loaded(GardenCharacterRocketbox.idFor(draft))??true;try{await GardenCharacter.load(draft);}catch{$('character-error').textContent='This character could not load. Showing a simple stand-in.';}if(wanted!==rebuildWanted||!draft||!dialog.open)return;$('character-loading').hidden=true;if(model)GardenCharacter.dispose(model);model=GardenCharacter.create(T,draft);scene.add(model.root);$('character-measure').textContent=draft.height+' cm / '+draft.weight+' kg';draw();});
  }
  function syncFields(){
-  for(const [key,spec] of Object.entries(schema.numbers)){const input=$('character-'+key);input.value=draft[key];$('value-'+key).value=spec.unit?draft[key]+' '+spec.unit:Math.round(draft[key]*100)+'%';}
-  for(const key of Object.keys(schema.choices))$('character-'+key).value=draft[key];
+  // Hidden schema fields keep their stored values but have no input.
+  for(const [key,spec] of Object.entries(schema.numbers)){const input=$('character-'+key);if(!input)continue;input.value=draft[key];$('value-'+key).value=spec.unit?draft[key]+' '+spec.unit:Math.round(draft[key]*100)+'%';}
+  for(const key of Object.keys(schema.choices)){const input=$('character-'+key);if(input)input.value=draft[key];}
   for(const b of dialog.querySelectorAll('[data-character]'))b.setAttribute('aria-pressed',String(b.dataset.character===draft.character));
-  for(const key of ['hairLength','hairVolume'])$('character-'+key).disabled=draft.hairStyle==='none';
-  for(const key of Object.keys(schema.colors)){$('character-'+key).value=draft[key];for(const b of dialog.querySelectorAll('[data-color-key="'+key+'"]'))b.setAttribute('aria-pressed',String(b.dataset.color===draft[key]));}
+  for(const key of ['hairLength','hairVolume']){const input=$('character-'+key);if(input)input.disabled=draft.hairStyle==='none';}
+  for(const key of Object.keys(schema.colors)){const input=$('character-'+key);if(!input)continue;input.value=draft[key];for(const b of dialog.querySelectorAll('[data-color-key="'+key+'"]'))b.setAttribute('aria-pressed',String(b.dataset.color===draft[key]));}
  }
  function change(key,value){draft[key]=value;$('character-base').value='Custom';syncFields();rebuild();$('character-error').textContent='';}
  function buildFields(){
@@ -81,7 +82,7 @@ window.createCharacterEditor=function({T,save,stopMoving,draftOwner=()=> 'guest'
     const label=document.createElement('label');label.className='character-field';label.textContent='Starting shape';const select=document.createElement('select');select.id='character-preset';select.setAttribute('aria-label','Starting shape');for(const name of ['Custom','Balanced','Lean','Athletic','Soft']){const o=document.createElement('option');o.textContent=name;select.append(o);}label.append(select);panel.append(label);
     select.onchange=()=>{const presets={Balanced:{weight:72,build:.35,shoulders:1,waist:1,hips:1},Lean:{weight:55,build:.2,shoulders:.94,waist:.85,hips:.94},Athletic:{weight:85,build:.9,shoulders:1.18,waist:.9,hips:1},Soft:{weight:108,build:.12,shoulders:1,waist:1.12,hips:1.2}};Object.assign(draft,presets[select.value]||{});$('character-base').value='Custom';syncFields();rebuild();};
    }
-   for(const [key,spec] of Object.entries(schema.numbers).filter(([,s])=>s.tab===tab)){
+   for(const [key,spec] of Object.entries(schema.numbers).filter(([,s])=>s.tab===tab&&!s.hidden)){
     const label=document.createElement('label');label.className='character-field';label.htmlFor='character-'+key;const row=document.createElement('span');row.append(document.createTextNode(spec.label));const out=document.createElement('output');out.id='value-'+key;out.htmlFor='character-'+key;row.append(out);
     const input=document.createElement('input');input.type='range';input.id='character-'+key;input.min=spec.min;input.max=spec.max;input.step=spec.step;input.oninput=()=>{change(key,Number(input.value));$('character-preset').value='Custom';};label.append(row,input);panel.append(label);
    }
@@ -91,11 +92,11 @@ window.createCharacterEditor=function({T,save,stopMoving,draftOwner=()=> 'guest'
     for(const [id,name] of Object.entries(spec.options)){const b=document.createElement('button');b.type='button';b.dataset.character=id;b.title=name;b.setAttribute('aria-label',name);const img=document.createElement('img');img.src=GardenCharacterRocketbox.thumb(id);img.alt='';img.loading='lazy';const caption=document.createElement('span');caption.textContent=name;b.append(img,caption);b.onclick=()=>change(key,id);grid.append(b);}
     field.append(label,value,grid);panel.prepend(field);
    }
-   for(const [key,spec] of Object.entries(schema.choices).filter(([,s])=>s.tab===tab&&!s.picker)){
+   for(const [key,spec] of Object.entries(schema.choices).filter(([,s])=>s.tab===tab&&!s.picker&&!s.hidden)){
     const label=document.createElement('label');label.className='character-field';label.htmlFor='character-'+key;const row=document.createElement('span');row.textContent=spec.label;const select=document.createElement('select');select.id='character-'+key;
     for(const [value,name] of Object.entries(spec.options)){const option=document.createElement('option');option.value=value;option.textContent=name;select.append(option);}select.onchange=()=>change(key,select.value);label.append(row,select);panel.append(label);
    }
-   for(const [key,spec] of Object.entries(schema.colors).filter(([,s])=>s.tab===tab)){
+   for(const [key,spec] of Object.entries(schema.colors).filter(([,s])=>s.tab===tab&&!s.hidden)){
     const field=document.createElement('div');field.className='character-field';const label=document.createElement('span');label.textContent=spec.label;field.append(label);const swatches=document.createElement('div');swatches.className='character-swatches';swatches.setAttribute('role','group');swatches.setAttribute('aria-label',spec.label);
     for(const color of spec.swatches){const b=document.createElement('button');b.type='button';b.dataset.colorKey=key;b.dataset.color=color;b.style.background=color;b.title=spec.label+' '+color;b.setAttribute('aria-label',b.title);b.onclick=()=>change(key,color);swatches.append(b);}
     const picker=document.createElement('input');picker.type='color';picker.id='character-'+key;picker.setAttribute('aria-label','Custom '+spec.label.toLowerCase());picker.title=picker.getAttribute('aria-label');picker.oninput=()=>change(key,picker.value);swatches.append(picker);field.append(swatches);panel.append(field);

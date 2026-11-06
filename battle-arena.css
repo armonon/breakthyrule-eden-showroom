@@ -1,0 +1,121 @@
+/* Break Thy Rule: Arena HUD */
+#battle-hud{position:absolute;inset:0;pointer-events:none;z-index:7;display:none;color:#f4f1ea;font-family:'DM Sans',Arial,sans-serif;text-shadow:0 1px 3px rgba(0,0,0,.75)}
+#battle-hud.on{display:block}
+body:has(#battle-hud.on) .world-caption,body:has(#battle-hud.on) .world-topline,body:has(#battle-hud.on) #movement-hint{opacity:0;pointer-events:none}
+#battle-hud kbd{display:inline-block;min-width:18px;padding:2px 5px;border:1px solid rgba(255,255,255,.55);font:600 10px/1.2 'DM Sans',Arial,sans-serif;text-align:center;margin-right:6px}
+
+.ar-top{position:absolute;left:4.3%;top:26px;display:flex;align-items:baseline;gap:8px;font-size:10px;letter-spacing:.2em}
+.ar-top b{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:34px;font-weight:600;letter-spacing:0}
+.ar-zone{font-style:normal;margin-left:16px;color:#cfe0ff}
+.ar-map{position:absolute;right:4.3%;top:24px;width:180px;height:160px;border:1px solid rgba(255,255,255,.22)}
+.ar-feed{position:absolute;right:4.3%;top:196px;width:260px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:10px;letter-spacing:.12em}
+.ar-feed div{background:rgba(10,12,10,.45);padding:5px 9px}
+.ar-feed i{font-style:normal;color:#ffc24a;margin:0 6px}
+.ar-count{position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:120px;font-weight:600;opacity:0}
+.ar-count.show{opacity:1;animation:ar-pop 1s ease-out infinite}
+@keyframes ar-pop{0%{transform:translate(-50%,-50%) scale(1.25)}30%{transform:translate(-50%,-50%) scale(1)}}
+.ar-announce{position:absolute;left:50%;top:17%;transform:translateX(-50%);font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:26px;letter-spacing:.2em;font-weight:600;white-space:nowrap;opacity:0;transition:opacity .3s}
+.ar-announce.show{opacity:1}
+.ar-prompt{position:absolute;left:50%;top:60%;transform:translateX(-50%);font-size:11px;letter-spacing:.14em;background:rgba(10,12,10,.55);border-left:3px solid var(--rar,#e9e6dc);padding:8px 14px;opacity:0;transition:opacity .15s;white-space:nowrap}
+.ar-prompt.show{opacity:1}
+.ar-vitals{position:absolute;left:4.3%;bottom:78px;width:260px;display:flex;flex-direction:column;gap:6px}
+.ar-bar{position:relative;height:16px;background:rgba(10,12,10,.5);border:1px solid rgba(255,255,255,.15)}
+.ar-bar i{position:absolute;inset:0 auto 0 0;width:100%;transition:width .2s}
+.ar-hp i{background:linear-gradient(90deg,#e9e6dc,#fff)}
+.ar-armor i{background:linear-gradient(90deg,#4f8fd6,#8cc2ff)}
+.ar-bar span{position:absolute;left:8px;top:1px;font-size:9px;letter-spacing:.14em;color:#111;text-shadow:none;mix-blend-mode:normal}
+.ar-armor span{color:#f4f1ea;text-shadow:0 1px 2px #000}
+.ar-heals{font-size:9px;letter-spacing:.14em;opacity:.85}
+.ar-heal-progress{height:3px;background:rgba(255,255,255,.2);opacity:0}
+.ar-heal-progress i{display:block;height:100%;width:0;background:#7fd18b}
+#battle-hud.in-dark::after{content:'IN THE DARK · GET TO THE LIGHT';position:absolute;left:50%;top:24%;transform:translateX(-50%);font-size:12px;letter-spacing:.24em;color:#9fc4ff;animation:ar-blink 1s steps(2) infinite}
+@keyframes ar-blink{50%{opacity:.35}}
+.ar-exit{position:absolute;left:4.3%;top:96px;pointer-events:auto;background:rgba(10,12,10,.45);color:#f4f1ea;border:1px solid rgba(255,255,255,.2);font-size:9px;letter-spacing:.18em;padding:7px 12px;cursor:pointer}
+.ar-end{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,10,9,.62);backdrop-filter:blur(6px);pointer-events:auto}
+.ar-end[hidden]{display:none}
+.ar-end-card{width:min(560px,92%);text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
+.ar-end-kicker{font-size:10px;letter-spacing:.26em;color:#ffc24a}
+.ar-end h2{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-size:clamp(44px,7vw,76px);margin:0;letter-spacing:.02em;font-weight:600}
+.ar-end-stats{font-size:11px;letter-spacing:.18em;margin:0;opacity:.85}
+.ar-loadout{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;font-size:9px;letter-spacing:.18em}
+.ar-loadout>span{width:100%;opacity:.7}
+.ar-garment{display:flex;flex-direction:column;align-items:center;gap:4px;width:120px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);color:#f4f1ea;padding:8px;cursor:pointer}
+.ar-garment img{width:100%;aspect-ratio:1;object-fit:cover}
+.ar-garment b{font-size:10px;letter-spacing:.06em}
+.ar-garment small{font-size:9px;opacity:.7}
+.ar-end-actions{display:flex;gap:10px;margin-top:8px}
+.ar-end-actions button{background:#f4f1ea;color:#151515;border:0;padding:12px 18px;font-size:10px;letter-spacing:.16em;cursor:pointer}
+.ar-end-actions .ar-leave{background:transparent;color:#f4f1ea;border:1px solid rgba(255,255,255,.4)}
+#battle-hud.loading .ar-announce{opacity:1}
+@media (max-width:700px){.ar-map{width:120px;height:107px}.ar-feed{top:140px;width:200px}.ar-vitals{width:200px}}
+/* Full-bleed, chrome-free arena */
+body.battle-on{overflow:hidden}
+body.battle-on #world{position:fixed;inset:0;height:100vh;min-height:0;z-index:40}
+body.battle-on .site-header,body.battle-on .world-footer,body.battle-on .world-topline,body.battle-on .world-caption,body.battle-on #movement-hint,body.battle-on #social-launcher,body.battle-on #social-panel,body.battle-on #music-prompt,body.battle-on #npc-prompt,body.battle-on #shelf-actions,body.battle-on .header-actions,body.battle-on #night-hud{display:none!important}
+body.battle-on #world>*:not(#scene):not(#battle-hud):not(#combat-hud):not(dialog){visibility:hidden}
+
+/* Recharging shield (battle-arena.js): a cyan bar over armour and health that flashes when it breaks. */
+.ar-shield i{background:linear-gradient(90deg,#3fd3ff,#b9f1ff);box-shadow:0 0 10px rgba(80,210,255,.55)}
+.ar-shield span{color:#06222b}
+.ar-shield.down span{color:#ff9c8a;text-shadow:0 1px 2px #000}
+.ar-shield.broke{animation:ar-shield-break .45s ease-out}
+@keyframes ar-shield-break{0%{box-shadow:0 0 0 0 rgba(120,220,255,.9);border-color:#bff2ff}100%{box-shadow:0 0 0 14px rgba(120,220,255,0);border-color:rgba(255,255,255,.15)}}
+
+/* Shield shimmer: a cyan ripple around the screen edge when your shield absorbs a hit. */
+.ar-shimmer{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:2;
+ background:radial-gradient(ellipse at center,rgba(70,210,255,0) 52%,rgba(70,210,255,.28) 78%,rgba(150,235,255,.55) 100%),
+  repeating-linear-gradient(60deg,rgba(150,235,255,.07) 0 2px,transparent 2px 14px),repeating-linear-gradient(-60deg,rgba(150,235,255,.07) 0 2px,transparent 2px 14px);
+ -webkit-mask:radial-gradient(ellipse at center,transparent 48%,#000 80%);mask:radial-gradient(ellipse at center,transparent 48%,#000 80%)}
+.ar-shimmer.on{animation:ar-shimmer .5s ease-out}
+@keyframes ar-shimmer{0%{opacity:var(--k,.6);transform:scale(1.015)}100%{opacity:0;transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.ar-shimmer.on{animation-duration:.01s}}
+
+/* Open match leaderboard (hold Tab). */
+.ar-board{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);min-width:min(460px,calc(100vw - 32px));padding:20px 24px;background:rgba(10,13,12,.82);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.16);color:#f4f1ea;z-index:5}
+.ar-board[hidden]{display:none}
+.ar-board h3{margin:0 0 12px;font-size:11px;letter-spacing:.2em;font-weight:600;opacity:.8}
+.ar-board table{width:100%;border-collapse:collapse;font-size:13px}
+.ar-board th{font-size:9px;letter-spacing:.16em;font-weight:500;opacity:.6;text-align:right;padding-bottom:6px}
+.ar-board td{padding:5px 0;border-top:1px solid rgba(255,255,255,.08);text-align:right;font-variant-numeric:tabular-nums}
+.ar-board td:first-child{text-align:left;letter-spacing:.06em}
+.ar-board tr.me td{color:#ffd27a}
+
+/* Damage: blood splashes in from the edges when hit and stays, pulsing, while health is low (battle-arena.js hud.blood). */
+.ar-blood{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:3;
+ background:
+  radial-gradient(ellipse 34% 26% at 0% 0%,rgba(120,0,0,.95),rgba(120,0,0,0) 70%),
+  radial-gradient(ellipse 30% 30% at 100% 6%,rgba(110,0,0,.9),rgba(110,0,0,0) 70%),
+  radial-gradient(ellipse 36% 28% at 2% 100%,rgba(105,0,0,.95),rgba(105,0,0,0) 70%),
+  radial-gradient(ellipse 30% 34% at 100% 100%,rgba(120,0,0,.95),rgba(120,0,0,0) 70%),
+  radial-gradient(circle at 8% 38%,rgba(140,6,6,.55) 0 1.6%,rgba(140,6,6,0) 5%),
+  radial-gradient(circle at 93% 44%,rgba(140,6,6,.5) 0 1.2%,rgba(140,6,6,0) 4.5%),
+  radial-gradient(circle at 22% 92%,rgba(140,6,6,.5) 0 1.4%,rgba(140,6,6,0) 4.6%),
+  radial-gradient(circle at 78% 9%,rgba(140,6,6,.45) 0 1.1%,rgba(140,6,6,0) 4%),
+  radial-gradient(ellipse 75% 70% at 50% 50%,rgba(90,0,0,0) 55%,rgba(90,0,0,.75) 100%)}
+.ar-blood i{position:absolute;inset:0;opacity:var(--low,0);background:radial-gradient(ellipse 60% 55% at 50% 50%,rgba(40,0,0,0) 40%,rgba(40,0,0,.85) 100%)}
+
+/* The eight pages under the score: one slip per page (home, loose, carried, yours, delivered). */
+.ar-pages{position:absolute;left:4.3%;top:66px;display:flex;align-items:center;gap:4px;font-size:10px;letter-spacing:.18em}
+.ar-pages .pg{display:inline-block;width:11px;height:15px;border:1px solid rgba(243,230,196,.7);background:rgba(243,230,196,.12)}
+.ar-pages .pg.loose{background:rgba(255,255,255,.45)}
+.ar-pages .pg.carried{background:rgba(255,90,74,.55);border-color:#ff5a4a}
+.ar-pages .pg.mine{background:#f3e6c4;border-color:#fff;box-shadow:0 0 6px #ffcf7a}
+.ar-pages .pg.delivered{background:#ffd27a;border-color:#ffd27a}
+.ar-pages span{margin-left:10px}
+.ar-pages b{font-size:14px}
+.ar-pages em{font-style:normal;color:#ff7a6a}
+
+/* Your soul in the Gathering after dying at night. */
+body.soul-taken #battle-hud::after{content:'';position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,rgba(170,200,255,.06),rgba(20,30,70,.55));mix-blend-mode:screen;animation:soul-in 1.2s ease-out}
+@keyframes soul-in{0%{background-color:rgba(230,240,255,.9)}100%{background-color:rgba(230,240,255,0)}}
+
+/* ---- HUD refresh: glass panel vitals with slanted bars and a soft glow ---- */
+.ar-vitals{padding:12px 14px 10px;background:linear-gradient(90deg,rgba(8,10,9,.6),rgba(8,10,9,0));border-left:2px solid rgba(255,255,255,.75)}
+.ar-bar{height:14px;background:rgba(255,255,255,.08);border:0;transform:skewX(-14deg);border-radius:2px;overflow:hidden}
+.ar-bar span{transform:skewX(14deg);top:0;line-height:14px}
+.ar-hp i{background:linear-gradient(90deg,#f1ede3,#fff);box-shadow:0 0 10px rgba(255,255,255,.35)}
+.ar-shield i{background:linear-gradient(90deg,#1fb7ff,#9ff0ff);box-shadow:0 0 14px rgba(80,210,255,.7)}
+.ar-armor i{background:linear-gradient(90deg,#3e7cd0,#8cc2ff)}
+.ar-map{border-radius:6px;border:1px solid rgba(255,255,255,.28);box-shadow:0 6px 22px rgba(0,0,0,.35)}
+.ar-feed div{border-left:2px solid rgba(255,194,74,.8);backdrop-filter:blur(4px)}
+.ar-top b{text-shadow:0 2px 12px rgba(0,0,0,.6)}

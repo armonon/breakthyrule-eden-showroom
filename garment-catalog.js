@@ -9,8 +9,8 @@ window.showroomCollection=[
     "tagline": "Front: the theatre. Back: the witnesses.",
     "description": "A two-sided airbrush bootleg. The front: three masked soldiers in faceless helmets, a blonde witness peering in from the margin, and the word WAR in pixelated red rendered like a redacted dispatch. The back: two winged figures, scattered watching eyes, the staring face of the unknown — printed edge-to-edge. Heavyweight 6oz cotton, raw white, hand-registered. Every print runs slightly different; the variance is the signature.",
     "images": [
-      "/products/war-tee-front.png",
-      "/products/war-tee-back.png"
+      "/products/war-tee-front.webp",
+      "/products/war-tee-back.webp"
     ],
     "photoViews": [
       "FRONT",
@@ -36,7 +36,7 @@ window.showroomCollection=[
     "tagline": "He has a great plan. Wear the proof.",
     "description": "A devotional bootleg. Heavyweight 6oz cotton in raw white, hand-printed with an airbrushed dove-and-hearts composition and the gospel pronouncement set in inverted serif blue. Each print is registered manually — small variation is part of the casting, not a defect. Cut boxy through the chest, regular through the body.",
     "images": [
-      "/products/god-loves-you-tee.png"
+      "/products/god-loves-you-tee.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -62,7 +62,7 @@ window.showroomCollection=[
     "tagline": "Tune in. The whole world is already listening.",
     "description": "A frequency garment. Heavyweight 6oz cotton in raw white, printed with two figures in headphones and a trailing staff of music notes — airbrushed, washed, and softened. The text above reads as broadcast, not slogan. Regular through the body with a slightly cropped torso.",
     "images": [
-      "/products/dance-to-your-vibration-tee.png"
+      "/products/dance-to-your-vibration-tee.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -213,7 +213,7 @@ window.showroomCollection=[
     "tagline": "The mark that splits the world in two.",
     "description": "Raw white cotton tee, back-panel airbrushed with an ornate Gothic cross in deep red — filigree vines spreading from each arm, edge-to-edge. The reverse is blank. Heavyweight 6oz cotton, regular fit. Every print registers slightly different; the variance is the signature.",
     "images": [
-      "/products/000-6B49F5B5-3F27-4F32-B604-01645A7AE0CD.png"
+      "/products/000-6B49F5B5-3F27-4F32-B604-01645A7AE0CD.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -239,7 +239,7 @@ window.showroomCollection=[
     "tagline": "The name above all names, certified.",
     "description": "Raw white cotton, worn and softened. The name is set in red cursive across the chest with a heavy red star — somewhere between a bandana logo and a roadside shrine. Distressed register, deliberate. Regular fit, 6oz cotton.",
     "images": [
-      "/products/002-8EA2387E-42C7-4655-8F1F-EC4335658CEE.png"
+      "/products/002-8EA2387E-42C7-4655-8F1F-EC4335658CEE.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -265,7 +265,7 @@ window.showroomCollection=[
     "tagline": "Everything you need. No questions asked.",
     "description": "Raw white cotton, cropped. A collage of redacted IDs, ghost databases, and an AR-15 schematic frames the title text in red. The paperwork of commerce, printed flat and worn proud. Boxy crop, 6oz cotton.",
     "images": [
-      "/products/003-black-market-baby.png"
+      "/products/003-black-market-baby.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -291,7 +291,7 @@ window.showroomCollection=[
     "tagline": "The ones who were there before the agreement.",
     "description": "White ribbed cotton maxi tank, airbrushed with two figures — one burning, one winged — locked together in an embrace. \"#family\" in script below. Worn long, worn soft. Ribbed cotton, raw hem.",
     "images": [
-      "/products/005-fm.png"
+      "/products/005-fm.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -317,7 +317,7 @@ window.showroomCollection=[
     "tagline": "The oldest strategy, printed fresh.",
     "description": "Baby blue crewneck sweatshirt with a full-front DTG of a Roman battle scene — warriors, tigers, eagles, and chaos — set above the words \"Divide & Conquer\" in black script. Classic heavyweight fleece, pre-washed.",
     "images": [
-      "/products/006-IMG_0063.png"
+      "/products/006-IMG_0063.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -343,7 +343,7 @@ window.showroomCollection=[
     "tagline": "The order that does not announce itself.",
     "description": "Red crewneck, front-printed with five hooded silhouettes framing a pyramid-and-eye seal. \"Illuminati\" set in black gothic lettering below. Heavyweight fleece, regular fit.",
     "images": [
-      "/products/007-IMG_0064.png"
+      "/products/007-IMG_0064.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -369,7 +369,7 @@ window.showroomCollection=[
     "tagline": "She sees you seeing her seeing you.",
     "description": "Vintage green raglan crewneck, chest-printed with a diptych: the pyramid-and-eye seal beside a woman covering one eye with her hand. The image says what the text won't. Cotton raglan, pre-shrunk.",
     "images": [
-      "/products/008-IMG_0065.png"
+      "/products/008-IMG_0065.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -395,8 +395,8 @@ window.showroomCollection=[
     "tagline": "Front: the masters. Back: the mysteries.",
     "description": "A two-sided transmission. Front: an airbrushed sunburst with a mounted figure, layered against a chart of ascended masters. Back: \"serrania angelica\" — a dense collage of Kabbalistic diagrams, figures, and verse. Raw white, 6oz cotton, boxy fit.",
     "images": [
-      "/products/018-IMG_0367.png",
-      "/products/019-IMG_0368.png"
+      "/products/018-IMG_0367.webp",
+      "/products/019-IMG_0368.webp"
     ],
     "photoViews": [
       "FRONT",
@@ -422,8 +422,8 @@ window.showroomCollection=[
     "tagline": "Declassified. Still redacted.",
     "description": "Declassified. Still redacted.",
     "images": [
-      "/products/020-IMG_0369.png",
-      "/products/021-IMG_0370.png"
+      "/products/020-IMG_0369.webp",
+      "/products/021-IMG_0370.webp"
     ],
     "photoViews": [
       "FRONT",
@@ -449,7 +449,7 @@ window.showroomCollection=[
     "tagline": "The first transmission.",
     "description": "Raw white cotton, printed with a detailed cave-painting hunting sequence across the chest — labeled stages annotated in cursive script: sighting, cornering, the kill, the return. The oldest story, re-rendered. Regular fit, 6oz cotton.",
     "images": [
-      "/products/023-IMG_0620.png"
+      "/products/023-IMG_0620.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -475,8 +475,8 @@ window.showroomCollection=[
     "tagline": "The name that cannot be spoken, worn.",
     "description": "White boxy 3/4-sleeve tee, front-printed with a Star of David containing Adonai figures and flanked by Kabbalistic seals. The back carries the German esoteric chakra diagram — \"Der gantze Irdische Natürliche Finstere Mensch\" — in full-color print. Oversized cut.",
     "images": [
-      "/products/027-IMG_0624.png",
-      "/products/026-IMG_0623.png"
+      "/products/027-IMG_0624.webp",
+      "/products/026-IMG_0623.webp"
     ],
     "photoViews": [
       "FRONT",
@@ -502,7 +502,7 @@ window.showroomCollection=[
     "tagline": "Last seen: at large.",
     "description": "Raw white cotton baby tee, front-printed with a WANTED poster composition — Jesus of Nazareth, surrealist collage, apples with eyes, and your name half-visible underneath. A bounty for the person most worth knowing. Boxy crop, 6oz cotton.",
     "images": [
-      "/products/035-IMG_0919.png"
+      "/products/035-IMG_0919.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -528,8 +528,8 @@ window.showroomCollection=[
     "tagline": "Front: the fairy. Back: the machine.",
     "description": "A two-sided garment. Front: \"pari\" — a Persian fairy — flanked by two winged demonic figures in red and black. Back: an all-over text collage of American signifiers, cultural debris, and contradiction — Lucifer, AMER-I-CAN, YE-24, and the rest. White, regular fit, 6oz cotton.",
     "images": [
-      "/products/043-IMG_1466.png",
-      "/products/042-IMG_1465.png"
+      "/products/043-IMG_1466.webp",
+      "/products/042-IMG_1465.webp"
     ],
     "photoViews": [
       "FRONT",
@@ -555,8 +555,8 @@ window.showroomCollection=[
     "tagline": "Prayer worn on the body.",
     "description": "White ribbed cotton maxi tank with a red rosary shaped into a heart at center chest. The beads are counted and labeled — each decade of the prayer printed in script inside the loop. Worn long, worn soft. Ribbed cotton, raw hem.",
     "images": [
-      "/products/055-IMG_1747.png",
-      "/products/057-IMG_1749.png"
+      "/products/055-IMG_1747.webp",
+      "/products/057-IMG_1749.webp"
     ],
     "photoViews": [
       "FRONT",
@@ -582,7 +582,7 @@ window.showroomCollection=[
     "tagline": "A hallmark for the initiated.",
     "description": "White ribbed maxi tank with an airbrushed composition of a rearing black horse and a dramatic painted face below — \"every kiss begins with K\" set in cursive above. All-over print, raw hem, worn long.",
     "images": [
-      "/products/056-IMG_1748.png"
+      "/products/056-IMG_1748.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -608,8 +608,8 @@ window.showroomCollection=[
     "tagline": "Past the summit. Still climbing.",
     "description": "White cotton baby tee, front-printed with an airbrushed warrior figure — arms raised, battle-ready — in deep red. \"over the hill\" set below in casual black type. A contradiction. Cropped, boxy.",
     "images": [
-      "/products/058-IMG_1830.png",
-      "/products/059-IMG_1833.png"
+      "/products/058-IMG_1830.webp",
+      "/products/059-IMG_1833.webp"
     ],
     "photoViews": [
       "FRONT",
@@ -635,7 +635,7 @@ window.showroomCollection=[
     "tagline": "She holds them all.",
     "description": "Raw white cotton tee with a full-front DTG of a guardian angel surrounded by two cherubs — clouds, light, and \"Divine Mother\" in rose script below. Soft, clean print. Regular fit, 6oz cotton.",
     "images": [
-      "/products/062-IMG_2054.png"
+      "/products/062-IMG_2054.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -661,7 +661,7 @@ window.showroomCollection=[
     "tagline": "The throne that moves.",
     "description": "Cream ribbed crop-sleeve sweater with an airbrushed back print — angel figures riding a golden chariot amid fire and trumpets, \"Gods Chariot\" in yellow script below. Cropped, wide-arm fit. Ribbed cotton, pre-washed.",
     "images": [
-      "/products/069-IMG_2308.png"
+      "/products/069-IMG_2308.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -687,7 +687,7 @@ window.showroomCollection=[
     "tagline": "The forbidden fruit, hand-painted.",
     "description": "A pair of white work gloves hand-painted with eye-faced apples — one red on the left, one blue on the right. Each pair is unique; the painting registers differently on every casting.",
     "images": [
-      "/products/074-IMG_2335.png"
+      "/products/074-IMG_2335.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -713,8 +713,8 @@ window.showroomCollection=[
     "tagline": "A dua for the distracted heart.",
     "description": "Neon yellow cotton baby tee, printed with two mirrored lion figures and a dua in Arabic script — followed in English below. Bleached-out, sun-stressed. A plea and a warning in the same breath. Boxy crop.",
     "images": [
-      "/products/076-IMG_3178.png",
-      "/products/077-IMG_3180.png"
+      "/products/076-IMG_3178.webp",
+      "/products/077-IMG_3180.webp"
     ],
     "photoViews": [
       "FRONT",
@@ -740,8 +740,8 @@ window.showroomCollection=[
     "tagline": "Every pleasure has a number.",
     "description": "White ribbed maxi tank dip-dyed red at the shoulders, printed all-over with classified-looking adult newspaper advertisements — \"The Atlantis Parlour,\" \"Easy Pleasures,\" \"Satisfaction Guaranteed.\" Found language, worn as text. Raw hem.",
     "images": [
-      "/products/079-IMG_3462.png",
-      "/products/080-IMG_3463.png"
+      "/products/079-IMG_3462.webp",
+      "/products/080-IMG_3463.webp"
     ],
     "photoViews": [
       "FRONT",
@@ -767,7 +767,7 @@ window.showroomCollection=[
     "tagline": "Licensed to feel.",
     "description": "Raw white cotton tee, airbrushed with two identical wingless angels in blue and pink, crossed revolvers at center chest. \"007\" in rose-pink block type below. The baroque meets the bargain rack. Regular fit, 6oz cotton.",
     "images": [
-      "/products/082-IMG_5473.png"
+      "/products/082-IMG_5473.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -793,7 +793,7 @@ window.showroomCollection=[
     "tagline": "Tested, not certified.",
     "description": "Raw white cotton tee, airbrushed with a full-front composition of a woman in chains with two crossed swords above — \"Bulletproof\" in hand-script at the top. Worn, saturated, lot-varied. Regular fit, 6oz cotton.",
     "images": [
-      "/products/094-IMG_6621.png"
+      "/products/094-IMG_6621.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -819,7 +819,7 @@ window.showroomCollection=[
     "tagline": "The only word worth repeating.",
     "description": "Cream ribbed thermal long-sleeve, airbrushed with a dramatic pink-washed face, cross, heart, and \"AMEN\" — \"Eternal\" in black script below with a red lip print. The devotion is sincere. Worn soft.",
     "images": [
-      "/products/089-IMG_6048.png"
+      "/products/089-IMG_6048.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -845,7 +845,7 @@ window.showroomCollection=[
     "tagline": "Girl with a pearl earring. Eternal.",
     "description": "Butter-yellow crewneck sweatshirt with an oversized airbrushed face — Vermeer-inspired, rendered in blue and pink tones — and \"Eternal\" in black gothic script. \"honey\" in small script at the collar. Pre-washed heavyweight fleece.",
     "images": [
-      "/products/093-IMG_6620.png"
+      "/products/093-IMG_6620.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -871,8 +871,8 @@ window.showroomCollection=[
     "tagline": "Pray for it. Kiss it. Both.",
     "description": "Raw white cotton tee, airbrushed with a full-body angel figure — luminous blue, reaching — and a red rosary heart at the chest. \"kiss\" in cursive at the hem. Pink-red wash from airbrush gives a relic warmth. Regular fit.",
     "images": [
-      "/products/096-IMG_6626.png",
-      "/products/097-IMG_6627.png"
+      "/products/096-IMG_6626.webp",
+      "/products/097-IMG_6627.webp"
     ],
     "photoViews": [
       "FRONT",
@@ -898,7 +898,7 @@ window.showroomCollection=[
     "tagline": "Better coverage. No co-pay.",
     "description": "Gold Champion reverse-weave hoodie, front-printed with a blurred diptych of two figures and the text \"Jesus Is My Health Insurance.\" A policy statement. Heavyweight cotton, kangaroo pocket, drawstring hood.",
     "images": [
-      "/products/114-Photoroom_20251017_091003.png"
+      "/products/114-Photoroom_20251017_091003.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -924,7 +924,7 @@ window.showroomCollection=[
     "tagline": "He has a great plan. He told them.",
     "description": "White cotton tee, printed all-over with two anime-style doll figures and a serpent-eye composition below. \"GOD Loves YOU!!! He Has A Great Plan For YOUR Life\" in blue bold type. The sincerity is the whole point. Regular fit, 6oz cotton.",
     "images": [
-      "/products/104-IMG_6806.png"
+      "/products/104-IMG_6806.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -950,7 +950,7 @@ window.showroomCollection=[
     "tagline": "Present in the room. Always.",
     "description": "Raw white cotton tee, airbrushed with a large pink-washed devotional face, cross, and \"Jesus is my companion\" in flowing script at top. \"AMEN\" in red below the cross. Regular fit, soft-hand airbrush finish.",
     "images": [
-      "/products/112-Photoroom_20251017_090559.png"
+      "/products/112-Photoroom_20251017_090559.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -976,7 +976,7 @@ window.showroomCollection=[
     "tagline": "The war no one admits is happening.",
     "description": "White ribbed racerback maxi tank, chest-printed with \"Spiritual Warfare\" in hand-script red italics. The text is the design. Worn long, worn every day. Ribbed cotton, raw hem.",
     "images": [
-      "/products/113-Photoroom_20251017_090747.png"
+      "/products/113-Photoroom_20251017_090747.webp"
     ],
     "photoViews": [
       "PHOTO",
@@ -1002,7 +1002,7 @@ window.showroomCollection=[
     "tagline": "The title, not the man.",
     "description": "Heavy black long-sleeve tee, chest-printed with \"WARLORD\" in blood-red airbrushed lettering — raised from the fabric like a scar. A name. A rank. Heavyweight cotton, regular fit.",
     "images": [
-      "/products/118-warlord-f.png"
+      "/products/118-warlord-f.webp"
     ],
     "photoViews": [
       "PHOTO",

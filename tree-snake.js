@@ -1,5 +1,5 @@
 'use strict';
-window.createTreeSnake=function(T,scene,{bark,reduced=false,model=null,onChange=()=>{}}={}){
+window.createTreeSnake=function(T,scene,{bark,reduced=false,model=null,viper=null,onChange=()=>{}}={}){
  const root=new T.Group();root.name='Apple tree snake';scene.add(root);
  const anchor=new T.Vector3(1.62,2.98,-5.92),start=new T.Vector3(.45,2.55,-6.92),end=new T.Vector3(1.65,2.88,-6.42);
  const axis=end.clone().sub(start).normalize(),normal=new T.Vector3().crossVectors(axis,new T.Vector3(0,1,0)).normalize(),binormal=new T.Vector3().crossVectors(axis,normal).normalize();
@@ -46,18 +46,119 @@ window.createTreeSnake=function(T,scene,{bark,reduced=false,model=null,onChange=
  for(const points of [[[0,-.021,.21],[0,-.023,.34]],[[0,-.023,.34],[-.025,-.024,.40]],[[0,-.023,.34],[.025,-.024,.40]]])tongue.add(new T.Mesh(new T.TubeGeometry(new T.LineCurve3(new T.Vector3(...points[0]),new T.Vector3(...points[1])),1,.003,6,false),tongueMaterial));
  tongue.visible=false;
 
+ function clearStandIn(){
+  for(const old of [branch,body]){root.remove(old);old.geometry.dispose();}
+  for(const child of [...head.children])if(child!==tongue){head.remove(child);child.geometry?.dispose();}
+ }
  // The sculpted serpent (tools/blender/build_hero_tree.py) coils round its own limb of the sculpted tree; it swaps in for
  // the stand-in branch, body and head shapes above, keeping this skin, the tongue and the animation.
- model?.then(gltf=>{
+ function useSculpted(gltf){
   const source=gltf.scene.getObjectByName('HeroTree'),place=new T.Group();place.position.set(.5,0,-7);root.add(place);
   const sculpted=source.getObjectByName('SnakeBody').clone();sculpted.material=skin;sculpted.castShadow=sculpted.receiveShadow=true;place.add(sculpted);
   const node=source.getObjectByName('SnakeHead'),pivot=new T.Group();pivot.position.copy(node.position);pivot.quaternion.copy(node.quaternion);place.add(pivot);
-  for(const old of [branch,body]){root.remove(old);old.geometry.dispose();}
-  for(const child of [...head.children])if(child!==tongue){head.remove(child);child.geometry?.dispose();}
+  clearStandIn();
   for(const part of node.children){const mesh=part.clone();if(mesh.material.name==='skin')mesh.material=headSkin;mesh.castShadow=mesh.receiveShadow=true;head.add(mesh);}
   // Larger head and bolder diamonds to match the thicker sculpted body (HEAD_SCALE in the build script).
-  head.position.set(0,0,0);head.scale.setScalar(1.2);pivot.add(head);for(const texture of [scales,scaleRelief])texture.repeat.set(4.5,1);root.updateMatrixWorld(true);pivot.getWorldPosition(anchor);onChange();
- }).catch(error=>console.warn('Sculpted snake unavailable; keeping the stand-in.',error));
+  head.position.set(0,0,0);head.scale.setScalar(1.2);pivot.add(head);for(const texture of [scales,scaleRelief])texture.repeat.set(4.5,1);root.updateMatrixWorld(true);pivot.getWorldPosition(anchor);
+  kind='sculpted';onChange();
+ }
+
+ // The pit viper (assets/eden-hero/pit-viper.glb: a CC0 photogrammetry scan by ffish.asia / floraZia.com) coils round
+ // the same limb of the sculpted tree. In its rest pose the scan lies straight, snout towards -X, tail towards +X and
+ // back towards +Y, on a chain of spine bones (v1 behind the head to v51 at the tail) plus a head bone. Each bone keeps
+ // its slice of the body rigid and is carried to the point of the coil at the same distance from the snout, so the
+ // real skin bends round the bark without stretching. The head and the first neck bones follow the head's sway.
+ const VIPER_SCALE=5.5,NECK_BONES=6;
+ const limbCurve=new T.CatmullRomCurve3([[0,2.42,.02],[.32,2.56,.16],[.70,2.70,.36],[1.10,2.86,.58],[1.48,3.0,.76],[1.80,3.13,.90]].map(p=>new T.Vector3(...p)));
+ const limbRadius=t=>.13-.075*t,headForward=new T.Vector3(.15,-.32,1).normalize();
+ // Centreline from tail to snout (limb space, as in build_hero_tree.py) with the belly direction at each point.
+ function viperPath(turns,radius,headLength){
+  const points=[],bellies=[],t1=.84,t0=Math.max(.04,t1-turns*.1),n=Math.ceil(turns*90)+8;
+  const side=new T.Vector3(0,1,0);
+  for(let i=0;i<=n;i++){
+   const f=i/n,t=t0+(t1-t0)*f,centre=limbCurve.getPoint(t),tangent=limbCurve.getTangent(t);
+   side.addScaledVector(tangent,-side.dot(tangent)).normalize();
+   const other=new T.Vector3().crossVectors(tangent,side),angle=f*turns*Math.PI*2+Math.PI;
+   const out=side.clone().multiplyScalar(Math.cos(angle)).addScaledVector(other,Math.sin(angle));
+   points.push(centre.addScaledVector(out,limbRadius(t)+radius*(.3+.7*T.MathUtils.smoothstep(f,0,.4))));bellies.push(out.negate());
+  }
+  // The neck lifts off the top of the limb in an S and holds the head out over the library path.
+  const end=limbCurve.getPoint(t1+.05),pivot=end.clone().add(new T.Vector3(0,.30,.26)),across=headForward.clone().cross(new T.Vector3(0,1,0)).normalize();
+  const neck=new T.CatmullRomCurve3([points.at(-1),end.clone().add(new T.Vector3(0,.15,0)).addScaledVector(headForward,-.12).addScaledVector(across,.07),
+   end.clone().add(new T.Vector3(0,.27,0)).addScaledVector(headForward,-.03).addScaledVector(across,-.06),pivot.clone().addScaledVector(headForward,-.12),pivot,pivot.clone().addScaledVector(headForward,headLength)]).getPoints(90).slice(1);
+  const down=new T.Vector3(0,-1,0),last=bellies.at(-1).clone();
+  neck.forEach((point,k)=>{points.push(point);bellies.push(last.clone().lerp(down,Math.min(1,(k+1)/60)).normalize());});
+  const lengths=[0];for(let i=1;i<points.length;i++)lengths.push(lengths[i-1]+points[i].distanceTo(points[i-1]));
+  return {points,bellies,lengths,total:lengths.at(-1)};
+ }
+ // Point, tangent (towards the snout) and belly at arc length a from the tail.
+ function pathAt(path,a){
+  const {points,bellies,lengths}=path;let i=1;while(i<lengths.length-1&&lengths[i]<a)i++;
+  const f=T.MathUtils.clamp((a-lengths[i-1])/(lengths[i]-lengths[i-1]||1),0,1);
+  return {point:points[i-1].clone().lerp(points[i],f),tangent:points[i].clone().sub(points[i-1]).normalize(),belly:bellies[i-1].clone().lerp(bellies[i],f).normalize()};
+ }
+ // Rigid map from the scan's rest space at x (slice centre c) to the coil at the matching distance from the snout.
+ function frameAt(path,a,centre){
+  const {point,tangent,belly}=pathAt(path,a),tailward=tangent.negate(),back=belly.negate(),dorsal=back.addScaledVector(tailward,-back.dot(tailward)).normalize(),side=new T.Vector3().crossVectors(tailward,dorsal);
+  return new T.Matrix4().makeBasis(tailward,dorsal,side).scale(new T.Vector3(VIPER_SCALE,VIPER_SCALE,VIPER_SCALE)).setPosition(point).multiply(new T.Matrix4().makeTranslation(-centre.x,-centre.y,-centre.z));
+ }
+ let viperRig=null,kind='stand-in';
+ function useViper(gltf){
+  const scan=gltf.scene,place=new T.Group();place.name='Pit viper';place.position.set(.5,0,-7);
+  scan.updateMatrixWorld(true);
+  const skinned=scan.getObjectByProperty('isSkinnedMesh',true),bones=skinned.skeleton.bones,rest=new Map(bones.map(bone=>[bone,bone.matrixWorld.clone()]));
+  // Snout and tail are the scan's extreme vertices along X in the rest pose. They are skinned to get there: the
+  // quantized geometry is stored in a unit box and only the inverse bind matrices scale it back to real size.
+  const vertex=new T.Vector3(),positions=skinned.geometry.attributes.position;let snout=Infinity,tail=-Infinity;
+  skinned.skeleton.update();
+  for(let i=0;i<positions.count;i++){skinned.applyBoneTransform(i,vertex.fromBufferAttribute(positions,i));snout=Math.min(snout,vertex.x);tail=Math.max(tail,vertex.x);}
+  const radius=.0075*VIPER_SCALE,length=(tail-snout)*VIPER_SCALE,headBone=bones.find(bone=>bone.name==='head');
+  const restPosition=bone=>new T.Vector3().setFromMatrixPosition(rest.get(bone)),neckX=restPosition(headBone).x,headLength=(neckX-snout)*VIPER_SCALE;
+  // Wind as many turns round the limb as the scan's length fills.
+  let low=.2,high=4,path;for(let i=0;i<24;i++){const turns=(low+high)/2;path=viperPath(turns,radius,headLength);if(path.total>length)high=turns;else low=turns;}
+  path=viperPath(low,radius,headLength);
+  root.add(place);place.add(scan);place.updateMatrixWorld(true);
+  // Bones in parent-first order; each gets the local transform that puts it at its posed world matrix.
+  const order=[];scan.traverse(object=>{if(object.isBone)order.push(object);});
+  const posed=new Map(),local=new T.Matrix4();
+  function pose(worldOf){
+   for(const bone of order){
+    local.copy(bone.parent.matrixWorld).invert().multiply(worldOf(bone));local.decompose(bone.position,bone.quaternion,bone.scale);
+    bone.updateMatrix();bone.matrixWorld.multiplyMatrices(bone.parent.matrixWorld,bone.matrix);
+   }
+  }
+  for(const bone of bones){
+   const centre=restPosition(bone),a=path.total-(centre.x-snout)*VIPER_SCALE;
+   posed.set(bone,place.matrixWorld.clone().multiply(frameAt(path,a,centre)).multiply(rest.get(bone)));
+  }
+  pose(bone=>posed.get(bone));
+  skinned.frustumCulled=false;skinned.castShadow=skinned.receiveShadow=true;
+  skinned.material.roughness=.5;skinned.material.side=T.FrontSide;
+  // The head pivot sits on the head bone, +Z towards the snout and +Y up its back, as the sway in update() expects.
+  const neckPoint=pathAt(path,path.total-headLength);
+  const forward=neckPoint.tangent.clone(),up=neckPoint.belly.clone().negate().addScaledVector(forward,-neckPoint.belly.clone().negate().dot(forward)).normalize();
+  const pivot=new T.Group();pivot.matrix.makeBasis(new T.Vector3().crossVectors(up,forward),up,forward).setPosition(neckPoint.point);pivot.matrix.decompose(pivot.position,pivot.quaternion,pivot.scale);place.add(pivot);
+  clearStandIn();head.position.set(0,0,0);head.rotation.set(0,0,0);head.scale.setScalar(1);pivot.add(head);
+  // Tongue from the mouth, just under the tip of the snout.
+  tongue.scale.set(.5,.5,.42);tongue.rotation.x=-.2;tongue.position.set(0,.012,headLength-.1);
+  root.updateMatrixWorld(true);
+  const restHead=pivot.matrixWorld.clone().invert(),centre=new T.Vector3(),turn=new T.Quaternion(),partial=new T.Quaternion(),none=new T.Quaternion(),delta=new T.Matrix4(),blend=new T.Matrix4();
+  const neck=[headBone,...Array.from({length:NECK_BONES},(_,i)=>bones.find(bone=>bone.name==='v'+(i+1))).filter(Boolean)];
+  viperRig={sway(){
+   head.updateMatrixWorld(true);delta.multiplyMatrices(head.matrixWorld,restHead);
+   centre.setFromMatrixPosition(pivot.matrixWorld);turn.setFromRotationMatrix(delta);
+   const swayed=new Map();
+   neck.forEach((bone,i)=>{partial.slerpQuaternions(none,turn,1-i/(NECK_BONES+1));
+    blend.makeTranslation(centre.x,centre.y,centre.z).multiply(new T.Matrix4().makeRotationFromQuaternion(partial)).multiply(new T.Matrix4().makeTranslation(-centre.x,-centre.y,-centre.z));
+    swayed.set(bone,blend.clone().multiply(posed.get(bone)));});
+   pose(bone=>swayed.get(bone)||posed.get(bone));
+  }};
+  pivot.getWorldPosition(anchor);kind='viper';onChange();
+ }
+ // The viper needs the sculpted tree's limb to coil round; without the scan the sculpted serpent stays.
+ const ready=Promise.all([model,viper]).then(([tree,scan])=>{if(!tree||!scan)throw Error('No viper');useViper(scan);})
+  .catch(error=>{console.warn('Pit viper unavailable; using the sculpted serpent.',error);return model?.then(useSculpted);})
+  .catch(error=>console.warn('Sculpted snake unavailable; keeping the stand-in.',error));
 
  const button=document.getElementById('garden-effects');let enabled=true;
  try{enabled=localStorage.getItem('eden-effects-muted')!=='1';}catch{}
@@ -90,7 +191,7 @@ window.createTreeSnake=function(T,scene,{bark,reduced=false,model=null,onChange=
   if(!active||distance>5)silence();
   if(distance>4.7)armed=true;
   if(active&&distance<3.2&&armed&&time-lastHiss>8&&hiss(viewer,distance)){armed=false;lastHiss=time;}
-  if(!reduced){head.rotation.y=Math.sin(time*.45)*.07+(distance<4?T.MathUtils.clamp((viewer.position.x-anchor.x)*.18,-.25,.25):0);head.rotation.x=Math.sin(time*.7)*.035;tongue.visible=active&&(time-lastHiss<1.1||time%8<.28)&&Math.sin(time*25)>0;}
+  if(!reduced){head.rotation.y=Math.sin(time*.45)*.07+(distance<4?T.MathUtils.clamp((viewer.position.x-anchor.x)*.18,-.25,.25):0);head.rotation.x=Math.sin(time*.7)*.035;viperRig?.sway();tongue.visible=active&&(time-lastHiss<1.1||time%8<.28)&&Math.sin(time*25)>0;}
  }
- return {root,anchor,update,inspect:()=>({enabled,armed,hissCount,audioState:context?.state||'locked',playing:!!voice,distance:lastViewer?.position.distanceTo(anchor),reduced}),dispose(){disposed=true;silence();context?.close().catch(()=>{});observer.disconnect();document.removeEventListener('pointerdown',unlock,true);document.removeEventListener('keydown',unlock,true);document.removeEventListener('visibilitychange',visibility);window.removeEventListener('pagehide',silence);}};
+ return {root,anchor,update,ready,inspect:()=>({model:kind,enabled,armed,hissCount,audioState:context?.state||'locked',playing:!!voice,distance:lastViewer?.position.distanceTo(anchor),reduced}),dispose(){disposed=true;silence();context?.close().catch(()=>{});observer.disconnect();document.removeEventListener('pointerdown',unlock,true);document.removeEventListener('keydown',unlock,true);document.removeEventListener('visibilitychange',visibility);window.removeEventListener('pagehide',silence);}};
 };

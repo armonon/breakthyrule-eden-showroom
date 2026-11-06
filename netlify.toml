@@ -1,12 +1,9 @@
-functionsDirectory = "/Users/lillypad/Documents/Codex/2026-09-28/breakthyrule-showroom/netlify/functions"
-functionsDirectoryOrigin = "config"
 redirectsOrigin = "config"
 plugins = []
 
 [build]
-publish = "/Users/lillypad/Documents/Codex/2026-09-28/breakthyrule-showroom/outputs/netlify-preview"
+publish = "."
 publishOrigin = "config"
-functions = "/Users/lillypad/Documents/Codex/2026-09-28/breakthyrule-showroom/netlify/functions"
 
   [build.environment]
 
@@ -22,11 +19,6 @@ functions = "/Users/lillypad/Documents/Codex/2026-09-28/breakthyrule-showroom/ne
     [build.processing.js]
 
   [build.services]
-
-[database]
-
-  [database.migrations]
-  path = "/Users/lillypad/Documents/Codex/2026-09-28/breakthyrule-showroom/netlify/database/migrations"
 
 [functions]
 

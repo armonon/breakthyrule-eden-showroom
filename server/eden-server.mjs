@@ -4,7 +4,7 @@
 //   node server/eden-server.mjs [--port 8777] [--host 127.0.0.1] [--data server/data]
 //
 // HTTP (same contract multiplayer.js already uses):  /api/social/{me,register,login,recover,logout,character,sync,
-// chat,wave,leave}.  Live: WebSocket /api/social/live?connectionId=… — the client sends {t:'pose',x,z,yaw} up to
+// chat,wave,leave}, plus /api/social/{world,ladder,progress} for the garden's shared state (server/world.mjs).  Live: WebSocket /api/social/live?connectionId=… — the client sends {t:'pose',x,z,yaw} up to
 // 15×/s and {t:'punch'} when it throws one (server/brawl.mjs decides hits and knockdowns); the server pushes sync-shaped snapshots ({t:'snapshot',selfId,user,people,messages}) ~20×/s while
 // anything changes and at once on chat. Also serves the static site with caching off, the prop editor's
 // PUT /assets/props/scene.json, and a local deployment.js that switches the client into live mode.
@@ -16,6 +16,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createArena} from './arena.mjs';
 import {createBrawl} from './brawl.mjs';
+import {createWorld} from './world.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((pairs, arg, i, all) => arg.startsWith('--') ? [...pairs, [arg.slice(2), all[i + 1]]] : pairs, []));
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -41,7 +42,7 @@ function save() {
 const PALETTE = ['#c8553d', '#2f6690', '#7a9e7e', '#b388eb', '#e0a458', '#3a7d44', '#d16666', '#5b8e7d', '#8f6593', '#4f6d7a'];
 const hash = (secret, salt) => crypto.scryptSync(secret, salt, 32).toString('hex');
 const nameKey = name => name.toLowerCase();
-const publicUser = u => u && {id: u.id, name: u.name, character: u.character || null, color: u.color};
+const publicUser = u => u && {id: u.id, name: u.name, character: u.character || null, color: u.color, progress: u.progress || null};
 function validName(name) { return typeof name === 'string' && /^[A-Za-z0-9 _.-]{3,24}$/.test(name.trim()); }
 function newSession(user) {
   const token = crypto.randomBytes(32).toString('hex');
@@ -152,7 +153,7 @@ async function social(action, req, res, body) {
     case 'delete': {
       if (!user) throw new HttpError(401, 'Sign in first.');
       if (!crypto.timingSafeEqual(Buffer.from(hash(String(body.password || ''), user.salt), 'hex'), Buffer.from(user.passwordHash, 'hex'))) throw new HttpError(401, 'That password is not right.');
-      delete store.users[user.id];
+      delete store.users[user.id]; world.forget(user.id);
       for (const [t, s] of Object.entries(store.sessions)) if (s.userId === user.id) delete store.sessions[t];
       for (let i = messages.length - 1; i >= 0; i--) if (messages[i].userId === user.id) messages.splice(i, 1);
       save(); touch(); broadcast(true);
@@ -174,6 +175,9 @@ async function social(action, req, res, body) {
       return reply({message: postMessage(user, action, text, typeof body.nonce === 'string' ? body.nonce.slice(0, 64) : null)});
     }
     case 'leave': leave(String(body.connectionId || '')); return reply({ok: true});
+    case 'world': return reply(world.state());
+    case 'ladder': return reply(world.ladder(user, body));
+    case 'progress': return reply(world.progress(user, body));
     default: throw new HttpError(404, 'Unknown action.');
   }
 }
@@ -193,6 +197,7 @@ function wsAccept(req, socket) {
   liveSockets.set(connectionId, client);
   setPose(connectionId, userFromRequest(req).user, null);
   sendSnapshot(connectionId, client);
+  socket.write(frame(Buffer.from(JSON.stringify(world.state()))));
   let buffer = Buffer.alloc(0);
   socket.on('data', chunk => {
     buffer = Buffer.concat([buffer, chunk]);
@@ -228,6 +233,8 @@ function onLiveMessage(connectionId, client, text) {
     const p = presence.get(connectionId); if (p) arena.action(connectionId, p, message);
   } else if (message.t === 'punch') {
     const p = presence.get(connectionId); if (p) brawl.punch(connectionId, p);
+  } else if (message.t === 'weather') {
+    world.weather(userFromRequest(client.req).user, message);
   }
 }
 function sendSnapshot(connectionId, client) {
@@ -249,6 +256,12 @@ const arena = createArena({root: ROOT, presence, emit(events) {
 const brawl = createBrawl({presence, emit(zone, events) {
   const payload = frame(Buffer.from(JSON.stringify({t: 'brawl', events})));
   for (const [id, c] of liveSockets) if ((presence.get(id)?.zone || 'garden') === zone) c.socket.write(payload);
+}});
+
+// Shared garden state (weather lever, Fools' Ladder) goes to every live client.
+const world = createWorld({store, save, allow, emit(payload) {
+  const data = frame(Buffer.from(JSON.stringify(payload)));
+  for (const c of liveSockets.values()) c.socket.write(data);
 }});
 
 // ---------- HTTP ----------
