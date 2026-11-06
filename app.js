@@ -532,7 +532,7 @@ function tryTackle(){
  const speed=Math.hypot(walkVelocity.x,walkVelocity.z);if(speed<4)return;
  const feet=targetPosition.clone();feet.y-=1.75;
  const hit=battle.tackle?.(feet,walkVelocity.clone().setY(0).normalize(),speed);
- if(hit){tackleCount++;sway.bump(.9,0);hitStop(70);footsteps?.land('grass',.8);walkVelocity.multiplyScalar(.45);if(slide)slide.speed*=.45;if(dive)dive.speed*=.45;}
+ if(hit){tackleCount++;playerBody?.anim?.('dash',{fade:.05,speed:1.4});sway.bump(.9,0);hitStop(70);footsteps?.land('grass',.8);walkVelocity.multiplyScalar(.45);if(slide)slide.speed*=.45;if(dive)dive.speed*=.45;}
 }
 function startSlide(){
  const speed=Math.hypot(walkVelocity.x,walkVelocity.z);
@@ -597,9 +597,26 @@ function updateMatchGate(){
  if(battle.active()){if(elsewhere||targetPosition.z>garden.road.door+.3)battle.suspend();}
  else if(!battle.busy()&&!elsewhere&&state.view==='free'&&targetPosition.z<garden.road.door-.8)battle.enter();
 }
+// Clips on your own character for what you are doing (seen in third person, and on your body in first person):
+// jumps, slides, dives, rolls, landings, climbs, tackles. T plays an emote (wave, cheer, clap, dance...).
+const bodyAnim={slide:false,dive:false,air:false,climb:false,prone:false,emote:null,emoteAt:0};
+const EMOTES=['wave','cheer','clap','danceCool','dance','nod'];let emoteIndex=0;
+function playEmote(){if(!playerBody?.anim||!state.ready)return;const id=EMOTES[emoteIndex++%EMOTES.length];if(bodyAnim.emote)playerBody.stopAnim(bodyAnim.emote,.2);bodyAnim.emote=playerBody.anim(id,{fade:.25,loop:id==='danceCool'||id==='dance'})?id:null;bodyAnim.emoteAt=performance.now();if(bodyAnim.emote&&!thirdOn){lastThirdToggle=0;setThird(true);}}
+function updateBodyAnim(){
+ const B=playerBody;if(!B?.anim)return;const air=motion.inspect().airborne,sl=slide?.kind==='slide',dv=!!dive,cl=parkour?.kind?.()==='climb',pr=proneT>0;
+ if(sl&&!bodyAnim.slide)B.anim('slideLoop',{fade:.1});if(!sl&&bodyAnim.slide){B.stopAnim('slideLoop',.15);B.anim('slideExit',{fade:.08,speed:1.3});}
+ if(dv&&!bodyAnim.dive)B.anim('dash',{fade:.08,speed:1.3});if(!dv&&bodyAnim.dive)B.stopAnim('dash',.1);
+ if(pr&&!bodyAnim.prone&&!dv)B.anim('getUp',{fade:.1,speed:2});
+ if(air&&!bodyAnim.air&&!dv&&!parkour?.active()){B.anim('jumpStart',{fade:.08,speed:2.2});B.anim('jumpLoop',{fade:.35});}
+ if(!air&&bodyAnim.air){B.stopAnim('jumpStart',.1);B.stopAnim('jumpLoop',.12);}
+ if(cl&&!bodyAnim.climb)B.anim('climbUp',{fade:.08,speed:.75});if(!cl&&bodyAnim.climb)B.stopAnim('climbUp',.2);
+ // Moving cancels an emote.
+ if(bodyAnim.emote&&(walkVelocity.lengthSq()>.5||air)&&performance.now()-bodyAnim.emoteAt>250){B.stopAnim(bodyAnim.emote,.2);bodyAnim.emote=null;}
+ Object.assign(bodyAnim,{slide:sl,dive:dv,air,climb:cl,prone:pr});
+}
 let deathDrop=0,lowShown=0;
 function updateFeel(dt){
- updateMatchGate();
+ updateMatchGate();updateBodyAnim();
  const fallen=battle?.dead?.()&&!battle.soul?.();
  deathDrop+=((fallen?1.25:0)-deathDrop)*(1-Math.exp(-(fallen?5:10)*dt));
  // Low health drains the colour and closes the vignette (the blood itself is battle-arena.js's HUD).
@@ -611,7 +628,7 @@ function updateFeel(dt){
  const Pk=parkourOn()?parkour:null;if(Pk&&!Pk.active()){Pk.update(dt);if(airborne)Pk.air(dt);}
  if(airborne){airTime+=dt;airPeak=Math.max(airPeak,targetPosition.y-1.75);}else if(wasAirborne){
   const fell=airPeak-(targetPosition.y-1.75),res=Pk?.land(fell);airPeak=targetPosition.y-1.75;
-  if(res?.kind==='roll'){proneT=0;fovKick+=4;{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,8,.8);}}else if(res?.kind==='hard')proneT=res.stun;footsteps?.land(surfaceAt(targetPosition),Math.min(1,airTime/.7));if(airTime>.45){const feet=targetPosition.clone();feet.y-=1.72;puff(feet,5,.7);}airTime=0;
+  if(res?.kind==='roll'){proneT=0;fovKick+=4;playerBody?.anim?.('roll',{fade:.06,speed:1.9});{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,8,.8);}}else if(res?.kind==='hard'){proneT=res.stun;playerBody?.anim?.('jumpLand',{fade:.06,speed:1.6});}footsteps?.land(surfaceAt(targetPosition),Math.min(1,airTime/.7));if(airTime>.45){const feet=targetPosition.clone();feet.y-=1.72;puff(feet,5,.7);}airTime=0;
   if(dive)landDive();
   // Land with C held at speed and you go straight into a slide.
   else if(crouchHeld&&!slide&&speed>4.2){slide={kind:'slide',dur:SLIDE_TIME,t:0,dir:walkVelocity.clone().setY(0).normalize(),speed:speed*1.15,noDive:true};footsteps?.slide(surfaceAt(targetPosition),SLIDE_TIME);}}
@@ -640,7 +657,7 @@ function setMovement(key,pressed){
  if(pressed)keys.add(key);else keys.delete(key);
  if(state.ready)requestDraw();
 }
-document.addEventListener('keydown',event=>{if(modalOpen()||event.ctrlKey||event.metaKey||event.altKey||event.isComposing||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;const key=event.code==='Space'?'space':event.key.toLowerCase();if(['f','g','q'].includes(key)&&fistsEngaged()){event.preventDefault();event.stopImmediatePropagation();fists.key(key,true,event.repeat);requestDraw();return;}if((key==='a'||key==='d')&&state.ready&&!event.repeat&&!arena?.active())tapDodge(key);if(key==='v'&&thirdOn&&!event.repeat){event.preventDefault();thirdSide*=-1;requestDraw();return;}if(key==='c'&&!event.repeat)parkour?.crouchPressed();if(key==='c'&&state.ready&&!arena?.active()&&!expedition?.active()){event.preventDefault();if(!event.repeat){crouchHeld=true;startSlide();}return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&garden.skybox.distance(targetPosition)<3.8){event.preventDefault();toggleDoor();return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&!battle?.active()&&secrets?.interact()){event.preventDefault();return;}if(state.ready&&key==='m'&&!event.repeat&&ambience){ambience.setMuted(!ambience.muted);secrets?.notify(ambience.muted?'Garden ambience muted (M)':'Garden ambience on (M)');return;}if((moveKeys.has(key)||key==='shift'||key==='space')&&state.ready){if(key==='space'&&['BUTTON','A'].includes(event.target.tagName))return;event.preventDefault();if(!event.repeat)setMovement(key,true);}});
+document.addEventListener('keydown',event=>{if(modalOpen()||event.ctrlKey||event.metaKey||event.altKey||event.isComposing||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;const key=event.code==='Space'?'space':event.key.toLowerCase();if(['f','g','q'].includes(key)&&fistsEngaged()){event.preventDefault();event.stopImmediatePropagation();fists.key(key,true,event.repeat);requestDraw();return;}if((key==='a'||key==='d')&&state.ready&&!event.repeat&&!arena?.active())tapDodge(key);if(key==='t'&&!event.repeat&&!combat?.armed()){event.preventDefault();playEmote();return;}if(key==='v'&&thirdOn&&!event.repeat){event.preventDefault();thirdSide*=-1;requestDraw();return;}if(key==='c'&&!event.repeat)parkour?.crouchPressed();if(key==='c'&&state.ready&&!arena?.active()&&!expedition?.active()){event.preventDefault();if(!event.repeat){crouchHeld=true;startSlide();}return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&garden.skybox.distance(targetPosition)<3.8){event.preventDefault();toggleDoor();return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&!battle?.active()&&secrets?.interact()){event.preventDefault();return;}if(state.ready&&key==='m'&&!event.repeat&&ambience){ambience.setMuted(!ambience.muted);secrets?.notify(ambience.muted?'Garden ambience muted (M)':'Garden ambience on (M)');return;}if((moveKeys.has(key)||key==='shift'||key==='space')&&state.ready){if(key==='space'&&['BUTTON','A'].includes(event.target.tagName))return;event.preventDefault();if(!event.repeat)setMovement(key,true);}});
 document.addEventListener('keyup',event=>{const key=event.key.toLowerCase();if(key==='c')crouchHeld=false;if(fists&&['f','g','q'].includes(key))fists.key(key,false);setMovement(key,false);});
 for(const button of $('social-move').querySelectorAll('button')){button.onpointerdown=event=>{if(event.button!==0)return;event.preventDefault();button.setPointerCapture(event.pointerId);setMovement(button.dataset.key,true);};button.onpointerup=button.onpointercancel=button.onlostpointercapture=()=>setMovement(button.dataset.key,false);}
 document.addEventListener('focusin',event=>{if(modalOpen()||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName)){keys.clear();if(state.ready)requestDraw();}});
@@ -760,7 +777,7 @@ battle=window.createBattleArena?.({T,scene,camera,combat,garden,terrainY:(x,z)=>
  setNight(v){if(v!=null)garden.district;garden.nightRoad?.setOverride(v);},
  onDeath(){sway.bump(1.5,Math.random()<.5?-1:1);hitStop(160);requestDraw();},
  dodging:()=>slide?.kind==='dash'||!!dive||!!vault,
- onTackled(dir){proneT=1;slide=null;dive=null;walkVelocity.copy(dir).setY(0).multiplyScalar(4.5);sway.bump(1.4,Math.random()<.5?-1:1);hitStop(90);footsteps?.land(surfaceAt(targetPosition),1);requestDraw();},
+ onTackled(dir){playerBody?.anim?.('knockback',{fade:.05});proneT=1;slide=null;dive=null;walkVelocity.copy(dir).setY(0).multiplyScalar(4.5);sway.bump(1.4,Math.random()<.5?-1:1);hitStop(90);footsteps?.land(surfaceAt(targetPosition),1);requestDraw();},
  onSoul(on){document.body.classList.toggle('soul-taken',!!on);requestDraw();},
  onImpact(at,k=1){const d=at.distanceTo(targetPosition);if(d<30){sway.bump(k*(1-d/30),0);const p=at.clone();puff(p,8,1.6,'stone');}},
  onExit(){go('spawn');},
@@ -797,7 +814,7 @@ const play=window.createPlayMenu?.({nav:document.querySelector('.view-nav'),afte
 window.breakThyRuleShowroom={scene:()=>scene,renderer:()=>renderer,combat:()=>combat,battle:()=>battle,fists:()=>fists,fight:key=>fists?.key(key,true),teleport(x,z,yaw=Math.PI){if(!state.ready)return;freeView();motion.reset();walkVelocity.set(0,0,0);targetPosition.set(x,1.75+groundHeight(groundPoint.set(x,0,z)),z);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,Math.cos(yaw)).multiplyScalar(5));camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();},go,inspect,showSide,focusResident,
  // camera placement for captures and checks: stand at (x,z) looking toward (lx,ly,lz)
  place(x,z,lx,lz,ly=1.75){if(expedition?.active())expedition.leave();motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,ly,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.lookAt(aim);requestDraw();},
-third:on=>{lastThirdToggle=0;return setThird(!!on);},climbs:()=>garden.nightBuilt()?garden.district.climbs:[],parkour:()=>pk(),// Run the movement logic n steps of dt with keys held (and Space pressed on the first step), without drawing.
+third:on=>{lastThirdToggle=0;return setThird(!!on);},bodyAnim:()=>({...bodyAnim,playing:['slideLoop','jumpLoop','dash','roll','climbUp','getUp','wave','cheer'].filter(id=>playerBody?.animPlaying?.(id))}),bodyClip:(id,o)=>playerBody?.anim?.(id,o),climbs:()=>garden.nightBuilt()?garden.district.climbs:[],parkour:()=>pk(),// Run the movement logic n steps of dt with keys held (and Space pressed on the first step), without drawing.
 sim:(n=30,dt=1/30,hold=[],jumpFirst=false,jumpAt=[],{holdC=false,crouchAt=[]}={})=>{for(const k of hold)keys.add(k);const hadC=crouchHeld;if(holdC)crouchHeld=true;for(let i=0;i<n;i++){if(crouchAt.includes(i))parkour?.crouchPressed();if((jumpFirst&&i===0)||jumpAt.includes(i))jump();updateJump(dt);if(keys.size||walkVelocity.lengthSq()||slide||vault||parkour?.active())move(dt);updateFeel(dt);}for(const k of hold)keys.delete(k);if(holdC)crouchHeld=hadC;return {pos:targetPosition.toArray().map(v=>+v.toFixed(2)),feet:+(targetPosition.y-1.75).toFixed(2),pk:parkour?.inspect()};},
 face:yaw=>{targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,-Math.cos(yaw)).multiplyScalar(5));requestDraw();},vault:(x,z)=>tryVault(new T.Vector3(x,0,z)),touch:()=>touch?.inspect?.()||null,sprintTo:v=>{const f=targetAim.clone().sub(targetPosition).setY(0).normalize();walkVelocity.copy(f).multiplyScalar(v||7);},getState:()=>({...state,secrets:secrets?.inspect(),extras:extras?.inspect(),ambience:ambience?.inspect(),aim:targetAim.toArray().map(v=>+v.toFixed(3)),third:+thirdK.toFixed(2),parkour:parkour?.inspect()||null,feel:{vaults:vaultCount,wallPops,rolls,vault:!!vault,dive:!!dive,dives:diveCount,tackles:tackleCount,prone:+proneT.toFixed(2),bumps:bumpCount,crouch:+crouchAmount.toFixed(2),slide:slide?.kind||null,fovKick:+fovKick.toFixed(1),lookLocked},combat:combat?.inspect(),fists:fists?.inspect(),position:camera.position.toArray(),arena:arena?.inspect(),movement:{...motion.inspect(),velocity:walkVelocity.toArray().map(v=>+v.toFixed(3)),sway:sway.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.nightBuilt()?garden.district.inspect():null,library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),lighting:lighting.inspect(),post:post.inspect(),quality:quality.inspect(),residents:residents.inspect(),body:playerBody?.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
 })();

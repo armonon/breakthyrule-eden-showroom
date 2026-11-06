@@ -1,0 +1,9 @@
+Animation clips in clips.json (baked by tools/animation/bake-clips.cjs):
+
+- Quaternius, Universal Animation Library and Universal Animation Library 2 (Standard).
+  CC0 1.0 Universal (public domain). https://quaternius.com
+- Microsoft Rocketbox animations (Assets/Animations), https://github.com/microsoft/Microsoft-Rocketbox
+  MIT License, Copyright (c) 2020 Microsoft. The full licence text is in the source repository's LICENSE.md:
+  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+  documentation files, to deal in the Software without restriction, subject to including the copyright notice and
+  this permission notice in all copies or substantial portions of the Software.

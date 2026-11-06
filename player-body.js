@@ -131,6 +131,10 @@
    // Third person (app.js): the head shows once the camera has pulled back.
    third(k){if(!model)return;const show=k>.15;if(show!==!!model.root.userData.third){model.root.userData.third=show;model.byName.neck01.scale.setScalar(show?1:.001);}},
    // What you hold, in the right hand (same placement as the match's bots).
+   // Authored clips on your own character (character-anim.js through character-motion.js).
+   anim(id,opts){return model?.motion.play?.(id,opts)||null;},
+   stopAnim(id,fade){model?.motion.stop?.(id,fade);},
+   animPlaying:id=>!!model?.motion.playing?.(id),
    // What you hold, gripped in both hands and pointed where you look (character-motion.js hold/aimAt).
    hold(mesh,id){heldMesh=mesh;heldId=id;if(model)model.motion.hold?.(mesh,id);requestDraw();},
    grab(point){if(!model?.root.visible||!point||point.distanceTo(camera.position)>1.6)return 0;grabPoint=point.clone();grabUntil=clock+.55;requestDraw();return 230;},

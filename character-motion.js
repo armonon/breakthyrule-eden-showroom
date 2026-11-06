@@ -124,7 +124,8 @@
   })();
   const state={time:null,phase:0,speed:0,weight:0,velocity:new T.Vector3(),last:new T.Vector3(),lastYaw:null,yawRate:0,walkHold:0,
    lean:{x:0,v:0},bank:{x:0,v:0},hitPitch:{x:0,v:0},hitRoll:{x:0,v:0},headPitch:{x:0,v:0},stumble:{x:new T.Vector3(),v:new T.Vector3()},
-   guard:{x:0,v:0},guardTarget:0,wave:{x:0,v:0},wade:{x:0,v:0},look:null,lookYaw:{x:0,v:0},lookPitch:{x:0,v:0},airborne:false,treadmill:0,punches:0,hold:{x:0,v:0},held:null,aimPoint:null};
+   guard:{x:0,v:0},guardTarget:0,wave:{x:0,v:0},wade:{x:0,v:0},look:null,lookYaw:{x:0,v:0},lookPitch:{x:0,v:0},airborne:false,treadmill:0,punches:0,hold:{x:0,v:0},held:null,aimPoint:null,layers:[],locoK:0,idleK:0};
+  if(root.GardenAnim&&!root.GardenAnim.ready())setTimeout(()=>root.GardenAnim.load(),3000);
   const toLocal=p=>group.worldToLocal(v3.copy(p)).clone(),toWorld=p=>group.localToWorld(p.clone());
   const api={
    tune:{guardLift:0,wadeLift:0},
@@ -140,6 +141,14 @@
    hold(mesh,kind=null){if(state.held?.mesh&&state.held.mesh!==mesh)state.held.mesh.parent?.remove(state.held.mesh);state.held=mesh?{mesh,kind}:null;if(mesh){mesh.traverse(n=>{n.userData.noHit=true;n.raycast=()=>{};});mesh.visible=false;}},
    held:()=>state.held,
    aimAt(point){state.aimPoint=point?point.clone():null;},
+   // Authored clips (character-anim.js) layered over the procedural pose. mask: 'full' | 'upper' | 'torso' | 'arms';
+   // arms: true lets the clip move the arms even while they hold a gun or grip something; hold: stay on the last frame.
+   play(id,{fade=.15,speed=1,loop=null,mask='full',weight=1,arms=false,hold=false,start=0}={}){
+    const A=root.GardenAnim;if(!A?.ready()||!A.has(id))return null;state.layers=state.layers.filter(L=>L.id!==id||L.out);
+    const L={id,t:start,speed,fade,loop:loop??A.clip(id).loop,mask,weight,arms,hold,w:0,out:false,dur:A.duration(id)};state.layers.push(L);return L;},
+   stop(id=null,fade=.2){for(const L of state.layers)if(!id||L.id===id){L.out=true;L.fade=fade;}},
+   playing:id=>state.layers.some(L=>L.id===id&&!L.out),
+   animTune:{loco:true},
    // Jab with the hand furthest back; returns the seconds until the fist lands.
    punch(target){const s=sides[state.punches++%2];s.punch={t:0,target:target?toLocal(target):s.shoulder.clone().add(new T.Vector3(-s.sign*.08,.02,.62))};return .12;},
    hit(direction,strength=1){const d=direction.clone().applyQuaternion(group.getWorldQuaternion(new T.Quaternion()).invert());d.y=0;if(d.lengthSq()>1e-6)d.normalize();
@@ -266,6 +275,22 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
      for(const f of s.fingers)f.chain.forEach((b,j)=>{b.quaternion.setFromAxisAngle(f.axis,s.curl.x*(f.thumb?[.55,.6,.5][j]:[1.55,1.1,.7][j]));
       if(j===0&&close>0){b.quaternion.premultiply(q1.setFromAxisAngle(f.across,f.spread*.9*close));if(f.thumb)b.quaternion.premultiply(q1.setFromAxisAngle(f.long,f.wrapSign*.85*close));}});
      if(s.touchWeight.x<.002&&!s.touchTarget)s.touch=null;
+    }
+    // Authored clips over the procedural pose: queued clips, and an upper-body walk / run (timed to our own footfalls)
+    // and idle, which give the arms, shoulders and spine their swing while the feet stay planted procedurally.
+    const A=root.GardenAnim;
+    if(A?.ready()){
+     const busy=state.hold.x>.05||sides.some(s=>s.touchWeight.x>.05||s.punch)||state.guard.x>.08;
+     let full=0;for(const L of state.layers){L.t+=dt*L.speed;if(!L.loop&&L.t>=L.dur){if(L.hold)L.t=L.dur;else L.out=true;}
+      const target=L.out?0:1,rate=dt/Math.max(.01,L.fade);L.w=target>L.w?Math.min(1,L.w+rate):Math.max(0,L.w-rate);if(L.mask==='full')full=Math.max(full,L.w*L.weight);}
+     state.layers=state.layers.filter(L=>!(L.out&&L.w<=0));
+     const M=A.masks(),noArms=k=>{const key=k+'-noarms';M[key]??=M[k].map((v,i)=>M.arms[i]?0:v);return M[key];},list=[];
+     if(api.animTune.loco&&!state.airborne){const gait=state.weight,run=smooth(3.5,6,state.speed),id=run>.6?'sprint':run>.15?'jog':'walk';
+      state.locoK+=((gait>.05?1:0)-state.locoK)*(1-Math.exp(-6*dt));state.idleK+=((gait<.05?1:0)-state.idleK)*(1-Math.exp(-3*dt));
+      const ph=(state.phase+A.phase0(id))%1;if(state.locoK>.01)list.push({id,t:ph*A.duration(id),weight:.85*state.locoK*(1-full),mask:busy?noArms('upper'):M.upper});
+      if(state.idleK>.01)list.push({id:'idle',t:(state.time||0)%A.duration('idle'),weight:.55*state.idleK*(1-full),mask:busy?noArms('upper'):M.upper});}
+     for(const L of state.layers)list.push({id:L.id,t:L.t,weight:L.w*L.weight,mask:busy&&!L.arms?noArms(L.mask):M[L.mask]});
+     A.apply(T,model,list);
     }
     // The held weapon follows the right hand: a gun points from the grip at the aim, the axe hangs from the hand.
     if(state.held){const m=state.held.mesh,par=group.parent;if(par){if(m.parent!==par)par.add(m);m.visible=true;group.updateMatrixWorld(true);

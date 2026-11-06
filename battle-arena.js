@@ -275,7 +275,7 @@
     // Hit reactions: heavy blows knock the bot down into a ragdoll (it gets back up); light ones flinch it, at most
     // every 0.7 s so a spray cannot pin it down. Either way it side-steps out of the line of fire.
     if(target.hp-a>0&&meta.kind!=='zone'){const heavy=meta.blast||['sniper','axe','melee'].includes(meta.weapon)||(meta.weapon==='pump'&&amount>=30)||amount>=45;
-     const dir=blowDirection(target,attacker,meta);if(heavy){target.model.motion?.hit?.(dir,2.2);}else if(clock-target.lastFlinch>.7){target.lastFlinch=clock;target.model.motion?.hit?.(dir,.7);}
+     const dir=blowDirection(target,attacker,meta);if(heavy){target.model.motion?.hit?.(dir,2.2);}else if(clock-target.lastFlinch>.7){target.lastFlinch=clock;target.model.motion?.hit?.(dir,.7);target.model.motion?.play?.(meta.head?'hitHead':'hitChest',{mask:'upper',fade:.04,speed:1.2});}
      target.dodgeT=.38;target.strafe=Math.random()<.5?1:-1;}}
    else{combat.hurt(attacker&&attacker!==target?eyeOf(attacker):null,a+(amount-a)*.4+shielded*.55);if(meta.kind==='zone')combat.hurt(null,a*.4);hud.update();}
    if(target.hp<=0){kill(target,attacker,meta);return {killed:true};}
@@ -284,6 +284,7 @@
   function kill(target,attacker,meta){
    target.alive=false;target.hp=0;target.deathT=clock;
    if(attacker&&attacker!==target){
+    if(attacker.bot&&Math.random()<.35)setTimeout(()=>{if(attacker.alive&&attacker.state!=='fight')attacker.model.motion?.play?.(pick(['cheer','nod','clap']),{fade:.2,mask:'upper'});},600);
     attacker.kills++;attacker.score=(attacker.score||0)+POINTS.kill+(meta.head?POINTS.head:0)+(meta.finisher?POINTS.finisher:0);if(meta.finisher&&attacker===player)setTimeout(()=>announce(`FINISHER · +${POINTS.finisher}`),700);
     attacker.multi=clock-(attacker.lastKillT??-9)<4?(attacker.multi||1)+1:1;attacker.lastKillT=clock;attacker.streak=(attacker.streak||0)+1;
     const call=SPREES[attacker.streak]||STREAKS[Math.min(4,attacker.multi)];
@@ -433,8 +434,8 @@
    }
    // Interact
    if(b.state==='rush'||b.state==='loot'){
-    for(const c of chests)if(!c.open&&c.pos.distanceTo(p)<1.4){openChest(c,b);b.goal=null;b.state='loot';}
-    for(const l of loot.slice())if(!l.vel&&l.pos.distanceTo(p)<1.3&&botWants(b,l)>0)botTake(b,l);
+    for(const c of chests)if(!c.open&&c.pos.distanceTo(p)<1.4){openChest(c,b);b.model.motion?.play?.('chestOpen',{speed:1.6,fade:.1});b.goal=null;b.state='loot';}
+    for(const l of loot.slice())if(!l.vel&&l.pos.distanceTo(p)<1.3&&botWants(b,l)>0){botTake(b,l);b.model.motion?.play?.('pickup',{speed:1.8,fade:.08,mask:'upper'});}
    }
    // Movement + combat
    let move=new T.Vector3(),speed=3.6;
@@ -442,14 +443,14 @@
     const tp=posOf(b.target),to=tp.clone().sub(p);to.y=0;const dist=to.length();to.normalize();
     b.heading=Math.atan2(to.x,to.z);b.model.motion?.aimAt?.(eyeOf(b.target).add(new T.Vector3(0,-.3,0)));
     const id=b.weapon,w=W(id);
-    if(id==='axe'){move.copy(to);speed=5;if(dist<1.8&&b.fireT<=0){b.fireT=.75;setTimeout(()=>{if(b.alive&&b.target?.alive&&posOf(b.target).distanceTo(b.root.position)<2.2)damage(b.target,w.dmg*.8,b,{weapon:'axe'});},350);}}
+    if(id==='axe'){move.copy(to);speed=5;if(dist<1.8&&b.fireT<=0){b.fireT=.75;b.model.motion?.play?.(Math.random()<.5?'swingA':'swingB',{mask:'upper',arms:true,fade:.06,speed:1.1});setTimeout(()=>{if(b.alive&&b.target?.alive&&posOf(b.target).distanceTo(b.root.position)<2.2)damage(b.target,w.dmg*.8,b,{weapon:'axe'});},350);}}
     else{
      let ideal=id==='pump'?6:id==='smg'?12:id==='pistol'?14:id==='sniper'?45:24;
      if(b.target===player&&player.shield<=0)ideal*=.55; // smells blood: closes in while your shield is down
      if(b.strafeT<=0){b.strafeT=rand(.35,1.1);b.strafe*=Math.random()<.6?-1:1;}
-     if(dist<2.2&&b.bashT<=0){b.bashT=1.1;setTimeout(()=>{if(b.alive&&b.target?.alive&&posOf(b.target).distanceTo(b.root.position)<2.6)damage(b.target,45,b,{weapon:'melee'});},180);}
+     if(dist<2.2&&b.bashT<=0){b.bashT=1.1;b.model.motion?.play?.('hook',{mask:'upper',arms:true,fade:.05,speed:1.2});setTimeout(()=>{if(b.alive&&b.target?.alive&&posOf(b.target).distanceTo(b.root.position)<2.6)damage(b.target,45,b,{weapon:'melee'});},180);}
      // Smelling blood (you are reloading or your shield is down) and close: the bot charges in for a tackle.
-     if(b.target===player&&!b.lunge&&dist>1.8&&dist<6&&Math.abs(tp.y-p.y)<1.2&&clock>(b.lungeCd||0)&&(player.shield<=0||combat.inspect().action==='reload')&&Math.random()<dt*1.2){b.lunge={t:0,dir:to.clone()};b.lungeCd=clock+7;}
+     if(b.target===player&&!b.lunge&&dist>1.8&&dist<6&&Math.abs(tp.y-p.y)<1.2&&clock>(b.lungeCd||0)&&(player.shield<=0||combat.inspect().action==='reload')&&Math.random()<dt*1.2){b.lunge={t:0,dir:to.clone()};b.lungeCd=clock+7;b.model.motion?.play?.('dash',{fade:.06,speed:1.3});}
      if(b.lunge){b.lunge.t+=dt;move.copy(b.lunge.dir);speed=9;b.heading=Math.atan2(b.lunge.dir.x,b.lunge.dir.z);
       if(dist<1.15){const dir=b.lunge.dir.clone();b.lunge=null;
        if(o.dodging?.()){announce('DODGED');b.model.motion?.knockdown?.(dir,1.5);b.tackledUntil=clock+2;chime([660,880],.06,.05);}
@@ -458,7 +459,7 @@
      const side=new T.Vector3(to.z,0,-to.x).multiplyScalar(b.strafe);if(!b.lunge){move.copy(side).addScaledVector(to,dist>ideal+4?1:dist<ideal-4?-.7:0);speed=dist>ideal+10?4.8:2.6;}
      if(b.dodgeT>0&&!b.lunge){move.copy(side).multiplyScalar(1.6).addScaledVector(to,.2);speed=6.5;}
      const gun=b.weapons[id];
-     if(gun.loaded<=0&&b.reloadT<=0){const r=b.reserve[w.ammo]||0;if(r>0){b.reloadT=id==='pump'?2.4:2;b.pendingReload=true;}else{delete b.weapons[id];setBotWeapon(b,botBestWeapon(b));}}
+     if(gun.loaded<=0&&b.reloadT<=0){const r=b.reserve[w.ammo]||0;if(r>0){b.reloadT=id==='pump'?2.4:2;b.pendingReload=true;b.model.motion?.play?.('pistolReload',{mask:'upper',arms:true,fade:.12,speed:1.67/(id==='pump'?2.4:2)});}else{delete b.weapons[id];setBotWeapon(b,botBestWeapon(b));}}
      if(b.pendingReload&&b.reloadT<=0){const r=b.reserve[w.ammo]||0,take=Math.min(w.mag-gun.loaded,r);gun.loaded+=take;b.reserve[w.ammo]=r-take;b.pendingReload=false;}
      if(b.aimT<=0&&b.fireT<=0&&gun.loaded>0&&b.reloadT<=0&&dist<(w.range||80)){
       b.fireT=Math.max(w.interval,id==='sniper'?2.2:id==='pump'?1:w.auto?w.interval*1.6:.42)*rand(1,1.4);gun.loaded--;botShoot(b,b.target,w,dist);}
