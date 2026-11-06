@@ -8,7 +8,7 @@
  const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
  function createPlayerBody({T,scene,camera,pickables=[],enabled=()=>true,requestDraw=()=>{}}){
   const push=root.createFoliagePush?.(T,scene);
-  let heldMesh=null,heldId=null,baseFov=null,ownFov=null,model=null,signature='',defaults=null,loading=null,checked=-1e9,clock=0,frame=0,yaw=null,turning=false,guardUntil=0,grabUntil=0,grabPoint=null,hover=null,wall=null;
+  let handsOn=false,heldMesh=null,heldId=null,baseFov=null,ownFov=null,model=null,signature='',defaults=null,loading=null,checked=-1e9,clock=0,frame=0,yaw=null,turning=false,guardUntil=0,grabUntil=0,grabPoint=null,hover=null,wall=null;
   const eye=new T.Vector3(),headQ=new T.Quaternion(),turnAround=new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),Math.PI);
   const forward=new T.Vector3(),left=new T.Vector3(),up=new T.Vector3(0,1,0),probe=new T.Vector3(),ray=new T.Raycaster(),center=new T.Vector2();
   // The character comes from the signed-in account, else the creator's latest draft, else the schema defaults.
@@ -67,7 +67,7 @@
   const api={
    // crouch: metres the eye is lowered; fovKick: degrees added while sprinting.
    // pose: {dive 0..1 (lying forward in the air), slide 0..1 (leaning back into a slide)}.
-   update(dt,{aim,velocity=null,airborne=false,crouch=0,fovKick=0,pose=null}={}){
+   update(dt,{aim,velocity=null,airborne=false,crouch=0,fovKick=0,pose=null,hands=null}={}){
     clock+=dt;frame++;
     if(clock-checked>1.5){checked=clock;refresh();}
     // Plants part around you and the five nearest characters.
@@ -115,6 +115,8 @@
     if(frame%4===0){center.set(0,0);ray.setFromCamera(center,camera);ray.far=1.25;const hit=ray.intersectObjects(pickables,false)[0];hover=hit?hit.point.clone().addScaledVector(ray.ray.direction,-.14):null;}
     const near=nearestOther(1.9);model.motion.guard(clock<guardUntil?1:near?.85:0);
     // The gun (third person) and the slide / dive pose.
+    // Parkour: both hands on the ledge while hanging or climbing.
+    if(hands){model.motion.touch('L',hands[0],null,1,'grab');model.motion.touch('R',hands[1],null,1,'grab');handsOn=true;}else if(handsOn){model.motion.touch('L',null,null,0);model.motion.touch('R',null,null,0);handsOn=false;}
     if(model.motion.held?.()?.mesh!==heldMesh)model.motion.hold?.(heldMesh,heldId);
     if(heldMesh)model.motion.aimAt?.(aim);
     model.root.rotation.order='YXZ';const pitchTo=pose?(pose.dive||0)*1.25-(pose.slide||0)*.32:0;model.root.rotation.x+=(pitchTo-model.root.rotation.x)*(1-Math.exp(-10*dt));

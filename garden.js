@@ -163,11 +163,11 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  const nightNear=p=>p.z< -12||Math.hypot(p.x-9,p.z+8.5)<10;
  function buildNight(all=false){nightSteps??=[...nightBuilders];while(nightSteps.length){nightSteps.shift()();if(!all)break;}}
  const nightBuilt=()=>!!nightRoad;
- return {snake,skybox,get nightRoad(){return nightRoad;},get pyramid(){buildNight(true);return pyramid;},get district(){buildNight(true);return district;},nightBuilt,ready:Promise.allSettled(assetJobs),constrain(position,previous){
+ return {snake,skybox,get nightRoad(){return nightRoad;},get pyramid(){buildNight(true);return pyramid;},get district(){buildNight(true);return district;},nightBuilt,ready:Promise.allSettled(assetJobs),constrain(position,previous,feet=null){
   if(position.z< -12&&!nightBuilt())buildNight(true);
   if(previous.z< -20){if(position.z< -111)pyramid.constrain(position);else{const width=T.MathUtils.lerp(2.7,90,T.MathUtils.smoothstep(-position.z,20,30));position.x=T.MathUtils.clamp(position.x,roadX-width,roadX+width);}}
   else{position.x=T.MathUtils.clamp(position.x,-20,20);if(position.z< -20&&Math.abs(position.x-roadX)>2.7)position.z=-20;}
-  if(district?.blocks(position)||pyramid?.blocks(position)||skybox.blocks(position,previous))position.copy(previous);
+  if(district?.blocks(position,feet)||pyramid?.blocks(position)||skybox.blocks(position,previous))position.copy(previous);
   if(position.z>26&&!window.edenValley.reaches(position.x,position.z)){if(previous.z>26)position.copy(previous);else position.z=26;}
   return position;
  },road:{x:roadX,start:roadStart,end:roadEnd,door:skybox.door.z,inspect:()=>({first:roadFirst,sections:roadSections.length,near:roadStart-roadFirst*roadLength,far:Math.max(roadEnd,roadStart-(roadFirst+roadSections.length)*roadLength)})},update(time,viewer,active=true){

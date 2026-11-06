@@ -11,7 +11,8 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
  const velvet=new T.MeshStandardMaterial({color:0x621f36,roughness:1});
  const glow=new T.MeshStandardMaterial({color:0xe6cd9e,emissive:0xffb34f,emissiveIntensity:.7,roughness:.45});
  const water=new T.MeshStandardMaterial({color:0x214f50,metalness:.65,roughness:.2});
- const walls=[],lamps=[],staticRoot=new T.Group();root.add(staticRoot);
+ const walls=[],lamps=[],staticRoot=new T.Group(),surfaces=[],climbs=[];
+ const ROOFS=window.edenRoofs||{},eaveOf=s=>ROOFS[s.id]?.eave??s.h;root.add(staticRoot);
  function mesh(parent,geometry,material,x,y,z,sx=1,sy=1,sz=1){const m=new T.Mesh(geometry,material);m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.receiveShadow=true;parent.add(m);return m;}
  const box=(p,m,x,y,z,w,h,d)=>mesh(p,cube,m,x,y,z,w,h,d);
  function column(p,x,z,h=4,r=.3){mesh(p,shaft,marble,x,h/2,z,r,h,r);box(p,marble,x,.12,z,r*3,.24,r*3);box(p,marble,x,h,z,r*3,.28,r*3);mesh(p,shaft,brass,x,h-.22,z,r*1.1,.09,r*1.1);}
@@ -47,12 +48,12 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
   const model=MODELS[s.id];
   const shell=model?new T.Group():p,q=model&&!model.keepInterior?shell:p;
   if(model){shell.name=s.name+' (procedural fallback)';shell.userData.landmarkModel=true;shell.position.copy(p.position);root.add(shell);loadModel(s,model,shell);
-   for(const [x,z,w,d] of model.blocks||[])walls.push([s.x+x,s.z+z,w,d]);}
+   for(const [x,z,w,d] of model.blocks||[])walls.push([s.x+x,s.z+z,w,d,eaveOf(s)]);}
   // Physical walls and server collision use the same doorway dimensions.
   if(s.id!=='gardens'){
    for(const side of [-1,1]){
-    box(shell,facade,side*s.w/2,s.h/2,0,.5,s.h,s.d);walls.push([s.x+side*s.w/2,s.z,.5,s.d]);
-    for(const end of [-1,1]){const x=side*(s.w/4+.9),z=end*s.d/2,w=s.w/2-1.8;box(shell,facade,x,s.h/2,z,w,s.h,.5);walls.push([s.x+x,s.z+z,w,.5]);}
+    box(shell,facade,side*s.w/2,s.h/2,0,.5,s.h,s.d);walls.push([s.x+side*s.w/2,s.z,.5,s.d,eaveOf(s)]);
+    for(const end of [-1,1]){const x=side*(s.w/4+.9),z=end*s.d/2,w=s.w/2-1.8;box(shell,facade,x,s.h/2,z,w,s.h,.5);walls.push([s.x+x,s.z+z,w,.5,eaveOf(s)]);}
    }
    const spandrel=new T.Shape();spandrel.moveTo(-1.8,s.h);spandrel.lineTo(1.8,s.h);spandrel.lineTo(1.8,2.9);spandrel.lineTo(1.65,2.9);spandrel.absarc(0,2.9,1.65,0,Math.PI,false);spandrel.lineTo(-1.8,2.9);spandrel.closePath();const archWall=new T.ExtrudeGeometry(spandrel,{depth:.5,bevelEnabled:false,curveSegments:20});
    for(const end of [-1,1]){mesh(shell,archWall,facade,0,0,end*s.d/2-.25);arch(shell,0,2.9,end*(s.d/2+.28),1.65);}
@@ -130,6 +131,23 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
   }).catch(error=>{modelState[s.id]='fallback';console.warn(s.name+' model unavailable; keeping the procedural building',error);})
    .finally(()=>{modelInFlight=false;});
  }
+ // Parkour: every roof is a walkable surface (parkour.js), and each building has a staircase of stacked crates against
+ // one side wall, each tier within a climb of the last, so any roof can be reached. Walls carry their height so you are
+ // only blocked by walls taller than where your feet are.
+ {const cv=document.createElement('canvas');cv.width=cv.height=128;const g=cv.getContext('2d');g.fillStyle='#7a5634';g.fillRect(0,0,128,128);for(let i=0;i<6;i++){g.fillStyle=i%2?'#6d4a2b':'#835d38';g.fillRect(0,i*21+2,128,19);}g.strokeStyle='#3f2a17';g.lineWidth=10;g.strokeRect(5,5,118,118);g.beginPath();g.moveTo(10,10);g.lineTo(118,118);g.stroke();
+  const tex=new T.CanvasTexture(cv);tex.colorSpace=T.SRGBColorSpace;const crate=new T.MeshStandardMaterial({map:tex,roughness:.88});
+  for(const s of layout.landmarks){
+   const F=ROOFS[s.id],eave=eaveOf(s);
+   if(F)surfaces.push({field:F,id:s.id,foot:{minX:s.x-s.w/2,maxX:s.x+s.w/2,minZ:s.z-s.d/2,maxZ:s.z+s.d/2}});else if(s.id!=='gardens')surfaces.push({minX:s.x-s.w/2,maxX:s.x+s.w/2,minZ:s.z-s.d/2,maxZ:s.z+s.d/2,top:s.h,bottom:s.h-.4,roof:true,id:s.id});
+   // Crates go against the model's real facade: scan in from outside along the row for the first cell near the eave.
+   const side=s.x<12?-1:1,step=2.55;const tops=[];let t=0;do{t+=step;tops.push(+t.toFixed(2));}while(eave-t>3.1);
+   const facadeX=z=>{const wall=s.x+side*s.w/2;if(!F)return wall;const r=Math.floor((z-F.minZ)/F.cell);if(r<0||r>=F.rows)return wall;for(let k=0;k<F.cols;k++){const c=side<0?k:F.cols-1-k,h=F.h[r*F.cols+c];if(h>3)return F.minX+(c+(side<0?0:1))*F.cell;}return wall;};
+   const z0=F?F.minZ+2.2:s.z-s.d/2+1.6,zMax=F?F.minZ+F.rows*F.cell-2.2:s.z+s.d/2-1;
+   tops.forEach((top,i)=>{const z=z0+i*2.05;if(z+1>zMax)return;const a=facadeX(z-.9),b=facadeX(z+.9);if(a==null||b==null)return;const fx=side<0?Math.min(a,b):Math.max(a,b);const x=fx+side*1.02;
+    const p=new T.Group();p.position.set(x,0,z);staticRoot.add(p);
+    for(let y=0;y<top-.01;y+=1.275){const h=Math.min(1.275,top-y);box(p,crate,0,y+h/2,0,2,h,2);}
+    walls.push([x,z,2,2,top]);climbs.push({x,z,top,id:s.id});});
+  }}
  // Collapse repeated architecture to instanced batches, preserving real geometry at low draw cost.
  staticRoot.updateMatrixWorld(true);const batches=new Map();staticRoot.traverse(o=>{if(!o.isMesh)return;const key=o.geometry.uuid+o.material.uuid;if(!batches.has(key))batches.set(key,{geometry:o.geometry,material:o.material,matrices:[]});batches.get(key).matrices.push(o.matrixWorld.clone());});
  root.remove(staticRoot);for(const batch of batches.values()){const m=new T.InstancedMesh(batch.geometry,batch.material,batch.matrices.length);batch.matrices.forEach((matrix,i)=>m.setMatrixAt(i,matrix));m.receiveShadow=true;m.computeBoundingSphere?.();root.add(m);}
@@ -146,7 +164,8 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
  box(watcher,brass,0,2.3,.245,.04,.75,.035);const sigil=mesh(watcher,new T.TorusGeometry(.12,.018,6,24),brass,0,2.61,.24);
  let snapshot=null;
  return {root,watcher,walls,lamps,setPages,setState(value){if(value&&value.code!==snapshot?.code)watcher.position.set(value.watcher.x,0,value.watcher.z);snapshot=value;watcher.visible=!!value&&value.phase==='playing';if(value)setPages(value.pages,value.collected);else pageRoot.visible=false;},
-  blocks(p){return walls.some(([x,z,w,d])=>Math.abs(p.x-x)<w/2+.3&&Math.abs(p.z-z)<d/2+.3);},
+  // feet: the height of the player's feet, when known: walls lower than a step up from there do not block.
+  blocks(p,feet=null){return walls.some(([x,z,w,d,h=99])=>Math.abs(p.x-x)<w/2+.3&&Math.abs(p.z-z)<d/2+.3&&(feet==null||h>feet+.45));},surfaces,climbs,
   clearGround(x,z){if(layout.arena&&Math.hypot(x-layout.arena.x,z-layout.arena.z)<layout.arena.r)return true;return layout.landmarks.some(s=>Math.abs(x-s.x)<s.w/2+3&&z-s.z>-s.d/2-4&&z-s.z<s.d/2+9)||layout.landmarks.some(s=>Math.abs(z-(s.z+s.d/2+3))<1.8&&x>Math.min(s.x,11.7)-1&&x<Math.max(s.x,11.7)+1);},
   update(time,viewer,night){root.visible=viewer.position.z<0;if(root.visible)streamModels(viewer);pageRoot.visible=!!snapshot;const nearest=lamps.map(p=>({p,d:p.distanceToSquared(viewer.position)})).sort((a,b)=>a.d-b.d);lightPool.forEach((l,i)=>{l.position.copy(nearest[i].p);l.intensity=night*10;});if(snapshot){const w=snapshot.watcher;watcher.position.lerp(new T.Vector3(w.x,0,w.z),.3);watcher.rotation.y=w.yaw;arms.forEach((a,i)=>{a.rotation.x=reduced?0:Math.sin(time*2+i*Math.PI)*.06;});sigil.material.emissive.set(0x503c22);sigil.material.emissiveIntensity=.2;}},
   inspect:()=>({landmarks:layout.landmarks.map(s=>({name:s.name,x:s.x,z:s.z})),batches:batches.size,theatre:modelState.playhouse==='model'?'model':'fallback',models:{...modelState},pages:pages.size,watcher:watcher.position.toArray()})
