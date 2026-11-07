@@ -9,7 +9,7 @@
  function createPlayerBody({T,scene,camera,pickables=[],enabled=()=>true,requestDraw=()=>{}}){
   const push=root.createFoliagePush?.(T,scene);
   root.GardenCharacterRocketbox?.textureListeners.add(requestDraw);
-  let handsOn=false,heldMesh=null,heldId=null,baseFov=null,ownFov=null,model=null,signature='',defaults=null,loading=null,checked=-1e9,clock=0,frame=0,yaw=null,turning=false,guardUntil=0,grabUntil=0,grabPoint=null,hover=null,wall=null;
+  let handsOn=false,handRise=0,heldMesh=null,heldId=null,baseFov=null,ownFov=null,model=null,signature='',defaults=null,loading=null,checked=-1e9,clock=0,frame=0,yaw=null,turning=false,guardUntil=0,grabUntil=0,grabPoint=null,hover=null,wall=null;
   const eye=new T.Vector3(),headQ=new T.Quaternion(),turnAround=new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),Math.PI);
   const forward=new T.Vector3(),left=new T.Vector3(),up=new T.Vector3(0,1,0),probe=new T.Vector3(),ray=new T.Raycaster(),center=new T.Vector2();
   // The character comes from the signed-in account, else the creator's latest draft, else the schema defaults.
@@ -118,8 +118,12 @@
     if(frame%4===0){center.set(0,0);ray.setFromCamera(center,camera);ray.far=1.25;const hit=ray.intersectObjects(pickables,false)[0];hover=hit?hit.point.clone().addScaledVector(ray.ray.direction,-.14):null;}
     const near=nearestOther(1.9);model.motion.guard(clock<guardUntil?1:near?.85:0);
     // The gun (third person) and the slide / dive pose.
-    // Parkour: both hands on the ledge while hanging or climbing.
-    if(hands){model.motion.touch('L',hands[0],null,1,'grab');model.motion.touch('R',hands[1],null,1,'grab');handsOn=true;}else if(handsOn){model.motion.touch('L',null,null,0);model.motion.touch('R',null,null,0);handsOn=false;}
+    // Parkour: both hands on the ledge while hanging or climbing. Each hand takes the grip on its own side, and the body
+    // rises under the ledge so the arms actually reach it.
+    const shoulder=model.byName['upperarm01.L'],at=shoulder&&model.skeleton.boneInverses[model.skeleton.bones.indexOf(shoulder)]?.elements;
+    const shoulderUp=at?-at[13]*model.root.scale.y:1.4,riseTo=hands?Math.max(0,Math.min(.7,hands[0].y-.33-(model.root.position.y+shoulderUp))):0;
+    handRise+=(riseTo-handRise)*(1-Math.exp(-14*dt));model.root.position.y+=handRise;
+    if(hands){const swap=shoulder?.getWorldPosition(probe).distanceToSquared(hands[0])>probe.distanceToSquared(hands[1]);model.motion.touch('L',hands[swap?1:0],null,1,'grab');model.motion.touch('R',hands[swap?0:1],null,1,'grab');handsOn=true;}else if(handsOn){model.motion.touch('L',null,null,0);model.motion.touch('R',null,null,0);handsOn=false;}
     if(model.motion.held?.()?.mesh!==heldMesh)model.motion.hold?.(heldMesh,heldId);
     if(heldMesh)model.motion.aimAt?.(aim);
     model.root.rotation.order='YXZ';const pitchTo=pose?(pose.dive||0)*1.25-(pose.slide||0)*.32:0;model.root.rotation.x+=(pitchTo-model.root.rotation.x)*(1-Math.exp(-10*dt));

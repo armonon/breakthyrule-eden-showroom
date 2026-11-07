@@ -24,7 +24,7 @@
  const EYE=1.75,STEP=.45,REACH=2.25,MANTLE=1.35,HANG_EYE=.3;
  root.createParkour=function({T,walls,surfaces,ground,player}){
   const P=player,up=new T.Vector3(0,1,0);
-  let boxes=[],fields=[],sig='',state=null,cool={wallrun:0,grab:0},crouchAt=-9,clock=0,lean=0,fov=0,stats={wallruns:0,scrambles:0,grabs:0,climbs:0,hangs:0,leaps:0,drops:0,rolls:0,hard:0};
+  let boxes=[],fields=[],sig='',state=null,cool={wallrun:0,grab:0},crouchAt=-9,clock=0,lean=0,fov=0,lift=0,stats={wallruns:0,scrambles:0,grabs:0,climbs:0,hangs:0,leaps:0,drops:0,rolls:0,hard:0};
 
   /* ---------------------------------------------------------------- world */
   function refresh(){
@@ -177,6 +177,8 @@
    clock+=dt;
    lean+=((state?.kind==='wallrun'?-state.side*.17:0)-lean)*(1-Math.exp(-10*dt));
    fov+=((state?.kind==='wallrun'?7:state?.kind==='warp'?5:0)-fov)*(1-Math.exp(-8*dt));
+   // First person, the eye rises towards a ledge you hold so your hands on it are in view; it settles again as you climb.
+   const wantLift=state?.kind==='hang'?.2:state?.kind==='climb'&&state.ledge?(1-clamp(state.t/state.dur/.6,0,1))*(state.from.y<state.ledge.top-1.4?.2:0):0;lift+=(wantLift-lift)*(1-Math.exp(-12*dt));
    if(!state)return false;const s=state;s.t+=dt;
    if(s.kind==='wallrun'){
     s.vy-=5.5*dt;const f=feetOf()+s.vy*dt,nx=P.pos.x+s.tangent.x*s.speed*dt,nz=P.pos.z+s.tangent.z*s.speed*dt;
@@ -226,10 +228,10 @@
    return false;
   }
   // The hands on the ledge (third-person body), or null.
-  function hands(){const s=state;if(!s)return null;const L=s.ledge;if(s.kind==='hang'||s.kind==='climb'&&s.t/s.dur<.6){return [L.point.clone().addScaledVector(L.tangent||new T.Vector3(L.normal.z,0,-L.normal.x),.24),L.point.clone().addScaledVector(L.tangent||new T.Vector3(L.normal.z,0,-L.normal.x),-.24)];}return null;}
+  function hands(){const s=state;if(!s)return null;const L=s.ledge;if(s.kind==='hang'||s.kind==='climb'&&s.t/s.dur<.85){const tan=L.tangent||new T.Vector3(L.normal.z,0,-L.normal.x);return [L.point.clone().addScaledVector(tan,.19),L.point.clone().addScaledVector(tan,-.19)];}return null;}
 
   return {wallBeside,wallAhead,floorAt,solid,ledgeAhead,update,onJump,air,land,dropToHang,hands,
-   crouchPressed(){crouchAt=clock;},active:()=>!!state,busy:()=>['climb','warp','scramble'].includes(state?.kind),kind:()=>state?.kind||null,lean:()=>lean,fov:()=>fov,
+   crouchPressed(){crouchAt=clock;},active:()=>!!state,busy:()=>['climb','warp','scramble'].includes(state?.kind),kind:()=>state?.kind||null,lean:()=>lean,fov:()=>fov,lift:()=>lift,handsFull:()=>['hang','climb','scramble'].includes(state?.kind),
    reset(){state=null;},inspect:()=>({state:state?.kind||null,boxes:boxes.length,fields:fields.length,stats:{...stats}})};
  };
 })(window);

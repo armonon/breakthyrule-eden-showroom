@@ -763,7 +763,7 @@
   }
 
   /* ------------------------------------------------------------ weapon state machine */
-  let adsBlend=0,sprintBlend=0,equipBlend=0,zoomTarget=0,lateral=0,stepDip=0,shiftHeld=false,breath={hold:0,tired:0},sprayIndex=0;
+  let handsBusy=false,adsBlend=0,sprintBlend=0,equipBlend=0,zoomTarget=0,lateral=0,stepDip=0,shiftHeld=false,breath={hold:0,tired:0},sprayIndex=0;
   // Sniper: hold Shift while scoped to steady your breath (4 s), then the sway comes back stronger while you recover.
   const BREATH_HOLD=4,BREATH_TIRED=3;
   // Rifle and SMG recoil you can learn while aiming: the muzzle climbs, then walks right, left and right again.
@@ -1123,7 +1123,8 @@
    const wantAds=zoomable()&&!(s.action&&s.action.name!=='bolt')?zoomTarget:0,weight=WEIGHT[w.id]||0;
    adsBlend+=(wantAds-adsBlend)*(1-Math.exp(-(15-weight*7)*dt));if(Math.abs(adsBlend-wantAds)<.002)adsBlend=wantAds;
    sprintBlend=lerp(sprintBlend,mv.sprinting&&!s.action?1:0,1-Math.exp(-8*dt));
-   equipBlend=Math.min(1,equipBlend+dt*3.2);
+   // Both hands on a ledge: the weapon drops out of view and cannot fire until they are free again.
+   if(handsBusy){equipBlend=Math.max(0,equipBlend-dt*7);zoomTarget=0;}else equipBlend=Math.min(1,equipBlend+dt*3.2);
    const zoom=1+((ZOOM[w.id]||1)-1)*adsBlend;if(Math.abs(camera.zoom-zoom)>1e-4){camera.zoom=zoom;camera.updateProjectionMatrix();}
 
    if(pendingFire){pendingFire=false;if(canFire())fire();else if(w.id==='pump'&&s.action?.name==='reload')s.action.cancel=true;}
@@ -1187,7 +1188,7 @@
   }
 
   function renderViewmodel(){
-   if(scoped||(o.thirdPerson?.()||0)>.35)return;
+   if(scoped||(o.thirdPerson?.()||0)>.35||handsBusy&&equipBlend<.04)return;
    viewCamera.aspect=camera.aspect;viewCamera.updateProjectionMatrix();
    // Sun direction (world) into view space so the weapon is lit like the garden.
    const sun=new T.Vector3(-23,19,-48).normalize().applyQuaternion(camera.quaternion.clone().invert());
@@ -1327,6 +1328,7 @@
    weaponModel(id){build();if(id==='c4'){const g=buildC4Block();return g;}const w=armsRig?.weapons[id];if(!w)return null;const c=w.model.clone(true);c.traverse(x=>{x.visible=true;});return c;},
    setHudMode(mode){build();hud.el.dataset.mode=mode||'';},
    armed:()=>armed,
+   setHandsBusy(on){handsBusy=!!on;},handsBusy:()=>handsBusy,weaponShown:()=>armed&&!(handsBusy&&equipBlend<.04),
    capturing:()=>armed,
    busy:()=>armed||(built&&(glowActive()||embers.length||heat.length||flips.some(f=>f.alive)||particles.some(p=>p.alive)||shells.some(s=>s.mesh.visible&&s.bounces<4)||charges.some(c=>!c.done)||targets.some(t=>Math.abs(t.swing.v)>.001||Math.abs(t.swing.x)>.001||t.down)||debris.length||tracers.some(t=>t.alive)||(state.blast||0)>0)),
    blocks(p){for(const t of targets){const q=t.root.position;if(t.kind==='plate'?Math.abs(p.x-q.x)<.62&&Math.abs(p.z-q.z)<.25:Math.hypot(p.x-q.x,p.z-q.z)<t.radius)return true;}return false;},

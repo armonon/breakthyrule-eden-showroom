@@ -42,7 +42,19 @@ console.log('second jump heights', JSON.stringify(heights));
 // Slide and dive for real.
 await evaluate(`S.teleport(C.x-20,C.z,Math.PI/2);0`); await sleep(600); await down('w'); await down('shift'); await sleep(500); await down('c'); seen = new Set(); for (let i = 0; i < 16; i++) { await sleep(70); seen.add((await evaluate(look)).mode); } await up('c'); await up('w'); await up('shift');
 console.log('slide', JSON.stringify([...seen])); await shot('slide');
-await sleep(1000); console.log('fps', await evaluate(`(async()=>{let n=0,run=true;const s=performance.now();const t=()=>{n++;if(run)requestAnimationFrame(t)};requestAnimationFrame(t);await new Promise(r=>setTimeout(r,2000));run=false;return +(n/((performance.now()-s)/1000)).toFixed(1)})()`));
+// Hands on a ledge: the gun goes away, the body shows and each hand reaches its own side; afterwards the gun returns.
+await evaluate(`(()=>{const c=S.climbs().find(c=>c.top>=5&&c.id==='temple');window.C=c;S.teleport(c.x-7,c.z,Math.PI/2);})();0`); await sleep(900);
+const facing = `(()=>{const s=S.getState(),p=s.position,dx=s.aim[0]-p[0],dz=s.aim[2]-p[2],wx=C.x-p[0],wz=C.z-p[2];return Math.atan2(wx*dz-wz*dx,wx*dx+wz*dz);})()`;
+for (let i = 0; i < 12; i++) { const e = await evaluate(facing); if (Math.abs(e) < .03) break; await evaluate(`S.combat().touchLook(${-e / .0042},0);0`); await sleep(160); }
+await evaluate(`(()=>{S.dropAt(C.x-1.45,C.z,C.top-1.9,C.x,C.z);S.sprintTo(3);})();0`);
+for (let i = 0; i < 40 && (await evaluate(`S.parkour().inspect().state`)) !== 'hang'; i++) await sleep(60);
+await sleep(700);
+const grip = await evaluate(`(()=>{const me=[...GardenCharacterMotion.bodies].find(b=>b.root.name==='Player body'),T=THREE,h=S.parkour().hands();me.root.updateMatrixWorld(true);const d=n=>Math.min(...h.map(p=>me.byName[n].getWorldPosition(new T.Vector3()).distanceTo(p)));return {state:S.parkour().inspect().state,gun:S.getState().feel.weaponShown,bodyShown:me.root.visible,left:+d('wrist.L').toFixed(3),right:+d('wrist.R').toFixed(3)};})()`);
+console.log('hanging', JSON.stringify(grip), grip.state === 'hang' && !grip.gun && grip.bodyShown && grip.left < .12 && grip.right < .12 ? 'PASS' : 'FAIL'); await shot('hang');
+await evaluate(`S.third(true);0`); await sleep(1100); await shot('hang-third'); await evaluate(`S.third(false);0`); await sleep(1100);
+await down('w'); await sleep(60); await up('w'); await sleep(170); await shot('climb-hands'); await sleep(1500);
+const back = await evaluate(`({state:S.parkour().inspect().state,gun:S.getState().feel.weaponShown})`); console.log('after climbing', JSON.stringify(back), !back.state && back.gun ? 'PASS' : 'FAIL');
+await sleep(1000); console.log('fps', await evaluate(`await new Promise(done=>{let n=0;const s=performance.now();const t=()=>{n++;if(performance.now()-s<2000)requestAnimationFrame(t);else done(+(n/((performance.now()-s)/1000)).toFixed(1));};requestAnimationFrame(t);})`));
 console.log('battle', JSON.stringify(await evaluate(`(()=>{const b=S.battle().inspect();return {active:b.active,alive:b.alive}})()`)));
 console.log('errors', JSON.stringify(errors.filter(e => !/Pointer Lock/.test(e)).slice(0, 6)));
 chrome.kill(); process.exit(0);
