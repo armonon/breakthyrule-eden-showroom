@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Broadcast Room — Video Index</title>
+<meta name="description" content="Every video looping on the Broadcast Room's televisions in the Break Thy Rule museum: My Lunch Break, CONSPIRACY-R-US and Mind Unveiled.">
+<link rel="icon" href="/assets/favicon-32.png">
+<style>
+ :root{--paper:#f4f3ef;--ink:#2b2c29;--muted:#74756f;--line:#d9d8d2;--card:#fff;--accent:#1f3a2e}
+ *{box-sizing:border-box}
+ body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.45 Georgia,'Times New Roman',serif}
+ header{padding:40px 16px 18px;max-width:1180px;margin:0 auto}
+ header a.back{font:600 12px/1 system-ui,sans-serif;letter-spacing:.14em;color:var(--ink);text-decoration:none}
+ h1{font-weight:600;letter-spacing:.16em;font-size:clamp(26px,5vw,44px);margin:18px 0 6px;text-transform:uppercase}
+ header p{margin:0;color:var(--muted);max-width:720px}
+ .controls{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
+ .controls .in{max-width:1180px;margin:0 auto;padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+ input[type=search]{flex:1 1 240px;font:inherit;padding:10px 12px;border:1px solid var(--ink);background:#fff;min-width:0}
+ .chips{display:flex;flex-wrap:wrap;gap:6px}
+ .chips button,select{font:600 12px/1 system-ui,sans-serif;letter-spacing:.1em;padding:10px 12px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
+ .chips button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+ .count{font:12px/1 system-ui,sans-serif;color:var(--muted);letter-spacing:.06em}
+ main{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+ .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+ .card{background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column}
+ .thumb{position:relative;aspect-ratio:16/9;background:#111;cursor:pointer;border:0;padding:0;display:block;width:100%}
+ .thumb img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.9)}
+ .thumb .len{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.78);color:#fff;font:600 11px/1 system-ui,sans-serif;padding:4px 6px}
+ .thumb iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+ .meta{padding:10px 12px 12px;display:flex;flex-direction:column;gap:6px;flex:1}
+ .meta h2{font-size:15px;font-weight:600;margin:0}
+ .meta .row{margin-top:auto;display:flex;justify-content:space-between;gap:8px;font:12px/1.2 system-ui,sans-serif;color:var(--muted)}
+ .meta a{color:var(--accent)}
+ .more{display:block;margin:26px auto 0;font:600 12px/1 system-ui,sans-serif;letter-spacing:.14em;padding:12px 18px;border:1px solid var(--ink);background:transparent;cursor:pointer}
+ footer{max-width:1180px;margin:0 auto;padding:0 16px 40px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<header>
+ <a class="back" href="/">← BREAKTHYRULE / THE MUSEUM</a>
+ <h1>The Broadcast Room</h1>
+ <p>Every video looping on the analog televisions past the museum's main gallery. The index updates from each channel's public upload list; videos play through YouTube, so the creators keep every view.</p>
+</header>
+<div class="controls"><div class="in">
+ <input type="search" id="q" placeholder="Search titles" aria-label="Search video titles">
+ <div class="chips" id="chips"></div>
+ <select id="sort" aria-label="Sort"><option value="new">NEWEST</option><option value="long">LONGEST</option><option value="short">SHORTEST</option><option value="az">A–Z</option></select>
+ <span class="count" id="count"></span>
+</div></div>
+<main><div class="grid" id="grid"></div><button class="more" id="more" type="button" hidden>SHOW MORE</button></main>
+<footer id="foot"></footer>
+<script>
+'use strict';
+(async()=>{
+ const data=await fetch('/assets/broadcast/channels.json').then(r=>r.json());
+ const all=data.channels.flatMap((c,ci)=>c.videos.map(([id,title,dur],i)=>({id,title,dur,ci,order:i,channel:c})));
+ let channel=-1,shown=60;
+ const $=id=>document.getElementById(id),chips=$('chips');
+ const chip=(label,ci)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.setAttribute('aria-pressed',ci===channel);
+  b.onclick=()=>{channel=ci;shown=60;[...chips.children].forEach(c=>c.setAttribute('aria-pressed',c===b));render();};chips.appendChild(b);};
+ chip('ALL · '+all.length,-1);data.channels.forEach((c,ci)=>chip(c.title.toUpperCase()+' · '+c.videos.length,ci));
+ const time=s=>{if(!s)return '';const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=String(s%60).padStart(2,'0');return h?`${h}:${String(m).padStart(2,'0')}:${x}`:`${m}:${x}`;};
+ function list(){
+  const q=$('q').value.trim().toLowerCase(),sort=$('sort').value;
+  let v=all.filter(x=>(channel<0||x.ci===channel)&&(!q||x.title.toLowerCase().includes(q)));
+  if(sort==='new')v.sort((a,b)=>a.order-b.order||a.ci-b.ci);else if(sort==='long')v.sort((a,b)=>b.dur-a.dur);
+  else if(sort==='short')v.sort((a,b)=>(a.dur||1e9)-(b.dur||1e9));else v.sort((a,b)=>a.title.localeCompare(b.title));
+  return v;
+ }
+ function render(){
+  const v=list(),grid=$('grid');grid.textContent='';
+  $('count').textContent=v.length+' VIDEOS';
+  for(const x of v.slice(0,shown)){
+   const card=document.createElement('article');card.className='card';
+   const thumb=document.createElement('button');thumb.className='thumb';thumb.type='button';thumb.setAttribute('aria-label','Play '+x.title);
+   const img=document.createElement('img');img.loading='lazy';img.alt='';img.src=`https://i.ytimg.com/vi/${x.id}/mqdefault.jpg`;thumb.appendChild(img);
+   if(x.dur){const len=document.createElement('span');len.className='len';len.textContent=time(x.dur);thumb.appendChild(len);}
+   thumb.onclick=()=>{thumb.innerHTML=`<iframe src="https://www.youtube-nocookie.com/embed/${x.id}?autoplay=1&rel=0" title="${x.title.replace(/"/g,'&quot;')}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;};
+   const meta=document.createElement('div');meta.className='meta';
+   const h=document.createElement('h2');h.textContent=x.title;
+   const row=document.createElement('div');row.className='row';
+   const ch=document.createElement('a');ch.href=x.channel.url;ch.target='_blank';ch.rel='noopener';ch.textContent=x.channel.title;
+   const yt=document.createElement('a');yt.href='https://www.youtube.com/watch?v='+x.id;yt.target='_blank';yt.rel='noopener';yt.textContent='YouTube ↗';
+   row.append(ch,yt);meta.append(h,row);card.append(thumb,meta);grid.appendChild(card);
+  }
+  $('more').hidden=v.length<=shown;
+ }
+ $('q').oninput=()=>{shown=60;render();};$('sort').onchange=()=>{shown=60;render();};$('more').onclick=()=>{shown+=60;render();};
+ $('foot').textContent=`Index refreshed ${data.generated}. Channels: ${data.channels.map(c=>c.title).join(', ')}. Videos and thumbnails belong to their creators and are served by YouTube.`;
+ render();
+})();
+</script>
+</body>
+</html>

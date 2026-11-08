@@ -298,7 +298,7 @@ const textures=allTextures.slice(0,2);
 const roomData=createWhiteRoom(T,scene,allTextures.slice(2,2+window.showroomArtwork.length),allTextures[allTextures.length-1]);
 posterMeshes=roomData.posterMeshes;
 // The black box (in the valley) and the museum (beside the library) are bigger inside: see pocket-worlds.js.
-pockets=createPocketWorlds(T,scene,renderer,camera);libraryGarden=createLibraryGarden(T,scene);createBlackBox(T,pockets);museum=createMuseum(T,pockets,{onChange:requestDraw});pickables.push(...museum.pickables);
+pockets=createPocketWorlds(T,scene,renderer,camera);libraryGarden=createLibraryGarden(T,scene);createBlackBox(T,pockets);museum=createMuseum(T,pockets,{onChange:requestDraw,camera,stage});pickables.push(...museum.pickables);
 pickables.push(...posterMeshes);
 const galleryLinks=[window.showroomArtwork.find(poster=>poster.lookbook),window.showroomInstagramPosts[0],...window.showroomArtwork.filter(poster=>!poster.lookbook)].filter(Boolean);
 const wallSwitch=document.createElement('button');wallSwitch.id='gallery-shop-photos';wallSwitch.textContent='SHOP PHOTOS';wallSwitch.onclick=shop.open;
