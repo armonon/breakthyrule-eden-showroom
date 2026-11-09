@@ -4,10 +4,11 @@
  const slug=new URLSearchParams(location.search).get('item');
  const g=garments.find(x=>x.slug===slug)||garments[0];if(!g)return;
  document.title='BREAKTHYRULE — '+g.name;
- $('chapter').textContent='Chapter '+g.chapter+' / No. '+g.id;$('name').textContent=g.name;$('price').textContent=g.price;
+ $('numeral').textContent=g.chapter;$('chapter').textContent='Chapter '+g.chapter+', plate '+g.id;$('name').textContent=g.name;$('price').textContent=g.price;
  $('tagline').textContent=g.tagline;$('description').textContent=g.description;$('model-note').textContent=g.modelNote||'';
  const photos=g.images.map(src=>window.showroomAssets.web(src));
  $('photo').src=photos[0];$('photo').alt=g.imageAlt||g.name;
+ window.siteHalo(photos[0]).then(c=>{if(c)$('viewer').style.setProperty('--halo',c);setTimeout(()=>$('halo').classList.add('lit'),300);});
  let showingPhoto=false;
  const viewer=window.createGarmentViewer($('viewer'),{wheelZoom:true});
  function photoMode(on,src){showingPhoto=on;if(src)$('photo').src=src;$('viewer').querySelector('canvas')?.classList.toggle('live',!on&&!!viewer);$('photos').setAttribute('aria-pressed',String(on));}

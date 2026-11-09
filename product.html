@@ -5,19 +5,22 @@
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
  <title>BREAKTHYRULE — Garment</title>
  <link rel="icon" type="image/png" href="/assets/favicon-32.png">
- <link rel="stylesheet" href="/site/site.css?v=1">
+ <link rel="stylesheet" href="/site/site.css?v=2">
+ <link rel="stylesheet" href="/site/codex.css?v=1">
  <script defer src="/assets/three.min.js?v=187"></script>
  <script defer src="/asset-loader.js?v=4"></script>
  <script defer src="/garment-catalog.js?v=11"></script>
  <script defer src="/site/config.js?v=1"></script>
- <script defer src="/site/site.js?v=1"></script>
- <script defer src="/site/garment-stage.js?v=1"></script>
- <script defer src="/site/product.js?v=1"></script>
+ <script defer src="/site/site.js?v=2"></script>
+ <script defer src="/site/garment-stage.js?v=2"></script>
+ <script defer src="/site/product.js?v=2"></script>
 </head>
 <body data-page="home">
  <main>
   <section class="product-page">
    <div class="viewer card-media" id="viewer" tabindex="0" aria-label="Rotatable 3D garment. Drag or use the arrow keys to turn it.">
+    <div class="halo" id="halo"></div>
+    <div class="pedestal"></div>
     <img id="photo" alt="">
     <span class="viewer-status" id="viewer-status" role="status"></span>
     <div class="viewer-tools">
@@ -28,11 +31,11 @@
     </div>
    </div>
    <div class="product-info">
-    <p class="kicker" id="chapter"></p>
+    <div class="plate-mark"><span class="numeral" id="numeral"></span><p class="kicker" id="chapter" style="margin:0"></p></div>
     <h1 id="name"></h1>
     <p class="price" id="price"></p>
     <p class="lede" id="tagline"></p>
-    <p id="description"></p>
+    <p id="description" class="drop-para"></p>
     <div class="thumbs" id="thumbs" aria-label="Product photographs"></div>
     <div class="hero-actions">
      <a class="solid" id="buy" href="https://breakthyrule-co.netlify.app" target="_blank" rel="noopener">Buy <span aria-hidden="true">↗</span></a>
@@ -42,7 +45,7 @@
    </div>
   </section>
   <section class="section wrap">
-   <p class="kicker">Talk about this piece</p>
+   <p class="kicker">Marginalia — talk about this piece</p>
    <div id="discussion"></div>
   </section>
  </main>

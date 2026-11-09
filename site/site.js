@@ -19,7 +19,7 @@
  const footer=el('footer',{className:'site-foot'});
  footer.append(
   el('div',{className:'foot-mark',textContent:'BREAKTHYRULE'}),
-  el('p',{textContent:'A codex worn on the body.'}),
+  el('p',{textContent:'Here ends the first book. A codex worn on the body.'}),
   el('div',{className:'foot-links'},
    el('a',{href:'/showroom',textContent:'3D Showroom'}),
    el('a',{href:'/broadcast.html',textContent:'Broadcast Room'}),
@@ -73,6 +73,21 @@
    form,status,list);
   render();
  };
+
+ // The glow behind a garment takes the strongest ink colour in its photo (skips paper-white and grey).
+ const haloCache=new Map();
+ window.siteHalo=function(src){
+  if(haloCache.has(src))return haloCache.get(src);
+  const job=new Promise(resolve=>{const img=new Image();img.onload=()=>{try{
+    const c=el('canvas',{width:40,height:50}),x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,40,50);
+    const d=x.getImageData(0,0,40,50).data;let r=0,g=0,b=0,w=0;
+    for(let i=0;i<d.length;i+=4){const max=Math.max(d[i],d[i+1],d[i+2]),min=Math.min(d[i],d[i+1],d[i+2]),sat=max?(max-min)/max:0;
+     if(sat<.28||max<45||d[i+3]<200)continue;const k=sat*sat;r+=d[i]*k;g+=d[i+1]*k;b+=d[i+2]*k;w+=k;}
+    resolve(w>1.5?`rgb(${Math.round(r/w)},${Math.round(g/w)},${Math.round(b/w)})`:null);}catch{resolve(null);}};
+   img.onerror=()=>resolve(null);img.src=src;});
+  haloCache.set(src,job);return job;
+ };
+ window.siteRoman=n=>{let out='';for(const [v,s] of [[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']])while(n>=v){out+=s;n-=v;}return out;};
 
  window.siteGarments=()=>(window.showroomCollection||[]).map(item=>({...item,photo:window.showroomAssets?.web(item.images[0])||item.images[0]}));
 })();
