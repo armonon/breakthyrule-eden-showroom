@@ -7,7 +7,7 @@ import { openPage, sleep } from './headless-chrome.mjs';
 const args = Object.fromEntries(process.argv.slice(2).map((a, i, all) => a.startsWith('--') ? [a.slice(2), all[i + 1]] : null).filter(Boolean));
 const out = args.out, base = args.url || 'http://127.0.0.1:8790/'; fs.mkdirSync(out, { recursive: true });
 const page = await openPage({ width: 1280, height: 800, deviceScaleFactor: 1.5 });
-await page.goto(base); await page.ready(); await sleep(9000);
+await page.goto(base + 'showroom.html'); await page.ready(); await sleep(9000);
 for (const view of ['library', 'approach', 'wall', 'amphitheater', 'librarian']) {
   await page.evaluate(`breakThyRuleShowroom.go('${view}',true)`); await sleep(view === 'approach' ? 14000 : 5000);
   await page.shot(path.join(out, `${view}.jpg`)); console.log(view, await page.evaluate(`JSON.stringify({view:breakThyRuleShowroom.getState().view,calls:edenPost.profile().calls})`));

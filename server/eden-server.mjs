@@ -303,6 +303,8 @@ const server = http.createServer(async (req, res) => {
     if (!file.startsWith(ROOT + path.sep) && file !== ROOT) throw new HttpError(403, 'Forbidden.');
     if (file.startsWith(path.join(ROOT, 'server') + path.sep) || path.basename(file).startsWith('.')) throw new HttpError(404, 'Not found.');
     if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
+    // Clean page URLs for the public site: /gallery → gallery.html, /showroom → showroom.html.
+    if (!fs.existsSync(file) && !path.extname(file) && fs.existsSync(file + '.html')) file += '.html';
     if (!fs.existsSync(file)) throw new HttpError(404, 'Not found.');
     res.writeHead(200, {'Content-Type': TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-store', 'Content-Length': fs.statSync(file).size});
     if (req.method === 'HEAD') return res.end();

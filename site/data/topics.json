@@ -1,0 +1,12 @@
+{
+ "note": "Archive topics. `tags` pull books from books.js by tag; `chapters` pull garments from garment-catalog.js; `query` seeds the Librarian search; `circle` is the Circle space path for that topic's discussion (or set it in site/config.js → circle.spaces.topics).",
+ "topics": [
+  {"id": "symbols", "title": "Symbols & Signs", "blurb": "Marks, seals and hidden codes — the visual language the prints borrow from.", "tags": ["Symbols"], "chapters": ["I"], "query": "symbols secret signs"},
+  {"id": "scripture", "title": "Scripture", "blurb": "The devotional texts behind the crosses, doves and gospel type.", "tags": ["Scripture"], "chapters": ["I"], "query": "bible apocrypha"},
+  {"id": "history", "title": "Hidden History", "blurb": "Secret societies, old orders and the long arc of power.", "tags": ["History"], "chapters": ["II"], "query": "secret societies history"},
+  {"id": "grimoire", "title": "Grimoires & Esoterica", "blurb": "Formulas, rites and the occult manuals of the archive.", "tags": ["Grimoire"], "chapters": ["III"], "query": "grimoire hermetic"},
+  {"id": "mind", "title": "Mind & Control", "blurb": "Programming, propaganda and the war for attention.", "tags": ["Mind Control"], "chapters": ["IV"], "query": "propaganda mind control"},
+  {"id": "money", "title": "Money Systems", "blurb": "Debt, currency and who prints the paper.", "tags": ["Finance"], "chapters": ["IV"], "query": "money banking history"},
+  {"id": "old-world", "title": "Old World & Architecture", "blurb": "Temples, lost cities and the buildings in the Broadcast Room.", "tags": [], "chapters": [], "query": "ancient architecture temples"}
+ ]
+}

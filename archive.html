@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>BREAKTHYRULE — Archive</title>
+ <meta name="description" content="The Break Thy Rule archive: topics behind every chapter, the Librarian, the shelf and the discussion.">
+ <link rel="icon" type="image/png" href="/assets/favicon-32.png">
+ <link rel="stylesheet" href="/site/site.css?v=1">
+ <script defer src="/asset-loader.js?v=4"></script>
+ <script defer src="/garment-catalog.js?v=11"></script>
+ <script defer src="/books.js?v=3"></script>
+ <script defer src="/librarian-engine.js?v=1"></script>
+ <script defer src="/librarian-client.js?v=1"></script>
+ <script defer src="/site/config.js?v=1"></script>
+ <script defer src="/site/site.js?v=1"></script>
+ <script defer src="/site/archive.js?v=1"></script>
+</head>
+<body data-page="archive">
+ <main class="wrap">
+  <header class="page-head">
+   <p class="kicker">Archive</p>
+   <h1>The Librarian's archive</h1>
+   <p class="lede">Every chapter of the collection draws on a body of reading. Pick a topic, ask the Librarian, and join the discussion.</p>
+  </header>
+  <div class="archive-layout">
+   <nav class="topic-list" id="topics" aria-label="Archive topics"></nav>
+   <div>
+    <section class="librarian" aria-labelledby="librarian-title">
+     <img src="/assets/librarian-realistic.png" alt="The Librarian">
+     <div>
+      <h3 id="librarian-title">Ask the Librarian</h3>
+      <p class="fine">Searches our shelf, Open Library, Google Books and Project Gutenberg at once.</p>
+      <form class="search-row" id="search">
+       <input id="query" type="search" placeholder="A title, author or subject" aria-label="Search the archive" maxlength="200">
+       <button class="solid" type="submit">Search</button>
+      </form>
+      <p class="fine" id="search-status" role="status"></p>
+     </div>
+    </section>
+    <p class="kicker" id="topic-kicker"></p>
+    <h2 id="topic-title"></h2>
+    <p class="lede" id="topic-blurb" style="margin-top:14px"></p>
+    <div id="topic-garments-wrap"><p class="kicker" style="margin-top:32px">From the collection</p><div class="topic-garments" id="topic-garments"></div></div>
+    <p class="kicker" id="shelf-label" style="margin-top:32px">On the shelf</p>
+    <div class="shelf" id="shelf"></div>
+    <p class="kicker">Discussion</p>
+    <div id="discussion"></div>
+   </div>
+  </div>
+ </main>
+</body>
+</html>

@@ -14,7 +14,7 @@ import path from 'node:path';
 
 const args = Object.fromEntries(process.argv.slice(2).map((a, i, all) => a.startsWith('--') ? [a.slice(2), all[i + 1]?.startsWith('--') || all[i + 1] === undefined ? true : all[i + 1]] : null).filter(Boolean));
 const CHROME = process.env.CHROME_BIN || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const base = args.url || 'http://127.0.0.1:8790/', out = args.out || 'docs/graphics/baseline', frames = Number(args.frames || 20);
+const base = args.url || 'http://127.0.0.1:8790/showroom.html', out = args.out || 'docs/graphics/baseline', frames = Number(args.frames || 20);
 const CLASSES = {
   desktop: { width: 1440, height: 900, deviceScaleFactor: 2, mobile: false, cpu: 1 },
   laptop: { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false, cpu: 2 },

@@ -62,7 +62,7 @@ echo "Recent local commits:"
 git --no-pager log --oneline --decorate -8 || true
 
 section "Expected project files"
-for file in server/eden-server.mjs index.html package.json; do
+for file in server/eden-server.mjs index.html showroom.html package.json; do
   if [[ -e "$file" ]]; then echo "ok       $file"; else echo "MISSING  $file"; fi
 done
 for file in eden-lighting.js eden-post.js eden-flora.js eden-quality.js camera-sway.js multiplayer.js arena.js; do

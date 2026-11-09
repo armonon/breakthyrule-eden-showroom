@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>BREAKTHYRULE — Gallery</title>
+ <meta name="description" content="Break Thy Rule in real life: garments, models and the people wearing them.">
+ <link rel="icon" type="image/png" href="/assets/favicon-32.png">
+ <link rel="stylesheet" href="/site/site.css?v=1">
+ <script defer src="/site/config.js?v=1"></script>
+ <script defer src="/site/site.js?v=1"></script>
+ <script defer src="/site/gallery.js?v=1"></script>
+</head>
+<body data-page="gallery">
+ <main class="wrap">
+  <header class="page-head">
+   <p class="kicker">Gallery</p>
+   <h1>Worn in real life</h1>
+   <p class="lede">The garments, the models, and everyone wearing them. Follow along on <a id="ig-link" style="text-decoration:underline" target="_blank" rel="noopener">Instagram</a>.</p>
+  </header>
+  <div class="section-head" style="margin-bottom:24px">
+   <div class="chips" id="filters" role="group" aria-label="Filter the gallery"></div>
+   <p class="fine" id="count" role="status"></p>
+  </div>
+  <div class="masonry" id="masonry"></div>
+  <section class="section">
+   <div class="section-head"><div><p class="kicker">Worn by you</p><h2>Share your fit</h2></div></div>
+   <div id="discussion"></div>
+  </section>
+ </main>
+ <dialog class="lightbox" id="lightbox" aria-labelledby="lb-caption">
+  <header><span id="lb-count"></span><button type="button" id="lb-close" aria-label="Close">✕</button></header>
+  <div class="frame"><img id="lb-img" alt=""></div>
+  <footer><span id="lb-caption"></span><a id="lb-product" style="text-decoration:underline"></a></footer>
+  <button type="button" class="prev" id="lb-prev" aria-label="Previous">‹</button>
+  <button type="button" class="next" id="lb-next" aria-label="Next">›</button>
+ </dialog>
+</body>
+</html>
