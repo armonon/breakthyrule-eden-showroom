@@ -55,3 +55,5 @@ body[data-page^=lab] .site-top .btr-header-button,body[data-page=reliquary] .sit
 .solid.big,.ghost.big{min-height:52px;padding:0 26px;font-size:13px}
 /* Phones: the wrapped header scrolls away instead of covering a third of the screen. */
 @media(max-width:900px){.site-top{position:relative}.site-top .enter-showroom{padding:0 12px}}
+/* Mid widths: the header has more to hold (Codex, Cart); the showroom button shortens to "3D". */
+@media(max-width:1240px) and (min-width:901px){.site-top{gap:16px}.enter-showroom span:first-child{display:none}.enter-showroom::before{content:'3D'}.tabs a,.tabs .btr-about-link{padding-left:10px;padding-right:10px}}

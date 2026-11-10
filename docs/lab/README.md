@@ -51,8 +51,13 @@ checkout from the catalog and ignores anything the browser sends**.
 
 ## Decisions (made so the build could finish; all easy to change)
 
-- **No new packages were installed.** Stripe is called over its REST API; QR codes, passwords and tokens use Node's
-  built-in crypto. Deployed storage uses Netlify Blobs, which needs one package (`@netlify/blobs`) — see activation.
+- **One package:** `@netlify/blobs` (approved) for storage on Netlify. Stripe is called over its REST API; QR codes,
+  passwords and tokens use Node's built-in crypto.
+- **Previews vs production:** production deploys use the Blobs store `garment-lab`; every other deploy (drafts,
+  previews) uses `garment-lab-preview`, so test orders never mix with real ones. Previews without Stripe keys run the
+  test gateway and keep their own random session secret; production never enables the gateway.
+- **Function bundling:** `tools/deploy-netlify-draft.sh` bundles `netlify/functions/lab.mjs` with esbuild (so
+  `@netlify/blobs` is inside) before uploading — Netlify's own CLI bundler left the package out.
 - **Stripe Checkout** handles cards, shipping-address collection, shipping rates and tax. Card details never touch
   our servers. Orders become paid only from a **signature-verified webhook**; each event is processed once.
 - **Reservations**: stock (Trinity, Relic Box) and capacity (Canvas, Cut & Sew) are held for 30 minutes while the
@@ -95,6 +100,12 @@ checkout from the catalog and ignores anything the browser sends**.
 `staff/<email>`, `login-failures/<hash>`, `waitlist/<hash>`, `uploads/<id>`, `archive/<passport id>`.
 No migrations are needed: documents are created on first write. Nothing touches existing site data.
 
+## The preview test store
+
+The draft previews share the `garment-lab-preview` store. It holds placeholder TEST stock and capacity and a test
+studio account (`owner@lab.test`), loaded with `netlify blobs:set garment-lab-preview …`. Wipe or replace it any time;
+it is never read by production.
+
 ## Running it locally
 
 ```
@@ -106,7 +117,8 @@ node --test server/lab/lab.test.mjs                            # automated tests
 
 ## Activation checklist (live checkout)
 
-1. Approve installing `@netlify/blobs` (`npm install @netlify/blobs`) so orders can be stored on Netlify.
+1. ~~Install `@netlify/blobs`~~ — done. The production deploy script must bundle the function the same way as
+   `tools/deploy-netlify-draft.sh` does.
 2. In Stripe: get test keys; add the webhook endpoint `/api/lab/stripe-webhook` for `checkout.session.completed`,
    `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`,
    `charge.refunded`; create shipping rates; set up Stripe Tax if you collect tax.
