@@ -166,7 +166,7 @@ window.createCoverTitle=function({actions,reduceMotion=false,photos=[]}){
      overlay.append(sh);
      const mx=r.left+r.width*(tri[0][0]+tri[1][0]+tri[2][0])/300,my=r.top+r.height*(tri[0][1]+tri[1][1]+tri[2][1])/300;
      const dx=mx-cx,dy=my-cy,d=Math.hypot(dx,dy)||1,force=(w===origin?1.6:1)*(260+Math.random()*520);
-     anims.push(sh.animate([{transform:'translate(0,0) rotate(0)',opacity:1},{transform:`translate(${dx/d*force}px,${dy/d*force+160}px) rotate(${(Math.random()-.5)*160}deg) scale(${.6+Math.random()*.5})`,opacity:0}],{duration:900+Math.random()*300,easing:'cubic-bezier(.2,.6,.4,1)',fill:'forwards'}));
+     anims.push(sh.animate([{transform:'translate(0,0) rotate(0)',opacity:1},{opacity:1,offset:.55},{transform:`translate(${dx/d*force}px,${dy/d*force+160}px) rotate(${(Math.random()-.5)*160}deg) scale(${.6+Math.random()*.5})`,opacity:0}],{duration:1000+Math.random()*350,easing:'cubic-bezier(.2,.6,.4,1)',fill:'forwards'}));
     }
    }
    root.classList.add('broken');
