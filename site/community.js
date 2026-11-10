@@ -20,7 +20,7 @@
   const gallery=await (await fetch('/site/data/gallery.json',{cache:'no-cache'})).json();
   const people=gallery.items.filter(i=>['worn','instagram','models'].includes(i.category));
   const pick=(people.length?people:gallery.items).slice(0,9);
-  $('wall').replaceChildren(...pick.map(i=>el('a',{href:'/gallery'},el('img',{src:i.src,alt:i.alt,loading:'lazy'}))));
+  $('wall').replaceChildren(...pick.map(i=>el('a',{href:'/gallery'},el('img',{src:i.thumb||i.src,alt:i.alt,loading:'lazy'}))));
  }catch{$('wall').closest('.panel').hidden=true;}
  try{
   const {channels}=await (await fetch('/assets/broadcast/channels.json')).json();

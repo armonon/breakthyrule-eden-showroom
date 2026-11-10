@@ -8,7 +8,8 @@
  window.siteEl=el;
 
  const header=el('header',{className:'site-top'});
- const brand=el('a',{className:'brand',href:'/'},el('img',{src:'/products/web/logo.webp',alt:'',width:40,height:42}),el('span',{textContent:'BREAKTHYRULE'}));
+ const logo=(cls)=>el('img',{className:'site-logo '+cls,src:'/assets/brand/logo.webp?v=1',alt:'BreakThyRule, anonymous archive',width:1400,height:381});
+ const brand=el('a',{className:'brand'},logo('in-header'));brand.href='/';
  brand.setAttribute('aria-label','Break Thy Rule home');
  const nav=el('nav',{className:'tabs'});nav.setAttribute('aria-label','Main');
  for(const [href,label,id] of tabs){const a=el('a',{href,textContent:label});if(id===page)a.setAttribute('aria-current','page');nav.append(a);}
@@ -18,7 +19,7 @@
 
  const footer=el('footer',{className:'site-foot'});
  footer.append(
-  el('div',{className:'foot-mark',textContent:'BREAKTHYRULE'}),
+  el('div',{className:'foot-mark'},logo('in-footer')),
   el('p',{textContent:'Here ends the first book. A codex worn on the body.'}),
   el('div',{className:'foot-links'},
    el('a',{href:'/showroom',textContent:'3D Showroom'}),
@@ -87,7 +88,7 @@
    img.onerror=()=>resolve(null);img.src=src;});
   haloCache.set(src,job);return job;
  };
- window.siteRoman=n=>{let out='';for(const [v,s] of [[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']])while(n>=v){out+=s;n-=v;}return out;};
+ window.siteRoman=n=>{let out='';for(const [v,s] of [[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']])while(n>=v){out+=s;n-=v;}return out;};
 
  window.siteGarments=()=>(window.showroomCollection||[]).map(item=>({...item,photo:window.showroomAssets?.web(item.images[0])||item.images[0]}));
 })();

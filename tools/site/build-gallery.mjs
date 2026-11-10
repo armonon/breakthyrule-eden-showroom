@@ -11,6 +11,8 @@
 //     and permissions → Download your information → JSON). Post media is copied into
 //     site/gallery/instagram/ with the post caption and date.
 //  3. The product photography already in products/web/, named from garment-catalog.js.
+//  4. The Break Thy Rule source folder, imported by tools/assets/import-breakthyrule.mjs into
+//     breakthyrule-assets.js: favourite photos (worn), every graphic (graphics), the adverts (adverts).
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -18,7 +20,7 @@ import vm from 'node:vm';
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, all) => (v.startsWith('--') && a.push([v.slice(2), all[i + 1]]), a), []));
 const IMAGE = /\.(jpe?g|png|webp|avif|gif)$/i;
-const CATEGORIES = ['garments', 'models', 'worn', 'events', 'instagram'];
+const CATEGORIES = ['worn', 'garments', 'models', 'events', 'instagram', 'graphics', 'adverts'];
 const entries = [];
 
 function walk(dir) { return fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap(d => d.isDirectory() ? walk(path.join(dir, d.name)) : [path.join(dir, d.name)]) : []; }
@@ -67,6 +69,18 @@ for (const file of walk(path.join(ROOT, 'products/web')).filter(f => IMAGE.test(
   const hit = byFile.get(path.basename(file).toLowerCase());
   entries.push({ src: web(file), category: 'garments', caption: hit ? hit.g.name + (hit.view && !/^PHOTO/.test(hit.view) ? ' — ' + hit.view.toLowerCase() : '') : 'From the vault', alt: hit ? (hit.g.imageAlt || hit.g.name) : 'Break Thy Rule product photograph', product: hit?.g.slug || '', source: 'Product photography' });
 }
+
+// 4. Imported Break Thy Rule assets (WebP thumbnails for the grid, larger files for the lightbox).
+const assetsFile = path.join(ROOT, 'breakthyrule-assets.js');
+if (fs.existsSync(assetsFile)) {
+  const box = { window: {} };vm.runInNewContext(fs.readFileSync(assetsFile, 'utf8'), box);
+  const a = box.window.breakthyruleAssets || {};
+  (a.favs || []).forEach((f, i) => entries.push({ src: f.full, thumb: f.thumb, ratio: f.ratio, category: 'worn', caption: '', alt: 'Break Thy Rule worn in real life, photo ' + (i + 1), source: 'Worn in the wild' }));
+  (a.graphics || []).forEach(g => entries.push({ src: g.full, thumb: g.thumb, ratio: g.ratio, category: 'graphics', caption: g.name, alt: g.name + ' — Break Thy Rule graphic', source: 'The codex of graphics' }));
+  (a.adverts || []).forEach((g, i) => entries.push({ src: g.full, thumb: g.thumb, ratio: g.ratio, category: 'adverts', caption: 'Broadside ' + (i + 1), alt: 'Break Thy Rule sticker sheet advert ' + (i + 1), source: 'Broadsides' }));
+}
+// Photos of people first, the garments next, the graphics and broadsides last.
+entries.sort((x, y) => CATEGORIES.indexOf(x.category) - CATEGORIES.indexOf(y.category));
 
 fs.mkdirSync(path.join(ROOT, 'site/data'), { recursive: true });
 fs.writeFileSync(path.join(ROOT, 'site/data/gallery.json'), JSON.stringify({ generated: new Date().toISOString().slice(0, 10), categories: CATEGORIES, items: entries }, null, 1) + '\n');

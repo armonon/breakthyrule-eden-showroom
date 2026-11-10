@@ -65,6 +65,31 @@ posts and images are saved only in that visitor's browser, and a banner says so.
    ```
    Each area then embeds `community/space?iframe=true`. Circle handles accounts, comments, DMs and image uploads.
 
+## Merged from the codex cover (Break Thy Rule assets)
+
+- **Logo**: `assets/brand/logo.webp` (BreakThyRule / anonymous archive) replaces the text wordmark in the site header,
+  the footer, the Archive page head and the showroom header. On the night pages (Archive, Community) it sits on a paper
+  label. Rebuild it with `swift tools/assets/build-logo.swift assets/brand/logo-source-photo.jpg assets/brand`.
+- **Cover** (`breakthyrule-cover.js/.css`): the sticker-bombed cover of all graphics. It greets a visitor on `/` once per
+  visit (sessionStorage); the yellow CODEX button in the header reopens it on any page; `/?cover` forces it, `?nocover`
+  skips it. Its buttons: Enter, Shop (scrolls to the collection), Gallery, Archive, About (an About panel).
+- **Home**: a running rubric of graphic names under the hero, "The codex, pasted up" (a draggable sticker board with the
+  advert strips as rails) and a strip of worn photos as polaroids (`site/stickers.js`).
+- **Archive**: the logo plaque, stickers pasted in the margin, and the A–Z "Index of the codex" (hover to peek, click to
+  open). The page is titled "The anonymous archive".
+- **Gallery**: new categories Worn (17 photos), The codex (397 graphics) and Broadsides (2 adverts), from
+  `breakthyrule-assets.js`. Link straight to one with `/gallery?filter=graphics` (or `worn`, `adverts`).
+- **Codex polish** (`site/folios.css`): folio heads and drop caps on Gallery/Archive/Community, numbered plates with
+  corner rules in the gallery, a reading-stand lightbox, the Archive table of contents with roman numerals and leader
+  dots, the Librarian's desk, numbered shelf plates, Community panels with gold rules, posts as marginal notes.
+
+### Adding to the Break Thy Rule assets
+
+The source folder is `~/Downloads/breakthyrule` (`GRAPHICS/`, `favs gallery/`, `ADVERTS/`). After adding files:
+
+1. `node tools/assets/import-breakthyrule.mjs` (add `--redo favs` to re-encode a set). Phone photos are turned upright.
+2. `node tools/site/build-gallery.mjs`
+
 ## Next steps
 
 - Real 3D spin captures: drop new GLBs into `models/` and `rack-models/` and add or update entries in `garment-catalog.js`.
