@@ -7,7 +7,7 @@
 window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{},camera=null,stage=null}={}){
  const width=2.2,height=3.4,m=.3,{rect}=pockets;
  const hallA={x0:.9,x1:9.6,z0:-4.45,z1:4.45,h:6},showroom=new T.Vector3(5.25,0,0); // the old pavilion layout, turned to face the door
- const galleryOne={x0:3.6,x1:6.6,z0:4.65,z1:44.65,h:4},hallB={x0:-4,x1:14,z0:44.85,z1:62.85,h:9},galleryTwo={x0:14.2,x1:150,z0:52.35,z1:55.35,h:4};
+ const galleryOne={x0:3.6,x1:6.6,z0:4.65,z1:44.65,h:4},hallB={x0:-4,x1:14,z0:44.85,z1:62.85,h:9},galleryTwo={x0:14.2,x1:262,z0:52.35,z1:55.35,h:4};
  const broadcastRoom={x0:-14.2,x1:-4.2,z0:49.35,z1:58.35,h:5},broadcastDoor={z0:51.85,z1:55.85,h:4};
  let broadcast=null;
  const body=rect(-1.25-m,4.5+m,-3-m,3+m),tunnel=rect(-2.5,1-.25,-width/2+m,width/2-m);
@@ -61,6 +61,7 @@ window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{},camera=null
  // Pictures: every product photograph and art-wall piece, framed in turn along the galleries (and around again).
  const seen=new Set(),pictures=[];
  const add=(name,file,alt)=>{if(!file||seen.has(file))return;seen.add(file);pictures.push({name,file,alt:alt||name});};
+ for(const art of window.museumGallery||[])add(art.name,art.file,art.alt); // Break Thy Rule graphics, adverts, favourites (museum-gallery.js)
  for(const art of window.showroomArtwork.filter(a=>!a.lookbook))add(art.name,art.file,art.alt);
  for(const item of window.showroomCollection)item.images.forEach((file,i)=>add(item.images.length>1?item.name+' / '+(i+1):item.name,file,item.imageAlt));
  const frames=[],frameMaterial=new T.MeshBasicMaterial({color:0x1d1d1c,fog:false}),matMaterial=new T.MeshBasicMaterial({color:0xf7f6f2,toneMapped:false,fog:false}),blank=new T.PlaneGeometry(1,1),edgeBox=new T.BoxGeometry(1,1,1);
@@ -79,12 +80,19 @@ window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{},camera=null
   const w=Math.min(frame.maxWidth,frame.maxHeight*aspect),h=w/aspect;
   frame.mesh.scale.set(w,h,1);frame.backing.scale.set(w,h,1);frame.border.scale.set(w+.07,h+.07,.04);
  }
+ const darkMat=new T.MeshBasicMaterial({color:0x111111,fog:false}),probe=document.createElement('canvas');probe.width=probe.height=48;
+ function seeThroughAndLight(image){
+  try{const g=probe.getContext('2d',{willReadFrequently:true});g.clearRect(0,0,48,48);g.drawImage(image,0,0,48,48);const d=g.getImageData(0,0,48,48).data;
+   let clear=0,solid=0,light=0;for(let i=0;i<d.length;i+=4){if(d[i+3]<40){clear++;continue;}solid++;light+=(.2126*d[i]+.7152*d[i+1]+.0722*d[i+2])*d[i+3]/255;}
+   return clear>d.length/4*.08&&solid>0&&light/solid>150;}catch{return false;}
+ }
  function load(frame){
   frame.loaded=true;const file=frame.picture.file;
   // The WebP copy of the photograph first (showroomAssets.web), the original if it is missing.
   const ready=texture=>{texture.colorSpace=T.SRGBColorSpace;texture.anisotropy=4;return texture;},light=window.showroomAssets?.web(file)||file;
   if(!textures.has(file))textures.set(file,new Promise(resolve=>loader.load(light,texture=>resolve(ready(texture)),undefined,()=>light===file?resolve(null):loader.load(file,texture=>resolve(ready(texture)),undefined,()=>resolve(null)))));
   textures.get(file).then(texture=>{if(!texture)return;frame.mesh.material.map=texture;frame.mesh.material.color.set(0xffffff);frame.mesh.material.needsUpdate=true;
+   if(seeThroughAndLight(texture.image))frame.backing.material=darkMat; // a light graphic on a transparent ground would vanish on white
    fit(frame,texture.image.width/texture.image.height);onChange();});
  }
  for(let z=7;z<=43;z+=3){hang(galleryOne.x0,z,Math.PI/2,1.5,1.5,1.75);hang(galleryOne.x1,z,-Math.PI/2,1.5,1.5,1.75);}
@@ -92,7 +100,7 @@ window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{},camera=null
  for(const x of [-.5,5,10.5])hang(x,hallB.z1,Math.PI,3.2,3.2,3.2);
  for(const x of [-1,11])hang(x,hallB.z0,0,3.2,3.2,3.2);
  for(const z of [48,59.5])hang(hallB.x1,z,-Math.PI/2,3.2,3.2,3.2);
- for(let x=17;x<=148;x+=3){hang(x,galleryTwo.z0,0,1.5,1.5,1.75);hang(x,galleryTwo.z1,Math.PI,1.5,1.5,1.75);}
+ for(let x=17;x<=galleryTwo.x1-3;x+=2.4)for(const y of [1.2,2.6]){hang(x,galleryTwo.z0,0,1.1,1.1,y);hang(x,galleryTwo.z1,Math.PI,1.1,1.1,y);} // salon hang, two rows
 
  // The art wall and garment rack move in from the old pavilion: Hall A is that pavilion, turned so the art wall faces
  // the door and the rack lines the north wall. The pavilion's camera views follow them.
