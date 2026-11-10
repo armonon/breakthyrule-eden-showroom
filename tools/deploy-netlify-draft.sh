@@ -43,5 +43,12 @@ cat > "$OUT/_headers" <<'H'
   X-Robots-Tag: noindex
   Referrer-Policy: no-referrer
 H
+# Bundle the Lab function ourselves (with @netlify/blobs inside) from the committed sources.
+FN="$(mktemp -d "${TMPDIR:-/tmp}/eden-fn.XXXXXX")"; SRC="$(mktemp -d "${TMPDIR:-/tmp}/eden-src.XXXXXX")"
+trap 'rm -rf "$OUT" "$FN" "$SRC"' EXIT
+git archive HEAD netlify server/lab labkit | tar -x -C "$SRC"
+ln -s "$ROOT/node_modules" "$SRC/node_modules"
+"$ROOT/node_modules/.bin/esbuild" "$SRC/netlify/functions/lab.mjs" --bundle --platform=node --format=esm --target=node20 \
+  --banner:js="import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" --outfile="$FN/lab.mjs" --log-level=warning
 echo "Draft $commit ($(du -sh "$OUT" | cut -f1)) → Netlify site $SITE_ID"
-(cd "$OUT" && netlify deploy --no-build --dir . --functions "$ROOT/netlify/functions" --site "$SITE_ID" --message "${1:-Draft $commit}")
+(cd "$OUT" && netlify deploy --no-build --dir . --functions "$FN" --site "$SITE_ID" --message "${1:-Draft $commit}")
