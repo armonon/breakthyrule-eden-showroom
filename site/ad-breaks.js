@@ -4,12 +4,13 @@
 // A page never shows the same ad twice. Data: site/data/ad-boxes.json (tools/assets/cut-adverts.mjs).
 (()=>{
  const css=document.createElement('style');
- // Each ad spans 90% of the screen width (5% clear on each side), whatever container the divider sits in, and is
- // cropped a little top and bottom so the band stays short.
+ // Each ad spans 95% of the screen width (2.5% clear on each side), whatever container the divider sits in. The band
+ // is about 30% shorter than the ad: 15% trimmed top and bottom, the rest squeezed (trimming more clips two-line ads).
  css.textContent=`html,body{overflow-x:clip}
-.ad-break{display:flex;flex-direction:column;align-items:center;gap:10px;width:90vw;margin:64px 0 0 calc(50% - 45vw);text-decoration:none;color:var(--ink,#1d1a17)}
+.ad-break{display:flex;flex-direction:column;align-items:center;gap:10px;width:95vw;margin:64px 0 0 calc(50% - 47.5vw);text-decoration:none;color:var(--ink,#1d1a17)}
 .ad-break .ad-box{position:relative;display:block;width:100%;line-height:0;background:#000;padding:5px 0 0;box-shadow:0 1px 0 rgba(0,0,0,.5),0 -1px 0 rgba(0,0,0,.5);overflow:hidden}
-.ad-break img{width:100%;height:auto;aspect-ratio:var(--ar,5);object-fit:cover;object-position:50% 50%;display:block;transition:transform .5s cubic-bezier(.2,.7,.2,1),filter .3s}
+.ad-break .ad-frame{position:relative;display:block;width:100%;aspect-ratio:var(--ar,6);overflow:hidden}
+.ad-break img{position:absolute;left:0;top:-7.5%;width:100%;height:115%;object-fit:fill;display:block;transition:transform .5s cubic-bezier(.2,.7,.2,1),filter .3s}
 .ad-break .ad-url{display:block;background:#000;color:#fff;font:700 clamp(11px,1.15vw,15px)/1 var(--sans,system-ui);letter-spacing:.04em;text-align:center;padding:6px 0 5px}
 .ad-break .ad-cta{font:600 12px/1 var(--sans,system-ui);letter-spacing:.2em;text-transform:uppercase;opacity:.75;transition:opacity .2s,letter-spacing .25s}
 .ad-break:hover img,.ad-break:focus-visible img{transform:scale(1.02);filter:saturate(1.15) brightness(1.05)}
@@ -34,8 +35,8 @@
    const a=document.createElement('a');a.className='ad-break';a.href='/showroom';
    a.setAttribute('aria-label',`${ad.name} — enter the Garden of Eden`);
    const t=[1,.8,.7][(i+speed0)%3];a.style.setProperty('--t',t+'s');a.style.setProperty('--d',(-Math.random()*t).toFixed(2)+'s'); // some faster, all out of step
-   a.innerHTML=`<span class="ad-box"><img alt="" loading="lazy" decoding="async" width="${Math.round(ad.ratio*100)}" height="100"><span class="ad-url">www.breakthyrule.com</span></span><span class="ad-cta">Enter Eden →</span>`;
-   a.querySelector('img').src=ad.src;a.style.setProperty('--ar',(ad.ratio*1.15).toFixed(3)); // 15% shorter (more would clip two-line ads)
+   a.innerHTML=`<span class="ad-box"><span class="ad-frame"><img alt="" loading="lazy" decoding="async" width="${Math.round(ad.ratio*100)}" height="100"></span><span class="ad-url">www.breakthyrule.com</span></span><span class="ad-cta">Enter Eden →</span>`;
+   a.querySelector('img').src=ad.src;a.style.setProperty('--ar',(ad.ratio*1.4).toFixed(3)); // the band: ~30% shorter than the ad
    spot.replaceWith(a);
   });
  }).catch(()=>{});
