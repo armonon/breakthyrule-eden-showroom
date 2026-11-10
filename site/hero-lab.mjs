@@ -117,7 +117,7 @@ function onFrame(yaw) {
     smoke = createSmoke(mount);
     $('hero-photo').hidden = true; // the featured photo is only the fallback
     stage.querySelector('.hero-top span:last-child').textContent = 'a new piece every turn';
-    prepare();
+    if (!new URLSearchParams(location.search).has('heroloop')) prepare(); // ?heroloop: one piece only (used to record the cover's Lab loop)
   } catch { /* the featured photo stays */ }
   setTimeout(() => $('hero-halo')?.classList.add('lit'), 250);
 })();
