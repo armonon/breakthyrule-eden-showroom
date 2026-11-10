@@ -14,7 +14,14 @@ export async function labFromEnv(env = process.env) {
   if (cached && cached.env === env) return cached.lab;
   const store = await openStore(env);
   const stripe = createStripe({ secretKey: env.STRIPE_SECRET_KEY });
-  const lab = createLab({ store, env, stripe, artworkPool: ARTWORK_POOL.map(a => a.id) });
+  let labEnv = env;
+  // Previews without a configured secret get a random one kept in their own (preview-only) store.
+  if (!env.LAB_SESSION_SECRET && env.LAB_PREVIEW === 'true') {
+    let s = (await store.get('preview-session-secret'))?.value;
+    if (!s) { const fresh = (await import('node:crypto')).randomBytes(48).toString('base64url'); await store.set('preview-session-secret', fresh, { ifNew: true }); s = (await store.get('preview-session-secret')).value; }
+    labEnv = { ...env, LAB_SESSION_SECRET: s };
+  }
+  const lab = createLab({ store, env: labEnv, stripe, artworkPool: ARTWORK_POOL.map(a => a.id) });
   cached = { env, lab };
   return lab;
 }

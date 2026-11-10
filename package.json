@@ -22,5 +22,8 @@
     "proof:smoke-server": "node tools/agent/check-server-static.mjs",
     "proof:summarize-benchmarks": "node tools/agent/summarize-benchmarks.mjs",
     "proof:assets": "npm run proof:build-temple && npm run proof:optimize && npm run proof:inspect"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^11.1.9"
   }
 }

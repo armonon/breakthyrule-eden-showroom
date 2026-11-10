@@ -75,7 +75,7 @@ export class FileStore extends BaseStore {
 
 export class BlobsStore extends BaseStore {
   constructor(store) { super(); this.s = store; }
-  static async open(name = 'garment-lab') {
+  static async open(name) {
     const pkg = '@netlify/blobs'; // resolved at runtime so the site still builds without it
     let mod;
     try { mod = await import(pkg); } catch { const e = new Error('Netlify Blobs is not installed. Run `npm install @netlify/blobs` (see docs/lab/README.md).'); e.code = 'STORE_UNAVAILABLE'; throw e; }
@@ -94,6 +94,7 @@ export class BlobsStore extends BaseStore {
 export async function openStore(env = process.env) {
   const kind = env.LAB_STORE || (env.NETLIFY || env.NETLIFY_BLOBS_CONTEXT ? 'blobs' : 'file');
   if (kind === 'memory') return new MemoryStore();
-  if (kind === 'blobs') return BlobsStore.open();
+  // Production and previews never share orders: previews use their own store.
+  if (kind === 'blobs') return BlobsStore.open(env.LAB_STORE_NAME || (env.CONTEXT === 'production' ? 'garment-lab' : 'garment-lab-preview'));
   return new FileStore(env.LAB_DATA_DIR || path.resolve(path.dirname(new URL(import.meta.url).pathname), '../data/lab'));
 }
