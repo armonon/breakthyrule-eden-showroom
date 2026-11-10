@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>BREAKTHYRULE — The Garment Lab</title>
+ <meta name="description" content="Build a Break Thy Rule garment: The Canvas or Cut & Sew, your size, colour and artwork direction. Plus The Relic Box and The Trinity.">
+ <link rel="icon" type="image/png" href="/assets/favicon-32.png">
+ <link rel="stylesheet" href="/site/site.css?v=2">
+ <link rel="stylesheet" href="/site/codex.css?v=1">
+ <link rel="stylesheet" href="/breakthyrule-cover.css?v=8">
+ <link rel="stylesheet" href="/site/folios.css?v=12">
+ <link rel="stylesheet" href="/site/commerce.css?v=2">
+ <link rel="stylesheet" href="/site/lab.css?v=1">
+ <script defer src="/site/config.js?v=1"></script>
+ <script defer src="/site/site.js?v=6"></script>
+ <script defer src="/breakthyrule-assets.js?v=2"></script>
+ <script defer src="/breakthyrule-cover.js?v=8"></script>
+ <script defer src="/site/graphic-strip.js?v=1"></script>
+ <script type="module" src="/site/cart-ui.js?v=1"></script>
+ <script type="module" src="/site/lab.js?v=1"></script>
+</head>
+<body data-page="lab">
+ <main>
+  <header class="page-head wrap lab-head">
+   <p class="folio">Folio V <small>Officina — the garment lab</small></p>
+   <h1><span class="dropcap">T</span>he Garment Lab</h1>
+   <p class="lede"><span class="rubric">Printed in house in Los Angeles.</span> Build a piece on <em>The Canvas</em> — a blank we print with artwork — or commission <em>Cut &amp; Sew</em>, made from scratch. Choose the colour and the artwork direction, or leave it to chance.</p>
+   <p class="lab-notice" id="lab-notice" role="status" hidden></p>
+   <nav class="lab-jump" aria-label="Lab sections"><a href="#build">Build a garment</a><a href="#relic">The Relic Box</a><a href="#trinity">The Trinity</a><a href="#catalog">All offerings</a></nav>
+  </header>
+
+  <section class="wrap lab-build" id="build" aria-labelledby="build-title">
+   <h2 id="build-title" class="visually-hidden">Build a garment</h2>
+   <div class="lab-stage" aria-live="polite">
+    <div class="stage-frame" id="stage-frame">
+     <div class="stage-art" id="stage-art"></div>
+    </div>
+    <div class="stage-tools">
+     <div class="seg" role="group" aria-label="Preview side"><button type="button" id="side-front" aria-pressed="true">Front</button><button type="button" id="side-back" aria-pressed="false">Back</button></div>
+     <label class="zoom">Zoom <input type="range" id="zoom" min="100" max="220" step="10" value="100" aria-label="Zoom the preview"></label>
+    </div>
+    <p class="stage-label" id="stage-label">Conceptual preview — every piece is printed by hand and the finished garment will differ.</p>
+   </div>
+
+   <form class="lab-steps" id="lab-form" novalidate>
+    <fieldset class="step" id="step-construction"><legend><span class="step-no">I</span> Construction</legend><div class="choices two" id="opt-construction"></div></fieldset>
+    <fieldset class="step" id="step-garment"><legend><span class="step-no">II</span> Garment</legend><div class="choices" id="opt-garment"></div></fieldset>
+    <fieldset class="step" id="step-size"><legend><span class="step-no">III</span> Size &amp; fit</legend>
+     <div class="sizes" id="opt-size" role="radiogroup" aria-label="Size"></div>
+     <div class="choices two fits" id="opt-fit"></div>
+     <p class="fine size-note" id="size-note"></p>
+    </fieldset>
+    <fieldset class="step" id="step-color"><legend><span class="step-no">IV</span> Color</legend>
+     <div class="choices four" id="opt-color"></div>
+     <label class="custom-color" id="custom-color-wrap" hidden>Name your color <input id="custom-color" maxlength="40" autocomplete="off" placeholder="e.g. Oxblood, sage, #2f4f4f"></label>
+    </fieldset>
+    <fieldset class="step" id="step-art"><legend><span class="step-no">V</span> Artwork</legend>
+     <div class="choices two" id="opt-art"></div>
+     <div class="altar" id="altar" hidden>
+      <div class="altar-head"><p class="kicker">The Altar of Chance</p><span class="seed" id="seed-label"></span></div>
+      <dl class="altar-draw" id="altar-draw"></dl>
+      <div class="altar-refs" id="altar-refs"></div>
+      <div class="altar-actions"><button type="button" class="ghost" id="redraw">Draw again</button><button type="button" class="solid" id="chaos">Total chaos</button><button type="button" class="ghost" id="unchaos" hidden>Undo chaos</button></div>
+      <p class="fine">Random art is free. It draws from our own artwork and the treatments we actually print; the seed is saved with your order so the draw can be rebuilt exactly.</p>
+     </div>
+    </fieldset>
+    <fieldset class="step review" id="step-review"><legend><span class="step-no">VI</span> Review your creation</legend>
+     <ul class="review-spec" id="review-spec"></ul>
+     <table class="breakdown" aria-label="Price breakdown"><tbody id="breakdown"></tbody><tfoot><tr><th scope="row">Total</th><td id="total">—</td></tr></tfoot></table>
+     <p class="fine" id="review-timeline"></p>
+     <p class="lab-error" id="lab-error" role="alert"></p>
+     <div class="review-actions">
+      <button type="submit" class="solid big" id="add-to-cart">Add to cart</button>
+      <button type="button" class="ghost" id="cancel-edit" hidden>Cancel editing</button>
+     </div>
+     <div class="waitlist" id="waitlist" hidden><label>At capacity — join the waitlist <input type="email" id="waitlist-email" autocomplete="email" placeholder="you@example.com"></label><button class="ghost" type="button" id="waitlist-join">Notify me</button><span class="fine" id="waitlist-status" role="status"></span></div>
+    </fieldset>
+   </form>
+  </section>
+
+  <div class="ornament" aria-hidden="true"><span>✠</span></div>
+
+  <section class="wrap lab-specials" aria-label="Special products">
+   <article class="special" id="relic" aria-labelledby="relic-title">
+    <div class="special-art" id="relic-art"></div>
+    <div class="special-body">
+     <p class="kicker">Mystery, curated</p>
+     <h2 id="relic-title"><span class="sect">§</span>The Relic Box <em class="price-tag">$120</em></h2>
+     <p class="lede">A curated assortment of new and repurposed garments — it may include tops, bottoms, tees and accessories. The mystery is in the art, never in your size.</p>
+     <form id="relic-form" class="special-form" novalidate>
+      <div class="field"><span class="field-label" id="relic-size-label">Your size</span><div class="sizes" id="relic-size" role="radiogroup" aria-labelledby="relic-size-label"></div></div>
+      <div class="field"><span class="field-label" id="relic-fit-label">Preferred fit</span><div class="sizes" id="relic-fit" role="radiogroup" aria-labelledby="relic-fit-label"></div></div>
+      <fieldset class="field"><legend class="field-label">Leave out (optional)</legend><div class="checks" id="relic-ex"></div></fieldset>
+      <label class="field"><span class="field-label">Anything we should know? (optional)</span><textarea id="relic-pref" maxlength="280" rows="2" placeholder="Colours you never wear, a favourite graphic…"></textarea></label>
+      <div class="policy" id="relic-policy"></div>
+      <p class="lab-error" id="relic-error" role="alert"></p>
+      <div class="special-actions"><button class="solid big" type="submit">Add the Relic Box</button><span class="fine" id="relic-stock"></span></div>
+     </form>
+    </div>
+   </article>
+
+   <article class="special" id="trinity" aria-labelledby="trinity-title">
+    <div class="special-art" id="trinity-art"></div>
+    <div class="special-body">
+     <p class="kicker">Bundle</p>
+     <h2 id="trinity-title"><span class="sect">§</span>The Trinity <em class="price-tag">3 tees · $60</em></h2>
+     <p class="lede">Three tees, one bundle. Pick your size and whether the house curates the three designs or draws them blind.</p>
+     <form id="trinity-form" class="special-form" novalidate>
+      <div class="field"><span class="field-label" id="tri-size-label">Size</span><div class="sizes" id="tri-size" role="radiogroup" aria-labelledby="tri-size-label"></div></div>
+      <div class="field"><span class="field-label" id="tri-var-label">Designs</span><div class="choices two" id="tri-variant" role="radiogroup" aria-labelledby="tri-var-label"></div></div>
+      <p class="lab-error" id="trinity-error" role="alert"></p>
+      <div class="special-actions"><button class="solid big" type="submit">Add The Trinity</button><span class="fine" id="trinity-stock"></span></div>
+     </form>
+    </div>
+   </article>
+  </section>
+
+  <div class="ornament" aria-hidden="true"><span>❦</span></div>
+
+  <section class="wrap lab-catalog" id="catalog" aria-labelledby="catalog-title">
+   <div class="section-head">
+    <div><p class="kicker">The offerings</p><h2 id="catalog-title"><span class="sect">§</span>Everything in the Lab</h2></div>
+    <div class="catalog-tools">
+     <label>Show <select id="cat-type"><option value="all">Everything</option><option value="canvas">The Canvas</option><option value="cut-sew">Cut &amp; Sew</option><option value="special">Boxes &amp; bundles</option></select></label>
+     <label>Sort <select id="cat-sort"><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="available">Available first</option></select></label>
+     <label class="check"><input type="checkbox" id="cat-available"> Available now</label>
+    </div>
+   </div>
+   <div class="catalog-grid" id="catalog-grid"></div>
+   <p class="fine">Looking for a finished piece? <a href="/#products">The collection</a> lists every garment we've made, in 3D.</p>
+  </section>
+ </main>
+</body>
+</html>

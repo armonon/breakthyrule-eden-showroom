@@ -8,6 +8,9 @@ The standard website is now the top layer at `/`. The 3D Garden of Eden showroom
 ├── /product?item=…   One garment: drag/turn/zoom 3D viewer, photos, story, buy link, discussion thread
 ├── /gallery          Real-life images: garments, models, worn by you, events, Instagram. Lightbox. "Share your fit" board
 ├── /archive          Topics (Symbols, Scripture, Hidden History…), Ask the Librarian, shelf, garments per topic, discussion per topic
+├── /lab              The Garment Lab: build a garment, Relic Box, Trinity, cart and checkout (docs/lab/README.md)
+├── /reliquary        Finished one-of-ones; /passport?id=… for each piece (QR)
+├── /lab-admin        The studio dashboard (staff only)
 └── /showroom         The 3D world (garden, museum, library, night district, multiplayer)
     ├── /broadcast.html   back link now returns to /showroom
     └── /shirt-study.html back link now returns to /showroom
@@ -94,6 +97,16 @@ The source folder is `~/Downloads/breakthyrule` (`GRAPHICS/`, `favs gallery/`, `
 
 1. `node tools/assets/import-breakthyrule.mjs` (add `--redo favs` to re-encode a set). Phone photos are turned upright.
 2. `node tools/site/build-gallery.mjs`
+
+## Garment Lab and showroom changes (branch claude/garment-lab)
+
+- Commerce: see docs/lab/README.md for pages, prices, code, environment variables and the activation checklist.
+- Home hero: the colour collage (assets/colour-collage-0524.jpg) drifts behind the hero as a living wall; the copy
+  sits on a taped paper card.
+- The graphic strip runs under the header on every site page and inside the 3D showroom header (site/graphic-strip.js).
+- 3D showroom: the Gilded Sentinel and the Azure Oracle statues were removed (eden-secrets.js); the arena door has a
+  lit "THE ARENA" sign, a glowing frame and arrows on the ground (eden-skybox.js); a GARMENT LAB link in the header.
+- Drafts: tools/deploy-netlify-draft.sh publishes a draft preview with the redirects, headers and the Lab function.
 
 ## Next steps
 

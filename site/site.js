@@ -2,7 +2,7 @@
 // Shared chrome for the public site: header, tabs, footer, and the discussion board
 // (a Circle space when one is configured, otherwise a local preview board).
 (()=>{
- const tabs=[['/', 'Products','home'],['/gallery','Gallery','gallery'],['/archive','Archive','archive']];
+ const tabs=[['/', 'Products','home'],['/lab','Lab','lab'],['/gallery','Gallery','gallery'],['/archive','Archive','archive']];
  const page=document.body.dataset.page||'';
  const el=(tag,props={},...children)=>{const node=Object.assign(document.createElement(tag),props);node.append(...children.filter(c=>c!=null));return node;};
  window.siteEl=el;
@@ -22,6 +22,8 @@
   el('div',{className:'foot-mark'},logo('in-footer')),
   el('p',{textContent:'Here ends the first book. A codex worn on the body.'}),
   el('div',{className:'foot-links'},
+   el('a',{href:'/lab',textContent:'Garment Lab'}),
+   el('a',{href:'/reliquary',textContent:'Reliquary'}),
    el('a',{href:'/showroom',textContent:'3D Showroom'}),
    el('a',{href:'/broadcast.html',textContent:'Broadcast Room'}),
    el('a',{href:siteConfig.instagram,textContent:'Instagram',target:'_blank',rel:'noopener'}),

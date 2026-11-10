@@ -1,7 +1,7 @@
 'use strict';
 // The garden's mystery layer: the painted sky glitches, a bird bonks into it, the stage crew's
-// backstage sits behind the north wall (with a weather lever), the Gilded Sentinel guards the door
-// until you have proven you see through it, and the Azure Oracle reads your progress back as fortune.
+// backstage sits behind the north wall (with a weather lever), and a door is stitched into the sky.
+// (The Gilded Sentinel and the Azure Oracle statues were removed.)
 // Progress is kept per visitor (localStorage); interactables share one on-screen prompt and the E key.
 window.createEdenSecrets=function({T,scene,camera,renderer,garden,combat,reduced=false,stage,getPlayer,requestDraw=()=>{},canAct=()=>true,addPickable=()=>{},shared=null}){
  const now=()=>performance.now()/1000,rand=(a,b)=>a+Math.random()*(b-a),pick=list=>list[Math.floor(Math.random()*list.length)];
@@ -66,9 +66,6 @@ window.createEdenSecrets=function({T,scene,camera,renderer,garden,combat,reduced
   prompt.hidden=false;if(prompt.textContent!==label)prompt.textContent=label;
   prompt.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,110,stage.clientWidth-110)+'px';prompt.style.top=Math.max(125,(1-point.y)*stage.clientHeight/2)+'px';
  }
- // ---------- Environment map for the statues ----------
- let environment=null;
- try{const backdrop=new T.Scene();backdrop.add(garden.sky.clone());const generator=new T.PMREMGenerator(renderer);environment=generator.fromScene(backdrop,0,.1,400).texture;generator.dispose();}catch{}
  // ---------- Glitches + the bird that hits the sky ----------
  const SUN=new T.Vector3(-.38,.32,-.8).normalize();
  let nextGlitch=now()+rand(14,22),lastKind='';
@@ -164,54 +161,11 @@ window.createEdenSecrets=function({T,scene,camera,renderer,garden,combat,reduced
   if(!progress.lever){progress.lever=true;changed();}
  }
  register({position:new T.Vector3(7.2,0,-24.6),radius:2.4,height:1.3,label:()=>'PULL THE WEATHER LEVER · '+STAGES[(stageIndex+1)%3].name,action:pullLever});
- // ---------- Statues (built from the avatar system and gilded) ----------
- async function statue({spec,material,at,yaw}){
-  if(!window.GardenCharacter)return null;
-  let defaults={};
-  try{const schema=await (await fetch('/character-schema.json?v=4')).json();for(const group of Object.values(schema))if(group&&typeof group==='object')for(const [k,s] of Object.entries(group))if(s&&typeof s==='object'&&'default' in s)defaults[k]=s.default;defaults.version=1;}catch{return null;}
-  const model=window.GardenCharacter.createClassic(T,{...defaults,...spec},false);model.animate(0);
-  model.root.traverse(n=>{if(n.isMesh){n.material=material;n.castShadow=true;n.receiveShadow=true;}});
-  model.root.position.copy(at);model.root.rotation.y=yaw;scene.add(model.root);
-  const bones={};model.root.traverse(n=>{if(n.isBone)bones[n.name]=n;});return {...model,bones};
- }
- const gold=new T.MeshStandardMaterial({color:0xd9ac4c,metalness:1,roughness:.26,envMap:environment,envMapIntensity:1.25});
- const azure=new T.MeshPhysicalMaterial({color:0x6aa6ea,metalness:.15,roughness:.14,clearcoat:1,clearcoatRoughness:.08,emissive:0x0c2f66,emissiveIntensity:.45,envMap:environment,envMapIntensity:1.1});
- const stone=new T.MeshStandardMaterial({color:0xcfcab8,roughness:.88});
- function plinth(x,z,r,h){const m=new T.Mesh(new T.CylinderGeometry(r,r*1.08,h,24),stone);m.position.set(x,h/2,z);m.castShadow=m.receiveShadow=true;scene.add(m);return m;}
- // Gilded Sentinel beside the door.
- const sentinelAt=new T.Vector3(door.x+2.8,0,door.z+1.7);plinth(sentinelAt.x,sentinelAt.z,.62,.42);
- const sentinelBubble=bubble('#8a6a1f');let sentinel=null,sentinelLooked=false,sentinelNext=0;
- statue({spec:{height:205,build:.85,shoulders:1.22,weight:96,hairStyle:'none',facialHair:'beard',age:.55},material:gold,at:sentinelAt.clone().setY(.42),yaw:-.35}).then(model=>{
-  if(!model)return;sentinel=model;
-  const spear=new T.Group();const shaft=new T.Mesh(new T.CylinderGeometry(.025,.025,2.9,8),gold);shaft.position.y=1.45;spear.add(shaft);const tip=new T.Mesh(new T.ConeGeometry(.07,.32,4),gold);tip.position.y=3.05;spear.add(tip);
-  spear.position.set(sentinelAt.x+.55,.42,sentinelAt.z+.12);scene.add(spear);renderer.shadowMap.needsUpdate=true;requestDraw();
- });
- function sentinelSpeak(lines){lines.forEach((line,i)=>setTimeout(()=>{sentinelBubble.say(line,3.6);sfx.stone();},i*3600));sentinelNext=now()+lines.length*3.6;}
- // The door is the way into the open match, so the Sentinel comments but never bars it.
+ // The door is the way into the open match; opening it is remembered as progress.
  function tryDoor(){
-  if(!progress.doorOpened){progress.doorOpened=true;changed();
-   sentinelSpeak(worthy()?['You have seen through the sky.','Pass, seeker. The night match never sleeps.']:['Few see the seams in this sky before they leave it.','Go on, then. Come back and watch it lie.']);}
+  if(!progress.doorOpened){progress.doorOpened=true;changed();}
   return true;
  }
- // Azure Oracle by the pond.
- const oracleAt=new T.Vector3(10.2,0,.6);plinth(oracleAt.x,oracleAt.z,.55,.35);
- const rings=new T.Group();rings.position.set(oracleAt.x,1.25,oracleAt.z);scene.add(rings);
- for(let i=0;i<2;i++){const r=new T.Mesh(new T.TorusGeometry(.75+i*.18,.012,8,64),new T.MeshBasicMaterial({color:0x9fd2ff,transparent:true,opacity:.65,fog:false}));r.rotation.x=Math.PI/2+i*.35;rings.add(r);}
- const oracleBubble=bubble('#2c5aa0','#14305e');let oracle=null;
- statue({spec:{height:172,build:.15,weight:58,shoulders:.88,hips:1.15,waist:.85,hairStyle:'long',age:.4},material:azure,at:oracleAt.clone().setY(.45),yaw:-Math.PI/2}).then(model=>{if(model){oracle=model;renderer.shadowMap.needsUpdate=true;requestDraw();}});
- function fortune(){
-  const lines=[];
-  if(!worthy())lines.push(progress.glitches.length?'The sun forgets its lines. You have caught '+progress.glitches.length+' of three.':'The sky is a lie told beautifully. Watch it until it stumbles.');
-  if(!progress.jesterBeaten)lines.push('The Fool falls only to a patient fist. Raise your guard just as he swings, then strike back.');
-  if(!progress.doorOpened)lines.push('Behind the sign that asks where God is, the sky was stitched shut. Open it.');
-  if(progress.doorOpened&&!progress.toll)lines.push('Beside the brick road, the Fool keeps a toll box. Answer honestly and the road gives you a gift.');
-  if(progress.doorOpened&&!progress.lever)lines.push('Behind the curtain, someone holds the sun by a lever.');
-  if(progress.found.length<3)lines.push('Three garments hide where no shop would: behind the curtain, along the bricks, and in the arms of the oldest tree. You hold '+progress.found.length+'.');
-  if(!progress.ring.wins)lines.push('Ring the bell in the amphitheater. The crowd remembers champions.');
-  if(!lines.length)lines.push('You have seen the stage, the crew and the Fool. Now be the play.');
-  oracleBubble.say(lines[Math.floor(now()/7)%lines.length],6);tone('sine',880,1320,.6,.06);tone('sine',660,990,.8,.05,.1);
- }
- register({position:oracleAt,radius:2.8,height:2.3,label:'ASK THE AZURE ORACLE',action:fortune});
  // ---------- Jester knows ----------
  combat?.on('jesterKO',()=>{
   const first=!progress.jesterBeaten;progress.jesterBeaten=true;changed();
@@ -223,18 +177,6 @@ window.createEdenSecrets=function({T,scene,camera,renderer,garden,combat,reduced
   if(!reduced&&p&&p.position.z>door.z&&t>nextGlitch&&canAct()){glitch();nextGlitch=t+rand(24,42);}
   busy=updateBird(t,dt)||busy;
   if(t-leverAnim<4){const k=Math.min(1,(t-leverAnim)/.25);lever.rotation.x=(stageIndex%2?.7:-.7)*k;busy=true;}
-  rings.rotation.y=reduced?0:t*.4;rings.children.forEach((r,i)=>{r.rotation.z=t*(i?.7:-.5);});rings.position.y=1.25+(reduced?0:Math.sin(t*1.4)*.06);
-  if(oracle)oracle.root.position.y=.45+(reduced?0:Math.sin(t*1.1)*.035);
-  // The Sentinel turns its head to watch whoever approaches the door.
-  if(sentinel&&p){
-   const head=sentinel.bones.head,d=Math.hypot(p.position.x-sentinelAt.x,p.position.z-sentinelAt.z);
-   if(head){const yaw=Math.atan2(p.position.x-sentinelAt.x,p.position.z-sentinelAt.z)-sentinel.root.rotation.y,target=d<9?T.MathUtils.clamp(Math.atan2(Math.sin(yaw),Math.cos(yaw)),-.9,.9):0;head.rotation.y+=(target-head.rotation.y)*Math.min(1,dt*3);if(Math.abs(target-head.rotation.y)>.01)busy=true;}
-   const nearDoor=Math.hypot(p.position.x-door.x,p.position.z-door.z)<5.5&&p.position.z>door.z;
-   if(nearDoor&&!sentinelLooked&&t>sentinelNext){sentinelLooked=true;sentinelSpeak(worthy()?['You have seen through the sky.','The door opens for you.']:['A door, stitched into a borrowed sky.','Catch the sky lying three times and you will understand.']);}
-   if(!nearDoor&&d>14)sentinelLooked=false;
-  }
-  busy=sentinelBubble.update(new T.Vector3(sentinelAt.x,2.95,sentinelAt.z))||busy;
-  busy=oracleBubble.update(new T.Vector3(oracleAt.x,2.6,oracleAt.z))||busy;
   updatePrompt();
   return busy;
  }
@@ -242,10 +184,9 @@ window.createEdenSecrets=function({T,scene,camera,renderer,garden,combat,reduced
   update,interact,register,notify,tryDoor,progress,changed,onChange(fn){changeListeners.push(fn);},worthy,
   onWorld(fn){worldListeners.push(fn);},call,get online(){return online&&signedIn;},
   blocks(p){
-   if(Math.hypot(p.x-sentinelAt.x,p.z-sentinelAt.z)<.8||Math.hypot(p.x-oracleAt.x,p.z-oracleAt.z)<.75)return true;
    const b=booth.position;if(Math.abs(p.x-b.x)<1.6&&Math.abs(p.z-b.z)<1.4)return true;
    return false;
   },
-  inspect:()=>({progress:JSON.parse(JSON.stringify(progress)),worthy:worthy(),stage:STAGES[stageIndex].name,online:online&&signedIn,bird:flight?.phase||null,statues:{sentinel:!!sentinel,oracle:!!oracle},interactables:interactables.length})
+  inspect:()=>({progress:JSON.parse(JSON.stringify(progress)),worthy:worthy(),stage:STAGES[stageIndex].name,online:online&&signedIn,bird:flight?.phase||null,interactables:interactables.length})
  };
 };

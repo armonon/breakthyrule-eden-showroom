@@ -1,0 +1,57 @@
+/* COMMERCE — the cart button and drawer on every page, and the shared night palette for the Garment Lab
+   pages (lab, order, studio, reliquary, passport). Loaded after codex.css and folios.css. */
+body[data-page=lab],body[data-page=lab-order],body[data-page=lab-admin],body[data-page=reliquary],body[data-page=passport],body[data-page=lab-testpay]{
+ --paper:#15120f;--paper-2:#1d1915;--wash:#201b16;--ink:#efe6d4;--muted:#a99d8f;--line:#3a3128;--red:#d0574a;--rubric:#e0695b;--gold:#c9a463}
+body[data-page=lab]::before,body[data-page=lab-order]::before,body[data-page=lab-admin]::before,body[data-page=reliquary]::before,body[data-page=passport]::before,body[data-page=lab-testpay]::before{mix-blend-mode:screen;opacity:.14}
+body[data-page=lab]::after,body[data-page=lab-order]::after,body[data-page=lab-admin]::after,body[data-page=reliquary]::after,body[data-page=passport]::after,body[data-page=lab-testpay]::after{background:radial-gradient(110% 80% at 50% 30%,transparent 50%,rgba(0,0,0,.55) 100%)}
+body[data-page^=lab] .brand,body[data-page=reliquary] .brand,body[data-page=passport] .brand,body[data-page^=lab] .foot-mark,body[data-page=reliquary] .foot-mark,body[data-page=passport] .foot-mark{background:#f2ebdd;padding:4px 12px;box-shadow:0 0 0 1px #b08a4a,0 0 0 4px #f2ebdd,0 0 0 5px rgba(176,138,74,.6),0 8px 18px rgba(0,0,0,.45)}
+body[data-page^=lab] .foot-mark,body[data-page=reliquary] .foot-mark,body[data-page=passport] .foot-mark{display:inline-block;transform:rotate(-1.2deg);padding:8px 16px}
+body[data-page^=lab] .site-top .btr-header-button,body[data-page=reliquary] .site-top .btr-header-button,body[data-page=passport] .site-top .btr-header-button{box-shadow:3px 3px 0 var(--gold);border-color:var(--gold)}
+.visually-hidden{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:2px solid var(--rubric);outline-offset:3px}
+
+/* Cart button */
+.cart-button{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border:1px solid var(--ink);background:transparent;color:var(--ink);font:600 12px 'DM Sans',sans-serif;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+.cart-button .cart-count{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:var(--line);color:var(--ink);font-size:12px;letter-spacing:0}
+.cart-button.has-items .cart-count{background:var(--rubric);color:#fff}
+.cart-button:hover{background:var(--ink);color:var(--paper)}
+@media(max-width:900px){.cart-button span:first-child{display:none}.cart-button{padding:0 10px}}
+
+/* Cart drawer */
+.cart-drawer{margin:0 0 0 auto;height:100dvh;max-height:100dvh;width:min(460px,100vw);max-width:100vw;padding:0;border:0;border-left:1px solid var(--line);background:#16120f;color:#efe6d4;display:none;flex-direction:column}
+.cart-drawer[open]{display:flex;animation:cart-in .28s cubic-bezier(.2,.7,.2,1)}
+.cart-drawer::backdrop{background:rgba(10,8,6,.55);backdrop-filter:blur(3px)}
+@keyframes cart-in{from{transform:translateX(40px);opacity:0}}
+.cart-head{display:flex;align-items:flex-start;justify-content:space-between;padding:22px 22px 14px;border-bottom:1px solid #3a3128}
+.cart-head h2{margin:0;font-size:40px;line-height:1;color:#efe6d4}
+.cart-head h2 small{display:block;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;font-size:16px;color:#e0695b;margin-bottom:6px}
+.cart-close{background:none;border:1px solid #3a3128;color:#efe6d4;min-width:44px;min-height:44px;font-size:24px;cursor:pointer}
+.test-badge{display:inline-block;margin-left:10px;vertical-align:middle;padding:4px 8px;border:1px solid #c9a463;color:#c9a463;font:600 10px 'DM Sans',sans-serif;letter-spacing:.12em;text-transform:uppercase}
+.cart-lines{list-style:none;margin:0;padding:6px 22px;overflow-y:auto;flex:1}
+.cart-line{display:grid;grid-template-columns:72px 1fr auto;gap:14px;padding:16px 0;border-bottom:1px solid #3a3128}
+.cart-art{width:72px;height:80px;background:#201b16;border:1px solid #3a3128;padding:4px}
+.cart-art svg{width:100%;height:100%}
+.cart-info strong{font-family:'Barlow Condensed',sans-serif;font-size:21px;letter-spacing:.01em;line-height:1.05}
+.cart-spec{list-style:none;margin:6px 0 10px;padding:0;font-family:'Cormorant Garamond',serif;font-size:15.5px;line-height:1.3;color:#b9ad9e}
+.cart-controls{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.qty{display:inline-flex;align-items:center;border:1px solid #3a3128}
+.qty button{width:36px;height:36px;background:none;border:0;color:#efe6d4;font-size:18px;cursor:pointer}
+.qty button:disabled{opacity:.3;cursor:default}
+.qty span{min-width:26px;text-align:center;font-variant-numeric:tabular-nums}
+.link{background:none;border:0;padding:4px 0;color:#c9a463;font:inherit;font-size:14px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.cart-price{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:21px;color:#e0695b;white-space:nowrap}
+.cart-empty{padding:40px 0;text-align:center;font-family:'Cormorant Garamond',serif;font-size:20px;color:#b9ad9e}
+.cart-empty .ghost{display:inline-flex;margin-top:12px;color:#efe6d4;border-color:#efe6d4}
+.cart-foot{padding:16px 22px 22px;border-top:1px solid #3a3128;background:#1a1612}
+.cart-row{display:flex;justify-content:space-between;align-items:baseline;font-family:'Barlow Condensed',sans-serif;font-size:22px}
+.cart-subtotal{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:26px;color:#e0695b;font-weight:500}
+.cart-foot .fine{color:#a99d8f;font-size:13px;margin:6px 0 10px}
+.cart-note{display:grid;gap:4px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#a99d8f;margin-bottom:10px}
+.cart-note textarea{background:#15120f;border:1px solid #3a3128;color:#efe6d4;padding:8px;font:15px 'DM Sans',sans-serif;resize:vertical}
+.cart-status{min-height:1.2em;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;color:#f1c56b;margin:0 0 10px}
+.cart-checkout{width:100%;justify-content:center;background:#e0695b!important;border-color:#e0695b!important;color:#140f0c!important}
+.cart-checkout:disabled{opacity:.4}
+.cart-continue{display:block;text-align:center;margin-top:12px;font-family:'Cormorant Garamond',serif;font-style:italic;color:#c9a463}
+.solid.big,.ghost.big{min-height:52px;padding:0 26px;font-size:13px}
+/* Phones: the wrapped header scrolls away instead of covering a third of the screen. */
+@media(max-width:900px){.site-top{position:relative}.site-top .enter-showroom{padding:0 12px}}

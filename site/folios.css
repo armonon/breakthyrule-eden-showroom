@@ -224,3 +224,41 @@ body[data-page=home] main,body[data-page=home] .site-foot{position:relative;z-in
 /* Archive: information and discussion only. The Librarian's desk shows the house apple. */
 .archive-plaque{grid-row:1/4}
 .librarian img.librarian-apple{width:132px;height:132px;object-fit:contain;padding:10px;border-radius:50%;background:#f2ebdd;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--gold)}
+
+/* Home: the colour collage as a living wall behind the hero. Two copies drift against each other
+   (one mirrored, blended) so the surface keeps changing; the copy sits on a taped paper card. */
+.codex-hero.has-collage{position:relative;overflow:hidden;isolation:isolate;background:#120f0c;border-bottom:0;padding:clamp(18px,2.4vw,34px);gap:clamp(18px,2.4vw,34px);min-height:calc(100svh - 134px)}
+.hero-collage{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.hero-collage img{position:absolute;inset:-12%;width:124%;height:124%;object-fit:cover;will-change:transform;
+ transform:translate3d(calc(var(--px,0) * -26px),calc(var(--py,0) * -20px),0) scale(1.06);animation:collage-drift 46s ease-in-out infinite alternate}
+.hero-collage img+img{transform:scaleX(-1);mix-blend-mode:screen;opacity:.42;animation:collage-drift-b 58s ease-in-out infinite alternate;filter:hue-rotate(40deg) saturate(1.2)}
+.hero-collage::after{content:'';position:absolute;inset:0;background:radial-gradient(120% 90% at 30% 50%,rgba(18,15,12,.05),rgba(18,15,12,.55) 85%),linear-gradient(180deg,rgba(18,15,12,.2),transparent 30%,transparent 70%,rgba(18,15,12,.45))}
+@keyframes collage-drift{0%{transform:translate3d(calc(var(--px,0) * -26px),calc(var(--py,0) * -20px),0) scale(1.06) rotate(0)}50%{transform:translate3d(calc(-2% + var(--px,0) * -26px),calc(1.5% + var(--py,0) * -20px),0) scale(1.14) rotate(.6deg)}100%{transform:translate3d(calc(2.5% + var(--px,0) * -26px),calc(-2% + var(--py,0) * -20px),0) scale(1.1) rotate(-.4deg)}}
+@keyframes collage-drift-b{0%{transform:scaleX(-1) translate3d(calc(var(--px,0) * 40px),calc(var(--py,0) * 30px),0) scale(1.18)}100%{transform:scaleX(-1) translate3d(calc(-3% + var(--px,0) * 40px),calc(2% + var(--py,0) * 30px),0) scale(1.08) rotate(1deg)}}
+.codex-hero.has-collage>.hero-copy,.codex-hero.has-collage>.hero-stage{position:relative;z-index:1}
+.codex-hero.has-collage>.hero-copy{align-self:center;background:#f2ebdd;padding:clamp(26px,3.4vw,52px);box-shadow:0 0 0 1px #b08a4a,0 0 0 6px #f2ebdd,0 0 0 7px rgba(176,138,74,.55),0 30px 70px rgba(0,0,0,.55);transform:rotate(-.8deg);color:#1d1a17;--ink:#1d1a17;--muted:#6e6458;--rubric:#a3322a;--paper:#f2ebdd;--paper-2:#e9e0cd;--line:#d6cab3}
+.codex-hero.has-collage>.hero-copy::before,.codex-hero.has-collage>.hero-copy::after{content:'';position:absolute;top:-14px;width:110px;height:28px;background:rgba(241,197,107,.7);box-shadow:0 2px 4px rgba(0,0,0,.15)}
+.codex-hero.has-collage>.hero-copy::before{left:-26px;transform:rotate(-24deg)}
+.codex-hero.has-collage>.hero-copy::after{right:-26px;transform:rotate(20deg)}
+.codex-hero.has-collage h1{font-size:clamp(64px,8.4vw,136px)}
+.codex-hero.has-collage>.hero-stage{border-left:0;box-shadow:0 30px 70px rgba(0,0,0,.55);min-height:0}
+@media(max-width:900px){.codex-hero.has-collage{padding:14px;gap:14px}.codex-hero.has-collage>.hero-copy{transform:none}.codex-hero.has-collage>.hero-stage{min-height:56svh}}
+@media(prefers-reduced-motion:reduce){.hero-collage img,.hero-collage img+img{animation:none}}
+/* Let the collage breathe: narrower card and plate, lighter veil. */
+.codex-hero.has-collage{padding:clamp(28px,4vw,64px) clamp(20px,4vw,72px);gap:clamp(24px,4vw,72px)}
+.codex-hero.has-collage>.hero-copy{justify-self:center;max-width:600px;width:100%}
+.codex-hero.has-collage>.hero-stage{justify-self:center;width:100%;max-width:560px;margin:3vh 0;transform:rotate(.7deg)}
+.hero-collage::after{background:radial-gradient(120% 90% at 50% 50%,transparent 40%,rgba(18,15,12,.38) 100%)}
+@media(max-width:900px){.codex-hero.has-collage>.hero-stage{transform:none;margin:0;max-width:none}.codex-hero.has-collage>.hero-copy{max-width:none}}
+
+/* Home: the Garment Lab band. */
+.lab-band .lede{max-width:700px;margin:0 0 22px}
+.lab-band-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.lab-card{position:relative;display:grid;gap:6px;align-content:start;min-height:200px;padding:22px 20px;background:#16120f;color:#efe6d4;border:1px solid #3a3128;box-shadow:inset 0 0 0 5px #16120f,inset 0 0 0 6px rgba(201,164,99,.4);transition:transform .3s,box-shadow .3s}
+.lab-card:hover{transform:translateY(-4px);box-shadow:inset 0 0 0 5px #16120f,inset 0 0 0 6px #e0695b}
+.lab-card-no{font-family:var(--blackletter);font-size:34px;color:#e0695b;line-height:1}
+.lab-card strong{font-family:'Barlow Condensed',sans-serif;font-size:30px;line-height:1}
+.lab-card span:not(.lab-card-no){font-family:var(--serif);font-size:18px;color:#b9ad9e}
+.lab-card em{margin-top:auto;font-family:var(--serif);font-size:22px;color:#f1c56b}
+@media(max-width:900px){.lab-band-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.lab-band-grid{grid-template-columns:1fr}}

@@ -33,6 +33,15 @@
   b.style.cssText=`left:${x}px;top:${y}px;width:${size}px;--r:${rand(-13,13).toFixed(1)}deg`;return b;
  }
 
+ // Home: the colour collage behind the hero leans with the pointer (the drift itself is CSS).
+ const collageHero=document.querySelector('.codex-hero.has-collage');
+ if(collageHero&&!reduceMotion){
+  let raf=0,tx=0,ty=0;
+  collageHero.addEventListener('pointermove',e=>{const r=collageHero.getBoundingClientRect();tx=(e.clientX-r.left)/r.width-.5;ty=(e.clientY-r.top)/r.height-.5;
+   if(!raf)raf=requestAnimationFrame(()=>{raf=0;collageHero.style.setProperty('--px',tx.toFixed(3));collageHero.style.setProperty('--py',ty.toFixed(3));});});
+  collageHero.addEventListener('pointerleave',()=>{collageHero.style.setProperty('--px',0);collageHero.style.setProperty('--py',0);});
+ }
+
  // Home: running rubric of graphic names under the hero.
  const ticker=$('rubric-ticker');
  if(ticker){

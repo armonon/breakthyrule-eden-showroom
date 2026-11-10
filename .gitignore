@@ -10,3 +10,6 @@ assets/beyond-eden/trees/*.blend1
 tools/native/
 assets/beyond-eden/trees/*.png
 .anim-work/
+
+# Garment Lab order data (customer information) never goes into git.
+server/data/lab/

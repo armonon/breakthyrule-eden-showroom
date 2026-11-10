@@ -17,6 +17,7 @@ import {fileURLToPath} from 'node:url';
 import {createArena} from './arena.mjs';
 import {createBrawl} from './brawl.mjs';
 import {createWorld} from './world.mjs';
+import {createHandler as createLabHandler, labFromEnv} from './lab/api.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((pairs, arg, i, all) => arg.startsWith('--') ? [...pairs, [arg.slice(2), all[i + 1]]] : pairs, []));
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -279,9 +280,26 @@ function readBody(req, limit = 65536) {
 }
 const LOCAL_DEPLOYMENT = `'use strict';window.showroomDeployment=${JSON.stringify({mode: 'local', socialApi: '/api/social/', realtime: '/api/social/live'})};`;
 
+// Garment Lab API (server/lab/): orders kept in server/data/lab unless LAB_DATA_DIR says otherwise.
+const LAB_ENV = {...process.env, LAB_DATA_DIR: process.env.LAB_DATA_DIR || path.join(DATA, 'lab')};
+const labHandle = createLabHandler(() => labFromEnv(LAB_ENV), LAB_ENV);
+function readRaw(req, limit = 5 * 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    let size = 0; const chunks = [];
+    req.on('data', c => { size += c.length; if (size > limit) { reject(new HttpError(413, 'Request too large.')); req.destroy(); } else chunks.push(c); });
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8'))); req.on('error', reject);
+  });
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://local');
   try {
+    if (url.pathname.startsWith('/api/lab/')) {
+      const raw = req.method === 'GET' || req.method === 'HEAD' ? '' : await readRaw(req);
+      const local = new URL(url.pathname + url.search, `http://${req.headers.host || 'localhost'}`);
+      const r = await labHandle({method: req.method, url: local, headers: req.headers, rawBody: raw});
+      res.writeHead(r.status, r.headers); return res.end(r.body);
+    }
     if (url.pathname.startsWith('/api/social/')) {
       if (!sameOrigin(req)) throw new HttpError(403, 'Cross-site request refused.');
       const raw = req.method === 'POST' ? await readBody(req) : '';

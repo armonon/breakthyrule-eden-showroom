@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <meta name="robots" content="noindex">
+ <meta name="referrer" content="no-referrer">
+ <title>BREAKTHYRULE — Your order</title>
+ <link rel="icon" type="image/png" href="/assets/favicon-32.png">
+ <link rel="stylesheet" href="/site/site.css?v=2">
+ <link rel="stylesheet" href="/site/codex.css?v=1">
+ <link rel="stylesheet" href="/breakthyrule-cover.css?v=8">
+ <link rel="stylesheet" href="/site/folios.css?v=12">
+ <link rel="stylesheet" href="/site/commerce.css?v=2">
+ <link rel="stylesheet" href="/site/lab.css?v=1">
+ <link rel="stylesheet" href="/site/lab-pages.css?v=1">
+ <script defer src="/site/config.js?v=1"></script>
+ <script defer src="/site/site.js?v=6"></script>
+ <script defer src="/breakthyrule-assets.js?v=2"></script>
+ <script defer src="/breakthyrule-cover.js?v=8"></script>
+ <script type="module" src="/site/cart-ui.js?v=1"></script>
+ <script type="module" src="/site/lab-order.js?v=1"></script>
+</head>
+<body data-page="lab-order">
+ <main class="wrap order-page">
+  <header class="page-head">
+   <p class="folio">Your order <small id="order-ref"></small></p>
+   <h1 id="order-title">Opening your order…</h1>
+   <p class="lede" id="order-lede"></p>
+   <p class="fine" id="order-keep">This page is private to you — keep its link (it holds your order key). <button type="button" class="link" id="copy-link">Copy link</button></p>
+  </header>
+  <div class="order-grid">
+   <section aria-labelledby="items-title"><h2 id="items-title" class="order-h">The pieces</h2><ol class="order-items" id="order-items"></ol>
+    <table class="breakdown"><tbody id="order-totals"></tbody></table></section>
+   <aside aria-labelledby="prod-title"><h2 id="prod-title" class="order-h">In the studio</h2><ol class="timeline" id="timeline"></ol><div id="shipment"></div></aside>
+  </div>
+ </main>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <meta name="robots" content="noindex, nofollow">
+ <meta name="referrer" content="no-referrer">
+ <title>BREAKTHYRULE — Studio</title>
+ <link rel="icon" type="image/png" href="/assets/favicon-32.png">
+ <link rel="stylesheet" href="/site/site.css?v=2">
+ <link rel="stylesheet" href="/site/codex.css?v=1">
+ <link rel="stylesheet" href="/site/folios.css?v=12">
+ <link rel="stylesheet" href="/site/commerce.css?v=2">
+ <link rel="stylesheet" href="/site/lab.css?v=1">
+ <link rel="stylesheet" href="/site/lab-pages.css?v=1">
+ <link rel="stylesheet" href="/site/lab-admin.css?v=1">
+ <script defer src="/site/config.js?v=1"></script>
+ <script defer src="/site/site.js?v=6"></script>
+ <script type="module" src="/site/lab-admin.js?v=2"></script>
+</head>
+<body data-page="lab-admin">
+ <main class="wrap lab-admin">
+  <header class="page-head admin-head">
+   <p class="folio">The studio <small>Production — staff only</small></p>
+   <h1>Workbench</h1>
+   <p class="fine" id="who"></p>
+  </header>
+
+  <form id="login" class="admin-login" hidden>
+   <h2>Sign in</h2>
+   <label>Email <input id="login-email" type="email" autocomplete="username" required></label>
+   <label>Password <input id="login-password" type="password" autocomplete="current-password" required minlength="10"></label>
+   <button class="solid big" type="submit">Sign in</button>
+   <p class="lab-error" id="login-error" role="alert"></p>
+  </form>
+
+  <section id="desk" hidden>
+   <nav class="admin-tabs" role="tablist" aria-label="Studio sections">
+    <button role="tab" data-tab="orders" aria-selected="true">Orders</button>
+    <button role="tab" data-tab="stock" aria-selected="false">Stock &amp; capacity</button>
+    <button role="tab" data-tab="archive" aria-selected="false">Archive</button>
+    <button role="tab" data-tab="waitlist" aria-selected="false">Waitlist</button>
+    <button role="tab" data-tab="settings" aria-selected="false">Launch settings</button>
+    <button role="tab" data-tab="staff" aria-selected="false" data-owner>Staff</button>
+    <button type="button" class="link" id="logout">Sign out</button>
+   </nav>
+
+   <div class="tab-panel" data-panel="orders">
+    <div class="admin-filters">
+     <label>Payment <select id="f-payment"><option value="">Any</option></select></label>
+     <label>Production <select id="f-production"><option value="">Any</option></select></label>
+     <label>Search <input id="f-q" type="search" placeholder="Order, name or email"></label>
+     <button class="ghost" type="button" id="f-refresh">Refresh</button>
+    </div>
+    <div class="admin-split">
+     <table class="admin-table" aria-label="Orders"><thead><tr><th>Order</th><th>Placed</th><th>Pieces</th><th>Payment</th><th>Production</th><th>Total</th></tr></thead><tbody id="orders"></tbody></table>
+     <article class="order-detail" id="detail" aria-live="polite"><p class="fine">Select an order.</p></article>
+    </div>
+   </div>
+
+   <div class="tab-panel" data-panel="stock" hidden>
+    <h2>Ready-made stock</h2>
+    <p class="fine">The Trinity and the Relic Box are sold from counted stock. Nothing sells until you enter a real count. "Held" are units in open checkouts.</p>
+    <table class="admin-table" aria-label="Stock"><thead><tr><th>SKU</th><th>On hand</th><th>Held</th><th></th></tr></thead><tbody id="skus"></tbody></table>
+    <h2>Made-to-order capacity</h2>
+    <p class="fine">Slots the studio can take on for The Canvas and Cut &amp; Sew. Empty = not open. Lead time is shown to customers only when you set it.</p>
+    <table class="admin-table" aria-label="Capacity"><thead><tr><th>Piece</th><th>Slots</th><th>Used</th><th>Held</th><th>Lead time (days)</th><th>Open</th><th></th></tr></thead><tbody id="slots"></tbody></table>
+   </div>
+
+   <div class="tab-panel" data-panel="archive" hidden>
+    <h2>The Reliquary — finished one-of-ones</h2>
+    <p class="fine">Entries stay private until published. Customer names and order details are never shown on a passport.</p>
+    <form id="archive-form" class="archive-form">
+     <input type="hidden" id="a-id">
+     <label>Title <input id="a-title" maxlength="120" required></label>
+     <label>Garment type <input id="a-garmentType" maxlength="120"></label>
+     <label>Construction <input id="a-construction" maxlength="120" placeholder="Cut & Sew / The Canvas"></label>
+     <label>Materials <input id="a-materials" maxlength="120"></label>
+     <label>Artwork technique <input id="a-technique" maxlength="120"></label>
+     <label>Created on <input id="a-createdOn" type="date"></label>
+     <label>Edition <input id="a-edition" maxlength="120" placeholder="1 of 1"></label>
+     <label>Linked order (private) <input id="a-orderId" maxlength="20" placeholder="BTR-…"></label>
+     <label class="wide">Description <textarea id="a-description" maxlength="2000" rows="4"></textarea></label>
+     <label class="wide">Photos <input id="a-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+     <div class="wide a-photo-list" id="a-photo-list"></div>
+     <div class="wide admin-actions"><button class="ghost" type="submit" data-status="draft">Save draft</button><button class="solid" type="submit" data-status="published">Publish passport</button><button class="link" type="button" id="a-new">New entry</button></div>
+     <p class="lab-error wide" id="a-error" role="alert"></p>
+    </form>
+    <table class="admin-table" aria-label="Archive entries"><thead><tr><th>Passport</th><th>Title</th><th>Status</th><th></th></tr></thead><tbody id="archive"></tbody></table>
+   </div>
+
+   <div class="tab-panel" data-panel="waitlist" hidden>
+    <h2>Waitlist</h2>
+    <table class="admin-table" aria-label="Waitlist"><thead><tr><th>Piece</th><th>Email</th><th>Joined</th></tr></thead><tbody id="waitlist"></tbody></table>
+   </div>
+
+   <div class="tab-panel" data-panel="settings" hidden>
+    <h2>Launch settings</h2>
+    <p class="fine">Live (real-money) checkout stays closed until each of these is true and the LAB_ALLOW_LIVE switch is set on the server.</p>
+    <form id="settings-form" class="settings-form">
+     <label class="check"><input type="checkbox" id="s-size"> Size charts measured from the real blanks and patterns are published</label>
+     <label class="check"><input type="checkbox" id="s-ship"> Shipping rates and tax are configured in Stripe</label>
+     <h3>Relic Box policies (published on the Lab page)</h3>
+     <label>Minimum guaranteed contents <textarea id="s-contents" rows="2" maxlength="1200"></textarea></label>
+     <label>Garment condition disclosure <textarea id="s-condition" rows="2" maxlength="1200"></textarea></label>
+     <label>Sizing rules <textarea id="s-sizing" rows="2" maxlength="1200"></textarea></label>
+     <label>Fulfilment policy <textarea id="s-fulfillment" rows="2" maxlength="1200"></textarea></label>
+     <label class="check"><input type="checkbox" id="s-relic"> Publish the Relic Box policies</label>
+     <label>Notice on the Lab page <input id="s-notice" maxlength="280"></label>
+     <button class="solid" type="submit">Save settings</button>
+     <p class="fine" id="s-status" role="status"></p>
+    </form>
+   </div>
+
+   <div class="tab-panel" data-panel="staff" hidden>
+    <h2>Staff</h2>
+    <table class="admin-table" aria-label="Staff"><thead><tr><th>Email</th><th>Role</th><th>Active</th><th></th></tr></thead><tbody id="staff"></tbody></table>
+    <form id="staff-form" class="staff-form">
+     <label>Email <input id="st-email" type="email" required></label>
+     <label>Temporary password <input id="st-password" type="password" minlength="10" required autocomplete="new-password"></label>
+     <label>Role <select id="st-role"><option value="artist">Artist — production, notes, archive</option><option value="owner">Owner — everything, incl. refunds &amp; stock</option></select></label>
+     <button class="solid" type="submit">Add staff</button>
+     <p class="lab-error" id="st-error" role="alert"></p>
+    </form>
+   </div>
+  </section>
+ </main>
+</body>
+</html>
