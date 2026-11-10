@@ -221,3 +221,5 @@ body.btr-cover-open{overflow:hidden}
 .ct-shard{position:fixed;background-size:100% 100%;will-change:transform,opacity}
 .ct.broken .ct-word{visibility:hidden}
 @media(prefers-reduced-motion:reduce){.ct-word,.ct-stamp{transition:none;animation:none!important}.ct-word.on .ct-stamp{opacity:1;transform:rotate(-7deg)}}
+@media(max-width:600px){.ct-stamp{font-size:10px;letter-spacing:.14em;padding:3px 5px 2px;right:2%}.ct-middle .ct-stamp{left:58%}.ct-word.on .ct-stamp{animation-name:ct-thump-sm}}
+@keyframes ct-thump-sm{0%{opacity:0;transform:rotate(-12deg) scale(1.6)}60%{opacity:1;transform:rotate(-6deg) scale(.82)}100%{opacity:1;transform:rotate(-7deg) scale(.88)}}
