@@ -3,6 +3,7 @@ window.showroomAssets={
  // World textures use <=1024 px WebP copies of product photos and the logo (tools/asset-pipeline/optimize-images.mjs);
  // the full-size WebP files stay for the shop and the full-size poster view.
  web(url){
+  const gallery=/^\/assets\/museum-gallery\/([^/?]+\.webp)$/.exec(url||'');if(gallery)return '/assets/museum-gallery/web/'+gallery[1]; // 512 px wall copies
   const match=/^\/(?:products\/)?([^/?]+)\.(?:png|jpe?g|webp)(\?.*)?$/i.exec(url||'');
   return match&&(url.startsWith('/products/')||url.startsWith('/logo.png'))?'/products/web/'+match[1].toLowerCase()+'.webp':url;
  },
