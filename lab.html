@@ -11,7 +11,7 @@
  <link rel="stylesheet" href="/breakthyrule-cover.css?v=8">
  <link rel="stylesheet" href="/site/folios.css?v=12">
  <link rel="stylesheet" href="/site/commerce.css?v=3">
- <link rel="stylesheet" href="/site/lab.css?v=2">
+ <link rel="stylesheet" href="/site/lab.css?v=4">
  <script defer src="/assets/three.min.js?v=187"></script>
  <script defer src="/asset-loader.js?v=4"></script>
  <script defer src="/site/garment-stage.js?v=3"></script>
@@ -21,14 +21,14 @@
  <script defer src="/breakthyrule-cover.js?v=8"></script>
  <script defer src="/site/graphic-strip.js?v=1"></script>
  <script type="module" src="/site/cart-ui.js?v=1"></script>
- <script type="module" src="/site/lab.js?v=3"></script>
+ <script type="module" src="/site/lab.js?v=9"></script>
 </head>
 <body data-page="lab">
  <main>
   <header class="page-head wrap lab-head">
    <p class="folio">Folio V <small>Officina — the garment lab</small></p>
    <h1><span class="dropcap">T</span>he Garment Lab</h1>
-   <p class="lede"><span class="rubric">Printed in house in Los Angeles.</span> Build a piece on <em>The Canvas</em> — a blank we print with artwork — or commission <em>Cut &amp; Sew</em>, made from scratch. Choose the colour and the artwork direction, or leave it to chance.</p>
+   <p class="lede"><span class="rubric">Printed in house in Los Angeles.</span> Build a piece on <em>The Canvas</em> — a blank we print with artwork — or commission <em>Cut &amp; Sew</em>, made from scratch in 100% cotton. Choose the colour and the artwork direction, or leave it to chance.</p>
    <p class="lab-notice" id="lab-notice" role="status" hidden></p>
    <nav class="lab-jump" aria-label="Lab sections"><a href="#build">Build a garment</a><a href="#relic">The Relic Box</a><a href="#trinity">The Trinity</a><a href="#catalog">All offerings</a></nav>
   </header>
@@ -40,12 +40,21 @@
      <div class="stage-art" id="stage-art"></div>
      <div class="stage-3d" id="stage-3d" tabindex="0" aria-label="3D blank garment. Drag or use the arrow keys to turn it." hidden></div>
      <p class="stage-loading" id="stage-loading" role="status" hidden>Loading the 3D blank…</p>
+     <div class="print-drag" id="print-drag" hidden aria-hidden="true"></div>
     </div>
     <div class="stage-tools">
      <div class="seg" role="group" aria-label="Preview type"><button type="button" id="mode-3d" aria-pressed="false">3D blank</button><button type="button" id="mode-draw" aria-pressed="true">Drawing</button></div>
      <div class="seg" role="group" aria-label="Preview side"><button type="button" id="side-front" aria-pressed="true">Front</button><button type="button" id="side-back" aria-pressed="false">Back</button></div>
      <label class="zoom">Zoom <input type="range" id="zoom" min="100" max="220" step="10" value="100" aria-label="Zoom the preview"></label>
     </div>
+    <fieldset class="print-place" id="print-place">
+     <legend>Print placement</legend>
+     <button type="button" class="ghost" id="print-move" aria-pressed="false">Move print</button>
+     <label>Size <input type="range" id="print-scale" min="60" max="160" step="5" value="100"><output id="print-scale-out">100%</output></label>
+     <label>Up / down <input type="range" id="print-y" min="-25" max="25" step="1" value="0"></label>
+     <label>Left / right <input type="range" id="print-x" min="-25" max="25" step="1" value="0"></label>
+     <button type="button" class="link" id="print-reset">Reset</button>
+    </fieldset>
     <p class="stage-label" id="stage-label">Conceptual preview — every piece is printed by hand and the finished garment will differ.</p>
    </div>
 
@@ -59,7 +68,7 @@
     </fieldset>
     <fieldset class="step" id="step-color"><legend><span class="step-no">IV</span> Color</legend>
      <div class="choices four" id="opt-color"></div>
-     <label class="custom-color" id="custom-color-wrap" hidden>Name your color <input id="custom-color" maxlength="40" autocomplete="off" placeholder="e.g. Oxblood, sage, #2f4f4f"></label>
+     <div class="custom-color" id="custom-color-wrap" hidden><span class="field-label">Pick your color</span><div class="custom-row"><input type="color" id="color-picker" value="#7a1f2b" aria-label="Pick your custom color"><input id="custom-color" maxlength="40" autocomplete="off" aria-label="Your custom color (code or name)" placeholder="e.g. #7a1f2b or Oxblood"></div><span class="fine">Pick a shade, or type a color code or name. We match it by hand and confirm before dyeing.</span></div>
     </fieldset>
     <fieldset class="step" id="step-art"><legend><span class="step-no">V</span> Artwork</legend>
      <div class="choices two" id="opt-art"></div>

@@ -3,11 +3,18 @@
 // price a browser sends.
 import {
   OFFERINGS, CONSTRUCTIONS, COLORS, ARTWORK, SIZES, FITS, RELIC_BOX, TRINITY,
-  CUSTOM_COLOR_MAX, MAX_QUANTITY, GARMENT_TYPES
+  CUSTOM_COLOR_MAX, MAX_QUANTITY, GARMENT_TYPES, PRINT_LIMITS
 } from './catalog.mjs';
 import { drawArt, drawChaos, isSeed } from './random.mjs';
 
 const clean = (s, max) => typeof s === 'string' ? s.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max) : '';
+// Print placement chosen by the customer: clamped and rounded so it stores cleanly.
+export function normalizePrint(p) {
+  const num = (v, lo, hi, d) => { const n = Number(v); return Number.isFinite(n) ? Math.round(Math.min(hi, Math.max(lo, n)) * 100) / 100 : d; };
+  const o = PRINT_LIMITS.offset;
+  return { x: num(p?.x, -o, o, 0), y: num(p?.y, -o, o, 0), scale: num(p?.scale, PRINT_LIMITS.scaleMin, PRINT_LIMITS.scaleMax, 1) };
+}
+export const isDefaultPrint = p => !p || (p.x === 0 && p.y === 0 && p.scale === 1);
 const qty = (q, max = MAX_QUANTITY) => Number.isInteger(q) && q >= 1 && q <= max ? q : null;
 
 // Turn untrusted input into a canonical item, or report what is wrong. Never reads prices from input.
@@ -41,7 +48,8 @@ export function normalizeItem(raw, { artworkPool = [] } = {}) {
     const quantity = raw.quantity == null ? 1 : qty(raw.quantity, maxQ);
     if (!quantity) errors.push(construction === 'cut-sew' ? 'Each cut & sew piece is one of one — add another for a second piece.' : `Quantity must be 1–${MAX_QUANTITY}.`);
     if (errors.length) return { ok: false, errors };
-    return { ok: true, item: { product, construction, garment, size, fit, color, customColor, artwork, chaos, seed: art ? seed : null, art, quantity } };
+    const print = normalizePrint(raw.print);
+    return { ok: true, item: { product, construction, garment, size, fit, color, customColor, artwork, chaos, seed: art ? seed : null, art, print, quantity } };
   }
 
   if (product === 'relic-box') {
@@ -108,12 +116,19 @@ export function describeItem(item) {
     const o = OFFERINGS[item.construction][item.garment];
     const spec = [
       `Construction: ${CONSTRUCTIONS[item.construction].name}`,
+      ...(CONSTRUCTIONS[item.construction].material ? [`Material: ${CONSTRUCTIONS[item.construction].material}`] : []),
       `Size: ${item.size}` + (FITS[item.construction].length > 1 ? ` · Fit: ${FITS[item.construction].find(f => f.id === item.fit)?.name}` : ''),
       `Color: ${item.color === 'custom' ? 'Custom — ' + item.customColor : COLORS[item.color].name}`,
       `Artwork: ${ARTWORK[item.artwork].name}`
     ];
     if (item.art) spec.push(`Direction: ${item.art.category} / ${item.art.secondary} · ${item.art.placement} · ${item.art.technique} (seed ${item.seed})`);
     if (item.chaos) spec.push('Drawn by Total Chaos');
+    if (!isDefaultPrint(item.print)) {
+      const p = item.print, where = [];
+      if (p.y) where.push(`${Math.abs(Math.round(p.y * 100))}% ${p.y > 0 ? 'higher' : 'lower'}`);
+      if (p.x) where.push(`${Math.abs(Math.round(p.x * 100))}% to the ${p.x > 0 ? "wearer's left" : "wearer's right"}`);
+      spec.push(`Print: ${Math.round(p.scale * 100)}% size` + (where.length ? ', ' + where.join(', ') : ''));
+    }
     return { title: `${o.name} — ${CONSTRUCTIONS[item.construction].name}`, spec, silhouette: GARMENT_TYPES[item.garment].silhouette };
   }
   if (item.product === 'relic-box') {

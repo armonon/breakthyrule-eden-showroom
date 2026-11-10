@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { normalizeItem, priceItem, priceCart } from '../../labkit/pricing.mjs';
+import { normalizeItem, priceItem, priceCart, describeItem } from '../../labkit/pricing.mjs';
 import { drawArt, drawChaos } from '../../labkit/random.mjs';
 import { createCart } from '../../labkit/cart.mjs';
 import { encodeQR, qrSVG } from '../../labkit/qr.mjs';
@@ -69,6 +69,22 @@ test('invalid selections are rejected', () => {
   bad({ product: 'relic-box', size: 'M', fit: 'regular', exclusions: ['tops', 'bottoms', 'tees', 'accessories', 'outerwear'] });
   bad({ product: 'trinity', size: 'M', variant: 'gold' });
   bad({ product: 'gift-card' });
+});
+
+test('print placement is optional, clamped, free, and written into the spec for the studio', () => {
+  const plain = normalizeItem(garment(), { artworkPool: POOL }).item;
+  assert.deepEqual(plain.print, { x: 0, y: 0, scale: 1 });
+  const moved = normalizeItem(garment({ print: { x: .12, y: -2, scale: 99 }, unitCents: 1 }), { artworkPool: POOL }).item;
+  assert.deepEqual(moved.print, { x: .12, y: -.25, scale: 1.6 });
+  assert.equal(priceItem(moved).unitCents, 6000);
+  assert.match(describeItem(moved).spec.join(' | '), /Print: 160% size, 25% lower, 12% to the wearer's left/);
+  assert.ok(!describeItem(plain).spec.some(s => s.startsWith('Print:')));
+  assert.deepEqual(normalizeItem(garment({ print: 'junk' }), { artworkPool: POOL }).item.print, { x: 0, y: 0, scale: 1 });
+});
+test('cut & sew is always described as 100% cotton', () => {
+  const cs = normalizeItem(garment({ construction: 'cut-sew', garment: 'hoodie', fit: 'regular' }), { artworkPool: POOL }).item;
+  assert.ok(describeItem(cs).spec.includes('Material: 100% cotton'));
+  assert.ok(!describeItem(normalizeItem(garment(), { artworkPool: POOL }).item).spec.some(s => s.startsWith('Material:')));
 });
 
 // ---------------- Random engine ----------------

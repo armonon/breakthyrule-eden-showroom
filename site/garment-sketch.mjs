@@ -33,9 +33,10 @@ function fillFor(color, customColor) {
 }
 
 // opts: { silhouette, color, customColor, artwork, art (with references), side: 'front'|'back', id }
-export function garmentSVG({ silhouette = 'tee', color = 'black', customColor = '', artwork = 'artists-choice', art = null, side = 'front', id = 'g' } = {}) {
+export function garmentSVG({ silhouette = 'tee', color = 'black', customColor = '', artwork = 'artists-choice', art = null, side = 'front', id = 'g', print = null } = {}) {
   const shape = SHAPES[silhouette] || SHAPES.tee, { fill, ink, label } = fillFor(color, customColor);
-  const [ax, ay, aw] = ART_ZONE[silhouette] || ART_ZONE.tee;
+  let [ax, ay, aw] = ART_ZONE[silhouette] || ART_ZONE.tee;
+  if (print) { const s = print.scale || 1, nw = aw * s; ax += (aw - nw) / 2 + (side === 'front' ? (print.x || 0) * 200 : 0); ay += (aw - nw) / 2 - (print.y || 0) * 220; aw = nw; }
   let artLayer = '';
   const refs = art?.references || [];
   const showOnSide = !art || art.placement === 'Front and back' || (side === 'front' ? art.placement !== 'Back' : art.placement === 'Back' || art.placement === 'Front and back');
@@ -66,5 +67,5 @@ ${artLayer}
 export function itemSketch(item, describe, id) {
   if (item.product === 'relic-box') return `<svg viewBox="0 0 200 220" role="img" aria-label="The Relic Box"><path d="M30 80 L100 50 L170 80 L170 180 L100 210 L30 180 Z" fill="#2a221b" stroke="#b08a4a" stroke-width="3"/><path d="M30 80 L100 110 L170 80 M100 110 L100 210" stroke="#b08a4a" stroke-width="3" fill="none"/><text x="100" y="168" font-family="Pirata One, serif" font-size="40" fill="#e0695b" text-anchor="middle">?</text></svg>`;
   if (item.product === 'trinity') return `<svg viewBox="0 0 200 220" role="img" aria-label="The Trinity, three tees">${[0, 1, 2].map(i => `<g transform="translate(${-30 + i * 30} ${i * 14}) scale(.7)"><path d="${SHAPES.tee}" fill="${['#161514', '#f3f0e8', '#8f2a22'][i]}" stroke="#b08a4a" stroke-width="2"/></g>`).join('')}</svg>`;
-  return garmentSVG({ silhouette: describe?.silhouette || 'tee', color: item.color, customColor: item.customColor, artwork: item.artwork, art: item.art, id: id || 'i' + Math.random().toString(36).slice(2, 7) });
+  return garmentSVG({ silhouette: describe?.silhouette || 'tee', color: item.color, customColor: item.customColor, artwork: item.artwork, art: item.art, print: item.print, id: id || 'i' + Math.random().toString(36).slice(2, 7) });
 }

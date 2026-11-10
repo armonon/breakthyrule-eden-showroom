@@ -13,7 +13,8 @@ export const CONSTRUCTIONS = {
   },
   'cut-sew': {
     id: 'cut-sew', name: 'Cut & Sew',
-    blurb: 'An original garment cut, sewn and printed from scratch. A handcrafted, brand-new piece.',
+    blurb: 'An original garment cut, sewn and printed from scratch. Always 100% cotton. A handcrafted, brand-new piece.',
+    material: '100% cotton',
     madeTo: 'commission'
   }
 };
@@ -96,6 +97,10 @@ export const TRINITY = {
     { id: 'surprise', name: 'Surprise', note: 'Three designs drawn blind.' }
   ]
 };
+
+// Customer print placement: offsets are fractions of the garment's width/height from the default spot.
+export const PRINT_LIMITS = { scaleMin: .6, scaleMax: 1.6, offset: .25 };
+export const DEFAULT_PRINT = { x: 0, y: 0, scale: 1 };
 
 export const MAX_QUANTITY = 5;
 export const NOTE_MAX = 500;

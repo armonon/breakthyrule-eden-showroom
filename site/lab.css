@@ -140,3 +140,17 @@
 .stage-3d canvas{display:block;width:100%;height:100%}
 .stage-loading{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;padding:10px 16px;background:rgba(18,15,12,.8);border:1px solid var(--line);font-family:var(--serif);font-style:italic;font-size:17px;color:var(--muted)}
 .stage-tools .seg button:disabled{opacity:.35;cursor:not-allowed}
+.custom-row{display:flex;gap:8px;align-items:stretch}
+.custom-row input[type=color]{width:64px;min-height:46px;padding:2px;border:1px solid var(--line);background:var(--paper);cursor:pointer}
+.custom-row input:not([type=color]){flex:1;min-width:0}
+.custom-color .field-label{font:600 11.5px 'DM Sans',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+/* Print placement */
+.print-place{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin:12px 0 0;padding:12px 14px;border:1px solid var(--line);background:color-mix(in srgb,var(--paper-2) 70%,transparent)}
+.print-place legend{padding:0 6px;font:600 11.5px 'DM Sans',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.print-place label{display:flex;align-items:center;gap:8px;font-family:var(--serif);font-size:16px;color:var(--muted)}
+.print-place input[type=range]{width:110px;accent-color:var(--rubric)}
+.print-place output{min-width:40px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.print-place .ghost[aria-pressed=true]{background:var(--rubric);border-color:var(--rubric);color:#140f0c}
+.print-drag{position:absolute;inset:0;z-index:5;cursor:move;touch-action:none}
+.stage-frame.moving-print{outline:2px dashed var(--gold);outline-offset:-10px}
+@media(max-width:640px){.print-place input[type=range]{width:90px}}

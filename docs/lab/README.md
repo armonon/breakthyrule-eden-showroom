@@ -73,8 +73,17 @@ checkout from the catalog and ignores anything the browser sends**.
   image. The seed is stored; the server re-derives the draw from it.
 - **Previews:** the tee, hoodie, crewneck and sweatpants show the real Ghost Studio blanks in 3D, recoloured live
   (models/blanks/, see SOURCE.md); they load only when the preview scrolls into view. Shorts and the long sleeve, and
-  every artwork direction, use the labelled concept drawing (a Drawing toggle is always there). Artwork is not
-  projected onto the 3D blank — it is placed by hand.
+  the labelled concept drawing (a Drawing toggle is always there).
+- **Artwork on the 3D blank:** the fabric shader projects the print onto the front / back / sleeve (planar
+  projection in garment space, so multi-part garments like the hoodie print across body and pocket). Random art
+  prints the drawn graphics; Minimal prints the house cross on the chest; Expressive prints layered marks front and
+  back; Artist's choice shows a "?" seal. Labelled as a preview — every print is placed by hand.
+- **Print placement:** customers can resize (60–160%) and move (±25% of the garment) the print with sliders or by
+  dragging on the garment ("Move print"; the wheel resizes). It is saved on the item (`print: {x, y, scale}`), shown
+  in the cart, order page and studio spec ("Print: 120% size, 8% higher…"), and never changes the price.
+- **Custom colour:** a colour picker plus a free-text field (a code or a name); +$40 as before.
+- **Cut & Sew is always 100% cotton:** stated in the construction blurb, the Lab intro, the home card, the About
+  panel, and as a "Material: 100% cotton" line on every Cut & Sew item (cart, order, studio, Stripe description).
 - **Customer accounts**: none. Each order has a private link with a secret key (only its hash is stored). Order
   history per customer can come with Circle SSO or a later accounts system.
 - **Staff**: owner (everything) and artist (production, notes, photos, archive). Tokens last 12 hours; sign-in

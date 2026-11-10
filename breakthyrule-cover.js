@@ -118,7 +118,7 @@
     el('p',{className:'btr-about-lede',textContent:'A clothing brand from LA.'}),
     el('p',{textContent:'Everything is printed in house. We work with artists on every drop, and we print on vintage pieces, random blank garments, or our own cut and sew. No two runs come out the same.'}),
     el('div',{className:'btr-about-cats'},[
-     el('div',{className:'btr-about-cat'},[el('span',{className:'btr-about-num',textContent:'I'}),el('h3',{textContent:'Cut & sew'}),el('p',{textContent:'A handcrafted, brand-new piece. Cut, sewn and printed by us.'})]),
+     el('div',{className:'btr-about-cat'},[el('span',{className:'btr-about-num',textContent:'I'}),el('h3',{textContent:'Cut & sew'}),el('p',{textContent:'A handcrafted, brand-new piece in 100% cotton. Cut, sewn and printed by us.'})]),
      el('div',{className:'btr-about-cat'},[el('span',{className:'btr-about-num',textContent:'II'}),el('h3',{textContent:'Ready to ship'}),el('p',{textContent:'Printed on a random blank or a vintage find, ready to go out now.'})])
     ]),
     el('h3',{textContent:'Made with artists'}),
