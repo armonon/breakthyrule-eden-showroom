@@ -60,18 +60,20 @@
  };
 
  // Single draggable viewer for the product page.
- window.createGarmentViewer=function(element,{wheelZoom=false}={}){
+ window.createGarmentViewer=function(element,{wheelZoom=false,onFrame=null}={}){
   if(!T||!window.ShowroomGLTFLoader)return null;
   const canvas=document.createElement('canvas');canvas.setAttribute('aria-hidden','true');element.append(canvas);
   let renderer;try{renderer=makeRenderer(canvas);}catch{return null;}
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
   const scene=new T.Scene();lights(scene);const camera=new T.PerspectiveCamera(30,1,.05,40);
   let model=null,yaw=.5,pitch=0,auto=!reduced,drag=null,frame=0,last=0,zoom=1,onScreen=true;
+  const roots=new Map();// blanks already loaded, so switching back is instant
+  const fetchRoot=url=>{if(!roots.has(url))roots.set(url,showroomAssets.model(url).then(g=>centre(g.scene)).catch(e=>{roots.delete(url);throw e;}));return roots.get(url);};
   function resize(){const w=element.clientWidth,h=element.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();request();}
   function request(){if(!frame&&onScreen&&!document.hidden)frame=requestAnimationFrame(draw);}
   function draw(time){frame=0;const dt=Math.min((time-(last||time))/1000,.05);last=time;if(auto)yaw+=dt*.45;
    if(model)model.rotation.set(pitch,yaw,0);const d=Math.max(4.4,2.2/Math.tan(15*Math.PI/180)/camera.aspect/2.4)/zoom;
-   camera.position.set(0,.1,d);camera.lookAt(0,0,0);renderer.render(scene,camera);if(auto)request();else last=0;}
+   camera.position.set(0,.1,d);camera.lookAt(0,0,0);onFrame?.(yaw);renderer.render(scene,camera);if(auto)request();else last=0;}
   element.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('button,a'))return;auto=false;drag={x:e.clientX,y:e.clientY,yaw,pitch};element.setPointerCapture(e.pointerId);});
   element.addEventListener('pointermove',e=>{if(!drag)return;yaw=drag.yaw+(e.clientX-drag.x)*.009;pitch=Math.max(-.4,Math.min(.4,drag.pitch+(e.clientY-drag.y)*.006));request();});
   element.addEventListener('pointerup',()=>drag=null);element.addEventListener('pointercancel',()=>drag=null);
@@ -82,7 +84,8 @@
   new IntersectionObserver(([e])=>{onScreen=e.isIntersecting;last=0;request();}).observe(element);
   document.addEventListener('visibilitychange',()=>{last=0;request();});
   return {
-   async load(url){const gltf=await showroomAssets.model(url);if(model)scene.remove(model);model=centre(gltf.scene);scene.add(model);resize();request();},
+   async load(url){const root=await fetchRoot(url);if(model)scene.remove(model);model=root;scene.add(model);resize();request();},
+   preload(url){return fetchRoot(url);},yaw:()=>yaw,
    setAuto(v){auto=v;last=0;request();return auto;},isAuto:()=>auto,
    view(side){auto=false;yaw=side==='back'?Math.PI:0;pitch=0;request();},
    // Used by the Garment Lab: recolour the loaded model, zoom from a slider, redraw after changes.

@@ -4,6 +4,7 @@ import { normalizeItem, priceItem, describeItem, sidesFor } from '/labkit/pricin
 import { drawArt, drawChaos, newSeed } from '/labkit/random.mjs';
 import { artworkThumb, ARTWORK_POOL, PICKER_TAGS } from '/labkit/artwork-pool.mjs';
 import { itemSketch } from '/site/garment-sketch.mjs';
+import { createPrinter, BLANKS } from '/site/garment-print.mjs';
 import { cart, POOL, labStatus, money } from '/site/cart-store.mjs';
 
 const $ = id => document.getElementById(id);
@@ -13,7 +14,6 @@ const params = new URLSearchParams(location.search);
 
 let status = null;
 // Real 3D blanks (Ghost Studio, converted to meshopt). Shorts and long sleeves show a panel instead.
-const BLANKS = { tee: '/models/blanks/tee.glb', hoodie: '/models/blanks/hoodie.glb', crewneck: '/models/blanks/crewneck.glb', sweatpants: '/models/blanks/pants.glb' };
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const three = { viewer: null, loaded: null, loading: null, failed: false, wanted: false, hue: 0, timer: 0 };
 const state = { construction: 'canvas', garment: 'tee', size: null, fit: 'blank', color: 'black', customColor: '', artwork: 'artists-choice', seed: null, chaos: false, preChaos: null, editId: null, side: 'front', print: { x: 0, y: 0, scale: 1 }, picks: { front: [], back: [] }, backSize: 'full' };
@@ -106,20 +106,7 @@ function fabricColor() {
   if (state.color === 'custom') return new T.Color(typeof CSS !== 'undefined' && state.customColor && CSS.supports('color', state.customColor) ? state.customColor : '#9c8f7a');
   return new T.Color('#b9b0a2'); // random: the house picks — shown undyed, with a note
 }
-// ---------- artwork printed onto the 3D blank ----------
-// Planar projection in the fabric shader, in garment space: the front gets the chosen composition, the back one
-// big print (16 × 20 in on every size). It follows the folds, turns with the garment and spans multi-part pieces.
-const IN = .0254;
-const FRONT_ZONES = { // fractions of garment width/height: centre x, centre y, print width
-  tee: { front: [0, .64, .46], chest: [.2, .78, .16] },
-  hoodie: { front: [0, .57, .34], chest: [.17, .64, .13] },
-  crewneck: { front: [0, .66, .42], chest: [.2, .78, .15] },
-  pants: { front: [.22, .66, .26], chest: [.22, .86, .14] }
-};
-const BACK_TOP_GAP = { tee: .075, crewneck: .08, hoodie: .30 }; // metres below the top of the garment (hoodies: below the hood)
-const imageCache = new Map();
-const loadImage = src => { if (!imageCache.has(src)) imageCache.set(src, new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; })); return imageCache.get(src); };
-const fullArt = id => '/images/breakthyrule/graphics/full/' + id + '.webp';
+// ---------- artwork printed onto the 3D blank (site/garment-print.mjs) ----------
 function itemLike() { return { artwork: state.artwork, art: currentArt(), picks: state.artwork === 'pick' ? state.picks : null }; }
 function sidePlan() {
   if (state.artwork === 'random-experimental' || state.artwork === 'pick') {
@@ -130,128 +117,23 @@ function sidePlan() {
   if (state.artwork === 'expressive') return { front: { kind: 'expressive' }, back: { kind: 'expressive' } };
   return { front: null, back: null, note: "Artist's choice — the artist decides the print. You'll see it when it's made." };
 }
-async function sideCanvas(plan, inkLight, back) {
-  const bs = BACK_SIZES[state.backSize] || BACK_SIZES.full;
-  const c = document.createElement('canvas'); c.width = back ? Math.round(1024 * bs.w / bs.h) : 1024; c.height = 1024; const x = c.getContext('2d'), W = c.width, H = c.height;
-  const ink = inkLight ? 'rgba(245,240,230,.92)' : 'rgba(20,18,16,.88)';
-  const fit = (img, cx, cy, w, h) => { if (!img) return; const k = Math.min(w / img.width, h / img.height); x.drawImage(img, cx - img.width * k / 2, cy - img.height * k / 2, img.width * k, img.height * k); };
-  if (plan.kind === 'big' || plan.kind === 'refs') {
-    const imgs = await Promise.all(plan.ids.map(id => loadImage(fullArt(id)).catch(() => null)));
-    if (plan.kind === 'big' || imgs.length === 1) fit(imgs[0], W / 2, H / 2, W, H);
-    else if (imgs.length === 2) { fit(imgs[0], W / 2, H * .33, W * .9, H * .62); fit(imgs[1], W / 2, H * .8, W * .7, H * .38); }
-    else { fit(imgs[0], W / 2, H * .44, W * .78, H * .7); fit(imgs[1], W * .22, H * .82, W * .4, H * .34); fit(imgs[2], W * .78, H * .82, W * .4, H * .34); }
-  } else if (plan.kind === 'minimal') {
-    x.fillStyle = ink; x.translate(W / 2, H / 2);
-    for (let k = 0; k < 4; k++) { x.beginPath(); x.moveTo(-40, -60); x.lineTo(40, -60); x.lineTo(150, -380); x.quadraticCurveTo(0, -320, -150, -380); x.closePath(); x.fill(); x.rotate(Math.PI / 2); }
-    x.beginPath(); x.arc(0, 0, 72, 0, Math.PI * 2); x.fill(); x.setTransform(1, 0, 0, 1, 0, 0);
-  } else if (plan.kind === 'expressive') {
-    x.lineCap = 'round'; x.lineJoin = 'round'; x.scale(W / 1024, H / 1024);
-    for (const [col, w, pts] of [['#c9473b', 130, [120, 300, 420, 60, 640, 760, 920, 380]], ['#e0b44c', 100, [90, 720, 420, 470, 600, 940, 940, 660]], ['#3554a5', 70, [200, 900, 380, 560, 700, 780, 840, 140]]]) {
-      x.strokeStyle = col; x.lineWidth = w; x.globalAlpha = .9; x.beginPath(); x.moveTo(pts[0], pts[1]); x.bezierCurveTo(pts[2], pts[3], pts[4], pts[5], pts[6], pts[7]); x.stroke();
-    }
-    x.globalAlpha = .85; x.fillStyle = ink; for (const [cx, cy, r] of [[300, 230, 28], [760, 820, 22], [820, 260, 36], [210, 560, 18], [540, 520, 46]]) { x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill(); }
-    x.globalAlpha = 1; x.setTransform(1, 0, 0, 1, 0, 0);
-  } else {
-    x.strokeStyle = ink; x.lineWidth = 22; x.setLineDash([46, 40]); x.beginPath(); x.arc(W / 2, H / 2, 330, 0, Math.PI * 2); x.stroke();
-    x.setLineDash([]); x.fillStyle = ink; x.font = '700 420px "Barlow Condensed", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('?', W / 2, H / 2 + 20);
-  }
-  const T = window.THREE, tex = new T.CanvasTexture(c); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 8; return tex;
-}
-const DECAL_VERT = `#include <begin_vertex>
-  mat4 decalM = decalRootInv * modelMatrix;
-  vDecalPos = (decalM * vec4(transformed, 1.0)).xyz; vDecalNrm = normalize(mat3(decalM) * objectNormal);`;
-const DECAL_FRAG = `#include <map_fragment>
-  {
-    vec4 d = vec4(0.0);
-    if (decalFlags.x > .5 && vDecalNrm.z > .2) d = decalAt(decalMap, (vDecalPos.xy - decalFront.xy) / (2.0 * decalFront.zw) + .5);
-    if (decalFlags.y > .5 && vDecalNrm.z < -.2) d = decalAt(decalMapBack, vec2(-(vDecalPos.x - decalBack.x), vDecalPos.y - decalBack.y) / (2.0 * decalBack.zw) + .5);
-    diffuseColor.rgb = mix(diffuseColor.rgb, d.rgb, d.a * .96);
-  }`;
-function decalMaterial(m) {
-  if (m.userData.decal) return m.userData.decal;
-  const T = window.THREE;
-  const u = { decalMap: { value: null }, decalMapBack: { value: null }, decalRootInv: { value: new T.Matrix4() }, decalFront: { value: new T.Vector4() }, decalBack: { value: new T.Vector4() }, decalFlags: { value: new T.Vector2() } };
-  m.onBeforeCompile = shader => {
-    Object.assign(shader.uniforms, u);
-    shader.vertexShader = 'uniform mat4 decalRootInv;\nvarying vec3 vDecalPos;\nvarying vec3 vDecalNrm;\n' + shader.vertexShader.replace('#include <begin_vertex>', DECAL_VERT);
-    shader.fragmentShader = 'uniform sampler2D decalMap;\nuniform sampler2D decalMapBack;\nuniform vec4 decalFront;\nuniform vec4 decalBack;\nuniform vec2 decalFlags;\nvarying vec3 vDecalPos;\nvarying vec3 vDecalNrm;\nvec4 decalAt(sampler2D map, vec2 uv){ if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) return vec4(0.0); return texture2D(map, uv); }\n'
-      + shader.fragmentShader.replace('#include <map_fragment>', DECAL_FRAG);
-  };
-  m.customProgramCacheKey = () => 'btr-lab-decal-2';
-  m.needsUpdate = true;
-  m.userData.decal = u;
-  return u;
-}
-const blankTex = () => { const T = window.THREE; three.blank ||= new T.DataTexture(new Uint8Array(4), 1, 1); three.blank.needsUpdate = true; return three.blank; };
-let printToken = 0, lastPrint = '';
+let printer = null;
 async function printArt() {
-  const model = three.viewer?.model(); const T = window.THREE; if (!model || !T) return;
-  const token = ++printToken;
-  const garmentRoot = model.children[0] || model; garmentRoot.updateMatrixWorld(true);
-  const inv = new T.Matrix4().copy(garmentRoot.matrixWorld).invert();
-  const fabric = [], box = new T.Box3();
-  model.traverse(n => { if (!n.isMesh) return; const rel = new T.Matrix4().multiplyMatrices(inv, n.matrixWorld);
-    if (!n.geometry.boundingBox) n.geometry.computeBoundingBox(); box.union(n.geometry.boundingBox.clone().applyMatrix4(rel));
-    for (const m of [].concat(n.material)) if (!/topstitch|thread/i.test(m.name)) fabric.push([n, m]); });
-  const size = box.getSize(new T.Vector3()), min = box.min, max = box.max;
+  if (!three.viewer?.model()) return;
+  printer ||= createPrinter(three.viewer);
   const kind = GARMENT_TYPES[state.garment].silhouette === 'pants' ? 'pants' : state.garment;
-  const zones = FRONT_ZONES[kind] || FRONT_ZONES.tee, plan = sidePlan(), pr = state.print;
-  const fz = plan.small ? zones.chest : plan.front?.kind === 'expressive' ? [zones.front[0], zones.front[1] - .04, Math.min(.66, zones.front[2] * 1.4)] : zones.front;
-  const front = new T.Vector4(min.x + size.x * (.5 + fz[0] + pr.x), min.y + size.y * (fz[1] + pr.y), size.x * fz[2] * pr.scale / 2, size.x * fz[2] * pr.scale / 2);
-  // The back: one big print, 16 × 20 in (whatever the size), centred, starting just below the collar (or the hood).
-  let back;
-  if (kind === 'pants') back = new T.Vector4(min.x + size.x * .28, min.y + size.y * .62, size.x * .13, size.x * .13 / .9);
-  else {
-    const bs = BACK_SIZES[state.backSize] || BACK_SIZES.full;
-    let hw = bs.w / 2 * IN, hh = bs.h / 2 * IN;
-    const k = Math.min(1, (size.x * .33) / hw); hw *= k; hh *= k; // stays on the body, off the sleeves
-    let top = max.y - (BACK_TOP_GAP[kind] ?? .08), cy = top - hh;
-    if (cy - hh < min.y + .03) { const room = (top - min.y - .03) / 2; const s2 = room / hh; hw *= s2; hh *= s2; cy = top - hh; }
-    back = new T.Vector4(min.x + size.x * .5, cy, hw, hh);
-  }
-  const fc = fabricColor(), light = fc ? (fc.r * .3 + fc.g * .59 + fc.b * .11) < .35 : true;
-  const key = model.uuid + JSON.stringify(plan) + light + JSON.stringify(pr) + state.backSize;
-  if (key === lastPrint) { printToken--; return; }
-  lastPrint = key;
-  const texKey = model.uuid + JSON.stringify(plan) + light + state.backSize;
-  let texF = three.texF, texB = three.texB;
-  if (three.texKey !== texKey) {
-    [texF, texB] = await Promise.all([plan.front ? sideCanvas(plan.front, light, false) : null, plan.back ? sideCanvas(plan.back, light, true) : null]);
-    if (token !== printToken) { lastPrint = ''; return; }
-    for (const t of [three.texF, three.texB]) if (t && t !== texF && t !== texB) t.dispose();
-    three.texF = texF; three.texB = texB; three.texKey = texKey;
-    renderPrintSides();
-  }
-  for (const [mesh, m] of fabric) {
-    const u = decalMaterial(m);
-    u.decalMap.value = texF || blankTex(); u.decalMapBack.value = texB || blankTex();
-    u.decalFront.value.copy(front); u.decalBack.value.copy(back);
-    u.decalFlags.value.set(texF ? 1 : 0, texB ? 1 : 0);
-    if (!mesh.userData.decalHook) { mesh.userData.decalHook = true; mesh.onBeforeRender = () => { const d = m.userData.decal; if (d) d.decalRootInv.value.copy(garmentRoot.matrixWorld).invert(); }; }
-  }
-  three.viewer.redraw();
+  const tex = await printer.apply({ kind, plan: sidePlan(), color: fabricColor(), backSize: state.backSize, print: state.print });
+  if (!tex) return;
+  if (tex.front !== three.texF || tex.back !== three.texB) { three.texF = tex.front; three.texB = tex.back; renderPrintSides(); }
 }
-
-function tint() {
-  const model = three.viewer?.model(); const c = fabricColor(); if (!model || !c) return;
-  model.traverse(n => {
-    if (!n.isMesh) return;
-    for (const m of [].concat(n.material)) {
-      if (/topstitch|thread/i.test(m.name)) { m.color.copy(c).multiplyScalar(.55); }
-      else { m.map = null; m.color.copy(c); }
-      m.needsUpdate = true;
-    }
-  });
-  three.viewer.redraw();
-  printArt();
-}
+function tint() { printArt(); }
 async function ensure3D() {
   const url = BLANKS[state.garment];
   if (!url || three.failed) return false;
   if (!three.viewer) { three.viewer = window.createGarmentViewer?.($('stage-3d'), { wheelZoom: true }) || null; if (!three.viewer) { three.failed = true; return false; } three.viewer.setAuto(!reduceMotion); }
   if (three.loaded === url) return true;
   three.loading = url; $('stage-loading').hidden = false;
-  try { await three.viewer.load(url); three.loaded = url; lastPrint = ''; three.texKey = ''; if (three.loading !== url) { renderThree(); return false; } return true; }
+  try { await three.viewer.load(url); three.loaded = url; if (three.loading !== url) { renderThree(); return false; } return true; }
   catch { three.failed = true; return false; }
   finally { if (three.loading === url) $('stage-loading').hidden = true; }
 }
