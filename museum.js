@@ -55,9 +55,8 @@ window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{},camera=null
  there.room(galleryOne.x0,galleryOne.x1,galleryOne.z0,galleryOne.z1,galleryOne.h,[{side:'n',from:galleryOne.x0,to:galleryOne.x1},{side:'s',from:galleryOne.x0,to:galleryOne.x1}]);
  there.room(hallB.x0,hallB.x1,hallB.z0,hallB.z1,hallB.h,[{side:'n',from:galleryOne.x0,to:galleryOne.x1,height:galleryOne.h},{side:'e',from:galleryTwo.z0,to:galleryTwo.z1,height:galleryTwo.h},{side:'w',from:broadcastDoor.z0,to:broadcastDoor.z1,height:broadcastDoor.h}]);
  there.room(galleryTwo.x0,galleryTwo.x1,galleryTwo.z0,galleryTwo.z1,galleryTwo.h,[{side:'w',from:galleryTwo.z0,to:galleryTwo.z1}]);
- there.room(broadcastRoom.x0,broadcastRoom.x1,broadcastRoom.z0,broadcastRoom.z1,broadcastRoom.h,[{side:'e',from:broadcastDoor.z0,to:broadcastDoor.z1,height:broadcastDoor.h}]);
- there.finish();
- if(camera&&stage&&window.createBroadcastRoom)broadcast=window.createBroadcastRoom(T,{place,room:broadcastRoom,door:broadcastDoor,camera,stage,onChange});
+ there.finish(); // the Broadcast Room builds its own shell (broadcast.js), so it can go dark
+ if(camera&&stage&&window.createBroadcastRoom)broadcast=window.createBroadcastRoom(T,{place,room:broadcastRoom,door:broadcastDoor,camera,stage,fade:pockets.surface.uniforms,onChange});
 
  // Pictures: every product photograph and art-wall piece, framed in turn along the galleries (and around again).
  const seen=new Set(),pictures=[];

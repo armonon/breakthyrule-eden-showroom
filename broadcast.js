@@ -4,7 +4,7 @@
 // embedded player, laid over the screen with a CSS homography and a CRT finish), each looping its channel's whole
 // upload list from a different starting video, through YouTube's IFrame API. The video index lives in /assets/broadcast/channels.json and is
 // browsable at /broadcast.html. Nothing is downloaded or rehosted: the creators keep their views.
-window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camera,stage,onChange=()=>{}}){
+window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camera,stage,fade={fadeNear:{value:12},fadeFar:{value:90}},onChange=()=>{}}){
  const mobile=matchMedia('(pointer:coarse)').matches||innerWidth<700,LIVE=mobile?2:6,parent=place.far;
  const sets=[];let channels=[];
 
@@ -89,14 +89,45 @@ window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camer
  parent.updateMatrixWorld(true);
  for(const set of sets){set.centre.applyMatrix4(parent.matrixWorld);for(const key of ['right','up','normal'])set[key].transformDirection(parent.matrixWorld);}
 
- // channel plaques above each wall
+ // ---------------------------------------------------------------- the room itself: white like the museum from the
+ // hall, fading to black once you step in so the screens are the only light. Floor, ceiling and three walls, plus a
+ // thin lining over Hall B's wall (the doorway stays white, like the hall it belongs to).
+ const darkness={value:0},shell=[],t=.2,lining=.06;
+ const box=(x0,x1,y0,y1,z0,z1)=>{const g=new T.BoxGeometry(x1-x0,y1-y0,z1-z0).toNonIndexed();g.translate((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);shell.push(g);};
+ box(room.x0-t,room.x1,-t,0,room.z0-t,room.z1+t);box(room.x0-t,room.x1,room.h,room.h+t,room.z0-t,room.z1+t);
+ box(room.x0-t,room.x1,0,room.h,room.z0-t,room.z0);box(room.x0-t,room.x1,0,room.h,room.z1,room.z1+t);box(room.x0-t,room.x0,0,room.h,room.z0,room.z1);
+ box(room.x1-lining,room.x1,0,room.h,room.z0,door.z0);box(room.x1-lining,room.x1,0,room.h,door.z1,room.z1);box(room.x1-lining,room.x1,door.h,room.h,door.z0,door.z1);
+ {const g=mergeAll(shell);
+  const fadeVert='uniform float fadeNear,fadeFar;varying float vDist;varying vec3 vNormal;varying float vHeight;void main(){vec4 world=modelMatrix*vec4(position,1.);vec4 view=viewMatrix*world;vDist=length(view.xyz);gl_Position=projectionMatrix*view;vNormal=normalize(mat3(modelMatrix)*normal);vHeight=position.y;}';
+  const mesh=new T.Mesh(g,new T.ShaderMaterial({polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1,
+   uniforms:{fadeNear:fade.fadeNear,fadeFar:fade.fadeFar,darkness},vertexShader:fadeVert,
+   fragmentShader:`uniform float fadeNear,fadeFar,darkness;varying float vDist;varying vec3 vNormal;varying float vHeight;
+   void main(){vec3 n=normalize(vNormal);
+    float white=n.y>.5?.86:n.y<-.5?.97:abs(n.x)>.5?.99:.95,black=n.y>.5?.006:n.y<-.5?.0006:abs(n.x)>.5?.0022:.0016;
+    if(abs(n.y)<.5)white*=1.-.14*exp(-max(vHeight,0.)*1.6);
+    float s=mix(white,black,darkness);
+    gl_FragColor=vec4(mix(vec3(s),vec3(1.),smoothstep(fadeNear,fadeFar,vDist)*(1.-darkness)),1.);
+    #include <colorspace_fragment>
+   }`}));
+  mesh.name='Broadcast Room shell';parent.add(mesh);}
+ function mergeAll(list){
+  let count=0;for(const g of list)count+=g.attributes.position.count;
+  const position=new Float32Array(count*3),normal=new Float32Array(count*3);let at=0;
+  for(const g of list){position.set(g.attributes.position.array,at*3);normal.set(g.attributes.normal.array,at*3);at+=g.attributes.position.count;g.dispose();}
+  const out=new T.BufferGeometry();out.setAttribute('position',new T.BufferAttribute(position,3));out.setAttribute('normal',new T.BufferAttribute(normal,3));return out;
+ }
+ const ink=new T.Color(0x3b3c39),glow=new T.Color(0xd9d6cc),plaques=[];
+ let dark=0,darkTarget=0,lastTick=0;
+
+ // channel plaques above each wall (white lettering tinted by the material: grey on white, pale on black)
  function plaque(text,sub,wall){
   const c=document.createElement('canvas');c.width=1024;c.height=160;const g=c.getContext('2d');
-  g.fillStyle='#3b3c39';g.font='600 70px Georgia, serif';g.textAlign='center';g.textBaseline='middle';g.letterSpacing='14px';g.fillText(text.toUpperCase(),512,62);
-  g.font='28px Georgia, serif';g.letterSpacing='8px';g.fillStyle='#6d6e69';g.fillText(sub.toUpperCase(),512,128);
+  g.fillStyle='#fff';g.font='600 70px Georgia, serif';g.textAlign='center';g.textBaseline='middle';g.letterSpacing='14px';g.fillText(text.toUpperCase(),512,62);
+  g.font='28px Georgia, serif';g.letterSpacing='8px';g.globalAlpha=.68;g.fillText(sub.toUpperCase(),512,128);
   const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;
-  const mesh=new T.Mesh(new T.PlaneGeometry(5.6,.875),new T.MeshBasicMaterial({map:t,transparent:true,toneMapped:false,fog:false}));
-  mesh.position.copy(wall.o).addScaledVector(wall.along,wall.length/2).addScaledVector(wall.facing,.02).setY(4.9);
+  const material=new T.MeshBasicMaterial({map:t,transparent:true,toneMapped:false,fog:false,color:ink.clone().lerp(glow,dark)});plaques.push(material);
+  const mesh=new T.Mesh(new T.PlaneGeometry(5.6,.875),material);
+  mesh.position.copy(wall.o).addScaledVector(wall.along,wall.length/2).addScaledVector(wall.facing,.09).setY(4.9);
   mesh.rotation.y=Math.atan2(wall.facing.x,wall.facing.z);parent.add(mesh);
  }
  plaque('The Broadcast Room','three channels · endless loop',{o:new T.Vector3(room.x1,0,room.z0+1.2),along:new T.Vector3(0,0,1),facing:new T.Vector3(-1,0,0),length:3.2});
@@ -166,6 +197,11 @@ window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camer
   const here=!!l&&l.x>room.x0&&l.x<room.x1+.4&&l.z>room.z0&&l.z<room.z1&&channels.length; // only in the room: no wall can hide a player
   overlay.style.display=here?'block':'none';hud.style.display=here?'flex':'none';
   const now=performance.now();
+  // the lights go down over a second and a half once you are through the doorway, and come back up when you leave
+  darkTarget=l&&l.x>room.x0&&l.x<room.x1-.25&&l.z>room.z0&&l.z<room.z1?1:0;
+  if(dark!==darkTarget){const dt=Math.min(.1,lastTick?(now-lastTick)/1000:0);dark=darkTarget>dark?Math.min(1,dark+dt/1.5):Math.max(0,dark-dt/1.2);
+   darkness.value=dark*dark*(3-2*dark);for(const m of plaques)m.color.copy(ink).lerp(glow,darkness.value);onChange();}
+  lastTick=now;
   if(!here){for(const [set,e] of live){command(e,'destroy');e.el.remove();live.delete(set);}loud=null;return;}
   camera.updateMatrixWorld();const rect=stage.getBoundingClientRect(),ranked=[];
   for(const set of sets){if(toCam.copy(camPos).sub(set.centre).dot(set.normal)<=0)continue;const p=project(set,rect);if(p)ranked.push({set,p});}
