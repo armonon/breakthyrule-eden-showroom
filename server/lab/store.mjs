@@ -4,10 +4,11 @@
 //
 //   memory  — tests
 //   file    — the local server (server/data/lab/), atomic rename writes, one process
-//   blobs   — Netlify Blobs (requires the @netlify/blobs package; see docs/lab/README.md)
+//   blobs   — Netlify Blobs (@netlify/blobs), used on Netlify deploys
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { getStore } from '@netlify/blobs';
 
 export class ConflictError extends Error { constructor(key) { super('Concurrent update on ' + key); this.code = 'CONFLICT'; } }
 
@@ -76,10 +77,8 @@ export class FileStore extends BaseStore {
 export class BlobsStore extends BaseStore {
   constructor(store) { super(); this.s = store; }
   static async open(name) {
-    const pkg = '@netlify/blobs'; // resolved at runtime so the site still builds without it
-    let mod;
-    try { mod = await import(pkg); } catch { const e = new Error('Netlify Blobs is not installed. Run `npm install @netlify/blobs` (see docs/lab/README.md).'); e.code = 'STORE_UNAVAILABLE'; throw e; }
-    return new BlobsStore(mod.getStore({ name, consistency: 'strong' }));
+    try { return new BlobsStore(getStore({ name, consistency: 'strong' })); }
+    catch (err) { const e = new Error('Netlify Blobs is not available here: ' + err.message); e.code = 'STORE_UNAVAILABLE'; throw e; }
   }
   async get(key) { const r = await this.s.getWithMetadata(key, { type: 'json' }); return r ? { value: r.data, etag: r.etag } : null; }
   async set(key, value, { ifMatch, ifNew } = {}) {
