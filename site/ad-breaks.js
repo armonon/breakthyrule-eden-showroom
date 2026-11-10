@@ -15,7 +15,11 @@
 .ad-break:hover .ad-cta,.ad-break:focus-visible .ad-cta{opacity:1;letter-spacing:.28em}
 .ad-break:focus-visible{outline:none}.ad-break:focus-visible .ad-box{outline:3px solid var(--rubric,#a3322a);outline-offset:-3px}
 @media(max-width:600px){.ad-break{margin-top:44px}.ad-break .ad-box{padding-top:6px}.ad-break .ad-url{padding:7px 0 6px}}
-@media(prefers-reduced-motion:reduce){.ad-break img{transition:none}}`;
+.ad-break .ad-box{animation:ad-strobe 1.25s steps(1,end) infinite;animation-delay:var(--d,0s)}
+.ad-break:hover .ad-box,.ad-break:focus-visible .ad-box{animation-play-state:paused}
+/* Strobe: hard on/off flashes, kept to at most ~2.4 flashes a second (photosensitivity guidance is under 3). */
+@keyframes ad-strobe{0%{filter:none;opacity:1}20%{filter:brightness(2.1) saturate(1.6);opacity:1}40%{filter:none;opacity:1}60%{filter:brightness(.25);opacity:.35}80%{filter:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.ad-break img{transition:none}.ad-break .ad-box{animation:none}}`;
  document.head.append(css);
  const spots=[...document.querySelectorAll('main .ornament, body > .ornament')];
  if(!spots.length){const footer=document.querySelector('footer, .site-footer');if(!footer)return;const s=document.createElement('div');footer.before(s);spots.push(s);}
@@ -26,6 +30,7 @@
    const ad=pool[i%pool.length];
    const a=document.createElement('a');a.className='ad-break';a.href='/showroom';
    a.setAttribute('aria-label',`${ad.name} — enter the Garden of Eden`);
+   a.style.setProperty('--d',(-Math.random()*1.25).toFixed(2)+'s'); // each ad strobes out of step with the others
    a.innerHTML=`<span class="ad-box"><img alt="" loading="lazy" decoding="async" width="${Math.round(ad.ratio*100)}" height="100"><span class="ad-url">www.breakthyrule.com</span></span><span class="ad-cta">Enter Eden →</span>`;
    a.querySelector('img').src=ad.src;
    spot.replaceWith(a);
