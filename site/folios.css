@@ -220,3 +220,7 @@ body[data-page=home] main,body[data-page=home] .site-foot{position:relative;z-in
 .showcase-plate .plate-note{position:absolute;right:12px;bottom:12px;font-family:var(--serif);font-style:italic;font-size:15px;color:var(--muted);line-height:1}
 .showcase-plate.is-own{background:#fff;outline:1px solid color-mix(in srgb,var(--gold) 60%,transparent);outline-offset:4px}
 @media(max-width:640px){.showcase-plate{flex-basis:72vw}.gallery-showcase .showcase-tools .ghost{display:none}}
+
+/* Archive: information and discussion only. The Librarian's desk shows the house apple. */
+.archive-plaque{grid-row:1/4}
+.librarian img.librarian-apple{width:132px;height:132px;object-fit:contain;padding:10px;border-radius:50%;background:#f2ebdd;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--gold)}

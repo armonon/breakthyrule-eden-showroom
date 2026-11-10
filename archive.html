@@ -9,7 +9,7 @@
  <link rel="stylesheet" href="/site/site.css?v=2">
  <link rel="stylesheet" href="/site/codex.css?v=1">
  <link rel="stylesheet" href="/breakthyrule-cover.css?v=7">
- <link rel="stylesheet" href="/site/folios.css?v=8">
+ <link rel="stylesheet" href="/site/folios.css?v=9">
  <script defer src="/asset-loader.js?v=4"></script>
  <script defer src="/garment-catalog.js?v=11"></script>
  <script defer src="/books.js?v=3"></script>
@@ -19,23 +19,21 @@
  <script defer src="/site/site.js?v=4"></script>
  <script defer src="/breakthyrule-assets.js?v=2"></script>
  <script defer src="/breakthyrule-cover.js?v=6"></script>
- <script defer src="/site/stickers.js?v=5"></script>
- <script defer src="/site/archive.js?v=1"></script>
+ <script defer src="/site/archive.js?v=3"></script>
 </head>
 <body data-page="archive">
  <main class="wrap">
   <header class="page-head archive-head">
-   <div class="archive-marginalia" id="archive-marginalia"></div>
    <div class="archive-plaque"><img src="/assets/brand/logo.webp?v=1" alt="BreakThyRule, anonymous archive" width="1400" height="381"></div>
    <p class="folio">Folio III <small>Liber Secretorum — the book of hidden things</small></p>
    <h1><span class="dropcap">T</span>he anonymous archive</h1>
-   <p class="lede"><span class="rubric">Every chapter of the collection draws on a body of reading.</span> Pick a topic, ask the Librarian, browse the index of graphics, and join the discussion.</p>
+   <p class="lede"><span class="rubric">Every chapter of the collection draws on a body of reading.</span> Pick a topic, ask the Librarian, read from the shelf, and join the discussion.</p>
   </header>
   <div class="archive-layout">
    <nav class="topic-list" id="topics" aria-label="Archive topics"></nav>
    <div>
     <section class="librarian" aria-labelledby="librarian-title">
-     <img src="/assets/librarian-realistic.png" alt="The Librarian">
+     <img class="librarian-apple" src="/images/breakthyrule/graphics/full/app.webp" alt="The Break Thy Rule apple, with a puzzle piece and an open eye" width="400" height="400">
      <div>
       <h3 id="librarian-title">Ask the Librarian</h3>
       <p class="fine">Searches our shelf, Open Library, Google Books and Project Gutenberg at once.</p>
@@ -49,20 +47,12 @@
     <p class="kicker" id="topic-kicker"></p>
     <h2 id="topic-title"></h2>
     <p class="lede" id="topic-blurb" style="margin-top:14px"></p>
-    <div id="topic-garments-wrap"><p class="kicker" style="margin-top:32px">From the collection</p><div class="topic-garments" id="topic-garments"></div></div>
     <p class="kicker" id="shelf-label" style="margin-top:32px">On the shelf</p>
     <div class="shelf" id="shelf"></div>
     <p class="kicker">Marginal notes</p>
     <div id="discussion"></div>
    </div>
   </div>
-  <div class="ornament" aria-hidden="true"><span>✠</span></div>
-  <section class="codex-index" id="codex-index" aria-labelledby="index-title">
-   <div class="section-head"><div><p class="kicker">Index</p><h2 id="index-title"><span class="sect">§</span>Index of the codex</h2></div><p class="fine"><span id="index-count"></span> entries, A to Z</p></div>
-   <p class="lede">Every graphic in the archive by name. Hover to see it, click to open it.</p>
-   <nav class="index-letters" id="index-letters" aria-label="Jump to a letter"></nav>
-   <div class="index-columns" id="index-columns"></div>
-  </section>
  </main>
 </body>
 </html>

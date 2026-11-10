@@ -1,6 +1,6 @@
 'use strict';
 (async()=>{
- const el=window.siteEl,$=id=>document.getElementById(id),garments=window.siteGarments(),books=window.showroomBooks||[];
+ const el=window.siteEl,$=id=>document.getElementById(id),books=window.showroomBooks||[];
  let topics=[];try{topics=(await (await fetch('/site/data/topics.json',{cache:'no-cache'})).json()).topics;}catch{}
  const all={id:'all',title:'Everything',blurb:'The whole shelf and the open discussion.',tags:books.map(b=>b.tag),chapters:[],query:''};
  topics.unshift(all);
@@ -14,9 +14,6 @@
  function select(topic,push=true){
   for(const b of buttons)b.setAttribute('aria-pressed',String(b.dataset.id===topic.id));
   $('topic-kicker').textContent=topic.id==='all'?'All topics':'Topic';$('topic-title').textContent=topic.title;$('topic-blurb').textContent=topic.blurb;
-  const pieces=garments.filter(g=>topic.chapters.includes(g.chapter)).slice(0,12);
-  $('topic-garments-wrap').hidden=!pieces.length;
-  $('topic-garments').replaceChildren(...pieces.map(g=>el('a',{href:'/product?item='+encodeURIComponent(g.slug),title:g.name},el('img',{src:g.photo,alt:g.name,loading:'lazy'}))));
   showShelf(books.filter(b=>topic.tags.includes(b.tag)).map(b=>({title:b.title,author:b.author,cover:b.cover,url:b.url,meta:b.tag})),'On the shelf');
   $('query').value=topic.query||'';$('search-status').textContent='';
   const space=topic.circle||siteConfig.circle.spaces.topics?.[topic.id]||siteConfig.circle.spaces.archive;

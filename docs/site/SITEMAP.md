@@ -74,11 +74,12 @@ posts and images are saved only in that visitor's browser, and a banner says so.
   skips it. Its buttons: Enter, Shop (scrolls to the collection), Gallery, Archive, About (an About panel).
 - **Home**: a running rubric of graphic names under the hero, "The codex, pasted up" (a draggable sticker board with the
   advert strips as rails) and a strip of worn photos as polaroids (`site/stickers.js`).
-- **Archive**: the logo plaque, stickers pasted in the margin, and the A–Z "Index of the codex" (hover to peek, click to
-  open). The page is titled "The anonymous archive".
+- **Archive**: information and discussion only — titled "The anonymous archive", with the logo plaque, the topics, the
+  Librarian (its picture is the house apple, `images/breakthyrule/graphics/full/app.webp`), the shelf and the discussion.
+  No garments, graphics index or stickers on this page.
 - **Gallery**: real-life photography only — garment photos and people wearing them (Worn: 15 of the favourite photos;
   artwork and collages are listed in `NOT_PHOTOS` in `tools/site/build-gallery.mjs`). Graphics and adverts are not in the
-  gallery; they live on the home page and in the Archive's index. Link to a set with `/gallery?filter=worn`.
+  gallery; they live on the home page and in the codex cover. Link to a set with `/gallery?filter=worn`.
 - **Home background** (`site/backdrop.js`): cut-out graphics printed faintly into the paper, drifting upward, leaning with
   the pointer and scroll; every few seconds one blooms into full colour. Still for reduced-motion visitors.
 - **Product pages**: the discussion was replaced by a "From the gallery" strip — the piece's own photos first, then worn

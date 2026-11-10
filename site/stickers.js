@@ -54,6 +54,7 @@
     return paste(g,(c+.5)*cw-size/2+rand(-cw*.22,cw*.22),(r+.5)*ch-size/2+rand(-ch*.2,ch*.2),size,true);}));
   };
   fill();$('wall-shuffle')?.addEventListener('click',fill);
+  $('wall-cover')?.addEventListener('click',()=>window.breakthyruleGallery?.openCover());
   if($('wall-count'))$('wall-count').textContent=graphics.length;
   let t,lastW=wall.clientWidth;new ResizeObserver(()=>{if(Math.abs(wall.clientWidth-lastW)<40)return;lastW=wall.clientWidth;clearTimeout(t);t=setTimeout(fill,300);}).observe(wall);
   // Clicking bare board slaps a new sticker down.
