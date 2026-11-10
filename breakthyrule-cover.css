@@ -177,3 +177,13 @@ body.btr-cover-open{overflow:hidden}
 @media(max-width:580px){.site-header .btr-logo{height:40px}.btr-logo-plate{height:46px}.btr-logo-head{height:24px}}
 @media(max-width:400px){.site-header .btr-logo{height:34px}}
 .site-header .btr-header-button,.site-header .btr-header-button span{color:var(--btr-ink)!important;text-shadow:none}
+
+/* About: the brand, in house, two categories. */
+.btr-about-kicker{font:700 11px 'DM Sans',sans-serif!important;letter-spacing:.24em;text-transform:uppercase;color:#555;margin:0 0 6px!important}
+.btr-about-cats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 0 8px}
+.btr-about-cat{position:relative;border:3px solid var(--btr-ink);background:#fff;padding:16px 16px 14px;box-shadow:5px 5px 0 var(--btr-ink)}
+.btr-about-cat:nth-child(2){background:var(--btr-yellow)}
+.btr-about-cat h3{margin:0 0 6px!important;font:700 22px/1 'Barlow Condensed',sans-serif!important;letter-spacing:.02em!important;text-transform:uppercase}
+.btr-about-cat p{margin:0!important;font-size:15px;line-height:1.5}
+.btr-about-num{position:absolute;top:8px;right:12px;font:700 13px 'DM Sans',sans-serif;letter-spacing:.1em;color:var(--btr-red)}
+@media(max-width:580px){.btr-about-cats{grid-template-columns:1fr}}

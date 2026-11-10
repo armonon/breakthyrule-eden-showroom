@@ -114,14 +114,15 @@
   el('div',{className:'btr-about-body'},[
    aboutCollage,
    el('div',{className:'btr-about-copy'},[
-    el('p',{className:'btr-about-lede',textContent:'A codex worn on the body.'}),
-    el('p',{textContent:'Break Thy Rule is clothing written like scripture and scrawled like a sticker on a lamppost. Every garment carries a line of the codex: a word, a warning, a blessing, a joke. Wear the rule, then break it.'}),
-    el('h3',{textContent:'The codex'}),
-    el('p',{textContent:`${graphics.length} graphics and counting. Angels, eyes, flowers, slogans and confessions, all drawn for the body first and the wall second.`}),
-    el('h3',{textContent:'The garden'}),
-    el('p',{textContent:'This site is a world, not a catalogue. Walk the Garden of Eden, browse the library, step into the vault of 3D garments, visit the gallery and the screen, and play music in the amphitheatre with whoever else is wandering through.'}),
-    el('h3',{textContent:'The witnesses'}),
-    el('p',{textContent:'The people who wear it are the point. Their photos hang in the gallery.'}),
+    el('p',{className:'btr-about-kicker',textContent:'Los Angeles, California'}),
+    el('p',{className:'btr-about-lede',textContent:'A clothing brand from LA.'}),
+    el('p',{textContent:'Everything is printed in house. We work with artists on every drop, and we print on vintage pieces, random blank garments, or our own cut and sew. No two runs come out the same.'}),
+    el('div',{className:'btr-about-cats'},[
+     el('div',{className:'btr-about-cat'},[el('span',{className:'btr-about-num',textContent:'I'}),el('h3',{textContent:'Cut & sew'}),el('p',{textContent:'A handcrafted, brand-new piece. Cut, sewn and printed by us.'})]),
+     el('div',{className:'btr-about-cat'},[el('span',{className:'btr-about-num',textContent:'II'}),el('h3',{textContent:'Ready to ship'}),el('p',{textContent:'Printed on a random blank or a vintage find, ready to go out now.'})])
+    ]),
+    el('h3',{textContent:'Made with artists'}),
+    el('p',{textContent:'Every graphic is a collaboration. The artists bring the work; we print it by hand in our shop.'}),
     el('div',{className:'btr-about-actions'},[
      aboutGo('ENTER EDEN',actions.eden),aboutGo('SHOP',actions.shop),aboutGo('GALLERY',actions.gallery),aboutGo('ARCHIVE',actions.archive)
     ])
@@ -130,7 +131,9 @@
  );
  function openAbout(){
   if(!aboutCollage.childElementCount){
-   const picks=[...shuffle(favs).slice(0,5).map(f=>[f,'photo']),...shuffle(graphics).slice(0,7).map(g=>[g,'graphic'])];
+   // About is about the clothes: real photos of them being worn (artwork and collages left out).
+   const notPhotos=new Set(['82dec1eb-dce2-4a7e-80f6-7b0a12cbbe4f','theodore']);
+   const picks=shuffle(favs.filter(f=>!notPhotos.has(f.id))).slice(0,12).map(f=>[f,'photo']);
    shuffle(picks).forEach(([item,kind])=>{const f=el('figure',{className:'btr-about-piece '+kind},img(item.thumb,''));f.style.setProperty('--r',rand(-9,9).toFixed(1)+'deg');aboutCollage.append(f);});
   }
   if(!about.open)about.showModal();aboutClose.focus();
