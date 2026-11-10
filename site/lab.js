@@ -12,6 +12,10 @@ const nameOf = Object.fromEntries(ARTWORK_POOL.map(a => [a.id, a.name]));
 const params = new URLSearchParams(location.search);
 
 let status = null;
+// Real 3D blanks (Ghost Studio, converted to meshopt). Shorts and long sleeves fall back to the drawing.
+const BLANKS = { tee: '/models/blanks/tee.glb', hoodie: '/models/blanks/hoodie.glb', crewneck: '/models/blanks/crewneck.glb', sweatpants: '/models/blanks/pants.glb' };
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const three = { viewer: null, loaded: null, loading: null, failed: false, wanted: false, hue: 0, timer: 0 };
 const state = { construction: 'canvas', garment: 'tee', size: null, fit: 'blank', color: 'black', customColor: '', artwork: 'artists-choice', seed: null, chaos: false, preChaos: null, editId: null, side: 'front' };
 
 // ---------- helpers ----------
@@ -81,10 +85,60 @@ function renderArt() {
   $('altar-draw').replaceChildren(...[['Direction', `${art.category} / ${art.secondary}`], ['Placement', art.placement], ['Technique', art.technique]].flatMap(([k, v]) => [h('dt', { textContent: k }), h('dd', { textContent: v })]));
   $('altar-refs').replaceChildren(...art.references.map(id => h('figure', {}, h('img', { src: artworkThumb(id), alt: nameOf[id] || id, loading: 'lazy' }), h('figcaption', { textContent: nameOf[id] || id }))));
 }
+// ---------- 3D blank ----------
+function fabricColor() {
+  const T = window.THREE; if (!T) return null;
+  if (state.color === 'black') return new T.Color('#1b1a19');
+  if (state.color === 'white') return new T.Color('#eeece6');
+  if (state.color === 'custom') return new T.Color(typeof CSS !== 'undefined' && state.customColor && CSS.supports('color', state.customColor) ? state.customColor : '#9c8f7a');
+  return new T.Color().setHSL(three.hue, .55, .5); // random: the house picks — cycle through hues
+}
+function tint() {
+  const model = three.viewer?.model(); const c = fabricColor(); if (!model || !c) return;
+  model.traverse(n => {
+    if (!n.isMesh) return;
+    for (const m of [].concat(n.material)) {
+      if (!m.userData.labOriginal) m.userData.labOriginal = { map: m.map, color: m.color.clone() };
+      if (/topstitch|thread/i.test(m.name)) { m.color.copy(c).multiplyScalar(.55); }
+      else { m.map = null; m.color.copy(c); }
+      m.needsUpdate = true;
+    }
+  });
+  three.viewer.redraw();
+  clearInterval(three.timer);
+  if (state.color === 'random' && !reduceMotion) three.timer = setInterval(() => { three.hue = (three.hue + .07) % 1; tint(); }, 900);
+}
+async function ensure3D() {
+  const url = BLANKS[state.garment];
+  if (!url || three.failed) return false;
+  if (!three.viewer) { three.viewer = window.createGarmentViewer?.($('stage-3d'), { wheelZoom: true }) || null; if (!three.viewer) { three.failed = true; return false; } three.viewer.setAuto(!reduceMotion); }
+  if (three.loaded === url) return true;
+  three.loading = url; $('stage-loading').hidden = false;
+  try { await three.viewer.load(url); three.loaded = url; if (three.loading !== url) { renderThree(); return false; } tint(); return true; }
+  catch { three.failed = true; return false; }
+  finally { if (three.loading === url) $('stage-loading').hidden = true; }
+}
+const use3D = () => three.wanted && !!BLANKS[state.garment] && !three.failed;
+async function renderThree() {
+  const on = use3D();
+  $('mode-3d').disabled = !BLANKS[state.garment] || three.failed;
+  $('mode-3d').setAttribute('aria-pressed', String(on)); $('mode-draw').setAttribute('aria-pressed', String(!on));
+  $('stage-3d').hidden = !on; $('stage-art').hidden = on;
+  $('stage-label').textContent = on
+    ? '3D blank — the real cut in your colour. Artwork is placed by hand; switch to Drawing to see the direction.'
+    : (three.failed ? '3D is unavailable on this device — showing the drawing. ' : '') + 'Conceptual preview — every piece is printed by hand and the finished garment will differ.';
+  if (!on) { clearInterval(three.timer); return; }
+  if (await ensure3D()) { tint(); three.viewer.setZoom($('zoom').value / 100); }
+  else if (three.failed) renderThree();
+}
+$('mode-3d').onclick = () => { three.wanted = true; renderThree(); };
+$('mode-draw').onclick = () => { three.wanted = false; renderThree(); };
+
 function renderStage() {
   const desc = GARMENT_TYPES[state.garment];
   $('stage-art').innerHTML = garmentSVG({ silhouette: desc.silhouette, color: state.color, customColor: state.customColor, artwork: state.artwork, art: currentArt(), side: state.side, id: 'stage' });
   $('stage-art').style.transform = `scale(${$('zoom').value / 100})`;
+  renderThree();
 }
 function renderReview() {
   const n = normalizeItem(config(), { artworkPool: POOL });
@@ -138,7 +192,7 @@ function applyChaos(full = true) {
   if (full) renderAll(); else { renderGarments(); renderSizes(); renderColors(); }
 }
 $('side-front').onclick = () => setSide('front'); $('side-back').onclick = () => setSide('back');
-function setSide(side) { state.side = side; $('side-front').setAttribute('aria-pressed', String(side === 'front')); $('side-back').setAttribute('aria-pressed', String(side === 'back')); $('stage-art').classList.remove('flip'); void $('stage-art').offsetWidth; $('stage-art').classList.add('flip'); renderStage(); }
+function setSide(side) { state.side = side; if (use3D()) three.viewer?.view(side); $('side-front').setAttribute('aria-pressed', String(side === 'front')); $('side-back').setAttribute('aria-pressed', String(side === 'back')); $('stage-art').classList.remove('flip'); void $('stage-art').offsetWidth; $('stage-art').classList.add('flip'); renderStage(); }
 $('zoom').addEventListener('input', renderStage);
 
 form.addEventListener('submit', e => {
@@ -241,6 +295,11 @@ function preselect(c, g) {
     Object.assign(state, { construction: c.construction, garment: c.garment, size: c.size, fit: c.fit, color: c.color, customColor: c.customColor || '', artwork: c.artwork, seed: c.seed || null, chaos: !!c.chaos, editId });
   } else preselect(params.get('c'), params.get('g'));
   renderAll(); renderSpecials(); renderCatalog();
+  // Open on the 3D blank once the stage is on screen (nothing heavy loads before that).
+  if ('IntersectionObserver' in window && window.THREE) {
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); if (!three.wanted && BLANKS[state.garment]) { three.wanted = true; renderThree(); } } }, { rootMargin: '200px' });
+    io.observe($('stage-frame'));
+  }
   if (params.get('canceled')) { $('lab-notice').hidden = false; $('lab-notice').textContent = 'Checkout was canceled — nothing was charged, and your cart is still here.'; }
   status = await labStatus();
   if (status?.notice) { $('lab-notice').hidden = false; $('lab-notice').textContent = status.notice; }

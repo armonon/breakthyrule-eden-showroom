@@ -84,7 +84,9 @@
   return {
    async load(url){const gltf=await showroomAssets.model(url);if(model)scene.remove(model);model=centre(gltf.scene);scene.add(model);resize();request();},
    setAuto(v){auto=v;last=0;request();return auto;},isAuto:()=>auto,
-   view(side){auto=false;yaw=side==='back'?Math.PI:0;pitch=0;request();}
+   view(side){auto=false;yaw=side==='back'?Math.PI:0;pitch=0;request();},
+   // Used by the Garment Lab: recolour the loaded model, zoom from a slider, redraw after changes.
+   model:()=>model,setZoom(z){zoom=Math.max(.8,Math.min(2.4,z));request();},redraw:request
   };
  };
 })();

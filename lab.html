@@ -11,14 +11,17 @@
  <link rel="stylesheet" href="/breakthyrule-cover.css?v=8">
  <link rel="stylesheet" href="/site/folios.css?v=12">
  <link rel="stylesheet" href="/site/commerce.css?v=3">
- <link rel="stylesheet" href="/site/lab.css?v=1">
+ <link rel="stylesheet" href="/site/lab.css?v=2">
+ <script defer src="/assets/three.min.js?v=187"></script>
+ <script defer src="/asset-loader.js?v=4"></script>
+ <script defer src="/site/garment-stage.js?v=3"></script>
  <script defer src="/site/config.js?v=1"></script>
  <script defer src="/site/site.js?v=6"></script>
  <script defer src="/breakthyrule-assets.js?v=2"></script>
  <script defer src="/breakthyrule-cover.js?v=8"></script>
  <script defer src="/site/graphic-strip.js?v=1"></script>
  <script type="module" src="/site/cart-ui.js?v=1"></script>
- <script type="module" src="/site/lab.js?v=1"></script>
+ <script type="module" src="/site/lab.js?v=3"></script>
 </head>
 <body data-page="lab">
  <main>
@@ -35,8 +38,11 @@
    <div class="lab-stage" aria-live="polite">
     <div class="stage-frame" id="stage-frame">
      <div class="stage-art" id="stage-art"></div>
+     <div class="stage-3d" id="stage-3d" tabindex="0" aria-label="3D blank garment. Drag or use the arrow keys to turn it." hidden></div>
+     <p class="stage-loading" id="stage-loading" role="status" hidden>Loading the 3D blank…</p>
     </div>
     <div class="stage-tools">
+     <div class="seg" role="group" aria-label="Preview type"><button type="button" id="mode-3d" aria-pressed="false">3D blank</button><button type="button" id="mode-draw" aria-pressed="true">Drawing</button></div>
      <div class="seg" role="group" aria-label="Preview side"><button type="button" id="side-front" aria-pressed="true">Front</button><button type="button" id="side-back" aria-pressed="false">Back</button></div>
      <label class="zoom">Zoom <input type="range" id="zoom" min="100" max="220" step="10" value="100" aria-label="Zoom the preview"></label>
     </div>

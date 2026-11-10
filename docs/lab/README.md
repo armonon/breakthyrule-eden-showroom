@@ -71,8 +71,10 @@ checkout from the catalog and ignores anything the browser sends**.
   colour (black/white/random — never a paid custom colour), fit and artwork. The price shown is the price charged.
 - **Random art references curated Break Thy Rule graphics** and producible treatments only; it never generates an
   image. The seed is stored; the server re-derives the draw from it.
-- **Previews are labelled concept drawings.** True 3D previews need blank garment models — the Ghost Studio blanks
-  at ghost.thecreatingco.com/shaka (tee, hoodie, crewneck, pants) can be dropped in once approved.
+- **Previews:** the tee, hoodie, crewneck and sweatpants show the real Ghost Studio blanks in 3D, recoloured live
+  (models/blanks/, see SOURCE.md); they load only when the preview scrolls into view. Shorts and the long sleeve, and
+  every artwork direction, use the labelled concept drawing (a Drawing toggle is always there). Artwork is not
+  projected onto the 3D blank — it is placed by hand.
 - **Customer accounts**: none. Each order has a private link with a secret key (only its hash is stored). Order
   history per customer can come with Circle SSO or a later accounts system.
 - **Staff**: owner (everything) and artist (production, notes, photos, archive). Tokens last 12 hours; sign-in
