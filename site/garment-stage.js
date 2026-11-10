@@ -60,7 +60,7 @@
  };
 
  // Single draggable viewer for the product page.
- window.createGarmentViewer=function(element,{wheelZoom=false,onFrame=null}={}){
+ window.createGarmentViewer=function(element,{wheelZoom=false,onFrame=null,spin=.45}={}){
   if(!T||!window.ShowroomGLTFLoader)return null;
   const canvas=document.createElement('canvas');canvas.setAttribute('aria-hidden','true');element.append(canvas);
   let renderer;try{renderer=makeRenderer(canvas);}catch{return null;}
@@ -71,7 +71,7 @@
   const fetchRoot=url=>{if(!roots.has(url))roots.set(url,showroomAssets.model(url).then(g=>centre(g.scene)).catch(e=>{roots.delete(url);throw e;}));return roots.get(url);};
   function resize(){const w=element.clientWidth,h=element.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();request();}
   function request(){if(!frame&&onScreen&&!document.hidden)frame=requestAnimationFrame(draw);}
-  function draw(time){frame=0;const dt=Math.min((time-(last||time))/1000,.05);last=time;if(auto)yaw+=dt*.45;
+  function draw(time){frame=0;const dt=Math.min((time-(last||time))/1000,.05);last=time;if(auto)yaw+=dt*spin;
    if(model)model.rotation.set(pitch,yaw,0);const d=Math.max(4.4,2.2/Math.tan(15*Math.PI/180)/camera.aspect/2.4)/zoom;
    camera.position.set(0,.1,d);camera.lookAt(0,0,0);onFrame?.(yaw);renderer.render(scene,camera);if(auto)request();else last=0;}
   element.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('button,a'))return;auto=false;drag={x:e.clientX,y:e.clientY,yaw,pitch};element.setPointerCapture(e.pointerId);});

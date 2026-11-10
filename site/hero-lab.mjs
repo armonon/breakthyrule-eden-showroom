@@ -6,6 +6,7 @@ import { normalizeItem, priceItem, sidesFor } from '/labkit/pricing.mjs';
 import { newSeed } from '/labkit/random.mjs';
 import { ARTWORK_POOL } from '/labkit/artwork-pool.mjs';
 import { createPrinter, BLANKS, preloadArt } from '/site/garment-print.mjs';
+import { createSmoke } from '/site/smoke.mjs';
 
 const $ = id => document.getElementById(id);
 const stage = $('hero-stage'), mount = $('hero-viewer');
@@ -60,7 +61,7 @@ function prepare() {
   const change = Math.random() < .34;
   const garment = change ? weighted(GARMENTS.filter(([g]) => g !== current?.item.garment)) : current?.item.garment || 'tee';
   const p = drawPiece(garment); if (!p) return;
-  p.ready = Promise.all([preloadArt([...p.sides.front, ...p.sides.back]), viewer.preload(BLANKS[garment]).catch(() => null)]);
+  p.ready = Promise.all([preloadArt([...p.sides.front, ...p.sides.back]), viewer.preload(BLANKS[garment]).catch(() => null)]).then(() => { p.isReady = true; });
   next = p;
 }
 async function show(p) {
@@ -68,26 +69,52 @@ async function show(p) {
   await printer.apply({ kind: kindOf(p.item.garment), plan: plan(p), color: colourOf(p), backSize: p.item.backSize, print: p.item.print });
   current = p; label(p);
 }
-// Each full turn, at the edge-on angle after the back has shown, the next piece takes over.
+// The swap: a puff of smoke rises, the garment melts into it (fade, blur, a slight sink), the next piece is put
+// in place behind the smoke, then it settles back out as the smoke thins. Reduced motion: a plain crossfade.
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const frames = n => new Promise(r => { const f = () => (--n <= 0 ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+let smoke = null, gl = null;
+const VEIL_MS = 560;
+document.head.append(Object.assign(document.createElement('style'), { textContent: `
+  #hero-viewer canvas.hero-gl{transition:opacity .56s ease,filter .56s ease,transform .7s cubic-bezier(.3,.6,.2,1)!important}
+  #hero-viewer canvas.hero-gl.veil{opacity:0!important;filter:blur(12px) brightness(1.08);transform:scale(.9) translateY(14px)!important}
+  #hero-viewer canvas.hero-gl.rise{transition:opacity .9s ease,filter .9s ease,transform 1.1s cubic-bezier(.2,.7,.2,1)!important}
+  .hero-stage .hero-label,.hero-stage .hero-top{transition:opacity .45s ease}
+  .hero-stage.swapping .hero-label,.hero-stage.swapping #hero-chapter{opacity:0}
+  @media (prefers-reduced-motion:reduce){#hero-viewer canvas.hero-gl.veil{filter:none;transform:none!important}}` }));
+async function transition(p) {
+  if (!reduceMotion) smoke.puff();
+  await wait(reduceMotion ? 0 : 140);
+  gl.classList.remove('rise'); gl.classList.add('veil'); stage.classList.add('swapping');
+  await wait(VEIL_MS);
+  await show(p);
+  await frames(2);
+  gl.classList.add('rise'); gl.classList.remove('veil'); stage.classList.remove('swapping');
+}
+// Each full turn, just before the garment is edge-on after the back has shown, the next piece takes over —
+// timed so the garment is fully hidden in the smoke at the edge-on moment.
+const LEAD = .52; // radians of turn before edge-on (about 0.7 s at the hero's spin speed)
 let lastTurn = null;
 function onFrame(yaw) {
-  const turn = Math.floor((yaw - Math.PI * 1.5) / (Math.PI * 2));
+  const turn = Math.floor((yaw - Math.PI * 1.5 + LEAD) / (Math.PI * 2));
   if (lastTurn === null) { lastTurn = turn; return; }
-  if (turn === lastTurn || turning || !next) { lastTurn = turn; return; }
+  if (turn === lastTurn || turning || !next?.isReady) { lastTurn = turn; return; }
   lastTurn = turn; turning = true;
   const p = next; next = null;
-  p.ready.then(() => show(p)).catch(() => {}).finally(() => { turning = false; prepare(); });
+  transition(p).catch(() => { gl?.classList.remove('veil'); stage.classList.remove('swapping'); }).finally(() => { turning = false; prepare(); });
 }
 
 (async () => {
   if (!T || !stage || !mount || !window.createGarmentViewer) return;
-  viewer = window.createGarmentViewer(mount, { onFrame }); if (!viewer) return;
+  viewer = window.createGarmentViewer(mount, { onFrame, spin: .75 }); if (!viewer) return;
   printer = createPrinter(viewer);
   const first = drawPiece('tee'); if (!first) return;
   try {
     await Promise.all([viewer.preload(BLANKS.tee), preloadArt([...first.sides.front, ...first.sides.back])]);
     await show(first);
-    mount.querySelector('canvas').classList.add('live');
+    gl = mount.querySelector('canvas'); gl.classList.add('live', 'hero-gl');
+    smoke = createSmoke(mount);
     $('hero-photo').hidden = true; // the featured photo is only the fallback
     stage.querySelector('.hero-top span:last-child').textContent = 'a new piece every turn';
     prepare();
