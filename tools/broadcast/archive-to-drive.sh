@@ -34,7 +34,7 @@ for handle in "${HANDLES[@]}"; do
     --paths "temp:$CACHE/partial" --paths "home:$DEST" \
     -o "%(channel)s/%(upload_date>%Y-%m-%d)s %(title).150B [%(id)s].%(ext)s" \
     --download-archive "$DEST/.downloaded.txt" --no-overwrites --continue --ignore-errors \
-    --sleep-requests 1 --sleep-interval 3 --max-sleep-interval 8 \
+    --sleep-requests 2 --sleep-interval 20 --max-sleep-interval 45 \
     --exec "before_dl:$GUARD" --no-progress --console-title \
     2>&1 | grep --line-buffered -E "^\[download\] (Destination|.* has already been recorded)|^\[Merger\]|ERROR|WARNING: \[youtube\].*(unavailable|members|Private)|\[archive\]|^\[info\].*Downloading [0-9]+ items"
 done
