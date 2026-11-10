@@ -61,8 +61,12 @@ export const ARTWORK = {
   'artists-choice': { id: 'artists-choice', name: "Artist's choice", addCents: 0, blurb: 'The artist decides. You trust the hand.' },
   'random-experimental': { id: 'random-experimental', name: 'Random experimental', addCents: 0, blurb: 'Drawn at the Altar of Chance from a stored seed.' },
   minimal: { id: 'minimal', name: 'Minimal', addCents: 0, blurb: 'A single mark, quiet placement.' },
-  expressive: { id: 'expressive', name: 'Expressive', addCents: 0, blurb: 'Loud, layered, edge to edge.' }
+  expressive: { id: 'expressive', name: 'Expressive', addCents: 0, blurb: 'Loud, layered, edge to edge.' },
+  pick: { id: 'pick', name: 'Pick your graphics', addCents: 0, blurb: 'Choose from the archive: up to three on the front, one big print on the back.' }
 };
+// Graphics a customer may pick per side, and the back print's maximum size (inches, width × height).
+export const PICK_LIMITS = { front: 3, back: 1 };
+export const BACK_PRINT_IN = { w: 18, h: 20 };
 
 // Sizes offered. Measurements are NOT published until verified against the real blanks and patterns.
 export const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
@@ -77,9 +81,9 @@ export const FITS = {
 
 // The Altar of Chance: artistic directions and producible treatments the random engine draws from.
 export const RANDOM_CATEGORIES = ['Abstract', 'Distressed', 'Archival', 'Surreal', 'Minimal', 'Industrial', 'Romantic', 'Deconstructed', 'Experimental', 'Mixed media'];
-export const PLACEMENTS = ['Front', 'Back', 'Front and back', 'Sleeve and chest'];
+export const PLACEMENTS = ['Front', 'Back', 'Front and back']; // no sleeve hits; the back is one big print
 export const TECHNIQUES = ['Airbrush', 'Screen print', 'Hand-finished print'];
-export const RANDOM_VERSION = 1;
+export const RANDOM_VERSION = 2;
 
 // Special products.
 export const RELIC_BOX = {

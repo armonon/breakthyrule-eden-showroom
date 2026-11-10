@@ -10,8 +10,8 @@
  <link rel="stylesheet" href="/site/codex.css?v=1">
  <link rel="stylesheet" href="/breakthyrule-cover.css?v=8">
  <link rel="stylesheet" href="/site/folios.css?v=12">
- <link rel="stylesheet" href="/site/commerce.css?v=3">
- <link rel="stylesheet" href="/site/lab.css?v=4">
+ <link rel="stylesheet" href="/site/commerce.css?v=4">
+ <link rel="stylesheet" href="/site/lab.css?v=5">
  <script defer src="/assets/three.min.js?v=187"></script>
  <script defer src="/asset-loader.js?v=4"></script>
  <script defer src="/site/garment-stage.js?v=3"></script>
@@ -21,7 +21,7 @@
  <script defer src="/breakthyrule-cover.js?v=8"></script>
  <script defer src="/site/graphic-strip.js?v=1"></script>
  <script type="module" src="/site/cart-ui.js?v=1"></script>
- <script type="module" src="/site/lab.js?v=9"></script>
+ <script type="module" src="/site/lab.js?v=11"></script>
 </head>
 <body data-page="lab">
  <main>
@@ -37,18 +37,17 @@
    <h2 id="build-title" class="visually-hidden">Build a garment</h2>
    <div class="lab-stage" aria-live="polite">
     <div class="stage-frame" id="stage-frame">
-     <div class="stage-art" id="stage-art"></div>
-     <div class="stage-3d" id="stage-3d" tabindex="0" aria-label="3D blank garment. Drag or use the arrow keys to turn it." hidden></div>
+     <div class="stage-3d" id="stage-3d" tabindex="0" aria-label="3D blank garment. Drag or use the arrow keys to turn it."></div>
+     <div class="stage-none" id="stage-none" hidden><p class="stage-none-title" id="stage-none-title"></p><p class="fine" id="stage-none-text"></p><div class="stage-none-art" id="stage-none-art"></div></div>
      <p class="stage-loading" id="stage-loading" role="status" hidden>Loading the 3D blank…</p>
      <div class="print-drag" id="print-drag" hidden aria-hidden="true"></div>
     </div>
     <div class="stage-tools">
-     <div class="seg" role="group" aria-label="Preview type"><button type="button" id="mode-3d" aria-pressed="false">3D blank</button><button type="button" id="mode-draw" aria-pressed="true">Drawing</button></div>
      <div class="seg" role="group" aria-label="Preview side"><button type="button" id="side-front" aria-pressed="true">Front</button><button type="button" id="side-back" aria-pressed="false">Back</button></div>
      <label class="zoom">Zoom <input type="range" id="zoom" min="100" max="220" step="10" value="100" aria-label="Zoom the preview"></label>
     </div>
     <fieldset class="print-place" id="print-place">
-     <legend>Print placement</legend>
+     <legend>Front print — move &amp; resize</legend>
      <button type="button" class="ghost" id="print-move" aria-pressed="false">Move print</button>
      <label>Size <input type="range" id="print-scale" min="60" max="160" step="5" value="100"><output id="print-scale-out">100%</output></label>
      <label>Up / down <input type="range" id="print-y" min="-25" max="25" step="1" value="0"></label>
@@ -72,11 +71,20 @@
     </fieldset>
     <fieldset class="step" id="step-art"><legend><span class="step-no">V</span> Artwork</legend>
      <div class="choices two" id="opt-art"></div>
+     <div class="picker" id="picker" hidden>
+      <div class="picker-head">
+       <div class="seg" role="tablist" aria-label="Which side you are adding to"><button type="button" role="tab" id="pick-front" aria-selected="true">Front <span id="pick-front-n">0/3</span></button><button type="button" role="tab" id="pick-back" aria-selected="false">Back <span id="pick-back-n">0/1</span></button></div>
+       <input type="search" id="pick-search" placeholder="Search the graphics" aria-label="Search the graphics" autocomplete="off">
+      </div>
+      <p class="fine" id="pick-hint">Click graphics to add them to the front (up to three). Switch to Back for one big print, up to 18 × 20 in. Click again to remove.</p>
+      <div class="pick-chosen" id="pick-chosen" aria-live="polite"></div>
+      <div class="pick-grid" id="pick-grid" role="listbox" aria-label="Graphics"></div>
+     </div>
      <div class="altar" id="altar" hidden>
       <div class="altar-head"><p class="kicker">The Altar of Chance</p><span class="seed" id="seed-label"></span></div>
       <dl class="altar-draw" id="altar-draw"></dl>
       <div class="altar-refs" id="altar-refs"></div>
-      <div class="altar-actions"><button type="button" class="ghost" id="redraw">Draw again</button><button type="button" class="solid" id="chaos">Total chaos</button><button type="button" class="ghost" id="unchaos" hidden>Undo chaos</button></div>
+      <div class="altar-actions"><button type="button" class="ghost" id="redraw">Draw again</button><button type="button" class="solid" id="chaos">Total chaos</button><button type="button" class="ghost" id="unchaos" hidden>Undo chaos</button><button type="button" class="ghost" id="keep-draw">Keep these graphics &amp; edit</button></div>
       <p class="fine">Random art is free. It draws from our own artwork and the treatments we actually print; the seed is saved with your order so the draw can be rebuilt exactly.</p>
      </div>
     </fieldset>

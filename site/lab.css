@@ -154,3 +154,31 @@
 .print-drag{position:absolute;inset:0;z-index:5;cursor:move;touch-action:none}
 .stage-frame.moving-print{outline:2px dashed var(--gold);outline-offset:-10px}
 @media(max-width:640px){.print-place input[type=range]{width:90px}}
+/* No drawings: a panel for pieces without a 3D blank, the graphic picker, typographic marks. */
+.stage-none{position:absolute;inset:0;display:grid;place-content:center;gap:10px;padding:30px;text-align:center}
+.stage-none-title{margin:0;font-family:'Barlow Condensed',sans-serif;font-size:30px;color:var(--ink)}
+.stage-none-art{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:10px}
+.stage-none-art figure{margin:0;width:150px}
+.stage-none-art img{width:150px;height:150px;object-fit:contain;background:#f2ebdd;padding:8px}
+.stage-none-art figcaption{font-family:var(--serif);font-size:14px;color:var(--muted);margin-top:4px}
+.picker{margin-top:16px;padding:16px;border:1px solid color-mix(in srgb,var(--gold) 45%,transparent)}
+.picker-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.picker .seg button[aria-selected=true]{background:var(--ink);color:var(--paper)}
+.picker .seg button span{opacity:.7;margin-left:4px;font-size:15px}
+#pick-search{flex:1;min-width:180px;background:var(--paper);border:1px solid var(--line);color:var(--ink);min-height:42px;padding:0 12px;font:15px 'DM Sans',sans-serif}
+#pick-hint{margin:10px 0}
+.pick-chosen{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.pick-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;border:1px solid var(--rubric);background:color-mix(in srgb,var(--rubric) 12%,var(--paper));color:var(--ink);font-family:var(--serif);font-size:15px;cursor:pointer}
+.pick-chip img{width:34px;height:34px;object-fit:contain;background:#f2ebdd}
+.pick-chip b{font-size:18px;color:var(--rubric)}
+.pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;max-height:420px;overflow-y:auto;padding:2px}
+.pick-tile{display:grid;gap:4px;padding:6px;border:1px solid var(--line);background:var(--paper);color:var(--muted);cursor:pointer;text-align:center;font:12px 'DM Sans',sans-serif}
+.pick-tile img{width:100%;aspect-ratio:1;object-fit:contain;background:#f2ebdd}
+.pick-tile span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick-tile:hover{border-color:var(--rubric)}
+.pick-tile.on{border-color:var(--rubric);box-shadow:inset 0 0 0 2px var(--rubric);color:var(--ink)}
+.offer-mark{height:100%;display:grid;place-content:center;gap:6px;text-align:center;padding:10px}
+.offer-mark span{font-family:var(--blackletter);font-size:64px;line-height:1;color:var(--rubric)}
+.offer-mark b{font-family:'Barlow Condensed',sans-serif;font-size:24px;color:var(--ink)}
+.offer-mark i{font-family:var(--serif);font-size:15px;color:var(--muted)}
+.special-art .thumb-mark{transform:scale(2.4)}

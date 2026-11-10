@@ -72,8 +72,16 @@ checkout from the catalog and ignores anything the browser sends**.
 - **Random art references curated Break Thy Rule graphics** and producible treatments only; it never generates an
   image. The seed is stored; the server re-derives the draw from it.
 - **Previews:** the tee, hoodie, crewneck and sweatpants show the real Ghost Studio blanks in 3D, recoloured live
-  (models/blanks/, see SOURCE.md); they load only when the preview scrolls into view. Shorts and the long sleeve, and
+  (models/blanks/, see SOURCE.md); they load only when the preview scrolls into view. Shorts and the long sleeve show a
+  "3D preview coming" panel with the chosen graphics (there are no drawings anywhere), and
   the labelled concept drawing (a Drawing toggle is always there).
+- **No drawings:** the preview is the 3D blank only; carts, orders and the studio show the garment colour with its
+  real graphics; the catalog and the boxes use typographic marks.
+- **Pick your graphics:** a searchable picker of every graphic — up to three on the front, one big print on the back
+  (up to 18 × 20 in). "Keep these graphics & edit" turns a random draw into picks. Validated server-side against
+  the archive, free.
+- **Big backs, no sleeves:** random draws place Front, Back or Front and back (never sleeves); whenever the back is
+  printed it is one graphic, enlarged to up to 18 × 20 in.
 - **Artwork on the 3D blank:** the fabric shader projects the print onto the front / back / sleeve (planar
   projection in garment space, so multi-part garments like the hoodie print across body and pocket). Random art
   prints the drawn graphics; Minimal prints the house cross on the chest; Expressive prints layered marks front and
@@ -116,6 +124,14 @@ No migrations are needed: documents are created on first write. Nothing touches 
 The draft previews share the `garment-lab-preview` store. It holds placeholder TEST stock and capacity and a test
 studio account (`owner@lab.test`), loaded with `netlify blobs:set garment-lab-preview …`. Wipe or replace it any time;
 it is never read by production.
+
+## Adding new graphics
+
+1. Drop the new PNG/JPG files into `~/Downloads/breakthyrule/GRAPHICS/` (the file name becomes the graphic's name).
+2. Run `npm run graphics:add` — converts them to web images, adds them to the Lab's picker and the random pool,
+   and refreshes the gallery data.
+3. Commit and publish. Placed orders keep the exact graphics they were sold with; seeds in carts that are still open
+   may draw differently once the pool grows.
 
 ## Running it locally
 

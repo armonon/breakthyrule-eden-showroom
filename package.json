@@ -21,7 +21,9 @@
     "proof:serve-source": "node tools/agent/serve-handoff.mjs",
     "proof:smoke-server": "node tools/agent/check-server-static.mjs",
     "proof:summarize-benchmarks": "node tools/agent/summarize-benchmarks.mjs",
-    "proof:assets": "npm run proof:build-temple && npm run proof:optimize && npm run proof:inspect"
+    "proof:assets": "npm run proof:build-temple && npm run proof:optimize && npm run proof:inspect",
+    "graphics:add": "node tools/assets/import-breakthyrule.mjs && node tools/lab/build-artwork-pool.mjs && node tools/site/build-gallery.mjs",
+    "lab:test": "node --test server/lab/lab.test.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "^11.1.9"

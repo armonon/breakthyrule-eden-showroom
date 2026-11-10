@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { normalizeItem, priceItem, priceCart, describeItem } from '../../labkit/pricing.mjs';
+import { normalizeItem, priceItem, priceCart, describeItem, sidesFor } from '../../labkit/pricing.mjs';
 import { drawArt, drawChaos } from '../../labkit/random.mjs';
 import { createCart } from '../../labkit/cart.mjs';
 import { encodeQR, qrSVG } from '../../labkit/qr.mjs';
@@ -85,6 +85,26 @@ test('cut & sew is always described as 100% cotton', () => {
   const cs = normalizeItem(garment({ construction: 'cut-sew', garment: 'hoodie', fit: 'regular' }), { artworkPool: POOL }).item;
   assert.ok(describeItem(cs).spec.includes('Material: 100% cotton'));
   assert.ok(!describeItem(normalizeItem(garment(), { artworkPool: POOL }).item).spec.some(s => s.startsWith('Material:')));
+});
+
+test('picked graphics: validated against the archive, front up to 3, one big back print, free', () => {
+  const [a, b, c, d, e] = POOL;
+  const n = normalizeItem(garment({ artwork: 'pick', picks: { front: [a, b, c, d, 'not-a-graphic'], back: [e, a] } }), { artworkPool: POOL });
+  assert.ok(n.ok);
+  assert.deepEqual(n.item.picks, { front: [a, b, c], back: [e] });
+  assert.equal(priceItem(n.item).unitCents, 6000);
+  const spec = describeItem(n.item).spec.join(' | ');
+  assert.match(spec, /Front: .+, .+, .+/); assert.match(spec, /Back: .+ — enlarged, up to 18 × 20 in/);
+  assert.equal(normalizeItem(garment({ artwork: 'pick', picks: { front: [], back: ['nope'] } }), { artworkPool: POOL }).ok, false);
+});
+test('random draws never place a sleeve print; back draws put one graphic on the back', () => {
+  for (let seed = 1; seed < 300; seed += 3) {
+    const art = drawArt(seed, POOL);
+    assert.ok(['Front', 'Back', 'Front and back'].includes(art.placement));
+    const s = sidesFor({ artwork: 'random-experimental', art });
+    if (art.placement !== 'Front') assert.equal(s.back.length, 1);
+    if (art.placement === 'Back') assert.equal(s.front.length, 0);
+  }
 });
 
 // ---------------- Random engine ----------------

@@ -254,7 +254,7 @@ export function createLab({ store, env = {}, stripe = null, artworkPool = [], no
   function customerView(o) {
     return {
       id: o.id, createdAt: o.createdAt, mode: o.mode,
-      items: o.items.map(i => ({ title: i.describe.title, spec: i.describe.spec, quantity: i.quantity, unitCents: i.unitCents, totalCents: i.totalCents, lines: i.lines, product: i.product, garment: i.garment, color: i.color, customColor: i.customColor || '', artwork: i.artwork, art: i.art || null, print: i.print || null })),
+      items: o.items.map(i => ({ title: i.describe.title, spec: i.describe.spec, quantity: i.quantity, unitCents: i.unitCents, totalCents: i.totalCents, lines: i.lines, product: i.product, construction: i.construction, garment: i.garment, picks: i.picks || null, color: i.color, customColor: i.customColor || '', artwork: i.artwork, art: i.art || null, print: i.print || null })),
       subtotalCents: o.subtotalCents, currency: o.currency,
       payment: { status: o.payment.status, amountTotal: o.payment.amountTotal ?? null, amountTax: o.payment.amountTax ?? null, amountShipping: o.payment.amountShipping ?? null },
       production: { status: o.production.status, history: o.production.history.map(h => ({ status: h.status, at: h.at })) },
