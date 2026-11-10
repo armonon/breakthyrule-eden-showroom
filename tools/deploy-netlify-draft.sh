@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Publish a DRAFT preview of the committed site (HEAD) to Netlify — never production.
+# Publish a DRAFT preview of the committed site (HEAD) to Netlify. Production only with LIVE=yes (owner's explicit "make it live").
 # Same clean copy as tools/deploy-netlify.sh plus the public-site redirects/headers and the Garment Lab function.
 #   bash tools/deploy-netlify-draft.sh "message"
 set -euo pipefail
@@ -51,4 +51,5 @@ ln -s "$ROOT/node_modules" "$SRC/node_modules"
 "$ROOT/node_modules/.bin/esbuild" "$SRC/netlify/functions/lab.mjs" --bundle --platform=node --format=esm --target=node20 \
   --banner:js="import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" --outfile="$FN/lab.mjs" --log-level=warning
 echo "Draft $commit ($(du -sh "$OUT" | cut -f1)) → Netlify site $SITE_ID"
-(cd "$OUT" && netlify deploy --no-build --dir . --functions "$FN" --site "$SITE_ID" --message "${1:-Draft $commit}")
+PROD=(); [[ "${LIVE:-}" == "yes" ]] && { PROD=(--prod); echo "LIVE production deploy of $commit"; }
+(cd "$OUT" && netlify deploy --no-build --dir . --functions "$FN" --site "$SITE_ID" "${PROD[@]}" --message "${1:-Draft $commit}")
