@@ -13,17 +13,32 @@
  const openGraphic=item=>window.breakthyruleGallery?.openLightbox(graphics,graphics.indexOf(item),'graphics');
  const readable=n=>n.length<=24&&/[a-z]{2}/i.test(n)&&!/\d{3,}|^img\b|chatgpt|gemini|copy|[a-z0-9]{12,}/i.test(n);
 
- // Drag to move, click to open. Works for any sticker inside `root`.
+ // Drag to move, click to open. Works for any sticker inside `root`. Dragged off the board, a sticker follows the
+ // pointer as a floating copy; dropping it on something that listens for "btr-sticker-drop" (the garment lab) uses it
+ // there and the sticker springs back to its spot.
  function stickerDrag(root){
   let drag=null;
+  const tell=(type,e,cancelable=false)=>{const ev=new CustomEvent(type,{cancelable,detail:{item:graphics[+drag.s.dataset.index],x:e.clientX,y:e.clientY}});document.dispatchEvent(ev);return ev.defaultPrevented;};
   root.addEventListener('pointerdown',e=>{const s=e.target.closest('.paste');if(!s||e.button)return;
-   drag={s,x:e.clientX,y:e.clientY,left:s.offsetLeft,top:s.offsetTop,moved:false,id:e.pointerId};});
+   drag={s,x:e.clientX,y:e.clientY,left:s.offsetLeft,top:s.offsetTop,moved:false,id:e.pointerId,ghost:null};});
   addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;
    const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
-   if(!drag.moved&&Math.hypot(dx,dy)>6){drag.moved=true;drag.s.classList.add('lifted');}
-   if(drag.moved){drag.s.style.left=drag.left+dx+'px';drag.s.style.top=drag.top+dy+'px';}});
-  addEventListener('pointerup',e=>{if(!drag||e.pointerId!==drag.id)return;const {s,moved}=drag;drag=null;s.classList.remove('lifted');
-   if(moved){s.dataset.dragged='1';s.style.setProperty('--r',rand(-14,14).toFixed(1)+'deg');}});
+   if(!drag.moved&&Math.hypot(dx,dy)>6){drag.moved=true;drag.s.classList.add('lifted');document.body.classList.add('sticker-dragging');}
+   if(!drag.moved)return;
+   drag.s.style.left=drag.left+dx+'px';drag.s.style.top=drag.top+dy+'px';
+   const r=root.getBoundingClientRect(),out=e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom;
+   if(out&&!drag.ghost){const g=drag.s.querySelector('img').cloneNode();g.className='paste-ghost';g.style.width=drag.s.offsetWidth+'px';document.body.append(g);drag.ghost=g;drag.s.style.visibility='hidden';}
+   if(!out&&drag.ghost){drag.ghost.remove();drag.ghost=null;drag.s.style.visibility='';}
+   if(drag.ghost){drag.ghost.style.left=e.clientX+'px';drag.ghost.style.top=e.clientY+'px';}
+   tell('btr-sticker-drag',e);});
+  const end=e=>{if(!drag||e.pointerId!==drag.id)return;const d=drag;drag=null;const {s,moved}=d;
+   s.classList.remove('lifted');document.body.classList.remove('sticker-dragging');
+   if(!moved)return;
+   drag=d;const used=tell('btr-sticker-drop',e,true),wasOut=!!d.ghost;drag=null;
+   d.ghost?.remove();s.style.visibility='';s.dataset.dragged='1';
+   if(used||wasOut){s.style.left=d.left+'px';s.style.top=d.top+'px';s.classList.add('slapped');setTimeout(()=>s.classList.remove('slapped'),450);}
+   else s.style.setProperty('--r',rand(-14,14).toFixed(1)+'deg');};
+  addEventListener('pointerup',end);addEventListener('pointercancel',end);
   root.addEventListener('click',e=>{const s=e.target.closest('.paste');if(!s)return;
    if(s.dataset.dragged){delete s.dataset.dragged;return;}openGraphic(graphics[+s.dataset.index]);});
  }
