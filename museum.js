@@ -22,7 +22,7 @@ window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{},camera=null
   solid:[rect(showroom.x+3.1-.09-m,showroom.x+3.1+.09+m,-3.8-m,3.8+m),rect(showroom.x-4,showroom.x+3,hallA.z0,-2.6)],
   blocksOutside:q=>(q.x>body[0]&&q.x<body[1]&&q.z>body[2]&&q.z<body[3]&&!(q.x>tunnel[0]&&q.x<tunnel[1]&&q.z>tunnel[2]&&q.z<tunnel[3]))||columns.some(c=>Math.hypot(q.x-c.x,q.z-c.z)<.19+m),
   enclosedOutside:q=>q.x>-1.25&&q.x<1&&Math.abs(q.z)<width/2,
-  update:(camPos,inside)=>{if(inside)for(const frame of frames)if(!frame.loaded&&frame.world.distanceTo(camPos)<26)load(frame);broadcast?.update(camPos,inside);}});
+  update:(camPos,inside)=>{for(const frame of frames){const d=inside?frame.world.distanceTo(camPos):1e9;if(!frame.loaded&&d<20)load(frame);else if(frame.loaded&&d>32)unload(frame);}broadcast?.update(camPos,inside);}});
 
  // Outside: plaster walls around a single doorway, a portico of four columns and a cornice.
  const plaster=new T.MeshStandardMaterial({color:0xffffff,roughness:1,emissive:0xffffff,emissiveIntensity:.35});
@@ -86,12 +86,19 @@ window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{},camera=null
    let clear=0,solid=0,light=0;for(let i=0;i<d.length;i+=4){if(d[i+3]<40){clear++;continue;}solid++;light+=(.2126*d[i]+.7152*d[i+1]+.0722*d[i+2])*d[i+3]/255;}
    return clear>d.length/4*.08&&solid>0&&light/solid>150;}catch{return false;}
  }
+ // Pictures far behind you give their textures back, so a walk down the long gallery never holds them all at once.
+ function unload(frame){
+  frame.loaded=false;frame.token=(frame.token||0)+1;const file=frame.picture.file;
+  frame.mesh.material.map=null;frame.mesh.material.color.set(0xdedede);frame.mesh.material.needsUpdate=true;frame.backing.material=matMaterial;
+  if(!frames.some(f=>f.loaded&&f.picture.file===file)){const t=textures.get(file);textures.delete(file);t?.then(texture=>texture?.dispose());}
+ }
  function load(frame){
   frame.loaded=true;const file=frame.picture.file;
   // The WebP copy of the photograph first (showroomAssets.web), the original if it is missing.
   const ready=texture=>{texture.colorSpace=T.SRGBColorSpace;texture.anisotropy=4;return texture;},light=window.showroomAssets?.web(file)||file;
   if(!textures.has(file))textures.set(file,new Promise(resolve=>loader.load(light,texture=>resolve(ready(texture)),undefined,()=>light===file?resolve(null):loader.load(file,texture=>resolve(ready(texture)),undefined,()=>resolve(null)))));
-  textures.get(file).then(texture=>{if(!texture)return;frame.mesh.material.map=texture;frame.mesh.material.color.set(0xffffff);frame.mesh.material.needsUpdate=true;
+  const token=frame.token=(frame.token||0)+1;
+  textures.get(file).then(texture=>{if(!texture||!frame.loaded||frame.token!==token)return;frame.mesh.material.map=texture;frame.mesh.material.color.set(0xffffff);frame.mesh.material.needsUpdate=true;
    if(seeThroughAndLight(texture.image))frame.backing.material=darkMat; // a light graphic on a transparent ground would vanish on white
    fit(frame,texture.image.width/texture.image.height);onChange();});
  }
