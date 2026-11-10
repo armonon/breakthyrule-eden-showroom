@@ -150,13 +150,13 @@ async function loadSettings() {
   const s = await api('settings'), owner = me.role === 'owner';
   $('s-size').checked = s.launch.sizeChartsVerified; $('s-ship').checked = s.launch.shippingTaxConfigured; $('s-relic').checked = s.launch.relicPoliciesPublished;
   for (const k of ['contents', 'condition', 'sizing', 'fulfillment']) $('s-' + k).value = s.relicPolicies[k] || '';
-  $('s-notice').value = s.notice || '';
+  $('s-notice').value = s.notice || ''; $('s-shipping').value = s.shippingNote || ''; $('s-returns').value = s.returnsNote || '';
   $('settings-form').querySelectorAll('input,textarea,button').forEach(x => x.disabled = !owner);
 }
 $('settings-form').addEventListener('submit', async e => {
   e.preventDefault();
   try { await api('settings', { launch: { sizeChartsVerified: $('s-size').checked, shippingTaxConfigured: $('s-ship').checked, relicPoliciesPublished: $('s-relic').checked },
-    relicPolicies: Object.fromEntries(['contents', 'condition', 'sizing', 'fulfillment'].map(k => [k, $('s-' + k).value])), notice: $('s-notice').value }); $('s-status').textContent = 'Saved.'; }
+    relicPolicies: Object.fromEntries(['contents', 'condition', 'sizing', 'fulfillment'].map(k => [k, $('s-' + k).value])), notice: $('s-notice').value, shippingNote: $('s-shipping').value, returnsNote: $('s-returns').value }); $('s-status').textContent = 'Saved.'; }
   catch (err) { $('s-status').textContent = err.message; }
 });
 async function loadStaff() {

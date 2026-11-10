@@ -10,13 +10,13 @@
  <link rel="stylesheet" href="/site/site.css?v=2">
  <link rel="stylesheet" href="/site/codex.css?v=1">
  <link rel="stylesheet" href="/site/folios.css?v=12">
- <link rel="stylesheet" href="/site/commerce.css?v=3">
+ <link rel="stylesheet" href="/site/commerce.css?v=5">
  <link rel="stylesheet" href="/site/lab.css?v=1">
  <link rel="stylesheet" href="/site/lab-pages.css?v=1">
  <link rel="stylesheet" href="/site/lab-admin.css?v=1">
  <script defer src="/site/config.js?v=1"></script>
- <script defer src="/site/site.js?v=6"></script>
- <script type="module" src="/site/lab-admin.js?v=2"></script>
+ <script defer src="/site/site.js?v=7"></script>
+ <script type="module" src="/site/lab-admin.js?v=3"></script>
 </head>
 <body data-page="lab-admin">
  <main class="wrap lab-admin">
@@ -107,6 +107,8 @@
      <label>Fulfilment policy <textarea id="s-fulfillment" rows="2" maxlength="1200"></textarea></label>
      <label class="check"><input type="checkbox" id="s-relic"> Publish the Relic Box policies</label>
      <label>Notice on the Lab page <input id="s-notice" maxlength="280"></label>
+     <label>Shipping note (shown under Add to cart) <input id="s-shipping" maxlength="400" placeholder="e.g. Ships in a recycled mailer within the US"></label>
+     <label>Returns note (shown under Add to cart) <input id="s-returns" maxlength="400" placeholder="Your returns policy, in one line"></label>
      <button class="solid" type="submit">Save settings</button>
      <p class="fine" id="s-status" role="status"></p>
     </form>

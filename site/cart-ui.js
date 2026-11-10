@@ -27,6 +27,7 @@ drawer.append(
     h('div', { className: 'cart-row' }, h('span', { textContent: 'Subtotal' }), subtotal),
     h('p', { className: 'fine', textContent: 'Shipping and any taxes are calculated at checkout. Card details are handled by Stripe and never touch our servers.' }),
     h('label', { className: 'cart-note' }, h('span', { textContent: 'Note' }), note),
+    h('div', { className: 'cart-upsell', id: 'cart-upsell', hidden: true }),
     status, checkout,
     h('a', { className: 'cart-continue', href: '/lab', textContent: 'Keep building in the Lab ↗' }))
 );
@@ -60,12 +61,19 @@ function render(view = cart.view()) {
       h('span', { className: 'cart-price', textContent: money(l.totalCents) }));
   }));
 }
-cart.subscribe(render); render();
+// One gentle suggestion: The Trinity, when it isn't in the cart yet.
+function renderUpsell(view = cart.view()) {
+  const box = drawer.querySelector('#cart-upsell');
+  const show = view.lines.length > 0 && !view.lines.some(l => l.item.product === 'trinity');
+  box.hidden = !show; if (!show) return;
+  box.replaceChildren(h('span', {}, h('strong', { textContent: 'The Trinity' }), ' — three tees, one bundle, $60.'), h('a', { href: '/lab#trinity', textContent: 'Add one ↗' }));
+}
+cart.subscribe(render); cart.subscribe(renderUpsell); render(); renderUpsell();
 
 function openCart() { if (!drawer.open) drawer.showModal(); status.textContent = ''; }
 button.onclick = openCart;
 close.onclick = () => drawer.close();
-drawer.addEventListener('click', e => { if (e.target === drawer) drawer.close(); });
+drawer.addEventListener('click', e => { if (e.target === drawer || e.target.closest('a')) drawer.close(); });
 document.addEventListener('lab:open-cart', openCart);
 
 // One checkout key per cart state, so a double click or a retry never opens two checkouts.

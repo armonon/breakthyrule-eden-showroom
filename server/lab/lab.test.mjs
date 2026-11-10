@@ -94,7 +94,10 @@ test('picked graphics: validated against the archive, front up to 3, one big bac
   assert.deepEqual(n.item.picks, { front: [a, b, c], back: [e] });
   assert.equal(priceItem(n.item).unitCents, 6000);
   const spec = describeItem(n.item).spec.join(' | ');
-  assert.match(spec, /Front: .+, .+, .+/); assert.match(spec, /Back: .+ — enlarged, up to 18 × 20 in/);
+  assert.match(spec, /Front: .+, .+, .+/); assert.match(spec, /Back: .+ — full back, up to 18 × 20 in/);
+  const med = normalizeItem(garment({ artwork: 'pick', picks: { back: [e] }, backSize: 'medium' }), { artworkPool: POOL }).item;
+  assert.match(describeItem(med).spec.join(' | '), /medium, up to 12 × 13 in/);
+  assert.equal(normalizeItem(garment({ backSize: 'giant' }), { artworkPool: POOL }).item.backSize, 'full');
   assert.equal(normalizeItem(garment({ artwork: 'pick', picks: { front: [], back: ['nope'] } }), { artworkPool: POOL }).ok, false);
 });
 test('random draws never place a sleeve print; back draws put one graphic on the back', () => {

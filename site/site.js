@@ -16,6 +16,8 @@
  const enter=el('a',{className:'enter-showroom',href:'/showroom'},el('span',{textContent:'Enter the 3D showroom'}),el('span',{textContent:'↗',ariaHidden:'true'}));
  header.append(brand,nav,enter);
  document.body.prepend(header);
+ // About opens the panel from the codex cover; pages without the cover link to it.
+ addEventListener('load',()=>{if(!nav.querySelector('.btr-about-link'))nav.append(el('a',{className:'btr-about-link',href:'/?about=1',textContent:'About'}));});
 
  const footer=el('footer',{className:'site-foot'});
  footer.append(

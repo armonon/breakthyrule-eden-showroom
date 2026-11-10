@@ -17,7 +17,8 @@ const PROD_IDS = PRODUCTION_STATUSES.map(s => s.id);
 const DEFAULT_SETTINGS = {
   launch: { sizeChartsVerified: false, relicPoliciesPublished: false, shippingTaxConfigured: false },
   relicPolicies: { contents: '', condition: '', sizing: '', fulfillment: '' },
-  notice: ''
+  notice: '',
+  shippingNote: '', returnsNote: '' // shown under Add to cart only when filled in
 };
 
 export function createLab({ store, env = {}, stripe = null, artworkPool = [], now = () => Date.now() }) {
@@ -45,7 +46,7 @@ export function createLab({ store, env = {}, stripe = null, artworkPool = [], no
       checkout: { available: !reasons.length, provider, mode, reasons },
       launch: set.launch,
       relicPolicies: set.launch.relicPoliciesPublished ? set.relicPolicies : null,
-      notice: set.notice,
+      notice: set.notice, shippingNote: set.shippingNote || '', returnsNote: set.returnsNote || '',
       slots, skus
     };
   }
@@ -431,6 +432,8 @@ export function createLab({ store, env = {}, stripe = null, artworkPool = [], no
       if (patch.launch) for (const k of Object.keys(DEFAULT_SETTINGS.launch)) if (k in patch.launch) s.launch = { ...s.launch, [k]: !!patch.launch[k] };
       if (patch.relicPolicies) for (const k of Object.keys(DEFAULT_SETTINGS.relicPolicies)) if (k in patch.relicPolicies) s.relicPolicies = { ...s.relicPolicies, [k]: clean(patch.relicPolicies[k], 1200) };
       if ('notice' in patch) s.notice = clean(patch.notice, 280);
+      if ('shippingNote' in patch) s.shippingNote = clean(patch.shippingNote, 400);
+      if ('returnsNote' in patch) s.returnsNote = clean(patch.returnsNote, 400);
       if (s.launch.relicPoliciesPublished && Object.values(s.relicPolicies).some(v => !v)) throw new LabError(400, 'bad_request', 'Fill in all four Relic Box policies before publishing them.');
       return s;
     });

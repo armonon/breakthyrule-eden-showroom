@@ -64,3 +64,6 @@ body[data-page^=lab] .site-top .btr-header-button,body[data-page=reliquary] .sit
 .thumb-mark{width:100%;height:100%;display:grid;place-content:center;text-align:center;background:#16120f;color:#efe6d4}
 .thumb-mark span{font-family:'Pirata One',serif;font-size:30px;line-height:1;color:#e0695b}
 .thumb-mark b{font:600 9px 'DM Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase}
+.cart-upsell{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 12px;padding:10px 12px;border:1px dashed #6b5a44;font-family:'Cormorant Garamond',serif;font-size:16px;color:#d9ccb6}
+.cart-upsell a{color:#f1c56b;white-space:nowrap;text-decoration:underline}
+.test-badge,.pill{font-size:12px}

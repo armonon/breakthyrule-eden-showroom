@@ -125,6 +125,24 @@ The draft previews share the `garment-lab-preview` store. It holds placeholder T
 studio account (`owner@lab.test`), loaded with `netlify blobs:set garment-lab-preview …`. Wipe or replace it any time;
 it is never read by production.
 
+## Lab page layout (after the review pass)
+
+- Compact header with tabs: Build a garment / The Relic Box / The Trinity / All offerings (`#relic`, `#trinity`,
+  `#catalog` open a tab directly).
+- Steps: Construction → Garment → Color → Artwork → Size & fit → Review. The price shows from the first click (a
+  placeholder size prices the review); Add to cart asks for the size if it is still missing.
+- Phones: the 3D preview pins to the top while you choose, a bar at the bottom shows the price and Add to cart, and
+  the move/resize controls sit in the Artwork step.
+- Next to the preview: thumbnails of the actual front and back prints (click to turn the garment), a back-size switch
+  (Full 18×20 / Medium 12×13 in), notes for Artist's choice and Random colour (no fake print, no colour cycling).
+  The garment stops spinning once someone starts choosing.
+- Picker: categories (From the collection, Faith, Eyes, Love & desire, Chaos, Nature, Mind, Words), tidied names,
+  explicit graphics hidden behind a toggle, arrow-key navigation (one tab stop).
+- Under Add to cart: facts only (made by hand in LA, blank or 100% cotton, made to order, Stripe), plus the shipping
+  and returns notes the studio writes in Launch settings. "Copy a link to this design" shares `?design=…`.
+- A strip of worn photos; the cart suggests The Trinity when it isn't in the cart.
+- The Lab no longer loads the graphic strip or the codex cover; the About link falls back to `/?about=1`.
+
 ## Adding new graphics
 
 1. Drop the new PNG/JPG files into `~/Downloads/breakthyrule/GRAPHICS/` (the file name becomes the graphic's name).

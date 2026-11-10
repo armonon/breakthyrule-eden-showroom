@@ -3,10 +3,10 @@
 // price a browser sends.
 import {
   OFFERINGS, CONSTRUCTIONS, COLORS, ARTWORK, SIZES, FITS, RELIC_BOX, TRINITY,
-  CUSTOM_COLOR_MAX, MAX_QUANTITY, GARMENT_TYPES, PRINT_LIMITS, PICK_LIMITS, BACK_PRINT_IN
+  CUSTOM_COLOR_MAX, MAX_QUANTITY, GARMENT_TYPES, PRINT_LIMITS, PICK_LIMITS, BACK_SIZES
 } from './catalog.mjs';
 import { ARTWORK_POOL } from './artwork-pool.mjs';
-const GRAPHIC_NAME = Object.fromEntries(ARTWORK_POOL.map(a => [a.id, a.name]));
+const GRAPHIC_NAME = Object.fromEntries(ARTWORK_POOL.map(a => [a.id, a.display || a.name]));
 export const graphicName = id => GRAPHIC_NAME[id] || id;
 import { drawArt, drawChaos, isSeed } from './random.mjs';
 
@@ -58,7 +58,8 @@ export function normalizeItem(raw, { artworkPool = [] } = {}) {
       if (!picks.front.length && !picks.back.length) return { ok: false, errors: ['Pick at least one graphic.'] };
     }
     const print = normalizePrint(raw.print);
-    return { ok: true, item: { product, construction, garment, size, fit, color, customColor, artwork, chaos, seed: art ? seed : null, art, picks, print, quantity } };
+    const backSize = BACK_SIZES[raw.backSize] ? raw.backSize : 'full';
+    return { ok: true, item: { product, construction, garment, size, fit, color, customColor, artwork, chaos, seed: art ? seed : null, art, picks, print, backSize, quantity } };
   }
 
   if (product === 'relic-box') {
@@ -133,7 +134,8 @@ export function describeItem(item) {
     if (item.art) spec.push(`Direction: ${item.art.category} / ${item.art.secondary} · ${item.art.placement} · ${item.art.technique} (seed ${item.seed})`);
     const sides = sidesFor(item);
     if (sides.front.length) spec.push('Front: ' + sides.front.map(graphicName).join(', '));
-    if (sides.back.length) spec.push(`Back: ${sides.back.map(graphicName).join(', ')} — enlarged, up to ${BACK_PRINT_IN.w} × ${BACK_PRINT_IN.h} in`);
+    const bs = BACK_SIZES[item.backSize] || BACK_SIZES.full;
+    if (sides.back.length) spec.push(`Back: ${sides.back.map(graphicName).join(', ')} — ${bs.name.toLowerCase()}, up to ${bs.w} × ${bs.h} in`);
     if (item.chaos) spec.push('Drawn by Total Chaos');
     if (!isDefaultPrint(item.print)) {
       const p = item.print, where = [];

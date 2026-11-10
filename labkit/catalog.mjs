@@ -67,6 +67,10 @@ export const ARTWORK = {
 // Graphics a customer may pick per side, and the back print's maximum size (inches, width × height).
 export const PICK_LIMITS = { front: 3, back: 1 };
 export const BACK_PRINT_IN = { w: 18, h: 20 };
+export const BACK_SIZES = {
+  full: { id: 'full', name: 'Full back', w: 18, h: 20 },
+  medium: { id: 'medium', name: 'Medium', w: 12, h: 13 }
+};
 
 // Sizes offered. Measurements are NOT published until verified against the real blanks and patterns.
 export const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];

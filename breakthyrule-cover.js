@@ -324,7 +324,8 @@ const coverNav=el('nav',{className:'btr-cover-nav'},[
   decorateSiteHeader();
   // The cover greets a visitor on the home page once per visit; the CODEX button brings it back anywhere.
   let seen=false;try{seen=sessionStorage.getItem('btr-cover-seen')==='1';sessionStorage.setItem('btr-cover-seen','1');}catch{}
-  if(params.has('cover')||(sitePage==='home'&&!seen&&!params.has('nocover')))openCover();else cover.hidden=true;
+  if(params.has('about')){cover.hidden=true;openAbout();}
+  else if(params.has('cover')||(sitePage==='home'&&!seen&&!params.has('nocover')))openCover();else cover.hidden=true;
  }else{
   decorateHeader();
   if(params.has('nocover'))cover.hidden=true;else openCover();

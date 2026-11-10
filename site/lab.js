@@ -1,30 +1,30 @@
 // The Garment Lab page: six-step configurator, the Altar of Chance, The Relic Box, The Trinity, catalog.
-import { CONSTRUCTIONS, OFFERINGS, GARMENT_TYPES, COLORS, ARTWORK, SIZES, FITS, RELIC_BOX, TRINITY, SIZE_CHART, PICK_LIMITS } from '/labkit/catalog.mjs';
+import { CONSTRUCTIONS, OFFERINGS, GARMENT_TYPES, COLORS, ARTWORK, SIZES, FITS, RELIC_BOX, TRINITY, SIZE_CHART, PICK_LIMITS, BACK_SIZES } from '/labkit/catalog.mjs';
 import { normalizeItem, priceItem, describeItem, sidesFor } from '/labkit/pricing.mjs';
 import { drawArt, drawChaos, newSeed } from '/labkit/random.mjs';
-import { artworkThumb, ARTWORK_POOL } from '/labkit/artwork-pool.mjs';
+import { artworkThumb, ARTWORK_POOL, PICKER_TAGS } from '/labkit/artwork-pool.mjs';
 import { itemSketch } from '/site/garment-sketch.mjs';
 import { cart, POOL, labStatus, money } from '/site/cart-store.mjs';
 
 const $ = id => document.getElementById(id);
 const h = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); for (const k of kids.flat()) if (k != null) n.append(k); return n; };
-const nameOf = Object.fromEntries(ARTWORK_POOL.map(a => [a.id, a.name]));
+const nameOf = Object.fromEntries(ARTWORK_POOL.map(a => [a.id, a.display || a.name]));
 const params = new URLSearchParams(location.search);
 
 let status = null;
-// Real 3D blanks (Ghost Studio, converted to meshopt). Shorts and long sleeves fall back to the drawing.
+// Real 3D blanks (Ghost Studio, converted to meshopt). Shorts and long sleeves show a panel instead.
 const BLANKS = { tee: '/models/blanks/tee.glb', hoodie: '/models/blanks/hoodie.glb', crewneck: '/models/blanks/crewneck.glb', sweatpants: '/models/blanks/pants.glb' };
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const three = { viewer: null, loaded: null, loading: null, failed: false, wanted: false, hue: 0, timer: 0 };
-const state = { construction: 'canvas', garment: 'tee', size: null, fit: 'blank', color: 'black', customColor: '', artwork: 'artists-choice', seed: null, chaos: false, preChaos: null, editId: null, side: 'front', print: { x: 0, y: 0, scale: 1 }, picks: { front: [], back: [] } };
+const state = { construction: 'canvas', garment: 'tee', size: null, fit: 'blank', color: 'black', customColor: '', artwork: 'artists-choice', seed: null, chaos: false, preChaos: null, editId: null, side: 'front', print: { x: 0, y: 0, scale: 1 }, picks: { front: [], back: [] }, backSize: 'full' };
 
 // ---------- helpers ----------
 const slotInfo = (c, g) => status?.slots?.[`${c}:${g}`] || null;
 const skuInfo = sku => status?.skus?.[sku] || null;
 function availabilityText(info) {
-  if (!status) return { text: 'Availability confirmed at checkout', open: true };
-  if (!info || info.available <= 0) return { text: 'At capacity', open: false };
-  return { text: info.leadTimeDays != null ? `Open · about ${info.leadTimeDays} days to make` : 'Open for orders', open: true };
+  if (!status) return { text: '', open: true };
+  if (!info || info.available <= 0) return { text: 'At capacity — waitlist', open: false };
+  return { text: info.leadTimeDays != null ? `About ${info.leadTimeDays} days to make` : '', open: true };
 }
 function choice(group, value, title, { sub = '', price = '', checked = false, disabled = false, badge = '', swatch = null } = {}) {
   const input = h('input', { type: 'radio', name: group, value, checked, disabled });
@@ -43,7 +43,12 @@ function config() {
   if (state.chaos) c.chaos = true;
   if (state.print.x || state.print.y || state.print.scale !== 1) c.print = { ...state.print };
   if (state.artwork === 'pick') c.picks = { front: [...state.picks.front], back: [...state.picks.back] };
+  if (hasBack()) c.backSize = state.backSize;
   return c;
+}
+const hasBack = () => sidesFor({ artwork: state.artwork, art: currentArt(), picks: state.artwork === 'pick' ? state.picks : null }).back.length > 0;
+// The price shows from the first click: until a size is chosen the review prices a placeholder size.
+function displayConfig() { return { ...config(), size: state.size || 'M' };
 }
 const currentArt = () => state.artwork === 'random-experimental' && state.seed ? drawArt(state.seed, POOL) : null;
 
@@ -99,7 +104,7 @@ function fabricColor() {
   if (state.color === 'black') return new T.Color('#1b1a19');
   if (state.color === 'white') return new T.Color('#eeece6');
   if (state.color === 'custom') return new T.Color(typeof CSS !== 'undefined' && state.customColor && CSS.supports('color', state.customColor) ? state.customColor : '#9c8f7a');
-  return new T.Color().setHSL(three.hue, .55, .5); // random: the house picks — cycle through hues
+  return new T.Color('#b9b0a2'); // random: the house picks — shown undyed, with a note
 }
 // ---------- artwork printed onto the 3D blank ----------
 // Planar projection in the fabric shader, in garment space: the front gets the chosen composition, the back one
@@ -123,7 +128,7 @@ function sidePlan() {
   }
   if (state.artwork === 'minimal') return { front: { kind: 'minimal' }, back: null, small: true };
   if (state.artwork === 'expressive') return { front: { kind: 'expressive' }, back: { kind: 'expressive' } };
-  return { front: { kind: 'choice' }, back: null };
+  return { front: null, back: null, note: "Artist's choice — the artist decides the print. You'll see it when it's made." };
 }
 async function sideCanvas(plan, inkLight, back) {
   const c = document.createElement('canvas'); c.width = back ? 922 : 1024; c.height = 1024; const x = c.getContext('2d'), W = c.width, H = c.height;
@@ -196,14 +201,15 @@ async function printArt() {
   let back;
   if (kind === 'pants') back = new T.Vector4(min.x + size.x * .28, min.y + size.y * .62, size.x * .13, size.x * .13 / .9);
   else {
-    let hw = 9 * IN, hh = 10 * IN;
+    const bs = BACK_SIZES[state.backSize] || BACK_SIZES.full;
+    let hw = bs.w / 2 * IN, hh = bs.h / 2 * IN;
     const k = Math.min(1, (size.x * .33) / hw); hw *= k; hh *= k; // stays on the body, off the sleeves
     let top = max.y - (BACK_TOP_GAP[kind] ?? .08), cy = top - hh;
     if (cy - hh < min.y + .03) { const room = (top - min.y - .03) / 2; const s2 = room / hh; hw *= s2; hh *= s2; cy = top - hh; }
     back = new T.Vector4(min.x + size.x * .5, cy, hw, hh);
   }
   const fc = fabricColor(), light = fc ? (fc.r * .3 + fc.g * .59 + fc.b * .11) < .35 : true;
-  const key = model.uuid + JSON.stringify(plan) + light + JSON.stringify(pr);
+  const key = model.uuid + JSON.stringify(plan) + light + JSON.stringify(pr) + state.backSize;
   if (key === lastPrint) { printToken--; return; }
   lastPrint = key;
   const texKey = model.uuid + JSON.stringify(plan) + light;
@@ -213,6 +219,7 @@ async function printArt() {
     if (token !== printToken) { lastPrint = ''; return; }
     for (const t of [three.texF, three.texB]) if (t && t !== texF && t !== texB) t.dispose();
     three.texF = texF; three.texB = texB; three.texKey = texKey;
+    renderPrintSides();
   }
   for (const [mesh, m] of fabric) {
     const u = decalMaterial(m);
@@ -236,8 +243,6 @@ function tint() {
   });
   three.viewer.redraw();
   printArt();
-  clearInterval(three.timer);
-  if (state.color === 'random' && !reduceMotion) three.timer = setInterval(() => { three.hue = (three.hue + .07) % 1; tint(); }, 900);
 }
 async function ensure3D() {
   const url = BLANKS[state.garment];
@@ -258,12 +263,25 @@ function renderNone() {
   const tiles = [...s.front.map(id => ['Front', id]), ...s.back.map(id => ['Back · up to 18 × 20 in', id])];
   $('stage-none-art').replaceChildren(...tiles.map(([side, id]) => h('figure', {}, h('img', { src: artworkThumb(id), alt: nameOf[id] || id }), h('figcaption', { textContent: `${side}: ${nameOf[id] || id}` }))));
 }
+// Small tiles of the actual front and back prints next to the preview; click one to turn the garment.
+function renderPrintSides() {
+  const tile = (side, tex) => {
+    const b = h('button', { type: 'button', className: 'print-side' + (state.side === side ? ' on' : '') }, h('span', { textContent: side === 'front' ? 'Front' : 'Back' }));
+    if (tex?.image) { const img = h('img', { alt: '' }); img.src = tex.image.toDataURL('image/webp', .7); b.prepend(img); } else b.prepend(h('i', { textContent: 'No print' }));
+    b.setAttribute('aria-label', `Show the ${side}`); b.onclick = () => setSide(side); return b;
+  };
+  $('print-sides').replaceChildren(tile('front', three.texF), tile('back', three.texB));
+}
 async function renderThree() {
   const has3D = !!BLANKS[state.garment] && !three.failed;
   $('stage-3d').hidden = !has3D; $('stage-none').hidden = has3D;
   $('print-place').hidden = !has3D;
   $('stage-label').textContent = has3D ? 'The real blank in your colour with your artwork laid on. A preview — every print is placed by hand.' : '';
-  if (!has3D) { clearInterval(three.timer); renderNone(); return; }
+  const plan = sidePlan(), notes = [plan.note, state.color === 'random' ? 'Random colour — the house picks it; shown here undyed.' : ''].filter(Boolean);
+  $('stage-note').hidden = !notes.length || !has3D; $('stage-note').textContent = notes.join(' ');
+  $('back-size').hidden = !hasBack() || !has3D; $('print-sides').hidden = !has3D;
+  $('back-size').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.size === state.backSize)));
+  if (!has3D) { renderNone(); return; }
   if (!three.wanted) return; // loads when the stage scrolls into view
   if (await ensure3D()) { tint(); three.viewer.setZoom($('zoom').value / 100); }
   else if (three.failed) renderThree();
@@ -298,32 +316,51 @@ $('print-drag').addEventListener('pointerup', () => { moveDrag = null; });
 $('print-drag').addEventListener('wheel', e => { e.preventDefault(); setPrint({ scale: state.print.scale * (e.deltaY > 0 ? .95 : 1.05) }); }, { passive: false });
 
 // ---------- the graphic picker ----------
-let pickSide = 'front';
+let pickSide = 'front', pickTag = 'All', pickFocus = 0;
+const visibleGraphics = () => {
+  const q = $('pick-search').value.trim().toLowerCase(), explicit = $('pick-explicit').checked;
+  return ARTWORK_POOL.filter(a => (explicit || !a.explicit)
+    && (pickTag === 'All' || (pickTag === 'From the collection' ? a.collection : a.tags.includes(pickTag)))
+    && (!q || (a.display || a.name).toLowerCase().includes(q) || a.name.toLowerCase().includes(q)))
+    .sort((a, b) => (b.collection ? 1 : 0) - (a.collection ? 1 : 0) || (a.display || a.name).localeCompare(b.display || b.name));
+};
 function renderPicker() {
   const on = state.artwork === 'pick';
   $('picker').hidden = !on; if (!on) return;
   $('pick-front').setAttribute('aria-selected', String(pickSide === 'front')); $('pick-back').setAttribute('aria-selected', String(pickSide === 'back'));
   $('pick-front-n').textContent = `${state.picks.front.length}/${PICK_LIMITS.front}`; $('pick-back-n').textContent = `${state.picks.back.length}/${PICK_LIMITS.back}`;
+  $('pick-tags').replaceChildren(...['All', ...PICKER_TAGS].map(t => { const b = h('button', { type: 'button', textContent: t }); b.setAttribute('aria-pressed', String(t === pickTag)); b.onclick = () => { pickTag = t; pickFocus = 0; renderPicker(); }; return b; }));
   const chip = (side, id) => { const b = h('button', { type: 'button', className: 'pick-chip', title: 'Remove' }, h('img', { src: artworkThumb(id), alt: '' }), h('span', { textContent: `${side === 'front' ? 'Front' : 'Back'}: ${nameOf[id] || id}` }), h('b', { textContent: '×', ariaHidden: 'true' }));
     b.setAttribute('aria-label', `Remove ${nameOf[id] || id} from the ${side}`); b.onclick = () => togglePick(side, id); return b; };
   $('pick-chosen').replaceChildren(...state.picks.front.map(id => chip('front', id)), ...state.picks.back.map(id => chip('back', id)));
-  const q = $('pick-search').value.trim().toLowerCase();
-  const chosen = new Set(state.picks[pickSide]);
-  const list = ARTWORK_POOL.filter(a => !q || a.name.toLowerCase().includes(q));
-  $('pick-grid').replaceChildren(...(list.length ? list.map(a => {
-    const b = h('button', { type: 'button', className: 'pick-tile' + (chosen.has(a.id) ? ' on' : ''), title: a.name, role: 'option' }, h('img', { src: artworkThumb(a.id), alt: '', loading: 'lazy', decoding: 'async' }), h('span', { textContent: a.name }));
-    b.setAttribute('aria-selected', String(chosen.has(a.id))); b.setAttribute('aria-label', a.name);
-    b.onclick = () => togglePick(pickSide, a.id); return b;
-  }) : [h('p', { className: 'fine', textContent: 'No graphic by that name.' })]));
+  const chosen = new Set(state.picks[pickSide]), list = visibleGraphics();
+  pickFocus = Math.min(pickFocus, Math.max(0, list.length - 1));
+  $('pick-grid').replaceChildren(...(list.length ? list.map((a, i) => {
+    const b = h('button', { type: 'button', className: 'pick-tile' + (chosen.has(a.id) ? ' on' : ''), title: a.display, role: 'option', tabIndex: i === pickFocus ? 0 : -1 }, h('img', { src: artworkThumb(a.id), alt: '', loading: 'lazy', decoding: 'async' }), h('span', { textContent: a.display }));
+    b.setAttribute('aria-selected', String(chosen.has(a.id))); b.setAttribute('aria-label', a.display + (a.collection ? ' (from the collection)' : ''));
+    b.dataset.index = i; b.onclick = () => { pickFocus = i; togglePick(pickSide, a.id); }; return b;
+  }) : [h('p', { className: 'fine', textContent: 'No graphic matches. Try another word or category.' })]));
 }
+// Arrow keys move around the grid (one tab stop for the whole grid).
+$('pick-grid').addEventListener('keydown', e => {
+  const tiles = [...$('pick-grid').querySelectorAll('.pick-tile')]; if (!tiles.length) return;
+  const i = tiles.indexOf(document.activeElement); if (i < 0) return;
+  const cols = Math.max(1, Math.round($('pick-grid').clientWidth / tiles[0].getBoundingClientRect().width));
+  const d = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols, Home: -i, End: tiles.length - 1 - i }[e.key];
+  if (d === undefined) return;
+  e.preventDefault(); const n = Math.max(0, Math.min(tiles.length - 1, i + d));
+  tiles[i].tabIndex = -1; tiles[n].tabIndex = 0; tiles[n].focus(); pickFocus = n;
+});
+$('pick-explicit').addEventListener('change', () => { pickFocus = 0; renderPicker(); });
 function togglePick(side, id) {
   const list = state.picks[side], i = list.indexOf(id), limit = PICK_LIMITS[side];
   if (i >= 0) list.splice(i, 1);
   else if (list.length >= limit) { if (limit === 1) list.splice(0, 1, id); else { $('pick-hint').textContent = `The front holds up to ${limit} graphics — remove one first.`; return; } }
   else list.push(id);
-  $('pick-hint').textContent = 'Click graphics to add them to the front (up to three). Switch to Back for one big print, up to 18 × 20 in. Click again to remove.';
+  $('pick-hint').textContent = 'Click graphics to add them to the front (up to three). Switch to Back for one big print. Click again to remove. Arrow keys move around the grid.';
   if (side === 'back' && list.length) setSide('back'); else if (side === 'front' && list.length) setSide('front');
   renderPicker(); renderStage(); renderReview();
+  $('pick-grid').querySelector('.pick-tile[tabindex="0"]')?.focus({ preventScroll: true });
 }
 $('pick-front').onclick = () => { pickSide = 'front'; renderPicker(); };
 $('pick-back').onclick = () => { pickSide = 'back'; renderPicker(); };
@@ -339,25 +376,41 @@ function renderStage() {
   renderThree();
 }
 function renderReview() {
-  const n = normalizeItem(config(), { artworkPool: POOL });
+  const n = normalizeItem(displayConfig(), { artworkPool: POOL });
   const err = $('lab-error'), add = $('add-to-cart');
   if (!n.ok) {
     $('review-spec').replaceChildren(h('li', { className: 'pending', textContent: n.errors[0] }));
-    $('breakdown').replaceChildren(); $('total').textContent = '—'; $('review-timeline').textContent = '';
-    add.disabled = true; $('waitlist').hidden = true; err.textContent = '';
-    return;
+    $('breakdown').replaceChildren(); $('total').textContent = '—';
+    add.disabled = false; add.textContent = 'Add to cart'; $('waitlist').hidden = true;
+    $('mbar-price').textContent = '—'; $('mbar-title').textContent = n.errors[0];
+    renderTrust(null); return;
   }
   const p = priceItem(n.item), d = describeItem(n.item);
-  $('review-spec').replaceChildren(h('li', { className: 'title', textContent: d.title }), ...d.spec.map(s => h('li', { textContent: s })));
+  const spec = d.spec.map(s => s.startsWith('Size:') && !state.size ? 'Size: choose in step V' : s);
+  $('review-spec').replaceChildren(h('li', { className: 'title', textContent: d.title }), ...spec.map(s => h('li', { className: s.startsWith('Size: choose') ? 'pending' : '', textContent: s })));
   $('breakdown').replaceChildren(...p.lines.map(l => h('tr', {}, h('th', { scope: 'row', textContent: l.label }), h('td', { textContent: l.cents ? money(l.cents) : 'included' }))));
   $('total').textContent = money(p.unitCents);
   const info = slotInfo(n.item.construction, n.item.garment), a = availabilityText(info);
-  $('review-timeline').textContent = info?.leadTimeDays != null ? `Estimated production: about ${info.leadTimeDays} days after payment, then shipping.` : status ? 'Production time is confirmed after your order.' : '';
   add.disabled = !a.open;
   add.textContent = state.editId ? 'Save changes' : a.open ? `Add to cart — ${money(p.unitCents)}` : 'At capacity';
   $('cancel-edit').hidden = !state.editId;
   $('waitlist').hidden = a.open;
-  err.textContent = '';
+  $('mbar-title').textContent = d.title; $('mbar-price').textContent = money(p.unitCents);
+  $('mbar-add').disabled = !a.open; $('mbar-add').textContent = state.editId ? 'Save' : a.open ? 'Add to cart' : 'At capacity';
+  if (!err.dataset.sticky) err.textContent = '';
+  renderTrust(info);
+}
+// What the customer should know before buying — only facts and what the studio has written in its settings.
+function renderTrust(info) {
+  const items = [
+    'Printed by hand in our Los Angeles studio.',
+    state.construction === 'cut-sew' ? 'Cut and sewn from scratch in 100% cotton.' : 'Printed on a blank chosen to fit your size and colour — it may be vintage or new.',
+    info?.leadTimeDays != null ? `Made to order — about ${info.leadTimeDays} days to make, then shipping.` : 'Made to order — the production time is confirmed after you order.',
+    'Secure checkout by Stripe. Shipping and any tax are shown before you pay.'
+  ];
+  if (status?.shippingNote) items.push(status.shippingNote);
+  if (status?.returnsNote) items.push(status.returnsNote);
+  $('trust').replaceChildren(...items.map(t => h('li', { textContent: t })));
 }
 function renderAll() { renderConstruction(); renderGarments(); renderSizes(); renderColors(); renderArt(); renderStage(); renderReview(); }
 const refresh = () => { renderArt(); renderStage(); renderReview(); };
@@ -373,7 +426,7 @@ form.addEventListener('change', e => {
     renderAll(); return;
   }
   if (t.name === 'garment') { state.garment = t.value; leaveChaos(); }
-  if (t.name === 'size') state.size = t.value;
+  if (t.name === 'size') { state.size = t.value; delete $('lab-error').dataset.sticky; $('step-size').classList.remove('needs'); $('lab-error').textContent = ''; }
   if (t.name === 'fit') { state.fit = t.value; leaveChaos(); }
   if (t.name === 'color') { state.color = t.value; leaveChaos(); if (t.value === 'custom' && !state.customColor) state.customColor = $('color-picker').value; renderColors(); if (t.value === 'custom') $('color-picker').focus(); }
   if (t.name === 'artwork') { state.artwork = t.value; if (t.value === 'random-experimental' && !state.seed) state.seed = newSeed(); if (t.value !== 'random-experimental') leaveChaos(); renderArt(); }
@@ -392,11 +445,22 @@ function applyChaos(full = true) {
   if (full) renderAll(); else { renderGarments(); renderSizes(); renderColors(); }
 }
 $('side-front').onclick = () => setSide('front'); $('side-back').onclick = () => setSide('back');
-function setSide(side) { state.side = side; three.viewer?.view(side); $('side-front').setAttribute('aria-pressed', String(side === 'front')); $('side-back').setAttribute('aria-pressed', String(side === 'back')); }
+function setSide(side) { state.side = side; three.viewer?.view(side); $('print-sides').querySelectorAll('.print-side').forEach((b, i) => b.classList.toggle('on', (i === 0) === (side === 'front'))); $('side-front').setAttribute('aria-pressed', String(side === 'front')); $('side-back').setAttribute('aria-pressed', String(side === 'back')); }
 $('zoom').addEventListener('input', renderStage);
+$('back-size').addEventListener('click', e => { const b = e.target.closest('[data-size]'); if (!b) return; state.backSize = b.dataset.size; setSide('back'); renderStage(); renderReview(); });
+// Once someone starts choosing, the garment stops spinning so they can look at it.
+const stopSpin = () => { if (three.viewer?.isAuto()) three.viewer.setAuto(false); };
+$('lab-form').addEventListener('change', stopSpin); $('stage-3d').addEventListener('pointerdown', stopSpin);
 
 form.addEventListener('submit', e => {
   e.preventDefault();
+  if (!state.size) {
+    const err = $('lab-error'); err.textContent = 'Choose your size to add it to the cart.'; err.dataset.sticky = '1';
+    $('step-size').classList.add('needs'); $('step-size').scrollIntoView({ block: 'center' });
+    setTimeout(() => $('opt-size').querySelector('input')?.focus({ preventScroll: true }), 400);
+    return;
+  }
+  delete $('lab-error').dataset.sticky; $('step-size').classList.remove('needs');
   const r = state.editId ? cart.replace(state.editId, config()) : cart.add(config());
   if (!r.ok) { $('lab-error').textContent = r.errors.join(' '); return; }
   const was = state.editId; state.editId = null;
@@ -404,6 +468,7 @@ form.addEventListener('submit', e => {
   document.dispatchEvent(new CustomEvent('lab:open-cart', { detail: { added: r.id } }));
   renderReview();
 });
+$('mbar-add').onclick = () => form.requestSubmit();
 $('cancel-edit').onclick = () => { state.editId = null; history.replaceState(null, '', location.pathname + '#build'); renderReview(); };
 $('waitlist-join').onclick = async () => {
   const email = $('waitlist-email').value.trim();
@@ -473,9 +538,9 @@ function renderCatalog() {
   $('catalog-grid').replaceChildren(...(list.length ? list.map(e => {
     const card = h('a', { className: 'offer', href: e.href }, h('div', { className: 'offer-art' }), h('div', { className: 'offer-body' },
       h('span', { className: 'offer-sub', textContent: e.sub }), h('strong', { textContent: e.title }), h('em', { textContent: money(e.priceCents) }),
-      h('span', { className: 'offer-state ' + (e.available === false ? 'off' : 'on'), textContent: e.available == null ? 'Checked at checkout' : e.available ? 'Available' : 'At capacity / sold out' })));
+      e.available === false ? h('span', { className: 'offer-state off', textContent: 'At capacity / sold out' }) : null));
     card.querySelector('.offer-art').innerHTML = e.art;
-    card.addEventListener('click', ev => { if (e.href.startsWith('?')) { ev.preventDefault(); const p = new URLSearchParams(e.href.split('#')[0]); preselect(p.get('c'), p.get('g')); $('build').scrollIntoView({ behavior: 'smooth' }); } });
+    card.addEventListener('click', ev => { ev.preventDefault(); if (e.href.startsWith('?')) { const p = new URLSearchParams(e.href.split('#')[0]); showTab('build'); preselect(p.get('c'), p.get('g')); $('build').scrollIntoView({ behavior: 'smooth' }); } else showTab(e.href.slice(1)); });
     return card;
   }) : [h('p', { className: 'fine', textContent: 'Nothing matches those filters.' })]));
 }
@@ -487,14 +552,63 @@ function preselect(c, g) {
   leaveChaos(); renderAll();
 }
 
+// On phones the preview is pinned and compact, so the move & resize controls live in the Artwork step.
+const phone = matchMedia('(max-width: 1000px)');
+function placeControls() { const pp = $('print-place'); if (phone.matches) $('step-art').append(pp); else $('stage-label').before(pp); }
+phone.addEventListener('change', placeControls); placeControls();
+
+// ---------- tabs ----------
+const TABS = ['build', 'relic', 'trinity', 'catalog'];
+function showTab(id, push = true) {
+  if (!TABS.includes(id)) id = 'build';
+  for (const t of TABS) { $('tab-' + t).setAttribute('aria-selected', String(t === id)); $(t).hidden = t !== id; }
+  document.body.dataset.labTab = id;
+  if (push) history.replaceState(null, '', location.pathname + location.search + (id === 'build' ? '' : '#' + id));
+  if (id === 'build' && three.viewer) three.viewer.redraw();
+}
+TABS.forEach(t => { $('tab-' + t).onclick = () => showTab(t); });
+document.querySelector('.lab-tabs').addEventListener('keydown', e => {
+  const i = TABS.indexOf(document.activeElement?.id?.replace('tab-', '')); if (i < 0) return;
+  const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key]; if (!d) return;
+  e.preventDefault(); const next = TABS[(i + d + TABS.length) % TABS.length]; showTab(next); $('tab-' + next).focus();
+});
+addEventListener('hashchange', () => showTab(location.hash.slice(1) || 'build', false));
+
+// ---------- share a design ----------
+const b64 = { enc: o => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''), dec: s => JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))))) };
+$('share-design').onclick = async () => {
+  const { quantity, ...design } = config(); void quantity;
+  const url = `${location.origin}/lab?design=${b64.enc(design)}`;
+  try { await navigator.clipboard.writeText(url); $('share-design').textContent = 'Link copied'; }
+  catch { const box = $('share-url') || h('input', { id: 'share-url', className: 'share-url', readOnly: true }); box.value = url; $('share-design').after(box); box.select(); $('share-design').textContent = 'Copy the link below'; }
+  setTimeout(() => { $('share-design').textContent = 'Copy a link to this design'; }, 2500);
+};
+function applyDesign(raw) {
+  const n = normalizeItem({ ...raw, size: raw.size || 'M' }, { artworkPool: POOL }); if (!n.ok) return false;
+  const c = n.item;
+  Object.assign(state, { construction: c.construction, garment: c.garment, size: raw.size ? c.size : null, fit: c.fit, color: c.color, customColor: c.customColor || '', artwork: c.artwork, seed: c.seed, chaos: !!c.chaos, print: c.print, picks: c.picks ? { front: [...c.picks.front], back: [...c.picks.back] } : { front: [], back: [] }, backSize: c.backSize || 'full' });
+  return true;
+}
+
+// ---------- worn by the witnesses (real photos) ----------
+async function renderWorn() {
+  try {
+    const g = await (await fetch('/site/data/gallery.json', { cache: 'no-cache' })).json();
+    const worn = g.items.filter(i => i.category === 'worn').slice(0, 10);
+    if (!worn.length) { document.querySelector('.lab-worn').hidden = true; return; }
+    $('lab-worn').replaceChildren(...worn.map(i => h('a', { href: '/gallery?filter=worn' }, h('img', { src: i.thumb || i.src, alt: i.alt, loading: 'lazy', decoding: 'async' }))));
+  } catch { document.querySelector('.lab-worn').hidden = true; }
+}
+
 // ---------- start ----------
 (async () => {
   const editId = params.get('edit'), line = editId && cart.get(editId);
   if (line?.config?.product === 'garment') {
     const c = line.config;
     Object.assign(state, { construction: c.construction, garment: c.garment, size: c.size, fit: c.fit, color: c.color, customColor: c.customColor || '', artwork: c.artwork, seed: c.seed || null, chaos: !!c.chaos, editId, print: { x: 0, y: 0, scale: 1, ...(c.print || {}) }, picks: { front: [...(c.picks?.front || [])], back: [...(c.picks?.back || [])] } });
-  } else preselect(params.get('c'), params.get('g'));
+  } else if (!(params.get('design') && (() => { try { return applyDesign(b64.dec(params.get('design'))); } catch { return false; } })())) preselect(params.get('c'), params.get('g'));
   renderAll(); renderSpecials(); renderCatalog(); syncPrintControls();
+  showTab(location.hash.slice(1) || 'build', false); renderWorn();
   // Open on the 3D blank once the stage is on screen (nothing heavy loads before that).
   if ('IntersectionObserver' in window && window.THREE) {
     const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); three.wanted = true; renderThree(); } }, { rootMargin: '200px' });
