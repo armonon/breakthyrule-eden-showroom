@@ -78,10 +78,10 @@ checkout from the catalog and ignores anything the browser sends**.
 - **No drawings:** the preview is the 3D blank only; carts, orders and the studio show the garment colour with its
   real graphics; the catalog and the boxes use typographic marks.
 - **Pick your graphics:** a searchable picker of every graphic — up to three on the front, one big print on the back
-  (up to 18 × 20 in). "Keep these graphics & edit" turns a random draw into picks. Validated server-side against
+  (16 × 20 in on every size). "Keep these graphics & edit" turns a random draw into picks. Validated server-side against
   the archive, free.
 - **Big backs, no sleeves:** random draws place Front, Back or Front and back (never sleeves); whenever the back is
-  printed it is one graphic, enlarged to up to 18 × 20 in.
+  printed it is one graphic, enlarged to 16 × 20 in on every size.
 - **Artwork on the 3D blank:** the fabric shader projects the print onto the front / back / sleeve (planar
   projection in garment space, so multi-part garments like the hoodie print across body and pocket). Random art
   prints the drawn graphics; Minimal prints the house cross on the chest; Expressive prints layered marks front and
@@ -134,7 +134,7 @@ it is never read by production.
 - Phones: the 3D preview pins to the top while you choose, a bar at the bottom shows the price and Add to cart, and
   the move/resize controls sit in the Artwork step.
 - Next to the preview: thumbnails of the actual front and back prints (click to turn the garment), a back-size switch
-  (Full 18×20 / Medium 12×13 in), notes for Artist's choice and Random colour (no fake print, no colour cycling).
+  (Full 16×20 / Medium 12×13 in), notes for Artist's choice and Random colour (no fake print, no colour cycling).
   The garment stops spinning once someone starts choosing.
 - Picker: categories (From the collection, Faith, Eyes, Love & desire, Chaos, Nature, Mind, Words), tidied names,
   explicit graphics hidden behind a toggle, arrow-key navigation (one tab stop).

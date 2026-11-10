@@ -108,7 +108,7 @@ function fabricColor() {
 }
 // ---------- artwork printed onto the 3D blank ----------
 // Planar projection in the fabric shader, in garment space: the front gets the chosen composition, the back one
-// big print (up to 18 × 20 in). It follows the folds, turns with the garment and spans multi-part pieces.
+// big print (16 × 20 in on every size). It follows the folds, turns with the garment and spans multi-part pieces.
 const IN = .0254;
 const FRONT_ZONES = { // fractions of garment width/height: centre x, centre y, print width
   tee: { front: [0, .64, .46], chest: [.2, .78, .16] },
@@ -131,7 +131,8 @@ function sidePlan() {
   return { front: null, back: null, note: "Artist's choice — the artist decides the print. You'll see it when it's made." };
 }
 async function sideCanvas(plan, inkLight, back) {
-  const c = document.createElement('canvas'); c.width = back ? 922 : 1024; c.height = 1024; const x = c.getContext('2d'), W = c.width, H = c.height;
+  const bs = BACK_SIZES[state.backSize] || BACK_SIZES.full;
+  const c = document.createElement('canvas'); c.width = back ? Math.round(1024 * bs.w / bs.h) : 1024; c.height = 1024; const x = c.getContext('2d'), W = c.width, H = c.height;
   const ink = inkLight ? 'rgba(245,240,230,.92)' : 'rgba(20,18,16,.88)';
   const fit = (img, cx, cy, w, h) => { if (!img) return; const k = Math.min(w / img.width, h / img.height); x.drawImage(img, cx - img.width * k / 2, cy - img.height * k / 2, img.width * k, img.height * k); };
   if (plan.kind === 'big' || plan.kind === 'refs') {
@@ -197,7 +198,7 @@ async function printArt() {
   const zones = FRONT_ZONES[kind] || FRONT_ZONES.tee, plan = sidePlan(), pr = state.print;
   const fz = plan.small ? zones.chest : plan.front?.kind === 'expressive' ? [zones.front[0], zones.front[1] - .04, Math.min(.66, zones.front[2] * 1.4)] : zones.front;
   const front = new T.Vector4(min.x + size.x * (.5 + fz[0] + pr.x), min.y + size.y * (fz[1] + pr.y), size.x * fz[2] * pr.scale / 2, size.x * fz[2] * pr.scale / 2);
-  // The back: one big print, up to 18 × 20 in, centred, starting just below the collar (or the hood).
+  // The back: one big print, 16 × 20 in (whatever the size), centred, starting just below the collar (or the hood).
   let back;
   if (kind === 'pants') back = new T.Vector4(min.x + size.x * .28, min.y + size.y * .62, size.x * .13, size.x * .13 / .9);
   else {
@@ -212,7 +213,7 @@ async function printArt() {
   const key = model.uuid + JSON.stringify(plan) + light + JSON.stringify(pr) + state.backSize;
   if (key === lastPrint) { printToken--; return; }
   lastPrint = key;
-  const texKey = model.uuid + JSON.stringify(plan) + light;
+  const texKey = model.uuid + JSON.stringify(plan) + light + state.backSize;
   let texF = three.texF, texB = three.texB;
   if (three.texKey !== texKey) {
     [texF, texB] = await Promise.all([plan.front ? sideCanvas(plan.front, light, false) : null, plan.back ? sideCanvas(plan.back, light, true) : null]);
@@ -260,7 +261,7 @@ function renderNone() {
   $('stage-none-title').textContent = three.failed ? '3D preview is not available on this device' : `3D preview for the ${name.toLowerCase()} is coming`;
   $('stage-none-text').textContent = 'Your choices below are what the studio prints from.';
   const s = sidesFor(itemLike());
-  const tiles = [...s.front.map(id => ['Front', id]), ...s.back.map(id => ['Back · up to 18 × 20 in', id])];
+  const tiles = [...s.front.map(id => ['Front', id]), ...s.back.map(id => [(state.backSize === 'medium' ? 'Back · 12 × 13 in' : 'Back · 16 × 20 in'), id])];
   $('stage-none-art').replaceChildren(...tiles.map(([side, id]) => h('figure', {}, h('img', { src: artworkThumb(id), alt: nameOf[id] || id }), h('figcaption', { textContent: `${side}: ${nameOf[id] || id}` }))));
 }
 // Small tiles of the actual front and back prints next to the preview; click one to turn the garment.

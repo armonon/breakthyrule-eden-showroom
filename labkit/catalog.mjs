@@ -64,11 +64,11 @@ export const ARTWORK = {
   expressive: { id: 'expressive', name: 'Expressive', addCents: 0, blurb: 'Loud, layered, edge to edge.' },
   pick: { id: 'pick', name: 'Pick your graphics', addCents: 0, blurb: 'Choose from the archive: up to three on the front, one big print on the back.' }
 };
-// Graphics a customer may pick per side, and the back print's maximum size (inches, width × height).
+// Graphics a customer may pick per side, and the back print size (inches, width × height) — the same on every garment size.
 export const PICK_LIMITS = { front: 3, back: 1 };
-export const BACK_PRINT_IN = { w: 18, h: 20 };
+export const BACK_PRINT_IN = { w: 16, h: 20 };
 export const BACK_SIZES = {
-  full: { id: 'full', name: 'Full back', w: 18, h: 20 },
+  full: { id: 'full', name: 'Full back', w: 16, h: 20 },
   medium: { id: 'medium', name: 'Medium', w: 12, h: 13 }
 };
 

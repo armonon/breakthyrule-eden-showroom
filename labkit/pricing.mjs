@@ -135,7 +135,7 @@ export function describeItem(item) {
     const sides = sidesFor(item);
     if (sides.front.length) spec.push('Front: ' + sides.front.map(graphicName).join(', '));
     const bs = BACK_SIZES[item.backSize] || BACK_SIZES.full;
-    if (sides.back.length) spec.push(`Back: ${sides.back.map(graphicName).join(', ')} — ${bs.name.toLowerCase()}, up to ${bs.w} × ${bs.h} in`);
+    if (sides.back.length) spec.push(`Back: ${sides.back.map(graphicName).join(', ')} — ${bs.name.toLowerCase()}, ${bs.w} × ${bs.h} in on every size`);
     if (item.chaos) spec.push('Drawn by Total Chaos');
     if (!isDefaultPrint(item.print)) {
       const p = item.print, where = [];
