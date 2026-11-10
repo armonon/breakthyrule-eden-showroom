@@ -187,3 +187,37 @@ body.btr-cover-open{overflow:hidden}
 .btr-about-cat p{margin:0!important;font-size:15px;line-height:1.5}
 .btr-about-num{position:absolute;top:8px;right:12px;font:700 13px 'DM Sans',sans-serif;letter-spacing:.1em;color:var(--btr-red)}
 @media(max-width:580px){.btr-about-cats{grid-template-columns:1fr}}
+
+/* ---------- The title: BREAK THY RULE as windows into Eden (site/cover-title.js) ---------- */
+.ct{position:relative;margin:10px 0 4px;display:flex;flex-direction:column;align-items:stretch;line-height:0;user-select:none}
+.ct-holder{position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none}
+.ct-holder video{width:1px;height:1px}
+.ct-word{position:relative;display:block;text-decoration:none;outline:none;transition:transform .28s cubic-bezier(.2,.8,.2,1),filter .28s;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ct-canvas{display:block;width:100%}
+.ct-word.on,.ct-word:focus-visible{transform:translateY(-6px);filter:drop-shadow(0 10px 0 rgba(17,17,17,.14))}
+.ct-word:focus-visible .ct-canvas{outline:3px dashed var(--btr-red,#c8102e);outline-offset:4px}
+/* The rubber stamp under a word */
+.ct-stamp{position:absolute;right:4%;bottom:-6px;z-index:3;font:700 13px/1 'Barlow Condensed',sans-serif;letter-spacing:.24em;color:var(--btr-red,#c8102e);border:2px solid currentColor;padding:4px 7px 3px;background:rgba(255,253,247,.86);transform:rotate(-7deg) scale(1.8);opacity:0;pointer-events:none;mix-blend-mode:multiply}
+.ct-middle .ct-stamp{right:auto;left:62%;bottom:-2px}
+.ct-word.on .ct-stamp,.ct-word:focus-visible .ct-stamp{animation:ct-thump .32s cubic-bezier(.3,1.7,.5,1) forwards}
+@keyframes ct-thump{0%{opacity:0;transform:rotate(-12deg) scale(2.2)}60%{opacity:1;transform:rotate(-6deg) scale(.92)}100%{opacity:1;transform:rotate(-7deg) scale(1)}}
+@media(hover:none){.ct-stamp{opacity:.9;transform:rotate(-7deg) scale(.82);font-size:11px;bottom:-4px}.ct-word.on{transform:none;filter:none}}
+/* Graffiti on THY: a red marker strikes it through and scrawls a new word above */
+.ct-graffiti{position:absolute;inset:0;pointer-events:none;z-index:2}
+.ct-graffiti svg{position:absolute;left:30%;right:22%;width:48%;top:38%;height:30%;overflow:visible}
+.ct-strike{fill:none;stroke:#e01a2b;stroke-width:3.2;stroke-linecap:round;vector-effect:non-scaling-stroke;stroke-dasharray:1;stroke-dashoffset:1;filter:drop-shadow(0 1px 0 rgba(0,0,0,.25))}
+.ct-graffiti svg .ct-strike{stroke-width:7}
+.ct-graffiti b{position:absolute;left:50%;top:-34%;transform:translateX(-30%) rotate(-6deg);font:700 italic clamp(26px,5.2vw,64px)/1 'Barlow Condensed','Marker Felt','Comic Sans MS',cursive;letter-spacing:.02em;color:#e01a2b;white-space:nowrap;text-shadow:1px 1px 0 rgba(0,0,0,.18),-1px 0 0 rgba(224,26,43,.5);clip-path:inset(0 100% 0 0);filter:url(#ct-rough)}
+.ct-graffiti.mark .ct-strike{animation:ct-strike .45s cubic-bezier(.6,0,.3,1) forwards}
+.ct-graffiti.mark b{animation:ct-write .8s .4s steps(14,end) forwards}
+.ct-graffiti.rub{animation:ct-rub .9s ease forwards}
+@keyframes ct-strike{to{stroke-dashoffset:0}}
+@keyframes ct-write{to{clip-path:inset(0 0 0 0)}}
+@keyframes ct-rub{0%{opacity:1;filter:none}40%{opacity:.7;filter:blur(1px)}100%{opacity:0;filter:blur(6px);transform:translateX(8px)}}
+/* The break: shards fly, the place fills the screen */
+.ct-break{position:fixed;inset:0;z-index:2147483000;pointer-events:none}
+.ct-break-back{position:absolute;inset:0;background:#111;overflow:hidden}
+.ct-break-media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.04)}
+.ct-shard{position:fixed;background-size:100% 100%;will-change:transform,opacity}
+.ct.broken .ct-word{visibility:hidden}
+@media(prefers-reduced-motion:reduce){.ct-word,.ct-stamp{transition:none;animation:none!important}.ct-word.on .ct-stamp{opacity:1;transform:rotate(-7deg)}}

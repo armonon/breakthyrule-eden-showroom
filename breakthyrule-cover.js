@@ -193,12 +193,14 @@
  };
  const leftRail=rail('left',adverts.length?adverts:[]),rightRail=rail('right',adverts.length?adverts.slice().reverse():[]);
 
- const wordmark=el('h1',{className:'btr-wordmark'},[el('span',{textContent:'BREAK'}),el('span',{textContent:'THY'}),el('span',{textContent:'RULE'})]);
- wordmark.setAttribute('aria-label','Break Thy Rule');
+ // The title: BREAK THY RULE as windows into Eden (site/cover-title.js); the old photo-filled wordmark is the fallback.
+ const title=window.createCoverTitle?.({actions,reduceMotion,photos:favs.map(f=>f.full)})||null;
+ const wordmark=title?title.el:el('h1',{className:'btr-wordmark'},[el('span',{textContent:'BREAK'}),el('span',{textContent:'THY'}),el('span',{textContent:'RULE'})]);
+ if(!title)wordmark.setAttribute('aria-label','Break Thy Rule');
  const favPool=shuffle(favs);let favCursor=0;
  const nextFav=()=>favPool.length?favPool[favCursor++%favPool.length]:null;
  function paintWordmark(){
-  if(!favPool.length)return;
+  if(title||!favPool.length)return;
   wordmark.style.backgroundImage=[nextFav(),nextFav(),nextFav()].map(f=>`url("${f.full}")`).join(',');
  }
  const enter=el('button',{type:'button',className:'btr-btn primary'},[actions.enterLabel,el('span',{textContent:'→',ariaHidden:'true'})]);
@@ -254,7 +256,7 @@ const coverNav=el('nav',{className:'btr-cover-nav'},[
  }
  let wordTimer=null,polaroidTimer=null;
  function startLife(){
-  paintWordmark();clearInterval(wordTimer);clearInterval(polaroidTimer);
+  paintWordmark();clearInterval(wordTimer);clearInterval(polaroidTimer);title?.start();
   if(reduceMotion)return;
   wordTimer=setInterval(paintWordmark,4200);
   polaroidTimer=setInterval(()=>{
@@ -272,10 +274,11 @@ const coverNav=el('nav',{className:'btr-cover-nav'},[
  function closeCover(){
   if(cover.hidden||cover.classList.contains('leaving'))return;
   cover.classList.add('leaving');document.body.classList.remove('btr-cover-open');
-  clearInterval(wordTimer);clearInterval(polaroidTimer);
+  clearInterval(wordTimer);clearInterval(polaroidTimer);title?.stop();
   setTimeout(()=>{cover.hidden=true;cover.classList.remove('leaving');wall.replaceChildren();window.dispatchEvent(new Event('resize'));},reduceMotion?50:1150);
  }
- enter.onclick=actions.enter;
+ // ENTER breaks all three words and drops you into Eden.
+ enter.onclick=title?title.enter:actions.enter;
  cover.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.querySelector('dialog[open]')){e.preventDefault();closeCover();}});
  let resizeTimer;addEventListener('resize',()=>{if(cover.hidden)return;clearTimeout(resizeTimer);resizeTimer=setTimeout(layoutWall,250);});
 
