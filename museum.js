@@ -8,7 +8,7 @@ window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{},camera=null
  const width=2.2,height=3.4,m=.3,{rect}=pockets;
  const hallA={x0:.9,x1:9.6,z0:-4.45,z1:4.45,h:6},showroom=new T.Vector3(5.25,0,0); // the old pavilion layout, turned to face the door
  const galleryOne={x0:3.6,x1:6.6,z0:4.65,z1:44.65,h:4},hallB={x0:-4,x1:14,z0:44.85,z1:62.85,h:9},galleryTwo={x0:14.2,x1:150,z0:52.35,z1:55.35,h:4};
- const broadcastRoom={x0:-24.2,x1:-4.2,z0:44.85,z1:62.85,h:6},broadcastDoor={z0:51.85,z1:55.85,h:4};
+ const broadcastRoom={x0:-14.2,x1:-4.2,z0:49.35,z1:58.35,h:5},broadcastDoor={z0:51.85,z1:55.85,h:4};
  let broadcast=null;
  const body=rect(-1.25-m,4.5+m,-3-m,3+m),tunnel=rect(-2.5,1-.25,-width/2+m,width/2-m);
  const columns=[-2.55,-1.75,1.75,2.55].map(z=>new T.Vector3(-2.35,0,z));
@@ -107,5 +107,5 @@ window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{},camera=null
   if(hall&&['approach','wall','lookbook','film'].includes(view)){const to=a=>hall.localToWorld(new T.Vector3(a[0]+10,a[1],a[2])).toArray();preset.position=to(preset.position);preset.aim=to(preset.aim);}
   return preset;
  };
- return Object.assign(place,{adopt,pickables:frames.map(f=>f.mesh),broadcast:()=>broadcast});
+ return Object.assign(place,{adopt,pickables:[...frames.map(f=>f.mesh),...(broadcast?.pickables||[])],broadcast:()=>broadcast});
 };
