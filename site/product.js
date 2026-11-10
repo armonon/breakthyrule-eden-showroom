@@ -22,5 +22,25 @@
  $('front').onclick=()=>{photoMode(false);viewer?.view('front');$('spin').setAttribute('aria-pressed','false');};
  $('back').onclick=()=>{photoMode(false);viewer?.view('back');$('spin').setAttribute('aria-pressed','false');};
  $('photos').onclick=()=>photoMode(!showingPhoto,photos[0]);
- window.siteDiscussion($('discussion'),{key:'product:'+g.slug,space:siteConfig.circle.spaces.forum,title:g.name,prompt:'Wearing it? Questions about the print?'});
+ // Gallery showcase: this piece's own photographs first, then people wearing the collection, then other pieces.
+ (async()=>{
+  let items=[];try{items=(await (await fetch('/site/data/gallery.json',{cache:'no-cache'})).json()).items;}catch{}
+  const mix=list=>list.slice().sort(()=>Math.random()-.5);
+  const own=items.filter(i=>i.product===g.slug),worn=mix(items.filter(i=>['worn','models','events','instagram'].includes(i.category)));
+  const others=mix(items.filter(i=>i.category==='garments'&&i.product&&i.product!==g.slug));
+  const picks=[...own,...worn,...others].slice(0,18);
+  const strip=$('showcase');if(!picks.length){strip.closest('section').hidden=true;return;}
+  const list=picks.map(i=>({full:i.src,thumb:i.thumb||i.src,name:i.caption?i.caption.split('\n')[0]:(i.category==='garments'?'From the vault':'Worn in real life')}));
+  strip.replaceChildren(...picks.map((item,n)=>{
+   const tag=item.product===g.slug?'This piece':item.category==='garments'?'The collection':'Worn';
+   const fig=el('button',{type:'button',className:'showcase-plate'+(item.product===g.slug?' is-own':'')},
+    el('img',{src:item.thumb||item.src,alt:item.alt,loading:'lazy',decoding:'async'}),
+    el('span',{className:'plate-tag',textContent:'Pl. '+window.siteRoman(n+1)}),
+    el('span',{className:'plate-note',textContent:tag}));
+   fig.setAttribute('aria-label','Open '+(list[n].name||'photograph'));
+   fig.onclick=()=>window.breakthyruleGallery?.openLightbox(list,n,'gallery');
+   return fig;}));
+  const by=d=>strip.scrollBy({left:d*strip.clientWidth*.8,behavior:'smooth'});
+  $('showcase-prev').onclick=()=>by(-1);$('showcase-next').onclick=()=>by(1);
+ })();
 })();

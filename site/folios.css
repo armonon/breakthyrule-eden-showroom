@@ -198,3 +198,25 @@ body[data-page=gallery] .chips button{display:inline-flex;align-items:baseline;g
 }
 @media(prefers-reduced-motion:reduce){.ticker-track,.rail-track{animation:none}}
 h2 .sect{font-family:var(--blackletter);font-weight:400;color:var(--rubric);font-size:.8em;margin-right:.18em}
+
+/* The living page: drifting ghost graphics behind the home page (site/backdrop.js). */
+#codex-backdrop{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+body[data-page=home] main,body[data-page=home] .site-foot{position:relative;z-index:1}
+/* Two chapters left to tease on the home page (Gallery, Archive). */
+@media(min-width:801px){.teasers{grid-template-columns:repeat(2,1fr)}}
+
+/* Product pages: the gallery showcase strip (replaces the discussion). */
+.gallery-showcase .showcase-tools{display:flex;gap:8px;align-items:center}
+.gallery-showcase .showcase-tools .ghost{min-width:46px;padding:0 14px;font-size:18px;letter-spacing:0}
+.showcase-strip{display:flex;gap:22px;overflow-x:auto;scroll-snap-type:x mandatory;padding:10px 4px 26px;scrollbar-width:thin;scrollbar-color:var(--rubric) transparent}
+.showcase-plate{flex:0 0 clamp(200px,22vw,290px);scroll-snap-align:start;position:relative;padding:10px 10px 44px;border:1px solid var(--line);background:color-mix(in srgb,var(--paper) 40%,#fff);box-shadow:0 1px 0 var(--line),0 12px 24px -16px rgba(40,25,10,.4);cursor:zoom-in;transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s}
+.showcase-plate::before,.showcase-plate::after{content:'';position:absolute;width:14px;height:14px;border-color:var(--rubric);border-style:solid;pointer-events:none;transition:width .35s,height .35s;z-index:2}
+.showcase-plate::before{top:4px;left:4px;border-width:1px 0 0 1px}
+.showcase-plate::after{bottom:4px;right:4px;border-width:0 1px 1px 0}
+.showcase-plate:hover{transform:translateY(-4px)}
+.showcase-plate:hover::before,.showcase-plate:hover::after{width:calc(100% - 8px);height:calc(100% - 8px)}
+.showcase-plate img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;background:var(--wash)}
+.showcase-plate .plate-tag{position:absolute;left:12px;bottom:12px;font-family:var(--blackletter);font-size:17px;color:var(--rubric);line-height:1}
+.showcase-plate .plate-note{position:absolute;right:12px;bottom:12px;font-family:var(--serif);font-style:italic;font-size:15px;color:var(--muted);line-height:1}
+.showcase-plate.is-own{background:#fff;outline:1px solid color-mix(in srgb,var(--gold) 60%,transparent);outline-offset:4px}
+@media(max-width:640px){.showcase-plate{flex-basis:72vw}.gallery-showcase .showcase-tools .ghost{display:none}}

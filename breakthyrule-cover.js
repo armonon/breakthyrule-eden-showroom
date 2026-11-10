@@ -39,7 +39,7 @@
  const lbKicker=el('small'),lbTitle=el('strong');
  lightbox.append(el('div',{className:'btr-lb-top'},[lbCount,lbClose]),lbStage,el('div',{className:'btr-lb-caption'},[lbKicker,lbTitle]));
  let lbList=[],lbIndex=0,lbKind='graphics';
- const kindLabel={graphics:'GRAPHIC',favs:'PHOTO',adverts:'ADVERT'};
+ const kindLabel={graphics:'GRAPHIC',favs:'PHOTO',adverts:'ADVERT',gallery:'GALLERY'};
  function renderLightbox(){
   const item=lbList[lbIndex];if(!item)return;
   const picture=el('img',{src:item.full,alt:item.name,decoding:'async'});

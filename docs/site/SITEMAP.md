@@ -8,7 +8,6 @@ The standard website is now the top layer at `/`. The 3D Garden of Eden showroom
 ├── /product?item=…   One garment: drag/turn/zoom 3D viewer, photos, story, buy link, discussion thread
 ├── /gallery          Real-life images: garments, models, worn by you, events, Instagram. Lightbox. "Share your fit" board
 ├── /archive          Topics (Symbols, Scripture, Hidden History…), Ask the Librarian, shelf, garments per topic, discussion per topic
-├── /community        Forum boards (General, Fits, Readings, Drops & events), live garden, member wall, Broadcast Room, house rules
 └── /showroom         The 3D world (garden, museum, library, night district, multiplayer)
     ├── /broadcast.html   back link now returns to /showroom
     └── /shirt-study.html back link now returns to /showroom
@@ -18,7 +17,7 @@ The standard website is now the top layer at `/`. The 3D Garden of Eden showroom
 
 | Path | What it is |
 | --- | --- |
-| `index.html`, `product.html`, `gallery.html`, `archive.html`, `community.html` | The pages |
+| `index.html`, `product.html`, `gallery.html`, `archive.html` | The pages (the Community page was removed; `/community` redirects to `/`) |
 | `site/site.css` | Shared styles. Same palette and type as the showroom (ink `#202020`, red `#753a36`, Barlow Condensed + DM Sans) |
 | `site/site.js` | Header tabs, footer, discussion board (Circle embed or local preview) |
 | `site/garment-stage.js` | 3D garments. One hidden WebGL renderer draws every visible card, so 39 spinning garments use one GPU context. Loads the same GLBs as the showroom (`rack-models/` for cards, `models/` for the product viewer) |
@@ -77,11 +76,16 @@ posts and images are saved only in that visitor's browser, and a banner says so.
   advert strips as rails) and a strip of worn photos as polaroids (`site/stickers.js`).
 - **Archive**: the logo plaque, stickers pasted in the margin, and the A–Z "Index of the codex" (hover to peek, click to
   open). The page is titled "The anonymous archive".
-- **Gallery**: new categories Worn (17 photos), The codex (397 graphics) and Broadsides (2 adverts), from
-  `breakthyrule-assets.js`. Link straight to one with `/gallery?filter=graphics` (or `worn`, `adverts`).
-- **Codex polish** (`site/folios.css`): folio heads and drop caps on Gallery/Archive/Community, numbered plates with
+- **Gallery**: real-life photography only — garment photos and people wearing them (Worn: 15 of the favourite photos;
+  artwork and collages are listed in `NOT_PHOTOS` in `tools/site/build-gallery.mjs`). Graphics and adverts are not in the
+  gallery; they live on the home page and in the Archive's index. Link to a set with `/gallery?filter=worn`.
+- **Home background** (`site/backdrop.js`): cut-out graphics printed faintly into the paper, drifting upward, leaning with
+  the pointer and scroll; every few seconds one blooms into full colour. Still for reduced-motion visitors.
+- **Product pages**: the discussion was replaced by a "From the gallery" strip — the piece's own photos first, then worn
+  photos, then other garments; click to open full size.
+- **Codex polish** (`site/folios.css`): folio heads and drop caps on Gallery/Archive, numbered plates with
   corner rules in the gallery, a reading-stand lightbox, the Archive table of contents with roman numerals and leader
-  dots, the Librarian's desk, numbered shelf plates, Community panels with gold rules, posts as marginal notes.
+  dots, the Librarian's desk, numbered shelf plates, posts as marginal notes.
 
 ### Adding to the Break Thy Rule assets
 

@@ -8,16 +8,16 @@
  <link rel="stylesheet" href="/site/site.css?v=2">
  <link rel="stylesheet" href="/site/codex.css?v=1">
  <link rel="stylesheet" href="/breakthyrule-cover.css?v=7">
- <link rel="stylesheet" href="/site/folios.css?v=5">
+ <link rel="stylesheet" href="/site/folios.css?v=8">
  <script defer src="/assets/three.min.js?v=187"></script>
  <script defer src="/asset-loader.js?v=4"></script>
  <script defer src="/garment-catalog.js?v=11"></script>
  <script defer src="/site/config.js?v=1"></script>
- <script defer src="/site/site.js?v=3"></script>
+ <script defer src="/site/site.js?v=4"></script>
  <script defer src="/site/garment-stage.js?v=2"></script>
  <script defer src="/breakthyrule-assets.js?v=2"></script>
- <script defer src="/breakthyrule-cover.js?v=5"></script>
- <script defer src="/site/product.js?v=2"></script>
+ <script defer src="/breakthyrule-cover.js?v=6"></script>
+ <script defer src="/site/product.js?v=3"></script>
 </head>
 <body data-page="home">
  <main>
@@ -48,9 +48,17 @@
     <p class="note" id="model-note"></p>
    </div>
   </section>
-  <section class="section wrap">
-   <p class="kicker">Marginalia — talk about this piece</p>
-   <div id="discussion"></div>
+  <div class="ornament" aria-hidden="true"><span>❦</span></div>
+  <section class="section wrap gallery-showcase" aria-labelledby="showcase-title">
+   <div class="section-head">
+    <div><p class="kicker">From the gallery</p><h2 id="showcase-title"><span class="sect">§</span>Worn in real life</h2></div>
+    <div class="showcase-tools">
+     <button type="button" class="ghost" id="showcase-prev" aria-label="Scroll the gallery strip back">←</button>
+     <button type="button" class="ghost" id="showcase-next" aria-label="Scroll the gallery strip forward">→</button>
+     <a class="solid" href="/gallery">The whole gallery <span aria-hidden="true">↗</span></a>
+    </div>
+   </div>
+   <div class="showcase-strip" id="showcase" aria-label="Photographs from the gallery"></div>
   </section>
  </main>
 </body>

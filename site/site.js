@@ -2,7 +2,7 @@
 // Shared chrome for the public site: header, tabs, footer, and the discussion board
 // (a Circle space when one is configured, otherwise a local preview board).
 (()=>{
- const tabs=[['/', 'Products','home'],['/gallery','Gallery','gallery'],['/archive','Archive','archive'],['/community','Community','community']];
+ const tabs=[['/', 'Products','home'],['/gallery','Gallery','gallery'],['/archive','Archive','archive']];
  const page=document.body.dataset.page||'';
  const el=(tag,props={},...children)=>{const node=Object.assign(document.createElement(tag),props);node.append(...children.filter(c=>c!=null));return node;};
  window.siteEl=el;

@@ -11,8 +11,9 @@
 //     and permissions → Download your information → JSON). Post media is copied into
 //     site/gallery/instagram/ with the post caption and date.
 //  3. The product photography already in products/web/, named from garment-catalog.js.
-//  4. The Break Thy Rule source folder, imported by tools/assets/import-breakthyrule.mjs into
-//     breakthyrule-assets.js: favourite photos (worn), every graphic (graphics), the adverts (adverts).
+//  4. The favourite photos from the Break Thy Rule source folder (breakthyrule-assets.js → favs), as
+//     "worn". The gallery is real-life photography only: graphics and adverts stay out (they live in the
+//     Archive's index and on the home page), and so do the favs listed in NOT_PHOTOS (artwork, collages).
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -20,7 +21,8 @@ import vm from 'node:vm';
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, all) => (v.startsWith('--') && a.push([v.slice(2), all[i + 1]]), a), []));
 const IMAGE = /\.(jpe?g|png|webp|avif|gif)$/i;
-const CATEGORIES = ['worn', 'garments', 'models', 'events', 'instagram', 'graphics', 'adverts'];
+const CATEGORIES = ['worn', 'garments', 'models', 'events', 'instagram'];
+const NOT_PHOTOS = new Set(['82dec1eb-dce2-4a7e-80f6-7b0a12cbbe4f', 'theodore']);
 const entries = [];
 
 function walk(dir) { return fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap(d => d.isDirectory() ? walk(path.join(dir, d.name)) : [path.join(dir, d.name)]) : []; }
@@ -75,11 +77,9 @@ const assetsFile = path.join(ROOT, 'breakthyrule-assets.js');
 if (fs.existsSync(assetsFile)) {
   const box = { window: {} };vm.runInNewContext(fs.readFileSync(assetsFile, 'utf8'), box);
   const a = box.window.breakthyruleAssets || {};
-  (a.favs || []).forEach((f, i) => entries.push({ src: f.full, thumb: f.thumb, ratio: f.ratio, category: 'worn', caption: '', alt: 'Break Thy Rule worn in real life, photo ' + (i + 1), source: 'Worn in the wild' }));
-  (a.graphics || []).forEach(g => entries.push({ src: g.full, thumb: g.thumb, ratio: g.ratio, category: 'graphics', caption: g.name, alt: g.name + ' — Break Thy Rule graphic', source: 'The codex of graphics' }));
-  (a.adverts || []).forEach((g, i) => entries.push({ src: g.full, thumb: g.thumb, ratio: g.ratio, category: 'adverts', caption: 'Broadside ' + (i + 1), alt: 'Break Thy Rule sticker sheet advert ' + (i + 1), source: 'Broadsides' }));
+  (a.favs || []).filter(f => !NOT_PHOTOS.has(f.id)).forEach((f, i) => entries.push({ src: f.full, thumb: f.thumb, ratio: f.ratio, category: 'worn', caption: '', alt: 'Break Thy Rule worn in real life, photo ' + (i + 1), source: 'Worn in the wild' }));
 }
-// Photos of people first, the garments next, the graphics and broadsides last.
+// Photos of people first, then the garments.
 entries.sort((x, y) => CATEGORIES.indexOf(x.category) - CATEGORIES.indexOf(y.category));
 
 fs.mkdirSync(path.join(ROOT, 'site/data'), { recursive: true });
