@@ -52,4 +52,4 @@ ln -s "$ROOT/node_modules" "$SRC/node_modules"
   --banner:js="import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" --outfile="$FN/lab.mjs" --log-level=warning
 echo "Draft $commit ($(du -sh "$OUT" | cut -f1)) → Netlify site $SITE_ID"
 PROD=(); [[ "${LIVE:-}" == "yes" ]] && { PROD=(--prod); echo "LIVE production deploy of $commit"; }
-(cd "$OUT" && netlify deploy --no-build --dir . --functions "$FN" --site "$SITE_ID" "${PROD[@]}" --message "${1:-Draft $commit}")
+(cd "$OUT" && netlify deploy --no-build --dir . --functions "$FN" --site "$SITE_ID" ${PROD[@]+"${PROD[@]}"} --message "${1:-Draft $commit}")
