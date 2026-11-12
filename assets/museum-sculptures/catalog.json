@@ -1,0 +1,89 @@
+{
+  "origin": "Owner-supplied Meshy exports",
+  "sculptures": [
+    {
+      "id": "ethereal-insight",
+      "title": "Ethereal Insight",
+      "file": "/assets/museum-sculptures/ethereal-insight.glb",
+      "sourceFolder": "Meshy_AI_Ethereal_Insight_20260126_generate_100caab8",
+      "sourceSha256": "e2c2738ea23a2d3b4d0a4af0f8fd877df55b606f71df4d5837fa3f09b2132079",
+      "sourceTriangles": 329900,
+      "triangles": 60000,
+      "bytes": 1080956,
+      "sha256": "d29268058f8ce5bb18eea69ecc762d0ba94544f42bcafd53792b09d88d50da1d",
+      "validated": true
+    },
+    {
+      "id": "neon-shamrock",
+      "title": "Neon Shamrock",
+      "file": "/assets/museum-sculptures/neon-shamrock.glb",
+      "sourceFolder": "Meshy_AI_Neon_Shamrock_20260212_generate_b4db6f52",
+      "sourceSha256": "602da516b292c9db4d4fd9d0a9b33cc7697eb1beb88920a77ed48b6ef5cb5de2",
+      "sourceTriangles": 121914,
+      "triangles": 20000,
+      "bytes": 360856,
+      "sha256": "4f90986f4537d55349cbbff1f6a27cbe6ef7c8f92c32dd936534a4b87b581ed6",
+      "validated": true
+    },
+    {
+      "id": "crimson-sentinel",
+      "title": "Crimson Sentinel",
+      "file": "/assets/museum-sculptures/crimson-sentinel.glb",
+      "sourceFolder": "Meshy_AI_Crimson_Sentinel_20260222_generate_3e79f6ae",
+      "sourceSha256": "7cecc83f268a97135bd8c81ad407646cf9829cbe7b903769f1a488159e99f086",
+      "sourceTriangles": 1156468,
+      "triangles": 99994,
+      "bytes": 1800200,
+      "sha256": "91c383336c63c244bc37664ef3785814b97a95a14661d7a739076471c563724a",
+      "validated": true
+    },
+    {
+      "id": "absolute-darkness",
+      "title": "Absolute Darkness",
+      "file": "/assets/museum-sculptures/absolute-darkness.glb",
+      "sourceFolder": "Meshy_AI_Absolute_Darkness_20260222_generate_536a52ac",
+      "sourceSha256": "3a55dca35df0c9a79d4a7129b600c4592bbca628bce2e7eac557c0d680a3ad42",
+      "sourceTriangles": 630278,
+      "triangles": 79997,
+      "bytes": 1439792,
+      "sha256": "9c8a99b635183f31c5473478c3b251318637c3d82c43d4ba0821773844784b05",
+      "validated": true
+    },
+    {
+      "id": "equine-reverie",
+      "title": "Equine Reverie",
+      "file": "/assets/museum-sculptures/equine-reverie.glb",
+      "sourceFolder": "Meshy_AI_Equine_Reverie_20260222_generate_9884cd42",
+      "sourceSha256": "d2f38642c519a6cc710068585779a37e501929fd01cb5ffb7208c419d5de1cb7",
+      "sourceTriangles": 809490,
+      "triangles": 79995,
+      "bytes": 1438336,
+      "sha256": "cb1d17f3f6dd1ebe0eeae043a6e69633c3197157928715aaeab64360e1c79740",
+      "validated": true
+    },
+    {
+      "id": "lion-rampant",
+      "title": "Lion Rampant",
+      "file": "/assets/museum-sculptures/lion-rampant.glb",
+      "sourceFolder": "Meshy_AI_Lion_Rampant_20260222_generate_f4ffaa5e",
+      "sourceSha256": "42167aad296d860f8f9afa698aa484bea27a146a3bf94f4989c5b0ea72b60f68",
+      "sourceTriangles": 685722,
+      "triangles": 70000,
+      "bytes": 1260660,
+      "sha256": "18bb60ba356178602f6e496f1fbe3ed179f1f5a98a9d50e6d8b6cd1c7c9e9210",
+      "validated": true
+    },
+    {
+      "id": "peaceful-flight",
+      "title": "Peaceful Flight",
+      "file": "/assets/museum-sculptures/peaceful-flight.glb",
+      "sourceFolder": "Meshy_AI_Peaceful_Flight_20260126_generate_e01c160c",
+      "sourceSha256": "bcf15be36d6fad33d59dc14d5d0bac7facce9a560bf48147cf19d050985ed405",
+      "sourceTriangles": 167516,
+      "triangles": 35000,
+      "bytes": 630908,
+      "sha256": "08812dd267e7ddabc0755fd9a2da357a026fe6f2681c5e0612ec12344597a2c6",
+      "validated": true
+    }
+  ]
+}

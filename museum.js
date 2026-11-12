@@ -9,7 +9,15 @@ window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{},camera=null
  const hallA={x0:.9,x1:9.6,z0:-4.45,z1:4.45,h:6},showroom=new T.Vector3(5.25,0,0); // the old pavilion layout, turned to face the door
  const galleryOne={x0:3.6,x1:6.6,z0:4.65,z1:44.65,h:4},hallB={x0:-4,x1:14,z0:44.85,z1:62.85,h:9},galleryTwo={x0:14.2,x1:262,z0:52.35,z1:55.35,h:4};
  const broadcastRoom={x0:-14.2,x1:-4.2,z0:49.35,z1:58.35,h:5},broadcastDoor={z0:51.85,z1:55.85,h:4};
- let broadcast=null;
+ let broadcast=null,sculptures=null,sculptureLoading=false,sculptureRetryAt=0;
+ const solids=[rect(showroom.x+3.1-.09-m,showroom.x+3.1+.09+m,-3.8-m,3.8+m),rect(showroom.x-4,showroom.x+3,hallA.z0,-2.6)];
+ function loadSculptures(){
+  if(sculptures||sculptureLoading||performance.now()<sculptureRetryAt)return;
+  sculptureLoading=true;
+  import('/museum-sculptures.js?v=1').then(module=>{sculptures=module.createMuseumSculptures(T,{place,solids,onChange});onChange();})
+   .catch(error=>{sculptureRetryAt=performance.now()+5000;console.warn('Museum sculpture display unavailable:',error.message);})
+   .finally(()=>{sculptureLoading=false;});
+ }
  const body=rect(-1.25-m,4.5+m,-3-m,3+m),tunnel=rect(-2.5,1-.25,-width/2+m,width/2-m);
  const columns=[-2.55,-1.75,1.75,2.55].map(z=>new T.Vector3(-2.35,0,z));
  const place=pockets.place({name:'Museum',caption:['THE MUSEUM','BREAKTHYRULE / THE GALLERY'],
@@ -19,10 +27,10 @@ window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{},camera=null
    rect(hallB.x1-.6,galleryTwo.x1-m,galleryTwo.z0+m,galleryTwo.z1-m),
    rect(broadcastRoom.x0+m,broadcastRoom.x1-m,broadcastRoom.z0+m,broadcastRoom.z1-m),rect(broadcastRoom.x1-.6,hallB.x0+.6,broadcastDoor.z0+m,broadcastDoor.z1-m)],
   // the art wall and the garment rack (see adopt)
-  solid:[rect(showroom.x+3.1-.09-m,showroom.x+3.1+.09+m,-3.8-m,3.8+m),rect(showroom.x-4,showroom.x+3,hallA.z0,-2.6)],
+  solid:solids,
   blocksOutside:q=>(q.x>body[0]&&q.x<body[1]&&q.z>body[2]&&q.z<body[3]&&!(q.x>tunnel[0]&&q.x<tunnel[1]&&q.z>tunnel[2]&&q.z<tunnel[3]))||columns.some(c=>Math.hypot(q.x-c.x,q.z-c.z)<.19+m),
   enclosedOutside:q=>q.x>-1.25&&q.x<1&&Math.abs(q.z)<width/2,
-  update:(camPos,inside)=>{for(const frame of frames){const d=inside?frame.world.distanceTo(camPos):1e9;if(!frame.loaded&&d<20)load(frame);else if(frame.loaded&&d>32)unload(frame);}broadcast?.update(camPos,inside);}});
+  update:(camPos,inside)=>{for(const frame of frames){const d=inside?frame.world.distanceTo(camPos):1e9;if(!frame.loaded&&d<20)load(frame);else if(frame.loaded&&d>32)unload(frame);}if(inside)loadSculptures();sculptures?.update(camPos,inside);broadcast?.update(camPos,inside);}});
 
  // Outside: plaster walls around a single doorway, a portico of four columns and a cornice.
  const plaster=new T.MeshStandardMaterial({color:0xffffff,roughness:1,emissive:0xffffff,emissiveIntensity:.35});
@@ -122,5 +130,6 @@ window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{},camera=null
   if(hall&&['approach','wall','lookbook','film'].includes(view)){const to=a=>hall.localToWorld(new T.Vector3(a[0]+10,a[1],a[2])).toArray();preset.position=to(preset.position);preset.aim=to(preset.aim);}
   return preset;
  };
- return Object.assign(place,{adopt,pickables:[...frames.map(f=>f.mesh),...(broadcast?.pickables||[])],broadcast:()=>broadcast});
+ loadSculptures();
+ return Object.assign(place,{adopt,pickables:[...frames.map(f=>f.mesh),...(broadcast?.pickables||[])],broadcast:()=>broadcast,sculptures:()=>sculptures});
 };
