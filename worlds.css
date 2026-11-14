@@ -49,3 +49,14 @@
  #world-loading::before,#world-loading::after,.wl-bar i::after{animation:none}
  #world-loading.in :is(.wl-kicker,.wl-title,.wl-sub,.wl-meter){animation:none}
  #world-loading,.wl-bar i{transition-duration:.01s}}
+
+/* The bitmapped hero film behind full loading screens (worlds.js film; site/video-dot-renderer.mjs). */
+.wl-film,.wl-poster{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.wl-film{z-index:-2;opacity:0;transition:opacity .9s var(--wl-ease)}
+.wl-film.on{opacity:.82}
+.wl-poster{z-index:-3;object-fit:cover;opacity:0;filter:grayscale(.2) contrast(1.05);transition:opacity .6s}
+#world-loading.wl-still:not(.card) .wl-poster{opacity:.55}
+#world-loading:not(.card) .wl-card{position:relative}
+#world-loading:not(.card) .wl-card::before{content:'';position:absolute;inset:-18% -30%;z-index:-1;pointer-events:none;background:radial-gradient(closest-side,rgba(4,5,6,.9),rgba(4,5,6,.62) 55%,transparent);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);-webkit-mask-image:radial-gradient(closest-side,#000 60%,transparent);mask-image:radial-gradient(closest-side,#000 60%,transparent)}
+#world-loading:not(.card) .wl-sub,#world-loading:not(.card) .wl-pct{color:rgba(239,233,220,.82);text-shadow:0 1px 8px rgba(0,0,0,.8)}
+#world-loading.card :is(.wl-film,.wl-poster){display:none}
