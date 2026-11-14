@@ -1,0 +1,522 @@
+.mr-dialog {
+  --mr-paper: #f6efdf;
+  --mr-paper-light: #fffaf0;
+  --mr-ink: #30251f;
+  --mr-muted: #69594c;
+  --mr-rule: #c9b9a0;
+  --mr-burgundy: #702c3d;
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
+  width: min(1440px, calc(100vw - 48px));
+  height: min(1040px, calc(100dvh - 48px));
+  max-width: none;
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--mr-rule);
+  border-radius: 5px;
+  background: var(--mr-paper);
+  color: var(--mr-ink);
+  box-shadow: 0 24px 90px #1e17195c;
+  font: 400 15px/1.5 Georgia, 'Times New Roman', serif;
+  text-align: left;
+  color-scheme: light;
+  isolation: isolate;
+}
+
+.mr-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.mr-dialog::backdrop {
+  background: rgb(31 22 23 / 76%);
+  backdrop-filter: blur(5px);
+}
+
+.mr-dialog *,
+.mr-dialog *::before,
+.mr-dialog *::after {
+  box-sizing: border-box;
+}
+
+.mr-dialog [hidden] {
+  display: none !important;
+}
+
+.mr-dialog :is(h2, h3, p, figure) {
+  margin: 0;
+}
+
+.mr-dialog :is(button, select, a) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mr-dialog :focus-visible {
+  outline: 3px solid var(--mr-burgundy);
+  outline-offset: 3px;
+}
+
+.mr-dialog .mr-header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 24px;
+  border-top: 4px solid var(--mr-burgundy);
+  border-bottom: 1px solid var(--mr-rule);
+  background: var(--mr-paper-light);
+}
+
+.mr-dialog .mr-heading {
+  min-width: 0;
+}
+
+.mr-dialog .mr-kicker {
+  color: var(--mr-burgundy);
+  font: 600 11px/1.4 system-ui, sans-serif;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.mr-dialog .mr-title {
+  margin-top: 3px;
+  font: 400 clamp(24px, 2.5vw, 36px)/1.15 Georgia, 'Times New Roman', serif;
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
+}
+
+.mr-dialog .mr-button,
+.mr-dialog .mr-select,
+.mr-dialog .mr-link {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 13px;
+  border: 1px solid var(--mr-rule);
+  border-radius: 3px;
+  background: var(--mr-paper-light);
+  color: var(--mr-ink);
+  font: 500 13px/1.4 system-ui, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.mr-dialog .mr-button:hover:not(:disabled):not([aria-disabled='true']),
+.mr-dialog .mr-link:hover,
+.mr-dialog .mr-select:hover:not(:disabled) {
+  border-color: var(--mr-burgundy);
+  background: #ebdeca;
+}
+
+.mr-dialog .mr-button:disabled,
+.mr-dialog .mr-select:disabled,
+.mr-dialog .mr-button[aria-disabled='true'] {
+  background: #e8dece;
+  color: #706459;
+  cursor: default;
+}
+
+.mr-dialog .mr-button[aria-pressed='true'] {
+  border-color: var(--mr-burgundy);
+  background: #e9d4d3;
+  color: #582032;
+}
+
+.mr-dialog .mr-button-primary {
+  border-color: var(--mr-burgundy);
+  background: var(--mr-burgundy);
+  color: #fffaf0;
+}
+
+.mr-dialog .mr-button-primary:hover:not(:disabled):not([aria-disabled='true']) {
+  background: #522030;
+  color: #fffaf0;
+}
+
+.mr-dialog .mr-close {
+  flex: 0 0 auto;
+}
+
+.mr-dialog .mr-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mr-dialog .mr-notes {
+  flex: 0 0 clamp(220px, 23%, 300px);
+  min-width: 0;
+  padding: 25px 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-right: 1px solid var(--mr-rule);
+}
+
+.mr-dialog .mr-section-title {
+  margin-bottom: 16px;
+  font: italic 400 20px/1.3 Georgia, 'Times New Roman', serif;
+}
+
+.mr-dialog .mr-description {
+  color: var(--mr-ink);
+  font-size: 17px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mr-dialog .mr-reader {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px 20px 12px;
+  gap: 12px;
+}
+
+.mr-dialog .mr-toolbar,
+.mr-dialog .mr-navigation,
+.mr-dialog .mr-zoom-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mr-dialog .mr-toolbar {
+  flex: 0 0 auto;
+  justify-content: space-between;
+}
+
+.mr-dialog .mr-navigation {
+  min-width: 0;
+}
+
+.mr-dialog .mr-position {
+  min-width: 4ch;
+  color: var(--mr-muted);
+  font: 500 12px/1.4 system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.mr-dialog .mr-page-picker {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+  color: var(--mr-muted);
+  font: 500 13px/1.4 system-ui, sans-serif;
+}
+
+.mr-dialog .mr-select {
+  display: block;
+  width: clamp(100px, 17vw, 230px);
+  max-width: 100%;
+  text-align: left;
+  text-overflow: ellipsis;
+}
+
+.mr-dialog .mr-figure {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  gap: 12px;
+}
+
+.mr-dialog .mr-image-frame {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 140px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--mr-rule);
+  background: #e8dfcf;
+  scrollbar-color: #927b66 #e8dfcf;
+  scrollbar-width: auto;
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+.mr-dialog .mr-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0 auto;
+  object-fit: contain;
+  cursor: zoom-in;
+}
+
+.mr-dialog .mr-image-frame[data-zoom='width'] .mr-image {
+  width: 100%;
+  height: auto;
+}
+
+.mr-dialog .mr-image-frame[data-zoom='actual'] .mr-image {
+  width: auto;
+  height: auto;
+  cursor: zoom-out;
+}
+
+.mr-dialog .mr-image-message {
+  display: grid;
+  min-height: 100%;
+  place-content: center;
+  padding: 24px;
+  color: var(--mr-muted);
+  font: 400 16px/1.6 Georgia, 'Times New Roman', serif;
+  text-align: center;
+}
+
+.mr-dialog .mr-caption {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.mr-dialog .mr-source-details {
+  flex: 1 1 200px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.mr-dialog .mr-source-label {
+  color: var(--mr-burgundy);
+  font: 600 11px/1.5 system-ui, sans-serif;
+  letter-spacing: .045em;
+}
+
+.mr-dialog .mr-source-title {
+  margin-top: 3px;
+  font: 400 20px/1.3 Georgia, 'Times New Roman', serif;
+}
+
+.mr-dialog .mr-credit {
+  margin-top: 4px;
+  color: var(--mr-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.mr-dialog .mr-source-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mr-dialog .mr-link {
+  border-color: transparent;
+  background: transparent;
+  color: var(--mr-burgundy);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.mr-dialog .mr-image-hint {
+  flex: 0 0 auto;
+  color: var(--mr-muted);
+  font: 400 11px/1.5 system-ui, sans-serif;
+}
+
+.mr-dialog .mr-footer {
+  flex: 0 0 auto;
+  padding: 12px 24px;
+  border-top: 1px solid var(--mr-rule);
+  background: var(--mr-paper-light);
+}
+
+.mr-dialog .mr-actions,
+.mr-dialog .mr-seal-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.mr-dialog .mr-actions {
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.mr-dialog .mr-seal-clue {
+  flex: 1 1 180px;
+  max-width: 54ch;
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
+.mr-dialog .mr-footer-text {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 24px;
+}
+
+.mr-dialog .mr-provenance,
+.mr-dialog .mr-status {
+  color: var(--mr-muted);
+  font: 400 11px/1.5 system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.mr-dialog .mr-status {
+  color: var(--mr-burgundy);
+}
+
+@media (max-width: 760px), (max-height: 620px) {
+  .mr-dialog {
+    width: 100%;
+    height: 100dvh;
+    max-width: 100%;
+    max-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .mr-dialog .mr-header {
+    position: sticky;
+    z-index: 2;
+    top: 0;
+    gap: 12px;
+    padding: max(12px, env(safe-area-inset-top)) 16px 12px;
+  }
+
+  .mr-dialog .mr-title {
+    font-size: 25px;
+  }
+
+  .mr-dialog .mr-body {
+    flex: 0 0 auto;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .mr-dialog .mr-notes {
+    flex: 0 0 auto;
+    padding: 20px 16px;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--mr-rule);
+  }
+
+  .mr-dialog .mr-section-title {
+    margin-bottom: 8px;
+  }
+
+  .mr-dialog .mr-description {
+    font-size: 16px;
+    line-height: 1.65;
+  }
+
+  .mr-dialog .mr-reader {
+    flex: 0 0 auto;
+    padding: 12px 12px 20px;
+  }
+
+  .mr-dialog .mr-navigation {
+    flex: 1 1 100%;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 5px;
+  }
+
+  .mr-dialog .mr-navigation > .mr-button {
+    flex: 0 0 auto;
+    padding-inline: 9px;
+  }
+
+  .mr-dialog .mr-page-picker {
+    flex: 1 1 100px;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .mr-dialog .mr-select {
+    width: 100%;
+    min-width: 44px;
+    font-size: 16px;
+  }
+
+  .mr-dialog .mr-figure {
+    flex: 0 0 auto;
+  }
+
+  .mr-dialog .mr-image-frame {
+    flex: 0 0 auto;
+    height: 65svh;
+    min-height: 280px;
+  }
+
+  .mr-dialog .mr-source-title {
+    font-size: 21px;
+  }
+
+  .mr-dialog .mr-credit {
+    font-size: 14px;
+  }
+
+  .mr-dialog .mr-image-hint,
+  .mr-dialog .mr-provenance,
+  .mr-dialog .mr-status {
+    font-size: 12px;
+  }
+
+  .mr-dialog .mr-footer {
+    margin-top: auto;
+    padding: 16px 16px max(20px, env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mr-dialog,
+  .mr-dialog *,
+  .mr-dialog::backdrop {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .mr-dialog,
+  .mr-dialog .mr-image-frame,
+  .mr-dialog .mr-button,
+  .mr-dialog .mr-select,
+  .mr-dialog .mr-link {
+    border: 1px solid CanvasText;
+  }
+
+  .mr-dialog :focus-visible {
+    outline-color: Highlight;
+  }
+
+  .mr-dialog .mr-button[aria-pressed='true'] {
+    outline: 2px solid Highlight;
+    outline-offset: -4px;
+  }
+}
