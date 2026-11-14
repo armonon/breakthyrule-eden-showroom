@@ -1,22 +1,34 @@
-// The Garment Lab page: six-step configurator, the Altar of Chance, The Relic Box, The Trinity, catalog.
-import { CONSTRUCTIONS, OFFERINGS, GARMENT_TYPES, COLORS, ARTWORK, SIZES, FITS, RELIC_BOX, TRINITY, SIZE_CHART, PICK_LIMITS, BACK_SIZES } from '/labkit/catalog.mjs';
+// The Garment Lab: open configurator, mystery packages and catalog.
+import { CONSTRUCTIONS, OFFERINGS, GARMENT_TYPES, COLORS, ARTWORK, SIZES, FITS, MYSTERY_PACKAGES, MYSTERY_FITS, MYSTERY_PREFERENCES_MAX, SIZE_CHART, PICK_LIMITS, BACK_SIZES } from '/labkit/catalog.mjs';
 import { normalizeItem, priceItem, describeItem, sidesFor } from '/labkit/pricing.mjs';
 import { drawArt, drawChaos, newSeed } from '/labkit/random.mjs';
 import { artworkThumb, ARTWORK_POOL, PICKER_TAGS } from '/labkit/artwork-pool.mjs';
 import { itemSketch } from '/site/garment-sketch.mjs';
 import { createPrinter, BLANKS } from '/site/garment-print.mjs';
-import { cart, POOL, labStatus, money } from '/site/cart-store.mjs';
+import { cart, POOL, labStatus, money } from '/site/cart-store.mjs?v=site-audit-1';
+import { isUploadId, uploadForId, uploadedArtworkUrl } from '/labkit/custom-artwork.mjs';
+import { uploadArtworkFile } from '/site/artwork-upload.mjs';
+import { quoteGarment, modeSelection, garmentSelection } from '/site/lab-price.mjs?v=random-prices-2';
+import { createLabFlow } from '/site/lab-flow.mjs?v=3';
 
 const $ = id => document.getElementById(id);
 const h = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); for (const k of kids.flat()) if (k != null) n.append(k); return n; };
 const nameOf = Object.fromEntries(ARTWORK_POOL.map(a => [a.id, a.display || a.name]));
 const params = new URLSearchParams(location.search);
+const legacyPackage = { relic: 'heavy-pack', trinity: 'light-pack' };
+const isPackage = id => typeof id === 'string' && Object.hasOwn(MYSTERY_PACKAGES, id);
+const initialPackage = params.get('package') || legacyPackage[location.hash.slice(1)];
+const packageState = { package: isPackage(initialPackage) ? initialPackage : Object.keys(MYSTERY_PACKAGES)[0], size: null, fit: null, preferences: '', quantity: 1, editId: null };
 
 let status = null;
 // Real 3D blanks (Ghost Studio, converted to meshopt). Shorts and long sleeves show a panel instead.
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const three = { viewer: null, loaded: null, loading: null, failed: false, wanted: false, hue: 0, timer: 0 };
-const state = { construction: 'canvas', garment: 'tee', size: null, fit: 'blank', color: 'black', customColor: '', artwork: 'artists-choice', seed: null, chaos: false, preChaos: null, editId: null, side: 'front', print: { x: 0, y: 0, scale: 1 }, picks: { front: [], back: [] }, backSize: 'full' };
+const state = { quantity: 1, baseMode: 'blank', construction: 'canvas', garment: 'tee', size: null, fit: 'blank', color: 'black', customColor: '', artwork: 'artists-choice', seed: null, chaos: false, preChaos: null, editId: null, side: 'front', print: { x: 0, y: 0, scale: 1 }, picks: { front: [], back: [] }, uploads: [], backSize: 'full' };
+let flow = null;
+let designIssue = '', uploadBusy = false, printRevision = 0;
+const artName = id => uploadForId(id, state.uploads)?.name || nameOf[id] || id;
+const artThumb = id => isUploadId(id) ? uploadedArtworkUrl(uploadForId(id, state.uploads)) : artworkThumb(id);
 
 // ---------- helpers ----------
 const slotInfo = (c, g) => status?.slots?.[`${c}:${g}`] || null;
@@ -28,6 +40,7 @@ function availabilityText(info) {
 }
 function choice(group, value, title, { sub = '', price = '', checked = false, disabled = false, badge = '', swatch = null } = {}) {
   const input = h('input', { type: 'radio', name: group, value, checked, disabled });
+  input.setAttribute('aria-label', title);
   const label = h('label', { className: 'choice' + (disabled ? ' is-off' : '') }, input,
     swatch ? h('span', { className: 'swatch', style: `background:${swatch}` }) : null,
     h('span', { className: 'choice-title' }, title, price ? h('em', { className: 'choice-price', textContent: price }) : null),
@@ -35,14 +48,19 @@ function choice(group, value, title, { sub = '', price = '', checked = false, di
     badge ? h('span', { className: 'choice-badge', textContent: badge }) : null);
   return label;
 }
-const sizeButton = (group, value, checked) => { const input = h('input', { type: 'radio', name: group, value, checked }); return h('label', { className: 'size' }, input, h('span', { textContent: value })); };
+const sizeButton = (group, value, checked) => { const input = h('input', { type: 'radio', name: group, value, checked, ariaLabel: value }); return h('label', { className: 'size' }, input, h('span', { textContent: value })); };
 function config() {
-  const c = { product: 'garment', construction: state.construction, garment: state.garment, size: state.size, fit: state.fit, color: state.color, artwork: state.artwork, quantity: 1 };
+  const c = { product: 'garment', labMode: state.baseMode, construction: state.construction, garment: state.garment, size: state.size, fit: state.fit, color: state.baseMode === 'random' ? 'random' : state.color, artwork: state.artwork, quantity: state.quantity };
   if (state.color === 'custom') c.customColor = state.customColor;
   if (state.artwork === 'random-experimental' || state.chaos) c.seed = state.seed;
   if (state.chaos) c.chaos = true;
   if (state.print.x || state.print.y || state.print.scale !== 1) c.print = { ...state.print };
-  if (state.artwork === 'pick') c.picks = { front: [...state.picks.front], back: [...state.picks.back] };
+  if (state.artwork === 'pick') {
+    c.picks = { front: [...state.picks.front], back: [...state.picks.back] };
+    const used = new Set([...c.picks.front, ...c.picks.back]);
+    const uploads = state.uploads.filter(asset => used.has(asset.id));
+    if (uploads.length) c.uploads = uploads.map(asset => ({ ...asset }));
+  }
   if (hasBack()) c.backSize = state.backSize;
   return c;
 }
@@ -54,15 +72,22 @@ const currentArt = () => state.artwork === 'random-experimental' && state.seed ?
 
 // ---------- render steps ----------
 function renderConstruction() {
-  $('opt-construction').replaceChildren(...Object.values(CONSTRUCTIONS).map(c => {
-    const from = Math.min(...Object.values(OFFERINGS[c.id]).map(o => o.priceCents));
-    return choice('construction', c.id, c.name, { sub: c.blurb, price: 'from ' + money(from), checked: state.construction === c.id });
+  $('opt-construction').replaceChildren(...[
+    ['random', 'Random', 'Studio chooses the base and color.', 'canvas'],
+    ['blank', 'Blank', 'Choose your color.', 'canvas'],
+    ['cut-sew', 'Cut & Sew', 'Made from scratch in cotton.', 'cut-sew']
+  ].map(([id, name, sub, construction]) => {
+    const selected = modeSelection(state, id), quote = selected && quoteGarment({ ...state, ...selected, quantity: 1 });
+    return choice('base-mode', id, name, { sub: selected ? sub : 'Not available for this style', price: quote ? money(quote.unitCents) : '', checked: state.baseMode === id, disabled: !selected });
   }));
+  $('construction-note').hidden = !!OFFERINGS.canvas[state.garment];
+  $('construction-note').textContent = state.garment === 'longsleeve' ? 'Choose a Random base or Cut & Sew for a long sleeve.' : 'This style is available in Cut & Sew.';
 }
 function renderGarments() {
-  $('opt-garment').replaceChildren(...Object.entries(OFFERINGS[state.construction]).map(([id, o]) => {
-    const a = availabilityText(slotInfo(state.construction, id));
-    return choice('garment', id, o.name, { price: money(o.priceCents), checked: state.garment === id, badge: a.text, sub: '' });
+  const names = { tee: 'T-shirt', hoodie: 'Hoodie', crewneck: 'Crewneck', sweatpants: 'Sweatpants', longsleeve: 'Long sleeve', shorts: 'Shorts' };
+  $('opt-garment').replaceChildren(...Object.entries(names).map(([id, name]) => {
+    const selected = garmentSelection(state, id), quote = selected && quoteGarment({ ...state, ...selected, quantity: 1 });
+    return choice('garment', id, name, { price: quote ? money(quote.unitCents) : '', checked: state.garment === id });
   }));
 }
 function renderSizes() {
@@ -70,16 +95,15 @@ function renderSizes() {
   const fits = FITS[state.construction];
   $('opt-fit').hidden = fits.length < 2;
   $('opt-fit').replaceChildren(...fits.map(f => choice('fit', f.id, f.name, { sub: f.note, checked: state.fit === f.id })));
-  $('size-note').textContent = SIZE_CHART ? '' : (fits.length < 2
-    ? 'Fit follows the blank. Measured size charts are being finalised — we confirm fit with you before printing.'
-    : 'Measured size charts for our patterns are being finalised — we confirm your measurements before cutting.');
+  $('size-note').textContent = SIZE_CHART ? '' : 'Fit varies by piece; confirmed before production.';
 }
 function renderColors() {
   $('opt-color').replaceChildren(...Object.values(COLORS).map(c => choice('color', c.id, c.name, {
-    price: c.addCents ? '+' + money(c.addCents) : 'included', checked: state.color === c.id,
+    price: c.addCents ? '+' + money(c.addCents) : 'included', checked: state.color === c.id, disabled: state.baseMode === 'random',
     swatch: c.swatch || (c.id === 'random' ? 'linear-gradient(135deg,#c9473b,#e0b44c,#3f7d5a,#3554a5)' : 'repeating-linear-gradient(45deg,#b9a98f 0 4px,#8d7b62 4px 7px)')
   })));
-  $('custom-color-wrap').hidden = state.color !== 'custom';
+  $('color-mode-note').hidden = state.baseMode !== 'random';
+  $('custom-color-wrap').hidden = state.color !== 'custom' || state.baseMode === 'random';
   $('custom-color').value = state.customColor;
   const hx = state.customColor && CSS.supports('color', state.customColor) ? toHex(state.customColor) : null;
   if (hx) $('color-picker').value = hx;
@@ -87,16 +111,16 @@ function renderColors() {
   if (sw && hx) sw.style.background = hx;
 }
 function renderArt() {
-  $('opt-art').replaceChildren(...Object.values(ARTWORK).map(a => choice('artwork', a.id, a.name, { sub: a.blurb, price: 'included', checked: state.artwork === a.id })));
-  const art = currentArt();
-  $('altar').hidden = !art;
+  $('opt-art').replaceChildren(
+    choice('artwork', 'artists-choice', 'Random', { price: ARTWORK['artists-choice'].addCents ? '+' + money(ARTWORK['artists-choice'].addCents) : 'included', sub: 'The studio chooses the artwork. No reveal until it is made.', checked: state.artwork === 'artists-choice' }),
+    choice('artwork', 'pick', 'Pick graphics', { price: ARTWORK.pick.addCents ? '+' + money(ARTWORK.pick.addCents) : 'included', sub: 'Choose archive graphics or upload your own.', checked: state.artwork === 'pick' })
+  );
+  $('altar').hidden = true;
   $('unchaos').hidden = !state.chaos;
+  if ($('flow-browse')) $('flow-browse').hidden = state.artwork !== 'pick';
+  if (state.artwork !== 'pick' && flow?.isBrowsing) flow.browse(false);
   renderPicker();
-  if (!art) return;
-  $('seed-label').textContent = 'Seed ' + state.seed + (state.chaos ? ' · Total chaos' : '');
-  $('altar-draw').replaceChildren(...[['Direction', `${art.category} / ${art.secondary}`], ['Placement', art.placement], ['Technique', art.technique]].flatMap(([k, v]) => [h('dt', { textContent: k }), h('dd', { textContent: v })]));
-  const sides = sidesFor(itemLike());
-  $('altar-refs').replaceChildren(...[...sides.back.map(id => ['Back', id]), ...sides.front.map(id => ['Front', id])].map(([side, id]) => h('figure', {}, h('img', { src: artworkThumb(id), alt: nameOf[id] || id, loading: 'lazy' }), h('figcaption', { textContent: `${side}: ${nameOf[id] || id}` }))));
+  renderSelectedArt();
 }
 // ---------- 3D blank ----------
 function fabricColor() {
@@ -119,18 +143,29 @@ function sidePlan() {
 }
 let printer = null;
 async function printArt() {
-  if (!three.viewer?.model()) return;
+  if (state.baseMode === 'random' || !three.viewer?.model()) return;
   printer ||= createPrinter(three.viewer);
   const kind = GARMENT_TYPES[state.garment].silhouette === 'pants' ? 'pants' : state.garment;
-  const tex = await printer.apply({ kind, plan: sidePlan(), color: fabricColor(), backSize: state.backSize, print: state.print });
-  if (!tex) return;
-  if (tex.front !== three.texF || tex.back !== three.texB) { three.texF = tex.front; three.texB = tex.back; renderPrintSides(); }
+  const revision = ++printRevision;
+  try {
+    const tex = await printer.apply({ kind, plan: sidePlan(), color: fabricColor(), backSize: state.backSize, print: state.print, uploads: state.uploads });
+    if (!tex || revision !== printRevision) return;
+    const hadError = three.printError;
+    three.printError = '';
+    if (tex.front !== three.texF || tex.back !== three.texB) { three.texF = tex.front; three.texB = tex.back; renderPrintSides(); }
+    if (hadError) renderReview();
+  } catch (error) {
+    if (revision !== printRevision) return;
+    three.printError = error.message || 'Your artwork preview could not be loaded.';
+    $('stage-note').hidden = false; $('stage-note').textContent = three.printError;
+    renderReview();
+  }
 }
 function tint() { printArt(); }
 async function ensure3D() {
   const url = BLANKS[state.garment];
   if (!url || three.failed) return false;
-  if (!three.viewer) { three.viewer = window.createGarmentViewer?.($('stage-3d'), { wheelZoom: true }) || null; if (!three.viewer) { three.failed = true; return false; } three.viewer.setAuto(!reduceMotion); }
+  if (!three.viewer) { three.viewer = window.createGarmentViewer?.($('stage-3d'), { wheelZoom: false }) || null; if (!three.viewer) { three.failed = true; return false; } three.viewer.setAuto(!reduceMotion); }
   if (three.loaded === url) return true;
   three.loading = url; $('stage-loading').hidden = false;
   try { await three.viewer.load(url); three.loaded = url; if (three.loading !== url) { renderThree(); return false; } return true; }
@@ -144,7 +179,7 @@ function renderNone() {
   $('stage-none-text').textContent = 'Your choices below are what the studio prints from.';
   const s = sidesFor(itemLike());
   const tiles = [...s.front.map(id => ['Front', id]), ...s.back.map(id => [(state.backSize === 'medium' ? 'Back · 12 × 13 in' : 'Back · 16 × 20 in'), id])];
-  $('stage-none-art').replaceChildren(...tiles.map(([side, id]) => h('figure', {}, h('img', { src: artworkThumb(id), alt: nameOf[id] || id }), h('figcaption', { textContent: `${side}: ${nameOf[id] || id}` }))));
+  $('stage-none-art').replaceChildren(...tiles.map(([side, id]) => h('figure', {}, h('img', { src: artThumb(id), alt: artName(id) }), h('figcaption', { textContent: `${side}: ${artName(id)}` }))));
 }
 // Small tiles of the actual front and back prints next to the preview; click one to turn the garment.
 function renderPrintSides() {
@@ -156,17 +191,28 @@ function renderPrintSides() {
   $('print-sides').replaceChildren(tile('front', three.texF), tile('back', three.texB));
 }
 async function renderThree() {
+  document.body.dataset.baseMode = state.baseMode;
+  const surprise = state.baseMode === 'random';
+  if ($('flow-surprise')) $('flow-surprise').hidden = !surprise;
+  if (surprise) {
+    ++printRevision; three.viewer?.setAuto(false);
+    for (const id of ['stage-3d', 'stage-none', 'stage-loading', 'stage-note', 'print-sides', 'back-size', 'print-place']) $(id).hidden = true;
+    $('stage-label').textContent = 'You choose the garment type. The studio chooses the actual base and color.';
+    if ($('flow-placement')) $('flow-placement').hidden = true;
+    return;
+  }
   const has3D = !!BLANKS[state.garment] && !three.failed;
   $('stage-3d').hidden = !has3D; $('stage-none').hidden = has3D;
   $('print-place').hidden = !has3D;
+  if ($('flow-placement')) $('flow-placement').hidden = !has3D || state.artwork !== 'pick';
   $('stage-label').textContent = has3D ? 'The real blank in your colour with your artwork laid on. A preview — every print is placed by hand.' : '';
   const plan = sidePlan(), notes = [plan.note, state.color === 'random' ? 'Random colour — the house picks it; shown here undyed.' : ''].filter(Boolean);
-  $('stage-note').hidden = !notes.length || !has3D; $('stage-note').textContent = notes.join(' ');
+  $('stage-note').hidden = !notes.length || !has3D || (state.artwork === 'artists-choice' && state.color !== 'random'); $('stage-note').textContent = notes.join(' ');
   $('back-size').hidden = !hasBack() || !has3D; $('print-sides').hidden = !has3D;
   $('back-size').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.size === state.backSize)));
   if (!has3D) { renderNone(); return; }
   if (!three.wanted) return; // loads when the stage scrolls into view
-  if (await ensure3D()) { tint(); three.viewer.setZoom($('zoom').value / 100); }
+  if (await ensure3D()) { if (state.baseMode === 'random') return; tint(); three.viewer.setZoom($('zoom').value / 100); }
   else if (three.failed) renderThree();
 }
 // ---------- print placement (front print) ----------
@@ -188,7 +234,9 @@ $('print-move').onclick = () => {
   const on = $('print-move').getAttribute('aria-pressed') !== 'true';
   $('print-move').setAttribute('aria-pressed', String(on)); $('print-drag').hidden = !on;
   $('stage-frame').classList.toggle('moving-print', on);
-  if (on) setSide('front');
+  if (on) { setSide('front'); $('placement-dialog')?.close(); flow?.message('Drag the print on your garment. Open Print position to stop moving it.'); }
+  else flow?.message();
+  $('print-move').textContent = on ? 'Stop moving print' : 'Move print';
 };
 $('print-drag').addEventListener('pointerdown', e => { moveDrag = { x: e.clientX, y: e.clientY, p: { ...state.print } }; $('print-drag').setPointerCapture(e.pointerId); });
 $('print-drag').addEventListener('pointermove', e => {
@@ -199,30 +247,79 @@ $('print-drag').addEventListener('pointerup', () => { moveDrag = null; });
 $('print-drag').addEventListener('wheel', e => { e.preventDefault(); setPrint({ scale: state.print.scale * (e.deltaY > 0 ? .95 : 1.05) }); }, { passive: false });
 
 // ---------- the graphic picker ----------
-let pickSide = 'front', pickTag = 'All', pickFocus = 0;
+let pickSide = 'front', pickTag = 'All', pickFocus = 0, pickView = 'grid', pickListKey = '';
+const pickGrid = $('pick-grid');
+const uploadInput = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp', hidden: true });
+const uploadButton = h('button', { type: 'button', className: 'ghost', textContent: 'Upload graphic' });
+const uploadStatus = h('p', { className: 'fine', role: 'status', textContent: 'PNG, JPEG or WebP · up to 3 MB' });
+$('picker').querySelector('.picker-head').after(h('div', { className: 'pick-upload' }, uploadButton, uploadInput, uploadStatus));
+uploadButton.onclick = () => {
+  if (state.picks[pickSide].length >= PICK_LIMITS[pickSide] && pickSide === 'front') { uploadStatus.textContent = 'The front already has three graphics. Remove one before uploading another.'; return; }
+  uploadInput.click();
+};
+uploadInput.addEventListener('change', async () => {
+  const file = uploadInput.files[0], side = pickSide;
+  uploadInput.value = '';
+  if (!file || uploadBusy) return;
+  uploadBusy = true; uploadButton.disabled = true; uploadButton.textContent = 'Uploading…'; uploadStatus.textContent = 'Saving your original graphic…'; renderReview();
+  try {
+    const { asset } = await uploadArtworkFile(file);
+    if (!state.uploads.some(existing => existing.id === asset.id)) state.uploads.push(asset);
+    state.artwork = 'pick'; designIssue = ''; leaveChaos();
+    pickSide = side; togglePick(side, asset.id, false); renderArt();
+    uploadStatus.textContent = state.picks[side].includes(asset.id) ? `${asset.name} saved and added to the ${side}.` : `${asset.name} saved. Remove a graphic, then choose it from Your uploads.`;
+  } catch (error) { uploadStatus.textContent = error.message || 'Your graphic could not be uploaded. Please try again.'; }
+  finally { uploadBusy = false; if (state.picks.front.length + state.picks.back.length) flow?.complete('art', { advance: !flow.isCompleted('art') }); uploadButton.disabled = false; uploadButton.textContent = 'Upload graphic'; renderReview(); uploadButton.focus({ preventScroll: true }); }
+});
 const visibleGraphics = () => {
   const q = $('pick-search').value.trim().toLowerCase(), explicit = $('pick-explicit').checked;
-  return ARTWORK_POOL.filter(a => (explicit || !a.explicit)
+  const uploaded = state.uploads.map(asset => ({ id: asset.id, name: asset.name, display: asset.name, tags: ['Your uploads'] }));
+  return [...uploaded, ...ARTWORK_POOL].filter(a => (explicit || !a.explicit)
     && (pickTag === 'All' || (pickTag === 'From the collection' ? a.collection : a.tags.includes(pickTag)))
     && (!q || (a.display || a.name).toLowerCase().includes(q) || a.name.toLowerCase().includes(q)))
     .sort((a, b) => (b.collection ? 1 : 0) - (a.collection ? 1 : 0) || (a.display || a.name).localeCompare(b.display || b.name));
 };
 function renderPicker() {
   const on = state.artwork === 'pick';
-  $('picker').hidden = !on; if (!on) return;
+  $('picker').hidden = !on || !flow?.isBrowsing; if (!on) return;
   $('pick-front').setAttribute('aria-selected', String(pickSide === 'front')); $('pick-back').setAttribute('aria-selected', String(pickSide === 'back'));
   $('pick-front-n').textContent = `${state.picks.front.length}/${PICK_LIMITS.front}`; $('pick-back-n').textContent = `${state.picks.back.length}/${PICK_LIMITS.back}`;
-  $('pick-tags').replaceChildren(...['All', ...PICKER_TAGS].map(t => { const b = h('button', { type: 'button', textContent: t }); b.setAttribute('aria-pressed', String(t === pickTag)); b.onclick = () => { pickTag = t; pickFocus = 0; renderPicker(); }; return b; }));
-  const chip = (side, id) => { const b = h('button', { type: 'button', className: 'pick-chip', title: 'Remove' }, h('img', { src: artworkThumb(id), alt: '' }), h('span', { textContent: `${side === 'front' ? 'Front' : 'Back'}: ${nameOf[id] || id}` }), h('b', { textContent: '×', ariaHidden: 'true' }));
-    b.setAttribute('aria-label', `Remove ${nameOf[id] || id} from the ${side}`); b.onclick = () => togglePick(side, id); return b; };
+  const tags = ['All', ...(state.uploads.length ? ['Your uploads'] : []), ...PICKER_TAGS];
+  if (!tags.includes(pickTag)) pickTag = 'All';
+  if ($('pick-filter')) {
+    $('pick-filter').replaceChildren(...tags.map(tag => h('option', { value: tag, textContent: tag })));
+    $('pick-filter').value = pickTag;
+  }
+  if ($('pick-tags')) $('pick-tags').hidden = true;
+  const chip = (side, id) => { const b = h('button', { type: 'button', className: 'pick-chip', title: 'Remove' }, h('img', { src: artThumb(id), alt: '' }), h('span', { textContent: `${side === 'front' ? 'Front' : 'Back'}: ${artName(id)}` }), h('b', { textContent: '×', ariaHidden: 'true' }));
+    b.setAttribute('aria-label', `Remove ${artName(id)} from the ${side}`); b.onclick = () => togglePick(side, id); return b; };
   $('pick-chosen').replaceChildren(...state.picks.front.map(id => chip('front', id)), ...state.picks.back.map(id => chip('back', id)));
   const chosen = new Set(state.picks[pickSide]), list = visibleGraphics();
-  pickFocus = Math.min(pickFocus, Math.max(0, list.length - 1));
-  $('pick-grid').replaceChildren(...(list.length ? list.map((a, i) => {
-    const b = h('button', { type: 'button', className: 'pick-tile' + (chosen.has(a.id) ? ' on' : ''), title: a.display, role: 'option', tabIndex: i === pickFocus ? 0 : -1 }, h('img', { src: artworkThumb(a.id), alt: '', loading: 'lazy', decoding: 'async' }), h('span', { textContent: a.display }));
-    b.setAttribute('aria-selected', String(chosen.has(a.id))); b.setAttribute('aria-label', a.display + (a.collection ? ' (from the collection)' : ''));
-    b.dataset.index = i; b.onclick = () => { pickFocus = i; togglePick(pickSide, a.id); }; return b;
-  }) : [h('p', { className: 'fine', textContent: 'No graphic matches. Try another word or category.' })]));
+  const key = JSON.stringify(list.map(a => a.id));
+  const changed = key !== pickListKey;
+  if (changed) {
+    pickListKey = key; pickFocus = 0;
+    pickGrid.replaceChildren(...(list.length ? list.map((a, i) => {
+      const name = a.display || a.name;
+      const b = h('button', { type: 'button', className: 'pick-tile', title: name, role: 'option', tabIndex: i === pickFocus ? 0 : -1 }, h('img', { src: artThumb(a.id), alt: '', loading: 'lazy', decoding: 'async' }), h('span', { textContent: name }));
+      b.setAttribute('aria-label', name + (a.collection ? ' (from the collection)' : ''));
+      b.dataset.index = i; b.dataset.art = a.id;
+      b.onclick = () => { pickFocus = i; togglePick(pickSide, a.id); }; return b;
+    }) : [h('p', { className: 'fine', textContent: 'No graphic matches. Try another word or category.' })]));
+    pickGrid.scrollTop = 0;
+  }
+  pickGrid.dataset.view = pickView;
+  pickGrid.setAttribute('aria-multiselectable', String(PICK_LIMITS[pickSide] > 1));
+  for (const tile of pickGrid.querySelectorAll('.pick-tile')) {
+    const selected = chosen.has(tile.dataset.art);
+    tile.classList.toggle('on', selected);
+    tile.setAttribute('aria-selected', String(selected));
+    tile.tabIndex = Number(tile.dataset.index) === pickFocus ? 0 : -1;
+  }
+  for (const view of ['grid', 'board']) $('pick-view-' + view).setAttribute('aria-pressed', String(view === pickView));
+  $('pick-page').textContent = `${list.length} graphics · scroll to explore`;
+  requestAnimationFrame(updatePickerScroll);
+
 }
 // Arrow keys move around the grid (one tab stop for the whole grid).
 $('pick-grid').addEventListener('keydown', e => {
@@ -232,18 +329,41 @@ $('pick-grid').addEventListener('keydown', e => {
   const d = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols, Home: -i, End: tiles.length - 1 - i }[e.key];
   if (d === undefined) return;
   e.preventDefault(); const n = Math.max(0, Math.min(tiles.length - 1, i + d));
-  tiles[i].tabIndex = -1; tiles[n].tabIndex = 0; tiles[n].focus(); pickFocus = n;
+  tiles[i].tabIndex = -1; tiles[n].tabIndex = 0; tiles[n].focus({ preventScroll: true }); tiles[n].scrollIntoView({ block: 'nearest' }); pickFocus = n;
 });
-$('pick-explicit').addEventListener('change', () => { pickFocus = 0; renderPicker(); });
-function togglePick(side, id) {
+function updatePickerScroll() {
+  $('pick-prev').disabled = pickGrid.scrollTop < 2;
+  $('pick-next').disabled = pickGrid.scrollTop + pickGrid.clientHeight >= pickGrid.scrollHeight - 2;
+}
+pickGrid.addEventListener('scroll', updatePickerScroll, { passive: true });
+if ('ResizeObserver' in window) new ResizeObserver(updatePickerScroll).observe(pickGrid);
+for (const [id, delta] of [['pick-prev', -1], ['pick-next', 1]]) $(id).addEventListener('click', () => {
+  pickGrid.scrollBy({ top: delta * pickGrid.clientHeight * .85, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+});
+for (const view of ['grid', 'board']) $('pick-view-' + view).addEventListener('click', () => {
+  const topTile = [...pickGrid.querySelectorAll('.pick-tile')].find(tile => tile.getBoundingClientRect().bottom > pickGrid.getBoundingClientRect().top);
+  pickView = view; renderPicker();
+  topTile?.scrollIntoView({ block: 'start' });
+});
+$('pick-explicit').addEventListener('change', renderPicker);
+$('pick-filter')?.addEventListener('change', e => { pickTag = e.target.value; renderPicker(); });
+function renderSelectedArt() {
+  const box = $('flow-selected-art'); if (!box) return;
+  const entries = state.artwork === 'pick' ? [...state.picks.front.map(id => ['Front', id]), ...state.picks.back.map(id => ['Back', id])] : [];
+  box.replaceChildren(...(entries.length ? entries.map(([side, id]) => h('figure', {}, h('img', { src: artThumb(id), alt: artName(id) }), h('figcaption', { textContent: side }))) : [h('p', { className: 'fine', textContent: state.artwork === 'pick' ? 'No graphics selected yet.' : state.artwork === 'artists-choice' ? 'Artwork stays a surprise.' : 'Your saved artwork direction is preserved. Choose Random or Pick graphics to change it.' })]));
+}
+function togglePick(side, id, focusGrid = true) {
   const list = state.picks[side], i = list.indexOf(id), limit = PICK_LIMITS[side];
   if (i >= 0) list.splice(i, 1);
   else if (list.length >= limit) { if (limit === 1) list.splice(0, 1, id); else { $('pick-hint').textContent = `The front holds up to ${limit} graphics — remove one first.`; return; } }
   else list.push(id);
-  $('pick-hint').textContent = 'Click graphics to add them to the front (up to three). Switch to Back for one big print. Click again to remove. Arrow keys move around the grid.';
+  designIssue = ''; three.printError = '';
+  $('pick-hint').textContent = 'Front: up to 3 · Back: 1';
   if (side === 'back' && list.length) setSide('back'); else if (side === 'front' && list.length) setSide('front');
-  renderPicker(); renderStage(); renderReview();
-  $('pick-grid').querySelector('.pick-tile[tabindex="0"]')?.focus({ preventScroll: true });
+  renderPicker(); renderSelectedArt(); renderStage(); renderReview();
+  if (state.picks.front.length + state.picks.back.length) flow?.complete('art', { advance: !flow.isCompleted('art') });
+  else flow?.revoke('art');
+  if (focusGrid) $('pick-grid').querySelector('.pick-tile[tabindex="0"]')?.focus({ preventScroll: true });
 }
 $('pick-front').onclick = () => { pickSide = 'front'; renderPicker(); };
 $('pick-back').onclick = () => { pickSide = 'back'; renderPicker(); };
@@ -252,35 +372,69 @@ $('keep-draw').onclick = () => {
   const s = sidesFor(itemLike());
   state.picks = { front: [...s.front].slice(0, PICK_LIMITS.front), back: [...s.back].slice(0, PICK_LIMITS.back) };
   state.artwork = 'pick'; leaveChaos(); renderArt(); renderStage(); renderReview();
-  $('picker').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  flow?.browse(true);
 };
 
 function renderStage() {
   renderThree();
 }
+function renderPricing(quote) {
+  // Prices on choices are for one garment after making that exact selection.
+  for (const [group, select] of [['garment', garmentSelection], ['base-mode', modeSelection]]) {
+    document.querySelectorAll(`input[name="${group}"]`).forEach(input => {
+      const selected = select(state, input.value);
+      const option = selected && quoteGarment({ ...state, ...selected, quantity: 1 });
+      const label = input.closest('.choice'), title = label.querySelector('.choice-title');
+      let price = label.querySelector('.choice-price');
+      if (!price && option) { price = h('em', { className: 'choice-price' }); title.append(price); }
+      if (price) { price.textContent = option ? money(option.unitCents) : ''; price.title = 'Per garment, with the selected color and artwork'; }
+    });
+  }
+  $('flow-total').textContent = quote ? money(quote.totalCents) : '—';
+  $('flow-total-label').textContent = quote?.quantity > 1 ? `${quote.quantity} garments · USD` : 'Item total · USD';
+  if (!quote) { $('flow-price-detail').textContent = 'Choose a valid garment and options to see the price.'; return; }
+  const [base, color, art] = quote.lines;
+  const parts = [`${money(base.cents)} base`];
+  if (color.cents) parts.push(`${money(color.cents)} custom color`);
+  if (art.cents) parts.push(`${money(art.cents)} artwork`);
+  const unit = parts.join(' + ');
+  $('flow-price-detail').textContent = (quote.quantity > 1 ? `${quote.quantity} × ${money(quote.unitCents)} each. Per item: ${unit}.` : `${unit}.`) + (art.cents ? '' : ' Artwork included.');
+}
 function renderReview() {
   const n = normalizeItem(displayConfig(), { artworkPool: POOL });
   const err = $('lab-error'), add = $('add-to-cart');
+  const blocked = uploadBusy || !!designIssue || (!!three.printError && state.baseMode !== 'random');
+  $('share-design').disabled = !n.ok || blocked;
+  const quote = n.ok ? { ...priceItem(n.item), quantity: n.item.quantity } : quoteGarment(config());
+  renderPricing(quote);
+  $('waitlist').hidden = true;
+  flow?.refresh();
   if (!n.ok) {
     $('review-spec').replaceChildren(h('li', { className: 'pending', textContent: n.errors[0] }));
     $('breakdown').replaceChildren(); $('total').textContent = '—';
-    add.disabled = false; add.textContent = 'Add to cart'; $('waitlist').hidden = true;
+    add.disabled = true; add.textContent = 'Save design';
+    $('mbar-add').disabled = true;
+    if (designIssue) err.textContent = designIssue;
     $('mbar-price').textContent = '—'; $('mbar-title').textContent = n.errors[0];
     renderTrust(null); return;
   }
   const p = priceItem(n.item), d = describeItem(n.item);
-  const spec = d.spec.map(s => s.startsWith('Size:') && !state.size ? 'Size: choose in step V' : s);
+  const spec = d.spec.filter(s => !s.startsWith('Construction:') && !s.startsWith('Material:')).map(s => s.startsWith('Size:') && !state.size ? 'Size: choose your size' : s);
   $('review-spec').replaceChildren(h('li', { className: 'title', textContent: d.title }), ...spec.map(s => h('li', { className: s.startsWith('Size: choose') ? 'pending' : '', textContent: s })));
   $('breakdown').replaceChildren(...p.lines.map(l => h('tr', {}, h('th', { scope: 'row', textContent: l.label }), h('td', { textContent: l.cents ? money(l.cents) : 'included' }))));
-  $('total').textContent = money(p.unitCents);
-  const info = slotInfo(n.item.construction, n.item.garment), a = availabilityText(info);
-  add.disabled = !a.open;
-  add.textContent = state.editId ? 'Save changes' : a.open ? `Add to cart — ${money(p.unitCents)}` : 'At capacity';
+  $('total').textContent = money(p.totalCents);
+  const info = slotInfo(n.item.construction, n.item.garment);
+  const orderOpen = !!status?.checkout?.available && info?.available > 0;
+  add.disabled = blocked || !state.size;
+  add.textContent = orderOpen ? 'Review order' : 'Save design';
   $('cancel-edit').hidden = !state.editId;
-  $('waitlist').hidden = a.open;
-  $('mbar-title').textContent = d.title; $('mbar-price').textContent = money(p.unitCents);
-  $('mbar-add').disabled = !a.open; $('mbar-add').textContent = state.editId ? 'Save' : a.open ? 'Add to cart' : 'At capacity';
-  if (!err.dataset.sticky) err.textContent = '';
+  $('waitlist').hidden = true;
+  $('mbar-title').textContent = d.title; $('mbar-price').textContent = money(p.totalCents);
+  $('mbar-add').disabled = add.disabled; $('mbar-add').textContent = add.textContent;
+
+  const previewError = state.baseMode === 'random' ? '' : three.printError;
+  if (designIssue || previewError) err.textContent = designIssue || previewError;
+  else if (!err.dataset.sticky) err.textContent = '';
   renderTrust(info);
 }
 // What the customer should know before buying — only facts and what the studio has written in its settings.
@@ -289,7 +443,7 @@ function renderTrust(info) {
     'Printed by hand in our Los Angeles studio.',
     state.construction === 'cut-sew' ? 'Cut and sewn from scratch in 100% cotton.' : 'Printed on a blank chosen to fit your size and colour — it may be vintage or new.',
     info?.leadTimeDays != null ? `Made to order — about ${info.leadTimeDays} days to make, then shipping.` : 'Made to order — the production time is confirmed after you order.',
-    'Secure checkout by Stripe. Shipping and any tax are shown before you pay.'
+    status?.checkout?.available ? 'Shipping and any tax are shown before you pay.' : 'Ordering is not open yet. You can save your design on this device.'
   ];
   if (status?.shippingNote) items.push(status.shippingNote);
   if (status?.returnsNote) items.push(status.returnsNote);
@@ -300,24 +454,50 @@ const refresh = () => { renderArt(); renderStage(); renderReview(); };
 
 // ---------- events ----------
 const form = $('lab-form');
-form.addEventListener('change', e => {
+let lastRadio = null, lastRadioAt = 0;
+function selectOption(e) {
   const t = e.target;
-  if (t.name === 'construction') {
-    state.construction = t.value; leaveChaos();
-    if (!OFFERINGS[state.construction][state.garment]) state.garment = Object.keys(OFFERINGS[state.construction])[0];
-    const fits = FITS[state.construction]; state.fit = fits.length === 1 ? fits[0].id : (fits.some(f => f.id === state.fit) ? state.fit : null);
-    renderAll(); return;
+  if (!t.matches('input[type=radio]')) return;
+  if (e.type === 'change' && lastRadio === t && performance.now() - lastRadioAt < 150) return;
+  lastRadio = t; lastRadioAt = performance.now();
+  three.viewer?.setAuto(false);
+  flow?.message();
+  if (t.name === 'base-mode' || t.name === 'construction') {
+    const mode = t.name === 'construction' ? (t.value === 'cut-sew' ? 'cut-sew' : 'blank') : t.value;
+    const selected = modeSelection(state, mode); if (!selected) return;
+    const oldQuantity = state.quantity;
+    Object.assign(state, selected); leaveChaos();
+    renderAll(); flow?.complete('construction');
+    if (oldQuantity !== state.quantity) flow?.message('Cut & Sew is one piece per design. Quantity is now 1.');
+    return;
   }
-  if (t.name === 'garment') { state.garment = t.value; leaveChaos(); }
+  if (t.name === 'garment') {
+    const selected = garmentSelection(state, t.value); if (!selected) return;
+    const oldQuantity = state.quantity;
+    Object.assign(state, selected); leaveChaos();
+    renderAll(); flow?.complete('garment');
+    if (oldQuantity !== state.quantity) flow?.message('Cut & Sew is one piece per design. Quantity is now 1.');
+    return;
+  }
   if (t.name === 'size') { state.size = t.value; delete $('lab-error').dataset.sticky; $('step-size').classList.remove('needs'); $('lab-error').textContent = ''; }
   if (t.name === 'fit') { state.fit = t.value; leaveChaos(); }
-  if (t.name === 'color') { state.color = t.value; leaveChaos(); if (t.value === 'custom' && !state.customColor) state.customColor = $('color-picker').value; renderColors(); if (t.value === 'custom') $('color-picker').focus(); }
-  if (t.name === 'artwork') { state.artwork = t.value; if (t.value === 'random-experimental' && !state.seed) state.seed = newSeed(); if (t.value !== 'random-experimental') leaveChaos(); renderArt(); }
+  if (t.name === 'color') { state.color = t.value; leaveChaos(); if (t.value === 'custom' && !state.customColor) state.customColor = $('color-picker').value; renderColors(); if (t.value === 'custom') $('color-picker').focus({ preventScroll: true }); }
+  if (t.name === 'artwork') { state.artwork = t.value; designIssue = ''; three.printError = ''; if (t.value === 'random-experimental' && !state.seed) state.seed = newSeed(); if (t.value !== 'random-experimental') leaveChaos(); renderArt(); if (t.value === 'pick') flow?.browse(true); }
   refresh();
-});
+  if (t.name === 'garment') flow?.complete('garment');
+  if (t.name === 'color' && t.value !== 'custom') flow?.complete('color');
+  if (t.name === 'artwork' && t.value !== 'pick') flow?.complete('art');
+  if ((t.name === 'size' || t.name === 'fit') && state.size && FITS[state.construction].some(fit => fit.id === state.fit)) flow?.complete('size');
+}
+form.addEventListener('click', selectOption);
+form.addEventListener('change', selectOption);
 const toHex = c => { const x = document.createElement('canvas').getContext('2d'); x.fillStyle = '#000'; x.fillStyle = c; const v = x.fillStyle; return /^#[0-9a-f]{6}$/i.test(v) ? v : null; };
 $('custom-color').addEventListener('input', e => { state.customColor = e.target.value; const hx = CSS.supports('color', e.target.value) ? toHex(e.target.value) : null; if (hx) $('color-picker').value = hx; renderStage(); renderReview(); });
 $('color-picker').addEventListener('input', e => { state.customColor = e.target.value; $('custom-color').value = e.target.value; renderColors(); renderStage(); renderReview(); });
+for (const id of ['custom-color', 'color-picker']) $(id).addEventListener('change', () => {
+  if (state.color === 'custom' && state.customColor.trim().length >= 2) flow?.complete('color');
+});
+$('custom-color').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); flow?.complete('color'); } });
 function leaveChaos() { if (state.chaos) { state.chaos = false; state.preChaos = null; } }
 $('redraw').onclick = () => { state.seed = newSeed(); if (state.chaos) applyChaos(false); refresh(); };
 $('chaos').onclick = () => { if (!state.chaos) state.preChaos = { garment: state.garment, color: state.color, fit: state.fit, artwork: state.artwork, seed: state.seed, customColor: state.customColor }; state.seed = newSeed(); applyChaos(true); };
@@ -337,22 +517,34 @@ $('lab-form').addEventListener('change', stopSpin); $('stage-3d').addEventListen
 
 form.addEventListener('submit', e => {
   e.preventDefault();
+  if (uploadBusy || designIssue) { const message = designIssue || 'Wait for your graphic to finish uploading.'; $('lab-error').textContent = message; flow?.message(message); return; }
   if (!state.size) {
-    const err = $('lab-error'); err.textContent = 'Choose your size to add it to the cart.'; err.dataset.sticky = '1';
-    $('step-size').classList.add('needs'); $('step-size').scrollIntoView({ block: 'center' });
-    setTimeout(() => $('opt-size').querySelector('input')?.focus({ preventScroll: true }), 400);
+    const err = $('lab-error'); err.textContent = 'Choose your size to save this design.'; err.dataset.sticky = '1';
+    $('step-size').classList.add('needs'); flow?.show('size'); flow?.message(err.textContent);
     return;
   }
   delete $('lab-error').dataset.sticky; $('step-size').classList.remove('needs');
+  const normalized = normalizeItem(config(), { artworkPool: POOL });
+  if (!normalized.ok) { $('lab-error').textContent = normalized.errors.join(' '); flow?.message($('lab-error').textContent); return; }
+  flow?.syncNotes();
   const r = state.editId ? cart.replace(state.editId, config()) : cart.add(config());
-  if (!r.ok) { $('lab-error').textContent = r.errors.join(' '); return; }
-  const was = state.editId; state.editId = null;
-  if (was) history.replaceState(null, '', location.pathname + '#build');
-  document.dispatchEvent(new CustomEvent('lab:open-cart', { detail: { added: r.id } }));
+  if (!r.ok) { $('lab-error').textContent = r.errors.join(' '); flow?.message($('lab-error').textContent); return; }
+  state.editId = r.id;
+  const open = !!status?.checkout?.available && slotInfo(normalized.item.construction, normalized.item.garment)?.available > 0;
+  if (open) document.dispatchEvent(new CustomEvent('lab:open-cart', { detail: { added: r.id } }));
+  else flow?.message('Design saved on this device. Ordering is not open yet.');
   renderReview();
 });
+// Keep an open design in sync when its cart quantity changes on this page or another tab.
+cart.subscribe(view => {
+  const line = state.editId && view.lines.find(item => item.id === state.editId);
+  if (line && line.item.construction === state.construction && state.quantity !== line.item.quantity) {
+    state.quantity = line.item.quantity;
+    renderReview();
+  }
+});
 $('mbar-add').onclick = () => form.requestSubmit();
-$('cancel-edit').onclick = () => { state.editId = null; history.replaceState(null, '', location.pathname + '#build'); renderReview(); };
+$('cancel-edit').onclick = () => { state.editId = null; state.quantity = 1; history.replaceState(null, '', location.pathname + '#build'); renderReview(); };
 $('waitlist-join').onclick = async () => {
   const email = $('waitlist-email').value.trim();
   if (!email) { $('waitlist-status').textContent = 'Enter your email.'; return; }
@@ -362,44 +554,90 @@ $('waitlist-join').onclick = async () => {
   } catch { $('waitlist-status').textContent = 'Could not join right now.'; }
 };
 
-// ---------- specials ----------
-function renderSpecials() {
-  $('relic-art').innerHTML = itemSketch({ product: 'relic-box' });
-  $('trinity-art').innerHTML = itemSketch({ product: 'trinity' });
-  $('relic-size').replaceChildren(...SIZES.map(s => sizeButton('relic-size', s, false)));
-  $('relic-fit').replaceChildren(...RELIC_BOX.fits.map(f => { const l = sizeButton('relic-fit', f.id, false); l.querySelector('span').textContent = f.name; return l; }));
-  $('relic-ex').replaceChildren(...RELIC_BOX.exclusions.map(x => h('label', { className: 'check' }, h('input', { type: 'checkbox', value: x, name: 'relic-ex' }), ' ' + x)));
-  $('tri-size').replaceChildren(...SIZES.map(s => sizeButton('tri-size', s, false)));
-  $('tri-variant').replaceChildren(...TRINITY.variants.map(v => choice('tri-variant', v.id, v.name, { sub: v.note, checked: v.id === 'curated' })));
-  renderPolicy();
+// ---------- mystery packages ----------
+function packageConfig() {
+  const { editId, ...selection } = packageState;
+  return { product: 'mystery-pack', ...selection };
 }
-function renderPolicy() {
-  const pol = status?.relicPolicies;
-  $('relic-policy').replaceChildren(pol
-    ? h('details', {}, h('summary', { textContent: 'What is guaranteed, condition, sizing and fulfilment' }), ...['contents', 'condition', 'sizing', 'fulfillment'].map(k => h('p', {}, h('strong', { textContent: k[0].toUpperCase() + k.slice(1) + ': ' }), pol[k])))
-    : h('p', { className: 'fine', textContent: 'The guaranteed contents, garment condition, sizing rules and fulfilment policy are published here before the Relic Box goes on public sale.' }));
+function renderPackages() {
+  $('package-options').replaceChildren(...Object.values(MYSTERY_PACKAGES).map(p => choice('package', p.id, p.name, { sub: p.countLabel, price: money(p.priceCents), checked: p.id === packageState.package })));
+  $('package-size').replaceChildren(...SIZES.map(s => sizeButton('package-size', s, s === packageState.size)));
+  $('package-fit').replaceChildren(...MYSTERY_FITS.map(f => { const label = sizeButton('package-fit', f.id, f.id === packageState.fit); label.querySelector('span').textContent = f.name; label.querySelector('input').setAttribute('aria-label', f.name); return label; }));
+  $('package-pref').maxLength = MYSTERY_PREFERENCES_MAX;
+  $('package-pref').value = packageState.preferences;
+  renderPackageDetail();
 }
-function stockLine(id, sku) {
-  const info = skuInfo(sku);
-  $(id).textContent = !status ? 'Availability confirmed at checkout.' : info?.available > 0 ? `${info.available} available in this size` : sku.endsWith(':') ? '' : 'Sold out in this size';
+function renderPackageDetail() {
+  const p = MYSTERY_PACKAGES[packageState.package];
+  $('package-art').innerHTML = itemSketch({ product: 'mystery-pack', package: p.id });
+  $('package-name').textContent = p.name;
+  $('package-count').textContent = p.countLabel;
+  $('package-price').textContent = money(p.priceCents);
+  $('package-copy').textContent = p.blurb;
+  renderPackageAvailability();
 }
-function relicConfig() {
-  return { product: 'relic-box', size: document.querySelector('input[name=relic-size]:checked')?.value, fit: document.querySelector('input[name=relic-fit]:checked')?.value,
-    exclusions: [...document.querySelectorAll('input[name=relic-ex]:checked')].map(i => i.value), preferences: $('relic-pref').value };
+function renderPackageAvailability() {
+  const p = MYSTERY_PACKAGES[packageState.package];
+  const info = packageState.size && skuInfo(`mystery-pack:${p.id}:${packageState.size}`);
+  const unavailable = !!status && !!packageState.size && !(info?.available > 0);
+  $('package-submit').textContent = `${packageState.editId ? 'Update' : 'Add'} ${p.name} — ${money(p.priceCents)}${packageState.quantity > 1 ? ' each' : ''}`;
+  $('package-submit').disabled = unavailable;
+  $('package-stock').textContent = !packageState.size ? 'Choose your size and preferred fit.'
+    : !status ? 'Availability is confirmed at checkout.'
+    : unavailable ? 'Not available in this size right now.'
+    : `${info.available} ${info.available === 1 ? 'package' : 'packages'} available in this size.`;
 }
-function trinityConfig() { return { product: 'trinity', size: document.querySelector('input[name=tri-size]:checked')?.value, variant: document.querySelector('input[name=tri-variant]:checked')?.value }; }
-$('relic-form').addEventListener('change', () => { const c = relicConfig(); if (c.size) stockLine('relic-stock', `relic-box:${c.size}`); });
-$('trinity-form').addEventListener('change', () => { const c = trinityConfig(); if (c.size && c.variant) stockLine('trinity-stock', `trinity:${c.variant}:${c.size}`); });
-function addSpecial(e, cfg, errId, sku) {
+function renderPackagePolicy() {
+  const policy = status?.relicPolicies;
+  const entries = ['contents', 'condition', 'sizing', 'fulfillment'].filter(key => typeof policy?.[key] === 'string' && policy[key].trim());
+  $('package-policy').hidden = !entries.length;
+  $('package-policy-copy').replaceChildren(...entries.map(key => h('p', {}, h('strong', { textContent: `${key[0].toUpperCase()}${key.slice(1)}: ` }), policy[key])));
+}
+function selectPackage(id, updateUrl = true) {
+  if (!isPackage(id)) return;
+  packageState.package = id;
+  document.querySelectorAll('input[name="package"]').forEach(input => { input.checked = input.value === id; });
+  $('package-error').textContent = '';
+  renderPackageDetail();
+  if (updateUrl) {
+    const url = new URL(location.href);
+    url.searchParams.set('package', id);
+    url.hash = 'packages';
+    history.replaceState(null, '', url.pathname + url.search + url.hash);
+  }
+}
+$('package-form').addEventListener('change', e => {
+  const input = e.target;
+  if (input.name === 'package') selectPackage(input.value);
+  if (input.name === 'package-size') packageState.size = input.value;
+  if (input.name === 'package-fit') packageState.fit = input.value;
+  $('package-error').textContent = '';
+  renderPackageAvailability();
+});
+$('package-pref').addEventListener('input', e => { packageState.preferences = e.target.value; });
+$('package-form').addEventListener('submit', e => {
   e.preventDefault();
-  const info = sku && skuInfo(sku);
-  if (status && sku && !(info?.available > 0)) { $(errId).textContent = 'That size is sold out right now.'; return; }
-  const r = cart.add(cfg);
-  $(errId).textContent = r.ok ? '' : r.errors.join(' ');
-  if (r.ok) document.dispatchEvent(new CustomEvent('lab:open-cart', { detail: { added: r.id } }));
-}
-$('relic-form').addEventListener('submit', e => { const c = relicConfig(); addSpecial(e, c, 'relic-error', c.size ? `relic-box:${c.size}` : null); });
-$('trinity-form').addEventListener('submit', e => { const c = trinityConfig(); addSpecial(e, c, 'trinity-error', c.size && c.variant ? `trinity:${c.variant}:${c.size}` : null); });
+  const cfg = packageConfig();
+  const normalized = normalizeItem(cfg, { artworkPool: POOL });
+  if (!normalized.ok) { $('package-error').textContent = normalized.errors.join(' '); return; }
+  if (status && !(skuInfo(`mystery-pack:${cfg.package}:${cfg.size}`)?.available >= cfg.quantity)) {
+    $('package-error').textContent = 'This package is not available in that quantity and size right now.';
+    return;
+  }
+  const result = packageState.editId ? cart.replace(packageState.editId, cfg) : cart.add(cfg);
+  $('package-error').textContent = result.ok ? '' : result.errors.join(' ');
+  if (result.ok) {
+    packageState.editId = null;
+    packageState.quantity = 1;
+    const url = new URL(location.href);
+    url.searchParams.delete('edit');
+    url.searchParams.set('package', packageState.package);
+    url.hash = 'packages';
+    history.replaceState(null, '', url.pathname + url.search + url.hash);
+    renderPackageAvailability();
+    document.dispatchEvent(new CustomEvent('lab:open-cart', { detail: { added: result.id } }));
+  }
+});
 
 // ---------- catalog ----------
 function catalogEntries() {
@@ -410,8 +648,7 @@ function catalogEntries() {
       art: `<div class="offer-mark"><span>${c === 'cut-sew' ? 'II' : 'I'}</span><b>${o.name}</b><i>${c === 'cut-sew' ? 'Cut & Sew · 100% cotton' : 'The Canvas'}</i></div>` });
   }
   const anySku = prefix => status ? Object.entries(status.skus || {}).some(([k, v]) => k.startsWith(prefix) && v.available > 0) : null;
-  out.push({ type: 'special', title: RELIC_BOX.name, sub: 'Mystery box', priceCents: RELIC_BOX.priceCents, available: anySku('relic-box:'), href: '#relic', art: itemSketch({ product: 'relic-box' }) });
-  out.push({ type: 'special', title: TRINITY.name, sub: 'Three tees', priceCents: TRINITY.priceCents, available: anySku('trinity:'), href: '#trinity', art: itemSketch({ product: 'trinity' }) });
+  for (const p of Object.values(MYSTERY_PACKAGES)) out.push({ type: 'special', package: p.id, title: p.name, sub: p.countLabel, priceCents: p.priceCents, available: anySku(`mystery-pack:${p.id}:`), href: `/lab?package=${encodeURIComponent(p.id)}#packages`, art: itemSketch({ product: 'mystery-pack', package: p.id }) });
   return out;
 }
 function renderCatalog() {
@@ -423,29 +660,34 @@ function renderCatalog() {
       h('span', { className: 'offer-sub', textContent: e.sub }), h('strong', { textContent: e.title }), h('em', { textContent: money(e.priceCents) }),
       e.available === false ? h('span', { className: 'offer-state off', textContent: 'At capacity / sold out' }) : null));
     card.querySelector('.offer-art').innerHTML = e.art;
-    card.addEventListener('click', ev => { ev.preventDefault(); if (e.href.startsWith('?')) { const p = new URLSearchParams(e.href.split('#')[0]); showTab('build'); preselect(p.get('c'), p.get('g')); $('build').scrollIntoView({ behavior: 'smooth' }); } else showTab(e.href.slice(1)); });
+    card.addEventListener('click', ev => {
+      if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey || ev.button !== 0) return;
+      ev.preventDefault();
+      if (e.package) { selectPackage(e.package); showTab('packages'); $('packages').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' }); }
+      else { const p = new URLSearchParams(e.href.split('#')[0]); showTab('build'); preselect(p.get('c'), p.get('g')); flow?.show('garment'); }
+    });
     return card;
   }) : [h('p', { className: 'fine', textContent: 'Nothing matches those filters.' })]));
 }
 ['cat-type', 'cat-sort', 'cat-available'].forEach(id => $(id).addEventListener('change', renderCatalog));
 
 function preselect(c, g) {
-  if (CONSTRUCTIONS[c]) { state.construction = c; const fits = FITS[c]; state.fit = fits.length === 1 ? fits[0].id : null; }
+  if (CONSTRUCTIONS[c]) { if (c === 'cut-sew') state.quantity = 1; state.construction = c; state.baseMode = c === 'cut-sew' ? 'cut-sew' : 'blank'; const fits = FITS[c]; state.fit = fits.length === 1 ? fits[0].id : null; }
   if (OFFERINGS[state.construction][g]) state.garment = g;
   leaveChaos(); renderAll();
 }
 
-// On phones the preview is pinned and compact, so the move & resize controls live in the Artwork step.
-const phone = matchMedia('(max-width: 1000px)');
-function placeControls() { const pp = $('print-place'); if (phone.matches) $('step-art').append(pp); else $('stage-label').before(pp); }
-phone.addEventListener('change', placeControls); placeControls();
+// Placement controls stay in the explicit dialog; the main page never scrolls them into view.
+if ($('placement-dialog') && !$('placement-dialog').contains($('print-place'))) $('placement-dialog').append($('print-place'));
 
 // ---------- tabs ----------
-const TABS = ['build', 'relic', 'trinity', 'catalog'];
+const TABS = ['build', 'packages', 'catalog'];
 function showTab(id, push = true) {
+  if (id === 'relic' || id === 'trinity') id = 'packages';
   if (!TABS.includes(id)) id = 'build';
-  for (const t of TABS) { $('tab-' + t).setAttribute('aria-selected', String(t === id)); $(t).hidden = t !== id; }
+  for (const t of TABS) { $('tab-' + t).setAttribute('aria-selected', String(t === id)); $('tab-' + t).tabIndex = t === id ? 0 : -1; $(t).hidden = t !== id; }
   document.body.dataset.labTab = id;
+  flow?.refresh();
   if (push) history.replaceState(null, '', location.pathname + location.search + (id === 'build' ? '' : '#' + id));
   if (id === 'build' && three.viewer) three.viewer.redraw();
 }
@@ -464,12 +706,16 @@ $('share-design').onclick = async () => {
   const url = `${location.origin}/lab?design=${b64.enc(design)}`;
   try { await navigator.clipboard.writeText(url); $('share-design').textContent = 'Link copied'; }
   catch { const box = $('share-url') || h('input', { id: 'share-url', className: 'share-url', readOnly: true }); box.value = url; $('share-design').after(box); box.select(); $('share-design').textContent = 'Copy the link below'; }
-  setTimeout(() => { $('share-design').textContent = 'Copy a link to this design'; }, 2500);
+  setTimeout(() => { $('share-design').textContent = 'Share design'; }, 2500);
 };
 function applyDesign(raw) {
-  const n = normalizeItem({ ...raw, size: raw.size || 'M' }, { artworkPool: POOL }); if (!n.ok) return false;
+  const n = normalizeItem({ ...raw, size: raw.size || 'M' }, { artworkPool: POOL });
+  if (!n.ok) { designIssue = 'This design could not be loaded: ' + n.errors.join(' ') + ' Choose artwork again before adding this garment.'; return false; }
+  if (n.item.product !== 'garment') { designIssue = 'This link does not contain a garment design. Choose your garment and artwork before adding it.'; return false; }
   const c = n.item;
-  Object.assign(state, { construction: c.construction, garment: c.garment, size: raw.size ? c.size : null, fit: c.fit, color: c.color, customColor: c.customColor || '', artwork: c.artwork, seed: c.seed, chaos: !!c.chaos, print: c.print, picks: c.picks ? { front: [...c.picks.front], back: [...c.picks.back] } : { front: [], back: [] }, backSize: c.backSize || 'full' });
+  Object.assign(state, { quantity: c.quantity ?? 1, construction: c.construction, garment: c.garment, size: raw.size ? c.size : null, fit: c.fit, color: c.color, customColor: c.customColor || '', artwork: c.artwork, seed: c.seed, chaos: !!c.chaos, print: c.print, picks: c.picks ? { front: [...c.picks.front], back: [...c.picks.back] } : { front: [], back: [] }, uploads: (c.uploads || []).map(asset => ({ ...asset })), backSize: c.backSize || 'full' });
+  state.baseMode = c.construction === 'cut-sew' ? 'cut-sew' : raw.labMode === 'random' && c.color === 'random' ? 'random' : 'blank';
+  designIssue = '';
   return true;
 }
 
@@ -484,14 +730,47 @@ async function renderWorn() {
 }
 
 // ---------- start ----------
+flow = createLabFlow({
+  getBaseMode: () => state.baseMode,
+  getSummary(step) {
+    if (step === 'construction') return { random: 'Studio surprise', blank: 'Blank', 'cut-sew': 'Cut & Sew' }[state.baseMode];
+    if (step === 'garment') return OFFERINGS[state.construction][state.garment]?.name || state.garment;
+    if (step === 'color') return state.color === 'custom' ? state.customColor : COLORS[state.color]?.name;
+    if (step === 'art') { const n = state.picks.front.length + state.picks.back.length; return state.artwork === 'pick' ? `${n} graphic${n === 1 ? '' : 's'} · add / edit` : 'Studio surprise'; }
+    if (step === 'size') return [state.size, state.fit !== 'blank' ? state.fit : ''].filter(Boolean).join(' · ');
+    return '';
+  },
+  validate(step) {
+    if (step === 'color' && state.color === 'custom' && state.customColor.trim().length < 2) return 'Name the custom color you want.';
+    if (step === 'art' && uploadBusy) return 'Wait for your graphic to finish uploading.';
+    if (step === 'art' && designIssue) return designIssue;
+    if (step === 'art' && state.artwork === 'pick' && !state.picks.front.length && !state.picks.back.length) return 'Choose at least one graphic.';
+    if (step === 'size' && !state.size) return 'Choose your size.';
+    if (step === 'size' && !FITS[state.construction].some(fit => fit.id === state.fit)) return 'Choose your fit.';
+    return '';
+  },
+  onBrowse: () => renderPicker()
+});
 (async () => {
   const editId = params.get('edit'), line = editId && cart.get(editId);
   if (line?.config?.product === 'garment') {
     const c = line.config;
-    Object.assign(state, { construction: c.construction, garment: c.garment, size: c.size, fit: c.fit, color: c.color, customColor: c.customColor || '', artwork: c.artwork, seed: c.seed || null, chaos: !!c.chaos, editId, print: { x: 0, y: 0, scale: 1, ...(c.print || {}) }, picks: { front: [...(c.picks?.front || [])], back: [...(c.picks?.back || [])] } });
-  } else if (!(params.get('design') && (() => { try { return applyDesign(b64.dec(params.get('design'))); } catch { return false; } })())) preselect(params.get('c'), params.get('g'));
-  renderAll(); renderSpecials(); renderCatalog(); syncPrintControls();
-  showTab(location.hash.slice(1) || 'build', false); renderWorn();
+    Object.assign(state, { quantity: c.quantity ?? 1, construction: c.construction, garment: c.garment, size: c.size, fit: c.fit, color: c.color, customColor: c.customColor || '', artwork: c.artwork, seed: c.seed || null, chaos: !!c.chaos, editId, print: { x: 0, y: 0, scale: 1, ...(c.print || {}) }, picks: { front: [...(c.picks?.front || [])], back: [...(c.picks?.back || [])] }, uploads: (c.uploads || []).map(asset => ({ ...asset })), backSize: c.backSize || 'full' });
+    state.baseMode = c.construction === 'cut-sew' ? 'cut-sew' : c.labMode === 'random' && c.color === 'random' ? 'random' : 'blank';
+  } else if (line?.config?.product === 'mystery-pack') {
+    Object.assign(packageState, line.config, { editId });
+  } else if (params.get('design')) {
+    try { applyDesign(b64.dec(params.get('design'))); }
+    catch { designIssue = 'This design link could not be read. Choose artwork again before adding this garment.'; }
+  } else preselect(params.get('c'), params.get('g'));
+  renderAll(); renderPackages(); renderCatalog(); syncPrintControls();
+  if (editId || params.get('design')) {
+    const restored = ['construction', 'garment', 'color'];
+    if (state.artwork !== 'pick' || state.picks.front.length + state.picks.back.length) restored.push('art');
+    if (state.size && FITS[state.construction].some(fit => fit.id === state.fit)) restored.push('size');
+    flow.restore(restored);
+  } else if (params.get('c') && params.get('g')) flow.restore(['construction', 'garment']);
+  showTab(location.hash.slice(1) || (packageState.editId || isPackage(params.get('package')) ? 'packages' : 'build'), false); renderWorn();
   // Open on the 3D blank once the stage is on screen (nothing heavy loads before that).
   if ('IntersectionObserver' in window && window.THREE) {
     const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); three.wanted = true; renderThree(); } }, { rootMargin: '200px' });
@@ -500,5 +779,5 @@ async function renderWorn() {
   if (params.get('canceled')) { $('lab-notice').hidden = false; $('lab-notice').textContent = 'Checkout was canceled — nothing was charged, and your cart is still here.'; }
   status = await labStatus();
   if (status?.notice) { $('lab-notice').hidden = false; $('lab-notice').textContent = status.notice; }
-  renderGarments(); renderReview(); renderPolicy(); renderCatalog();
+  renderGarments(); renderReview(); renderPackageAvailability(); renderPackagePolicy(); renderCatalog();
 })();

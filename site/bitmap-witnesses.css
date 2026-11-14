@@ -1,0 +1,16 @@
+/* Straight color photographs with clean edges. */
+#worn-photos .witness-head{flex-direction:row;align-items:center;gap:12px;margin:30px 0 8px}
+#worn-photos .witness-head>a{margin-left:auto}
+#witness-strip{gap:18px;align-items:center;padding:8px 6px 14px;overflow-x:auto;overflow-y:hidden;scroll-behavior:auto!important;scroll-snap-type:none!important;overscroll-behavior-x:contain;scrollbar-width:none}
+#witness-strip::-webkit-scrollbar{display:none}
+#witness-strip .polaroid,#witness-strip .polaroid:hover,#witness-strip .polaroid:focus-visible{flex:0 0 clamp(154px,17vw,210px);padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;transform:none!important;transition:none!important}
+#witness-strip .polaroid::before,#witness-strip .polaroid::after{display:none!important;content:none!important}
+#witness-strip .polaroid>span{display:none!important}
+#witness-strip .polaroid img{display:block;width:100%;aspect-ratio:1;object-fit:cover;border:0;background:transparent;}
+#witness-strip .polaroid:focus-visible{outline:2px dashed #eeeedf!important;outline-offset:4px!important}
+#worn-photos #witness-motion{display:inline-flex;align-items:center;justify-content:center;flex:0 0 44px;width:44px;height:44px;min-width:44px;min-height:44px;margin:0;padding:0!important;border:1px solid #525b49!important;border-radius:0;background:transparent!important;color:#eeeedf!important;box-shadow:none!important;font:18px/1 Arial,sans-serif!important;cursor:pointer}
+#worn-photos #witness-motion:hover{background:#20231b!important}
+#worn-photos #witness-motion:focus-visible{outline:2px dashed #eeeedf!important;outline-offset:4px}
+#worn-photos #witness-motion[hidden]{display:none!important}
+@media(max-width:600px){#witness-strip{gap:12px}#witness-strip .polaroid{flex-basis:158px}}
+@media print{#worn-photos #witness-motion{display:none!important}#witness-strip{flex-wrap:wrap;overflow:visible}}

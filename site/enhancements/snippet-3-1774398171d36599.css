@@ -1,0 +1,21 @@
+
+/* Hide the requested editorial copy immediately, including dynamically built cover copy. */
+body[data-page="home"] .hero-copy > .folio,
+body[data-page="home"] .hero-copy > .lede,
+body[data-page="home"] .hero-copy > .marginalia,
+body[data-page="gallery"] .page-head > .folio,
+body[data-page="gallery"] .page-head > h1,
+body[data-page="archive"] .archive-head > .folio,
+body[data-page="archive"] .archive-head > h1,
+body[data-page="archive"] .archive-head > .lede,
+.showroom-band > .wrap > div,
+.btr-plate > .btr-tagline,
+.btr-plate > .btr-tally,
+#showcase-title {
+  display: none !important;
+}
+body[data-page="gallery"] .page-head { padding: 28px 0 24px; margin-bottom: 24px; }
+body[data-page="gallery"] .page-head > .lede { margin-top: 0; }
+body[data-page="archive"] .archive-head { display: flex; justify-content: center; padding: 40px 0 32px; margin-bottom: 32px; }
+body[data-page="archive"] .archive-plaque { grid-column: auto; grid-row: auto; margin: 0; max-width: 360px; }
+.showroom-band > .wrap { justify-content: center; }

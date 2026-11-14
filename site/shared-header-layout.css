@@ -1,0 +1,142 @@
+/* Standalone app layouts only. The shared navigation stays in document flow. */
+body:is([data-shared-page="beyond-eden"], [data-shared-page="combat-sandbox"], [data-shared-page="showroom"], [data-shared-page="studio"]) {
+  --btr-app-height:calc(100svh - var(--btr-header-height, 62px));
+}
+
+/* These studies render at window size; keep the canvas aspect ratio intact. */
+body[data-shared-page="shirt-study"] > #canvas,
+body[data-shared-page="combat-lab"] > canvas {
+  position:fixed;
+  inset:0;
+}
+
+body[data-shared-page="shirt-study"] > #canvas {
+  width:100vw;
+  height:100svh;
+}
+
+body[data-shared-page="shirt-study"] > header:not(#btr-site-header) {
+  top:var(--btr-header-height, 62px);
+}
+
+body[data-shared-page="combat-lab"] > #ui {
+  top:calc(var(--btr-header-height, 62px) + 10px);
+  z-index:2;
+  max-width:calc(100% - 20px);
+  flex-wrap:wrap;
+}
+
+body[data-shared-page="ragdoll-lab"] > #ui {
+  top:calc(var(--btr-header-height, 62px) + 12px);
+}
+
+body[data-shared-page="ragdoll-lab"] > #out {
+  top:calc(var(--btr-header-height, 62px) + 70px);
+  max-height:calc(100svh - var(--btr-header-height, 62px) - 120px);
+}
+
+/* These worlds size their renderers from their scene containers. */
+body[data-shared-page="combat-sandbox"] > #world,
+body[data-shared-page="beyond-eden"] > #beyond-eden-app {
+  height:var(--btr-app-height);
+}
+
+body[data-shared-page="beyond-eden"] .hud--top {
+  top:calc(var(--btr-header-height, 62px) + 22px);
+}
+
+body[data-shared-page="beyond-eden"] .hud--panel {
+  top:calc(var(--btr-header-height, 62px) + 86px);
+  max-height:calc(var(--btr-app-height) - 110px);
+  overflow:auto;
+}
+
+body[data-shared-page="beyond-eden"] #quality-open {
+  top:calc(var(--btr-header-height, 62px) + 70px);
+}
+
+body[data-shared-page="beyond-eden"] :is(#reticle, #fatal) {
+  top:calc(50% + var(--btr-header-height, 62px) / 2);
+}
+
+body[data-shared-page="beyond-eden"] #fade {
+  top:var(--btr-header-height, 62px);
+}
+
+/* Preserve Eden's original controls as a separate overlay above its scene. */
+body[data-shared-page="showroom"] #world {
+  height:var(--btr-app-height);
+  min-height:0;
+}
+
+body[data-shared-page="showroom"] > .btr-world-tools {
+  position:absolute;
+  top:calc(var(--btr-header-height, 62px) + 8px);
+  left:3.2%;
+  right:3.2%;
+  z-index:4;
+  display:flex;
+  justify-content:flex-end;
+  color:#fff;
+  text-shadow:0 1px 4px #0009;
+  pointer-events:none;
+}
+
+body[data-shared-page="showroom"] .btr-world-tools .header-actions {
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  pointer-events:none;
+}
+
+body[data-shared-page="showroom"] .btr-world-tools :is(a, button) {
+  min-height:44px;
+  pointer-events:auto;
+}
+
+body[data-shared-page="showroom"] .btr-world-tools #open-garment-lab {
+  margin-right:0!important;
+}
+
+/* Keep the Studio's existing internal workspace and bottom controls intact. */
+body[data-shared-page="studio"] :is(.site-shell, .stemdeck-web) {
+  min-height:var(--btr-app-height);
+}
+
+body[data-shared-page="studio"] .sd-session-shell .sd-app-frame {
+  height:var(--btr-app-height);
+  min-height:0;
+}
+
+@supports (height:100dvh) {
+  body:is([data-shared-page="beyond-eden"], [data-shared-page="combat-sandbox"], [data-shared-page="showroom"], [data-shared-page="studio"]) {
+    --btr-app-height:calc(100dvh - var(--btr-header-height, 62px));
+  }
+}
+
+@media (max-width:720px) {
+  body[data-shared-page="beyond-eden"] .hud--top,
+  body[data-shared-page="beyond-eden"] #quality-open {
+    top:calc(var(--btr-header-height, 77px) + 14px);
+  }
+
+  body[data-shared-page="beyond-eden"] .hud--panel {
+    top:calc(var(--btr-header-height, 77px) + 58px);
+    max-height:calc(var(--btr-app-height) - 82px);
+  }
+}
+
+@media (max-width:700px) {
+  body[data-shared-page="showroom"] > .btr-world-tools {
+    left:14px;
+    right:14px;
+  }
+
+  body[data-shared-page="showroom"] .btr-world-tools .header-actions {
+    gap:8px;
+  }
+
+  body[data-shared-page="showroom"] .btr-world-tools .text-button {
+    gap:6px;
+    font-size:10px;
+  }
+}

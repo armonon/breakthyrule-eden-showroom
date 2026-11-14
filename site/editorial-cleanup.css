@@ -1,0 +1,147 @@
+
+/* Keep the public pages visual: remove decorative editorial copy, retain UI labels. */
+body[data-page] .site-foot > p,
+body[data-page] .site-foot .btr-feel-return,
+body[data-page] .site-foot .btr-discovery-footer,
+body[data-page="home"] .wearer-kicker,
+body[data-page="home"] #photo-story > .hero-copy,
+body[data-page="home"] .gallery-reel .reel-head > span,
+body[data-page="home"] .gallery-reel .reel-foot,
+body[data-page="home"] :is(#products, #metalwork, #accessories, #mystery) > .section-head,
+body[data-page="home"] #codex > .section-head > div,
+body[data-page="home"] .workshop-console-top,
+body[data-page="home"] .shop-shelf .shelf-bottom > p:not([role="status"]),
+body[data-page="home"] .witness-head > .kicker,
+body[data-page="home"] .production-heading > .kicker,
+body[data-page="home"] #production-title,
+body[data-page="home"] .production-about-copy > small,
+body[data-page="home"] .production-options article > h3,
+body[data-page="home"] .portal-heading > div,
+body[data-page="home"] .portal-card-top,
+body[data-page="home"] .portal-caption,
+body[data-page="home"] .box-coordinate,
+body[data-page="home"] .box-front > small,
+body[data-page="home"] :is(.box-back, .box-left, .box-right) > span {
+ display: none !important;
+}
+body[data-page="home"] #photo-story.hero-gallery {
+ grid-template-columns: minmax(0, 1fr) !important;
+ min-height: 0 !important;
+ gap: 0 !important;
+ padding-block: clamp(24px, 4vw, 48px) !important;
+}
+body[data-page="home"] #photo-story .hero-showcase { max-width: 680px; }
+body[data-page="home"] .gallery-reel .reel-head,
+body[data-page="home"] #codex > .section-head,
+body[data-page="home"] .witness-head,
+body[data-page="home"] .portal-heading { justify-content: flex-end !important; }
+body[data-page="home"] #codex > .section-head {
+ border: 0 !important;
+ box-shadow: none !important;
+ padding: 0 !important;
+ margin-bottom: 12px !important;
+}
+body[data-page="home"] .shop-shelf { padding-top: clamp(28px, 4vw, 52px) !important; }
+body[data-page="home"] :is(.compact-workshop, .mystery-drop) { padding-top: clamp(32px, 5vw, 64px) !important; }
+body[data-page="home"] .production-heading { align-self: center; }
+body[data-page="home"] .production-about-tool { margin-top: 0 !important; }
+body[data-page="home"] .portal-heading { margin-bottom: 12px !important; }
+body[data-page="home"] .shop-shelf .more-button { font-size: 0 !important; gap: 0 !important; }
+body[data-page="home"] .shop-shelf .more-button > span { display: none !important; }
+body[data-page="home"] .shop-shelf .more-button::after { content: "Show more +" / ""; font-size: 13px; }
+body[data-page="home"] .shop-shelf .more-button[aria-expanded="true"]::after { content: "Show less −" / ""; }
+
+/* Small motion icons keep pause/resume available without the repeated captions.
+   Original button text remains its accessible name; the decorative glyph is silent. */
+body[data-page="home"] :is(#wearer-play, #reel-motion, #portal-motion-toggle, #box-spin),
+body[data-page="home"] .spool-motion-label {
+ font-size: 0 !important;
+ letter-spacing: 0 !important;
+ min-width: 44px !important;
+ min-height: 44px !important;
+ padding: 8px !important;
+ display: inline-flex;
+ align-items: center;
+ justify-content: center;
+}
+body[data-page="home"] :is(#wearer-play, #reel-motion, #portal-motion-toggle, #box-spin)::after,
+body[data-page="home"] .spool-motion-label::after { content: "Ⅱ" / ""; font: 18px/1 Arial, sans-serif; }
+body[data-page="home"] :is(#wearer-play, #reel-motion, #portal-motion-toggle)[aria-pressed="false"]::after,
+body[data-page="home"] #box-spin[aria-pressed="true"]::after,
+body[data-page="home"] #production-icon-pause:checked ~ .spool-motion-label::after { content: "▶" / ""; }
+body[data-page="home"] .spool-motion-label > span {
+ position: absolute !important;
+ width: 1px !important;
+ height: 1px !important;
+ overflow: hidden !important;
+ clip-path: inset(50%) !important;
+ white-space: nowrap !important;
+}
+@media (prefers-reduced-motion: reduce) {
+ body[data-page="home"] .spool-motion-label { display: none !important; }
+}
+
+/* Latest collection cards and the paper About layout. */
+body[data-page="home"] #metalwork > .section-head { display: flex !important; }
+body[data-page="home"] :is(#metalwork, #belts) > .section-head > div,
+body[data-page="home"] #belts > .lede,
+body[data-page="home"] #mystery > .mystery-heading,
+body[data-page="home"] .equipment-card > p,
+body[data-page="home"] .equipment-art .slot-number,
+body[data-page="home"] .product-card :is(.card-badge, .card-numeral),
+body[data-page="home"] #wall-title,
+:is(#about-paper, #home-about-paper) .document-line,
+:is(#about-paper, #home-about-paper) .printed-images figcaption,
+:is(#about-paper, #home-about-paper) .paper-section > :is(h2, h3),
+:is(#about-paper, #home-about-paper) .typed-note,
+:is(#about-paper, #home-about-paper) .paper-footer > span,
+body[data-page="gallery"] .page-head,
+body[data-page="gallery"] main > .section > .section-head,
+body[data-page="lab"] .lab-title,
+body[data-page="lab"] .lab-worn > .kicker,
+body[data-page="lab"] .special-body > .kicker,
+body[data-page="lab"] .lab-catalog > .section-head > div:first-child,
+body[data-page="lab"] .altar-head > .kicker,
+body[data-page="archive"] .market-welcome > span,
+body[data-page="archive"] .library-intro > div { display: none !important; }
+body[data-page="home"] :is(#metalwork, #belts) > .section-head {
+ justify-content: flex-end !important;
+ border: 0 !important;
+ box-shadow: none !important;
+ padding: 0 !important;
+ margin-bottom: 12px !important;
+}
+body[data-page="home"] .workshop-art-heading { justify-content: flex-end !important; }
+body[data-page="home"] #belts { padding-top: clamp(28px, 4vw, 52px) !important; }
+:is(#about-paper, #home-about-paper) .paper-footer { justify-content: flex-end !important; }
+body[data-page="gallery"] main.wrap { padding-top: 16px; }
+body[data-page="lab"] .lab-head { padding-block: 24px 16px !important; }
+body[data-page="archive"] .market-welcome { justify-content: flex-end !important; }
+body[data-page="archive"] .library-intro { display: none !important; }
+body[data-page] .btr-discovery-invite > p,
+body[data-page] .btr-mood-intro > span,
+body[data-page] .btr-lab-stamp.is-complete,
+body[data-page="home"] #necklaces > .section-head,
+body[data-page="home"] #necklaces > .lede,
+body[data-page="home"] .pendant-dialog-eyebrow,
+body[data-page="home"] .belt-collection > .page-head,
+body[data-page="home"] .belt-feature-copy > .kicker,
+body[data-page="home"] .belt-collection > .section > .section-head,
+body[data-page="reliquary"] .page-head > :is(.folio, h1),
+body[data-page="reliquary"] .page-head .rubric { display: none !important; }
+body[data-page="home"] #necklaces { padding-top: clamp(28px, 4vw, 52px) !important; }
+body[data-page="home"] .belt-collection { padding-top: 24px; }
+body[data-page="reliquary"] .page-head { padding-block: 24px 16px; margin-bottom: 24px; }
+body[data-page="product"] .plate-mark,
+body[data-page="product"] #tagline,
+body[data-page="product"] .gallery-showcase > .section-head > div:first-child { display: none !important; }
+body[data-page="product"] .gallery-showcase > .section-head { justify-content: flex-end !important; }
+
+/* The particle hero puts its gesture hint inside the decorative overline. */
+body[data-page="home"] .wearer-topline { justify-content: space-between !important; }
+body[data-page="home"] .wearer-topline > span { font-size: 0 !important; line-height: 0 !important; letter-spacing: 0 !important; }
+body[data-page="home"] .wearer-topline .btr-particle-hint { line-height: 1.4 !important; margin-top: 0 !important; }
+
+/* Retire the category preview; its hidden anchor still mounts the necklace collection. */
+body[data-page="home"] #metalwork,
+body[data-page="home"] .shop-path a[href="#metalwork"] { display: none !important; }

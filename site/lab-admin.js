@@ -3,6 +3,8 @@
 import { PRODUCTION_STATUSES, PAYMENT_STATUSES } from '/labkit/catalog.mjs';
 import { artworkThumb, ARTWORK_POOL } from '/labkit/artwork-pool.mjs';
 import { itemSketch } from '/site/garment-sketch.mjs';
+import { sidesFor, graphicName } from '/labkit/pricing.mjs';
+import { isUploadId, uploadForId, uploadedArtworkUrl } from '/labkit/custom-artwork.mjs';
 
 const $ = id => document.getElementById(id);
 const h = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); for (const k of kids.flat()) if (k != null && k !== false) n.append(k); return n; };
@@ -75,13 +77,23 @@ async function openOrder(id) {
     h('p', { className: 'detail-status', role: 'status' }),
     h('section', {}, h('h3', { textContent: 'Pieces' }), ...o.items.map((it, i) => {
       const art = h('div', { className: 'cart-art' }); art.innerHTML = itemSketch(it, it.describe, 'adm' + i);
-      const refs = it.art?.references?.length ? h('div', { className: 'altar-refs' }, ...it.art.references.map(r => h('figure', {}, h('img', { src: artworkThumb(r), alt: nameOf[r] || r }), h('figcaption', { textContent: nameOf[r] || r })))) : null;
+      const sides = sidesFor(it), printRefs = [...sides.front.map(r => ['Front', r]), ...sides.back.map(r => ['Back', r])];
+      const refs = printRefs.length ? h('div', { className: 'altar-refs' }, ...printRefs.map(([side, r]) => {
+        const name = graphicName(r, it.uploads) || nameOf[r] || r;
+        let url;
+        try { url = isUploadId(r) ? uploadedArtworkUrl(uploadForId(r, it.uploads)) : artworkThumb(r); }
+        catch { return h('figure', {}, h('figcaption', { textContent: `${side}: ${name} — uploaded file unavailable` })); }
+        const img = h('img', { src: url, alt: name, loading: 'lazy' });
+        const visual = isUploadId(r) ? h('a', { href: url, target: '_blank', rel: 'noopener', ariaLabel: `Open original print file: ${name}` }, img) : img;
+        return h('figure', {}, visual, h('figcaption', { textContent: `${side}: ${name}${isUploadId(r) ? ' · original file' : ''}` }));
+      })) : null;
       let relic = null;
-      if (it.product === 'relic-box') {
+      if (it.product === 'relic-box' || it.product === 'mystery-pack') {
         const ta = h('textarea', { rows: 3, placeholder: 'One item per line', value: (o.relic?.[i] || []).join('\n') });
-        relic = h('div', { className: 'relic-assign' }, h('label', {}, 'Box contents (assigned items)', ta), h('button', { className: 'ghost', type: 'button', textContent: 'Save contents', onclick: () => act('relic', { index: i, contents: ta.value.split('\n') }, 'Box contents saved.') }));
+        relic = h('div', { className: 'relic-assign' }, h('label', {}, 'Package contents (assigned items)', ta), h('button', { className: 'ghost', type: 'button', textContent: 'Save contents', onclick: () => act('relic', { index: i, contents: ta.value.split('\n') }, 'Package contents saved.') }));
       }
-      return h('div', { className: 'detail-item' }, art, h('div', {}, h('strong', { textContent: `${it.describe.title}${it.quantity > 1 ? ' × ' + it.quantity : ''} — ${money(it.totalCents)}` }), h('ul', { className: 'cart-spec' }, ...it.describe.spec.map(s => h('li', { textContent: s })), it.units > 1 ? h('li', { textContent: `Fulfil ${it.units} pieces` }) : null), refs, relic));
+      const fulfilmentCount = it.expectedUnits ? `Expected total: ${it.expectedUnits.min}–${it.expectedUnits.max} pieces` : it.units > 1 ? `Fulfil ${it.units} pieces` : '';
+      return h('div', { className: 'detail-item' }, art, h('div', {}, h('strong', { textContent: `${it.describe.title}${it.quantity > 1 ? ' × ' + it.quantity : ''} — ${money(it.totalCents)}` }), h('ul', { className: 'cart-spec' }, ...it.describe.spec.map(s => h('li', { textContent: s })), fulfilmentCount ? h('li', { textContent: fulfilmentCount }) : null), refs, relic));
     })),
     o.customerNote ? h('section', {}, h('h3', { textContent: 'Customer note' }), h('p', { textContent: o.customerNote })) : null,
     h('section', {}, h('h3', { textContent: 'Customer & payment' }),

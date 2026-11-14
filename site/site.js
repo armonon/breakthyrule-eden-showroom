@@ -2,8 +2,10 @@
 // Shared chrome for the public site: header, tabs, footer, and the discussion board
 // (a Circle space when one is configured, otherwise a local preview board).
 (()=>{
- const tabs=[['/', 'Products','home'],['/lab','Lab','lab'],['/gallery','Gallery','gallery'],['/archive','Archive','archive']];
+ const tabs=[['/', 'Products','home'],['/lab','Lab','lab'],['/gallery','Gallery','gallery'],['/archive','Archive','archive'],['/about','About','about']];
  const page=document.body.dataset.page||'';
+ // Keep old shared About links working at the dedicated page.
+ if(new URLSearchParams(location.search).has('about')){location.replace('/about');return;}
  const el=(tag,props={},...children)=>{const node=Object.assign(document.createElement(tag),props);node.append(...children.filter(c=>c!=null));return node;};
  window.siteEl=el;
 
@@ -12,18 +14,17 @@
  const brand=el('a',{className:'brand'},logo('in-header'));brand.href='/';
  brand.setAttribute('aria-label','Break Thy Rule home');
  const nav=el('nav',{className:'tabs'});nav.setAttribute('aria-label','Main');
- for(const [href,label,id] of tabs){const a=el('a',{href,textContent:label});if(id===page)a.setAttribute('aria-current','page');nav.append(a);}
- const enter=el('a',{className:'enter-showroom',href:'/showroom'},el('span',{textContent:'Enter the 3D showroom'}),el('span',{textContent:'↗',ariaHidden:'true'}));
+ for(const [href,label,id] of tabs){const a=el('a',{href,textContent:label});if(id===page)a.setAttribute('aria-current','page');if(id==='about')a.className='btr-about-link';nav.append(a);}
+ const enter=el('a',{className:'enter-showroom',href:'/showroom',ariaLabel:'Enter the 3D showroom',title:'Enter the 3D showroom'},el('span',{textContent:'Enter the 3D showroom'}),el('span',{textContent:'↗',ariaHidden:'true'}));
  header.append(brand,nav,enter);
  document.body.prepend(header);
- // About opens the panel from the codex cover; pages without the cover link to it.
- addEventListener('load',()=>{if(!nav.querySelector('.btr-about-link'))nav.append(el('a',{className:'btr-about-link',href:'/?about=1',textContent:'About'}));});
 
  const footer=el('footer',{className:'site-foot'});
  footer.append(
   el('div',{className:'foot-mark'},logo('in-footer')),
   el('p',{textContent:'Here ends the first book. A codex worn on the body.'}),
   el('div',{className:'foot-links'},
+   el('a',{href:'/about',textContent:'About'}),
    el('a',{href:'/lab',textContent:'Garment Lab'}),
    el('a',{href:'/reliquary',textContent:'Reliquary'}),
    el('a',{href:'/showroom',textContent:'3D Showroom'}),

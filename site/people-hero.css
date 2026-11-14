@@ -1,0 +1,70 @@
+/* A moving photographic cover, followed by the existing live garment canvas. */
+.wearer-hero{position:relative;isolation:isolate;height:clamp(620px,calc(100svh - 72px),820px);overflow:hidden;background:#28271e;color:#fff4d8;border-bottom:6px ridge #a18a5f;scroll-margin-top:72px}
+.wearer-scenes{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:5px;background:#29251c}
+.wearer-frame{position:relative;min-width:0;overflow:hidden;margin:0;background:#444130}
+.wearer-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.88);opacity:1;transform:scale(1);transition:opacity .18s ease,transform .45s ease;will-change:opacity}
+.wearer-photo.is-entering{opacity:0;transform:scale(1.035)}
+.wearer-photo.is-leaving{opacity:0}
+.wearer-shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,#15140e85,transparent 20%,#15140e08 35%,#15140e66 60%,#15140ee6 100%)}
+.wearer-shade::after{content:'';position:absolute;inset:0;border:1px solid #f7e6bd69;margin:16px;box-shadow:inset 0 0 60px #0d0d0833}
+.wearer-topline{position:absolute;top:28px;left:4vw;right:4vw;display:flex;align-items:center;justify-content:space-between;gap:16px;font:11px/1.4 Georgia,serif;letter-spacing:.13em;text-shadow:0 1px 3px #000}
+#wearer-play{min-height:44px;flex:none;padding:10px 14px;border:1px solid #f5e7bf99;background:#1d201b87;color:#fff2cf;font:12px Georgia,serif;cursor:pointer;backdrop-filter:blur(6px)}
+.wearer-content{position:absolute;left:4vw;right:4vw;bottom:98px;display:flex;align-items:flex-end;justify-content:space-between;gap:30px}
+.wearer-title-group{min-width:0}
+.wearer-kicker{font:italic 17px/1.4 Georgia,serif;margin:0 0 25px;color:#fff1ca;text-shadow:1px 2px 8px #000}
+#wearer-title{margin:0;color:#fff4d8;font-family:var(--blackletter,Georgia,serif);font-size:clamp(98px,12.7vw,184px);font-weight:400;line-height:.79;letter-spacing:-.035em;text-shadow:3px 4px 0 #211b13,0 9px 28px #0005}
+#wearer-title span{display:block}
+#wearer-title span+span{margin-top:.12em}
+.wearer-actions{display:flex;flex-direction:column;gap:10px;min-width:210px;margin-bottom:4px}
+.wearer-actions a{display:flex;align-items:center;justify-content:space-between;gap:22px;min-height:48px;padding:12px 18px;border:2px ridge #d0b980;text-decoration:none;background:#f0dfb8;color:#292417;font:15px Georgia,serif;box-shadow:3px 4px 0 #0b0c075e;transition:background .18s,transform .18s}
+.wearer-actions a+a{background:#24251cc9;color:#fff1ca;border-color:#b59c65}
+.wearer-actions a:hover{background:#ffecc2;transform:translateY(-2px);color:#282417}
+.wearer-hero :focus-visible{outline:3px solid #fff0b3;outline-offset:4px}
+.wearer-bottomline{position:absolute;left:4vw;right:4vw;bottom:22px;display:flex;justify-content:space-between;align-items:center;gap:20px;padding-top:14px;border-top:1px solid #f1db9b66;font:11px/1.4 Georgia,serif;color:#e7d3a7}
+.wearer-gallery-link{color:#f6e4bb;text-decoration:none;font-style:italic;font-size:15px}
+.wearer-gallery-link:hover{text-decoration:underline;text-underline-offset:4px}
+#wearer-index{display:flex;gap:2px}
+#wearer-index button{min-width:36px;min-height:40px;padding:6px;border:0;border-bottom:2px solid transparent;background:transparent;color:#d6c5a2;font:11px Georgia,serif;cursor:pointer}
+#wearer-index button[aria-current=true]{color:#fff6d3;border-bottom-color:#f2c86e;background:#f0dfb81c}
+#wearer-index button:hover{background:#f0dfb82e}
+#wearer-count{min-width:46px;text-align:right;white-space:nowrap;letter-spacing:.06em}
+.wearer-hero [hidden]{display:none!important}
+#photo-story.hero-gallery .garment-preview-kicker{margin:0;font:11px/1.5 Georgia,serif;letter-spacing:.12em;color:var(--rubric,#963b2d)}
+#photo-story.hero-gallery .garment-preview-title{margin:0;color:var(--ink,#302418);font:clamp(68px,7.5vw,112px)/.94 var(--blackletter,Georgia,serif);font-weight:400;letter-spacing:-.025em}
+@media(max-width:1000px){
+ .wearer-actions{min-width:180px}
+ .wearer-actions a{padding:12px;font-size:13px}
+ #wearer-title{font-size:12.9vw}
+ .wearer-bottomline{gap:12px}
+ #wearer-index button{min-width:30px}
+}
+@media(max-width:700px){
+ .wearer-hero{height:calc(100svh - 60px);min-height:620px;max-height:800px}
+ .wearer-scenes{display:block}
+ .wearer-frame-current{position:absolute;inset:0}
+ .wearer-frame-previous,.wearer-frame-next{display:none}
+ .wearer-shade{background:linear-gradient(180deg,#16170d66,transparent 22%,#16170d08 38%,#16170d8c 65%,#16170dee)}
+ .wearer-shade::after{margin:10px}
+ .wearer-topline{top:20px;left:20px;right:20px;font-size:8px;letter-spacing:.07em}
+ #wearer-play{font-size:11px;padding:8px 10px;min-height:44px}
+ .wearer-content{left:22px;right:22px;bottom:108px;display:block}
+ .wearer-kicker{font-size:13px;margin-bottom:18px}
+ #wearer-title{font-size:clamp(70px,18vw,125px);line-height:.83}
+ .wearer-actions{flex-direction:row;min-width:0;margin:25px 0 0;gap:8px}
+ .wearer-actions a{flex:1;min-width:0;gap:5px;padding:10px;font-size:12px}
+ .wearer-bottomline{left:22px;right:22px;bottom:19px;display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding-top:10px}
+ .wearer-gallery-link{font-size:12px}
+ #wearer-index{grid-column:1/-1;grid-row:2;justify-content:space-between}
+ #wearer-index button{min-height:36px;min-width:28px;flex:1;padding:5px}
+ #wearer-count{grid-column:2;grid-row:1;font-size:9px}
+ #photo-story.hero-gallery .garment-preview-title{font-size:clamp(64px,15vw,92px)}
+}
+@media(max-width:360px){
+ .wearer-content{left:18px;right:18px}
+ #wearer-title{font-size:65px}
+ .wearer-kicker{font-size:12px}
+ .wearer-actions a{font-size:11px;padding:9px 7px}
+ .wearer-topline{left:18px;right:18px}
+ .wearer-topline>span{max-width:140px}
+}
+@media(prefers-reduced-motion:reduce){.wearer-photo,.wearer-actions a{transition:none!important}.wearer-photo.is-entering{transform:none}.wearer-actions a:hover{transform:none}}

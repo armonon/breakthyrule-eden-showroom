@@ -67,3 +67,12 @@ body[data-page^=lab] .site-top .btr-header-button,body[data-page=reliquary] .sit
 .cart-upsell{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 12px;padding:10px 12px;border:1px dashed #6b5a44;font-family:'Cormorant Garamond',serif;font-size:16px;color:#d9ccb6}
 .cart-upsell a{color:#f1c56b;white-space:nowrap;text-decoration:underline}
 .test-badge,.pill{font-size:12px}
+
+/* Keep the cart and showroom together as matching header controls. */
+body .site-top{column-gap:8px}
+body .site-top > :is(.cart-button,.enter-showroom){box-sizing:border-box;display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 84px;width:84px;min-width:84px;max-width:84px;height:44px;min-height:44px!important;max-height:44px;padding:0 8px!important;margin:0!important;gap:6px;white-space:nowrap}
+body .site-top > .enter-showroom span:first-child{display:none!important}
+body .site-top > .enter-showroom::before{content:'3D'}
+@media(max-width:900px){body .site-top > .cart-button{margin-left:auto!important}}
+@media(max-width:480px){body .site-top{padding-left:12px;padding-right:12px}body .site-top > .brand{padding:0!important}}
+@media(max-width:360px){body .site-top > .brand img.site-logo.in-header{width:112px;height:auto;max-width:112px}}

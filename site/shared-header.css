@@ -1,0 +1,282 @@
+@import url('/site/product-card-links.css?v=1');
+@import url('/site/motion-controls.css?v=1');
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
+
+/* The About bar, scoped above the older page skins and injected button styles. */
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] {
+  box-sizing:border-box!important;
+  position:relative!important;
+  inset:auto!important;
+  z-index:5;
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  flex-shrink:0;
+  align-items:center!important;
+  justify-content:normal!important;
+  gap:22px!important;
+  width:calc(100% - 56px)!important;
+  max-width:1500px!important;
+  min-width:0!important;
+  height:62px!important;
+  min-height:62px!important;
+  margin:0 auto!important;
+  padding:0!important;
+  border:0!important;
+  border-bottom:1px solid #6c735e!important;
+  border-radius:0!important;
+  background:var(--cave-grain, none) #0b0e0a!important;
+  color:#ebe5d1!important;
+  box-shadow:0 3px 0 #070907,0 4px 0 #394232!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  font:14px/1.5 'Courier Prime','Courier New',monospace!important;
+  letter-spacing:normal!important;
+  text-transform:none!important;
+  text-shadow:none!important;
+  filter:none!important;
+  transform:none!important;
+}
+
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] *,
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] *::before,
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] *::after {
+  box-sizing:border-box!important;
+}
+
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] .brand {
+  display:block!important;
+  flex:0 0 auto!important;
+  order:0!important;
+  width:auto!important;
+  min-width:0!important;
+  margin:0 auto 0 0!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  color:#ebe5d1!important;
+  box-shadow:none!important;
+  font:bold 18px/1.1 'Courier Prime','Courier New',monospace!important;
+  letter-spacing:normal!important;
+  text-transform:none!important;
+  text-decoration:none!important;
+  text-shadow:none!important;
+  white-space:nowrap!important;
+  transform:none!important;
+}
+
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] .brand > span {
+  display:block!important;
+  margin:2px 0 0!important;
+  padding:0!important;
+  color:inherit!important;
+  font:italic 10px/1.3 'Courier Prime','Courier New',monospace!important;
+  letter-spacing:normal!important;
+  text-transform:none!important;
+}
+
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] .tabs {
+  position:static!important;
+  display:flex!important;
+  flex:0 1 auto!important;
+  flex-wrap:nowrap!important;
+  order:0!important;
+  align-items:center!important;
+  justify-content:normal!important;
+  gap:16px!important;
+  width:auto!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] .tabs > :is(a,button) {
+  position:relative!important;
+  display:inline-flex!important;
+  flex:0 0 auto!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:auto!important;
+  min-width:0!important;
+  height:auto!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:8px 0!important;
+  border:1px solid transparent!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:#c9cdbb!important;
+  box-shadow:none!important;
+  font:700 11px/1.2 'Courier New',monospace!important;
+  letter-spacing:.07em!important;
+  text-transform:lowercase!important;
+  text-decoration:none!important;
+  text-shadow:none!important;
+  white-space:nowrap!important;
+  transform:none!important;
+  animation:none!important;
+  transition:background-color .15s,color .15s,border-color .15s!important;
+}
+
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] .tabs > :is(a,button):hover {
+  border-color:#6c735e!important;
+  background:#252c20!important;
+  color:#ebe5d1!important;
+}
+
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] .tabs > [aria-current="page"] {
+  border-color:#e3e7a2!important;
+  background:#d6dc6c!important;
+  color:#10120f!important;
+  box-shadow:2px 2px 0 #050705!important;
+}
+
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] :is(.cart-button,.enter-showroom) {
+  position:relative!important;
+  display:inline-flex!important;
+  flex:0 0 auto!important;
+  order:0!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:5px!important;
+  width:auto!important;
+  min-width:0!important;
+  height:auto!important;
+  min-height:29px!important;
+  margin:0!important;
+  padding:6px 9px!important;
+  border:1px solid #6c735e!important;
+  border-radius:0!important;
+  background:#171d14!important;
+  color:#ebe5d1!important;
+  box-shadow:inset 1px 1px 0 #3e4835,2px 2px 0 #020402!important;
+  font:400 11px/1.2 'Courier New',monospace!important;
+  letter-spacing:0!important;
+  text-transform:none!important;
+  text-decoration:none!important;
+  text-shadow:none!important;
+  white-space:nowrap!important;
+  cursor:pointer;
+  filter:none!important;
+  transform:none!important;
+  animation:none!important;
+  transition:background-color .15s,border-color .15s!important;
+}
+
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] .cart-button {
+  min-height:44px!important;
+  padding:0 12px!important;
+  gap:5px!important;
+}
+
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] .cart-button > span:first-child {
+  display:inline!important;
+  font:10px/1 'Courier Prime','Courier New',monospace!important;
+  letter-spacing:0!important;
+  text-transform:none!important;
+}
+
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] .cart-button .cart-count {
+  display:inline-grid!important;
+  position:static!important;
+  place-items:center!important;
+  width:auto!important;
+  min-width:0!important;
+  height:auto!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:50%!important;
+  background:#d6dc6c!important;
+  color:#10120f!important;
+  box-shadow:none!important;
+  font:10px/1 'Courier Prime','Courier New',monospace!important;
+  letter-spacing:0!important;
+  text-transform:none!important;
+  transform:none!important;
+}
+
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] :is(.cart-button,.enter-showroom):hover {
+  border-color:#879174!important;
+  background:#252c20!important;
+  color:#ebe5d1!important;
+}
+
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] :is(.cart-button,.enter-showroom):active {
+  background:#1d2618!important;
+  transform:none!important;
+}
+
+/* The brand still opens the Codex; hide only its redundant legacy header button. */
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] > .btr-header-button {
+  display:none!important;
+}
+
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] :is(a,button)::before,
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] :is(a,button)::after {
+  content:none!important;
+  display:none!important;
+  background:none!important;
+  border:0!important;
+  box-shadow:none!important;
+  filter:none!important;
+  animation:none!important;
+}
+
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] :is(a,button):focus-visible {
+  outline:3px solid #d6dc6c!important;
+  outline-offset:4px!important;
+}
+
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] [hidden] {
+  display:none!important;
+}
+
+@media (max-width:1050px) {
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] {gap:15px!important}
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] .brand {font-size:16px!important}
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] .tabs {gap:12px!important}
+}
+
+@media (max-width:760px) {
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] {
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto auto!important;
+    grid-template-rows:43px 29px!important;
+    align-content:start!important;
+    gap:0 10px!important;
+    width:calc(100% - 28px)!important;
+    height:77px!important;
+    min-height:77px!important;
+  }
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] .brand {grid-column:1;grid-row:1;font-size:16px!important}
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] .brand > span {font-size:9px!important}
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] .tabs {
+    grid-row:2;
+    grid-column:1/-1;
+    justify-content:space-between!important;
+    gap:10px!important;
+    width:100%!important;
+  }
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] .tabs > :is(a,button) {padding:5px 0!important;font-size:11px!important}
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] .cart-button {grid-column:2;grid-row:1}
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] .enter-showroom {grid-column:3;grid-row:1;padding-inline:7px!important}
+}
+
+@media (max-width:360px) {
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] {column-gap:6px!important}
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] .brand {font-size:14px!important}
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] :is(.cart-button,.enter-showroom) {padding-inline:5px!important;font-size:9px!important}
+}
+
+@media (prefers-reduced-motion:reduce) {
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] :is(a,button) {transition:none!important}
+}
+
+@media print {
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] {display:none!important}
+}

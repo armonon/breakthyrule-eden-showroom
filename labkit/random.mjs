@@ -2,6 +2,7 @@
 // give the same result, so an accepted configuration can be rebuilt exactly from its stored record.
 // It only chooses from curated, producible treatments and existing artwork — it never invents an image.
 import { OFFERINGS, RANDOM_CATEGORIES, PLACEMENTS, TECHNIQUES, RANDOM_VERSION, FITS } from './catalog.mjs';
+import { POOL_IDS, RANDOM_POOL_IDS } from './artwork-pool.mjs';
 
 export function mulberry32(seed) {
   let a = seed >>> 0;
@@ -29,6 +30,9 @@ export function newSeed() {
 // RANDOM ART: keeps garment and size; draws the artistic direction.
 // `artworkPool` is a list of curated artwork ids (Break Thy Rule graphics) to reference.
 export function drawArt(seed, artworkPool = []) {
+  // The expanded manual catalog keeps its original seeded-draw snapshot.
+  // Callers supplying a partial, reordered or custom pool retain their own input.
+  const drawPool = artworkPool.length === POOL_IDS.length && artworkPool.every((id, index) => id === POOL_IDS[index]) ? RANDOM_POOL_IDS : artworkPool;
   const rng = mulberry32(seed);
   const [category, secondary] = pickDistinct(rng, RANDOM_CATEGORIES, 2);
   return {
@@ -36,7 +40,7 @@ export function drawArt(seed, artworkPool = []) {
     category, secondary,
     placement: pick(rng, PLACEMENTS),
     technique: pick(rng, TECHNIQUES),
-    references: pickDistinct(rng, artworkPool, Math.min(3, artworkPool.length))
+    references: pickDistinct(rng, drawPool, Math.min(3, drawPool.length))
   };
 }
 

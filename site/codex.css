@@ -71,6 +71,8 @@ h1,h2,h3{color:var(--ink)}
 .pedestal{position:absolute;left:50%;bottom:13%;width:46%;height:26px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(closest-side,rgba(40,25,10,.28),transparent);z-index:1;pointer-events:none}
 .spot{position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(260px circle at var(--mx,50%) var(--my,45%),rgba(255,247,226,.32),transparent 70%);mix-blend-mode:soft-light;opacity:0;transition:opacity .4s}
 .altar:hover .spot{opacity:1}
+/* Keep the Garment Lab preview free of the pointer-following spotlight. */
+#hero-spot{display:none}
 .hero-label{z-index:4;left:44px;right:44px;bottom:42px;font-family:var(--serif);font-size:17px;letter-spacing:.02em;text-transform:none;color:var(--ink)}
 .hero-label .plate-no{font-family:var(--blackletter);color:var(--rubric);font-size:20px;margin-right:8px}
 .hero-label em{font-family:var(--serif)}

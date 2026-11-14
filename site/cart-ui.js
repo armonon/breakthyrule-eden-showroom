@@ -1,8 +1,8 @@
 // The cart: a header button and a drawer on every page of the site. Edits configurations, quantities,
 // removes lines, and starts a secure checkout (prices are recomputed on the server).
-import { cart, labStatus, money } from '/site/cart-store.mjs';
+import { cart, labStatus, money } from '/site/cart-store.mjs?v=site-audit-1';
 import { itemSketch } from '/site/garment-sketch.mjs';
-import { MAX_QUANTITY } from '/labkit/catalog.mjs';
+import { MAX_QUANTITY, MYSTERY_PACKAGES } from '/labkit/catalog.mjs';
 
 const h = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); for (const k of kids.flat()) if (k != null) n.append(k); return n; };
 
@@ -33,14 +33,19 @@ drawer.append(
 );
 document.body.append(drawer);
 
-note.value = sessionStorage.getItem('btr-cart-note') || '';
-note.addEventListener('input', () => sessionStorage.setItem('btr-cart-note', note.value));
+// Session storage may be blocked, full or contain an interrupted write. Keep this tab usable.
+const sessionMemory = new Map();
+function sessionRead(key) { if (sessionMemory.has(key)) return sessionMemory.get(key); try { return sessionStorage.getItem(key); } catch { return null; } }
+function sessionWrite(key, value) { sessionMemory.set(key, value); try { sessionStorage.setItem(key, value); } catch {} }
+note.value = sessionRead('btr-cart-note') || '';
+note.addEventListener('input', () => sessionWrite('btr-cart-note', note.value));
+let checkingOut = false;
 
 function render(view = cart.view()) {
   button.querySelector('.cart-count').textContent = view.count;
   button.classList.toggle('has-items', view.count > 0);
   subtotal.textContent = money(view.subtotalCents);
-  checkout.disabled = !view.lines.length;
+  checkout.disabled = checkingOut || !view.lines.length;
   if (!view.lines.length) { list.replaceChildren(h('li', { className: 'cart-empty' }, h('p', { textContent: 'Your cart is empty.' }), h('a', { href: '/lab', className: 'ghost', textContent: 'Build a garment' }))); return; }
   list.replaceChildren(...view.lines.map(l => {
     const art = h('div', { className: 'cart-art' }); art.innerHTML = itemSketch(l.item, l.describe, 'cart-' + l.id);
@@ -50,7 +55,8 @@ function render(view = cart.view()) {
     minus.onclick = () => cart.setQuantity(l.id, l.item.quantity - 1);
     plus.onclick = () => cart.setQuantity(l.id, l.item.quantity + 1);
     const remove = h('button', { type: 'button', className: 'link', textContent: 'Remove' }); remove.onclick = () => cart.remove(l.id);
-    const edit = l.item.product === 'garment' ? h('a', { className: 'link', href: '/lab?edit=' + encodeURIComponent(l.id) + '#build', textContent: 'Edit' }) : null;
+    const editable = l.item.product === 'garment' || l.item.product === 'mystery-pack';
+    const edit = editable ? h('a', { className: 'link', href: '/lab?edit=' + encodeURIComponent(l.id) + (l.item.product === 'mystery-pack' ? '#packages' : '#build'), textContent: 'Edit' }) : null;
     return h('li', { className: 'cart-line' }, art,
       h('div', { className: 'cart-info' },
         h('strong', { textContent: l.describe.title }),
@@ -61,12 +67,13 @@ function render(view = cart.view()) {
       h('span', { className: 'cart-price', textContent: money(l.totalCents) }));
   }));
 }
-// One gentle suggestion: The Trinity, when it isn't in the cart yet.
+// Let shoppers browse the packages without suggesting an unavailable size.
 function renderUpsell(view = cart.view()) {
   const box = drawer.querySelector('#cart-upsell');
-  const show = view.lines.length > 0 && !view.lines.some(l => l.item.product === 'trinity');
+  const show = view.lines.length > 0 && !view.lines.some(l => l.item.product === 'mystery-pack');
   box.hidden = !show; if (!show) return;
-  box.replaceChildren(h('span', {}, h('strong', { textContent: 'The Trinity' }), ' — three tees, one bundle, $60.'), h('a', { href: '/lab#trinity', textContent: 'Add one ↗' }));
+  const startingPrice = Math.min(...Object.values(MYSTERY_PACKAGES).map(p => p.priceCents));
+  box.replaceChildren(h('span', {}, h('strong', { textContent: 'Leave room for surprise.' }), ` Mystery packages from ${money(startingPrice)}.`), h('a', { href: '/lab#packages', textContent: 'Explore packages ↗' }));
 }
 cart.subscribe(render); cart.subscribe(renderUpsell); render(); renderUpsell();
 
@@ -77,30 +84,34 @@ drawer.addEventListener('click', e => { if (e.target === drawer || e.target.clos
 document.addEventListener('lab:open-cart', openCart);
 
 // One checkout key per cart state, so a double click or a retry never opens two checkouts.
-function checkoutKey(items) {
-  const sig = JSON.stringify(items) + note.value;
-  const saved = JSON.parse(sessionStorage.getItem('btr-checkout-key') || 'null');
-  if (saved && saved.sig === sig) return saved.key;
+function checkoutKey(items, orderNote) {
+  const sig = JSON.stringify(items) + orderNote;
+  let saved = null;
+  try { saved = JSON.parse(sessionRead('btr-checkout-key') || 'null'); } catch {}
+  if (saved && saved.sig === sig && typeof saved.key === 'string' && /^[a-f0-9]{36}$/.test(saved.key)) return saved.key;
   const key = Array.from(crypto.getRandomValues(new Uint8Array(18)), b => b.toString(16).padStart(2, '0')).join('');
-  sessionStorage.setItem('btr-checkout-key', JSON.stringify({ sig, key }));
+  sessionWrite('btr-checkout-key', JSON.stringify({ sig, key }));
   return key;
 }
 checkout.onclick = async () => {
-  const items = cart.items();
+  if (checkingOut) return;
+  const items = JSON.parse(JSON.stringify(cart.items())), orderNote = note.value;
   if (!items.length) return;
+  checkingOut = true;
   checkout.disabled = true; status.textContent = 'Opening secure checkout…';
   try {
-    const st = await labStatus();
-    if (!st) throw new Error('Ordering is not connected on this preview yet — your cart is saved on this device.');
-    if (!st.checkout.available) throw new Error(st.checkout.reasons.join(' ') + ' Your cart is saved on this device.');
-    const r = await fetch('/api/lab/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items, note: note.value, idempotencyKey: checkoutKey(items) }) });
+    const st = await labStatus({ refresh: true });
+    if (!st) throw new Error('Ordering could not be reached. Please try again. Your cart is saved on this device.');
+    if (!st.checkout?.available) throw new Error((st.checkout?.reasons?.join(' ') || 'Ordering is currently unavailable.') + ' Your cart is saved on this device.');
+    const r = await fetch('/api/lab/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items, note: orderNote, idempotencyKey: checkoutKey(items, orderNote) }) });
     const data = await r.json().catch(() => ({}));
     if (!r.ok || !data.url) throw new Error(data.error || 'Checkout could not start. Nothing was charged.');
-    sessionStorage.setItem('btr-last-order', data.orderId);
+    sessionWrite('btr-last-order', data.orderId);
     location.href = data.url;
   } catch (e) {
-    status.textContent = e.message; checkout.disabled = false;
-    sessionStorage.removeItem('btr-checkout-key');
+    status.textContent = e.message;
+    // A lost response may still have created a checkout. Retry the same cart with the same key.
+    checkingOut = false; checkout.disabled = !cart.items().length;
   }
 };
 labStatus().then(st => { if (st?.checkout?.mode === 'test') { const b = h('span', { className: 'test-badge', textContent: 'Test mode — no real charges' }); drawer.querySelector('.cart-head h2').append(b); } });

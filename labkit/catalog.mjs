@@ -3,7 +3,7 @@
 // All money is integer cents, USD. Edit here; never in page code.
 
 export const CURRENCY = 'usd';
-export const CATALOG_VERSION = 1;
+export const CATALOG_VERSION = 2;
 
 export const CONSTRUCTIONS = {
   canvas: {
@@ -48,6 +48,19 @@ export const OFFERINGS = {
   }
 };
 
+export const RANDOM_OFFERINGS = {
+  tee: { name: 'T-shirt', priceCents: 3000 },
+  hoodie: { name: 'Hoodie', priceCents: 5000 },
+  crewneck: { name: 'Crewneck', priceCents: 4000 },
+  sweatpants: { name: 'Sweatpants', priceCents: 5000 },
+  longsleeve: { name: 'Long sleeve', priceCents: 3500 }
+};
+export function offeringFor(item) {
+  return item.labMode === 'random' && item.construction === 'canvas'
+    ? RANDOM_OFFERINGS[item.garment] || OFFERINGS.canvas[item.garment]
+    : OFFERINGS[item.construction]?.[item.garment];
+}
+
 export const COLORS = {
   black: { id: 'black', name: 'Black', addCents: 0, swatch: '#141414' },
   white: { id: 'white', name: 'White', addCents: 0, swatch: '#f4f1ea' },
@@ -90,6 +103,37 @@ export const TECHNIQUES = ['Airbrush', 'Screen print', 'Hand-finished print'];
 export const RANDOM_VERSION = 2;
 
 // Special products.
+export const MYSTERY_FITS = [
+  { id: 'regular', name: 'Regular' },
+  { id: 'relaxed', name: 'Relaxed' },
+  { id: 'oversized', name: 'Oversized' }
+];
+export const MYSTERY_PREFERENCES_MAX = 280;
+export const MYSTERY_PACKAGES = {
+  'one-tee': {
+    id: 'one-tee', name: 'One Tee', priceCents: 3000, units: 1, countLabel: '1 tee',
+    blurb: 'One tee, selected by the house. A simple way to leave the choice to us.'
+  },
+  outerwear: {
+    id: 'outerwear', name: 'Outerwear', priceCents: 4000, units: 1, countLabel: '1 piece',
+    blurb: 'One outerwear piece, selected by the house. The exact style is part of the surprise.'
+  },
+  'light-pack': {
+    id: 'light-pack', name: 'Light Pack', priceCents: 8000, units: 3, countLabel: '3 pieces',
+    blurb: 'Three pieces, brought together as a lighter mix. The selection changes with each pack.'
+  },
+  'heavy-pack': {
+    id: 'heavy-pack', name: 'Heavy Pack', priceCents: 12000, units: 4, countLabel: '4 pieces',
+    blurb: 'Four pieces, brought together as a heavier mix. The selection changes with each pack.'
+  },
+  'super-package': {
+    id: 'super-package', name: 'Super Package', priceCents: 25000, units: null,
+    expectedUnits: { min: 4, max: 6 }, countLabel: 'Expect 4–6 pieces',
+    blurb: 'Expect 4–6 new and vintage pieces. Your package may also include a cut-and-sew piece.'
+  }
+};
+
+// Legacy configurations remain valid for saved carts and existing orders.
 export const RELIC_BOX = {
   id: 'relic-box', name: 'The Relic Box', priceCents: 12000,
   blurb: 'A curated assortment of new and repurposed garments — it may include tops, bottoms, tees and accessories.',
@@ -127,12 +171,14 @@ export const PAYMENT_STATUSES = ['pending', 'paid', 'failed', 'expired', 'cancel
 
 // Inventory keys. Ready-made stock is tracked per SKU; made-to-order work per capacity slot.
 export const skuFor = item =>
+  item.product === 'mystery-pack' ? `mystery-pack:${item.package}:${item.size}` :
   item.product === 'trinity' ? `trinity:${item.variant}:${item.size}` :
   item.product === 'relic-box' ? `relic-box:${item.size}` : null;
 export const slotFor = item => item.product === 'garment' ? `${item.construction}:${item.garment}` : null;
 
 export function allSkus() {
   const out = [];
+  for (const p of Object.values(MYSTERY_PACKAGES)) for (const s of SIZES) out.push({ sku: `mystery-pack:${p.id}:${s}`, label: `${p.name} · ${s}` });
   for (const v of TRINITY.variants) for (const s of SIZES) out.push({ sku: `trinity:${v.id}:${s}`, label: `${TRINITY.name} · ${v.name} · ${s}` });
   for (const s of SIZES) out.push({ sku: `relic-box:${s}`, label: `${RELIC_BOX.name} · ${s}` });
   return out;
@@ -141,6 +187,8 @@ export function allSlots() {
   const out = [];
   for (const [construction, garments] of Object.entries(OFFERINGS))
     for (const [garment, o] of Object.entries(garments)) out.push({ slot: `${construction}:${garment}`, label: `${CONSTRUCTIONS[construction].name} · ${o.name}` });
+  for (const [garment, o] of Object.entries(RANDOM_OFFERINGS))
+    if (!OFFERINGS.canvas[garment]) out.push({ slot: `canvas:${garment}`, label: `Random base · ${o.name}` });
   return out;
 }
 

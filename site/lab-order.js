@@ -1,7 +1,7 @@
 // The customer's private order page: payment status, the pieces, totals and the production timeline.
 import { PRODUCTION_STATUSES, GARMENT_TYPES } from '/labkit/catalog.mjs';
 import { itemSketch } from '/site/garment-sketch.mjs';
-import { cart, money } from '/site/cart-store.mjs';
+import { cart, money } from '/site/cart-store.mjs?v=site-audit-1';
 const $ = id => document.getElementById(id);
 const h = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); for (const k of kids.flat()) if (k != null) n.append(k); return n; };
 const p = new URLSearchParams(location.search), ref = p.get('ref'), key = p.get('key');
@@ -25,7 +25,9 @@ async function load() {
   const [title, lede] = COPY[o.payment.status] || [o.payment.status, ''];
   $('order-ref').textContent = o.id + (o.mode === 'test' ? ' · test order' : '');
   $('order-title').textContent = title; $('order-lede').textContent = lede;
-  if (['paid', 'review'].includes(o.payment.status) && sessionStorage.getItem('btr-last-order') === o.id) { cart.clear(); sessionStorage.removeItem('btr-last-order'); sessionStorage.removeItem('btr-checkout-key'); sessionStorage.removeItem('btr-cart-note'); }
+  try {
+    if (['paid', 'review'].includes(o.payment.status) && sessionStorage.getItem('btr-last-order') === o.id) { cart.clear(); sessionStorage.removeItem('btr-last-order'); sessionStorage.removeItem('btr-checkout-key'); sessionStorage.removeItem('btr-cart-note'); }
+  } catch { /* Blocked browser storage must not hide the order confirmation. */ }
   $('order-items').replaceChildren(...o.items.map((it, i) => { const art = h('div', { className: 'cart-art' }); art.innerHTML = itemSketch(it, { silhouette: GARMENT_TYPES[it.garment]?.silhouette }, 'o' + i);
     return h('li', { className: 'cart-line' }, art, h('div', { className: 'cart-info' }, h('strong', { textContent: it.title + (it.quantity > 1 ? ` × ${it.quantity}` : '') }), h('ul', { className: 'cart-spec' }, ...it.spec.map(s => h('li', { textContent: s })))), h('span', { className: 'cart-price', textContent: money(it.totalCents) })); }));
   const rows = [['Subtotal', o.subtotalCents]];

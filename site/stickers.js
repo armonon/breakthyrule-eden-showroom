@@ -20,6 +20,9 @@
   let drag=null;
   const tell=(type,e,cancelable=false)=>{const ev=new CustomEvent(type,{cancelable,detail:{item:graphics[+drag.s.dataset.index],x:e.clientX,y:e.clientY}});document.dispatchEvent(ev);return ev.defaultPrevented;};
   root.addEventListener('pointerdown',e=>{const s=e.target.closest('.paste');if(!s||e.button)return;
+   delete s.dataset.dragged;
+   // Touch scrolls the unified wall; a tap still prints through the click handler.
+   if(root.dataset.labWall==='true'&&e.pointerType==='touch')return;
    drag={s,x:e.clientX,y:e.clientY,left:s.offsetLeft,top:s.offsetTop,moved:false,id:e.pointerId,ghost:null};});
   addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;
    const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
@@ -36,11 +39,15 @@
    if(!moved)return;
    drag=d;const used=tell('btr-sticker-drop',e,true),wasOut=!!d.ghost;drag=null;
    d.ghost?.remove();s.style.visibility='';s.dataset.dragged='1';
+   if(root.dataset.labWall==='true')setTimeout(()=>delete s.dataset.dragged,0);
    if(used||wasOut){s.style.left=d.left+'px';s.style.top=d.top+'px';s.classList.add('slapped');setTimeout(()=>s.classList.remove('slapped'),450);}
    else s.style.setProperty('--r',rand(-14,14).toFixed(1)+'deg');};
   addEventListener('pointerup',end);addEventListener('pointercancel',end);
   root.addEventListener('click',e=>{const s=e.target.closest('.paste');if(!s)return;
-   if(s.dataset.dragged){delete s.dataset.dragged;return;}openGraphic(graphics[+s.dataset.index]);});
+   if(s.dataset.dragged){delete s.dataset.dragged;return;}
+   const item=graphics[+s.dataset.index];
+   if(root.dataset.labWall==='true')document.dispatchEvent(new CustomEvent('btr-sticker-select',{detail:{item}}));
+   else openGraphic(item);});
  }
  function paste(item,x,y,size,eager=false){
   const b=el('button',{type:'button',className:'paste',title:item.name},img(item.thumb,item.name,eager?{loading:'eager'}:{}));
@@ -70,6 +77,7 @@
  const wall=$('board-wall');
  if(wall){
   stickerDrag(wall);
+  if(wall.dataset.labWall!=='true'){
   const fill=()=>{
    const w=wall.clientWidth,h=wall.clientHeight,cell=w<600?96:132;
    const cols=Math.max(3,Math.round(w/cell)),rows=Math.max(2,Math.round(h/(cell*.85)));
@@ -78,12 +86,13 @@
     return paste(g,(c+.5)*cw-size/2+rand(-cw*.22,cw*.22),(r+.5)*ch-size/2+rand(-ch*.2,ch*.2),size,true);}));
   };
   fill();$('wall-shuffle')?.addEventListener('click',fill);
-  $('wall-cover')?.addEventListener('click',()=>window.breakthyruleGallery?.openCover());
-  if($('wall-count'))$('wall-count').textContent=graphics.length;
   let t,lastW=wall.clientWidth;new ResizeObserver(()=>{if(Math.abs(wall.clientWidth-lastW)<40)return;lastW=wall.clientWidth;clearTimeout(t);t=setTimeout(fill,300);}).observe(wall);
   // Clicking bare board slaps a new sticker down.
   wall.addEventListener('click',e=>{if(e.target!==wall)return;const r=wall.getBoundingClientRect(),size=Math.round(rand(110,170));
    const s=paste(graphics[Math.floor(Math.random()*graphics.length)],e.clientX-r.left-size/2,e.clientY-r.top-size/2,size);s.classList.add('slapped');wall.append(s);});
+  }
+  $('wall-cover')?.addEventListener('click',()=>window.breakthyruleGallery?.openCover());
+  if($('wall-count'))$('wall-count').textContent=graphics.length;
   for(const side of document.querySelectorAll('.board-rail')){
    const track=el('div',{className:'rail-track'});
    const list=side.classList.contains('right')?adverts.slice().reverse():adverts;

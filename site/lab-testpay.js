@@ -1,5 +1,5 @@
 // Local/test only: stands in for the Stripe page and sends a payment event through the normal pipeline.
-import { money } from '/site/cart-store.mjs';
+import { money } from '/site/cart-store.mjs?v=site-audit-1';
 const $ = id => document.getElementById(id);
 const p = new URLSearchParams(location.search), ref = p.get('ref'), key = p.get('key');
 const orderUrl = `/lab-order?ref=${encodeURIComponent(ref)}&key=${encodeURIComponent(key)}`;

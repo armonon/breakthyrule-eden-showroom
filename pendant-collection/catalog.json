@@ -1,0 +1,262 @@
+[
+  {
+    "slug": "absolute-darkness",
+    "name": "Absolute Darkness",
+    "widthMm": 48.9,
+    "heightMm": 64.0,
+    "media": "/pendant-collection/media/absolute-darkness/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "circle-of-anarchy",
+    "name": "Circle of Anarchy",
+    "widthMm": 52.0,
+    "heightMm": 64.0,
+    "media": "/pendant-collection/media/circle-of-anarchy/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "crimson-screamer",
+    "name": "Crimson Screamer",
+    "widthMm": 39.8,
+    "heightMm": 56.0,
+    "media": "/pendant-collection/media/crimson-screamer/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "crimson-sentinel",
+    "name": "Crimson Sentinel",
+    "widthMm": 52.0,
+    "heightMm": 63.3,
+    "media": "/pendant-collection/media/crimson-sentinel/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "equine-reverie",
+    "name": "Equine Reverie",
+    "widthMm": 52.0,
+    "heightMm": 62.3,
+    "media": "/pendant-collection/media/equine-reverie/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "ethereal-insight",
+    "name": "Ethereal Insight",
+    "widthMm": 44.0,
+    "heightMm": 47.4,
+    "media": "/pendant-collection/media/ethereal-insight/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "heatwave-rifle",
+    "name": "Heatwave Rifle",
+    "widthMm": 58.0,
+    "heightMm": 42.1,
+    "media": "/pendant-collection/media/heatwave-rifle/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "lion-rampant",
+    "name": "Lion Rampant",
+    "widthMm": 50.0,
+    "heightMm": 49.3,
+    "media": "/pendant-collection/media/lion-rampant/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "love-birds",
+    "name": "Love Birds",
+    "widthMm": 42.8,
+    "heightMm": 64.0,
+    "media": "/pendant-collection/media/love-birds/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "magenta-ornate-cross",
+    "name": "Magenta Ornate Cross",
+    "widthMm": 43.2,
+    "heightMm": 64.0,
+    "media": "/pendant-collection/media/magenta-ornate-cross/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "neon-mosaic-horse-and-pink-star",
+    "name": "Neon Mosaic Horse and Pink Star",
+    "widthMm": 54.0,
+    "heightMm": 55.3,
+    "media": "/pendant-collection/media/neon-mosaic-horse-and-pink-star/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "neon-shamrock",
+    "name": "Neon Shamrock",
+    "widthMm": 40.0,
+    "heightMm": 62.0,
+    "media": "/pendant-collection/media/neon-shamrock/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "obsidian-knight",
+    "name": "Obsidian Knight",
+    "widthMm": 46.4,
+    "heightMm": 66.0,
+    "media": "/pendant-collection/media/obsidian-knight/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "peaceful-flight",
+    "name": "Peaceful Flight",
+    "widthMm": 41.7,
+    "heightMm": 64.0,
+    "media": "/pendant-collection/media/peaceful-flight/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "sara-la-kali",
+    "name": "Sara la kali",
+    "widthMm": 43.9,
+    "heightMm": 56.0,
+    "media": "/pendant-collection/media/sara-la-kali/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "gunho",
+    "name": "gunho",
+    "widthMm": 58.0,
+    "heightMm": 48.4,
+    "media": "/pendant-collection/media/gunho/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "orange",
+    "name": "orange",
+    "widthMm": 40.3,
+    "heightMm": 58.0,
+    "media": "/pendant-collection/media/orange/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "prem",
+    "name": "prem",
+    "widthMm": 48.0,
+    "heightMm": 60.0,
+    "media": "/pendant-collection/media/prem/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "shoota",
+    "name": "shoota",
+    "widthMm": 42.3,
+    "heightMm": 64.0,
+    "media": "/pendant-collection/media/shoota/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  },
+  {
+    "slug": "stickman",
+    "name": "stickman",
+    "widthMm": 18.3,
+    "heightMm": 64.0,
+    "media": "/pendant-collection/media/stickman/",
+    "price": 800,
+    "currency": "USD",
+    "priceIncludes": [
+      "pendant",
+      "chain"
+    ]
+  }
+]

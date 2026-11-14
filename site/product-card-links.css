@@ -1,0 +1,73 @@
+/* Product images and names are the entry points; avoid a repeated Explore CTA. */
+html body .belt-card-actions > a.ghost[href^="/product?item="],
+html body .accessory-card > a.ghost[href^="/product?item="],
+html body .belt-card-actions:has(> a.ghost[href^="/product?item="]:only-child) {
+  display:none!important;
+}
+
+html body .pendant-media > .pendant-product-link {
+  position:absolute;
+  inset:0;
+  z-index:2;
+  display:block;
+  cursor:pointer;
+  background:transparent;
+  border:0;
+  box-shadow:none;
+}
+html body .pendant-copy h3 a {
+  color:inherit;
+  text-decoration:none;
+}
+html body .pendant-copy h3 a:hover {text-decoration:underline;text-underline-offset:4px}
+html body .pendant-product-link:focus-visible,
+html body .pendant-copy h3 a:focus-visible {outline:2px solid #d6dc6c;outline-offset:5px}
+
+/* The necklace page uses the same product layout and transparent 360° media. */
+html body.pendant-product #viewer.pendant-product-viewer {
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:center;
+  gap:12px;
+  min-height:0;
+  height:auto;
+  aspect-ratio:auto;
+  padding:12px;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  overflow:visible;
+}
+html body.pendant-product #viewer::before,
+html body.pendant-product #viewer::after {display:none!important}
+/* The generic garment-photo popup has no photographs on a necklace page. */
+html body.pendant-product .btr-look-launch,
+html body.pendant-product .btr-look-hotspot {display:none!important}
+html body.pendant-product .pendant-product-stage {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:clamp(320px,66svh,650px);
+  min-width:0;
+  background:transparent;
+}
+html body.pendant-product .pendant-product-stage transparent-spin {
+  display:block;
+  height:100%;
+  width:auto;
+  max-width:100%;
+  background:transparent;
+}
+html body.pendant-product .pendant-product-stage[data-view="full"] transparent-spin {aspect-ratio:640/900}
+html body.pendant-product .pendant-product-stage[data-view="detail"] transparent-spin {aspect-ratio:1220/900}
+html body.pendant-product .pendant-product-views {display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
+html body.pendant-product .pendant-product-views button {min-height:44px}
+html body.pendant-product #viewer .pendant-product-views button[aria-pressed="true"] {
+  background:#d6dc6c!important;
+  color:#10120f!important;
+  border-color:#e3e7a2!important;
+}
+@media(max-width:600px) {
+  html body.pendant-product .pendant-product-stage {height:clamp(280px,48svh,420px)}
+}
