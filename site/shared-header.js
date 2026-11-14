@@ -58,8 +58,24 @@
     let eden = header.querySelector('.enter-showroom');
     if (!eden) { eden = create('a', 'enter-showroom'); header.append(eden); }
     eden.href = '/showroom';
-    eden.textContent = 'Enter Eden ↗';
+    eden.classList.add('btr-eden-apple');
     eden.setAttribute('aria-label', 'Enter Eden showroom');
+    eden.title = 'Enter Eden';
+    const apple = create('img', 'btr-eden-apple-logo');
+    apple.src = '/products/web/logo.webp';
+    apple.alt = '';
+    apple.width = 40;
+    apple.height = 42;
+    apple.decoding = 'async';
+    apple.draggable = false;
+    eden.replaceChildren(apple);
+    if (!document.getElementById('btr-eden-apple-style')) {
+      const appleStyle = create('link');
+      appleStyle.id = 'btr-eden-apple-style';
+      appleStyle.rel = 'stylesheet';
+      appleStyle.href = '/site/eden-apple.css?v=b869d1f36747244a';
+      document.head.append(appleStyle);
+    }
 
     if (!header.querySelector('.cart-button')) {
       const cartLink = create('a', 'cart-button');
