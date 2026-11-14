@@ -42,3 +42,16 @@ body.touch-play .ar-feed{top:150px}
 #touch-controls.tc-expedition .tc-reload{right:calc(100px + env(safe-area-inset-right));bottom:178px;width:48px!important;height:48px!important;font-size:9px}
 @media(max-width:360px){#touch-controls.tc-expedition .tc-stick{left:calc(12px + env(safe-area-inset-left));width:100px;height:100px}#touch-controls.tc-expedition .tc-slide{right:calc(88px + env(safe-area-inset-right));width:52px;height:52px}#touch-controls.tc-expedition .tc-use{right:calc(84px + env(safe-area-inset-right));width:58px}}
 @media(max-height:500px) and (orientation:landscape){#touch-controls.tc-expedition .tc-stick{bottom:20px;width:100px;height:100px}#touch-controls.tc-expedition .tc-fire{bottom:154px;width:54px!important;height:54px!important}#touch-controls.tc-expedition .tc-reload{bottom:158px}#touch-controls.tc-expedition .tc-use,#touch-controls.tc-expedition .tc-third{bottom:88px}#touch-controls.tc-expedition .tc-jump{bottom:14px;width:58px;height:58px}#touch-controls.tc-expedition .tc-slide{bottom:16px}}
+
+/* Keep the scene visible behind the action buttons in every touch game mode. */
+#touch-controls button,#touch-controls.tc-expedition button,#touch-controls.tc-expedition .tc-jump{
+ background:linear-gradient(145deg,#ffffff26,#ffffff05),#132b2433;color:#fffdf5;border-color:#ffffff73;
+ -webkit-backdrop-filter:blur(6px) saturate(1.15);backdrop-filter:blur(6px) saturate(1.15);
+ box-shadow:inset 0 1px 0 #ffffff40,0 3px 12px #0000001f;text-shadow:0 1px 3px #0009;
+}
+#touch-controls button:active,#touch-controls button.on,#touch-controls.tc-expedition button.on{background:linear-gradient(145deg,#ffffff47,#ffffff12),#294c3e52;color:#fffdf5;border-color:#ffffffc7}
+#touch-controls .tc-stick{background:radial-gradient(circle at 35% 20%,#ffffff1f,#ffffff03),#132b241f;border-color:#ffffff66;box-shadow:inset 0 1px 0 #ffffff26,0 3px 12px #0001}
+#touch-controls .tc-stick i{background:linear-gradient(145deg,#ffffff80,#ffffff29);border:1px solid #ffffffb3;box-shadow:inset 0 1px 0 #ffffff80,0 2px 8px #0002}
+#touch-controls .tc-stick.running{border-color:#e7efb9;box-shadow:0 0 0 4px #e7efb926,inset 0 1px 0 #ffffff40}
+#touch-controls .tc-stick.running .tc-stick-label{color:#f6ffd0;font-weight:700}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){#touch-controls button,#touch-controls.tc-expedition button,#touch-controls.tc-expedition .tc-jump{background-color:#132b246b}}
