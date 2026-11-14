@@ -1,0 +1,19 @@
+/* Native copy/lookup/image-drag menus should never interrupt a world gesture. */
+:is(#world,#touch-controls,#fight-pad,#social-move,#eden-mobile-hud,.world-footer,.entry-header,.entry-footer),
+:is(#world,#touch-controls,#fight-pad,#social-move,#eden-mobile-hud,.world-footer,.entry-header,.entry-footer) *{
+ -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none;
+}
+:is(#scene canvas,.em-look,.em-stick,.tc-look,.tc-stick){touch-action:none;-webkit-tap-highlight-color:transparent}
+:is(#eden-mobile-hud,#touch-controls,#fight-pad,#social-move) button{-webkit-tap-highlight-color:transparent}
+/* This file only loads in game documents. Keep all reader and editor behavior. */
+:is(dialog,[role="dialog"],#social-panel,#night-chat,[data-allow-selection]),
+:is(dialog,[role="dialog"],#social-panel,#night-chat,[data-allow-selection]) *,
+:is(input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="textbox"]){
+ -webkit-user-select:text;user-select:text;-webkit-touch-callout:default;
+}
+:is(dialog,[role="dialog"],#social-panel,#night-chat) :is(button,summary),#eden-mobile-menu button{
+ -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation;
+}
+:is(dialog,#social-panel,#night-chat){overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+@media(pointer:coarse){:is(dialog,#social-panel,#night-chat) :is(input,textarea,select){font-size:16px}}
+:is(#world,#touch-controls,#eden-mobile-hud) :is(input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="textbox"]){-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}

@@ -1,5 +1,5 @@
 'use strict';
-window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
+window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepareModel=null}){
  const root=new T.Group();root.name='Beyond Eden / the old civilization';scene.add(root);
  const cube=new T.BoxGeometry(1,1,1),shaft=new T.CylinderGeometry(1,1,1,12),orb=new T.SphereGeometry(1,24,16),dome=new T.SphereGeometry(1,32,16,0,Math.PI*2,0,Math.PI/2);
  const plasterCanvas=document.createElement('canvas');plasterCanvas.width=plasterCanvas.height=256;const pc=plasterCanvas.getContext('2d');pc.fillStyle='#d9dbd5';pc.fillRect(0,0,256,256);for(let i=0;i<9000;i++){const shade=185+(i*17%55);pc.fillStyle=`rgba(${shade},${shade},${shade},.18)`;pc.fillRect((i*71)%256,(i*131+Math.floor(i/256)*7)%256,1+(i%3),1+(i%2));}const plasterMap=new T.CanvasTexture(plasterCanvas);plasterMap.colorSpace=T.SRGBColorSpace;plasterMap.wrapS=plasterMap.wrapT=T.RepeatWrapping;
@@ -110,25 +110,28 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
  // Streaming: the nearest building within 75 m loads first, one at a time (several GLBs decoding and uploading at once
  // stalled the frame for seconds where many sites are in range); buildings over 110 m away are released again and
  // their light procedural shell restored, so GPU memory stays bounded however far the viewer walks.
- const loadedModels=new Map();let modelInFlight=false;
+ const loadedModels=new Map(),priorityModels=new Set();let modelInFlight=false,disposed=false;
  function releaseModel(scene){scene.traverse(o=>{if(!o.isMesh)return;o.geometry.dispose();for(const m of [].concat(o.material)){for(const v of Object.values(m))if(v?.isTexture)v.dispose();m.dispose();}});}
  function streamModels(viewer){
+  if(disposed)return;
   const distance=s=>Math.hypot(viewer.position.x-s.x,viewer.position.z-s.z);
   for(const [id,entry] of loadedModels)if(distance(entry.s)>110){
    root.remove(entry.scene);releaseModel(entry.scene);root.add(entry.shell);loadedModels.delete(id);modelState[id]='waiting';pendingModels.push(entry);}
   if(modelInFlight)return;
-  let next=-1,nearest=75;
-  pendingModels.forEach((p,i)=>{const d=distance(p.s);if(d<nearest){nearest=d;next=i;}});
+  let next=pendingModels.findIndex(p=>priorityModels.has(p.s.id)),nearest=75;
+  if(next<0)pendingModels.forEach((p,i)=>{const d=distance(p.s);if(d<nearest){nearest=d;next=i;}});
   if(next<0)return;
-  const [p]=pendingModels.splice(next,1);fetchModel(p.s,p.model,p.shell);
+  const [p]=pendingModels.splice(next,1);priorityModels.delete(p.s.id);fetchModel(p.s,p.model,p.shell);
  }
  function fetchModel(s,model,shell){
   modelState[s.id]='loading';modelInFlight=true;
-  window.showroomAssets?.model(model.url).then(gltf=>{
+  window.showroomAssets?.model(model.url).then(async gltf=>{
+   if(disposed){releaseModel(gltf.scene);return;}
    const scene=gltf.scene;scene.name=s.name+' (modelled)';scene.userData.landmarkModel=true;scene.position.set(s.x,0,s.z);
    scene.traverse(o=>{if(!o.isMesh)return;o.receiveShadow=true;o.castShadow=!/bulb|sign|relief|glass/.test(o.name+o.material?.name);});
+   if(prepareModel)await prepareModel(scene);if(disposed){releaseModel(scene);return;}
    root.remove(shell);root.add(scene);modelState[s.id]='model';loadedModels.set(s.id,{s,model,shell,scene});
-  }).catch(error=>{modelState[s.id]='fallback';console.warn(s.name+' model unavailable; keeping the procedural building',error);})
+  }).catch(error=>{if(disposed)return;modelState[s.id]='fallback';console.warn(s.name+' model unavailable; keeping the procedural building',error);})
    .finally(()=>{modelInFlight=false;});
  }
  // Parkour: every roof is a walkable surface (parkour.js), and each building has a staircase of stacked crates against
@@ -163,11 +166,11 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced}){
  const arms=[];for(const side of [-1,1]){const arm=new T.Group();arm.position.set(side*.31,2.74,0);mesh(arm,shaft,robe,side*.08,-.75,0,.065,1.6,.065);mesh(arm,orb,mask,side*.08,-1.6,0,.055,.18,.055);arm.rotation.z=side*.10;watcher.add(arm);arms.push(arm);}
  box(watcher,brass,0,2.3,.245,.04,.75,.035);const sigil=mesh(watcher,new T.TorusGeometry(.12,.018,6,24),brass,0,2.61,.24);
  let snapshot=null;
- return {root,watcher,walls,lamps,setPages,setState(value){if(value&&value.code!==snapshot?.code)watcher.position.set(value.watcher.x,0,value.watcher.z);snapshot=value;watcher.visible=!!value&&value.phase==='playing';if(value)setPages(value.pages,value.collected);else pageRoot.visible=false;},
+ return {root,watcher,walls,lamps,setPages,prepare(ids){if(disposed)return;for(const id of ids)if(modelState[id]==='waiting')priorityModels.add(id);},dispose(){disposed=true;snapshot=null;pendingModels.length=0;priorityModels.clear();loadedModels.clear();},setState(value){if(disposed)return;if(value&&value.code!==snapshot?.code)watcher.position.set(value.watcher.x,0,value.watcher.z);snapshot=value;watcher.visible=!!value&&value.phase==='playing';if(value)setPages(value.pages,value.collected);else pageRoot.visible=false;},
   // feet: the height of the player's feet, when known: walls lower than a step up from there do not block.
   blocks(p,feet=null){return walls.some(([x,z,w,d,h=99])=>Math.abs(p.x-x)<w/2+.3&&Math.abs(p.z-z)<d/2+.3&&(feet==null||h>feet+.45));},surfaces,climbs,
   clearGround(x,z){if(layout.arena&&Math.hypot(x-layout.arena.x,z-layout.arena.z)<layout.arena.r)return true;return layout.landmarks.some(s=>Math.abs(x-s.x)<s.w/2+3&&z-s.z>-s.d/2-4&&z-s.z<s.d/2+9)||layout.landmarks.some(s=>Math.abs(z-(s.z+s.d/2+3))<1.8&&x>Math.min(s.x,11.7)-1&&x<Math.max(s.x,11.7)+1);},
-  update(time,viewer,night){root.visible=viewer.position.z<0;if(root.visible)streamModels(viewer);pageRoot.visible=!!snapshot;const nearest=lamps.map(p=>({p,d:p.distanceToSquared(viewer.position)})).sort((a,b)=>a.d-b.d);lightPool.forEach((l,i)=>{l.position.copy(nearest[i].p);l.intensity=night*10;});if(snapshot){const w=snapshot.watcher;watcher.position.lerp(new T.Vector3(w.x,0,w.z),.3);watcher.rotation.y=w.yaw;arms.forEach((a,i)=>{a.rotation.x=reduced?0:Math.sin(time*2+i*Math.PI)*.06;});sigil.material.emissive.set(0x503c22);sigil.material.emissiveIntensity=.2;}},
+  update(time,viewer,night){if(disposed)return;root.visible=viewer.position.z<0;if(root.visible)streamModels(viewer);pageRoot.visible=!!snapshot;const nearest=lamps.map(p=>({p,d:p.distanceToSquared(viewer.position)})).sort((a,b)=>a.d-b.d);lightPool.forEach((l,i)=>{l.position.copy(nearest[i].p);l.intensity=night*10;});if(snapshot){const w=snapshot.watcher;watcher.position.lerp(new T.Vector3(w.x,0,w.z),.3);watcher.rotation.y=w.yaw;arms.forEach((a,i)=>{a.rotation.x=reduced?0:Math.sin(time*2+i*Math.PI)*.06;});sigil.material.emissive.set(0x503c22);sigil.material.emissiveIntensity=.2;}},
   inspect:()=>({landmarks:layout.landmarks.map(s=>({name:s.name,x:s.x,z:s.z})),batches:batches.size,theatre:modelState.playhouse==='model'?'model':'fallback',models:{...modelState},pages:pages.size,watcher:watcher.position.toArray()})
  };
 };
