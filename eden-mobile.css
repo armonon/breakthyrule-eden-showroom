@@ -65,3 +65,6 @@ body.eden-mobile-explore #fight-pad button:active{background:var(--em-cream);col
 body.eden-mobile-explore #fight-hud{top:calc(118px + env(safe-area-inset-top));z-index:11;font-size:8px;gap:8px;width:calc(100% - 40px)}
 body.eden-mobile-explore #fight-hud .fight-keys{display:none}
 @media(max-height:500px) and (orientation:landscape){body.eden-mobile-explore.eden-mobile-fight #fight-pad{bottom:calc(160px + env(safe-area-inset-bottom));grid-template-columns:repeat(2,60px)}body.eden-mobile-explore #fight-pad button{min-height:44px}body.eden-mobile-explore #fight-hud{top:16px;width:36%}}
+
+/* Long live-drop names stay within the phone HUD. */
+body.eden-mobile-explore #eden-drop{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-sizing:border-box}
