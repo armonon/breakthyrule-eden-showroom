@@ -5,10 +5,10 @@
  <meta name="theme-color" content="#0b1618"><title>Break Thy Rule · Beyond Eden</title>
  <meta name="description" content="Enter the actual Beyond Eden night district. Explore the old civilization, ring the temple bell, recover the lost pages and return to Eden.">
  <link rel="icon" href="/assets/favicon-32.png">
- <link rel="stylesheet" href="/expedition.css?v=20261112-full-r2">
+ <link rel="stylesheet" href="/expedition.css?v=15500968b89dc95f">
  <link rel="stylesheet" href="/play-menu.css?v=4">
- <link rel="stylesheet" href="/touch-controls.css?v=4">
- <link rel="stylesheet" href="/expedition-entry.css?v=1">
+ <link rel="stylesheet" href="/touch-controls.css?v=5a86adc74d5bcd5d">
+ <link rel="stylesheet" href="/expedition-entry.css?v=48aa1bace718ff5a">
  <script src="/deployment.js?v=6468bf0929e006b6"></script>
  <script defer src="/assets/three.min.js?v=0c535de97fa620db"></script>
  <script defer src="/assets/lucide.min.js"></script>
@@ -18,7 +18,7 @@
  <script defer src="/expedition-world.js?v=2ae230b0465f8744"></script>
  <script defer src="/pyramid-gathering.js?v=7f1ae358d5d8526b"></script>
  <script defer src="/road-pyramid.js?v=42a575d1af0e3169"></script>
- <script defer src="/night-district.js?v=c55f19c287366dde"></script>
+ <script defer src="/night-district.js?v=e668dcc98e5e42ba"></script>
  <script defer src="/night-road.js?v=f02028ebdc26ab57"></script>
  <script defer src="/eden-flora.js?v=adcd54eabf36393e"></script>
  <script defer src="/eden-lighting.js?v=fb2f500fb0a785de"></script>
@@ -45,16 +45,16 @@
  <script defer src="/footsteps.js?v=d515e74289a0558e"></script>
  <script defer src="/play-menu.js?v=62733aae7aa27964"></script>
  <script defer src="/expedition-preferences.js?v=3f62b80cfc926a57"></script>
- <script defer src="/touch-controls.js?v=f73ac4206d187c62"></script>
+ <script defer src="/touch-controls.js?v=f9e7f8147feb5c8c"></script>
  <script defer src="/solo-expedition.js?v=de3b71d6815026e1"></script>
  <script defer src="/expedition.js?v=612d35f1762c9fc1"></script>
  <script defer src="/expedition-scene.js?v=fae891131149c691"></script>
- <script defer src="/expedition-entry.js?v=e41dee644db3e0be"></script>
-<link rel="stylesheet" href="/game-input-guard.css?v=1">
-<script defer src="/game-input-guard.js?v=1"></script>
+ <script defer src="/expedition-entry.js?v=f03b23d1f6744525"></script>
+<link rel="stylesheet" href="/game-input-guard.css?v=f0dcfbcee34fd748">
+<script defer src="/game-input-guard.js?v=2340ad26ad4dc9e0"></script>
 </head>
 <body class="expedition-entry">
- <header class="entry-header"><a href="/showroom.html" id="return-eden">← Return to Eden</a><div><strong>BREAK THY RULE</strong><span>CHAPTER 01 / BEYOND EDEN</span></div><nav class="view-nav"><button id="night-launch" disabled>Expedition</button></nav></header>
+ <header class="entry-header"><a href="/showroom.html?v=d6f975c3c18fa849" id="return-eden">← Return to Eden</a><div><strong>BREAK THY RULE</strong><span>CHAPTER 01 / BEYOND EDEN</span></div><nav class="view-nav"><button id="night-launch" disabled>Expedition</button></nav></header>
  <main id="world" aria-label="Beyond Eden night expedition">
   <div id="scene" aria-label="The old civilization, Moon Temple and Processional Road"></div>
   <div id="entry-reticle" aria-hidden="true"></div>
@@ -77,7 +77,7 @@
   </section>
   <button id="night-action" hidden><i data-lucide="file-text"></i><span id="night-action-label">Take page</span></button>
   <aside id="night-chat" hidden aria-label="Party chat"><header><strong>Party chat</strong><button id="night-chat-close" aria-label="Close party chat">×</button></header><ol id="night-chat-log" role="log" aria-live="polite"></ol><form id="night-chat-form"><input id="night-chat-input" aria-label="Message your expedition" maxlength="280" autocomplete="off" placeholder="Message the party"><button id="night-chat-send" aria-label="Send message">Send</button></form></aside>
-  <section id="entry-loading" role="status" aria-live="polite"><span class="entry-spinner" aria-hidden="true"></span><h1>Beyond Eden</h1><p id="entry-loading-status">Preparing the old civilization…</p><button id="entry-retry" hidden>Retry loading</button><a href="/showroom.html">Return to Eden</a></section>
+  <section id="entry-loading" role="status" aria-live="polite"><span class="entry-spinner" aria-hidden="true"></span><h1>Beyond Eden</h1><p id="entry-loading-status">Preparing the old civilization…</p><button id="entry-retry" hidden>Retry loading</button><a href="/showroom.html?v=d6f975c3c18fa849">Return to Eden</a></section>
  </main>
  <footer class="entry-footer"><span id="entry-hint">WASD move · Click to look · Space jump · Shift sprint · C crouch · ? controls</span><span id="entry-identity">Your Eden character and settings follow you.</span></footer>
  <dialog id="night-dialog" aria-labelledby="night-title">
@@ -88,6 +88,6 @@
   <p class="night-exploration-hint">Explore first. Ring the brass bell outside the Moon Temple to begin the hunt. E interacts. F toggles the flashlight. G fires a nonlethal flare, R reloads. B bails or gets up. Recover all eight pages and reach the pyramid.</p><p id="night-error" role="alert"></p>
  </dialog>
  <dialog id="night-journal" aria-labelledby="night-journal-title"><header class="night-heading"><div><small>THE EMPTY BINDING</small><h2 id="night-journal-title">Recovered pages</h2></div><button id="night-journal-close" class="icon-button" aria-label="Close journal">×</button></header><p id="night-journal-empty">The binding is empty.</p><ol id="night-journal-list"></ol></dialog>
- <noscript>JavaScript is needed to enter the expedition. <a href="/showroom.html">Return to Eden</a>.</noscript>
+ <noscript>JavaScript is needed to enter the expedition. <a href="/showroom.html?v=d6f975c3c18fa849">Return to Eden</a>.</noscript>
 </body>
 </html>
