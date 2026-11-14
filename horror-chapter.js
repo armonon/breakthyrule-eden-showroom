@@ -73,6 +73,27 @@
   // projection (like the Garment Lab's printer).
   const SAVE='eden-free-garment-v1';
   const saved=()=>{try{return JSON.parse(localStorage.getItem(SAVE)||'null');}catch{return null;}};
+  // Lab preview: front and back silhouettes of the chosen blank, printed with the same texture the worn shell uses.
+  const SHAPES={
+   tee:[[.3,.12],[.4,.1],[.6,.1],[.7,.12],[.9,.27],[.82,.38],[.72,.31],[.72,.95],[.28,.95],[.28,.31],[.18,.38],[.1,.27]],
+   longsleeve:[[.3,.12],[.4,.1],[.6,.1],[.7,.12],[.86,.3],[.97,.82],[.88,.85],[.75,.42],[.73,.95],[.27,.95],[.25,.42],[.12,.85],[.03,.82],[.14,.3]],
+   hoodie:[[.29,.14],[.36,.04],[.5,.0],[.64,.04],[.71,.14],[.87,.31],[.98,.83],[.88,.86],[.76,.44],[.75,.96],[.25,.96],[.24,.44],[.12,.86],[.02,.83],[.13,.31]]};
+  SHAPES.crewneck=SHAPES.longsleeve;
+  function drawMockup(g,img,design){
+   const W=g.canvas.width,H=g.canvas.height,dark=design.color==='black',pts=SHAPES[design.garment]||SHAPES.tee;
+   g.clearRect(0,0,W,H);
+   for(let side=0;side<2;side++){
+    const box=Math.min(H-H*.11,W/2-W*.05),x0=side*W/2+(W/2-box)/2,y0=H*.03,path=new Path2D();
+    pts.forEach(([u,v],i)=>path[i?'lineTo':'moveTo'](x0+u*box,y0+v*box));path.closePath();
+    g.save();g.shadowColor='rgba(0,0,0,.22)';g.shadowBlur=H/14;g.shadowOffsetY=H/40;g.fillStyle=dark?'#1b1a19':'#eeece6';g.fill(path);g.restore();
+    g.save();g.clip(path);g.drawImage(img,side*img.width/2,0,img.width/2,img.height,x0,y0,box,box);
+    const shade=g.createLinearGradient(x0,0,x0+box,0);shade.addColorStop(0,'rgba(0,0,0,.14)');shade.addColorStop(.5,'rgba(255,255,255,.05)');shade.addColorStop(1,'rgba(0,0,0,.16)');g.fillStyle=shade;g.fillRect(x0,y0,box,box);
+    g.strokeStyle=dark?'rgba(255,255,255,.08)':'rgba(0,0,0,.08)';g.lineWidth=2;g.beginPath();g.moveTo(x0+.28*box,y0+.93*box);g.lineTo(x0+.72*box,y0+.93*box);g.stroke();
+    if(design.garment==='hoodie'&&!side){g.beginPath();g.moveTo(x0+.38*box,y0+.08*box);g.quadraticCurveTo(x0+.5*box,y0+.24*box,x0+.62*box,y0+.08*box);g.stroke();}
+    g.restore();
+    g.fillStyle='rgba(20,20,20,.5)';g.font='600 '+Math.round(H/30)+'px "DM Sans",Arial,sans-serif';g.textAlign='center';g.fillText(side?'B A C K':'F R O N T',x0+box/2,H-H*.025);
+   }
+  }
   function printTexture(design,done){
    const cv=document.createElement('canvas');cv.width=1024;cv.height=512;const g=cv.getContext('2d');
    g.fillStyle=design.color==='black'?'#1b1a19':'#eeece6';g.fillRect(0,0,1024,512);
@@ -119,14 +140,14 @@
    dialog=document.createElement('dialog');dialog.id='garment-lab-ingame';
    dialog.innerHTML=`<header><div><small>INSIDE THE BLACK CUBE</small><h2>The Garment Lab</h2></div><button type="button" class="icon-button gl-close" aria-label="Close">×</button></header>
     <p class="gl-intro">${made?'Your free piece is made. You are wearing it.':'You survived. Make one garment, free, and wear it out of here.'}</p>
-    <div class="gl-body"><div class="gl-preview"><canvas width="512" height="256"></canvas><small>FRONT · BACK</small></div>
+    <div class="gl-body"><div class="gl-preview"><canvas width="1024" height="512" aria-label="Garment preview, front and back"></canvas><small>PICK ART FOR EACH SIDE · IT PRINTS ON WHAT YOU WEAR</small></div>
      <div class="gl-controls"><div class="gl-row gl-blanks"></div><div class="gl-row gl-colors"></div>
       <div class="gl-tabs"><button type="button" data-side="front" aria-pressed="true">FRONT ART</button><button type="button" data-side="back" aria-pressed="false">BACK ART</button></div>
       <div class="gl-art"></div></div></div>
     <footer><a class="gl-real" href="/lab#build" target="_blank" rel="noopener">MAKE IT REAL IN THE GARMENT LAB →</a><button type="button" class="gl-make">${made?'WEAR IT AGAIN':'MAKE IT · FREE · ONE PER PERSON'}</button></footer>`;
    document.body.append(dialog);const q=s=>dialog.querySelector(s);
    const d=made?.design||{product:'garment',construction:'canvas',garment:'tee',fit:'blank',color:'black',artwork:'pick',picks:{front:[],back:[]},backSize:'full',quantity:1};let side='front';
-   const preview=()=>{const c=q('canvas'),g=c.getContext('2d'),t=printTexture(d,()=>{g.drawImage(t.image,0,0,512,256);});g.drawImage(t.image,0,0,512,256);
+   const preview=()=>{const c=q('canvas'),g=c.getContext('2d'),t=printTexture(d,()=>drawMockup(g,t.image,d));drawMockup(g,t.image,d);
     q('.gl-real').href=(d.picks.front.length||d.picks.back.length)?'/lab?design='+b64(d)+'#build':'/lab#build';};
    const row=(sel,items,on)=>{q(sel).replaceChildren(...items.map(([v,label])=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.setAttribute('aria-pressed',String(on()===v));b.onclick=()=>{set(v);};const set=v2=>{if(sel==='.gl-blanks'){d.garment=v2;d.construction=BLANKS.find(x=>x[0]===v2)[2];d.fit=d.construction==='cut-sew'?'regular':'blank';}else d.color=v2;render();};return b;}));};
    const render=()=>{row('.gl-blanks',BLANKS,()=>d.garment);row('.gl-colors',[['white','WHITE'],['black','BLACK']],()=>d.color);
@@ -137,7 +158,7 @@
     if(wear(design)){story?.set('garment');dialog.close();thirdPerson(true);W()?.card('YOU ARE WEARING IT','YOUR FREE PIECE FROM THE GARMENT LAB · MAKE IT REAL AT /LAB','THE GARMENT LAB',3600);}
     else q('.gl-intro').textContent='Your character is still loading. Try again in a moment.';};
    q('.gl-close').onclick=()=>dialog.close();dialog.addEventListener('close',()=>{labOpen=false;dialog.remove();dialog=null;requestDraw();});
-   render();document.exitPointerLock?.();dialog.showModal();
+   render();document.exitPointerLock?.();dialog.tabIndex=-1;dialog.showModal();dialog.focus({preventScroll:true});
   }
 
   /* ---------------------------------------------------------------- prompts and the frame */

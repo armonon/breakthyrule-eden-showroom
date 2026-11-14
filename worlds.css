@@ -1,13 +1,51 @@
 /* Loading screens between worlds (worlds.js). */
-#world-loading{position:fixed;inset:0;z-index:90;display:grid;place-items:center;background:#07090a;color:#efe9dc;opacity:0;transition:opacity .4s ease;pointer-events:none}
+#world-loading{
+ --wl-ink:#efe9dc;--wl-dim:rgba(239,233,220,.56);--wl-line:rgba(239,233,220,.14);--wl-ease:cubic-bezier(.2,.8,.2,1);
+ position:fixed;inset:0;z-index:90;display:grid;place-items:center;isolation:isolate;overflow:hidden;
+ padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+ background:radial-gradient(120% 90% at 50% 42%,#15191b 0%,#0a0c0d 55%,#030404 100%);color:var(--wl-ink);
+ opacity:0;transition:opacity .45s var(--wl-ease);pointer-events:none;-webkit-font-smoothing:antialiased}
 #world-loading[hidden]{display:none}
 #world-loading.in{opacity:1;pointer-events:auto}
-#world-loading.out{opacity:0}
-#world-loading.card{background:rgba(5,6,7,.82);backdrop-filter:blur(4px)}
-.wl-card{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:24px}
-.wl-kicker{font-size:10px;letter-spacing:.3em;opacity:.6}
-.wl-title{margin:0;font:600 clamp(28px,5vw,52px) 'Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.18em}
-.wl-sub{margin:0;font-size:12px;letter-spacing:.18em;opacity:.75;max-width:520px;line-height:1.6}
-.wl-bar{width:min(260px,60vw);height:2px;background:rgba(255,255,255,.12);margin-top:14px;overflow:hidden}
-.wl-bar i{display:block;height:100%;width:0;background:#efe9dc;transition:width .3s ease}
-#world-loading.card .wl-bar{display:none}
+#world-loading.out{opacity:0;transition-duration:.6s}
+/* Film grain and a slow light sweep, both pure CSS and off the main thread. */
+#world-loading::before{content:'';position:absolute;inset:-50%;z-index:-1;opacity:.07;pointer-events:none;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+ animation:wl-grain .9s steps(4) infinite}
+#world-loading::after{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+ background:linear-gradient(105deg,transparent 35%,rgba(239,233,220,.045) 50%,transparent 65%);background-size:250% 100%;animation:wl-sweep 5.5s ease-in-out infinite}
+@keyframes wl-grain{0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}50%{transform:translate(2%,-3%)}75%{transform:translate(-2%,-1%)}100%{transform:translate(0,0)}}
+@keyframes wl-sweep{0%{background-position:120% 0}100%{background-position:-120% 0}}
+
+.wl-card{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:32px 28px;max-width:min(640px,92vw)}
+.wl-kicker{display:flex;align-items:center;gap:14px;font:600 10px/1 'DM Sans',Arial,sans-serif;letter-spacing:.34em;color:var(--wl-dim);text-transform:uppercase}
+.wl-kicker::before,.wl-kicker::after{content:'';width:34px;height:1px;background:linear-gradient(90deg,transparent,var(--wl-dim))}
+.wl-kicker::after{transform:scaleX(-1)}
+.wl-title{margin:0;font:600 clamp(30px,6vw,64px)/1.02 'Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.16em;text-transform:uppercase;
+ text-shadow:0 0 28px rgba(239,233,220,.18);text-wrap:balance}
+.wl-sub{margin:0;font:400 12px/1.7 'DM Sans',Arial,sans-serif;letter-spacing:.16em;color:var(--wl-dim);max-width:520px;text-wrap:pretty}
+#world-loading.in .wl-kicker{animation:wl-rise .7s var(--wl-ease) both}
+#world-loading.in .wl-title{animation:wl-focus 1s var(--wl-ease) .06s both}
+#world-loading.in .wl-sub{animation:wl-rise .8s var(--wl-ease) .18s both}
+#world-loading.in .wl-meter{animation:wl-rise .8s var(--wl-ease) .26s both}
+@keyframes wl-rise{from{opacity:0;transform:translateY(8px)}}
+@keyframes wl-focus{from{opacity:0;filter:blur(10px);letter-spacing:.42em}}
+
+.wl-meter{display:flex;flex-direction:column;align-items:center;gap:9px;margin-top:18px}
+.wl-bar{position:relative;width:min(280px,62vw);height:2px;border-radius:2px;background:var(--wl-line);overflow:hidden}
+.wl-bar i{position:relative;display:block;height:100%;width:0;border-radius:inherit;background:var(--wl-ink);box-shadow:0 0 12px rgba(239,233,220,.55);transition:width .35s var(--wl-ease)}
+.wl-bar i::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent);background-size:60px 100%;background-repeat:no-repeat;animation:wl-shimmer 1.3s linear infinite}
+@keyframes wl-shimmer{from{background-position:-60px 0}to{background-position:calc(100% + 60px) 0}}
+.wl-pct{font:500 10px/1 'DM Sans',Arial,sans-serif;letter-spacing:.28em;color:var(--wl-dim);font-variant-numeric:tabular-nums}
+.wl-brand{position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%);font:600 9px/1 'DM Sans',Arial,sans-serif;letter-spacing:.5em;color:rgba(239,233,220,.28);white-space:nowrap}
+
+/* Chapter cards: a glass plate over the live world, no meter. */
+#world-loading.card{background:radial-gradient(80% 60% at 50% 50%,rgba(5,6,7,.55),rgba(5,6,7,.86));-webkit-backdrop-filter:blur(6px) saturate(.8);backdrop-filter:blur(6px) saturate(.8)}
+#world-loading.card::after,#world-loading.card .wl-brand,#world-loading.card .wl-meter{display:none}
+#world-loading.card .wl-card{border-block:1px solid var(--wl-line);padding:30px 40px;background:linear-gradient(180deg,rgba(239,233,220,.03),rgba(239,233,220,0))}
+
+@media (max-width:560px){.wl-sub{font-size:11px;letter-spacing:.12em}.wl-kicker{letter-spacing:.26em}.wl-kicker::before,.wl-kicker::after{width:20px}}
+@media (prefers-reduced-motion:reduce){
+ #world-loading::before,#world-loading::after,.wl-bar i::after{animation:none}
+ #world-loading.in :is(.wl-kicker,.wl-title,.wl-sub,.wl-meter){animation:none}
+ #world-loading,.wl-bar i{transition-duration:.01s}}

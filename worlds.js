@@ -23,12 +23,12 @@
    stats.hiddenLast=hidden.size;
   }
   // Loading screen.
-  const el=document.createElement('div');el.id='world-loading';el.hidden=true;el.setAttribute('role','status');
-  el.innerHTML='<div class="wl-card"><small class="wl-kicker"></small><h2 class="wl-title"></h2><p class="wl-sub"></p><div class="wl-bar"><i></i></div></div>';
+  const el=document.createElement('div');el.id='world-loading';el.hidden=true;el.setAttribute('role','status');el.setAttribute('aria-live','polite');
+  el.innerHTML='<div class="wl-card"><small class="wl-kicker"></small><h2 class="wl-title"></h2><p class="wl-sub"></p><div class="wl-meter"><div class="wl-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div><span class="wl-pct">0%</span></div></div><span class="wl-brand" aria-hidden="true">BREAK THY RULE</span>';
   document.body.append(el);const q=s=>el.querySelector(s);
-  function show(title,sub='',kicker='BREAKTHYRULE'){q('.wl-kicker').textContent=kicker;q('.wl-title').textContent=title;q('.wl-sub').textContent=sub;q('.wl-bar i').style.width='0%';el.hidden=false;el.classList.remove('out');void el.offsetWidth;el.classList.add('in');}
-  const progress=k=>{q('.wl-bar i').style.width=Math.round(Math.min(1,k)*100)+'%';};
-  function hide(){el.classList.remove('in');el.classList.add('out');setTimeout(()=>{if(el.classList.contains('out'))el.hidden=true;},450);}
+  function show(title,sub='',kicker='BREAKTHYRULE'){q('.wl-kicker').textContent=kicker;q('.wl-title').textContent=title;q('.wl-sub').textContent=sub;progress(0);el.hidden=false;el.classList.remove('out');void el.offsetWidth;el.classList.add('in');}
+  function progress(k){const n=Math.round(Math.max(0,Math.min(1,k))*100);q('.wl-bar i').style.width=n+'%';q('.wl-bar').setAttribute('aria-valuenow',n);q('.wl-pct').textContent=n+'%';}
+  function hide(){el.classList.remove('in');el.classList.add('out');setTimeout(()=>{if(el.classList.contains('out'))el.hidden=true;},620);}
   const frame=()=>new Promise(r=>requestAnimationFrame(()=>r()));
   // Compile shaders up front, but never hold a loading screen longer than `cap` ms: the rest finishes behind it.
   async function compile(cap=4000){const job=(async()=>{try{if(renderer.compileAsync)await renderer.compileAsync(scene,camera);else renderer.compile(scene,camera);}catch(e){console.warn('Precompile skipped',e);}})();await Promise.race([job,new Promise(r=>setTimeout(r,cap))]);}
