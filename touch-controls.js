@@ -5,7 +5,7 @@
 //
 // Host hooks (app.js): createTouchControls({look(dx,dy), combat:()=>combat, third(), visible:()=>bool, armed:()=>bool})
 (function(root){
- root.createTouchControls=function({host=null,look,combat,third,visible,armed}){
+ root.createTouchControls=function({host=null,look,combat,third,visible,armed,expedition=()=>false}){
   const coarse=matchMedia('(pointer:coarse)').matches||'ontouchstart'in root;
   if(!coarse)return null;
   const key=(k,down)=>{const code=k===' '?'Space':k.length===1?'Key'+k.toUpperCase():k;document.dispatchEvent(new KeyboardEvent(down?'keydown':'keyup',{key:k,code,bubbles:true}));};
@@ -35,19 +35,19 @@
   const hold=(sel,down,up)=>{const b=q(sel);let last=null;b.addEventListener('pointerdown',e=>{e.preventDefault();cap(b,e.pointerId);last={x:e.clientX,y:e.clientY};b.classList.add('on');down?.();});
    b.addEventListener('pointermove',e=>{if(!last||sel!=='.tc-fire')return;look(e.clientX-last.x,e.clientY-last.y);last={x:e.clientX,y:e.clientY};});
    const end=()=>{if(!last)return;last=null;b.classList.remove('on');up?.();};b.addEventListener('pointerup',end);b.addEventListener('pointercancel',end);};
-  hold('.tc-fire',()=>{const c=combat();if(c?.armed())c.touchFire(true);else key('f',true);},()=>{const c=combat();if(c?.armed())c.touchFire(false);else key('f',false);});
+  hold('.tc-fire',()=>{const c=combat();if(expedition())key('g',true);else if(c?.armed())c.touchFire(true);else key('f',true);},()=>{const c=combat();if(expedition())key('g',false);else if(c?.armed())c.touchFire(false);else key('f',false);});
   hold('.tc-aim',()=>combat()?.toggleZoom?.());
   hold('.tc-jump',()=>key(' ',true),()=>key(' ',false));
   hold('.tc-slide',()=>key('c',true),()=>key('c',false));
-  hold('.tc-use',()=>key('f',true),()=>key('f',false));
+  hold('.tc-use',()=>key(expedition()?'e':'f',true),()=>key(expedition()?'e':'f',false));
   hold('.tc-reload',()=>key('r',true),()=>key('r',false));
   hold('.tc-melee',()=>combat()?.touchMelee?.());
   hold('.tc-third',()=>third());
   let slot=0;hold('.tc-swap',()=>{const c=combat(),ids=c?.arsenal?.inspect?.()?.owned||['axe','pistol'];const guns=ids.length?ids:['pistol'];slot=(slot+1)%(guns.length+1);if(slot===guns.length){if(c?.armed())key('x',true),key('x',false);}else key(String(slot+1),true),key(String(slot+1),false);});
   // Show while playing; combat gets touch mode so it fires without pointer lock.
   let shown=false;
-  setInterval(()=>{const on=!!visible();if(on!==shown){shown=on;el.hidden=!on;document.body.classList.toggle('touch-play',on);if(!on){setKeys(0,0);combat()?.touchFire?.(false);}}
-   el.classList.toggle('armed',!!armed());combat()?.setTouch?.(on);},300);
-  return {element:el,inspect:()=>({shown,keys:[...held]})};
+  const timer=setInterval(()=>{const on=!!visible();if(on!==shown){shown=on;el.hidden=!on;document.body.classList.toggle('touch-play',on);if(!on){setKeys(0,0);combat()?.touchFire?.(false);}}
+   el.classList.toggle('armed',!!armed()||expedition());for(const sel of ['.tc-aim','.tc-swap','.tc-melee'])q(sel).hidden=expedition();combat()?.setTouch?.(on&&!expedition());},300);
+  return {element:el,dispose(){clearInterval(timer);setKeys(0,0);fingers.clear();combat()?.touchFire?.(false);combat()?.setTouch?.(false);document.body.classList.remove('touch-play');el.remove();},inspect:()=>({shown,keys:[...held]})};
  };
 })(window);

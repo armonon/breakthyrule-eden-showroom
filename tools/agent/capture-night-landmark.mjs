@@ -14,7 +14,7 @@ const args = Object.fromEntries(process.argv.slice(2).map((a, i, all) => a.start
 const CHROME = process.env.CHROME_BIN || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const port = 9555 + Math.floor(Math.random() * 300);
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'night-cap-'));
-const url = args.url || 'http://127.0.0.1:8777/';
+const url = args.url || 'http://127.0.0.1:8777/showroom.html';
 const out = args.out || `docs/night/evidence/${new Date().toISOString().slice(0, 10)}`;
 const seconds = Number(args.seconds || 12);
 fs.mkdirSync(out, { recursive: true });

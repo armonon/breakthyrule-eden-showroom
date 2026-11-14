@@ -31,13 +31,21 @@ window.createRoadPyramid=function(T,scene,{roadX,roadEnd,stone,onChange,reduced}
   const lamp=new T.PointLight(0xffca85,12,22,1.7);lamp.position.set(side*5,4.3,30);root.add(lamp);lamps.push(lamp);
  }
  const gathering=window.createPyramidGathering(T,root,{stone,onChange,reduced});
- let unlocked=false;
+ // Visibility culling must not change the scene's light count: each change
+ // recompiles every lit material when the player crosses a distance boundary.
+ // Keep the same lights registered; their existing intensity controls still
+ // fade them and the geometry remains culled exactly as before.
+ const lightRoot=new T.Group();lightRoot.name='Pyramid lighting';scene.add(lightRoot);
+ const stableLights=[];root.traverse(node=>{if(node.isLight)stableLights.push(node);});
+ scene.updateMatrixWorld(true);for(const light of stableLights)lightRoot.attach(light);
+
+ let unlocked=false;const collision=window.createPyramidCollision({roadX,roadEnd,unlocked:()=>unlocked});
  const gate=box(3.35,4.1,.4,0,2.05,24.25,metal);
  const seals=[];for(let i=0;i<8;i++)seals.push(box(.20,.22,.045,(i-3.5)*.35,2.15,24.48,lampMaterial.clone()));
  return {
   setPages(count){unlocked=count===8;gate.visible=!unlocked;seals.forEach((s,i)=>{s.visible=!unlocked;s.material.emissiveIntensity=i<count?2.2:.05;});},
   centerZ,clearingStart:roadEnd+24,gathering,ready:gathering.ready,
-  blocks(p){const x=p.x-roadX,z=p.z-centerZ;if(!unlocked&&Math.abs(x)<2&&Math.abs(z-24.25)<.7)return true;if(Math.abs(Math.abs(x)-1.98)<.5&&Math.abs(z-24.4)<.8)return true;if(Math.abs(x)>=half+.55||Math.abs(z)>=half+.55)return false;return gathering.blocks(x,z);},
+  blocks:collision.blocks,
   constrain(p){const width=T.MathUtils.lerp(32,42,T.MathUtils.smoothstep(roadEnd+36-p.z,0,24));p.x=T.MathUtils.clamp(p.x,roadX-width,roadX+width);p.z=Math.max(centerZ-45,p.z);},
   update(viewer,time=0){const proximity=T.MathUtils.smoothstep(roadEnd+48-viewer.position.z,0,40);scene.fog.density=T.MathUtils.lerp(scene.fog.density,.01,proximity);root.visible=viewer.position.z<roadEnd+80;lamps.forEach(l=>{l.intensity=12*proximity;});gathering.update(time,viewer);},
   inspect:()=>({x:roadX,z:centerZ,roadEnd,height,halfWidth:half,backLimit:centerZ-45,visible:root.visible,unlocked})

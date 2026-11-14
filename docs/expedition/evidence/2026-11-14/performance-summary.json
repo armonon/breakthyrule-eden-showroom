@@ -1,0 +1,197 @@
+{
+  "contentVersion": "10056d9f218af2f445da665b765065863682c29908649293f88137267fd779a9",
+  "variant": "confirmed-stable-lights",
+  "scope": "Same actual game, same preserved effects and input route. Before overrides only four rendering modules; both pin the solo seed at construction. No player pose writes.",
+  "seed": 134202611,
+  "startedAt": "2026-11-14T16:33:53.980Z",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "deviceScaleFactor": 1,
+  "browser": "157.0.8103.78",
+  "hardware": {
+    "host": "Mac.lan",
+    "cpu": "Apple M4",
+    "memoryBytes": 25769803776
+  },
+  "sources": {
+    "eden-post.js": "e496a4dc6ab55a35362265e401e17b8be491ad95bde7e5004f1c9eac16453268",
+    "eden-lighting.js": "fb2f500fb0a785de711448be7d502ced6c08caaa3e48d2123d5b4d713227e0e9",
+    "eden-quality.js": "28ddd15c250e6778ffdbab9b79d5c91aa66c2be4ead9503e43b38c916d59fdc7",
+    "render-warmup.js": "aca372e2f732021c44f6b8f068c4e528ceaa1d57cc00ce39a39c5a9159df03b6",
+    "expedition-entry.js": "64e7f39fa5e9cec13baf33b039de7ad3a1d5f0a4a7c84fb24e8680239bc3897f",
+    "character-motion.js": "17e401bdc9b7954f42289cd8a891f7420cf1848386bb0cd044e1f17c6773c841",
+    "player-movement.js": "1872ce11cdef86503867f3f7c2071a9dbe0bd19562aa6ad76d0c7b1b7157f965",
+    "parkour.js": "6b910f9ef593d0383013099184804d4bb442a38f0fc3480ed6e5c258b63fe653",
+    "expedition-world.js": "0806025e62a818fd3490adbf57b11b4aeb7b9f1f1311f817751cad3c04197231",
+    "assets/anim/clips.json": "3fb2914d5787bd9eb6da41745114503312ef5c6e67cc8c111d18741cb5cb262c",
+    "road-pyramid.js": "cca432e50f3b09fc497651eb1a5b87227db377c73344d31b9933abd9f7fea28f",
+    "player-body.js": "cf3f7d30d2582c4510ebe0de37e8c05cef73ffcd09cf5b241a9e8d2ca174f6e4",
+    "solo-expedition.js": "e2509ccd895f399119e943d08b2a45998211fa2934dce756eceaf9720a1751b4",
+    "stemdeck-panel.js": "242dfafa36aa7c076d15a0bfdbd3117a5e1a22cdff8b520b4815fc1a70a0a0de",
+    "librarian-client.js": "4086d2b1690c86eec2d2c1ffe83666c0d0b70f47b787a3b10fa812ba16696270"
+  },
+  "coldEntryMs": 4102,
+  "graphics": {
+    "vendor": "Google Inc. (Apple)",
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)"
+  },
+  "actualRouteDurationMs": 600026,
+  "summary": {
+    "startup": {
+      "frames": 404,
+      "p50": 16.699999999999818,
+      "p95": 16.800000000000182,
+      "p99": 83.29999999999927,
+      "max": 433.2999999999997,
+      "over50": 5,
+      "over100": 4,
+      "longTasks": [
+        {
+          "start": 142.39999997615814,
+          "duration": 128
+        },
+        {
+          "start": 292.60000002384186,
+          "duration": 406
+        },
+        {
+          "start": 1010.7999999523163,
+          "duration": 58
+        },
+        {
+          "start": 3262.7999999523163,
+          "duration": 113
+        },
+        {
+          "start": 3605.7999999523163,
+          "duration": 387
+        },
+        {
+          "start": 3993.5,
+          "duration": 62
+        },
+        {
+          "start": 4200.399999976158,
+          "duration": 58
+        },
+        {
+          "start": 4276.799999952316,
+          "duration": 66
+        }
+      ]
+    },
+    "route": {
+      "frames": 35868,
+      "p50": 16.699999999982538,
+      "p95": 16.79999999993015,
+      "p99": 16.800000000046566,
+      "max": 83.30000000000291,
+      "over50": 6,
+      "over100": 0,
+      "longTasks": [
+        {
+          "start": 17674.5,
+          "duration": 69
+        },
+        {
+          "start": 28924.399999976158,
+          "duration": 90
+        },
+        {
+          "start": 74970.89999997616,
+          "duration": 77
+        },
+        {
+          "start": 112782.29999995232,
+          "duration": 63
+        },
+        {
+          "start": 162549.10000002384,
+          "duration": 65
+        },
+        {
+          "start": 345224.6999999285,
+          "duration": 71
+        },
+        {
+          "start": 389824.1999999285,
+          "duration": 53
+        },
+        {
+          "start": 441522.7999999523,
+          "duration": 75
+        },
+        {
+          "start": 477051.6999999285,
+          "duration": 65
+        },
+        {
+          "start": 530850.5,
+          "duration": 72
+        },
+        {
+          "start": 559214.3999999762,
+          "duration": 68
+        }
+      ]
+    },
+    "steady": {
+      "frames": 32285,
+      "p50": 16.699999999982538,
+      "p95": 16.79999999993015,
+      "p99": 16.800000000046566,
+      "max": 66.70000000001164,
+      "over50": 4,
+      "over100": 0,
+      "longTasks": [
+        {
+          "start": 74970.89999997616,
+          "duration": 77
+        },
+        {
+          "start": 112782.29999995232,
+          "duration": 63
+        },
+        {
+          "start": 162549.10000002384,
+          "duration": 65
+        },
+        {
+          "start": 345224.6999999285,
+          "duration": 71
+        },
+        {
+          "start": 389824.1999999285,
+          "duration": 53
+        },
+        {
+          "start": 441522.7999999523,
+          "duration": 75
+        },
+        {
+          "start": 477051.6999999285,
+          "duration": 65
+        },
+        {
+          "start": 530850.5,
+          "duration": 72
+        },
+        {
+          "start": 559214.3999999762,
+          "duration": 68
+        }
+      ]
+    }
+  },
+  "passed": true,
+  "completed": true,
+  "reportSHA256": "f93a7d693c4561fd54c8f11f4a203058005de92afc35e9319e2b7c54509d71aa",
+  "limitations": [
+    "Browser-solo exploration, not active hunt or multiplayer endurance.",
+    "Adaptive resolution dropped to 0.75 at two checkpoints; not constant resolution.",
+    "Earlier source version; newer movement/physics changes have no browser performance qualification.",
+    "Startup and active-play stalls remain; physical mobile not tested."
+  ]
+}

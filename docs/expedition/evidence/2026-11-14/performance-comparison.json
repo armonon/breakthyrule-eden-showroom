@@ -1,0 +1,269 @@
+{
+  "scope": "Same actual game, same preserved effects and input route. Before overrides only four rendering modules; both pin the solo seed at construction. No player pose writes.",
+  "device": {
+    "cpu": "Apple M4",
+    "memoryBytes": 25769803776
+  },
+  "browser": "157.0.8103.78",
+  "graphicsBackend": {
+    "vendor": "Google Inc. (Apple)",
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)"
+  },
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "stage": [
+    1440,
+    790
+  ],
+  "preset": "medium",
+  "contentVersion": "70e9d4edb83a08c55b5cc01e34eb00219a749b7fc01f21e41aef4396d7e77ec7",
+  "result": "No measured steady frame-time improvement. Three versus one >50.5ms steady frames; large first-use stalls remain. Both automated reports flag showroom missing-service HTTP responses.",
+  "before": {
+    "coldEntryMs": 4124,
+    "durationMs": 600073,
+    "phases": {
+      "startup": {
+        "frames": 408,
+        "p50": 16.7,
+        "p95": 16.8,
+        "p99": 50,
+        "max": 566.7,
+        "over50": 4,
+        "over100": 3,
+        "longTaskCount": 6
+      },
+      "route": {
+        "frames": 35903,
+        "p50": 16.7,
+        "p95": 16.7,
+        "p99": 16.8,
+        "max": 483.3,
+        "over50": 3,
+        "over100": 2,
+        "longTaskCount": 5
+      },
+      "steady": {
+        "frames": 32362,
+        "p50": 16.7,
+        "p95": 16.7,
+        "p99": 16.8,
+        "max": 66.7,
+        "over50": 1,
+        "over100": 0,
+        "longTaskCount": 3
+      }
+    },
+    "switchEntryMs": [
+      4042,
+      4650,
+      4650
+    ],
+    "resources": [
+      {
+        "geometries": 157,
+        "textures": 254,
+        "canvases": 1
+      },
+      {
+        "geometries": 238,
+        "textures": 257,
+        "canvases": 1
+      },
+      {
+        "geometries": 251,
+        "textures": 257,
+        "canvases": 1
+      },
+      {
+        "geometries": 251,
+        "textures": 257,
+        "canvases": 1
+      },
+      {
+        "geometries": 252,
+        "textures": 257,
+        "canvases": 1
+      },
+      {
+        "geometries": 252,
+        "textures": 257,
+        "canvases": 1
+      },
+      {
+        "geometries": 252,
+        "textures": 257,
+        "canvases": 1
+      },
+      {
+        "geometries": 252,
+        "textures": 257,
+        "canvases": 1
+      },
+      {
+        "geometries": 252,
+        "textures": 257,
+        "canvases": 1
+      },
+      {
+        "geometries": 252,
+        "textures": 257,
+        "canvases": 1
+      }
+    ],
+    "switchResources": [
+      {
+        "geometries": 152,
+        "textures": 253,
+        "canvases": 1
+      },
+      {
+        "geometries": 152,
+        "textures": 253,
+        "canvases": 1
+      },
+      {
+        "geometries": 153,
+        "textures": 253,
+        "canvases": 1
+      }
+    ],
+    "sourceHashes": {
+      "eden-post.js": "e496a4dc6ab55a35362265e401e17b8be491ad95bde7e5004f1c9eac16453268",
+      "eden-lighting.js": "fb2f500fb0a785de711448be7d502ced6c08caaa3e48d2123d5b4d713227e0e9",
+      "eden-quality.js": "28ddd15c250e6778ffdbab9b79d5c91aa66c2be4ead9503e43b38c916d59fdc7",
+      "render-warmup.js": "a1c263a2258c67518b0513831686c7475edfc93350b61f146ce32e176ebef5b5",
+      "expedition-entry.js": "59031d1282773e2e70215c7e71d78bd68810ea8ab1d202b8a325e4f9741e1798",
+      "character-motion.js": "17e401bdc9b7954f42289cd8a891f7420cf1848386bb0cd044e1f17c6773c841",
+      "player-movement.js": "1872ce11cdef86503867f3f7c2071a9dbe0bd19562aa6ad76d0c7b1b7157f965",
+      "parkour.js": "f7ad43e096b5388a174d6da25426ee3f266accb3e5883c2bbd84a59cbbf70e63",
+      "expedition-world.js": "3f169290d0dba58f1cb7da353a648238f4e8f74caa003e070ff2cb87425a9155",
+      "assets/anim/clips.json": "3fb2914d5787bd9eb6da41745114503312ef5c6e67cc8c111d18741cb5cb262c"
+    },
+    "reportSHA256": "442ff98d212827348b023bd95e49dfe7eda25764d69d9c805e6c6dae36a6fd12"
+  },
+  "after": {
+    "coldEntryMs": 4145,
+    "durationMs": 600130,
+    "phases": {
+      "startup": {
+        "frames": 419,
+        "p50": 16.7,
+        "p95": 16.8,
+        "p99": 50,
+        "max": 550,
+        "over50": 4,
+        "over100": 3,
+        "longTaskCount": 6
+      },
+      "route": {
+        "frames": 35875,
+        "p50": 16.7,
+        "p95": 16.7,
+        "p99": 16.8,
+        "max": 483.3,
+        "over50": 5,
+        "over100": 2,
+        "longTaskCount": 6
+      },
+      "steady": {
+        "frames": 32336,
+        "p50": 16.7,
+        "p95": 16.7,
+        "p99": 16.8,
+        "max": 66.7,
+        "over50": 3,
+        "over100": 0,
+        "longTaskCount": 4
+      }
+    },
+    "switchEntryMs": [
+      4450,
+      3426,
+      4114
+    ],
+    "resources": [
+      {
+        "geometries": 158,
+        "textures": 253,
+        "canvases": 1
+      },
+      {
+        "geometries": 238,
+        "textures": 256,
+        "canvases": 1
+      },
+      {
+        "geometries": 252,
+        "textures": 256,
+        "canvases": 1
+      },
+      {
+        "geometries": 252,
+        "textures": 256,
+        "canvases": 1
+      },
+      {
+        "geometries": 252,
+        "textures": 256,
+        "canvases": 1
+      },
+      {
+        "geometries": 252,
+        "textures": 256,
+        "canvases": 1
+      },
+      {
+        "geometries": 252,
+        "textures": 256,
+        "canvases": 1
+      },
+      {
+        "geometries": 252,
+        "textures": 256,
+        "canvases": 1
+      },
+      {
+        "geometries": 252,
+        "textures": 256,
+        "canvases": 1
+      },
+      {
+        "geometries": 252,
+        "textures": 256,
+        "canvases": 1
+      }
+    ],
+    "switchResources": [
+      {
+        "geometries": 152,
+        "textures": 252,
+        "canvases": 1
+      },
+      {
+        "geometries": 152,
+        "textures": 252,
+        "canvases": 1
+      },
+      {
+        "geometries": 152,
+        "textures": 252,
+        "canvases": 1
+      }
+    ],
+    "sourceHashes": {
+      "eden-post.js": "e496a4dc6ab55a35362265e401e17b8be491ad95bde7e5004f1c9eac16453268",
+      "eden-lighting.js": "fb2f500fb0a785de711448be7d502ced6c08caaa3e48d2123d5b4d713227e0e9",
+      "eden-quality.js": "28ddd15c250e6778ffdbab9b79d5c91aa66c2be4ead9503e43b38c916d59fdc7",
+      "render-warmup.js": "a1c263a2258c67518b0513831686c7475edfc93350b61f146ce32e176ebef5b5",
+      "expedition-entry.js": "59031d1282773e2e70215c7e71d78bd68810ea8ab1d202b8a325e4f9741e1798",
+      "character-motion.js": "17e401bdc9b7954f42289cd8a891f7420cf1848386bb0cd044e1f17c6773c841",
+      "player-movement.js": "1872ce11cdef86503867f3f7c2071a9dbe0bd19562aa6ad76d0c7b1b7157f965",
+      "parkour.js": "f7ad43e096b5388a174d6da25426ee3f266accb3e5883c2bbd84a59cbbf70e63",
+      "expedition-world.js": "3f169290d0dba58f1cb7da353a648238f4e8f74caa003e070ff2cb87425a9155",
+      "assets/anim/clips.json": "3fb2914d5787bd9eb6da41745114503312ef5c6e67cc8c111d18741cb5cb262c"
+    },
+    "reportSHA256": "0ae15f0e7adcd1b9ebaad146a1d3561c47bcdd4cd542c0c8d3ba48e1c90bdd9f"
+  }
+}

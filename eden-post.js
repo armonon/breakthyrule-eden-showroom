@@ -5,6 +5,7 @@
 // targets): it then holds exactly what the canvas used to show, including garden.js's sky and water shaders, which
 // write display-referred colour directly (clamped here, as the canvas used to clip it: the sky's sun disc is ~3x white).
 window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
+ let disposed=false;
  const settings={enabled,ao:.8,aoRadius:.7,aoIntensity:4.5,bloom:.26,bloomThreshold:.9,warmth:.025,saturation:1.06,vignette:.22,flare:.8,rays:.7,glare:.9,contrast:.12,split:.035,taa:true,taaFeedback:.88,sharpen:.6,grain:.028,lut:1};
  const webgl2=true,size=new T.Vector2(),last=new T.Vector2();
  const target=(type=T.HalfFloatType,extra={})=>new T.WebGLRenderTarget(1,1,{type,depthBuffer:false,...extra});
@@ -187,6 +188,7 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   return sunGate>0||lampCount>0;
  }
  function render(){
+  if(disposed)return;
   if(!settings.enabled){renderer.info.autoReset=true;renderer.render(scene,camera);return;}
   resize();
   const previous=renderer.getRenderTarget();renderer.info.autoReset=false;renderer.info.reset(); // stats cover the whole processed frame
@@ -214,21 +216,30 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   }
   const c=composite.uniforms;c.ao.value=settings.ao;c.bloom.value=settings.bloom;c.warmth.value=settings.warmth;c.saturation.value=settings.saturation;c.vignette.value=settings.vignette;c.contrast.value=settings.contrast;c.split.value=settings.split;
   c.sunGate.value=sunGate;c.flare.value=settings.flare;c.rays.value=settings.rays;c.glare.value=lampCount?settings.glare:0;c.tRays.value=rayB.texture;
-  if(!taa){pass(composite,previous);return;}
+  // Raw diagnostic views intentionally bypass the grade; ordinary non-TAA
+  // rendering still owns grain, LUT and sharpening in the finish pass.
+  if(composite.uniforms.view.value!==0){pass(composite,previous);return;}
   e[8]=baseX;e[9]=baseY;camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
-  pass(composite,taaCurrent);
-  camera.getWorldPosition(tmp);const moved=tmp.distanceTo(lastCam);lastCam.copy(tmp);if(moved>6)taaValid=false;taaStill=moved>.0005?0:taaStill+1;
-  viewProj.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);invViewProj.copy(viewProj).invert();reproject.multiplyMatrices(prevViewProj,invViewProj);
-  const dest=taaHistory[taaIndex&1],hist=taaHistory[(taaIndex&1)^1],r=resolve.uniforms;
-  r.tHist.value=hist.texture;r.feedback.value=taaValid?settings.taaFeedback:0;pass(resolve,dest);prevViewProj.copy(viewProj);taaValid=true;
-  const f=finish.uniforms;f.tSrc.value=dest.texture;f.sharpen.value=settings.sharpen;f.grain.value=settings.grain;f.lutMix.value=settings.lut;f.seed.value=(taaIndex%64)*7.13;pass(finish,previous);
+  pass(composite,taaCurrent);let color=taaCurrent.texture;
+  if(taa){
+   camera.getWorldPosition(tmp);const moved=tmp.distanceTo(lastCam);lastCam.copy(tmp);if(moved>6)taaValid=false;taaStill=moved>.0005?0:taaStill+1;
+   viewProj.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);invViewProj.copy(viewProj).invert();reproject.multiplyMatrices(prevViewProj,invViewProj);
+   const dest=taaHistory[taaIndex&1],hist=taaHistory[(taaIndex&1)^1],r=resolve.uniforms;
+   r.tHist.value=hist.texture;r.feedback.value=taaValid?settings.taaFeedback:0;pass(resolve,dest);prevViewProj.copy(viewProj);taaValid=true;color=dest.texture;
+  }else taaValid=false;
+  const f=finish.uniforms;f.tSrc.value=color;f.sharpen.value=settings.sharpen;f.grain.value=settings.grain;f.lutMix.value=settings.lut;f.seed.value=(taaIndex%64)*7.13;pass(finish,previous);
   taaIndex++;
  }
  return {
   render,
+  dispose(){
+   if(disposed)return;disposed=true;
+   for(const resource of [sceneRT,aoA,aoB,...down,...up,rayA,rayB,visible,taaCurrent,...taaHistory,lut,quad.geometry,aoMaterial,blurMaterial,brightMaterial,downMaterial,upMaterial,visibleMaterial,rayMaskMaterial,rayBlurMaterial,composite,resolve,finish])resource.dispose();
+   lights={sky:null,lamps:()=>null,torches:()=>null};lampList.length=0;
+  },
   // Still scenes need a few more frames for the temporal filter to converge (reduced-motion idle stops the loop).
   settling:()=>settings.enabled&&settings.taa&&taaStill<16,
-  set(next={}){if(next.samples!==undefined&&webgl2&&next.samples!==sceneRT.samples){sceneRT.samples=next.samples;sceneRT.dispose();}Object.assign(settings,next);},
+  set(next={}){if(['enabled','taa','samples'].some(key=>next[key]!==undefined&&next[key]!==settings[key])){taaValid=false;taaStill=0;}if(next.samples!==undefined&&webgl2&&next.samples!==sceneRT.samples){sceneRT.samples=next.samples;sceneRT.dispose();}Object.assign(settings,next);},
   // sky: garden.js's sky dome (its sun disc and night fade); lamps: () => world positions of lit lanterns, or null;
   // torches: () => [{position, direction, strength}] flashlights, or null.
   setLights(next){lights={...lights,...next};},

@@ -3,7 +3,9 @@
  function createPlayerMotion(){
   let height=0,velocity=0;
   const gravity=15,impulse=5.4;
+  function validateState(s){if(!s||s.version!==1||!Number.isFinite(s.height)||s.height<0||s.height>1000||!Number.isFinite(s.velocity)||Math.abs(s.velocity)>1000)throw Error('Invalid vertical motion snapshot.');return s;}
   return {
+   validateState,captureState:()=>({version:1,height,velocity}),restoreState(s){validateState(s);height=s.height;velocity=s.velocity;},
    impulse,
    speed:sprinting=>sprinting?6:3.4,
    jump(v=impulse){if(velocity||height)return false;velocity=v;return true;},

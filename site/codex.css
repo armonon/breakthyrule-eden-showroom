@@ -1,0 +1,185 @@
+@import url('https://fonts.googleapis.com/css2?family=Pirata+One&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,500&display=swap');
+/* ILLUMINATED CODEX — a manuscript someone airbrushed over.
+   Loaded after site.css; remove this one file to return to the plain theme. */
+:root{
+ --paper:#f2ebdd;--paper-2:#e9e0cd;--wash:#ebe3d2;--ink:#1d1a17;--muted:#6e6458;--line:#d6cab3;
+ --red:#8f2a22;--rubric:#a3322a;--gold:#b08a4a;--halo:#c9473b;
+ --blackletter:'Pirata One','UnifrakturMaguntia',serif;--serif:'Cormorant Garamond',Georgia,serif;
+}
+/* Night folios: the archive and the forum are read by lamplight. */
+body[data-page=archive],body[data-page=community]{--paper:#15120f;--paper-2:#1d1915;--wash:#201b16;--ink:#efe6d4;--muted:#a3978a;--line:#3a3128;--red:#d0574a;--rubric:#e0695b;--gold:#c9a463}
+
+body{background:var(--paper);color:var(--ink)}
+/* Paper grain and aged edges over everything, never catching the pointer. */
+body::before{content:'';position:fixed;inset:0;z-index:100;pointer-events:none;opacity:.42;mix-blend-mode:multiply;
+ background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .32 0 0 0 0 .24 0 0 0 0 .15 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+body::after{content:'';position:fixed;inset:0;z-index:99;pointer-events:none;background:radial-gradient(120% 90% at 50% 40%,transparent 55%,rgba(92,62,30,.16) 100%)}
+body[data-page=archive]::before,body[data-page=community]::before{mix-blend-mode:screen;opacity:.16}
+body[data-page=archive]::after,body[data-page=community]::after{background:radial-gradient(110% 80% at 50% 30%,transparent 50%,rgba(0,0,0,.55) 100%)}
+::selection{background:var(--rubric);color:#fff}
+
+/* Type */
+h1,h2,h3{color:var(--ink)}
+.kicker{font-family:var(--serif);font-style:italic;font-weight:500;font-size:17px;letter-spacing:.02em;text-transform:none;color:var(--rubric)}
+.kicker::before{content:'❧ ';font-style:normal}
+.lede{font-family:var(--serif);font-size:22px;line-height:1.45;color:var(--muted)}
+.rubric{color:var(--rubric);font-style:italic}
+.blackletter{font-family:var(--blackletter);font-weight:400;letter-spacing:0}
+.fine{color:var(--muted)}
+.marginalia{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--muted);border-left:1px solid var(--rubric);padding-left:14px;max-width:300px}
+.folio{font-family:var(--blackletter);font-size:22px;color:var(--rubric);margin:0;letter-spacing:.02em}
+.folio small{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--muted);margin-left:8px}
+.dropcap{font-family:var(--blackletter);font-weight:400;color:var(--rubric);letter-spacing:0;margin-right:.02em}
+.drop-para::first-letter{font-family:var(--blackletter);float:left;font-size:4.1em;line-height:.82;padding:.06em .1em 0 0;color:var(--rubric)}
+.ornament{display:flex;align-items:center;gap:18px;color:var(--rubric);margin:72px auto 0;width:min(1320px,92vw)}
+.ornament::before,.ornament::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--line) 15%,var(--line) 85%,transparent);box-shadow:0 3px 0 -0px color-mix(in srgb,var(--line) 50%,transparent)}
+.ornament span{font-size:22px;line-height:1}
+
+/* Buttons become stamped labels. */
+.solid,.ghost{font-family:'DM Sans',sans-serif;border-radius:0;letter-spacing:.14em;font-size:12px}
+.solid{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.solid:hover{background:var(--rubric);border-color:var(--rubric);color:#fff}
+.ghost{border-color:var(--ink);color:var(--ink)}
+.ghost:hover{background:var(--ink);color:var(--paper)}
+
+/* Header: a running head with a double rule. */
+.site-top{background:color-mix(in srgb,var(--paper) 90%,transparent);border-bottom:0;box-shadow:0 1px 0 var(--line),0 4px 0 -1px var(--paper),0 5px 0 -1px var(--line)}
+.brand{color:var(--ink)}
+.tabs a{font-family:var(--serif);font-size:18px;letter-spacing:.02em;text-transform:none;font-weight:500;color:var(--muted)}
+.tabs a[aria-current=page]{color:var(--ink);border-bottom-color:transparent;position:relative}
+.tabs a[aria-current=page]::after{content:'✠';position:absolute;left:50%;bottom:-12px;transform:translateX(-50%);font-size:11px;color:var(--rubric)}
+.enter-showroom{background:var(--ink);color:var(--paper)}
+.enter-showroom:hover{background:var(--rubric);color:#fff}
+
+/* Hero: the altar. */
+.codex-hero{position:relative;border-bottom:0}
+.codex-hero .hero-copy{gap:22px}
+.codex-hero h1{font-size:clamp(70px,10vw,156px);line-height:.86}
+.codex-hero h1 .dropcap{font-size:1.18em;line-height:.7;display:inline-block;transform:translateY(.04em)}
+.ink-in{animation:ink 1.6s cubic-bezier(.2,.7,.2,1) both}
+.ink-in-late{animation:ink 1.4s .5s cubic-bezier(.2,.7,.2,1) both}
+@keyframes ink{0%{opacity:0;filter:blur(14px);letter-spacing:.08em;text-shadow:0 0 30px color-mix(in srgb,var(--ink) 60%,transparent)}60%{opacity:1;filter:blur(1px)}100%{opacity:1;filter:none;letter-spacing:-.02em;text-shadow:0 0 0 transparent}}
+.altar{background:radial-gradient(90% 70% at 50% 42%,color-mix(in srgb,var(--paper) 70%,#fff) 0%,var(--paper-2) 70%);border-left:1px solid var(--line);isolation:isolate}
+.altar::before{content:'';position:absolute;inset:22px;border:1px solid color-mix(in srgb,var(--gold) 55%,transparent);z-index:1;pointer-events:none}
+.altar::after{content:'';position:absolute;inset:30px;border:1px solid color-mix(in srgb,var(--gold) 28%,transparent);z-index:1;pointer-events:none}
+.halo{position:absolute;left:50%;top:44%;width:min(78%,620px);aspect-ratio:1;transform:translate(-50%,-50%) scale(.6);border-radius:50%;opacity:0;z-index:0;pointer-events:none;
+ background:radial-gradient(circle,color-mix(in srgb,var(--halo) 70%,transparent) 0%,color-mix(in srgb,var(--halo) 30%,transparent) 38%,transparent 68%);filter:blur(28px);transition:transform 1.4s cubic-bezier(.2,.7,.2,1),opacity 1.4s}
+.halo.lit{opacity:.85;transform:translate(-50%,-50%) scale(1)}
+.altar .card-media{z-index:2;background:transparent}
+.altar .card-media canvas{transform:translateY(24px);transition:opacity 1s,transform 1.4s cubic-bezier(.2,.7,.2,1)}
+.altar .card-media canvas.live{transform:none}
+.pedestal{position:absolute;left:50%;bottom:13%;width:46%;height:26px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(closest-side,rgba(40,25,10,.28),transparent);z-index:1;pointer-events:none}
+.spot{position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(260px circle at var(--mx,50%) var(--my,45%),rgba(255,247,226,.32),transparent 70%);mix-blend-mode:soft-light;opacity:0;transition:opacity .4s}
+.altar:hover .spot{opacity:1}
+.hero-label{z-index:4;left:44px;right:44px;bottom:42px;font-family:var(--serif);font-size:17px;letter-spacing:.02em;text-transform:none;color:var(--ink)}
+.hero-label .plate-no{font-family:var(--blackletter);color:var(--rubric);font-size:20px;margin-right:8px}
+.hero-label em{font-family:var(--serif)}
+.hero-top{position:absolute;top:44px;left:44px;right:44px;display:flex;justify-content:space-between;z-index:4;font-family:var(--serif);font-style:italic;color:var(--muted);font-size:16px;pointer-events:none}
+.altar{cursor:grab}.altar:active{cursor:grabbing}
+
+/* Section heads carry a section mark. */
+.section-head h2{font-size:clamp(46px,5.5vw,80px)}
+.section-head h2 .sect{font-family:var(--blackletter);font-weight:400;color:var(--rubric);font-size:.8em;margin-right:.18em}
+.chips button{font-family:var(--serif);font-size:17px;letter-spacing:.01em;text-transform:none;background:transparent;border-color:var(--line);color:var(--ink);border-radius:0}
+.chips button[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.chips button .numeral{font-family:var(--blackletter);font-size:19px;margin-left:4px}
+
+/* Product cards: catalogue plates. */
+.product-grid{gap:28px;background:none;border:0}
+.product-card{background:transparent;position:relative}
+.product-card .card-media{background:radial-gradient(80% 65% at 50% 46%,color-mix(in srgb,var(--paper) 50%,#fff),var(--paper-2));border:1px solid var(--line);isolation:isolate}
+.product-card .card-media::before,.product-card .card-media::after{content:'';position:absolute;width:16px;height:16px;z-index:3;pointer-events:none;border-color:var(--rubric);border-style:solid;transition:width .4s,height .4s}
+.product-card .card-media::before{top:7px;left:7px;border-width:1px 0 0 1px}
+.product-card .card-media::after{bottom:7px;right:7px;border-width:0 1px 1px 0}
+.product-card:hover .card-media::before,.product-card:hover .card-media::after{width:calc(100% - 14px);height:calc(100% - 14px)}
+.product-card .halo{width:96%;top:46%;filter:blur(22px);opacity:.38;transform:translate(-50%,-50%) scale(.82)}
+.product-card:hover .halo{opacity:.9;transform:translate(-50%,-50%) scale(1.05)}
+.product-card canvas,.product-card img{z-index:1}
+.card-badge{font-family:var(--serif);font-style:italic;font-size:15px;letter-spacing:.01em;text-transform:none;color:var(--muted);top:14px;left:20px;z-index:2}
+.card-numeral{position:absolute;top:8px;right:18px;z-index:2;font-family:var(--blackletter);font-size:30px;color:var(--rubric);line-height:1}
+.card-body{padding:14px 2px 6px;display:grid;grid-template-columns:1fr auto;gap:2px 14px;align-items:baseline}
+.card-body h3{font-size:25px;transition:color .2s}
+.card-body .price{font-family:var(--serif);font-style:italic;font-size:21px;color:var(--rubric)}
+.card-body .plate-line{grid-column:1/-1;font-family:var(--serif);font-style:italic;font-size:15px;color:var(--muted);white-space:normal}
+.product-card:hover h3{color:var(--rubric)}
+#grid-status{font-family:var(--serif);font-style:italic;font-size:16px;margin-top:22px}
+
+/* Teasers: the book's other chapters. */
+.teasers{gap:36px}
+.teaser .teaser-img{border:1px solid var(--line);position:relative;filter:sepia(.25) contrast(1.02);transition:filter .5s}
+.teaser:hover .teaser-img{filter:none}
+.teaser .teaser-img::after{content:attr(data-numeral);position:absolute;left:14px;bottom:4px;font-family:var(--blackletter);font-size:64px;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.45);line-height:1}
+.teaser h3{font-size:32px}
+.teaser p:not(.kicker){font-family:var(--serif);font-size:19px;line-height:1.4}
+
+/* Showroom band: a framed plate of the garden. */
+.showroom-band{margin:96px 3.2% 0;outline:1px solid var(--line);outline-offset:10px}
+.showroom-band h2{color:#fff}
+.showroom-band .kicker{color:#f0c8b8}
+
+/* Footer: the colophon. */
+.site-foot{border-top:0;box-shadow:0 -1px 0 var(--line),0 -4px 0 -1px var(--paper),0 -5px 0 -1px var(--line);text-align:left}
+.foot-mark{font-family:var(--blackletter);font-weight:400;letter-spacing:0;font-size:72px;color:var(--ink)}
+.site-foot p{font-family:var(--serif);font-style:italic;font-size:19px}
+.foot-links a{font-family:var(--serif);font-size:17px;letter-spacing:.02em;text-transform:none}
+.foot-links a:hover{color:var(--rubric)}
+
+/* Product folio */
+.product-page{border-bottom:0}
+.product-page .viewer{background:radial-gradient(80% 60% at 50% 45%,color-mix(in srgb,var(--paper) 55%,#fff),var(--paper-2));border-right:1px solid var(--line);isolation:isolate}
+.product-page .viewer .halo{top:46%}
+.product-page .viewer canvas{z-index:2}
+.product-page .viewer img{z-index:1}
+.viewer-tools{background:var(--paper);border-color:var(--line);z-index:4}
+.viewer-tools button{font-family:var(--serif);font-size:17px;letter-spacing:.01em;text-transform:none}
+.viewer-tools button:hover,.viewer-tools button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.viewer-status{font-family:var(--serif);font-style:italic;font-size:16px;letter-spacing:.01em;text-transform:none;left:44px;top:40px;z-index:4}
+.product-info h1{font-size:clamp(56px,5.6vw,92px)}
+.product-info .price{font-family:var(--serif);font-style:italic;font-size:30px;color:var(--rubric)}
+.product-info #description{font-family:var(--serif);font-size:20px;line-height:1.55}
+.product-info .note{font-family:var(--serif);font-style:italic;font-size:16px;border-top:0;border-left:1px solid var(--rubric);padding:0 0 0 14px}
+.thumbs button{background:var(--paper-2);border-color:var(--line)}
+.plate-mark{display:flex;gap:16px;align-items:baseline}
+.plate-mark .numeral{font-family:var(--blackletter);font-size:54px;color:var(--rubric);line-height:.8}
+
+/* Shared surfaces that were hard-coded white. */
+.compose,.panel,.librarian{background:color-mix(in srgb,var(--paper-2) 60%,transparent);border-color:var(--line)}
+.compose input,.compose textarea,.search-row input,.attach{background:var(--paper);border-color:var(--line);color:var(--ink)}
+.preview-note{background:color-mix(in srgb,var(--rubric) 10%,var(--paper));color:var(--ink);font-family:var(--serif);font-style:italic;font-size:16px}
+.page-head{border-bottom:0;box-shadow:0 1px 0 var(--line),0 4px 0 -1px var(--paper),0 5px 0 -1px var(--line)}
+.page-head h1{font-size:clamp(64px,9vw,140px)}
+.topic-list button{color:var(--ink);font-family:var(--serif);font-size:19px}
+.topic-list button[aria-pressed=true]{color:var(--rubric)}
+.book .cover{border-color:var(--line)}
+.masonry figure{background:var(--paper-2)}
+.masonry img{filter:sepia(.12)}
+.masonry figure:hover img{filter:none}
+.posts li{border-color:var(--line)}
+.channel-list li{border-color:var(--line)}
+.lightbox{background:rgba(16,12,9,.97)}
+
+/* Pages turn into each other (Chrome/Edge/Safari 18; others just navigate). */
+@view-transition{navigation:auto}
+::view-transition-old(root){animation:folio-out .45s ease both}
+::view-transition-new(root){animation:folio-in .55s ease both}
+@keyframes folio-out{to{opacity:0;filter:blur(6px);transform:translateX(-2%)}}
+@keyframes folio-in{from{opacity:0;filter:blur(6px);transform:translateX(2%)}}
+
+@media(max-width:900px){
+ .altar::before{inset:12px}.altar::after{inset:18px}
+ .hero-top{top:26px;left:28px;right:28px;font-size:14px}
+ .hero-label{left:28px;right:28px;bottom:26px;font-size:15px}
+ .product-grid{gap:18px}
+ .showroom-band{margin-inline:0;outline:0}
+}
+@media(prefers-reduced-motion:reduce){
+ .ink-in,.ink-in-late{animation:none}
+ ::view-transition-old(root),::view-transition-new(root){animation:none}
+ .halo{transition:none}
+}
+
+/* Lining figures: old-style numerals in Cormorant read "01" as "o1". */
+body{font-variant-numeric:lining-nums}
+.product-info{gap:14px}.product-info p{margin:0}.product-info .lede{margin-top:6px}
+.product-info .price{margin-top:-4px}
+.topic-list button span:last-child{font-family:var(--blackletter);font-size:18px;color:var(--rubric)}

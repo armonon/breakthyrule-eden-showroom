@@ -10,8 +10,14 @@
  // Forgiveness: a jump still counts just after walking off an edge, and a press made too early is kept for a moment.
  const COYOTE=.12,JUMP_BUFFER=.15;
  let coyote=0,jumpBuffer=0;
-function move(dt){
- if(h.parkour()?.active()){if(h.parkourOn())h.parkour().update(dt);else h.parkour().reset();return;}
+ const profile=()=>h.bodyDimensions?.()||root.playerBodyProfile?.(root.GardenPlayerCharacter)||{height:1.75,radius:.26,crouch:1.19};
+ const bodyHeight=()=>{const p=profile();return p.height+(p.crouch-p.height)*crouchAmount;};
+ const feetPoint=(p=targetPosition)=>({x:p.x,y:p.y-1.75,z:p.z});
+ const fits=(p,height=bodyHeight())=>h.pk()?.bodyFits?.(p,height,profile().radius)??!(h.pk()?.solid(p.x,p.z,p.y,p.y+height,profile().radius));
+ const sweep=(a,b,height=bodyHeight())=>h.pk()?.bodySweep?.(a,b,height,profile().radius)??(fits(b,height)?1:0);
+function move(dt,tick=null){
+ if((h.expedition&&!h.expedition.canMove())||h.playerBody?.downed()){cancelTraversal();walkVelocity.set(0,0,0);return;}
+ if(h.parkour()?.active()){if(h.parkourOn())h.parkour().update(dt,tick);else h.parkour().reset();return;}
  if(updateVault(dt))return;
  if((h.expedition&&!h.expedition.canMove())||(h.battle&&!h.battle.canMove())||(h.fists&&!h.fists.canMove())||h.playerBody?.downed()){walkVelocity.set(0,0,0);return;}
  const z=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),x=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
@@ -61,15 +67,17 @@ function tryStep(step){
  if(h.arena?.active()){const next=targetPosition.clone().add(step);if(!h.arena.allowed(next))return null;next.y=1.75+motion.inspect().height;return next;}
  if(h.pockets?.inside(targetPosition)){const next=targetPosition.clone().add(step);if(h.pockets.blocks(next))return null;next.y=1.75+motion.inspect().height;return next;}
  const feet=targetPosition.y-1.75,P=h.pk();
- const next=h.garden.constrain(targetPosition.clone().add(step),targetPosition,P?feet:null);
+ const next=h.garden.constrain(targetPosition.clone().add(step),targetPosition,P?feet:null,{height:bodyHeight(),radius:profile().radius});
  // Battles and the firing range take place beyond Eden without an expedition, so its gate (and its entry screen) stays out of them.
  if(!h.battle?.busy?.()&&!h.battle?.active()&&!h.combat?.inRange())h.expedition?.constrain(next,targetPosition);
- if(obstacle(next))return null;
+ if(obstacle(next)||Math.hypot(next.x-targetPosition.x,next.z-targetPosition.z)<1e-8)return null;
  if(P){
   // Stand on the highest surface under you (roofs, crates, wall tops); walk off an edge and you fall (or, holding C,
   // catch it and hang); land on whatever is under you mid-air.
-  if(P.solid(next.x,next.z,feet,feet+1.7,.2))return null;
-  const floor=P.floorAt(next.x,next.z,feet+.45),m=motion.inspect();
+  const floor=(P.supportAt||P.floorAt)(next.x,next.z,feet+.45,profile().radius),m=motion.inspect();
+  // Ascend a walkable step before crossing it, with clearance above both ends.
+  const start=feetPoint(),raised={...start,y:Math.max(feet,floor)},end={x:next.x,y:raised.y,z:next.z};
+  if(!fits(end)||sweep(start,raised)<1||sweep(raised,end)<1)return null;
   if(!m.airborne&&floor<feet-.4){if(crouchHeld&&!slide&&P.dropToHang(targetPosition,next,feet))return null;motion.set(feet-floor,0);airPeak=feet;coyote=COYOTE;}
   else if(m.airborne)motion.set(Math.max(0,feet-floor),m.velocity);
   next.y=1.75+floor+motion.inspect().height;return next;
@@ -81,8 +89,12 @@ function tryStep(step){
 // and skids. Sliding or diving into someone in the open match tackles them: they go down and drop their weapon.
 const DIVE_HOLD=.16;
 function startDive(){
- const speed=Math.hypot(walkVelocity.x,walkVelocity.z),dir=slide.dir.clone();slide=null;
- dive={t:0,dir,speed:Math.max(speed,6.5)*1.15};walkVelocity.copy(dir).multiplyScalar(dive.speed);motion.jump(4.3);diveCount++;
+ const speed=Math.hypot(walkVelocity.x,walkVelocity.z),dir=slide.dir.clone();
+ if(!motion.jump(4.3))return;
+ slide=null;dive={t:0,dir,speed:Math.max(speed,6.5)*1.15};walkVelocity.copy(dir).multiplyScalar(dive.speed);diveCount++;
+ // Launch happens after this frame's landing check. Record it now so a correction
+ // or interrupted frame that grounds us before the next sample still lands the dive.
+ wasAirborne=true;airTime=0;airPeak=targetPosition.y-1.75;
  h.combat?.dropAim?.();sway.bump(.5,0);h.kick(5);footsteps?.step(surfaceAt(targetPosition),8);requestDraw();
 }
 function landDive(){
@@ -97,20 +109,38 @@ function landDive(){
 }
 // Vault: jump into something low (a chest, a low wall, a bench) and you hop over it to the far side.
 let vault=null,vaultCount=0,wallPops=0,rolls=0;
+function cancelTraversal(){vault=null;slide=null;dive=null;proneT=0;jumpBuffer=0;coyote=0;}
+function vaultPoint(v,k){
+ // Rise fully outside the near face, cross above the obstacle, then settle.
+ const p=v.from.clone(),horizontal=k<.28?0:k>.78?1:T.MathUtils.smoothstep(k,.28,.78);
+ p.lerp(v.to,horizontal);
+ const lift=k<.28?T.MathUtils.smoothstep(k,0,.28):k>.78?1-T.MathUtils.smoothstep(k,.78,1):1;
+ p.y=(k<.78?v.from.y:v.to.y)+v.lift*lift;return p;
+}
 function tryVault(dir){
- if(vault||!h.combat?.worldHits||h.arena?.active())return false;
- const feet=targetPosition.y-1.75-motion.inspect().height,d=dir.clone().setY(0);if(d.lengthSq()<1e-4)return false;d.normalize();
- // Open above: nothing at head height just ahead...
- const head=new T.Vector3(targetPosition.x,feet+1.5,targetPosition.z);if(h.combat.worldHits(head,d,1.1))return false;
- // ...and something low there: a top surface between knee and chest height.
- let top=null;for(const k of [.35,.55,.8]){const h=h.combat.worldHits(head.clone().addScaledVector(d,k),new T.Vector3(0,-1,0),1.5);if(h&&h.point.y>=feet+.3&&h.point.y<=feet+1.3){top=h;break;}}
+ const P=h.pk(),probe=P?.raycast?((o,d,n)=>P.raycast(o,d,n)):h.combat?.worldHits?.bind(h.combat);
+ if(vault||!probe||h.arena?.active()||P?.active?.())return false;
+ const feet=targetPosition.y-1.75,d=dir.clone().setY(0);if(d.lengthSq()<1e-4)return false;d.normalize();
+ const head=new T.Vector3(targetPosition.x,feet+1.5,targetPosition.z);if(probe(head,d,1.1))return false;
+ let top=null;for(const k of [.35,.55,.8,1.0]){const hit=probe(head.clone().addScaledVector(d,k),new T.Vector3(0,-1,0),1.5);if(hit&&hit.point.y>=feet+.3&&hit.point.y<=feet+1.2){top=hit;break;}}
  if(!top)return false;
- for(const k of [1,1.3,1.6,1.9,2.2]){const to=tryStep(d.clone().multiplyScalar(k));if(to){vault={from:targetPosition.clone(),to,aim:targetAim.clone(),t:0,dur:.42,lift:top.point.y-feet+.25,speed:Math.max(3.5,Math.hypot(walkVelocity.x,walkVelocity.z))};vaultCount++;slide=null;dive=null;motion.reset();sway.bump(.35,0);footsteps?.step(surfaceAt(targetPosition),6);requestDraw();return true;}}
- return false;
+ for(const distance of [1,1.3,1.6,1.9,2.2]){
+  const to=targetPosition.clone().addScaledVector(d,distance),floor=P?.floorAt(to.x,to.z,feet+.2)??groundHeight(to),radius=profile().radius;
+  if(Math.abs(floor-feet)>.18)continue;to.y=floor+1.75;
+  const constrained=h.garden.constrain(to.clone(),targetPosition,P?feet:null,{height:profile().height,radius});
+  if(Math.hypot(constrained.x-to.x,constrained.z-to.z)>.02||obstacle(to)||!fits(feetPoint(to),profile().height))continue;
+  if(P&&[[radius,radius],[-radius,radius],[radius,-radius],[-radius,-radius]].some(([x,z])=>Math.abs(P.floorAt(to.x+x,to.z+z,feet+.2)-floor)>.18))continue;
+  const plan={from:targetPosition.clone(),to,t:0,dur:.62,lift:top.point.y-feet+.035,speed:Math.max(3.5,Math.hypot(walkVelocity.x,walkVelocity.z))};
+  let previous=feetPoint(),safe=true;
+  for(let i=1;i<=32;i++){const next=feetPoint(vaultPoint(plan,i/32));if(sweep(previous,next,profile().height)<1){safe=false;break;}previous=next;}
+  if(!safe)continue;
+  vault=plan;vaultCount++;slide=null;dive=null;motion.reset();sway.bump(.35,0);footsteps?.step(surfaceAt(targetPosition),6);requestDraw();return true;
+ }return false;
 }
 function updateVault(dt){
- if(!vault)return false;vault.t+=dt;const k=Math.min(1,vault.t/vault.dur),e=k*k*(3-2*k);
- const p=vault.from.clone().lerp(vault.to,e);p.y+=Math.sin(k*Math.PI)*vault.lift;const delta=p.clone().sub(targetPosition);targetPosition.copy(p);targetAim.add(delta);
+ if(!vault)return false;vault.t+=dt;const k=Math.min(1,vault.t/vault.dur),p=vaultPoint(vault,k);
+ if(sweep(feetPoint(),feetPoint(p),profile().height)<1){const floor=h.pk()?.floorAt(targetPosition.x,targetPosition.z,targetPosition.y-1.75+.05)??groundHeight(targetPosition);cancelTraversal();motion.set(Math.max(0,targetPosition.y-1.75-floor),0);return true;}
+ const delta=p.clone().sub(targetPosition);targetPosition.copy(p);targetAim.add(delta);
  if(k>=1){const d=vault.to.clone().sub(vault.from).setY(0).normalize();walkVelocity.copy(d).multiplyScalar(vault.speed);footsteps?.land(surfaceAt(targetPosition),.4);sway.bump(.3,0);vault=null;}
  requestDraw();return true;
 }
@@ -132,7 +162,7 @@ function startSlide(){
 // jester miss during it (fists.dodge()).
 const lastTap={a:0,d:0};
 function tapDodge(key){
- const t=performance.now(),quick=t-lastTap[key]<260;lastTap[key]=quick?0:t;
+ const t=h.now?.()??performance.now(),quick=t-lastTap[key]<260;lastTap[key]=quick?0:t;
  if(!quick||slide||motion.inspect().airborne||h.playerBody?.downed()||!(h.fistsEngaged()||h.battle?.active()||h.combat?.armed()))return;
  const forward=targetAim.clone().sub(targetPosition).setY(0).normalize(),side=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0)).multiplyScalar(key==='d'?1:-1);
  prepareWalking();slide={kind:'dash',dur:.26,t:0,dir:side,speed:8};h.fists?.dodge();footsteps?.step(surfaceAt(targetPosition),7);requestDraw();
@@ -141,7 +171,7 @@ function tapDodge(key){
 // hard hit a short frame hold.
 let lastBump=0,bumpCount=0;
 function wallHit(into){
- const impact=into.length(),t=performance.now();if(impact<2.4||t-lastBump<300)return;lastBump=t;bumpCount++;
+ const impact=into.length(),t=h.now?.()??performance.now();if(impact<2.4||t-lastBump<300)return;lastBump=t;bumpCount++;
  const forward=targetAim.clone().sub(targetPosition).setY(0).normalize(),right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));
  const k=Math.min(1.4,impact/6);sway.bump(k,Math.sign(into.dot(right))||0);footsteps?.land(surfaceAt(targetPosition),Math.min(1,impact/8));
  h.kick(-(4*k));if(impact>5.5)hitStop(40+impact*4);{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,Math.round(3+4*k),.6);}requestDraw();
@@ -149,16 +179,30 @@ function wallHit(into){
 function jump(){if(!h.state.ready||h.modalOpen()||h.expedition&&!h.expedition.canMove()||h.fists&&!h.fists.canMove())return;
  const P=h.pk(),m=motion.inspect(),late=coyote>0&&m.airborne&&m.velocity<=0;
  if(P?.busy()||vault){jumpBuffer=JUMP_BUFFER;return;}
+ if(!P?.active?.()&&!m.airborne&&tryVault(walkVelocity.lengthSq()>.1?walkVelocity:targetAim.clone().sub(targetPosition))){jumpBuffer=0;coyote=0;return;}
  if(P?.onJump({late})){slide=null;dive=null;jumpBuffer=0;coyote=0;requestDraw();return;}
  if(m.airborne&&!late){jumpBuffer=JUMP_BUFFER;return;}prepareWalking();
  // Jumping out of a slide carries its speed and a little more.
  if(slide?.kind==='slide'){walkVelocity.multiplyScalar(1.12);slide=null;}
  if(late)motion.set(m.height,motion.impulse);else motion.jump();jumpBuffer=0;coyote=0;airPeak=targetPosition.y-1.75-(late?m.height:0);requestDraw();}
-function updateJump(dt){coyote=Math.max(0,coyote-dt);if(jumpBuffer>0){jumpBuffer=Math.max(0,jumpBuffer-dt);if(!motion.inspect().airborne&&!vault&&!h.parkour()?.active())jump();}if(!motion.inspect().airborne)return;const before=motion.inspect().height;if(h.expedition&&!h.expedition.canMove())motion.reset();else motion.step(dt);shiftHeight(motion.inspect().height-before);}
- function updateCrouch(dt){crouchAmount+=(((crouchHeld||slide?.kind==='slide')&&!h.arena?.active()?1:0)-crouchAmount)*(1-Math.exp(-14*dt));}
+function updateJump(dt){
+ coyote=Math.max(0,coyote-dt);if(jumpBuffer>0){jumpBuffer=Math.max(0,jumpBuffer-dt);if(!motion.inspect().airborne&&!vault&&!h.parkour()?.active())jump();}
+ if(!motion.inspect().airborne)return;const before=motion.inspect().height,start=feetPoint();
+ if(h.expedition&&!h.expedition.canMove())motion.reset();else motion.step(dt);
+ let delta=motion.inspect().height-before;
+ if(delta>0){const t=sweep(start,{...start,y:start.y+delta});if(t<1){delta*=t;motion.set(before+delta,0);}}
+ shiftHeight(delta);
+}
+ function updateCrouch(dt){
+  const p=profile(),want=(crouchHeld||slide?.kind==='slide'||proneT>0)&&!h.arena?.active()?1:0;
+  const next=crouchAmount+(want-crouchAmount)*(1-Math.exp(-14*dt));
+  // Releasing C, losing focus or ending a slide cannot expand into a ceiling.
+  if(next<crouchAmount&&!fits(feetPoint(),p.height+(p.crouch-p.height)*next))return;
+  crouchAmount=next<.001?0:next>.999?1:next;
+ }
  // Landings, wall and ledge moves in the air, and what follows from them.
- function updateAir(dt,speed,airborne){
- const Pk=h.parkourOn()?h.parkour():null;if(Pk&&!Pk.active()){Pk.update(dt);if(airborne)Pk.air(dt);}
+ function updateAir(dt,speed,airborne,tick=null){
+ const Pk=h.parkourOn()?h.parkour():null;if(Pk&&!Pk.active()&&!Pk.updated?.(tick)){Pk.update(dt,tick);if(airborne)Pk.air(dt);}
  // Parkour owns the player while it is active: a caught ledge is not a landing, and a later fall counts from where you let go.
  if(h.parkour()?.active()){slide=null;dive=null;airTime=0;wasAirborne=false;airPeak=targetPosition.y-1.75;proneT=Math.max(0,proneT-dt);return;}
  if(airborne){airTime+=dt;airPeak=Math.max(airPeak,targetPosition.y-1.75);}else if(wasAirborne){
@@ -172,11 +216,25 @@ function updateJump(dt){coyote=Math.max(0,coyote-dt);if(jumpBuffer>0){jumpBuffer
  if(dive)dive.t+=dt;proneT=Math.max(0,proneT-dt);
  tryTackle();
  }
- const api={move,jump,updateJump,tryVault,tryStep,startSlide,tapDodge,updateCrouch,updateAir,
+ function captureState(){return root.createMovementStateCodec({T}).encode({version:1,crouchHeld,crouchAmount,slide,airTime,wasAirborne,dive,proneT,diveCount,tackleCount,airPeak,coyote,jumpBuffer,vault,vaultCount,wallPops,rolls,lastTap,lastBump,bumpCount});}
+ function validateState(value){const s=root.createMovementStateCodec({T}).decode(value);
+  if(s.version!==1||typeof s.crouchHeld!=='boolean'||typeof s.wasAirborne!=='boolean'||!['crouchAmount','airTime','proneT','diveCount','tackleCount','airPeak','coyote','jumpBuffer','vaultCount','wallPops','rolls','lastBump','bumpCount'].every(k=>Number.isFinite(s[k]))||s.crouchAmount<0||s.crouchAmount>1||!s.lastTap||!Number.isFinite(s.lastTap.a)||!Number.isFinite(s.lastTap.d))throw Error('Incompatible locomotion snapshot.');
+  const nonnegative=['airTime','proneT','diveCount','tackleCount','coyote','jumpBuffer','vaultCount','wallPops','rolls','lastBump','bumpCount'];
+  if(nonnegative.some(k=>s[k]<0)||['diveCount','tackleCount','vaultCount','wallPops','rolls','bumpCount'].some(k=>!Number.isSafeInteger(s[k])))throw Error('Invalid locomotion counters.');
+  const vec=v=>v?.isVector3&&[v.x,v.y,v.z].every(Number.isFinite),numbers=(v,ks)=>ks.every(k=>Number.isFinite(v[k]));
+  if(s.slide!==null&&(!s.slide||!['slide','dash'].includes(s.slide.kind)||!vec(s.slide.dir)||!numbers(s.slide,['speed','t','dur'])||s.slide.t<0||s.slide.dur<=0))throw Error('Invalid slide snapshot.');
+  if(s.dive!==null&&(!s.dive||!vec(s.dive.dir)||!numbers(s.dive,['t','speed'])||s.dive.t<0))throw Error('Invalid dive snapshot.');
+  if(s.vault!==null&&(!s.vault||!vec(s.vault.from)||!vec(s.vault.to)||!numbers(s.vault,['t','dur','lift','speed'])||s.vault.t<0||s.vault.dur<=0))throw Error('Invalid vault snapshot.');
+  return s;
+ }
+ function restoreState(value){const s=validateState(value);
+  ({crouchHeld,crouchAmount,slide,airTime,wasAirborne,dive,proneT,diveCount,tackleCount,airPeak,coyote,jumpBuffer,vault,vaultCount,wallPops,rolls,lastBump,bumpCount}=s);Object.assign(lastTap,s.lastTap);
+ }
+ const api={captureState,restoreState,validateState,move,jump,updateJump,tryVault,cancelTraversal,bodyHeight,tryStep,startSlide,tapDodge,updateCrouch,updateAir,
   needsStep:()=>!!(keys.size||walkVelocity.lengthSq()||slide||vault||h.parkour()?.active()),
-  get slide(){return slide;},set slide(v){slide=v;},get dive(){return dive;},set dive(v){dive=v;},get vault(){return vault;},
+  get slide(){return slide;},set slide(v){slide=v;},get dive(){return dive;},set dive(v){dive=v;},get vault(){return vault;},set vault(v){if(v===null)cancelTraversal();},
   // Exactly one answer to "what is the player doing".
-  state:()=>h.parkour()?.kind()||(vault?'vault':dive?'dive':slide?slide.kind:motion.inspect().airborne?'air':proneT>0?'prone':'ground'),
+  state:()=>h.parkour()?.kind()||(vault?'vault':dive?'dive':slide?slide.kind:motion.inspect().airborne?'air':proneT>0?'prone':crouchAmount>.1?'crouch':'ground'),
   get proneT(){return proneT;},set proneT(v){proneT=v;},get crouchHeld(){return crouchHeld;},set crouchHeld(v){crouchHeld=v;},get crouchAmount(){return crouchAmount;},
   counts:()=>({vaults:vaultCount,wallPops,rolls,dives:diveCount,tackles:tackleCount,bumps:bumpCount})};
  return api;

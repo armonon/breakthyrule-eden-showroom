@@ -9,7 +9,7 @@ import path from 'node:path';
 import { openPage, sleep } from './headless-chrome.mjs';
 const args = Object.fromEntries(process.argv.slice(2).map((a, i, all) => a.startsWith('--') ? [a.slice(2), all[i + 1]] : null).filter(Boolean));
 const out = args.out; fs.mkdirSync(out, { recursive: true });
-const page = await openPage(); await page.goto(args.url || 'http://127.0.0.1:8790/'); await page.ready(); await sleep(args.settle ? Number(args.settle) * 1000 : 25000);
+const page = await openPage(); await page.goto(args.url || 'http://127.0.0.1:8790/showroom.html'); await page.ready(); await sleep(args.settle ? Number(args.settle) * 1000 : 25000);
 await page.evaluate(`document.querySelectorAll('dialog[open]').forEach(d=>d.close())`);
 const names = await page.evaluate(`edenScene.children.map(o=>o.name||o.type)`); console.log('scene:', names.join(' | '));
 const census = await page.evaluate(`(()=>{const rows=[];edenScene.traverse(o=>{if(o.isMesh&&o.visible&&o.geometry?.attributes?.position){const g=o.geometry,t=(g.index?g.index.count:g.attributes.position.count)/3*(o.isInstancedMesh?o.count:1);rows.push([o.name||o.parent?.name||'mesh',Math.round(t),o.isInstancedMesh?o.count:1]);}});rows.sort((a,b)=>b[1]-a[1]);return {meshes:rows.length,total:rows.reduce((s,r)=>s+r[1],0),top:rows.slice(0,8)};})()`);

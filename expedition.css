@@ -16,3 +16,16 @@ body.in-expedition:has(#night-chat:not([hidden])) .social-move{display:none}
 #night-chat{position:absolute;z-index:9;right:18px;bottom:96px;width:min(340px,calc(100% - 36px));height:280px;display:flex;flex-direction:column;background:#132021;color:#ecede5;border:1px solid #60726c;border-radius:4px}#night-chat[hidden]{display:none}#night-chat header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #435650;font-size:13px}#night-chat button{width:36px;height:36px;border:0;border-radius:3px;background:#293f38;color:#e4e9d5;padding:8px;flex-shrink:0}#night-chat button svg{width:18px;height:18px}#night-chat-log{list-style:none;margin:0;padding:10px 12px;overflow:auto;flex:1;font-size:13px}#night-chat-log li{margin-bottom:12px;overflow-wrap:anywhere}#night-chat-log strong{display:block;color:#bfcaaf;font-size:11px;margin-bottom:3px}#night-chat-form{display:flex;gap:6px;padding:10px;border-top:1px solid #435650}#night-chat-input{min-width:0;flex:1;background:#0b1719;border:1px solid #60726c;color:#fff;font-size:16px;padding:7px;border-radius:3px}.night-tools button.unread{border-color:#f2cc80;color:#f2cc80}
 body.in-expedition #garden-effects,body.in-expedition .world-topline,body.in-expedition .view-nav button:not(#spawn):not(#night-launch),body.in-expedition .site-header .header-actions{visibility:hidden}body.in-expedition .view-nav button:not(#spawn):not(#night-launch){display:none}body.in-expedition .view-nav{display:flex;justify-content:flex-end;gap:16px}body.in-expedition .footer-note{display:none}
 @media(max-width:650px){#night-hud{left:16px;top:88px;max-width:calc(100% - 32px)}#night-count{font-size:28px}#night-event{max-width:230px;font-size:11px;margin:7px 0}#night-location{font-size:16px}#night-dialog,#night-journal{padding:20px}.night-heading h2{font-size:26px}#night-action{bottom:180px}#night-outcome{max-width:270px}body.in-expedition .world-footer .control-hint{display:none}body.in-expedition .world-footer{height:64px;min-height:64px;padding:10px 20px}body.in-expedition .view-nav{width:100%;justify-content:space-between}body.in-expedition .social-move{bottom:84px}}
+
+/* Integrated temple-bell and survival-flare controls. */
+.night-tools{flex-wrap:wrap}
+.night-tools #night-flare{width:auto;min-width:112px;white-space:nowrap;font-size:11px;letter-spacing:.02em}
+.night-tools #night-flare:disabled{opacity:.55;cursor:not-allowed}
+.night-tools #night-flare[hidden]{display:none}
+.night-exploration-hint{font-size:12px;line-height:1.6;color:#c3cebd;margin:18px 0 0}
+
+.night-tools #night-reload,.night-tools #night-bail{width:auto;min-width:75px;font-size:11px;white-space:nowrap}.night-tools #night-reload[hidden],.night-tools #night-bail[hidden]{display:none}
+
+.night-tools #night-view{width:auto;min-width:55px;font-size:11px}.night-tools #night-view[hidden]{display:none}
+
+.night-tools #night-reset{width:auto;min-width:90px;font-size:11px;white-space:nowrap}.night-tools #night-reset[hidden]{display:none}

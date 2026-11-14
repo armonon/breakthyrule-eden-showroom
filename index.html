@@ -1,268 +1,276 @@
-<!DOCTYPE html><html lang="en"><head><script src="/deployment.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
  <meta charset="UTF-8">
- <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
- <meta name="theme-color" content="#ffffff">
- <title>BREAKTHYRULE — Garden of Eden</title>
- <meta name="description" content="Enter the Garden of Eden. Explore the Break Thy Rule collection in a sunlit outdoor garden.">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>BREAKTHYRULE — Products</title>
+ <meta name="description" content="Break Thy Rule: airbrushed garments shown as rotating 3D pieces, a gallery of the clothes worn, an archive with the Librarian, and a community.">
+ <meta property="og:image" content="/assets/og-default.jpg">
  <link rel="icon" type="image/png" href="/assets/favicon-32.png">
- <link rel="stylesheet" href="/style.css?v=20">
- <link rel="stylesheet" href="/multiplayer.css?v=4">
- <link rel="stylesheet" href="/character-creator.css?v=7">
- <link rel="stylesheet" href="/residents.css?v=1">
- <link rel="stylesheet" href="/music.css?v=2">
- <link rel="stylesheet" href="/stemdeck-panel.css?v=1">
- <link rel="stylesheet" href="/community-library.css?v=1">
- <link rel="stylesheet" href="/tree-snake.css?v=1">
- <link rel="stylesheet" href="/expedition.css?v=1">
- <link rel="stylesheet" href="/shop.css?v=1">
- <link rel="stylesheet" href="/combat.css?v=9">
- <link rel="stylesheet" href="/battle-arena.css?v=9">
- <link rel="stylesheet" href="/fist-combat.css?v=2">
- <link rel="stylesheet" href="/touch-controls.css?v=4">
- <link rel="stylesheet" href="/worlds.css?v=1">
- <link rel="stylesheet" href="/play-menu.css?v=4">
- <link rel="stylesheet" href="/eden-secrets.css?v=1">
- <script defer="" src="/assets/three.min.js?v=187"></script>
- <script defer="" src="/asset-loader.js?v=5"></script>
- <script defer="" src="/eden-baked-light.js?v=1"></script>
- <script defer="" src="/assets/lucide.min.js"></script>
- <script defer="" src="/collection.js?v=11"></script>
- <script defer="" src="/garment-catalog.js?v=11"></script>
- <script defer="" src="/shop.js?v=1"></script>
- <script defer="" src="/books.js?v=3"></script>
- <script defer="" src="/community-library.js?v=1"></script>
- <script defer="" src="/library.js?v=11"></script>
- <script defer="" src="/library-uploads.js?v=3"></script>
- <script defer="" src="/librarian-engine.js?v=1"></script>
- <script defer="" src="/librarian-client.js?v=1"></script>
- <script defer="" src="/librarian-npc.js?v=4"></script>
- <script defer="" src="/librarian-dialog.js?v=2"></script>
- <script defer="" src="/spin-viewer.js?v=3"></script>
- <script defer="" src="/room.js?v=34"></script>
- <script defer="" src="/pocket-worlds.js?v=2"></script>
- <script defer="" src="/story.js?v=1"></script>
- <script defer="" src="/worlds.js?v=1"></script>
- <script defer="" src="/black-box.js?v=3"></script>
- <script defer="" src="/broadcast.js?v=3"></script>
- <script defer="" src="/museum-gallery.js?v=1"></script>
- <script defer="" src="/museum.js?v=9"></script>
- <script defer="" src="/library-garden.js?v=3"></script>
- <script defer="" src="/tree-snake.js?v=5"></script>
- <script defer="" src="/pyramid-gathering.js?v=3"></script>
- <script defer="" src="/road-pyramid.js?v=4"></script>
- <script defer="" src="/assets/roof-heights.js?v=2"></script>
- <script defer="" src="/night-district.js?v=10"></script>
- <script defer="" src="/night-road.js?v=11"></script>
- <script defer="" src="/eden-photoreal.js?v=2"></script>
- <script defer="" src="/eden-skybox.js?v=5"></script>
- <script defer="" src="/eden-grass.js?v=2"></script>
- <script defer="" src="/eden-flora.js?v=19"></script>
-<script defer="" src="/garden.js?v=36"></script>
- <script defer="" src="/garden-props.js?v=7"></script>
-<script defer="" src="/eden-lighting.js?v=5"></script>
-<script defer="" src="/eden-post.js?v=16"></script>
-<script defer="" src="/eden-quality.js?v=6"></script>
- <script defer="" src="/amphitheater.js?v=3"></script>
- <script defer="" src="/live-music.js?v=3"></script>
- <script defer="" src="/stemdeck-panel.js?v=1"></script>
- <script defer="" src="/music-player.js?v=6"></script>
- <script defer="" src="/wall-film.js?v=7"></script>
- <script defer="" src="/instagram-slideshow.js?v=6"></script>
- <script defer="" src="/assets/character-human-base.js?v=3"></script>
- <script defer="" src="/assets/character-human-full.js?v=1"></script>
- <script defer="" src="/assets/character-human-assets.js?v=1"></script>
- <script defer="" src="/character-details.js?v=4"></script>
- <script defer="" src="/character-human-proxies.js?v=2"></script>
- <script defer="" src="/character-anim.js?v=2"></script>
- <script defer="" src="/character-motion.js?v=13"></script>
- <script defer="" src="/character-rocketbox.js?v=5"></script>
- <script defer="" src="/character-model.js?v=10"></script>
- <script defer="" src="/character-creator.js?v=9"></script>
- <script defer="" src="/social-account.js?v=1"></script>
- <script defer="" src="/multiplayer.js?v=12"></script>
-<script defer="" src="/arena.js?v=2"></script>
- <script defer="" src="/ragdoll.js?v=1"></script>
- <script defer="" src="/jester-moves.js?v=1"></script>
- <script defer="" src="/residents.js?v=7"></script>
- <script defer="" src="/assets/fp-arm.js?v=1"></script>
- <script defer="" src="/fist-viewmodel.js?v=3"></script>
- <script defer="" src="/fist-combat.js?v=7"></script>
- <script defer="" src="/eden-ambience.js?v=1"></script>
- <script defer="" src="/eden-secrets.js?v=2"></script>
- <script defer="" src="/eden-extras.js?v=2"></script>
- <script defer="" src="/assets/night-pathfinding.js?v=1"></script>
- <script defer="" src="/solo-expedition.js?v=2"></script>
- <script defer="" src="/expedition.js?v=2"></script>
- <script defer="" src="/player-motion.js?v=5"></script>
- <script defer="" src="/parkour.js?v=7"></script>
- <script defer="" src="/player-movement.js?v=2"></script>
- <script defer="" src="/camera-sway.js?v=5"></script>
- <script defer="" src="/foliage-push.js?v=1"></script>
- <script defer="" src="/player-body.js?v=21"></script>
- <script defer="" src="/combat-arms.js?v=3"></script>
- <script defer="" src="/combat.js?v=16"></script>
- <script defer="" src="/battle-arena.js?v=17"></script>
- <script defer="" src="/footsteps.js?v=1"></script>
- <script defer="" src="/play-menu.js?v=11"></script>
- <script defer="" src="/touch-controls.js?v=3"></script>
-<script defer src="/eden-mobile.js?v=c772600ad72870af"></script>
-<script defer="" src="/app.js?v=b33c5045edf944ab"></script>
-<link rel="stylesheet" href="/eden-mobile.css?v=c4b99385c60fb039">
+ <link rel="stylesheet" href="/site/site.css?v=3">
+ <link rel="stylesheet" href="/site/codex.css?v=1">
+ <link rel="stylesheet" href="/breakthyrule-cover.css?v=10">
+ <link rel="stylesheet" href="/site/folios.css?v=12">
+ <link rel="stylesheet" href="/site/commerce.css?v=5">
+ <script defer src="/assets/three.min.js?v=187"></script>
+ <script defer src="/asset-loader.js?v=product-studio-6"></script>
+ <script defer src="/garment-catalog.js?v=hat-replacement-1"></script>
+ <script defer src="/site/config.js?v=1"></script>
+ <script defer src="/site/site.js?v=7"></script>
+ <script defer src="/site/garment-stage.js?v=product-studio-6"></script>
+ <script defer src="/breakthyrule-assets.js?v=2"></script>
+ <script defer src="/site/cover-title.js?v=4"></script>
+ <script defer src="/breakthyrule-cover.js?v=10"></script>
+ <script type="module" src="/site/cart-ui.js?v=site-audit-1"></script>
+ <script defer src="/site/stickers.js?v=10"></script>
+ <script defer src="/site/backdrop.js?v=2"></script>
+ <script defer src="/site/gallery-reel.js?v=site-audit-1"></script>
+ <link rel="stylesheet" href="/site/shop-redesign.css?v=18">
+ <script type="module" src="/site/shop-experience.mjs?v=more-tees-1"></script>
+ <link rel="stylesheet" href="/site/product-portals.css?v=2">
+ <script type="module" src="/site/product-portals.mjs?v=1"></script>
+ <link rel="stylesheet" href="/site/people-hero.css?v=1">
+ <link rel="stylesheet" href="/btr-belts/collection.css?v=transparent-3">
+ <script defer src="/btr-belts/garment-stage.js?v=product-studio-6"></script>
+ <script defer src="/btr-belts/home.js?v=1"></script>
+ <script defer src="/btr-belts/thumbnails.js?v=1"></script>
+ <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap">
+ <link rel="stylesheet" href="/site/home-about.css?v=inverted-2">
+ <script defer src="/site/about.js?v=paper-embed-1"></script>
+ <link rel="stylesheet" href="/pendant-collection/transparent-spin.css?v=1">
+ <link rel="stylesheet" href="/pendant-collection/collection.css?v=1">
+ <script type="module" src="/pendant-collection/collection.js?v=browse-rework-1"></script>
+
+ <link rel="stylesheet" href="/accessory-collection/collection.css?v=hat-shapes-4">
+ <script defer src="/accessory-collection/catalog.js?v=hat-shapes-4"></script>
+ <script defer src="/accessory-collection/viewer.js?v=product-studio-6"></script>
+ <script defer src="/accessory-collection/customizer.js?v=site-audit-1"></script>
+ <script defer src="/accessory-collection/integration.js?v=hat-replacement-1"></script>
+ <link rel="stylesheet" href="/site/bitmap-witnesses.css?v=1">
+ <script defer src="/site/bitmap-witnesses.js?v=1"></script>
+ <link rel="stylesheet" href="/site/shared-header.css?v=about-1">
+ <link rel="stylesheet" href="/site/shared-header-layout.css?v=about-1">
+ <script defer src="/site/shared-header.js?v=site-audit-1"></script>
+ <link rel="stylesheet" href="/core-collection/core.css?v=distinct-4">
+ <script defer src="/core-collection/catalog.js?v=distinct-4"></script>
+ <script defer src="/core-collection/cycle.js?v=product-studio-6"></script>
+ <script defer src="/core-collection/core.js?v=fw27-cards-1"></script>
+ <link rel="stylesheet" href="/site/mystery-bitmap.css?v=tab-loop-5">
+ <link rel="stylesheet" href="/site/discovery-hero.css?v=tab-loop-5">
+ <script type="module" src="/site/discovery-hero.mjs?v=product-studio-6"></script>
+<style id="archive-model-preview">.archive-product #viewer .halo,.archive-product #viewer .pedestal,.product-card[data-archive-hq] .halo{display:none!important}.archive-product #viewer{background:transparent!important}.product-card[data-archive-hq] .card-media:has(canvas.live) img{opacity:0!important}</style>
+<style id="replacement-hat-previews">.product-card[data-accessory-replacement] .halo{display:none!important}.product-card[data-accessory-replacement] .card-media:has(canvas[data-model-ready="true"]) img{opacity:0!important}.product-card[data-accessory-replacement] .card-media canvas{opacity:1}</style>
+<link rel="stylesheet" href="/site/collection-browse.css?v=2">
 </head>
-<body>
- <header class="site-header">
-  <a class="wordmark" href="/" aria-label="Break Thy Rule showroom home">BREAKTHYRULE</a>
-  <span class="header-label">A CODEX WORN ON THE BODY</span>
-  <div class="header-actions"><button class="icon-button" id="open-residents" aria-label="Garden residents" title="Garden residents" disabled=""><i data-lucide="drama"></i></button><button class="text-button" id="open-library">LIBRARY</button><button class="text-button" id="view-product" aria-label="Shop garment photos">SHOP <span aria-hidden="true">↗</span></button></div>
- </header>
+<body data-page="home">
  <main>
-  <section id="world" aria-label="Interactive clothing showroom">
-   <div class="world-topline"><span>CHAPTER 00 / EDEN</span><span>BREAKTHYRULE / CODEX</span></div>
-   <div id="scene" aria-label="Sunlit garden with a fruit tree, flowers, pond and open collection pavilion"></div>
-   <section id="night-hud" hidden="" aria-label="Expedition status">
-    <div class="night-kicker"><span id="night-phase">THE LOST PAGES</span> / <span id="night-connection"></span></div>
-    <strong id="night-count">00 / 08</strong><span id="night-location">The Processional Road</span>
-    <p id="night-event" role="status"></p><div id="night-danger" role="status"></div>
-    <div class="night-tools">
-     <button id="night-flash" aria-label="Flashlight" title="Flashlight" aria-pressed="true"><i data-lucide="flashlight"></i></button>
-     <button id="night-journal-open" aria-label="Read recovered pages" title="Read recovered pages"><i data-lucide="book-open"></i></button>
-     <button id="night-sound" aria-label="Night ambience" title="Night ambience" aria-pressed="false"><i data-lucide="audio-lines"></i></button>
-     <button id="night-chat-open" aria-label="Party chat" title="Party chat"><i data-lucide="messages-square"></i></button>
-     <button id="night-return" aria-label="Leave expedition and return to Eden" title="Leave expedition and return to Eden"><i data-lucide="log-out"></i></button>
-    </div>
-    <div id="night-outcome" hidden=""><h3 id="night-outcome-title"></h3><button id="night-spectate">Watch teammate</button><button id="night-retry">Try again</button></div>
-   </section>
-   <button id="night-action" hidden=""><i data-lucide="file-text"></i><span id="night-action-label">Take page</span></button>
-   <aside id="night-chat" hidden="" aria-label="Party chat"><header><strong>Party chat</strong><button id="night-chat-close" aria-label="Close party chat" title="Close party chat"><i data-lucide="x"></i></button></header><ol id="night-chat-log" role="log" aria-live="polite"></ol><form id="night-chat-form"><input id="night-chat-input" aria-label="Message your expedition" maxlength="280" autocomplete="off" placeholder="Message the party"><button id="night-chat-send" aria-label="Send message" title="Send message"><i data-lucide="send"></i></button></form></aside>
-   <button id="garden-effects" class="icon-button" aria-label="Mute garden sound effects" title="Mute garden sound effects" aria-pressed="true" hidden=""><i data-lucide="volume-2"></i></button>
-   <button id="npc-prompt" hidden=""><i data-lucide="message-circle"></i><span>Talk to the librarian</span></button>
-   <button id="music-prompt" hidden=""><i data-lucide="disc-3"></i><span>Sattari StemDeck</span></button>
-   <div id="shelf-actions" hidden="" aria-label="Library shelf">
-    <button id="previous-shelf" class="icon-button" aria-label="Previous shelf page" title="Previous shelf page" hidden=""><i data-lucide="chevron-left"></i></button>
-    <span id="shelf-page" hidden=""></span>
-    <button id="next-shelf" class="icon-button" aria-label="Next shelf page" title="Next shelf page" hidden=""><i data-lucide="chevron-right"></i></button>
-    <button id="add-shelf-pdf" class="icon-button" aria-label="Add PDFs to the library" title="Add PDFs to the library"><i data-lucide="plus"></i></button>
+  <section class="wearer-hero" id="wearer-hero" data-particle-hero="true" data-masthead-edge="true" aria-labelledby="wearer-title" data-current="1">
+   <div class="wearer-scenes"><img class="btr-particle-fallback" crossorigin="anonymous" src="https://apple-cover-assets--breakthyrule-eden-showroom.netlify.app/hero-film-poster.jpg" alt="Break Thy Rule film, rendered as fine color bitmap dots." width="1280" height="720" decoding="async" fetchpriority="high"></div>
+   <div class="wearer-shade" aria-hidden="true"></div>
+   <div class="wearer-topline"><span>BREAKTHYRULE / WORN IN THE WORLD</span><button type="button" id="wearer-play" aria-pressed="true" hidden>Pause photos Ⅱ</button></div>
+   <div class="wearer-content">
+    <div class="wearer-title-group"><p class="wearer-kicker">The clothes. The people. The moments.</p><h1 id="wearer-title"><span>BREAK</span><span>THY RULE</span></h1></div>
+    <div class="wearer-actions"><a href="#products">Collection <span aria-hidden="true">↓</span></a></div>
    </div>
-   <div id="loading" role="status"><span class="loading-line"></span>Entering Eden</div>
-   <div id="fallback" hidden=""><img src="/products/web/war-tee-front.webp" alt="WAR / Witnesses Tee product photo"><p>The vault is ready to explore.</p><button class="solid-button" id="fallback-inspect">Inspect vault</button></div>
-   <div class="world-caption"><span class="edition">BREAKTHYRULE / 12 PHOTO PIECES</span><h1>THE VAULT</h1><p id="world-hint" aria-live="polite">Explore the room. Select a piece to look closer.</p><nav id="poster-links" aria-label="View media" hidden=""></nav><button id="retry-film" class="text-button" hidden="">RETRY VIDEO ↻</button><a id="film-link" href="https://breakthyrule-co.netlify.app" target="_blank" rel="noopener noreferrer" hidden="">OPEN BREAKTHYRULE ↗</a></div>
+   <div class="wearer-bottomline"><a href="/gallery?filter=worn" class="wearer-gallery-link">Gallery <span aria-hidden="true">↗</span></a><div id="wearer-index" role="group" aria-label="Choose a wearer photograph" hidden><button type="button" data-wearer-choice="0" data-src="/images/breakthyrule/favs/full/img-2440.webp" data-thumb="/images/breakthyrule/favs/thumb/img-2440.webp" data-width="1350" data-thumb-width="480" data-height="1800" data-alt="Person walking outdoors in a black graphic sweatshirt and black trousers." data-position="50% 35%" aria-label="Show wearer photograph 1">01</button><button type="button" data-wearer-choice="1" data-src="/images/breakthyrule/favs/full/img-8369.webp" data-thumb="/images/breakthyrule/favs/thumb/img-8369.webp" data-width="1350" data-thumb-width="480" data-height="1800" data-alt="Person wearing a white printed T-shirt and black graphic trousers beside a chain-link fence." data-position="50% 35%" aria-label="Show wearer photograph 2" aria-current="true">02</button><button type="button" data-wearer-choice="2" data-src="/images/breakthyrule/favs/full/img-2805.webp" data-thumb="/images/breakthyrule/favs/thumb/img-2805.webp" data-width="1200" data-thumb-width="427" data-height="1800" data-alt="Person looking back while wearing a pale yellow T-shirt with a large illustrated back print at night." data-position="50% 35%" aria-label="Show wearer photograph 3">03</button><button type="button" data-wearer-choice="3" data-src="/images/breakthyrule/favs/full/img-1659.webp" data-thumb="/images/breakthyrule/favs/thumb/img-1659.webp" data-width="1350" data-thumb-width="480" data-height="1800" data-alt="Person wearing a printed tank top at a doorway with hands raised over their face." data-position="50% 30%" aria-label="Show wearer photograph 4">04</button><button type="button" data-wearer-choice="4" data-src="/images/breakthyrule/favs/full/img-0381.webp" data-thumb="/images/breakthyrule/favs/thumb/img-0381.webp" data-width="1350" data-thumb-width="480" data-height="1800" data-alt="Back view of a person wearing an olive jacket with a large illustrated panel and fabric flowers on the shoulders." data-position="50% 38%" aria-label="Show wearer photograph 5">05</button><button type="button" data-wearer-choice="5" data-src="/images/breakthyrule/favs/full/img-0155.webp" data-thumb="/images/breakthyrule/favs/thumb/img-0155.webp" data-width="1350" data-thumb-width="480" data-height="1800" data-alt="Person in a black beanie looking down at a black shirt with a red face-and-sun graphic outdoors." data-position="50% 35%" aria-label="Show wearer photograph 6">06</button><button type="button" data-wearer-choice="6" data-src="/images/breakthyrule/favs/full/img-0323.webp" data-thumb="/images/breakthyrule/favs/thumb/img-0323.webp" data-width="1350" data-thumb-width="480" data-height="1800" data-alt="Two people in graphic clothing in a studio, one standing and another seated beside printed artwork." data-position="50% 38%" aria-label="Show wearer photograph 7">07</button><button type="button" data-wearer-choice="7" data-src="/images/breakthyrule/favs/full/img-3589.webp" data-thumb="/images/breakthyrule/favs/thumb/img-3589.webp" data-width="1350" data-thumb-width="480" data-height="1800" data-alt="Close view of a person wearing an eye-print T-shirt beneath a pale jacket outdoors." data-position="0% 35%" aria-label="Show wearer photograph 8">08</button></div><span id="wearer-count" aria-hidden="true">02 / 08</span></div>
   </section>
-  <footer class="world-footer">
-   <div class="control-hint" id="movement-hint">SELECT A PIECE TO INSPECT</div>
-   <nav class="view-nav" aria-label="Garden positions"><button id="spawn" class="selected" aria-pressed="true">EDEN</button><button id="library-view" aria-pressed="false" disabled="">LIBRARY</button><button id="approach" aria-pressed="false">VAULT</button><button id="wall-view" aria-pressed="false" disabled="">GALLERY</button><button id="film-view" aria-pressed="false" disabled="">SCREEN</button><button id="amphitheater-view" aria-pressed="false" disabled="">MUSIC</button><button id="open-music" hidden=""><i data-lucide="speaker"></i>SOUND DESK</button><button id="talk-librarian" class="npc-command" hidden=""><i data-lucide="message-circle"></i> TALK</button><button id="browse-library" class="inspect-button" hidden="">BROWSE BOOKS <span aria-hidden="true">↗</span></button><button id="inspect-jacket" class="inspect-button">SHOP PHOTOS <span aria-hidden="true">↗</span></button></nav>
-   <button id="retry-rack" class="icon-button" title="Retry loading 3D collection" aria-label="Retry loading 3D collection" hidden=""><i data-lucide="refresh-cw"></i></button><span class="footer-note" id="collection-status" role="status">3D COLLECTION / GHOST STUDIO</span>
-  </footer>
- </main>
- <dialog id="night-dialog" aria-labelledby="night-title">
-  <header class="night-heading"><div><small>CHAPTER 01 / THE OLD CIVILIZATION</small><h2 id="night-title">Beyond Eden</h2></div><button id="night-close" class="icon-button" aria-label="Close expedition menu" title="Close expedition menu"><i data-lucide="x"></i></button></header>
-  <div id="night-service" role="status">Connecting...</div>
-  <div id="night-entry"><div class="night-buttons"><button id="night-solo"><i data-lucide="footprints"></i>Enter alone</button><button id="night-create"><i data-lucide="users"></i>Create party</button></div>
-   <form id="night-join-form"><label>Expedition code<input id="night-join-code" maxlength="6" minlength="6" pattern="[a-zA-Z]{6}" autocomplete="off" required=""></label><button id="night-join" type="submit">Join party</button></form>
-  </div>
-  <div id="night-room" hidden=""><p>Expedition <strong id="night-code"></strong></p><ul id="night-party"></ul><div class="night-buttons"><button id="night-start">Begin expedition</button><button id="night-resume">Return to expedition</button><button id="night-abandon">Leave party</button></div></div>
-  <p id="night-error" role="alert"></p>
- </dialog>
- <dialog id="night-journal" aria-labelledby="night-journal-title"><header class="night-heading"><div><small>THE EMPTY BINDING</small><h2 id="night-journal-title">Recovered pages</h2></div><button id="night-journal-close" class="icon-button" aria-label="Close journal" title="Close journal"><i data-lucide="x"></i></button></header><p id="night-journal-empty">The binding is empty.</p><ol id="night-journal-list"></ol></dialog>
- <audio id="garden-audio" preload="metadata"></audio>
- <dialog id="music-dialog" aria-labelledby="music-title">
-  <header><div><h2 id="music-title">Eden sound desk</h2><span id="music-connection" role="status">Connecting...</span></div><button id="close-music" class="icon-button" aria-label="Close sound desk" title="Close sound desk"><i data-lucide="x"></i></button></header>
-  <div class="music-body">
-   <div class="music-live-actions"><button id="music-stemdeck"><i data-lucide="panels-top-left"></i>Open Sattari StemDeck</button><button id="music-live" disabled=""><i data-lucide="radio"></i><span>Go live</span></button></div>
-   <p id="music-live-status" role="status" aria-live="polite">Off air</p>
-   <div class="music-now"><i data-lucide="disc-3"></i><div><p id="music-track">Nothing playing</p><p id="music-credit">The amphitheater</p></div></div>
-   <div class="music-timeline"><output id="music-elapsed">0:00</output><input id="music-seek" type="range" min="0" max="1" step=".1" value="0" aria-label="Room playback position" disabled=""><output id="music-duration">0:00</output></div>
-   <div class="music-transport"><button id="music-play" class="icon-button" aria-label="Play room music" title="Play room music" disabled=""><i data-lucide="play"></i></button><button id="music-skip" class="icon-button" aria-label="Skip track" title="Skip track" disabled=""><i data-lucide="skip-forward"></i></button><button id="music-listen" aria-pressed="false"><i data-lucide="headphones"></i><span>Listen</span></button></div>
-   <label class="music-volume"><i data-lucide="volume-2"></i><input id="music-volume" type="range" min="0" max="100" value="65" aria-label="Your volume"><output id="music-volume-value">65%</output></label>
-   <div class="music-queue-heading"><h3>Up next</h3><span id="music-queue-count">0 / 12</span></div><ol id="music-queue" aria-label="Shared music queue"></ol><p id="music-empty">Queue is empty</p>
-   <label class="music-rights"><input id="music-rights" type="checkbox">I have permission to share this audio with the garden.</label>
-   <div class="music-upload-row"><button id="music-upload" disabled=""><i data-lucide="plus"></i>Add tracks</button><small id="music-upload-format">MP3 / WAV / OGG · 40 MB · 20 min</small><input id="music-files" type="file" accept=".mp3,.wav,.ogg,audio/mpeg,audio/wav,audio/ogg" multiple="" hidden=""></div>
-   <p id="music-error" role="status" aria-live="polite"></p><button id="music-connect" disabled="">Connect to speakers</button>
-  </div>
- </dialog>
- <audio id="garden-live-audio" preload="none"></audio>
- <button id="stemdeck-launcher" hidden=""><i data-lucide="disc-3"></i>StemDeck</button>
- <dialog id="stemdeck-dialog" aria-labelledby="stemdeck-title">
-  <header><h2 id="stemdeck-title">Sattari StemDeck</h2><div class="stemdeck-actions"><button id="stemdeck-sound-desk"><i data-lucide="speaker"></i>Sound desk</button><a class="icon-button" href="https://sattarimusic.com/studio" target="_blank" rel="noopener noreferrer" aria-label="Open public StemDeck in a new tab" title="Open public StemDeck in a new tab"><i data-lucide="external-link"></i></a><button id="close-stemdeck" class="icon-button" aria-label="Return to garden" title="Return to garden"><i data-lucide="x"></i></button></div></header>
-  <div class="stemdeck-content"><p id="stemdeck-status" role="status">Connecting to Sattari StemDeck...</p><button id="stemdeck-retry" hidden="">Retry connection</button><iframe id="stemdeck-frame" title="Sattari StemDeck music studio" allow="autoplay" sandbox="allow-scripts allow-same-origin allow-forms allow-downloads" hidden=""></iframe></div>
- </dialog>
- <dialog id="resident-dialog" aria-labelledby="resident-title">
-  <header><h2 id="resident-title">Garden residents</h2><button id="close-residents" class="icon-button" aria-label="Close residents" title="Close residents"><i data-lucide="x"></i></button></header>
-  <ul id="resident-list"></ul>
-  <footer><button id="resident-concepts" class="text-button"><i data-lucide="images"></i>Full-body concepts</button></footer>
- </dialog>
- <dialog id="shop-dialog" aria-labelledby="shop-title">
-  <header class="shop-header"><div class="shop-heading"><small>BREAKTHYRULE</small><h2 id="shop-title">Shop the collection</h2></div><span id="shop-count" class="shop-count" role="status"></span><button id="close-shop" class="icon-button" aria-label="Close shop" title="Close shop"><i data-lucide="x"></i></button></header>
-  <div class="shop-filters"><label class="shop-search"><i data-lucide="search"></i><input id="shop-search" type="search" aria-label="Search garments" placeholder="Search garments" autocomplete="off"><button id="shop-clear-search" aria-label="Clear search" title="Clear search" hidden=""><i data-lucide="x"></i></button></label><select id="shop-category" aria-label="Garment category"><option value="">All garments</option></select></div>
-  <div class="shop-scroll"><ul id="shop-grid" aria-label="Garments"></ul><div id="shop-empty" hidden=""><p>No garments found.</p><button id="shop-reset">Clear filters</button></div></div>
- </dialog>
- <dialog id="product-dialog" aria-labelledby="product-title">
-  <div class="product-shell">
-   <header class="product-header"><span id="piece-number">COLLECTION / INSPECT</span><button class="text-button" id="close-product">CLOSE <span aria-hidden="true">×</span></button></header>
-   <div class="product-layout">
-    <div class="product-visual">
-     <div id="garment-viewer" tabindex="0" aria-label="360 degree garment viewer. Drag to rotate. Arrow keys turn the garment." hidden=""></div>
-     <div class="image-scroll" id="image-scroll" tabindex="0" aria-label="Product photograph. Zoom in, then drag or scroll to explore details."><div id="zoom-surface"><img id="detail-image" src="/products/war-tee-front.webp" draggable="false" alt="WAR / Witnesses Tee product photo"></div></div>
-     <div class="image-annotation"><span id="image-caption">01 / FRONT</span><span id="image-help">DRAG TO ROTATE</span><button id="auto-spin" aria-pressed="false" hidden="">START SPIN ↻</button></div>
-     <div class="image-toolbar">
-      <div class="side-switch" role="group" aria-label="Jacket view"><button id="show-3d" aria-pressed="false" disabled="">360° VIEW</button><button id="show-front" class="active" aria-pressed="true">FRONT</button><button id="show-back" aria-pressed="false">BACK</button></div>
-      <div class="zoom-controls"><button id="zoom-out" aria-label="Zoom out">−</button><input type="range" id="zoom" min="100" max="250" value="100" step="25" aria-label="Image zoom"><button id="zoom-reset" aria-label="Reset image zoom"><output id="zoom-output">100%</output></button><button id="zoom-in" aria-label="Zoom in">+</button></div>
-     </div>
+
+
+  <section class="discovery-hero" id="photo-story" aria-label="3D collection preview">
+   <div class="discovery-atmosphere" aria-hidden="true"></div>
+   <div class="discovery-tabs" role="tablist" aria-label="Explore the collection">
+    <button id="discovery-tab-chance" type="button" role="tab" aria-selected="true" aria-controls="discovery-chance">In rotation</button>
+    <button id="discovery-tab-mystery" type="button" role="tab" aria-selected="false" aria-controls="mystery" tabindex="-1">Mystery box</button>
+   </div>
+   <div id="discovery-chance" role="tabpanel" aria-labelledby="discovery-tab-chance">
+   <div class="discovery-layout">
+    <div class="discovery-object">
+     <div id="discovery-stage" tabindex="0" role="img" aria-label="Rotating 3D product. Drag to turn, or use the left and right arrow keys."><img id="discovery-fallback" src="/core-collection/posters/core-tee-black-front.webp" alt="A piece from the BreakThyRule collection" loading="lazy"></div>
+     <span class="discovery-instruction" id="discovery-instruction">360° / DRAG TO TURN</span>
+     <span class="discovery-loading" id="discovery-loading" role="status">Finding your next piece…</span>
     </div>
-    <div class="product-info">
-     <span class="edition">BREAKTHYRULE / VAULT</span>
-     <label class="collection-label" for="collection-select">SELECT A PIECE</label><select id="collection-select"></select>
-     <h2 id="product-title">THE COLLECTION</h2>
-     <p class="product-description">Explore the silhouette, materials and details from every angle.</p>
-     <p class="model-note" id="model-status" role="status">Loading the collection…</p>
-     <button id="retry-model" class="text-button" hidden="">RETRY LOADING</button>
-     <button class="return-button" id="return-room"><i data-lucide="arrow-left"></i><span id="return-product-label">RETURN TO SHOWROOM</span></button>
+    <div class="discovery-details" aria-busy="true">
+     <div class="discovery-meta"><span id="discovery-category">THE COLLECTION</span><span id="discovery-number">01</span></div>
+     <h3 id="discovery-name">Something unexpected.</h3>
+     <p id="discovery-description">Garments, metal, accessories and a little chance.</p>
+     <div class="discovery-price-line"><strong id="discovery-price"></strong><span id="discovery-price-note"></span></div>
+     <p class="discovery-variation" id="discovery-variation">Original pieces. Infinite possibilities.</p>
+     <a id="discovery-link" href="#products">Explore the collection <span aria-hidden="true">↗</span></a>
+     <p class="discovery-footnote" id="discovery-footnote">Every turn brings another possibility.</p>
+    </div>
+   </div>
+   <div class="discovery-timeline" aria-hidden="true"><span id="discovery-progress"></span></div>
+   </div>
+  <div id="mystery" class="discovery-mystery-panel" role="tabpanel" aria-labelledby="discovery-tab-mystery" hidden>
+   <svg class="mystery-filters" aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden;pointer-events:none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+     <filter id="mystery-ink-filter" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feColorMatrix in="SourceGraphic" type="saturate" values="0" result="mono"/>
+      <feComponentTransfer in="mono" result="tones"><feFuncR type="gamma" amplitude="1" exponent="1.12" offset="0"/><feFuncG type="gamma" amplitude="1" exponent="1.12" offset="0"/><feFuncB type="gamma" amplitude="1" exponent="1.12" offset="0"/><feFuncA type="linear" slope="0" intercept="1"/></feComponentTransfer>
+      <feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="1" seed="23" result="noise"/>
+      <feColorMatrix in="noise" type="matrix" values=".2126 .7152 .0722 0 0 .2126 .7152 .0722 0 0 .2126 .7152 .0722 0 0 0 0 0 0 1" result="grain"/>
+      <feComposite in="tones" in2="grain" operator="arithmetic" k1="0" k2="1" k3="1.7" k4="-.85" result="dither"/>
+      <feComponentTransfer in="dither" result="ink"><feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/></feComponentTransfer>
+      <feComposite in="ink" in2="SourceGraphic" operator="in"/>
+     </filter>
+    </defs>
+   </svg>
+   <div class="mystery-console">
+    <div class="mystery-print">
+    <div class="mystery-stage" id="mystery-stage" role="img" aria-label="Rotating Break Thy Rule mystery box">
+     <span class="box-shadow" aria-hidden="true"></span>
+     <div class="mystery-cube" aria-hidden="true"><div class="box-face box-front"><span>BREAK<br>THY RULE</span><b>?</b><small>CURATED BY THE HOUSE</small></div><div class="box-face box-back"><span>EXPECT<br>THE UNEXPECTED</span><b>✦</b></div><div class="box-face box-left"><span>NO TWO<br>STORIES<br>THE SAME.</span></div><div class="box-face box-right"><span>LET<br>CHANCE<br>DRESS YOU.</span></div><div class="box-face box-top"><span>BTR / MYSTERY DROP</span></div><div class="box-face box-bottom"></div></div>
+     <span class="box-coordinate" aria-hidden="true">BTR—SUPPLY / 005</span>
+    </div>
+    </div>
+    <div class="mystery-info">
+     <div class="mystery-options" role="group" aria-label="Choose a mystery package"><button type="button" data-package="one-tee" aria-pressed="true"><span class="package-name">One Tee</span><span class="package-price">$30</span></button><button type="button" data-package="outerwear" aria-pressed="false"><span class="package-name">Outerwear</span><span class="package-price">$40</span></button><button type="button" data-package="light-pack" aria-pressed="false"><span class="package-name">Light Pack</span><span class="package-price">$80</span></button><button type="button" data-package="heavy-pack" aria-pressed="false"><span class="package-name">Heavy Pack</span><span class="package-price">$120</span></button><button type="button" data-package="super-package" aria-pressed="false"><span class="package-name">Super Package</span><span class="package-price">$250</span></button></div>
+     <div class="mystery-description" aria-live="polite"><p class="tiny-label" id="box-label">1 tee</p><h3 id="box-name">One Tee</h3><p id="box-copy">One tee, selected by the house. A simple way to leave the choice to us.</p><p class="box-detail" id="box-detail">Choose your size and preferred fit, and leave any notes in the Lab.</p></div>
+     <a class="solid" id="box-cta" href="/lab?package=one-tee#packages">Choose One Tee <span aria-hidden="true">↗</span></a>
+     <button class="spin-toggle" id="box-spin" type="button" aria-pressed="false">Pause rotation Ⅱ</button>
+     <p class="fine">Select your size and preferences before adding to your bag.</p>
     </div>
    </div>
   </div>
- </dialog>
- <dialog id="book-dialog" aria-labelledby="library-title">
-  <header class="product-header"><span id="library-title">THE FOUNDING SHELF / 08 TEXTS</span><button id="add-library-pdf" class="icon-button" aria-label="Add PDFs to the library" title="Add PDFs to the library"><i data-lucide="plus"></i></button><button id="ask-from-books" class="text-button">ASK THE LIBRARIAN</button><button id="close-library" class="text-button">CLOSE <span aria-hidden="true">×</span></button></header>
-  <div class="library-layout">
-   <nav id="book-list" aria-label="Books in the library"></nav>
-   <article class="book-detail">
-    <div class="book-cover-wrap"><img id="book-cover" alt=""></div>
-    <div class="book-info"><span id="book-category" class="edition"></span><h2 id="book-title"></h2><p id="book-author"></p><p id="book-format"></p><a id="read-book" class="read-book" target="_blank" rel="noopener noreferrer">READ PDF <span aria-hidden="true">↗</span></a><a class="archive-source" href="https://breakthyrule-co.netlify.app/library" target="_blank" rel="noopener noreferrer">The Break Thy Rule archive ↗</a><p id="library-shared-status" role="status">Connecting to the shared library...</p><div class="book-paging"><button id="previous-book" aria-label="Previous book">←</button><span id="book-number"></span><button id="next-book" aria-label="Next book">→</button></div></div>
-   </article>
+   <span class="discovery-sr" id="discovery-status" aria-live="polite"></span>
+  </section>
+
+  <section class="gallery-reel" id="gallery-reel" aria-label="The gallery"></section>
+
+  <div class="rpg-shop">
+  <nav class="shop-path wrap" aria-label="Shop sections">
+   <a href="#core">Core collection</a><a href="#products">Collection</a><a href="#metalwork">Metal + belts</a><a href="#accessories">Accessories</a><a href="#photo-story" data-discovery-open="mystery">Mystery boxes</a>
+  </nav>
+
+  <section class="section wrap" id="core" aria-label="FW27 collection"><div class="core-grid"><article class="core-card" data-core-summary="price"><a class="core-image" data-core-model="core-tee" href="/product?item=core-tee" aria-label="Explore FW27 Crew Tee in 3D"><img style="filter:hue-rotate(0deg)" src="/core-collection/posters/core-tee-black-front.webp" alt="FW27 Crew Tee garment preview" width="800" height="960" loading="lazy" decoding="async"></a><h3><a href="/product?item=core-tee">FW27 Crew Tee</a></h3><p class="core-card-price" aria-label="Random $30 to Cut and Sew $80" title="Random to Cut &amp; Sew">$30–$80</p></article><article class="core-card" data-core-summary="price"><a class="core-image" data-core-model="core-hoodie" href="/product?item=core-hoodie" aria-label="Explore FW27 Crew Hoodie in 3D"><img style="filter:hue-rotate(223deg)" src="/core-collection/posters/core-hoodie-white-front.webp" alt="FW27 Crew Hoodie garment preview" width="800" height="960" loading="lazy" decoding="async"></a><h3><a href="/product?item=core-hoodie">FW27 Crew Hoodie</a></h3><p class="core-card-price" aria-label="Random $50 to Cut and Sew $180" title="Random to Cut &amp; Sew">$50–$180</p></article><article class="core-card" data-core-summary="price"><a class="core-image" data-core-model="core-crewneck" href="/product?item=core-crewneck" aria-label="Explore FW27 Crewneck in 3D"><img style="filter:hue-rotate(36deg)" src="/core-collection/posters/core-crewneck-black-front.webp" alt="FW27 Crewneck garment preview" width="800" height="960" loading="lazy" decoding="async"></a><h3><a href="/product?item=core-crewneck">FW27 Crewneck</a></h3><p class="core-card-price" aria-label="Random $40 to Cut and Sew $150" title="Random to Cut &amp; Sew">$40–$150</p></article></div></section>
+  <section class="section wrap shop-shelf" id="products" aria-labelledby="collection-title">
+   <div class="section-head"><div><p class="kicker">01 / Equipment chest</p><h2 id="collection-title"><span class="sect">§</span>The collection</h2></div><p class="shelf-note">Graphic tees from the collection.<br>Every piece has a point of view.</p></div>
+   <div class="product-grid" id="product-grid"></div>
+   <div class="shelf-bottom collection-browse-row"><p class="fine" id="grid-status" role="status"></p><button class="ghost more-button collection-browse-action" id="collection-more" type="button" aria-controls="product-grid" aria-expanded="false">More of the collection <span aria-hidden="true">＋</span></button></div>
+  </section>
+
+  <section class="section wrap shop-shelf" id="metalwork" aria-labelledby="metal-title">
+   <div class="section-head"><div><p class="kicker">02 / Metalwork &amp; relics</p><h2 id="metal-title"><span class="sect">§</span>Metal, meet body.</h2></div><a class="ghost" href="/belts.html">Explore belts in 3D ↗</a></div>
+   <div class="equipment-grid" id="metal-grid"></div>
+   <div class="shelf-bottom"><p class="fine">21 belt designs in 3D. Explore the necklace collection below. More metal objects are coming soon.</p><button class="ghost more-button" id="metal-more" type="button" aria-controls="metal-grid" aria-expanded="false">More metal + belts <span aria-hidden="true">＋</span></button></div>
+  </section>
+
+  <section class="section wrap belt-shelf" id="belts" aria-labelledby="belt-title"><div class="section-head"><div><p class="kicker">Metalwork / The belt collection</p><h2 id="belt-title"><span class="sect">§</span>Sculpture, worn.</h2></div></div><p class="lede">Sculptural buckles. Simple black straps. Turn every design in 3D.</p><div class="belt-grid belt-grid-home"><article class="belt-card"><a href="/product?item=belt-neon-shamrock" class="belt-card-image"><img src="/btr-belts/posters/neon-shamrock.webp" alt="Neon Shamrock Belt, sculptural buckle and black strap" width="800" height="500" loading="lazy" decoding="async"></a><div class="belt-card-copy"><h3><a href="/product?item=belt-neon-shamrock">Neon Shamrock Belt</a></h3><p class="accessory-price">$400 USD · complete belt</p><div class="belt-card-actions"><a href="/product?item=belt-neon-shamrock" class="ghost">Explore <span aria-hidden="true">↗</span></a></div></div></article><article class="belt-card"><a href="/product?item=belt-circle-of-anarchy" class="belt-card-image"><img src="/btr-belts/posters/circle-of-anarchy.webp" alt="Circle of Anarchy Belt, sculptural buckle and black strap" width="800" height="500" loading="lazy" decoding="async"></a><div class="belt-card-copy"><h3><a href="/product?item=belt-circle-of-anarchy">Circle of Anarchy Belt</a></h3><p class="accessory-price">$400 USD · complete belt</p><div class="belt-card-actions"><a href="/product?item=belt-circle-of-anarchy" class="ghost">Explore <span aria-hidden="true">↗</span></a></div></div></article><article class="belt-card"><a href="/product?item=belt-absolute-darkness" class="belt-card-image"><img src="/btr-belts/posters/absolute-darkness.webp" alt="Absolute Darkness Belt, sculptural buckle and black strap" width="800" height="500" loading="lazy" decoding="async"></a><div class="belt-card-copy"><h3><a href="/product?item=belt-absolute-darkness">Absolute Darkness Belt</a></h3><p class="accessory-price">$400 USD · complete belt</p><div class="belt-card-actions"><a href="/product?item=belt-absolute-darkness" class="ghost">Explore <span aria-hidden="true">↗</span></a></div></div></article><article class="belt-card"><a href="/product?item=belt-sara-la-kali" class="belt-card-image"><img src="/btr-belts/posters/sara-la-kali.webp" alt="Sara la kali Belt, sculptural buckle and black strap" width="800" height="500" loading="lazy" decoding="async"></a><div class="belt-card-copy"><h3><a href="/product?item=belt-sara-la-kali">Sara la kali Belt</a></h3><p class="accessory-price">$400 USD · complete belt</p><div class="belt-card-actions"><a href="/product?item=belt-sara-la-kali" class="ghost">Explore <span aria-hidden="true">↗</span></a></div></div></article></div><div class="collection-browse-row"><p class="fine">4 of 21 designs</p><a class="collection-browse-action" href="/belts.html">Belt collection</a></div></section>
+
+  <section class="section wrap" id="accessories" aria-labelledby="accessory-title"><div class="section-head"><div><p class="kicker">Accessories / The first collection</p><h2 id="accessory-title"><span class="sect">§</span>Small pieces. Big energy.</h2></div></div><p class="lede">Red centaur embroidery. White and black Apple Gloves. Mesh truckers and baseball caps, your way.</p><button type="button" class="ghost accessory-motion" data-accessory-motion aria-pressed="true">Pause previews</button><div class="accessory-grid"><article class="accessory-card" data-accessory-family="headband"><a class="accessory-image" data-accessory-model="headband-black" href="/product?item=accessory-headband-black" aria-label="Explore Black Headband in 3D"><img src="/accessory-collection/posters/headband-black.png?v=quality-3" alt="Black Headband 3D model" width="900" height="900" loading="lazy" decoding="async"></a><h3><a href="/product?item=accessory-headband-black">Black Headband</a></h3><p>Red centaur embroidery</p><a class="ghost" href="/product?item=accessory-headband-black">Explore 3D ↗</a></article><article class="accessory-card" data-accessory-family="gloves"><a class="accessory-image" data-accessory-model="gloves-white" href="/product?item=apple-gloves&amp;glove=white" aria-label="Explore White Apple Gloves in 3D"><img src="/accessory-collection/posters/gloves-white.png?v=quality-3" alt="White Apple Gloves 3D model" width="900" height="900" loading="lazy" decoding="async"></a><h3><a href="/product?item=apple-gloves&amp;glove=white">White Apple Gloves</a></h3><p>Design preview</p><a class="ghost" href="/product?item=apple-gloves&amp;glove=white">Explore 3D ↗</a></article><article class="accessory-card" data-accessory-family="skully"><a class="accessory-image" data-accessory-model="skully-black" href="/product?item=accessory-skully-black" aria-label="Explore Black Skully in 3D"><img src="/accessory-collection/posters/skully-black.png?v=quality-3" alt="Black Skully 3D model" width="900" height="900" loading="lazy" decoding="async"></a><h3><a href="/product?item=accessory-skully-black">Black Skully</a></h3><p>Red centaur embroidery</p><a class="ghost" href="/product?item=accessory-skully-black">Explore 3D ↗</a></article><article class="accessory-card" data-accessory-family="trucker"><a class="accessory-image" data-accessory-model="trucker-cobalt" href="/product?item=accessory-trucker-cobalt" aria-label="Explore Cobalt / White Trucker in 3D"><img src="/accessory-collection/posters/mesh-trucker-v2.png" alt="Cobalt / White Trucker 3D model" width="900" height="900" loading="lazy" decoding="async"></a><h3><a href="/product?item=accessory-trucker-cobalt">Cobalt / White Trucker</a></h3><p>Choose shape, colors + graphics</p><a class="ghost" href="/product?item=accessory-trucker-cobalt">Explore 3D ↗</a></article></div><div class="collection-browse-row"><p class="fine">Headwear & gloves</p><a class="collection-browse-action" href="/accessories.html">All accessories</a></div></section>
+
+  <div class="wrap workshop-witnesses" id="worn-photos">
+   <div class="witness-head"><p class="kicker">Worn by the witnesses</p><button class="witness-motion" id="witness-motion" type="button" aria-label="Pause photo movement" aria-controls="witness-strip" hidden>Ⅱ</button><a href="/gallery?filter=worn">See every photo <span aria-hidden="true">↗</span></a></div>
+   <div class="witness-strip" id="witness-strip" role="region" aria-label="Photos of Break Thy Rule worn in the world"></div>
   </div>
- </dialog>
- <dialog id="upload-dialog" aria-labelledby="upload-title">
-  <header class="librarian-header"><h2 id="upload-title">Add PDFs</h2><button id="close-upload" class="icon-button" aria-label="Close upload" title="Close upload"><i data-lucide="x"></i></button></header>
-  <div class="upload-body"><div id="pdf-drop"><i data-lucide="file-up"></i><button id="choose-pdfs" class="solid-button">Choose PDFs</button><input id="pdf-files" type="file" accept=".pdf,application/pdf" multiple="" hidden=""></div>
-   <p id="upload-status" role="status" aria-live="polite">PDF only / up to 4 MB each</p><label class="upload-privacy"><input id="pdf-rights" type="checkbox"> I have permission to share these PDFs publicly.</label><ul id="upload-results" aria-live="polite"></ul>
-  </div>
- </dialog>
- <dialog id="poster-dialog" aria-labelledby="poster-title"><header class="product-header"><span id="poster-title">Artwork</span><nav id="poster-navigation" aria-label="Media pages" hidden=""><button id="poster-previous" aria-label="Previous post or photograph">←</button><button id="poster-next" aria-label="Next post or photograph">→</button></nav><button class="text-button" id="close-poster">CLOSE <span aria-hidden="true">×</span></button></header><div class="poster-view"><img id="poster-image" alt=""><video id="poster-video" controls="" playsinline="" preload="metadata" hidden=""></video></div></dialog>
- <dialog id="librarian-dialog" aria-labelledby="librarian-title">
-  <header class="librarian-header"><div><span class="librarian-eyebrow">THE GARDEN KEEPER</span><h2 id="librarian-title">The librarian</h2></div><button id="close-librarian" class="icon-button" aria-label="End conversation" title="End conversation"><i data-lucide="x"></i></button></header>
-  <div class="librarian-scroll">
-   <p id="librarian-user" class="visitor-line" hidden=""></p>
-   <p id="librarian-speech" class="librarian-speech" aria-live="polite">Come, sit a moment. What would you like to read?</p>
-   <div id="librarian-tools" hidden=""><div class="librarian-result-heading"><span id="librarian-count">0 books</span><select id="librarian-source" aria-label="Filter results by source"><option value="all">All sources</option></select></div><p id="librarian-status" role="status"></p></div>
-   <p id="librarian-action-status" role="status"></p><div id="librarian-results" aria-label="Book search results" aria-busy="false"></div>
-   <p id="librarian-empty" hidden=""></p>
-   <button id="librarian-more" class="text-button" hidden="">MORE BOOKS</button><button id="librarian-retry" class="text-button" hidden="">TRY AGAIN</button>
-  </div>
-  <form id="librarian-form"><label for="librarian-query">What are you looking for?</label><div class="librarian-input-row"><input id="librarian-query" name="query" type="search" maxlength="200" required="" autocomplete="off" placeholder="Title, author, subject, or ISBN"><button id="librarian-submit" class="icon-button" aria-label="Search books" title="Search books"><i data-lucide="arrow-up"></i></button><button id="librarian-cancel" type="button" class="icon-button" aria-label="Stop search" title="Stop search" hidden=""><i data-lucide="square"></i></button></div><a id="librarian-atlas" target="_blank" rel="noopener noreferrer">Librarian Atlas <i data-lucide="arrow-up-right"></i></a></form>
- </dialog>
- <button id="social-launcher" class="social-launcher" aria-label="Open garden chat"><i data-lucide="users"></i><span id="social-dot" class="social-dot"></span><span id="social-launch-label">Join garden</span><span id="social-unread" hidden=""></span></button>
- <button id="character-launcher" class="social-launcher character-launcher"><i data-lucide="user-round-pen"></i><span id="character-launch-label">Become a character</span></button>
- <aside id="social-panel" aria-label="Garden community" hidden="">
-  <header><div><h2>Garden chat</h2><span id="social-status" role="status">Connecting...</span></div><button id="social-close" class="icon-button" aria-label="Close chat" title="Close chat"><i data-lucide="x"></i></button></header>
-  <div class="social-tabs" role="tablist" aria-label="Community views"><button id="social-chat-tab" role="tab" aria-selected="true">Chat</button><button id="social-people-tab" role="tab" aria-selected="false">Visitors (0)</button></div>
-  <p id="social-empty">No messages yet.</p><ol id="social-messages" role="log" aria-label="Room messages" aria-live="polite"></ol><ul id="social-people" aria-label="Online visitors" hidden=""></ul>
-  <p id="social-error" role="status"></p>
-  <button id="social-gate" type="button">Create an account</button>
-  <form id="social-chat-form"><textarea id="social-message" rows="1" maxlength="300" aria-label="Message everyone in the garden" placeholder="Message the garden" required=""></textarea><button id="social-send" class="icon-button" aria-label="Send message" title="Send message"><i data-lucide="arrow-up"></i></button></form>
-  <div class="social-account"><span id="social-account-name"></span><button id="social-edit" class="icon-button" title="Your character" aria-label="Your character"><i data-lucide="user-round-pen"></i></button><button id="social-wave" class="icon-button" title="Wave to everyone" aria-label="Wave to everyone"><i data-lucide="hand"></i></button><button id="social-delete" class="icon-button" title="Delete account" aria-label="Delete account" hidden=""><i data-lucide="user-round-x"></i></button><button id="social-logout" class="icon-button" title="Sign out" aria-label="Sign out"><i data-lucide="log-out"></i></button></div>
- </aside>
- <dialog id="social-auth" aria-labelledby="social-auth-title"><header><h2 id="social-auth-title">Create an account</h2><button id="social-auth-close" class="icon-button" aria-label="Close sign in" title="Close sign in"><i data-lucide="x"></i></button></header><form id="social-auth-form"><label>Username<input id="social-name" autocomplete="username" pattern="[a-zA-Z0-9_]{3,24}" minlength="3" maxlength="24" required=""></label><label>Password<input id="social-password" type="password" autocomplete="new-password" minlength="10" maxlength="128" required=""></label><label id="social-recovery-field" hidden="">Recovery code<input id="social-recovery-code" autocomplete="off" maxlength="100" spellcheck="false"></label><p id="social-auth-error" role="alert"></p><button id="social-auth-submit" type="submit">Create account</button><button id="social-auth-switch" type="button">Already have an account? Sign in</button><button id="social-recover" type="button" hidden="">Recover account</button><p class="social-privacy">Your saved character, username and garden messages are public. Chat is retained for up to 24 hours. Keep your recovery code private.</p></form></dialog>
- <div id="social-move" class="social-move" aria-label="Move around the garden" hidden=""><button data-key="w" aria-label="Walk forward" title="Walk forward"><i data-lucide="arrow-up"></i></button><button data-key="a" aria-label="Walk left" title="Walk left"><i data-lucide="arrow-left"></i></button><button data-key="s" aria-label="Walk backward" title="Walk backward"><i data-lucide="arrow-down"></i></button><button data-key="d" aria-label="Walk right" title="Walk right"><i data-lucide="arrow-right"></i></button><button data-key="space" aria-label="Jump" title="Jump"><i data-lucide="arrow-up-from-line"></i></button><button data-key="shift" aria-label="Sprint" title="Sprint" aria-pressed="false"><i data-lucide="footprints"></i></button></div>
- <noscript><div class="noscript"><p>Explore Break Thy Rule product photographs.</p><a href="/products/war-tee-front.webp">Featured piece</a></div></noscript>
+
+  <section class="home-about-section" id="production" aria-labelledby="home-paper-title">
+   <div id="home-about-paper" data-bitmap-about>
+ <svg class="print-filters" aria-hidden="true" width="0" height="0" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+   <!-- A one-bit, noise-dithered print treatment. The original photographs stay intact. -->
+   <filter id="home-bitmap-print" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feColorMatrix in="SourceGraphic" type="saturate" values="0" result="mono"/>
+    <feComponentTransfer in="mono" result="contrast"><feFuncR type="linear" slope="1.12" intercept="-.02"/><feFuncG type="linear" slope="1.12" intercept="-.02"/><feFuncB type="linear" slope="1.12" intercept="-.02"/><feFuncA type="linear" slope="0" intercept="1"/></feComponentTransfer>
+    <feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="1" seed="17" result="noise"/>
+    <feColorMatrix in="noise" type="matrix" values=".2126 .7152 .0722 0 0 .2126 .7152 .0722 0 0 .2126 .7152 .0722 0 0 0 0 0 0 1" result="gray-noise"/>
+    <feComposite in="contrast" in2="gray-noise" operator="arithmetic" k1="0" k2="1" k3="1.7" k4="-.85" result="dither"/>
+    <feComponentTransfer in="dither" result="ink"><feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/></feComponentTransfer>
+    <feComposite in="ink" in2="SourceGraphic" operator="in"/>
+   </filter>
+  </defs>
+ </svg>
+  <article class="paper-sheet" aria-labelledby="home-paper-title">
+   <header class="paper-heading">
+    <div class="document-line"><span>LOS ANGELES, CALIFORNIA</span><span>ABOUT / 001</span></div>
+    <h2 id="home-paper-title">BREAK THY RULE</h2>
+    <p class="mission-copy">We’re seekers of knowledge and truth. Our mission is to make this site an archive of authentic culture, knowledge and information—a place to explore, learn and keep asking questions. We take great pride in our products and our <a href="/archive">Archive</a>, and in the care we put into both.</p>
+   </header>
+   <div class="paper-content">
+    <aside class="printed-images" aria-label="Garments and artwork">
+     <figure class="garment-print">
+      <img class="bitmap-photo" src="/images/breakthyrule/favs/full/img-0155.webp" width="1350" height="1800" alt="Black-and-white print of a person wearing a Break Thy Rule graphic top." loading="lazy" decoding="async">
+      <figcaption>WORN OUT IN THE WORLD.</figcaption>
+     </figure>
+     <figure class="graphic-print">
+      <img class="bitmap-art" loading="lazy" decoding="async" src="/images/breakthyrule/graphics/thumb/love-gives-wings.webp" width="360" height="360" alt="Love Gives Wings: a winged heart graphic, printed in black and white.">
+      <figcaption>ARTISTS IN EVERY DROP.</figcaption>
+     </figure>
+    </aside>
+    <div class="copy-column">
+     <section class="paper-section" aria-labelledby="home-brand-heading">
+      <h3 id="home-brand-heading">01. THE BRAND</h3>
+      <p>We’re a clothing brand from Los Angeles. We collaborate with artists on every drop and print everything in house, working with vintage finds, new garments and our own cut and sew.</p>
+     </section>
+     <section class="paper-section" id="home-ready" aria-labelledby="home-ready-heading">
+      <h3 id="home-ready-heading">02. READY NOW</h3>
+      <p>We pick from garments already in our selection: vintage tees, crewnecks and some new pieces too. Having these garments on hand means we can get your order out sooner.</p>
+      <p class="typed-note">On hand. Out sooner.</p>
+     </section>
+    </div>
+    <div class="copy-column">
+     <section class="paper-section" id="home-made" aria-labelledby="home-made-heading">
+      <h3 id="home-made-heading">03. MADE TO ORDER</h3>
+      <p>Each garment is constructed in LA’s Fashion District, then printed in house and finished with its details and additions.</p>
+      <p>Allow <strong>2–3 weeks for making.</strong> That time gives us room to work carefully, refine the details and give your piece the attention it needs.</p>
+     </section>
+     <section class="paper-section" id="home-notes" aria-labelledby="home-notes-heading">
+      <h3 id="home-notes-heading">04. YOUR NOTES</h3>
+      <p>Have something in mind? Add a note to your order. We’ll consider your ideas and how we might incorporate them into the garment—a detail, a direction or something you’d like us to keep in mind.</p>
+     </section>
+    </div>
+   </div>
+   <footer class="paper-footer"><span>ARTIST COLLABORATIONS. IN-HOUSE PRINTING.</span><a href="/?nocover=1#products">Collection ↗</a></footer>
+  </article>
+    <footer class="desk-footer">
+     <div class="print-controls"><button type="button" data-print-motion hidden>Pause images</button><span data-print-hint hidden>Click a print for the next one.</span></div>
+     <a class="full-about-link" href="/about">Open the About page ↗</a>
+    </footer>
+    <p class="sr-only" data-print-status role="status"></p>
+   </div>
+  </section>
 
 
-</body></html>
+
+  </div>
+
+  <section class="product-portals wrap" id="product-portals" aria-label="Explore destinations">
+   <div class="portal-controls"><button id="portal-motion-toggle" type="button" aria-pressed="true" aria-label="Pause portal animations" hidden>Ⅱ</button></div>
+   <div class="portal-grid">
+    <a class="portal-card portal-eden" data-portal="eden" href="/showroom" aria-label="Enter Eden">
+     <span class="portal-visual" data-portal-stage aria-hidden="true">
+      <span class="portal-orbit"></span><span class="portal-object-shadow"></span>
+      <svg class="portal-fallback" viewBox="0 0 240 240" fill="none"><defs><linearGradient id="portal-apple-red" x1="45" y1="55" x2="180" y2="210"><stop stop-color="#ef5348"/><stop offset="1" stop-color="#7f131b"/></linearGradient></defs><path d="M120 63c-7-23 0-39 10-46" stroke="#604329" stroke-width="12" stroke-linecap="round"/><path d="M130 44c10-28 42-31 58-17-15 25-39 32-58 17Z" fill="#759141" stroke="#354824" stroke-width="4"/><path d="M120 65c-31-22-73-5-77 38-4 45 24 107 54 109 13 1 18-10 24-10 7 0 14 10 27 8 31-5 53-63 49-106-3-37-40-59-77-39Z" fill="url(#portal-apple-red)" stroke="#441c1b" stroke-width="4"/><path d="M65 103c5-18 15-25 28-27" stroke="#ffb18a" stroke-width="7" stroke-linecap="round" opacity=".75"/><ellipse cx="125" cy="131" rx="36" ry="32" fill="#fff9e8" stroke="#211b18" stroke-width="7"/><ellipse cx="134" cy="133" rx="15" ry="21" fill="#171c17"/><circle cx="140" cy="126" r="5" fill="#fff"/><path d="m97 180 13-12 13 9 16-12 12 11" stroke="#391d1b" stroke-width="4"/></svg>
+      <canvas data-portal-canvas></canvas>
+     </span>
+     <span class="portal-label"><strong>Eden</strong></span>
+    </a>
+    <a class="portal-card portal-lab" data-portal="lab" href="/lab#build" aria-label="Enter Garment Lab">
+     <span class="portal-visual" data-portal-stage aria-hidden="true">
+      <span class="portal-orbit"></span><span class="portal-object-shadow"></span>
+      <svg class="portal-fallback" viewBox="0 0 240 240" fill="none"><path d="m80 40-29 13-37 42 35 31 27-23v105h89V103l25 23 36-31-38-42-29-13c-11 25-67 25-79 0Z" fill="#d5c9ad" stroke="#423a2c" stroke-width="5" transform="translate(8 -3) rotate(8 120 120)"/><path d="m80 40-29 13-37 42 35 31 27-23v105h89V103l25 23 36-31-38-42-29-13c-11 25-67 25-79 0Z" fill="#f1eadc" stroke="#524a3d" stroke-width="4"/><path d="M80 40c9 40 69 40 79 0M84 196h74M76 103 81 75m84 28-5-28" stroke="#b8ab92" stroke-width="3"/><text x="120" y="126" fill="#a93b31" text-anchor="middle" font-size="27" font-family="Georgia" font-weight="bold">BTR</text><path d="m104 145 16-12 16 12-16 22Z" fill="#a93b31"/></svg>
+      <canvas data-portal-canvas></canvas>
+     </span>
+     <span class="portal-label"><strong>Garment Lab</strong></span>
+    </a>
+    <a class="portal-card portal-gallery" data-portal="gallery" href="/gallery" aria-label="Enter Gallery">
+     <span class="portal-visual" data-portal-stage aria-hidden="true">
+      <span class="portal-orbit"></span><span class="portal-object-shadow"></span>
+      <svg class="portal-fallback" viewBox="0 0 240 240" fill="none"><path d="m42 71 139-7 21 16-2 101-156 6-20-19 2-81Z" fill="#363b36" stroke="#171e1a" stroke-width="5"/><path d="m42 71 141-7 19 16-160 7Z" fill="#bdab7a"/><path d="m27 87 16 1 1 99-20-19Z" fill="#91816a"/><path d="m62 67 3-16 44-2 8 15" fill="#a29476" stroke="#3c3b30" stroke-width="4"/><rect x="145" y="90" width="38" height="21" rx="2" fill="#c4c6ae" stroke="#171e1a" stroke-width="4"/><circle cx="108" cy="137" r="45" fill="#ae9761" stroke="#171e1a" stroke-width="7"/><circle cx="108" cy="137" r="33" fill="#273832" stroke="#d3c396" stroke-width="4"/><circle cx="108" cy="137" r="22" fill="#142522"/><path d="m95 120 18-5 8 9-23 8Z" fill="#8cad9c" opacity=".8"/><path d="M54 102h20M151 163h28" stroke="#b8a26f" stroke-width="4"/></svg>
+      <canvas data-portal-canvas></canvas>
+     </span>
+     <span class="portal-label"><strong>Gallery</strong></span>
+    </a>
+    <a class="portal-card portal-archive" data-portal="archive" href="/archive" aria-label="Enter Archive">
+     <span class="portal-visual" data-portal-stage aria-hidden="true">
+      <span class="portal-orbit"></span><span class="portal-object-shadow"></span>
+      <svg class="portal-fallback" viewBox="0 0 240 240" fill="none"><path d="m61 42 112-8 17 13v153l-115 10-20-14Z" fill="#36261d" stroke="#201812" stroke-width="4"/><path d="m76 58 113-10v143L76 202Z" fill="#d9c69c" stroke="#382a1a" stroke-width="3"/><path d="m84 68 96-8M84 77l96-8M84 184l96-9M84 192l96-9" stroke="#ad976d" stroke-width="2"/><path d="m56 43 113-9 5 155-114 9Z" fill="#714535" stroke="#2d2118" stroke-width="5"/><path d="m66 57 94-8 3 126-94 8Z" stroke="#c2a56a" stroke-width="3"/><path d="m55 44 15 2 4 149-13 3Z" fill="#472e24"/><path d="m112 75 24 27-23 30-24-27Z" fill="#bd9b52"/><text x="118" y="157" fill="#e4ce91" text-anchor="middle" font-size="16" font-family="Georgia" font-weight="bold">CODEX</text></svg>
+      <canvas data-portal-canvas></canvas>
+     </span>
+     <span class="portal-label"><strong>Archive</strong></span>
+    </a>
+   </div>
+  </section>
+ </main>
+</body>
+</html>

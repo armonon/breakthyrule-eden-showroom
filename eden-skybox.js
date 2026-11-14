@@ -84,6 +84,21 @@ window.createEdenSkybox=function(T,scene,{sky,roadX,reduced=false,bounds={minX:-
  const threshold=new T.Mesh(new T.BoxGeometry(door.width,.04,.5),frameMaterial);threshold.position.set(door.x,.02,door.z-.3);threshold.receiveShadow=true;root.add(threshold);
  // Warm light spills through the gap when the door opens.
  const spill=new T.PointLight(0xffd9a0,0,9,1.6);spill.position.set(door.x,2.2,door.z-.8);root.add(spill);
+ // The way to the arena is never a secret: a lit sign over the door, a glowing frame and arrows on the ground.
+ const glowMat=color=>new T.MeshBasicMaterial({color,transparent:true,toneMapped:false,fog:false,depthWrite:false});
+ const signCanvas=document.createElement('canvas');signCanvas.width=1024;signCanvas.height=256;
+ {const c=signCanvas.getContext('2d');c.fillStyle='rgba(18,12,8,.92)';c.fillRect(0,0,1024,256);c.strokeStyle='#ffc56b';c.lineWidth=10;c.strokeRect(14,14,996,228);
+  c.textAlign='center';c.textBaseline='middle';c.shadowColor='#ff5a3c';c.shadowBlur=36;c.fillStyle='#fff1d6';c.font='700 132px "Barlow Condensed","Arial Narrow",sans-serif';c.fillText('THE ARENA',512,112);
+  c.shadowBlur=12;c.fillStyle='#ffc56b';c.font='600 46px "DM Sans",Arial,sans-serif';c.fillText('OPEN MATCH  ·  WALK THROUGH THE DOOR',512,206);}
+ const signTex=new T.CanvasTexture(signCanvas);signTex.colorSpace=T.SRGBColorSpace;signTex.anisotropy=4;
+ const sign=new T.Mesh(new T.PlaneGeometry(2.7,.675),new T.MeshBasicMaterial({map:signTex,transparent:true,toneMapped:false,fog:false}));
+ sign.position.set(door.x,door.height+.62,door.z+.06);sign.name='Arena sign';root.add(sign);
+ const frameGlow=glowMat(0xffc56b),edge=.07;
+ for(const [w,h,x,y] of [[edge,door.height,door.x-door.width/2-edge/2,door.height/2],[edge,door.height,door.x+door.width/2+edge/2,door.height/2],[door.width+edge*2,edge,door.x,door.height+edge/2]]){
+  const m=new T.Mesh(new T.PlaneGeometry(w,h),frameGlow);m.position.set(x,y,door.z+.04);m.name='Arena door glow';root.add(m);}
+ const arrowShape=new T.Shape();arrowShape.moveTo(-.5,-.2);arrowShape.lineTo(0,.25);arrowShape.lineTo(.5,-.2);arrowShape.lineTo(.5,.05);arrowShape.lineTo(0,.5);arrowShape.lineTo(-.5,.05);arrowShape.closePath();
+ const arrows=[0,1,2].map(i=>{const m=new T.Mesh(new T.ShapeGeometry(arrowShape),glowMat(0xff7a4a));m.rotation.x=-Math.PI/2;m.position.set(door.x,.035,door.z+1.6+i*1.5);m.name='Arena arrow';root.add(m);return m;});
+ const doorBeacon=new T.PointLight(0xffb36b,1.4,7,1.8);doorBeacon.position.set(door.x,door.height+.5,door.z+1.1);root.add(doorBeacon);
  root.traverse(n=>{if(n.isMesh){n.castShadow=false;n.frustumCulled=n.material!==material;}});
  let open=0,target=0,found=false,lastNear=0;const glitches=[];
  const marker=new T.Vector3(door.x,1.75,door.z+.35);
@@ -113,11 +128,15 @@ window.createEdenSkybox=function(T,scene,{sky,roadX,reduced=false,bounds={minX:-
    const step=reduced?1:Math.min(1,dt*1.4);open+=Math.sign(target-open)*Math.min(Math.abs(target-open),step);
    const eased=open*open*(3-2*open);hinge.rotation.y=eased*1.72;spill.intensity=eased*6;
    const near=viewer?Math.hypot(viewer.position.x-door.x,viewer.position.z-door.z):99;
-   knob.visible=backKnob.visible=keyhole.visible=near<9||open>0;
-   uniforms.doorGlow.value=found?.25:0;
+   knob.visible=backKnob.visible=keyhole.visible=true;
+   uniforms.doorGlow.value=found?.8:.6;
+   // Arrows pulse towards the door while anyone is in sight of it; the frame breathes.
+   let pulsing=false;
+   if(!reduced&&near<40){pulsing=true;arrows.forEach((a,i)=>{a.material.opacity=.35+.65*Math.max(0,Math.sin(clock*3-i*.9));});frameGlow.opacity=.75+.25*Math.sin(clock*2);}
+   else{arrows.forEach(a=>{a.material.opacity=.85;});frameGlow.opacity=1;}
    // Close quietly once everyone has wandered away again.
    if(target&&near>26&&viewer.position.z>door.z){if(!lastNear)lastNear=time;else if(time-lastNear>6)target=0;}else lastNear=0;
-   return Math.abs(target-open)>.001||glitches.length>0;
+   return Math.abs(target-open)>.001||glitches.length>0||pulsing;
   },
   // Brief faults in the painted sky, driven by eden-secrets.js.
   glitch(kind,{at,strength=1}={}){if(reduced)return;glitches.push({kind,start:performance.now()/1000,strength,at:at?.clone()});},

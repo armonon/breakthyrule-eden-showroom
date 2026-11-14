@@ -17,6 +17,9 @@ import {fileURLToPath} from 'node:url';
 import {createArena} from './arena.mjs';
 import {createBrawl} from './brawl.mjs';
 import {createWorld} from './world.mjs';
+import {createExpeditionService} from './expedition.mjs';
+import {normalizeCharacter} from './character.mjs';
+import {createHandler as createLabHandler, labFromEnv} from './lab/api.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((pairs, arg, i, all) => arg.startsWith('--') ? [...pairs, [arg.slice(2), all[i + 1]]] : pairs, []));
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -42,7 +45,7 @@ function save() {
 const PALETTE = ['#c8553d', '#2f6690', '#7a9e7e', '#b388eb', '#e0a458', '#3a7d44', '#d16666', '#5b8e7d', '#8f6593', '#4f6d7a'];
 const hash = (secret, salt) => crypto.scryptSync(secret, salt, 32).toString('hex');
 const nameKey = name => name.toLowerCase();
-const publicUser = u => u && {id: u.id, name: u.name, character: u.character || null, color: u.color, progress: u.progress || null};
+const publicUser = u => u && {id: u.id, name: u.name, character: u.character || null, color: u.color, progress: u.progress || null, expeditionStats: u.expeditionStats || null};
 function validName(name) { return typeof name === 'string' && /^[A-Za-z0-9 _.-]{3,24}$/.test(name.trim()); }
 function newSession(user) {
   const token = crypto.randomBytes(32).toString('hex');
@@ -163,7 +166,7 @@ async function social(action, req, res, body) {
       if (!user) throw new HttpError(401, 'Sign in to save a character.');
       const json = JSON.stringify(body.character ?? null);
       if (!body.character || typeof body.character !== 'object' || json.length > 16000) throw new HttpError(400, 'That character could not be saved.');
-      user.character = body.character; save(); touch(); broadcast(true);
+      user.character = normalizeCharacter(body.character); save(); touch(); broadcast(true);
       return reply({user: publicUser(user)});
     }
     case 'sync': setPose(String(body.connectionId || ''), user, body.pose); return reply(snapshotFor(String(body.connectionId || ''), user));
@@ -264,12 +267,23 @@ const world = createWorld({store, save, allow, emit(payload) {
   for (const c of liveSockets.values()) c.socket.write(data);
 }});
 
+const expedition = createExpeditionService({storageDir:args['expedition-memory']==='true'?null:path.join(DATA,'expedition'),onResult(userId, result) {
+  const user=store.users[userId]; if(!user)return;
+  const previous=user.expeditionStats || {};
+  // Keep authoritative results separate from the client-editable garden progress payload.
+  user.expeditionStats={runs:(previous.runs||0)+1, escapes:(previous.escapes||0)+(result.status==='escaped'?1:0), bestPages:Math.max(previous.bestPages||0,result.pages)};
+  save();
+}});
+setInterval(()=>{try{expedition.tick();}catch(error){console.error('Expedition checkpoint failed; service stopped accepting commands:',error.message);}},1000/60).unref();
+
 // ---------- HTTP ----------
 const TYPES = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json',
-  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.glb': 'model/gltf-binary', '.gltf': 'model/gltf+json',
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.glb': 'model/gltf-binary', '.gltf': 'model/gltf+json', '.wasm': 'application/wasm',
   '.mp4': 'video/mp4', '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8', '.webmanifest': 'application/manifest+json'};
 function send(res, status, body, headers = {}) { res.writeHead(status, {'Cache-Control': 'no-store', ...headers}); res.end(body); }
-function sameOrigin(req) { const origin = req.headers.origin; return !origin || origin === `http://${req.headers.host}`; }
+const trustedOrigins=new Set((process.env.EDEN_ALLOWED_ORIGINS||'').split(',').map(s=>s.trim()).filter(Boolean));
+for(const origin of trustedOrigins){const parsed=new URL(origin);if(!['http:','https:'].includes(parsed.protocol)||parsed.origin!==origin)throw Error('EDEN_ALLOWED_ORIGINS must contain exact HTTP(S) origins only.');}
+function sameOrigin(req) { const origin = req.headers.origin; return !origin || origin === `http://${req.headers.host}` || trustedOrigins.has(origin); }
 function readBody(req, limit = 65536) {
   return new Promise((resolve, reject) => {
     let size = 0; const chunks = [];
@@ -277,11 +291,49 @@ function readBody(req, limit = 65536) {
     req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8'))); req.on('error', reject);
   });
 }
-const LOCAL_DEPLOYMENT = `'use strict';window.showroomDeployment=${JSON.stringify({mode: 'local', socialApi: '/api/social/', realtime: '/api/social/live'})};`;
+const LOCAL_DEPLOYMENT = `'use strict';window.showroomDeployment=${JSON.stringify({mode: 'local', libraryApi:null, musicApi:null, socialApi: '/api/social/', realtime: '/api/social/live'})};`;
+
+// Garment Lab API (server/lab/): orders kept in server/data/lab unless LAB_DATA_DIR says otherwise.
+const LAB_ENV = {...process.env, LAB_DATA_DIR: process.env.LAB_DATA_DIR || path.join(DATA, 'lab')};
+const labHandle = createLabHandler(() => labFromEnv(LAB_ENV), LAB_ENV);
+function readRaw(req, limit = 5 * 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    let size = 0; const chunks = [];
+    req.on('data', c => { size += c.length; if (size > limit) { reject(new HttpError(413, 'Request too large.')); req.destroy(); } else chunks.push(c); });
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8'))); req.on('error', reject);
+  });
+}
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://local');
   try {
+    if(url.pathname==='/api/expedition' || url.pathname==='/api/expedition/events') {
+      if(!sameOrigin(req)) throw new HttpError(403,'Cross-site request refused.');
+      if(req.method==='GET' && url.pathname==='/api/expedition') return send(res,200,JSON.stringify(expedition.available()),{'Content-Type':'application/json'});
+      if(req.method!=='POST') throw new HttpError(405,'Method not allowed.');
+      let body;try {body=JSON.parse(await readBody(req,16384));} catch(error) {if(error.status)throw error;throw new HttpError(400,'Bad request.');}
+      const {user}=userFromRequest(req);
+      if(url.pathname.endsWith('/events')) {
+        if(!body || typeof body!=='object') throw new HttpError(400,'Bad request.');
+        // One authenticated stream per membership. Never put capability tokens in URLs.
+        let opened=false;
+        const unsubscribe=expedition.subscribe(body.token,user,value=>{
+          if(!opened){res.writeHead(200,{'Content-Type':'application/x-ndjson','Cache-Control':'no-store','X-Accel-Buffering':'no'});opened=true;}
+          if(res.destroyed)return;
+          if(res.writableLength>256*1024){res.destroy();return;}
+          res.write(JSON.stringify(value)+'\n');
+        },()=>res.end(),()=>!user || userFromRequest(req).user?.id===user.id,body.generation,body.connectionEpoch);
+        res.on('close',unsubscribe);return;
+      }
+      const result=expedition.command(body,{user,ip:req.socket.remoteAddress||'?'});
+      return send(res,200,JSON.stringify(result),{'Content-Type':'application/json'});
+    }
+    if (url.pathname.startsWith('/api/lab/')) {
+      const raw = req.method === 'GET' || req.method === 'HEAD' ? '' : await readRaw(req);
+      const local = new URL(url.pathname + url.search, `http://${req.headers.host || 'localhost'}`);
+      const r = await labHandle({method: req.method, url: local, headers: req.headers, rawBody: raw});
+      res.writeHead(r.status, r.headers); return res.end(r.body);
+    }
     if (url.pathname.startsWith('/api/social/')) {
       if (!sameOrigin(req)) throw new HttpError(403, 'Cross-site request refused.');
       const raw = req.method === 'POST' ? await readBody(req) : '';
@@ -303,6 +355,8 @@ const server = http.createServer(async (req, res) => {
     if (!file.startsWith(ROOT + path.sep) && file !== ROOT) throw new HttpError(403, 'Forbidden.');
     if (file.startsWith(path.join(ROOT, 'server') + path.sep) || path.basename(file).startsWith('.')) throw new HttpError(404, 'Not found.');
     if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
+    // Clean page URLs for the public site: /gallery → gallery.html, /showroom → showroom.html.
+    if (!fs.existsSync(file) && !path.extname(file) && fs.existsSync(file + '.html')) file += '.html';
     if (!fs.existsSync(file)) throw new HttpError(404, 'Not found.');
     res.writeHead(200, {'Content-Type': TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-store', 'Content-Length': fs.statSync(file).size});
     if (req.method === 'HEAD') return res.end();
@@ -316,4 +370,12 @@ const server = http.createServer(async (req, res) => {
 server.on('upgrade', (req, socket) => {
   if (new URL(req.url, 'http://local').pathname === '/api/social/live') wsAccept(req, socket); else socket.destroy();
 });
-server.listen(PORT, HOST, () => console.log(`Eden server: http://${HOST}:${PORT}/  (live multiplayer on, data in ${DATA})`));
+server.listen(PORT, HOST, () => console.log(`Eden server: http://${HOST}:${server.address().port}/  (live multiplayer on, data in ${DATA})`));
+let stopping=false;
+function shutdown(){if(stopping)return;stopping=true;
+  try{expedition.close();if(saveTimer){clearTimeout(saveTimer);const temporary=STORE_FILE+'.tmp';fs.writeFileSync(temporary,JSON.stringify(store,null,1));fs.renameSync(temporary,STORE_FILE);}}
+  catch(error){console.error('Shutdown persistence failed:',error.message);process.exitCode=1;}
+  server.close();for(const client of liveSockets.values())client.socket.destroy();
+  setTimeout(()=>process.exit(process.exitCode||0),50);
+}
+process.on('SIGINT',shutdown);process.on('SIGTERM',shutdown);

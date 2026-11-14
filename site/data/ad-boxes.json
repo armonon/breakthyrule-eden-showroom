@@ -1,0 +1,125 @@
+{
+ "generated": "2026-11-10",
+ "boxes": [
+  {
+   "id": "01-the-time-is-now",
+   "name": "The time is NOW!",
+   "src": "/images/breakthyrule/adverts/boxes/01-the-time-is-now.webp",
+   "ratio": 4.256
+  },
+  {
+   "id": "02-stay-weird",
+   "name": "Stay Weird",
+   "src": "/images/breakthyrule/adverts/boxes/02-stay-weird.webp",
+   "ratio": 4.778
+  },
+  {
+   "id": "03-buzzin-like-a-bee",
+   "name": "Buzzin Like a Bee",
+   "src": "/images/breakthyrule/adverts/boxes/03-buzzin-like-a-bee.webp",
+   "ratio": 4.575
+  },
+  {
+   "id": "04-beyond-mind",
+   "name": "Beyond Mind",
+   "src": "/images/breakthyrule/adverts/boxes/04-beyond-mind.webp",
+   "ratio": 4.597
+  },
+  {
+   "id": "05-i-am-light",
+   "name": "I Am Light",
+   "src": "/images/breakthyrule/adverts/boxes/05-i-am-light.webp",
+   "ratio": 5.184
+  },
+  {
+   "id": "06-love-gives-wings",
+   "name": "Love Gives Wings",
+   "src": "/images/breakthyrule/adverts/boxes/06-love-gives-wings.webp",
+   "ratio": 5.463
+  },
+  {
+   "id": "07-currently-creating",
+   "name": "Currently Creating",
+   "src": "/images/breakthyrule/adverts/boxes/07-currently-creating.webp",
+   "ratio": 4.98
+  },
+  {
+   "id": "08-destroy-attachment",
+   "name": "Destroy Attachment",
+   "src": "/images/breakthyrule/adverts/boxes/08-destroy-attachment.webp",
+   "ratio": 5.943
+  },
+  {
+   "id": "09-keep-dancing",
+   "name": "Keep Dancing",
+   "src": "/images/breakthyrule/adverts/boxes/09-keep-dancing.webp",
+   "ratio": 5.048
+  },
+  {
+   "id": "10-life-s-a-party",
+   "name": "Life's a Party",
+   "src": "/images/breakthyrule/adverts/boxes/10-life-s-a-party.webp",
+   "ratio": 4.351
+  },
+  {
+   "id": "11-star-power",
+   "name": "Star Power",
+   "src": "/images/breakthyrule/adverts/boxes/11-star-power.webp",
+   "ratio": 3.875
+  },
+  {
+   "id": "12-contact-high",
+   "name": "Contact High",
+   "src": "/images/breakthyrule/adverts/boxes/12-contact-high.webp",
+   "ratio": 4.295
+  },
+  {
+   "id": "13-music-is-my-savior",
+   "name": "Music Is My Savior",
+   "src": "/images/breakthyrule/adverts/boxes/13-music-is-my-savior.webp",
+   "ratio": 4.395
+  },
+  {
+   "id": "14-pretty-in-punk",
+   "name": "Pretty in Punk",
+   "src": "/images/breakthyrule/adverts/boxes/14-pretty-in-punk.webp",
+   "ratio": 4.455
+  },
+  {
+   "id": "15-world-wide-connection",
+   "name": "World Wide Connection",
+   "src": "/images/breakthyrule/adverts/boxes/15-world-wide-connection.webp",
+   "ratio": 4.509
+  },
+  {
+   "id": "16-fallen-angel",
+   "name": "Fallen Angel",
+   "src": "/images/breakthyrule/adverts/boxes/16-fallen-angel.webp",
+   "ratio": 5.027
+  },
+  {
+   "id": "17-cupid-s-secret",
+   "name": "Cupid's Secret",
+   "src": "/images/breakthyrule/adverts/boxes/17-cupid-s-secret.webp",
+   "ratio": 4.8
+  },
+  {
+   "id": "18-metamorphosis",
+   "name": "Metamorphosis",
+   "src": "/images/breakthyrule/adverts/boxes/18-metamorphosis.webp",
+   "ratio": 5.345
+  },
+  {
+   "id": "19-lovebomb",
+   "name": "lovebomb!",
+   "src": "/images/breakthyrule/adverts/boxes/19-lovebomb.webp",
+   "ratio": 5.314
+  },
+  {
+   "id": "20-grape",
+   "name": "Grape",
+   "src": "/images/breakthyrule/adverts/boxes/20-grape.webp",
+   "ratio": 5.277
+  }
+ ]
+}

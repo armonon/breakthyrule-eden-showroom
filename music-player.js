@@ -1,7 +1,7 @@
 'use strict';
 window.createGardenMusic=function({requestDraw=()=>{},onOpen=()=>{}}={}){
  const apiBase=window.showroomDeployment?.musicApi||'/api/music/';
- const preview=window.showroomDeployment?.mode==='preview'&&!window.showroomDeployment?.musicApi;
+ const preview=(window.showroomDeployment?.mode==='preview'||window.showroomDeployment?.musicApi===null)&&!window.showroomDeployment?.musicApi;
  const hosted=Boolean(window.showroomDeployment?.musicApi);
  const $=id=>document.getElementById(id),dialog=$('music-dialog'),audio=$('garden-audio');
  let state=null,received=0,connected=false,listening=false,busy=false,uploading=false,timer,heartbeat=0,lastQueue='',localVolume=.65;

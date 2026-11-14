@@ -1,0 +1,43 @@
+'use strict';
+// Section breaks become Break Thy Rule ad boxes (cut from the advert sheets), each a door into Eden.
+// Every .ornament divider is replaced by one ad; pages without dividers get one before the footer.
+// A page never shows the same ad twice. Data: site/data/ad-boxes.json (tools/assets/cut-adverts.mjs).
+(()=>{
+ const css=document.createElement('style');
+ // Each ad spans 95% of the screen width (2.5% clear on each side), whatever container the divider sits in. The band
+ // is about 30% shorter than the ad: 15% trimmed top and bottom, the rest squeezed (trimming more clips two-line ads).
+ css.textContent=`html,body{overflow-x:clip}
+.ad-break{display:flex;flex-direction:column;align-items:center;gap:10px;width:95vw;margin:64px 0 0 calc(50% - 47.5vw);text-decoration:none;color:var(--ink,#1d1a17)}
+.ad-break .ad-box{position:relative;display:block;width:100%;line-height:0;background:#000;padding:5px 0 0;box-shadow:0 1px 0 rgba(0,0,0,.5),0 -1px 0 rgba(0,0,0,.5);overflow:hidden}
+.ad-break .ad-frame{position:relative;display:block;width:100%;aspect-ratio:var(--ar,6);overflow:hidden}
+.ad-break img{position:absolute;left:0;top:-7.5%;width:100%;height:115%;object-fit:fill;display:block;transition:transform .5s cubic-bezier(.2,.7,.2,1),filter .3s}
+.ad-break .ad-url{display:block;background:#000;color:#fff;font:700 clamp(11px,1.15vw,15px)/1 var(--sans,system-ui);letter-spacing:.04em;text-align:center;padding:6px 0 5px}
+.ad-break .ad-cta{font:600 12px/1 var(--sans,system-ui);letter-spacing:.2em;text-transform:uppercase;opacity:.75;transition:opacity .2s,letter-spacing .25s}
+.ad-break:hover img,.ad-break:focus-visible img{transform:scale(1.02);filter:saturate(1.15) brightness(1.05)}
+.ad-break:hover .ad-cta,.ad-break:focus-visible .ad-cta{opacity:1;letter-spacing:.28em}
+.ad-break:focus-visible{outline:none}.ad-break:focus-visible .ad-box{outline:3px solid var(--rubric,#a3322a);outline-offset:-3px}
+@media(max-width:600px){.ad-break{margin-top:44px}.ad-break .ad-box{padding-top:6px}.ad-break .ad-url{padding:7px 0 6px}}
+.ad-break .ad-box{animation:ad-strobe var(--t,1.25s) steps(1,end) infinite;animation-delay:var(--d,0s)}
+.ad-break:hover .ad-box,.ad-break:focus-visible .ad-box{animation-play-state:paused}
+/* Strobe: short, hard flashes. Speeds vary per ad (1 s, 0.8 s or 0.7 s a cycle — two flashes each, so at most 2.9 a
+   second, just under the 3-a-second photosensitivity limit). */
+@keyframes ad-strobe{0%{filter:none;opacity:1}12%{filter:brightness(2.2) saturate(1.7);opacity:1}26%{filter:none;opacity:1}58%{filter:brightness(.2);opacity:.3}70%{filter:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.ad-break img{transition:none}.ad-break .ad-box{animation:none}}`;
+ document.head.append(css);
+ const spots=[...document.querySelectorAll('main .ornament, body > .ornament')];
+ if(!spots.length){const footer=document.querySelector('footer, .site-footer');if(!footer)return;const s=document.createElement('div');footer.before(s);spots.push(s);}
+ fetch('/site/data/ad-boxes.json').then(r=>r.json()).then(({boxes=[]})=>{
+  if(!boxes.length)return;
+  const pool=boxes.slice();for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  const speed0=Math.floor(Math.random()*3);
+  spots.forEach((spot,i)=>{
+   const ad=pool[i%pool.length];
+   const a=document.createElement('a');a.className='ad-break';a.href='/showroom';
+   a.setAttribute('aria-label',`${ad.name} — enter the Garden of Eden`);
+   const t=[1,.8,.7][(i+speed0)%3];a.style.setProperty('--t',t+'s');a.style.setProperty('--d',(-Math.random()*t).toFixed(2)+'s'); // some faster, all out of step
+   a.innerHTML=`<span class="ad-box"><span class="ad-frame"><img alt="" loading="lazy" decoding="async" width="${Math.round(ad.ratio*100)}" height="100"></span><span class="ad-url">www.breakthyrule.com</span></span><span class="ad-cta">Enter Eden →</span>`;
+   a.querySelector('img').src=ad.src;a.style.setProperty('--ar',(ad.ratio*1.4).toFixed(3)); // the band: ~30% shorter than the ad
+   spot.replaceWith(a);
+  });
+ }).catch(()=>{});
+})();

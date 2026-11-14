@@ -22,13 +22,20 @@
 (function(root){
  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),smooth=t=>t*t*(3-2*t);
  const EYE=1.75,STEP=.45,REACH=2.25,MANTLE=1.35,HANG_EYE=.3;
- root.createParkour=function({T,walls,surfaces,ground,player}){
+ root.createParkour=function({T,walls,surfaces,ground,player,revision=()=>null}){
   const P=player,up=new T.Vector3(0,1,0);
+  let lastUpdateTick=null;
+  const codec=()=>root.createMovementStateCodec({T,boxes:()=>{refresh();return boxes;},fields:()=>{refresh();return fields;}});
   let boxes=[],fields=[],sig='',state=null,cool={wallrun:0,grab:0},crouchAt=-9,clock=0,lean=0,fov=0,lift=0,stats={wallruns:0,scrambles:0,grabs:0,climbs:0,hangs:0,leaps:0,drops:0,rolls:0,hard:0};
 
+  const profile=()=>P.bodyDimensions?.()||root.playerBodyProfile?.(root.GardenPlayerCharacter)||{height:1.75,radius:.26,crouch:1.19};
+  const clearance=root.createBodyClearance?.({boxes:()=>{refresh();return boxes;},fields:()=>{refresh();return fields;}});
+  const bodyFits=(p,height=profile().height,radius=profile().radius)=>clearance?clearance.fits(p,height,radius):!solid(p.x,p.z,p.y,p.y+height,radius);
+  const bodySweep=(a,b,height=profile().height,radius=profile().radius)=>clearance?clearance.fraction(a,b,height,radius):(bodyFits(b,height,radius)?1:0);
+  const raycast=(o,d,n)=>clearance?.ray(o,d,n)||null;
   /* ---------------------------------------------------------------- world */
   function refresh(){
-   const w=walls()||[],s=surfaces()||[],k=w.length+':'+s.length;if(k===sig)return;sig=k;
+   const w=walls()||[],s=surfaces()||[],k=String(revision()??'legacy')+':'+w.length+':'+s.length;if(k===sig)return;sig=k;
    boxes=w.map(([x,z,bw,bd,h=99])=>({minX:x-bw/2,maxX:x+bw/2,minZ:z-bd/2,maxZ:z+bd/2,top:h,bottom:-1,wall:true}))
     .concat(s.filter(b=>!b.field).map(b=>({...b})));
    // Measured rooftops of the building models (assets/roof-heights.js): 1 m height maps.
@@ -39,7 +46,8 @@
   const inside=(b,x,z,m=0)=>x>b.minX-m&&x<b.maxX+m&&z>b.minZ-m&&z<b.maxZ+m;
   // Highest walkable top under (x, z) no higher than maxTop (the terrain counts too).
   function floorAt(x,z,maxTop=Infinity,m=.08){refresh();let f=ground(x,z);for(const b of boxes)if(b.top<=maxTop+1e-4&&b.top>f&&inside(b,x,z,m))f=b.top;
-   for(const F of fields){const h=fieldH(F,x,z);if(h!=null&&h>.2&&h<=maxTop+1e-4&&h>f)f=h;}return f;}
+   for(const F of fields){const h=fieldH(F,x,z);if(h!=null&&h>0&&h<=maxTop+1e-4&&h>f)f=h;}return f;}
+  function supportAt(x,z,maxTop=Infinity,radius=profile().radius){let h=floorAt(x,z,maxTop);for(const dx of [-radius,0,radius])for(const dz of [-radius,0,radius])h=Math.max(h,floorAt(x+dx,z+dz,maxTop));return h;}
   // Is there something solid at (x, z) between feet and head (anything taller than a step)?
   function solid(x,z,feet,head,m=.25){refresh();for(const b of boxes)if(inside(b,x,z,m)&&b.top>feet+STEP&&b.bottom<head)return b;
    // Once you are off the ground (on crates, walls or roofs) the measured building is solid wherever it stands taller
@@ -56,15 +64,15 @@
   // stand on it. Returns the grab point on its edge, the face normal, the top and a standing spot.
   function ledgeAhead(p,feet,dir,minUp,maxUp,far=1.1){
    refresh();let best=null;
-   for(const b of boxes){if(b.top<feet+minUp||b.top>feet+maxUp)continue;const t=entry(b,p,dir);if(t==null||t>far)continue;
+   for(const b of boxes){if(inside(b,p.x,p.z)||b.top<feet+minUp||b.top>feet+maxUp)continue;const t=entry(b,p,dir);if(t==null||t>far)continue;
     const edge=p.clone().addScaledVector(dir,t);edge.y=b.top;const n=faceNormal(b,p.clone().addScaledVector(dir,t-.02));
     const stand=edge.clone().addScaledVector(n,-.45);if(!inside(b,stand.x,stand.z))continue;
-    if(floorAt(stand.x,stand.z,b.top+.05)<b.top-.05)continue;if(solid(stand.x,stand.z,b.top,b.top+1.8,.1))continue;
+    if(floorAt(stand.x,stand.z,b.top+.05)<b.top-.05)continue;if(!bodyFits(stand))continue;
     if(!best||b.top<best.top)best={box:b,point:edge,normal:n,top:b.top,stand,t};}
    // The measured rooftops: march along dir for a step up into reach (a roof edge, a ledge on the facade).
    for(const F of fields){let prev=fieldH(F,p.x,p.z)??-1;for(let k=.15;k<=far+.01;k+=.15){const q=p.clone().addScaledVector(dir,k),h=fieldH(F,q.x,q.z);if(h==null){prev=-1;continue;}
      if(h>=feet+minUp&&h<=feet+maxUp&&h-Math.max(prev,feet)>.3){const st=q.clone().addScaledVector(dir,.4),hs=fieldH(F,st.x,st.z);if(hs==null||Math.abs(hs-h)>.35)break;
-      const point=p.clone().addScaledVector(dir,k-.08);point.y=h;const n=snap(dir).negate();const stand=st.clone();stand.y=h;
+      const point=p.clone().addScaledVector(dir,k-.08);point.y=h;const n=snap(dir).negate();const stand=st.clone();stand.y=h;if(!bodyFits(stand))break;
       if(!best||h<best.top)best={box:{field:F,top:h},point,normal:n,top:h,stand,t:k};break;}
      if(h>feet+maxUp)break;prev=h;}}
    return best;
@@ -86,6 +94,10 @@
   // Leave a state into free motion: falling from where you are with this velocity.
   function release(vel=null,vy=0){const f=feetOf(),fl=floorAt(P.pos.x,P.pos.z,f+STEP);P.motion.set(Math.max(0,f-fl),vy);if(f<fl)place(P.pos.x,fl,P.pos.z);if(vel)P.vel.copy(vel);state=null;}
   function stand(){P.motion.reset();state=null;}
+  function safePlace(x,y,z){const from={x:P.pos.x,y:feetOf(),z:P.pos.z},to={x,y,z};
+   if(bodySweep(from,to)<1){release(P.vel.clone().multiplyScalar(.5),0);cool.grab=clock+.35;return false;}
+   place(x,y,z);return true;
+  }
 
   /* ---------------------------------------------------------------- moves */
   function startHang(ledge,from='grab'){
@@ -114,7 +126,7 @@
    if(speed>2.5&&w.z>0){const mid=P.pos.clone().addScaledVector(dir,1.3);if(floorAt(mid.x,mid.z,f+STEP)<f-.6){
     for(let d=2;d<=6.5;d+=.5){const q=P.pos.clone().addScaledVector(dir,d);let best=null;refresh();
      for(const b of boxes)if(inside(b,q.x,q.z,-.15)&&b.top>=f-4&&b.top<=f+REACH&&(!best||b.top>best.top))best=b;
-     if(!best||solid(q.x,q.z,best.top,best.top+1.8,.05))continue;
+     if(!best||!bodyFits({x:q.x,y:best.top,z:q.z}))continue;
      if(best.top<=f+1){startWarp(new T.Vector3(q.x,best.top,q.z),{dur:.32+d*.06,arc:Math.max(.9,best.top-f+.9),then:'land'});return true;}
      const ledge=ledgeAhead(P.pos,f,dir,1,REACH+.4,d+.5);if(ledge){startWarp(new T.Vector3(ledge.point.x+ledge.normal.x*.38,hangFeet(ledge.top),ledge.point.z+ledge.normal.z*.38),{dur:.32+d*.06,arc:.7,then:'hang',ledge});return true;}
      break;}}}
@@ -135,7 +147,7 @@
     state=null;release(back.multiplyScalar(4.6),4.2);return;}
    tryClimb();
   }
-  function tryClimb(){const L=state.ledge;if(solid(L.stand.x,L.stand.z,L.top,L.top+1.75,.05)){P.sway.bump(.15,0);return;}startClimb(L,false);}
+  function tryClimb(){const L=state.ledge;if(!bodyFits(L.stand)){P.sway.bump(.15,0);return;}startClimb(L,false);}
 
   // Every frame in the air (outside a state): grab ledges, start wall-runs.
   function air(dt){
@@ -151,18 +163,35 @@
   }
   // Walk off an edge with C held: catch it and hang.
   function dropToHang(from,to,feet){
-   refresh();const b=boxes.find(b=>Math.abs(b.top-feet)<.12&&inside(b,from.x,from.z,.1));
-   if(!b){for(const F of fields){const h=fieldH(F,from.x,from.z);if(h==null||Math.abs(h-feet)>.15)continue;const dir=flat(to.clone().sub(from));let k=0;while(k<1.2&&Math.abs((fieldH(F,from.x+dir.x*k,from.z+dir.z*k)??-9)-h)<.3)k+=.1;
-     const pt=new T.Vector3(from.x+dir.x*(k-.05),h,from.z+dir.z*(k-.05)),n=snap(dir);if(floorAt(pt.x+n.x*.6,pt.z+n.z*.6,h-1)>h-2.3)return false;
-     stats.drops++;startHang({box:{field:F,top:h},point:pt,normal:n,top:h,stand:pt.clone().addScaledVector(n,-.45)},'drop');
-     const face=n.clone().negate(),d=P.aim.clone().sub(P.pos);const pitch=Math.atan2(d.y,Math.hypot(d.x,d.z));P.aim.copy(P.pos).add(new T.Vector3(face.x*Math.cos(pitch),Math.sin(pitch),face.z*Math.cos(pitch)).multiplyScalar(5));return true;}
-    return false;}
-   const pt=new T.Vector3(clamp(to.x,b.minX,b.maxX),b.top,clamp(to.z,b.minZ,b.maxZ)),n=faceNormal(b,to);
-   if(floorAt(pt.x+n.x*.6,pt.z+n.z*.6,b.top-1)>b.top-2.3)return false; // too low to bother hanging
-   stats.drops++;startHang({box:b,point:pt,normal:n,top:b.top,stand:pt.clone().addScaledVector(n,-.45)},'drop');
-   // Turn to face the wall.
-   const face=n.clone().negate(),d=P.aim.clone().sub(P.pos);const pitch=Math.atan2(d.y,Math.hypot(d.x,d.z));P.aim.copy(P.pos).add(new T.Vector3(face.x*Math.cos(pitch),Math.sin(pitch),face.z*Math.cos(pitch)).multiplyScalar(5));
-   return true;
+   refresh();const radius=profile().radius,dir=flat(to.clone().sub(from));
+   if(!clearance||dir.lengthSq()<1e-8||supportAt(to.x,to.z,feet+STEP,radius)>=feet-.4)return false;
+   const samples=[];for(const dx of [-radius,0,radius])for(const dz of [-radius,0,radius])samples.push({x:from.x+dx,z:from.z+dz});
+   const candidates=[];
+   for(const b of boxes)if(Math.abs(b.top-feet)<.12&&samples.some(p=>inside(b,p.x,p.z,.08)))candidates.push({box:b,shape:b});
+   for(const F of fields){const seen=new Set();for(const p of samples){
+    const col=Math.floor((p.x-F.minX)/F.cell),row=Math.floor((p.z-F.minZ)/F.cell);
+    if(col<0||row<0||col>=F.cols||row>=F.rows)continue;
+    const id=row*F.cols+col,h=F.h[id];if(seen.has(id)||!(h>0)||Math.abs(h-feet)>.15)continue;seen.add(id);
+    const x=F.minX+col*F.cell,z=F.minZ+row*F.cell;
+    candidates.push({box:{field:F,top:h},shape:{minX:x,maxX:x+F.cell,minZ:z,maxZ:z+F.cell,bottom:h-.2,top:h}});
+   }}
+   // Cell bounds are projection geometry only; snapshots retain the registered field.
+   for(const c of candidates){const b=c.shape;c.point=new T.Vector3(clamp(to.x,b.minX,b.maxX),b.top,clamp(to.z,b.minZ,b.maxZ));c.normal=faceNormal(b,to);}
+   candidates.sort((a,b)=>a.point.distanceToSquared(to)-b.point.distanceToSquared(to));
+   for(const {box,shape:b,point:pt,normal:n} of candidates){
+    if(n.dot(dir)<=0)continue;
+    const supported=p=>box.field?Math.abs((fieldH(box.field,p.x,p.z)??-Infinity)-b.top)<.15:inside(b,p.x,p.z);
+    const tangent=new T.Vector3(n.z,0,-n.x),inset=pt.clone().addScaledVector(n,-.05),stand=pt.clone().addScaledVector(n,-.45);
+    if(!supported(stand)||!supported(inset.clone().addScaledVector(tangent,.19))||!supported(inset.clone().addScaledVector(tangent,-.19)))continue;
+    if(floorAt(pt.x+n.x*.6,pt.z+n.z*.6,b.top-1)>b.top-2.3)continue;
+    // Match startHang's placement; clear the lip at feet height before descending.
+    const hang={x:pt.x+n.x*.38,y:hangFeet(b.top),z:pt.z+n.z*.38},outside={...hang,y:feet},start={x:from.x,y:feet,z:from.z};
+    if(!bodyFits(stand)||!bodyFits(hang)||bodySweep(start,outside)<1||bodySweep(outside,hang)<1)continue;
+    const face=n.clone().negate(),d=P.aim.clone().sub(P.pos),pitch=Math.atan2(d.y,Math.hypot(d.x,d.z));
+    stats.drops++;startHang({box,point:pt,normal:n,top:b.top,stand},'drop');
+    P.aim.copy(P.pos).add(new T.Vector3(face.x*Math.cos(pitch),Math.sin(pitch),face.z*Math.cos(pitch)).multiplyScalar(5));return true;
+   }
+   return false;
   }
   // Landing from a fall of `height` metres.
   function land(height,speed){
@@ -173,7 +202,8 @@
   }
 
   /* ---------------------------------------------------------------- state update */
-  function update(dt){
+  function update(dt,tick=null){
+   if(tick!==null&&lastUpdateTick===tick)return false;lastUpdateTick=tick;
    clock+=dt;
    lean+=((state?.kind==='wallrun'?-state.side*.17:0)-lean)*(1-Math.exp(-10*dt));
    fov+=((state?.kind==='wallrun'?7:state?.kind==='warp'?5:0)-fov)*(1-Math.exp(-8*dt));
@@ -184,14 +214,14 @@
     s.vy-=5.5*dt;const f=feetOf()+s.vy*dt,nx=P.pos.x+s.tangent.x*s.speed*dt,nz=P.pos.z+s.tangent.z*s.speed*dt;
     const {r}=view(),wall=wallBeside(new T.Vector3(nx,P.pos.y,nz),f,r,s.side),fl=floorAt(nx,nz,f+STEP);
     if(solid(nx,nz,f,f+1.7,.2)&&!wall){release(s.tangent.clone().multiplyScalar(s.speed*.5),s.vy);return true;}
-    place(nx,Math.max(f,fl),nz);
+    if(!safePlace(nx,Math.max(f,fl),nz))return true;
     s.step+=dt;if(s.step>.2){s.step=0;P.footsteps?.step('stone',7);}
     if(fl>=f-.02){stand();P.vel.copy(s.tangent).multiplyScalar(s.speed*.8);return true;}
     if(!wall||s.t>1.25||wish().z<0){release(s.tangent.clone().multiplyScalar(s.speed),s.vy);cool.wallrun=clock+.3;}
     P.requestDraw();return true;
    }
    if(s.kind==='scramble'){
-    s.vy-=7*dt;const f=feetOf()+s.vy*dt;place(P.pos.x,f,P.pos.z);
+    s.vy-=7*dt;const f=feetOf()+s.vy*dt;if(!safePlace(P.pos.x,f,P.pos.z))return true;
     const ledge=ledgeAhead(P.pos,f,s.normal.clone().negate(),.25,REACH,.8);
     if(ledge){startClimb(ledge,ledge.top-f<=MANTLE);return true;}
     if(s.vy<.6||s.t>.7){release(s.normal.clone().multiplyScalar(2.2),s.vy);cool.grab=clock+.25;}
@@ -200,10 +230,12 @@
    if(s.kind==='climb'){
     const k=Math.min(1,s.t/s.dur),L=s.ledge,a=s.from,e=smooth(k);
     // Up the face first (hands on the edge), then over onto the top.
-    const upK=smooth(Math.min(1,k/.6)),overK=smooth(clamp((k-.45)/.55,0,1));
-    const wallX=L.point.x+L.normal.x*.3,wallZ=L.point.z+L.normal.z*.3;
+    const upK=smooth(Math.min(1,k/.6)),overK=smooth(clamp((k-.62)/.38,0,1));
+    // Keep the torso outside the face until its feet clear the lip. Wide
+    // characters need more than the default 30 cm offset.
+    const faceOffset=Math.max(.3,profile().radius+.04),wallX=L.point.x+L.normal.x*faceOffset,wallZ=L.point.z+L.normal.z*faceOffset;
     const x=a.x+(wallX-a.x)*Math.min(1,upK*1.3)+(L.stand.x-wallX)*overK,z=a.z+(wallZ-a.z)*Math.min(1,upK*1.3)+(L.stand.z-wallZ)*overK;
-    const feet=a.y+(L.top-a.y)*Math.min(1,upK*1.08);place(x,feet-(1-overK)*.5*(1-e*.2),z);
+    const feet=a.y+(L.top-a.y)*upK;if(!bodyFits(L.stand)||!safePlace(x,feet,z))return true;
     if(k>=1){place(L.stand.x,L.top,L.stand.z);stand();P.vel.copy(L.normal).multiplyScalar(-Math.max(1.4,s.entry*(s.quick?.8:.5)));P.footsteps?.step(P.surface(),3);}
     P.requestDraw();return true;
    }
@@ -217,11 +249,11 @@
     if(w.z>0&&s.t>.3&&s.wReady){tryClimb();return true;}
     // Shimmy along the edge, as long as there is edge.
     if(w.x){const s2=Math.sign(w.x)*(L.tangent.dot(view().r)>0?1:-1),np=L.point.clone().addScaledVector(L.tangent,s2*1.5*dt),q=np.clone().addScaledVector(L.normal,-.1);
-     if((L.box.field?Math.abs((fieldH(L.box.field,q.x,q.z)??-9)-L.top)<.4:inside(L.box,q.x,q.z))||boxes.some(b=>Math.abs(b.top-L.top)<.15&&inside(b,q.x,q.z))){L.point.copy(np);L.stand.addScaledVector(L.tangent,s2*1.5*dt);place(np.x+L.normal.x*.38,hangFeet(L.top),np.z+L.normal.z*.38);s.shimmy=(s.shimmy||0)+dt;if(s.shimmy>.4){s.shimmy=0;P.footsteps?.step('stone',2);}}}
+     if((L.box.field?Math.abs((fieldH(L.box.field,q.x,q.z)??-9)-L.top)<.4:inside(L.box,q.x,q.z))||boxes.some(b=>Math.abs(b.top-L.top)<.15&&inside(b,q.x,q.z))){if(!safePlace(np.x+L.normal.x*.38,hangFeet(L.top),np.z+L.normal.z*.38))return true;L.point.copy(np);L.stand.addScaledVector(L.tangent,s2*1.5*dt);s.shimmy=(s.shimmy||0)+dt;if(s.shimmy>.4){s.shimmy=0;P.footsteps?.step('stone',2);}}}
     P.requestDraw();return true;
    }
    if(s.kind==='warp'){
-    const k=Math.min(1,s.t/s.dur),e=smooth(k),p=s.from.clone().lerp(s.to,e);p.y+=Math.sin(k*Math.PI)*s.arc;place(p.x,p.y,p.z);
+    const k=Math.min(1,s.t/s.dur),e=smooth(k),p=s.from.clone().lerp(s.to,e);p.y+=Math.sin(k*Math.PI)*s.arc;if(!safePlace(p.x,p.y,p.z))return true;
     if(k>=1){if(s.then==='hang'&&s.ledge)startHang(s.ledge,'leap');else{stand();const d=flat(s.to.clone().sub(s.from));P.vel.copy(d).multiplyScalar(Math.max(4,s.entry*.9));P.footsteps?.land(P.surface(),.5);}}
     P.requestDraw();return true;
    }
@@ -230,7 +262,26 @@
   // The hands on the ledge (third-person body), or null.
   function hands(){const s=state;if(!s)return null;const L=s.ledge;if(s.kind==='hang'||s.kind==='climb'&&s.t/s.dur<.85){const tan=L.tangent||new T.Vector3(L.normal.z,0,-L.normal.x);return [L.point.clone().addScaledVector(tan,.19),L.point.clone().addScaledVector(tan,-.19)];}return null;}
 
-  return {wallBeside,wallAhead,floorAt,solid,ledgeAhead,update,onJump,air,land,dropToHang,hands,
+  function captureState(){refresh();return codec().encode({version:1,sig,state,cool,crouchAt,clock,lean,fov,lift,stats,lastUpdateTick});}
+  function validateState(value){refresh();const s=codec().decode(value);
+   if(s.version!==1||s.sig!==sig||!['crouchAt','clock','lean','fov','lift'].every(k=>Number.isFinite(s[k]))||!s.cool||!Number.isFinite(s.cool.wallrun)||!Number.isFinite(s.cool.grab)||s.state&&!['hang','climb','warp','scramble','wallrun'].includes(s.state.kind))throw Error('Incompatible parkour snapshot.');
+   if(s.lastUpdateTick!==null&&(!Number.isSafeInteger(s.lastUpdateTick)||s.lastUpdateTick<0)||s.clock<0||!s.stats||['wallruns','scrambles','grabs','climbs','hangs','leaps','drops','rolls','hard'].some(k=>!Number.isSafeInteger(s.stats[k])||s.stats[k]<0))throw Error('Invalid parkour counters.');
+   const v=s.state,vec=p=>p?.isVector3&&[p.x,p.y,p.z].every(Number.isFinite),nums=(o,ks)=>ks.every(k=>Number.isFinite(o[k]));
+   const ledge=L=>L&&L.box&&vec(L.point)&&vec(L.normal)&&vec(L.stand)&&Number.isFinite(L.top)&&(!L.tangent||vec(L.tangent));
+   if(v){if(!Number.isFinite(v.t)||v.t<0)throw Error('Invalid parkour timer.');
+    if(['hang','climb'].includes(v.kind)&&!ledge(v.ledge))throw Error('Invalid ledge snapshot.');
+    if(v.kind==='hang'&&(typeof v.from!=='string'||v.cReady!==undefined&&typeof v.cReady!=='boolean'||v.wReady!==undefined&&typeof v.wReady!=='boolean'))throw Error('Invalid hang snapshot.');
+    if(v.kind==='climb'&&(!vec(v.from)||!nums(v,['dur','entry'])||v.dur<=0||typeof v.quick!=='boolean'))throw Error('Invalid climb snapshot.');
+    if(v.kind==='warp'&&(!vec(v.from)||!vec(v.to)||!nums(v,['dur','arc','entry'])||v.dur<=0||!['hang','land'].includes(v.then)||v.then==='hang'&&!ledge(v.ledge)))throw Error('Invalid leap snapshot.');
+    if(v.kind==='scramble'&&(!vec(v.normal)||!nums(v,['vy'])))throw Error('Invalid scramble snapshot.');
+    if(v.kind==='wallrun'&&(!vec(v.normal)||!vec(v.tangent)||!nums(v,['speed','vy','side','step'])||!v.box))throw Error('Invalid wallrun snapshot.');
+   }
+   return s;
+  }
+  function restoreState(value){const s=validateState(value);
+   ({state,cool,crouchAt,clock,lean,fov,lift,stats,lastUpdateTick}=s);
+  }
+  return {captureState,restoreState,validateState,updated:tick=>tick!==null&&lastUpdateTick===tick,wallBeside,wallAhead,floorAt,supportAt,solid,ledgeAhead,bodyFits,bodySweep,raycast,update,onJump,air,land,dropToHang,hands,
    crouchPressed(){crouchAt=clock;},active:()=>!!state,busy:()=>['climb','warp','scramble'].includes(state?.kind),kind:()=>state?.kind||null,lean:()=>lean,fov:()=>fov,lift:()=>lift,handsFull:()=>['hang','climb','scramble'].includes(state?.kind),
    reset(){state=null;},inspect:()=>({state:state?.kind||null,boxes:boxes.length,fields:fields.length,stats:{...stats}})};
  };

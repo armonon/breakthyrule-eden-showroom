@@ -79,7 +79,7 @@ function live(base, cookie) {
 
 test('end to end: shared weather, ladder and progress', async t => {
   const server = await startServer();
-  t.after(() => { server.child.kill(); fs.rmSync(server.data, {recursive: true, force: true}); });
+  t.after(async () => { server.child.kill(); await new Promise(resolve=>server.child.exitCode!==null?resolve():server.child.once('exit',resolve)); fs.rmSync(server.data, {recursive: true, force: true}); });
   const a = client(server.base), b = client(server.base);
   assert.equal((await a.call('register', {name: 'Ada Lovelace', password: 'correct horse'})).status, 200);
   assert.equal((await b.call('register', {name: 'Bo Diddley', password: 'correct horse'})).status, 200);

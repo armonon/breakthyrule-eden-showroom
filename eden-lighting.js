@@ -1,7 +1,8 @@
 'use strict';
 // Daylight environment lighting (image-based, from a procedural sky that fades with the night road) and a sun
 // shadow frustum that follows the viewer instead of covering a fixed 56 m square around the origin.
-window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=false}){
+window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=false,getNight=null}){
+ let disposed=false;const lifetime=new AbortController();
  const original={hemi:hemi.intensity,mapSize:sun.shadow.mapSize.x,frustum:(({left,right,top,bottom,near,far})=>({left,right,top,bottom,near,far}))(sun.shadow.camera),position:sun.position.clone()};
  const settings={environment:true,followShadow:true,hemi:.6,strength:.7};
  const maxSize=Math.min(4096,renderer.capabilities.maxTextureSize),half=mobile?18:22;let size=mobile?2048:maxSize,texel=2*half/size,step=texel*Math.max(1,Math.round(.5/texel));
@@ -11,7 +12,7 @@ window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=fals
 
  // Sky colours follow garden.js's sky dome in linear radiance, with the zenith desaturated so lit stone stays warm;
  // below the horizon is grass bounce light.
- const uniforms={night:{value:0},strength:{value:settings.strength},sunDir:{value:offset.clone().normalize()},skyMap:{value:null},hasSky:{value:0},skyTurn:{value:0},skyGain:{value:.55}};
+ const uniforms={night:{value:getNight?Math.max(0,Math.min(1,getNight())):0},strength:{value:settings.strength},sunDir:{value:offset.clone().normalize()},skyMap:{value:null},hasSky:{value:0},skyTurn:{value:0},skyGain:{value:.55}};
  const envScene=new T.Scene();
  envScene.add(new T.Mesh(new T.SphereGeometry(1,64,32),new T.ShaderMaterial({side:T.BackSide,depthWrite:false,uniforms,
   vertexShader:'varying vec3 vDir;void main(){vDir=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
@@ -27,13 +28,15 @@ window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=fals
  vec3 moonlit=mix(vec3(.012,.02,.016),vec3(.002,.004,.005),pow(max(h,0.),.45));
  gl_FragColor=vec4(mix(c,moonlit,night)*strength,1.);}`})));
  const pmrem=new T.PMREMGenerator(renderer);
- let envTarget=null,bakedNight=-1,skyUniform=null;
+ let envTarget=null,bakedNight=-1,skyUniform=null,bakes=0,skyStarted=false;
  function bakeEnvironment(){
-  const target=pmrem.fromScene(envScene);
+  if(disposed)return;
+  const target=pmrem.fromScene(envScene);bakes++;
   envTarget?.dispose();envTarget=target;bakedNight=uniforms.night.value;
   scene.environment=settings.environment?target.texture:null;
  }
  function nightAmount(){
+  if(getNight)return Math.max(0,Math.min(1,getNight()));
   if(!skyUniform)scene.getObjectByName('Garden of Eden')?.children.some(o=>(skyUniform=o.material?.uniforms?.roadNight));
   return skyUniform?skyUniform.value:0;
  }
@@ -55,20 +58,22 @@ window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=fals
  const SKY_SUN_U=.5947; // where the photographed sun sits across the image
  async function loadSky(url){
   try{
-   const buf=new Uint8Array(await (await fetch(url)).arrayBuffer());let i=0,line='';const lines=[];
+   const response=await fetch(url,{signal:lifetime.signal});if(!response.ok)throw new Error('HTTP '+response.status);const buf=new Uint8Array(await response.arrayBuffer());if(disposed)return;let i=0,line='';const lines=[];
    while(lines.length<4&&i<buf.length){const c=buf[i++];if(c===10){lines.push(line);line='';}else line+=String.fromCharCode(c);}
    const [,h,,w]=lines.find(l=>/^-Y /.test(l)).split(' ').map(Number),px=new Uint16Array(w*h*4),f=T.DataUtils.toHalfFloat;
    for(let p=0;p<w*h;p++){const e=buf[i+p*4+3],k=e?Math.pow(2,e-136):0;px[p*4]=f(buf[i+p*4]*k);px[p*4+1]=f(buf[i+p*4+1]*k);px[p*4+2]=f(buf[i+p*4+2]*k);px[p*4+3]=f(1);}
    const tex=new T.DataTexture(px,w,h,T.RGBAFormat,T.HalfFloatType);tex.magFilter=tex.minFilter=T.LinearFilter;tex.wrapS=T.RepeatWrapping;tex.needsUpdate=true;
    const sunU=Math.atan2(offset.z,offset.x)/(Math.PI*2)+.5;
-   uniforms.skyMap.value=tex;uniforms.skyTurn.value=SKY_SUN_U-sunU;uniforms.hasSky.value=1;bakeEnvironment();
-  }catch(error){console.warn('HDR sky unavailable; keeping the painted one.',error);}
+   uniforms.skyMap.value?.dispose();uniforms.skyMap.value=tex;uniforms.skyTurn.value=SKY_SUN_U-sunU;uniforms.hasSky.value=1;if(nightAmount()<.999)bakeEnvironment();
+  }catch(error){if(disposed||error.name==='AbortError')return;console.warn('HDR sky unavailable; keeping the painted one.',error);}
  }
- loadSky('/assets/eden-sky.hdr?v=1');
+ function ensureSky(){if(skyStarted||disposed||nightAmount()>=.999)return;skyStarted=true;loadSky('/assets/eden-sky.hdr?v=1');}
+ ensureSky();
 
  return {
   update(){
-   const night=nightAmount();
+   if(disposed)return;
+   const night=nightAmount();ensureSky();
    window.edenBaked?.setNight(night);
    if(settings.environment&&(Math.abs(night-bakedNight)>.04||(night!==bakedNight&&(night===0||night===1)))){uniforms.night.value=night;bakeEnvironment();}
    if(!settings.followShadow)return;
@@ -79,9 +84,21 @@ window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=fals
    centre.x=Math.round(centre.x/step)*step;centre.y=Math.round(centre.y/step)*step;centre.applyMatrix4(look);
    if(centre.distanceToSquared(sun.target.position)>1e-6){sun.target.position.copy(centre);sun.target.updateMatrixWorld();sun.position.copy(centre).add(offset);renderer.shadowMap.needsUpdate=true;}
   },
-  set(next={}){Object.assign(settings,next);apply();},
+  set(next={}){if(disposed)return;
+   const changed=Object.keys(next).filter(key=>next[key]!==settings[key]);if(!changed.length)return;
+   Object.assign(settings,next);hemi.intensity=settings.environment?settings.hemi:original.hemi;uniforms.strength.value=settings.strength;
+   if(settings.environment&&(changed.includes('strength')||changed.includes('environment'))){uniforms.night.value=nightAmount();bakeEnvironment();}
+   else scene.environment=settings.environment?envTarget?.texture:null;
+   if(changed.includes('followShadow')||changed.includes('shadowSize'))applyShadowFrustum();
+  },
   // Development aid: average ms per frame for n synchronous renders (GPU-finished), optionally re-rendering shadows each frame.
   bench(n=60,{shadows=true}={}){const gl=renderer.getContext();renderer.render(scene,camera);gl.finish();const t0=performance.now();for(let i=0;i<n;i++){if(shadows)renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);}gl.readPixels(0,0,1,1,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array(4));return +((performance.now()-t0)/n).toFixed(2);},
-  inspect:()=>({...settings,shadowMapSize:sun.shadow.mapSize.x,shadowHalfExtent:settings.followShadow?half:original.frustum.right,shadowCentre:sun.target.position.toArray().map(v=>+v.toFixed(2)),night:bakedNight})
+  dispose(){
+   if(disposed)return;disposed=true;lifetime.abort();
+   if(scene.environment===envTarget?.texture)scene.environment=null;
+   envTarget?.dispose();envTarget=null;uniforms.skyMap.value?.dispose();uniforms.skyMap.value=null;
+   envScene.traverse(o=>{o.geometry?.dispose();for(const material of [].concat(o.material||[]))material.dispose();});envScene.clear();pmrem.dispose();
+  },
+  inspect:()=>({...settings,bakes,skyRequested:skyStarted,shadowMapSize:sun.shadow.mapSize.x,shadowHalfExtent:settings.followShadow?half:original.frustum.right,shadowCentre:sun.target.position.toArray().map(v=>+v.toFixed(2)),night:bakedNight})
  };
 };

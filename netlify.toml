@@ -35,6 +35,42 @@ for = "/*"
   Content-Security-Policy = "frame-ancestors 'self'"
 
 [[redirects]]
+from = "/showroom"
+to = "/showroom.html"
+status = 200
+force = false
+
+[[redirects]]
+from = "/showroom/"
+to = "/showroom.html"
+status = 200
+force = false
+
+[[redirects]]
+from = "/gallery"
+to = "/gallery.html"
+status = 200
+force = false
+
+[[redirects]]
+from = "/archive"
+to = "/archive.html"
+status = 200
+force = false
+
+[[redirects]]
+from = "/community"
+to = "/community.html"
+status = 200
+force = false
+
+[[redirects]]
+from = "/product"
+to = "/product.html"
+status = 200
+force = false
+
+[[redirects]]
 from = "/studio"
 to = "/studio.html"
 status = 200

@@ -1,0 +1,12 @@
+import {readdirSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+const root=fileURLToPath(new URL('../../',import.meta.url));
+const files=readdirSync(new URL('./',import.meta.url)).filter(name=>name.endsWith('-test.mjs')).map(name=>'tools/expedition/'+name);
+files.push('tools/movement/player-bail-test.mjs','tools/movement/dive-lifecycle-test.mjs','server/expedition.test.mjs','server/expedition-http.test.mjs','server/expedition-storage.test.mjs','server/world.test.mjs');
+const soak=process.argv.includes('--soak');
+console.log(soak?'Includes accelerated simulation soak, not browser endurance.':'Excludes accelerated 30-minute simulation soak; use --soak to include it.');
+const result=spawnSync(process.execPath,['--test',...(!soak?['--test-skip-pattern=accelerated thirty-minute']:[]),...files],{cwd:root,stdio:'inherit'});
+if(result.error)console.error(result.error);
+if(result.signal)console.error('Test process interrupted:',result.signal);
+process.exitCode=typeof result.status==='number'?result.status:1;

@@ -1,0 +1,23 @@
+/* Order, test-pay, studio, reliquary and passport pages. */
+.order-page .page-head .folio small,.order-page #order-ref{font-family:var(--serif)}
+.order-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:48px;margin-bottom:60px}
+.order-h{font-size:38px;margin:0 0 10px}
+.order-items{list-style:none;margin:0 0 16px;padding:0}
+.order-items .cart-line{border-color:var(--line)}
+.order-items .cart-art{background:var(--paper-2);border-color:var(--line)}
+.order-items .cart-spec{color:var(--muted)}
+.timeline{list-style:none;margin:0;padding:0;border-left:1px solid var(--line)}
+.timeline li{display:grid;grid-template-columns:20px 1fr auto;align-items:center;gap:10px;padding:10px 0 10px 0;margin-left:-8px;font-family:var(--serif);font-size:19px;color:var(--muted)}
+.timeline .dot{width:15px;height:15px;border-radius:50%;border:1px solid var(--line);background:var(--paper)}
+.timeline li.done{color:var(--ink)}.timeline li.done .dot{background:var(--rubric);border-color:var(--rubric)}
+.timeline time{font-style:italic;font-size:15px}
+.shipment{font-family:var(--serif);font-size:19px;margin-top:16px}
+.testpay{display:grid;place-items:center;min-height:70vh;padding:40px 0}
+.testpay-card{max-width:640px;padding:36px;border:1px dashed var(--gold);background:var(--paper-2)}
+.testpay-card h1{font-size:64px;margin:10px 0}
+.testpay-sum{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;margin:20px 0;font-family:var(--serif);font-size:18px}
+.testpay-sum dt{color:var(--muted);font-style:italic}.testpay-sum dd{margin:0}
+.testpay-actions{display:flex;gap:10px;flex-wrap:wrap}
+.testpay-actions .solid{background:var(--rubric);border-color:var(--rubric);color:#140f0c}
+.testpay-actions .ghost{border-color:var(--ink);color:var(--ink)}
+@media(max-width:900px){.order-grid{grid-template-columns:1fr}}

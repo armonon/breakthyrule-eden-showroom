@@ -1,6 +1,6 @@
 'use strict';
 window.gardenResidentDefinitions = [
- {id:'violet-trickster',name:'Violet Trickster',region:'Pavilion path',assetVersion:4,offset:0,speed:.43,pause:11,moves:true,points:[[-4.6,7.2],[-4.7,5.2],[-3.4,4.8],[-2.5,6.4]]}
+ {id:'violet-trickster',name:'Violet Trickster',region:'Pavilion path',assetVersion:4,offset:0,speed:.43,pause:11,moves:true,animationManifest:null,points:[[-4.6,7.2],[-4.7,5.2],[-3.4,4.8],[-2.5,6.4]]}
 ];
 
 window.createGardenResidents = function(T,scene,{reduced=false,onChange=()=>{},renderer,sky}={}) {
@@ -73,7 +73,7 @@ window.createGardenResidents = function(T,scene,{reduced=false,onChange=()=>{},r
     attachClips(entry,{Walk:walk,Idle:idle});
     if(entry.def.moves&&window.createJesterMoves){
      entry.moves=window.createJesterMoves(T,entry.root);attachClips(entry,entry.moves.clips);
-     entry.moves.loadMixamo().then(names=>{if(names.length){attachClips(entry,Object.fromEntries(names.map(n=>[n,entry.moves.clips[n]])));onChange();}});
+     entry.moves.loadMixamo(entry.def.animationManifest).then(names=>{if(names.length){attachClips(entry,Object.fromEntries(names.map(n=>[n,entry.moves.clips[n]])));onChange();}}).catch(error=>console.warn('Resident animation setup failed:',entry.def.id,error));
     }
     scene.add(entry.root);updateEntry(entry,epoch+(performance.now()-start)/1000);entry.status='ready';
    }catch(error){entry.status='error';entry.error='Model unavailable';console.warn('Garden resident unavailable:',id,error);}
@@ -90,6 +90,6 @@ window.createGardenResidents = function(T,scene,{reduced=false,onChange=()=>{},r
   pose,
   pathState(id){const entry=entries.get(id);return entry?pathState(entry,now()):null;},
   pick(raycaster,maxDistance=Infinity){return raycaster.intersectObjects([...entries.values()].flatMap(e=>e.root?[e.root]:[]),true).find(hit=>hit.distance<maxDistance)?.object.userData.residentId;},
-  inspect(){return [...entries.values()].map(e=>({id:e.def.id,name:e.def.name,region:e.def.region,assetVersion:e.def.assetVersion||3,status:e.status,error:e.error,animation:e.controller?.active?e.controller.animation:e.animation,mode:e.controller?.active?e.controller.mode:'path',clips:Object.keys(e.actions),mixamo:e.moves?Object.entries(e.moves.meta).filter(([,m])=>m.source==='mixamo').map(([n])=>n):[],position:e.root?.position.toArray(),yaw:e.root?.rotation.y}));}
+  inspect(){return [...entries.values()].map(e=>({id:e.def.id,name:e.def.name,region:e.def.region,assetVersion:e.def.assetVersion||3,status:e.status,error:e.error,animation:e.controller?.active?e.controller.animation:e.animation,mode:e.controller?.active?e.controller.mode:'path',clips:Object.keys(e.actions),optionalAnimations:e.moves?.inspect?.()||null,mixamo:e.moves?Object.entries(e.moves.meta).filter(([,m])=>m.source==='mixamo').map(([n])=>n):[],position:e.root?.position.toArray(),yaw:e.root?.rotation.y}));}
  };
 };

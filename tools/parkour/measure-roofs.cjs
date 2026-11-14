@@ -9,7 +9,7 @@ const URLS={playhouse:'/assets/night/mayan-theatre.glb',temple:'/assets/night/mo
  const layout=JSON.parse(fs.readFileSync(path.join(__dirname,'../../night-layout.json'),'utf8'));
  const b=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  const p=await b.newPage({viewport:{width:200,height:120}});
- await p.goto('http://localhost:8765/',{waitUntil:'load'});
+ await p.goto('http://localhost:8765/showroom.html',{waitUntil:'load'});
  await p.waitForFunction(()=>window.showroomAssets&&window.THREE,null,{timeout:180000});
  const out={};
  for(const s of layout.landmarks){const url=URLS[s.id];if(!url)continue;

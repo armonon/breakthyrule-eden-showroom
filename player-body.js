@@ -6,9 +6,12 @@
 (function(root){
  const clamp=(n,l,h)=>Math.max(l,Math.min(h,n)),smooth=(l,h,n)=>{const t=clamp((n-l)/(h-l),0,1);return t*t*(3-2*t);};
  const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
- function createPlayerBody({T,scene,camera,pickables=[],enabled=()=>true,requestDraw=()=>{}}){
+ function createPlayerBody({T,scene,camera,pickables=[],enabled=()=>true,canPunch=()=>true,requestDraw=()=>{}}){
   const push=root.createFoliagePush?.(T,scene);
   root.GardenCharacterRocketbox?.textureListeners.add(requestDraw);
+  let headClearance=Infinity,headVisible=false;
+  let physicsActive=false,disposed=false,thirdView=0,lastView=null,lastPitch=null;
+  let bodyAppearance=null;
   let handsOn=false,handRise=0,heldMesh=null,heldId=null,baseFov=null,ownFov=null,model=null,signature='',defaults=null,loading=null,checked=-1e9,clock=0,frame=0,yaw=null,turning=false,guardUntil=0,grabUntil=0,grabPoint=null,hover=null,wall=null;
   const eye=new T.Vector3(),headQ=new T.Quaternion(),turnAround=new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),Math.PI);
   const forward=new T.Vector3(),left=new T.Vector3(),up=new T.Vector3(0,1,0),probe=new T.Vector3(),ray=new T.Raycaster(),center=new T.Vector2();
@@ -19,14 +22,15 @@
    return {...defaults,...best?.appearance};
   }
   async function refresh(){
+   if(disposed)return;
    // One schema fetch shared by every refresh; a body is only built once the defaults are really in.
    loading??=fetch('/character-schema.json').then(r=>r.json()).then(schema=>{defaults=Object.fromEntries([['version',1],...Object.values(schema).filter(v=>v&&typeof v==='object').flatMap(g=>Object.entries(g).map(([k,s])=>[k,s.default]))]);}).catch(()=>{loading=null;});
-   await loading;if(!defaults)return;
+   await loading;if(disposed||!defaults||physicsActive)return;
    const look=appearance(),next=JSON.stringify(look);if(next===signature)return;signature=next;
-   try{await GardenCharacter.load(look);}catch{}if(next!==signature)return;
+   try{await GardenCharacter.load(look);}catch{}if(disposed||next!==signature)return;if(physicsActive){signature='';return;}
    const old=model;try{model=GardenCharacter.create(T,look);}catch{model=old;return;}
    if(old)GardenCharacter.dispose(old);
-   model.root.name='Player body';model.root.userData.noHit=true;model.byName.neck01?.scale.setScalar(.001);model.motion.tune.guardLift=.05;model.motion.tune.wadeLift=.33;scene.add(model.root);requestDraw();
+   bodyAppearance={...look};model.root.name='Player body';model.root.userData.noHit=true;model.byName.neck01?.scale.setScalar(.001);model.motion.tune.guardLift=.05;model.motion.tune.wadeLift=.33;scene.add(model.root);requestDraw();
   }
   // Walls are found by chest-height rays against the static meshes near the player (refreshed each second), so a
   // knee-high birdbath does not raise the hands but a wall, shelf or pillar does, with its true surface normal.
@@ -59,25 +63,27 @@
    return best;
   }
   function onKey(event){
-   if(event.repeat||event.ctrlKey||event.metaKey||event.altKey||event.key.toLowerCase()!=='f'||!model?.root.visible||!enabled()||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName)||event.target.isContentEditable)return;
+   if(event.repeat||event.ctrlKey||event.metaKey||event.altKey||event.key.toLowerCase()!=='f'||!model?.root.visible||!enabled()||!canPunch()||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName)||event.target.isContentEditable)return;
    event.preventDefault();api.punch();
   }
   document.addEventListener('keydown',onKey);
   // Someone else's punch landed on us: the body flinches (no first-person knockdown yet).
-  const onPunched=event=>{const d=event.detail?.direction;if(model&&d){const dir=camera.position.clone().set(d.x,0,d.z);if(event.detail.knockdown)model.motion.knockdown(dir,1.7);else model.motion.hit(dir,1.1);}requestDraw();};
+  const onPunched=event=>{const d=event.detail?.direction;if(!physicsActive&&model&&d){const dir=camera.position.clone().set(d.x,0,d.z);if(event.detail.knockdown)model.motion.knockdown(dir,1.7);else model.motion.hit(dir,1.1);}requestDraw();};
   root.addEventListener?.('eden-punched',onPunched);
   const api={
    // crouch: metres the eye is lowered; fovKick: degrees added while sprinting.
    // pose: {dive 0..1 (lying forward in the air), slide 0..1 (leaning back into a slide)}.
-   update(dt,{aim,velocity=null,airborne=false,crouch=0,fovKick=0,pose=null,hands=null}={}){
+   update(dt,{aim,velocity=null,airborne=false,crouch=0,fovKick=0,pose=null,hands=null,position=null,eyeOffset=0,sprint=0,effects=null,manageFov=true}={}){
+    if(disposed)return;
     clock+=dt;frame++;
-    if(clock-checked>1.5){checked=clock;refresh();}
+    if(!physicsActive&&clock-checked>1.5){checked=clock;refresh();}
     // Plants part around you and the five nearest characters.
     if(push){const near=[{x:camera.position.x,y:camera.position.y-1.75,z:camera.position.z,d:0}];
      for(const other of root.GardenCharacterMotion?.bodies||[])if(other!==model&&other.root.visible&&inScene(other.root)){const p=other.root.getWorldPosition(probe),d=p.distanceTo(camera.position);if(d<15)near.push({x:p.x,y:p.y,z:p.z,d});}
      push.update(near.sort((a,b)=>a.d-b.d),clock);}
     if(!model)return;
-    const on=enabled();model.root.visible=on;root.GardenCharacterMotion.attention=on?camera.position:null;if(!on){yaw=null;if(ownFov!==null&&Math.abs(camera.fov-ownFov)<.01){camera.fov=baseFov;camera.updateProjectionMatrix();}ownFov=null;return;}
+    if(physicsActive){model.root.visible=true;requestDraw();return;}
+    const on=enabled();model.root.visible=on;root.GardenCharacterMotion.attention=on?camera.position:null;if(!on){yaw=null;lastView=lastPitch=null;if(ownFov!==null&&Math.abs(camera.fov-ownFov)<.01){camera.fov=baseFov;camera.updateProjectionMatrix();}ownFov=null;return;}
     // Knocked down: the body ragdolls where it stood and the camera rides its head (eyes forward of the skull),
     // then hands the view back to the player's camera as the body gets up.
     const down=model.motion.downAmount();
@@ -86,19 +92,20 @@
      eye.add(probe.set(0,.035,.09).multiplyScalar(model.root.scale.x).applyQuaternion(headQ));headQ.multiply(turnAround);eye.y=Math.max(eye.y,model.root.position.y+.26); // never inside the ground
      const k=down>=1?1:smooth(0,1,down);camera.position.lerp(eye,k);camera.quaternion.slerp(headQ,k);requestDraw();return;
     }
-    forward.subVectors(aim,camera.position);const pitch=Math.atan2(forward.y,Math.hypot(forward.x,forward.z));forward.y=0;forward.normalize();left.set(forward.z,0,-forward.x);
+    forward.subVectors(aim,position||camera.position);if(position)forward.y-=eyeOffset;const pitch=Math.atan2(forward.y,Math.hypot(forward.x,forward.z));forward.y=0;forward.normalize();left.set(forward.z,0,-forward.x);
     // The body turns with the view only once the head is twisted far enough, or while walking, like a real neck.
     const view=Math.atan2(forward.x,forward.z),speed=velocity?Math.hypot(velocity.x,velocity.z):0;if(yaw===null)yaw=view;
-    const diff=wrap(view-yaw);if(speed>.3||Math.abs(diff)>.75)turning=true;else if(Math.abs(diff)<.04)turning=false;
-    if(turning)yaw=wrap(yaw+diff*(1-Math.exp(-(speed>.3?11:6)*dt)));
+    model.motion.presentation?.({firstPerson:1-thirdView,sprint,lookYawRate:lastView===null||dt<=0?0:clamp(wrap(view-lastView)/dt,-6,6),lookPitchRate:lastPitch===null||dt<=0?0:clamp((pitch-lastPitch)/dt,-6,6),effects});lastView=view;lastPitch=pitch;
+    ({yaw,turning}=root.GardenCharacterMotion.turnBody(yaw,turning,view,speed,dt));
     model.root.rotation.y=yaw;
     // The eyes sit ahead of the neck: looking down, the chest and toes should be below the view, not behind it.
-    const back=.06+.22*smooth(-.25,-1.1,pitch);
+    const back=(1-thirdView)*(.06+.22*smooth(-.25,-1.1,pitch));
     // Looking down widens the view like peripheral vision, so chest, legs and feet come into frame together.
     // Whatever field of view the app set last is the base; only our own widening is undone.
-    if(ownFov===null||Math.abs(camera.fov-ownFov)>.01)baseFov=camera.fov;
-    const fov=baseFov+30*smooth(-.3,-1.2,pitch)+fovKick;if(Math.abs(fov-camera.fov)>.01){camera.fov=fov;camera.updateProjectionMatrix();}ownFov=camera.fov;
-    model.root.position.set(camera.position.x-Math.sin(yaw)*back,camera.position.y-1.75+crouch,camera.position.z-Math.cos(yaw)*back);
+    if(manageFov){if(ownFov===null||Math.abs(camera.fov-ownFov)>.01)baseFov=camera.fov;
+    const fov=baseFov+30*smooth(-.3,-1.2,pitch)+fovKick;if(Math.abs(fov-camera.fov)>.01){camera.fov=fov;camera.updateProjectionMatrix();}ownFov=camera.fov;}
+    // An explicit player eye anchor keeps the feet independent of visual camera bob.
+    const anchor=position||camera.position;model.root.position.set(anchor.x-Math.sin(yaw)*back,anchor.y-1.75+(position?0:crouch),anchor.z-Math.cos(yaw)*back);
     model.motion.airborne(airborne);model.motion.crouch?.(crouch/.55);
     // Walls: both palms meet the surface ahead at chest height, harder and earlier when walking into it.
     if(clock-gathered>2){gathered=clock;gather();}
@@ -120,30 +127,30 @@
     // The gun (third person) and the slide / dive pose.
     // Parkour: both hands on the ledge while hanging or climbing. Each hand takes the grip on its own side, and the body
     // rises under the ledge so the arms actually reach it.
-    const shoulder=model.byName['upperarm01.L'],at=shoulder&&model.skeleton.boneInverses[model.skeleton.bones.indexOf(shoulder)]?.elements;
-    const shoulderUp=at?-at[13]*model.root.scale.y:1.4,riseTo=hands?Math.max(0,Math.min(.7,hands[0].y-.33-(model.root.position.y+shoulderUp))):0;
-    handRise+=(riseTo-handRise)*(1-Math.exp(-14*dt));model.root.position.y+=handRise;
-    if(hands){const swap=shoulder?.getWorldPosition(probe).distanceToSquared(hands[0])>probe.distanceToSquared(hands[1]);model.motion.touch('L',hands[swap?1:0],null,1,'grab');model.motion.touch('R',hands[swap?0:1],null,1,'grab');handsOn=true;}else if(handsOn){model.motion.touch('L',null,null,0);model.motion.touch('R',null,null,0);handsOn=false;}
+    ({handRise,handsOn}=root.GardenCharacterMotion.traverseBody(T,model,{hands,handRise,handsOn,pose,dt,probe}));
     if(model.motion.held?.()?.mesh!==heldMesh)model.motion.hold?.(heldMesh,heldId);
     if(heldMesh)model.motion.aimAt?.(aim);
-    model.root.rotation.order='YXZ';const pitchTo=pose?(pose.dive||0)*1.25-(pose.slide||0)*.32:0;model.root.rotation.x+=(pitchTo-model.root.rotation.x)*(1-Math.exp(-10*dt));
-    if(pose?.dive)model.root.position.y+=.35*pose.dive;
     model.motion.update(dt,{velocity,wade:brush});
    },
    // Click on something within reach: the hand gets there first, then the caller opens it.
-   downed:()=>!!model&&model.motion.downAmount()>0,
+   getModel:()=>model,
+   bodyDimensions:()=>root.playerBodyProfile?.(bodyAppearance)||{height:1.75,radius:.26,crouch:1.19},
+   getAppearance:()=>bodyAppearance,
+   setPhysicsActive(on){physicsActive=!!on;lastView=lastPitch=null;if(!on)yaw=null;},
+   downed:()=>physicsActive||!!model&&model.motion.downAmount()>0,
    // Third person (app.js): the head shows once the camera has pulled back.
-   third(k){if(!model)return;const show=k>.15;if(show!==!!model.root.userData.third){model.root.userData.third=show;model.byName.neck01.scale.setScalar(show?1:.001);}},
+   third(k){thirdView=clamp(k,0,1);if(!model||physicsActive)return;const show=k>.15&&headClearance>(headVisible?.45:.7);headVisible=show;if(show!==!!model.root.userData.third){model.root.userData.third=show;model.byName.neck01.scale.setScalar(show?1:.001);}},
+   cameraClearance(distance){headClearance=Math.max(0,distance);api.third(thirdView);},
    // What you hold, in the right hand (same placement as the match's bots).
    // Authored clips on your own character (character-anim.js through character-motion.js).
-   anim(id,opts){return model?.motion.play?.(id,opts)||null;},
+   anim(id,opts){return !physicsActive&&model?.motion.play?.(id,opts)||null;},
    stopAnim(id,fade){model?.motion.stop?.(id,fade);},
    animPlaying:id=>!!model?.motion.playing?.(id),
    // What you hold, gripped in both hands and pointed where you look (character-motion.js hold/aimAt).
    hold(mesh,id){heldMesh=mesh;heldId=id;if(model)model.motion.hold?.(mesh,id);requestDraw();},
    grab(point){if(!model?.root.visible||!point||point.distanceTo(camera.position)>1.6)return 0;grabPoint=point.clone();grabUntil=clock+.55;requestDraw();return 230;},
    punch(){
-    if(!model)return;root.dispatchEvent?.(new CustomEvent('eden-punch-thrown'));
+    if(!model||physicsActive)return;root.dispatchEvent?.(new CustomEvent('eden-punch-thrown'));
     const target=nearestOther(1.4),head=target?.byName?.head?.getWorldPosition(new T.Vector3());
     const aimPoint=head||camera.position.clone().addScaledVector(forward,.75).add(new T.Vector3(0,-.12,0));
     const land=model.motion.punch(aimPoint);guardUntil=clock+2.2;requestDraw();
@@ -152,8 +159,8 @@
      if(target.root.userData.visitorId)root.dispatchEvent?.(new CustomEvent('eden-punch',{detail:{visitorId:target.root.userData.visitorId,direction:{x:direction.x,z:direction.z},knockdown:result==='down'}}));}
     requestDraw();},land*1000);
    },
-   inspect:()=>({ready:!!model,visible:!!model?.root.visible,yaw:yaw===null?null:+yaw.toFixed(3),wall:wall?+wall.distance.toFixed(2):null,brush:+brush.toFixed(2),nearestBrush:(()=>{let best=null,bd=1e9;for(const list of plants.values())for(const [x,z,r] of list){const d=Math.hypot(x-camera.position.x,z-camera.position.z);if(d<bd){bd=d;best=[+x.toFixed(2),+z.toFixed(2),+r.toFixed(2)];}}return best;})(),plants:[...plants.values()].reduce((n,a)=>n+a.length,0),hover:!!hover,motion:model?.motion.inspect()}),
-   dispose(){document.removeEventListener('keydown',onKey);root.removeEventListener?.('eden-punched',onPunched);if(model)GardenCharacter.dispose(model);model=null;}
+   inspect:()=>({firstPerson:+(1-thirdView).toFixed(3),ready:!!model,visible:!!model?.root.visible,yaw:yaw===null?null:+yaw.toFixed(3),wall:wall?+wall.distance.toFixed(2):null,brush:+brush.toFixed(2),nearestBrush:(()=>{let best=null,bd=1e9;for(const list of plants.values())for(const [x,z,r] of list){const d=Math.hypot(x-camera.position.x,z-camera.position.z);if(d<bd){bd=d;best=[+x.toFixed(2),+z.toFixed(2),+r.toFixed(2)];}}return best;})(),plants:[...plants.values()].reduce((n,a)=>n+a.length,0),hover:!!hover,motion:model?.motion.inspect()}),
+   dispose(){if(disposed)return;disposed=true;signature='';document.removeEventListener('keydown',onKey);root.removeEventListener?.('eden-punched',onPunched);root.GardenCharacterRocketbox?.textureListeners.delete(requestDraw);if(model)GardenCharacter.dispose(model);model=null;heldMesh=null;nearby=[];plants.clear();}
   };
   return api;
  }

@@ -47,7 +47,7 @@
  for(const s of 'LR')Object.assign(CHAIN,{['upperarm01.'+s]:'lowerarm01.'+s,['lowerarm01.'+s]:'wrist.'+s,['upperleg01.'+s]:'lowerleg01.'+s,['lowerleg01.'+s]:'foot.'+s,['foot.'+s]:'toes.'+s});
  // The sliders as per-bone changes: torso bones widen about the spine, limbs thicken about their own axis, arms and legs
  // move with the shoulders and hips. Limits keep clothes and hands believable at the far ends of each slider.
- function shape(mesh,a){
+ function shape(mesh,a,jointsOnly=false){
   const num=(k,d=1)=>Number.isFinite(a?.[k])?a[k]:d,mass=clamp((num('weight',72)-72)/100,-.27,.6),build=clamp(num('build',.35),0,1)-.35;
   const hips=clamp(num('hips'),.8,1.35)-1,waist=clamp(num('waist'),.75,1.3)-1,shoulders=clamp(num('shoulders'),.8,1.3)-1,legs=clamp(num('legLength'),.9,1.1);
   const torso={root:[1+hips*.7+mass*.35,1+mass*.4],spine03:[1+waist*.8+mass*.5,1+mass*.6],spine02:[1+waist*.3+shoulders*.15+mass*.4,1+mass*.45],spine01:[1+shoulders*.35+mass*.22+build*.05,1+mass*.25+build*.06]};
@@ -58,6 +58,7 @@
   const stretch=y=>y<mesh.hipY?y*legs:y+(legs-1)*mesh.hipY,fit=mesh.eyeY/stretch(mesh.eyeY);
   const finish=(out,i,x,y,z)=>{out[i]=x*fit;out[i+1]=stretch(y)*fit;out[i+2]=z*fit;};
   const joints=mesh.bones.map((b,i)=>{const o=[0,0,0];finish(o,0,b.position[0]+info[i].dx,b.position[1],b.position[2]);return o;});
+  if(jointsOnly)return {joints};
   const plain=!mass&&!build&&!hips&&!waist&&!shoulders&&legs===1;
   if(plain)return {position:mesh.position,joints};
   const p=mesh.position,out=new Float32Array(p.length),J=mesh.joints,W=mesh.weights;
@@ -74,13 +75,18 @@
   }
   return {position:out,joints};
  }
- // Build the people-parts under `group` and report what the motion layer and the model need.
- function build(T,id,a,group){
-  const mesh=meshes.get(id),{position,joints}=shape(mesh,a);
+ // The server uses the exact same shaped joints and bind inverses as the rendered character.
+ function buildRig(T,mesh,a,group,joints=shape(mesh,a,true).joints){
   const bones=mesh.bones.map((b,i)=>{const bone=new T.Bone();bone.name=b.name;const j=joints[i],q=b.parent>=0?joints[b.parent]:[0,0,0];bone.position.set(j[0]-q[0],j[1]-q[1],j[2]-q[2]);return bone;});
   const parts=[];mesh.bones.forEach((b,i)=>{if(b.parent>=0)bones[b.parent].add(bones[i]);else{group.add(bones[i]);parts.push(bones[i]);}});
   // Rest pose from the joints themselves, so a character swapped in while already placed or scaled in the world binds correctly.
   const skeleton=new T.Skeleton(bones,joints.map(j=>new T.Matrix4().makeTranslation(-j[0],-j[1],-j[2])));group.updateMatrixWorld(true);
+  return {skeleton,byName:Object.fromEntries(bones.map(b=>[b.name,b])),parts};
+ }
+ // Build the people-parts under `group` and report what the motion layer and the model need.
+ function build(T,id,a,group){
+  const mesh=meshes.get(id),{position,joints}=shape(mesh,a);
+  const rig=buildRig(T,mesh,a,group,joints),{skeleton,parts}=rig;
   const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(position,3));g.setAttribute('normal',new T.BufferAttribute(mesh.normal,3));g.setAttribute('uv',new T.BufferAttribute(mesh.uv,2));
   g.setAttribute('skinIndex',new T.Uint16BufferAttribute(mesh.joints,4));g.setAttribute('skinWeight',new T.BufferAttribute(mesh.weights,4));g.setIndex(new T.BufferAttribute(mesh.index,1));
   const set=materials(T,id,mesh),list=mesh.sections.map((s,i)=>{g.addGroup(s.start,s.count,i);return set[s.material];});
@@ -88,7 +94,7 @@
   const mass=(Number.isFinite(a?.weight)?a.weight-72:0)/100;
   const blob=new T.Mesh(new T.PlaneGeometry(1,1).rotateX(-Math.PI/2),new T.MeshBasicMaterial({map:GardenCharacterDetails.blobTexture(T),transparent:true,depthWrite:false,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-2}));
   blob.name='Blob shadow';blob.position.y=.006;blob.scale.set(.62+mass*.25,1,.42+mass*.2);blob.renderOrder=-1;group.add(blob);parts.push(blob);
-  return {skeleton,byName:Object.fromEntries(bones.map(b=>[b.name,b])),parts};
+  return rig;
  }
- root.GardenCharacterRocketbox={textureListeners,CATALOG,DEFAULT,idFor,load,build,loaded:id=>meshes.has(id),thumb:id=>BASE+id+'/thumb.webp?v='+VERSION};
+ root.GardenCharacterRocketbox={buildRig,textureListeners,CATALOG,DEFAULT,idFor,load,build,loaded:id=>meshes.has(id),thumb:id=>BASE+id+'/thumb.webp?v='+VERSION};
 })(typeof window==='object'?window:globalThis);

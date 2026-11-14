@@ -1,0 +1,264 @@
+/* FOLIOS — the Break Thy Rule assets merged into the Illuminated Codex, and the detailed codex
+   finish for the Gallery (Folio II), Archive (Folio III) and Community (Folio IV).
+   Loaded after codex.css and breakthyrule-cover.css. */
+
+/* ---------- The house logo ---------- */
+.brand{gap:0;font-size:0;letter-spacing:0}
+.site-logo{display:block;height:auto}
+.brand img.site-logo{width:auto;max-width:none}
+.brand img.site-logo.in-header{height:48px}
+.foot-mark .site-logo{height:clamp(70px,8vw,104px);width:auto}
+/* Night folios: the logo sits on a paper label so its ink still reads by lamplight. */
+body[data-page=archive] .brand,body[data-page=community] .brand,
+body[data-page=archive] .foot-mark,body[data-page=community] .foot-mark{background:#f2ebdd;padding:4px 12px;box-shadow:0 0 0 1px #b08a4a,0 0 0 4px #f2ebdd,0 0 0 5px rgba(176,138,74,.6),0 8px 18px rgba(0,0,0,.45)}
+body[data-page=archive] .foot-mark,body[data-page=community] .foot-mark{display:inline-block;transform:rotate(-1.2deg);padding:8px 16px}
+@media(max-width:900px){.brand img.site-logo.in-header{height:38px}}
+
+/* Header additions: the CODEX sticker button and the About tab. */
+.site-top .btr-header-button{margin:0;min-height:38px;color:#141414;border-color:#141414;box-shadow:3px 3px 0 #141414;font-family:'DM Sans',sans-serif}
+body[data-page=archive] .site-top .btr-header-button,body[data-page=community] .site-top .btr-header-button{box-shadow:3px 3px 0 var(--gold);border-color:var(--gold)}
+.tabs .btr-about-link{display:inline-flex!important;align-items:center;background:none;border:0;cursor:pointer;padding:10px 14px;margin:0;font-family:var(--serif);font-size:18px;font-weight:500;letter-spacing:.02em;color:var(--muted)}
+.tabs .btr-about-link:hover{color:var(--rubric)}
+@media(max-width:900px){.tabs .btr-about-link{font-size:15px;padding:8px 10px}.site-top .btr-header-button span{display:none}.site-top .btr-header-button{padding:0 8px}}
+
+/* ---------- Home: the running rubric ---------- */
+.rubric-ticker{overflow:hidden;background:var(--rubric);color:#f6eee0;height:46px;display:flex;align-items:center;box-shadow:0 -1px 0 var(--ink),0 -4px 0 -1px var(--paper),0 -5px 0 -1px var(--ink),0 1px 0 var(--ink),0 4px 0 -1px var(--paper),0 5px 0 -1px var(--ink);margin-top:5px}
+.ticker-track{display:flex;white-space:nowrap;width:max-content;animation:folio-tick 150s linear infinite;font-family:var(--blackletter);font-size:24px;line-height:1}
+.ticker-track span{padding:0 16px}.ticker-track i{font-style:normal;color:#f1c56b;font-size:16px}
+.rubric-ticker:hover .ticker-track{animation-play-state:paused}
+@keyframes folio-tick{to{transform:translateX(-50%)}}
+
+/* ---------- Home: the codex, pasted up ---------- */
+.codex-wall .wall-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.wall-lede{max-width:760px;margin:0 0 26px}
+.sticker-board{display:grid;grid-template-columns:clamp(54px,6vw,92px) 1fr clamp(54px,6vw,92px);height:clamp(420px,58vh,620px);border:1px solid var(--line);outline:1px solid color-mix(in srgb,var(--gold) 55%,transparent);outline-offset:8px;background:var(--paper-2);position:relative;isolation:isolate}
+.board-wall{position:relative;overflow:hidden;cursor:crosshair;
+ background:repeating-linear-gradient(0deg,transparent 0 31px,color-mix(in srgb,var(--rubric) 14%,transparent) 31px 32px),radial-gradient(90% 80% at 50% 45%,color-mix(in srgb,var(--paper) 60%,#fff),var(--paper-2))}
+.board-wall::before{content:'';position:absolute;top:0;bottom:0;left:56px;width:1px;background:color-mix(in srgb,var(--rubric) 35%,transparent);pointer-events:none}
+.board-rail{overflow:hidden;background:#141210;position:relative}
+.rail-track{display:flex;flex-direction:column;animation:folio-rail 44s linear infinite}
+.board-rail.right .rail-track{animation-direction:reverse;animation-duration:52s}
+.rail-track img{display:block;width:100%;height:auto}
+@keyframes folio-rail{to{transform:translateY(-50%)}}
+.paste{position:absolute;padding:0;border:0;background:none;cursor:grab;touch-action:none;transform:rotate(var(--r));transition:transform .25s cubic-bezier(.3,1.6,.5,1),filter .25s;z-index:1}
+.paste img{display:block;width:100%;height:auto;pointer-events:none;user-select:none}
+.paste:hover,.paste:focus-visible{z-index:5;transform:rotate(calc(var(--r) * -.3)) scale(1.16);filter:drop-shadow(3px 0 0 #fff) drop-shadow(-3px 0 0 #fff) drop-shadow(0 3px 0 #fff) drop-shadow(0 -3px 0 #fff) drop-shadow(0 12px 16px rgba(40,25,10,.3))}
+.paste.lifted{z-index:9;cursor:grabbing;transition:none;transform:rotate(var(--r)) scale(1.22);filter:drop-shadow(0 20px 24px rgba(40,25,10,.35))}
+.paste.slapped{animation:folio-slap .4s cubic-bezier(.2,1.8,.4,1)}
+@keyframes folio-slap{from{transform:rotate(var(--r)) scale(2.2);opacity:0}}
+.witness-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin:56px 0 14px}
+.witness-head a{font-family:var(--serif);font-style:italic;font-size:17px;text-decoration:underline;text-underline-offset:4px}
+.witness-strip{display:flex;gap:22px;overflow-x:auto;padding:16px 6px 26px;scrollbar-width:thin}
+.polaroid{flex:0 0 clamp(150px,15vw,200px);background:#fff;padding:9px 9px 34px;box-shadow:0 10px 24px rgba(40,25,10,.22);transform:rotate(var(--r));transition:transform .3s cubic-bezier(.3,1.5,.5,1);position:relative}
+.polaroid::before{content:'';position:absolute;top:-10px;left:50%;width:64px;height:20px;margin-left:-32px;background:rgba(201,71,59,.35);transform:rotate(-5deg)}
+.polaroid img{display:block;width:100%;aspect-ratio:1;object-fit:cover;background:var(--wash)}
+.polaroid span{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-family:var(--blackletter);font-size:18px;color:#1d1a17}
+.polaroid:hover{transform:rotate(0) scale(1.05);z-index:2}
+
+/* ---------- Folio II: the Gallery ---------- */
+.page-head h1 .dropcap,.archive-head h1 .dropcap{font-size:1.16em;line-height:.7;display:inline-block;transform:translateY(.04em)}
+.page-head .folio{margin-bottom:12px}
+body[data-page=gallery] .chips button{display:inline-flex;align-items:baseline;gap:2px}
+#count{font-family:var(--serif);font-style:italic;font-size:16px}
+.masonry{columns:auto;display:flex;gap:22px;align-items:flex-start}
+.masonry-col{flex:1;min-width:0}
+.masonry figure{margin:0 0 22px;padding:10px 10px 42px;background:color-mix(in srgb,var(--paper) 40%,#fff);border:1px solid var(--line);box-shadow:0 1px 0 var(--line),0 10px 22px -14px rgba(40,25,10,.35);transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s}
+.masonry figure::before,.masonry figure::after{content:'';position:absolute;width:14px;height:14px;border-color:var(--rubric);border-style:solid;pointer-events:none;transition:width .35s,height .35s;z-index:2}
+.masonry figure::before{top:4px;left:4px;border-width:1px 0 0 1px}
+.masonry figure::after{bottom:4px;right:4px;border-width:0 1px 1px 0}
+.masonry figure:hover{transform:translateY(-3px);box-shadow:0 1px 0 var(--line),0 18px 30px -16px rgba(40,25,10,.45)}
+.masonry figure:hover::before,.masonry figure:hover::after{width:calc(100% - 8px);height:calc(100% - 8px)}
+.masonry figure img{background:var(--wash)}
+.masonry .plate-tag{position:absolute;left:12px;bottom:11px;font-family:var(--blackletter);font-size:17px;color:var(--rubric);line-height:1}
+.masonry figcaption{position:absolute;left:72px;right:12px;bottom:11px;top:auto;padding:0;background:none;opacity:1;color:var(--muted);font-family:var(--serif);font-style:italic;font-size:15px;letter-spacing:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.1}
+.masonry figure.cat-worn{background:#fff;padding:9px 9px 42px}
+.masonry figure.cat-graphics{background:transparent;border-color:transparent;box-shadow:none;padding:20px 16px 42px}
+.masonry figure.cat-graphics img{background:none;transform:rotate(var(--tilt,0deg));transition:transform .3s cubic-bezier(.3,1.6,.5,1),filter .3s}
+.masonry figure.cat-graphics:hover{transform:none;box-shadow:none}
+.masonry figure.cat-graphics:hover img{transform:rotate(0) scale(1.06);filter:drop-shadow(3px 0 0 #fff) drop-shadow(-3px 0 0 #fff) drop-shadow(0 3px 0 #fff) drop-shadow(0 -3px 0 #fff) drop-shadow(0 10px 14px rgba(40,25,10,.25))}
+.masonry figure.cat-adverts{background:#141210;border-color:#141210}
+.masonry figure.cat-adverts figcaption{color:#c9b9a0}
+/* The lightbox becomes a lit reading stand. */
+.lightbox{background:radial-gradient(80% 70% at 50% 45%,#2a221b,#0d0b09 75%)}
+.lightbox header,.lightbox footer{font-family:var(--serif);font-size:17px;letter-spacing:.02em;color:#d9ccb6}
+#lb-count{font-style:italic}
+.lightbox footer #lb-caption{font-family:var(--blackletter);font-size:clamp(24px,3vw,36px);color:#f2ebdd}
+.lightbox .frame img{padding:10px;background:#f2ebdd;box-shadow:0 0 0 1px #b08a4a,0 0 0 6px #f2ebdd,0 0 0 7px rgba(176,138,74,.6),0 30px 60px rgba(0,0,0,.6);max-height:calc(100% - 30px);max-width:calc(100% - 30px)}
+.lightbox.is-graphic .frame img{padding:4vmin}
+.lightbox button{border-color:#b08a4a;color:#f2ebdd;font-family:var(--serif)}
+.lightbox button:hover{background:#b08a4a;color:#141210}
+.lightbox #lb-product{font-family:var(--serif);font-style:italic;color:#f1c56b}
+
+/* ---------- Folio III: the Archive ---------- */
+.archive-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,32%);column-gap:40px;align-items:start;position:relative}
+.archive-head>.folio{grid-column:1;grid-row:1}
+.archive-head>h1{grid-column:1;grid-row:2;font-size:clamp(60px,7.6vw,128px);line-height:.9}
+.archive-head>.lede{grid-column:1;grid-row:3;max-width:640px}
+.archive-plaque{grid-column:2;grid-row:1/3;align-self:center;justify-self:center;width:100%;max-width:420px;background:#f2ebdd;padding:18px 22px;transform:rotate(-2deg);box-shadow:0 0 0 1px #b08a4a,0 0 0 6px #f2ebdd,0 0 0 7px rgba(176,138,74,.7),0 24px 50px rgba(0,0,0,.55);position:relative;z-index:2}
+.archive-plaque::before,.archive-plaque::after{content:'';position:absolute;top:-14px;width:96px;height:26px;background:rgba(241,197,107,.55)}
+.archive-plaque::before{left:-24px;transform:rotate(-28deg)}.archive-plaque::after{right:-24px;transform:rotate(24deg)}
+.archive-plaque img{display:block;width:100%;height:auto}
+.archive-marginalia{grid-column:2;grid-row:3;position:relative;min-height:170px}
+.archive-marginalia .paste{width:clamp(70px,7vw,118px)!important}
+/* Table of contents with roman numerals and leader dots. */
+.topic-list{counter-reset:toc;border-top:0;box-shadow:0 -1px 0 var(--line),0 -4px 0 -1px var(--paper),0 -5px 0 -1px var(--line)}
+.topic-list button{counter-increment:toc;align-items:baseline;font-family:var(--serif);font-size:19px;color:var(--ink);padding:13px 2px;transition:color .2s,padding .25s}
+.topic-list button::before{content:counter(toc,upper-roman);font-family:var(--blackletter);color:var(--rubric);font-size:18px;min-width:34px}
+.topic-list button span:first-child{flex:1;display:flex;align-items:baseline;gap:8px}
+.topic-list button span:first-child::after{content:'';flex:1;border-bottom:1px dotted color-mix(in srgb,var(--muted) 70%,transparent);transform:translateY(-.25em)}
+.topic-list button span:last-child{font-family:var(--blackletter);font-size:18px;color:var(--gold)}
+.topic-list button:hover{color:var(--rubric);padding-left:8px}
+.topic-list button[aria-pressed=true]{color:var(--rubric);font-weight:600;font-style:italic}
+/* The Librarian's reading desk. */
+.librarian{position:relative;background:radial-gradient(90% 120% at 0% 50%,color-mix(in srgb,var(--gold) 14%,transparent),transparent 60%),color-mix(in srgb,var(--paper-2) 70%,transparent);box-shadow:inset 0 0 0 6px var(--paper),inset 0 0 0 7px color-mix(in srgb,var(--gold) 45%,transparent)}
+.librarian::before,.librarian::after{content:'❦';position:absolute;color:var(--gold);font-size:18px;line-height:1}
+.librarian::before{top:12px;right:16px}.librarian::after{bottom:12px;left:16px;transform:rotate(180deg)}
+.librarian img{box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--gold);filter:sepia(.2)}
+.librarian h3{font-family:var(--blackletter);font-weight:400;font-size:34px;color:var(--rubric);letter-spacing:0}
+#topic-kicker{margin-top:8px}
+#topic-title{font-size:clamp(46px,5vw,76px)}
+#topic-title::first-letter{font-family:var(--blackletter);font-weight:400;color:var(--rubric);font-size:1.14em}
+#topic-blurb{font-style:italic}
+/* The shelf: numbered plates. */
+.shelf{counter-reset:plate;gap:30px}
+.book{counter-increment:plate;position:relative}
+.book .cover{box-shadow:0 1px 0 var(--line),0 16px 26px -14px rgba(0,0,0,.7);transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s;transform-origin:50% 100%}
+.book:hover .cover{transform:translateY(-6px) rotate(-1.5deg);box-shadow:0 26px 34px -16px rgba(0,0,0,.8)}
+.book::before{content:'Pl. ' counter(plate,lower-roman);position:absolute;top:-22px;left:0;font-family:var(--blackletter);color:var(--rubric);font-size:16px}
+.book strong{font-family:var(--serif);font-size:18px;font-weight:600;line-height:1.15}
+.book span{font-family:var(--serif);font-style:italic;font-size:15px}
+.topic-garments img{background:var(--paper-2);border:1px solid var(--line);transition:transform .3s}
+.topic-garments a:hover img{transform:translateY(-4px)}
+/* Index of the codex. */
+.codex-index{margin-top:56px}
+.codex-index .lede{margin:0 0 22px}
+.index-letters{display:flex;flex-wrap:wrap;gap:4px;padding:12px 0;margin-bottom:28px;position:sticky;top:72px;z-index:5;background:color-mix(in srgb,var(--paper) 94%,transparent);box-shadow:0 1px 0 var(--line),0 -1px 0 var(--line)}
+.index-letters a{font-family:var(--blackletter);font-size:24px;color:var(--rubric);min-width:34px;min-height:40px;display:grid;place-items:center;transition:background .2s,color .2s}
+.index-letters a:hover{background:var(--rubric);color:#fff}
+.index-columns{columns:3 280px;column-gap:44px;column-rule:1px solid var(--line)}
+.index-letter{break-inside:avoid-column;margin:0 0 28px;scroll-margin-top:140px}
+.index-letter h3{font-family:var(--blackletter);font-weight:400;font-size:52px;color:var(--rubric);line-height:1;margin:0 0 6px}
+.index-letter ol{list-style:none;margin:0;padding:0}
+.index-letter button{display:flex;align-items:baseline;gap:8px;width:100%;background:none;border:0;padding:5px 0;cursor:pointer;text-align:left;color:var(--ink);font-family:var(--serif);font-size:18px}
+.index-letter .entry{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.index-letter .leader{flex:1;border-bottom:1px dotted color-mix(in srgb,var(--muted) 60%,transparent);transform:translateY(-.25em);min-width:16px}
+.index-letter .folio-no{font-style:italic;font-size:14px;color:var(--muted)}
+.index-letter button:hover .entry{color:var(--rubric)}
+.index-peek{position:fixed;left:0;top:0;width:170px;height:170px;object-fit:contain;pointer-events:none;z-index:150;opacity:0;transition:opacity .15s;filter:drop-shadow(3px 0 0 #fff) drop-shadow(-3px 0 0 #fff) drop-shadow(0 3px 0 #fff) drop-shadow(0 -3px 0 #fff) drop-shadow(0 14px 18px rgba(0,0,0,.5))}
+.index-peek.on{opacity:1}
+@media(hover:none){.index-peek{display:none}}
+
+/* ---------- Folio IV: Community ---------- */
+.threads-title{font-size:clamp(44px,4.6vw,64px);margin-bottom:18px}
+#boards{counter-reset:quire}
+#boards button{counter-increment:quire}
+#boards button::before{content:counter(quire,upper-roman) ' · ';font-family:var(--blackletter);color:var(--rubric)}
+#boards button[aria-pressed=true]::before{color:#f1c56b}
+.panel{position:relative;padding:28px 26px 24px;box-shadow:inset 0 0 0 5px var(--paper),inset 0 0 0 6px color-mix(in srgb,var(--gold) 40%,transparent)}
+.panel::after{content:'✠';position:absolute;top:12px;right:16px;color:var(--gold);font-size:14px}
+.panel h3{font-family:var(--blackletter);font-weight:400;font-size:32px;letter-spacing:0;color:var(--ink)}
+.panel p{font-family:var(--serif);font-size:18px;line-height:1.5}
+.wall{gap:8px}
+.wall img{filter:sepia(.35) contrast(1.02);border:1px solid var(--line);transition:filter .4s,transform .3s}
+.wall a:hover img{filter:none;transform:scale(1.04)}
+.channel-list li{align-items:baseline;gap:8px;font-family:var(--serif);font-size:18px}
+.channel-list li a{flex:0 1 auto}
+.channel-list li::after{content:'';order:1;flex:1;border-bottom:1px dotted color-mix(in srgb,var(--muted) 60%,transparent);transform:translateY(-.25em)}
+.channel-list li .fine{order:2;font-style:italic;font-size:15px}
+
+/* ---------- Shared: discussion boards as marginal notes ---------- */
+.compose{box-shadow:inset 0 0 0 4px var(--paper),inset 0 0 0 5px color-mix(in srgb,var(--gold) 35%,transparent)}
+.compose button.solid{min-width:110px}
+.posts li{border-bottom:0;border-left:2px solid var(--rubric);padding:12px 0 12px 18px;margin-bottom:14px;background:linear-gradient(90deg,color-mix(in srgb,var(--rubric) 7%,transparent),transparent 60%)}
+.posts li p{font-family:var(--serif);font-size:19px;line-height:1.5}
+.posts li p::first-letter{font-family:var(--blackletter);color:var(--rubric);font-size:1.6em}
+.posts .post-meta strong{font-family:var(--blackletter);font-weight:400;font-size:20px;color:var(--rubric)}
+.posts .post-meta time{font-family:var(--serif);font-style:italic;color:var(--muted);margin-left:10px}
+.posts .empty{border-left-color:var(--line);background:none;font-family:var(--serif);font-style:italic;font-size:18px}
+
+/* ---------- Small screens ---------- */
+@media(max-width:900px){
+ .archive-head{grid-template-columns:1fr}
+ .archive-plaque{grid-column:1;grid-row:auto;max-width:300px;justify-self:start;margin:6px 0 26px 14px}
+ .archive-head>.folio,.archive-head>h1,.archive-head>.lede{grid-row:auto}
+ .archive-marginalia{display:none}
+ .index-letters{top:0}
+}
+@media(max-width:640px){
+ .sticker-board{grid-template-columns:34px 1fr 34px;height:440px}
+ .masonry{gap:12px}
+ .masonry figure{margin-bottom:12px;padding:6px 6px 34px}
+ .masonry figcaption{display:none}
+ .masonry .plate-tag{left:8px;bottom:9px;font-size:15px}
+ .index-columns{columns:1}
+ .lightbox .frame{padding:0 12px}
+ .lightbox .frame img{padding:6px;box-shadow:0 0 0 1px #b08a4a,0 20px 40px rgba(0,0,0,.6)}
+ .witness-head{flex-direction:column;gap:4px}
+ .polaroid{flex-basis:150px}
+}
+@media(prefers-reduced-motion:reduce){.ticker-track,.rail-track{animation:none}}
+h2 .sect{font-family:var(--blackletter);font-weight:400;color:var(--rubric);font-size:.8em;margin-right:.18em}
+
+/* The living page: drifting ghost graphics behind the home page (site/backdrop.js). */
+#codex-backdrop{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+body[data-page=home] main,body[data-page=home] .site-foot{position:relative;z-index:1}
+/* Two chapters left to tease on the home page (Gallery, Archive). */
+@media(min-width:801px){.teasers{grid-template-columns:repeat(2,1fr)}}
+
+/* Product pages: the gallery showcase strip (replaces the discussion). */
+.gallery-showcase .showcase-tools{display:flex;gap:8px;align-items:center}
+.gallery-showcase .showcase-tools .ghost{min-width:46px;padding:0 14px;font-size:18px;letter-spacing:0}
+.showcase-strip{display:flex;gap:22px;overflow-x:auto;scroll-snap-type:x mandatory;padding:10px 4px 26px;scrollbar-width:thin;scrollbar-color:var(--rubric) transparent}
+.showcase-plate{flex:0 0 clamp(200px,22vw,290px);scroll-snap-align:start;position:relative;padding:10px 10px 44px;border:1px solid var(--line);background:color-mix(in srgb,var(--paper) 40%,#fff);box-shadow:0 1px 0 var(--line),0 12px 24px -16px rgba(40,25,10,.4);cursor:zoom-in;transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s}
+.showcase-plate::before,.showcase-plate::after{content:'';position:absolute;width:14px;height:14px;border-color:var(--rubric);border-style:solid;pointer-events:none;transition:width .35s,height .35s;z-index:2}
+.showcase-plate::before{top:4px;left:4px;border-width:1px 0 0 1px}
+.showcase-plate::after{bottom:4px;right:4px;border-width:0 1px 1px 0}
+.showcase-plate:hover{transform:translateY(-4px)}
+.showcase-plate:hover::before,.showcase-plate:hover::after{width:calc(100% - 8px);height:calc(100% - 8px)}
+.showcase-plate img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;background:var(--wash)}
+.showcase-plate .plate-tag{position:absolute;left:12px;bottom:12px;font-family:var(--blackletter);font-size:17px;color:var(--rubric);line-height:1}
+.showcase-plate .plate-note{position:absolute;right:12px;bottom:12px;font-family:var(--serif);font-style:italic;font-size:15px;color:var(--muted);line-height:1}
+.showcase-plate.is-own{background:#fff;outline:1px solid color-mix(in srgb,var(--gold) 60%,transparent);outline-offset:4px}
+@media(max-width:640px){.showcase-plate{flex-basis:72vw}.gallery-showcase .showcase-tools .ghost{display:none}}
+
+/* Archive: information and discussion only. The Librarian's desk shows the house apple. */
+.archive-plaque{grid-row:1/4}
+.librarian img.librarian-apple{width:132px;height:132px;object-fit:contain;padding:10px;border-radius:50%;background:#f2ebdd;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--gold)}
+
+/* Home: the colour collage as a living wall behind the hero. Two copies drift against each other
+   (one mirrored, blended) so the surface keeps changing; the copy sits on a taped paper card. */
+.codex-hero.has-collage{position:relative;overflow:hidden;isolation:isolate;background:#120f0c;border-bottom:0;padding:clamp(18px,2.4vw,34px);gap:clamp(18px,2.4vw,34px);min-height:calc(100svh - 134px)}
+.hero-collage{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.hero-collage img{position:absolute;inset:-12%;width:124%;height:124%;object-fit:cover;will-change:transform;
+ transform:translate3d(calc(var(--px,0) * -26px),calc(var(--py,0) * -20px),0) scale(1.06);animation:collage-drift 46s ease-in-out infinite alternate}
+.hero-collage img+img{transform:scaleX(-1);mix-blend-mode:screen;opacity:.42;animation:collage-drift-b 58s ease-in-out infinite alternate;filter:hue-rotate(40deg) saturate(1.2)}
+.hero-collage::after{content:'';position:absolute;inset:0;background:radial-gradient(120% 90% at 30% 50%,rgba(18,15,12,.05),rgba(18,15,12,.55) 85%),linear-gradient(180deg,rgba(18,15,12,.2),transparent 30%,transparent 70%,rgba(18,15,12,.45))}
+@keyframes collage-drift{0%{transform:translate3d(calc(var(--px,0) * -26px),calc(var(--py,0) * -20px),0) scale(1.06) rotate(0)}50%{transform:translate3d(calc(-2% + var(--px,0) * -26px),calc(1.5% + var(--py,0) * -20px),0) scale(1.14) rotate(.6deg)}100%{transform:translate3d(calc(2.5% + var(--px,0) * -26px),calc(-2% + var(--py,0) * -20px),0) scale(1.1) rotate(-.4deg)}}
+@keyframes collage-drift-b{0%{transform:scaleX(-1) translate3d(calc(var(--px,0) * 40px),calc(var(--py,0) * 30px),0) scale(1.18)}100%{transform:scaleX(-1) translate3d(calc(-3% + var(--px,0) * 40px),calc(2% + var(--py,0) * 30px),0) scale(1.08) rotate(1deg)}}
+.codex-hero.has-collage>.hero-copy,.codex-hero.has-collage>.hero-stage{position:relative;z-index:1}
+.codex-hero.has-collage>.hero-copy{align-self:center;background:#f2ebdd;padding:clamp(26px,3.4vw,52px);box-shadow:0 0 0 1px #b08a4a,0 0 0 6px #f2ebdd,0 0 0 7px rgba(176,138,74,.55),0 30px 70px rgba(0,0,0,.55);transform:rotate(-.8deg);color:#1d1a17;--ink:#1d1a17;--muted:#6e6458;--rubric:#a3322a;--paper:#f2ebdd;--paper-2:#e9e0cd;--line:#d6cab3}
+.codex-hero.has-collage>.hero-copy::before,.codex-hero.has-collage>.hero-copy::after{content:'';position:absolute;top:-14px;width:110px;height:28px;background:rgba(241,197,107,.7);box-shadow:0 2px 4px rgba(0,0,0,.15)}
+.codex-hero.has-collage>.hero-copy::before{left:-26px;transform:rotate(-24deg)}
+.codex-hero.has-collage>.hero-copy::after{right:-26px;transform:rotate(20deg)}
+.codex-hero.has-collage h1{font-size:clamp(64px,8.4vw,136px)}
+.codex-hero.has-collage>.hero-stage{border-left:0;box-shadow:0 30px 70px rgba(0,0,0,.55);min-height:0}
+@media(max-width:900px){.codex-hero.has-collage{padding:14px;gap:14px}.codex-hero.has-collage>.hero-copy{transform:none}.codex-hero.has-collage>.hero-stage{min-height:56svh}}
+@media(prefers-reduced-motion:reduce){.hero-collage img,.hero-collage img+img{animation:none}}
+/* Let the collage breathe: narrower card and plate, lighter veil. */
+.codex-hero.has-collage{padding:clamp(28px,4vw,64px) clamp(20px,4vw,72px);gap:clamp(24px,4vw,72px)}
+.codex-hero.has-collage>.hero-copy{justify-self:center;max-width:600px;width:100%}
+.codex-hero.has-collage>.hero-stage{justify-self:center;width:100%;max-width:560px;margin:3vh 0;transform:rotate(.7deg)}
+.hero-collage::after{background:radial-gradient(120% 90% at 50% 50%,transparent 40%,rgba(18,15,12,.38) 100%)}
+@media(max-width:900px){.codex-hero.has-collage>.hero-stage{transform:none;margin:0;max-width:none}.codex-hero.has-collage>.hero-copy{max-width:none}}
+
+/* Home: the Garment Lab band. */
+.lab-band .lede{max-width:700px;margin:0 0 22px}
+.lab-band-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.lab-card{position:relative;display:grid;gap:6px;align-content:start;min-height:200px;padding:22px 20px;background:#16120f;color:#efe6d4;border:1px solid #3a3128;box-shadow:inset 0 0 0 5px #16120f,inset 0 0 0 6px rgba(201,164,99,.4);transition:transform .3s,box-shadow .3s}
+.lab-card:hover{transform:translateY(-4px);box-shadow:inset 0 0 0 5px #16120f,inset 0 0 0 6px #e0695b}
+.lab-card-no{font-family:var(--blackletter);font-size:34px;color:#e0695b;line-height:1}
+.lab-card strong{font-family:'Barlow Condensed',sans-serif;font-size:30px;line-height:1}
+.lab-card span:not(.lab-card-no){font-family:var(--serif);font-size:18px;color:#b9ad9e}
+.lab-card em{margin-top:auto;font-family:var(--serif);font-size:22px;color:#f1c56b}
+@media(max-width:900px){.lab-band-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.lab-band-grid{grid-template-columns:1fr}}
