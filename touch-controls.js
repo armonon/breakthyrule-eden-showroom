@@ -1,7 +1,7 @@
 'use strict';
 // One owner per finger; every held action has a matching release, including interruption.
 (function(root){
- root.createTouchControls=function({host=null,look,combat,third,visible,armed,expedition=()=>false,move,jump,crouch,onReset}){
+ root.createTouchControls=function({host=null,look,combat,third,visible,armed,expedition=()=>false,actions=()=>({}),move,jump,crouch,onReset}){
   const media=matchMedia('(pointer:coarse), (any-pointer:coarse)');
   if(!media.matches&&!('ontouchstart'in root))return null;
   const abort=new AbortController(),listen=(node,type,fn,options={})=>node.addEventListener(type,fn,{...options,signal:abort.signal});
@@ -57,6 +57,7 @@
    if(on!==shown){shown=on;el.hidden=!on;document.body.classList.toggle('touch-play',on);if(!on)reset();}
    el.classList.toggle('armed',mode!=='unarmed');el.classList.toggle('tc-expedition',isExpedition);
    for(const selector of ['.tc-aim','.tc-swap','.tc-melee'])q(selector).hidden=isExpedition;
+   const available=actions();q('.tc-fire').hidden=isExpedition&&available.fire===false;q('.tc-reload').hidden=isExpedition&&available.reload===false;
    q('.tc-fire').textContent=isExpedition?'FLARE':mode==='armed'?'FIRE':'PUNCH';q('.tc-fire').setAttribute('aria-label',isExpedition?'Fire nonlethal flare':mode==='armed'?'Fire':'Punch');
    combat()?.setTouch?.(on&&!isExpedition);
   }

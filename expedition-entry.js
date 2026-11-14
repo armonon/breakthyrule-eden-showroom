@@ -126,7 +126,7 @@
   listen(window,'blur',stop);listen(document,'visibilitychange',()=>{stop();previous=0;quality?.pause();if(!document.hidden)requestDraw();});
   listen(renderer.domElement,'webglcontextlost',event=>{if(disposed)return;event.preventDefault();cancelAnimationFrame(frame);frame=0;fail(new Error('The graphics connection was interrupted. Use Retry loading.'));});
   observer=new ResizeObserver(()=>{if(disposed)return;renderer.setSize(stage.clientWidth,stage.clientHeight);camera.aspect=stage.clientWidth/stage.clientHeight;camera.updateProjectionMatrix();requestDraw();});observer.observe(stage);
-  touch=window.createTouchControls({host:document.body,look,combat:()=>null,third:()=>setThird(!third),visible:()=>ready&&expedition.active()&&!modalOpen(),armed:()=>false,expedition:()=>!!expedition.active(),
+  touch=window.createTouchControls({host:document.body,look,combat:()=>null,third:()=>setThird(!third),visible:()=>ready&&expedition.active()&&!modalOpen(),armed:()=>false,expedition:()=>!!expedition.active(),actions:()=>({fire:!$('night-flare').hidden,reload:!$('night-reload').hidden}),
    // Touch holds release directly, independent of the keyboard's toggle preferences.
    move(key,pressed){const k=key.toLowerCase();if(pressed){if(!ready||modalOpen()||bail?.active)return;keys.add(k);}else keys.delete(k);requestDraw();},
    jump(){if(ready&&!modalOpen()&&!bail?.active){movement.jump();requestDraw();}},
