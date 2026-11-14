@@ -1,0 +1,66 @@
+/* The original red apple is Eden's small, living doorway. */
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] a.enter-showroom.btr-eden-apple {
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  flex:0 0 48px!important;
+  width:48px!important;
+  height:48px!important;
+  min-width:44px!important;
+  min-height:44px!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:8px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+  line-height:0!important;
+  text-decoration:none!important;
+  -webkit-tap-highlight-color:transparent;
+}
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] a.btr-eden-apple > img {
+  display:block!important;
+  width:40px!important;
+  height:42px!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  object-fit:contain!important;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  transform-origin:50% 82%;
+  filter:drop-shadow(0 2px 3px #0006);
+  animation:btr-eden-apple-wobble 9s 1.2s infinite!important;
+  transition:filter .2s ease;
+}
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] a.btr-eden-apple:is(:hover,:focus-visible) > img {
+  animation:btr-eden-apple-hello .75s both!important;
+  filter:drop-shadow(0 0 6px #df26396b);
+}
+@keyframes btr-eden-apple-wobble {
+  0%,78%,100%{transform:translate(0,0) rotate(0)}
+  82%{transform:translate(-1px,-2px) rotate(-11deg)}
+  86%{transform:translate(1px,-3px) rotate(9deg)}
+  90%{transform:translate(-1px,-1px) rotate(-6deg)}
+  94%{transform:translate(0,-1px) rotate(3deg)}
+  97%{transform:translate(0,0) rotate(-1deg)}
+}
+@keyframes btr-eden-apple-hello {
+  0%,100%{transform:translateY(0) rotate(0)}
+  25%{transform:translateY(-3px) rotate(-12deg)}
+  50%{transform:translateY(-2px) rotate(10deg)}
+  75%{transform:translateY(-1px) rotate(-4deg)}
+}
+@media(max-width:760px){
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] a.enter-showroom.btr-eden-apple{width:44px!important;height:44px!important;align-self:start!important}
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] a.btr-eden-apple > img{width:34px!important;height:36px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] a.btr-eden-apple > img,
+  html body header#btr-site-header.btr-about-header[data-shared-header="about"] a.btr-eden-apple:is(:hover,:focus-visible) > img{animation:none!important;transition:none!important;transform:none!important}
+}
