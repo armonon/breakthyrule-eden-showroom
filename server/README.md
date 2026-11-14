@@ -1,8 +1,9 @@
 # Eden local server
 
-One Node process (no dependencies, Node 18+) that serves the site and runs the shared garden:
+One Node process (Node 20.18+) that serves the site and runs the shared garden. Install the repository's locked dependencies first; the Garment Lab storage package is imported by this server even when using local data:
 
 ```bash
+npm ci
 node server/eden-server.mjs            # http://127.0.0.1:8777/
 node server/eden-server.mjs --port 8780 --data /path/to/data
 ```

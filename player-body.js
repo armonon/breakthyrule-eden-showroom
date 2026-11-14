@@ -103,7 +103,10 @@
     // Looking down widens the view like peripheral vision, so chest, legs and feet come into frame together.
     // Whatever field of view the app set last is the base; only our own widening is undone.
     if(manageFov){if(ownFov===null||Math.abs(camera.fov-ownFov)>.01)baseFov=camera.fov;
-    const fov=baseFov+30*smooth(-.3,-1.2,pitch)+fovKick;if(Math.abs(fov-camera.fov)>.01){camera.fov=fov;camera.updateProjectionMatrix();}ownFov=camera.fov;}
+    // The master comfort control owns all visual FOV changes; the speed option
+    // only controls sprint/impact kicks. Callers without preferences keep the existing framing.
+    const visualFov=effects?.cameraEffects===false?0:30*smooth(-.3,-1.2,pitch)+(effects?.speedFov===false?0:fovKick);
+    const fov=baseFov+visualFov;if(Math.abs(fov-camera.fov)>.01){camera.fov=fov;camera.updateProjectionMatrix();}ownFov=camera.fov;}
     // An explicit player eye anchor keeps the feet independent of visual camera bob.
     const anchor=position||camera.position;model.root.position.set(anchor.x-Math.sin(yaw)*back,anchor.y-1.75+(position?0:crouch),anchor.z-Math.cos(yaw)*back);
     model.motion.airborne(airborne);model.motion.crouch?.(crouch/.55);

@@ -1,6 +1,8 @@
 # Test the actual integrated game
 
-Use the repository root. No dependency install is needed for core checks; Node and the existing vendored browser/Jolt assets are required.
+Use the repository root with Node 20.18 or newer. A fresh checkout needs the locked dependencies: the tests import Three.js and the local server imports the Garment Lab's Netlify storage package even when using local test data. Existing vendored browser/Jolt assets are also required.
+
+    npm ci
 
     node tools/expedition/check.mjs
     node tools/expedition/check.mjs --soak
@@ -22,4 +24,4 @@ The settings panel provides independent view sensitivity/FOV, motion-effect swit
 
 ## Release status
 
-See RELEASE-COVERAGE.md for verified evidence and remaining gates. Current Node room persistence is single-host, not a distributed database lease. Public multiplayer, full account/character admission, prediction/reconciliation and production promotion remain final-stage work. A passing local command is not production approval.
+See RELEASE-COVERAGE.md for verified evidence and remaining gates. Current Node room persistence is single-host, not a distributed database lease. Saved-character admission is enforced by the existing service; protocol-v2 browser/HTTP integration, public multiplayer hosting, prediction/reconciliation acceptance and production promotion remain final-stage work. A passing local command is not production approval.
