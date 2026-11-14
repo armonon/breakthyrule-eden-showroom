@@ -143,6 +143,8 @@
    cameraClearance(distance){headClearance=Math.max(0,distance);api.third(thirdView);},
    // What you hold, in the right hand (same placement as the match's bots).
    // Authored clips on your own character (character-anim.js through character-motion.js).
+   // The character model (the horror chapter dresses it in the free garment).
+   model:()=>model,
    anim(id,opts){return !physicsActive&&model?.motion.play?.(id,opts)||null;},
    stopAnim(id,fade){model?.motion.stop?.(id,fade);},
    animPlaying:id=>!!model?.motion.playing?.(id),

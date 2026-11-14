@@ -30,7 +30,8 @@
   const progress=k=>{q('.wl-bar i').style.width=Math.round(Math.min(1,k)*100)+'%';};
   function hide(){el.classList.remove('in');el.classList.add('out');setTimeout(()=>{if(el.classList.contains('out'))el.hidden=true;},450);}
   const frame=()=>new Promise(r=>requestAnimationFrame(()=>r()));
-  async function compile(){try{if(renderer.compileAsync)await renderer.compileAsync(scene,camera);else renderer.compile(scene,camera);}catch(e){console.warn('Precompile skipped',e);}}
+  // Compile shaders up front, but never hold a loading screen longer than `cap` ms: the rest finishes behind it.
+  async function compile(cap=4000){const job=(async()=>{try{if(renderer.compileAsync)await renderer.compileAsync(scene,camera);else renderer.compile(scene,camera);}catch(e){console.warn('Precompile skipped',e);}})();await Promise.race([job,new Promise(r=>setTimeout(r,cap))]);}
   // Switch world behind a loading screen. steps: async work to do while it shows (build, start the match...).
   async function enter(next,{title,sub,kicker,steps=[],min=900}={}){
    if(busy||next===world)return;busy=true;const t0=performance.now();
@@ -43,11 +44,11 @@
    }finally{if(title)hide();busy=false;requestDraw();}
   }
   // A loading screen without a world change (the black cube): compile what is about to be seen.
-  async function veil({title,sub,kicker,min=800}={}){if(busy)return;busy=true;const t0=performance.now();try{show(title,sub,kicker);await frame();await frame();progress(.5);await compile();progress(1);const left=min-(performance.now()-t0);if(left>0)await new Promise(r=>setTimeout(r,left));}finally{hide();busy=false;requestDraw();}}
+  async function veil({title,sub,kicker,min=800}={}){if(busy)return;busy=true;const t0=performance.now();try{show(title,sub,kicker);await frame();await frame();progress(.5);await compile(1500);progress(1);const left=min-(performance.now()-t0);if(left>0)await new Promise(r=>setTimeout(r,left));}finally{hide();busy=false;requestDraw();}}
   // A short card (a sealed door, a milestone).
   let cardTimer=0;function card(title,sub,kicker='BREAKTHYRULE',ms=2600){show(title,sub,kicker);progress(1);el.classList.add('card');clearTimeout(cardTimer);cardTimer=setTimeout(()=>{el.classList.remove('card');hide();},ms);}
   // Chapters: status from the manifest, and their scripts fetched only when asked for.
-  async function chapters(){if(manifest)return manifest;try{const r=await fetch('/assets/worlds/chapters.json?v=1');manifest=(await r.json()).chapters||{};}catch{manifest={};}return manifest;}
+  async function chapters(){if(manifest)return manifest;try{const r=await fetch('/assets/worlds/chapters.json?v=2');manifest=(await r.json()).chapters||{};}catch{manifest={};}return manifest;}
   async function chapter(id){const m=(await chapters())[id];if(!m)return {id,status:'sealed'};
    if(m.script&&m.status!=='sealed'){if(!loadedScripts.has(m.script))loadedScripts.set(m.script,new Promise((res,rej)=>{const s=document.createElement('script');s.src=m.script;s.onload=res;s.onerror=rej;document.head.append(s);}));try{await loadedScripts.get(m.script);}catch{return {id,...m,status:'sealed'};}}
    return {id,...m};}

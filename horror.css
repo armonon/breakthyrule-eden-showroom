@@ -1,0 +1,25 @@
+/* The horror chapter (horror-chapter.js): prompts, the showdown's red light, and the in-game Garment Lab. */
+#horror-prompt{position:fixed;left:50%;bottom:22%;transform:translateX(-50%);z-index:30;padding:9px 16px;background:rgba(6,7,8,.72);color:#efe9dc;font:600 11px 'DM Sans',Arial,sans-serif;letter-spacing:.18em;border:1px solid rgba(255,255,255,.16);pointer-events:none}
+#horror-prompt[hidden]{display:none}
+body.office-showdown #battle-hud::before{content:'';position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 140px 30px rgba(170,0,0,.5);animation:office-red 1.1s ease-in-out infinite}
+@keyframes office-red{50%{box-shadow:inset 0 0 180px 46px rgba(200,0,0,.62)}}
+#garment-lab-ingame{width:min(860px,calc(100vw - 28px));max-height:calc(100dvh - 40px);overflow:auto;padding:24px;background:#fbfaf6;color:#151515;border:0;border-radius:4px}
+#garment-lab-ingame::backdrop{background:radial-gradient(circle,rgba(255,255,255,.75),rgba(235,235,230,.92))}
+#garment-lab-ingame header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+#garment-lab-ingame h2{margin:4px 0 0;font:400 30px Georgia,serif}
+#garment-lab-ingame small{font-size:10px;letter-spacing:.18em;opacity:.65}
+.gl-intro{font-size:13px;opacity:.8;margin:0 0 14px}
+.gl-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+@media (max-width:700px){.gl-body{grid-template-columns:1fr}}
+.gl-preview canvas{width:100%;aspect-ratio:2/1;background:#e9e7e0;border-radius:3px}
+.gl-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.gl-row button,.gl-tabs button{border:1px solid #d6d3cb;background:#fff;padding:7px 12px;font-size:10px;letter-spacing:.14em;cursor:pointer}
+.gl-row button[aria-pressed="true"],.gl-tabs button[aria-pressed="true"]{background:#151515;color:#fff;border-color:#151515}
+.gl-tabs{display:flex;gap:6px;margin:6px 0 8px}
+.gl-art{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;max-height:280px;overflow:auto}
+.gl-thumb{border:1px solid #e2dfd7;background:#fff;padding:3px;cursor:pointer;aspect-ratio:1}
+.gl-thumb img{width:100%;height:100%;object-fit:contain}
+.gl-thumb[aria-pressed="true"]{border:2px solid #151515}
+#garment-lab-ingame footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}
+.gl-real{font-size:11px;letter-spacing:.14em;color:#151515}
+.gl-make{background:#151515;color:#fff;border:0;padding:12px 18px;font-size:11px;letter-spacing:.16em;cursor:pointer}
