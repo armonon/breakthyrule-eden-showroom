@@ -25,3 +25,20 @@ body.touch-play .ch-keys,body.touch-play .ch-putaway,body.touch-play .ch-lock{di
 body.touch-play .ar-vitals{bottom:auto;top:132px;transform:scale(.75);transform-origin:left top}
 body.touch-play .ar-map{transform:scale(.7);transform-origin:right top}
 body.touch-play .ar-feed{top:150px}
+
+/* Keep the thumb on the control, including its label, and preserve notch clearance. */
+#touch-controls [hidden]{display:none!important}
+#touch-controls .tc-stick-label{position:absolute;top:calc(100% + 7px);left:0;width:100%;text-align:center;font:500 8px Arial,sans-serif;letter-spacing:.14em;color:#f4f1ea;text-shadow:0 1px 4px #000;pointer-events:none}
+#touch-controls .tc-stick.running{border-color:#e8dba2;box-shadow:0 0 0 3px #e8dba222}
+#touch-controls .tc-stick i{transition:none;will-change:transform}
+#touch-controls.tc-expedition .tc-stick{left:calc(18px + env(safe-area-inset-left));bottom:26px;width:112px;height:112px}
+#touch-controls.tc-expedition .tc-stick i{width:44px;height:44px;margin:-22px}
+#touch-controls.tc-expedition button{border-radius:18px;min-width:44px;min-height:44px;font-size:10px;letter-spacing:.03em;background:#102922dc}
+#touch-controls.tc-expedition .tc-jump{right:calc(18px + env(safe-area-inset-right));bottom:20px;width:64px;height:64px;background:#e4e8d5;color:#172a25;border-radius:50%}
+#touch-controls.tc-expedition .tc-slide{right:calc(96px + env(safe-area-inset-right));bottom:22px;width:58px;height:58px;border-radius:50%}
+#touch-controls.tc-expedition .tc-use{right:calc(90px + env(safe-area-inset-right));bottom:100px;width:64px;height:56px}
+#touch-controls.tc-expedition .tc-third{left:auto;right:calc(22px + env(safe-area-inset-right));bottom:102px;width:52px;height:52px}
+#touch-controls.tc-expedition .tc-fire{right:calc(20px + env(safe-area-inset-right));bottom:174px;width:62px!important;height:62px!important;font-size:10px!important}
+#touch-controls.tc-expedition .tc-reload{right:calc(100px + env(safe-area-inset-right));bottom:178px;width:48px!important;height:48px!important;font-size:9px}
+@media(max-width:360px){#touch-controls.tc-expedition .tc-stick{left:calc(12px + env(safe-area-inset-left));width:100px;height:100px}#touch-controls.tc-expedition .tc-slide{right:calc(88px + env(safe-area-inset-right));width:52px;height:52px}#touch-controls.tc-expedition .tc-use{right:calc(84px + env(safe-area-inset-right));width:58px}}
+@media(max-height:500px) and (orientation:landscape){#touch-controls.tc-expedition .tc-stick{bottom:20px;width:100px;height:100px}#touch-controls.tc-expedition .tc-fire{bottom:154px;width:54px!important;height:54px!important}#touch-controls.tc-expedition .tc-reload{bottom:158px}#touch-controls.tc-expedition .tc-use,#touch-controls.tc-expedition .tc-third{bottom:88px}#touch-controls.tc-expedition .tc-jump{bottom:14px;width:58px;height:58px}#touch-controls.tc-expedition .tc-slide{bottom:16px}}

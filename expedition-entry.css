@@ -7,3 +7,23 @@
 @media(max-width:700px){.entry-header{height:68px;padding:10px 12px;gap:8px}.entry-header strong{font-size:11px}.entry-header span{font-size:8px}.entry-header>a{max-width:72px;font-size:11px}.view-nav{gap:4px}.view-nav button{padding:9px 7px;font-size:9px}.entry-footer{height:30px;padding:0 12px;font-size:9px}.entry-footer #entry-identity{display:none}#world{height:calc(100dvh - 98px)}.expedition-entry #touch-controls{top:68px;bottom:30px}.expedition-entry #night-hud{left:12px;top:14px;max-width:calc(100% - 24px)}#night-count{font-size:26px}#night-event{min-height:20px;max-width:220px}#night-danger{margin-top:0}.expedition-entry #night-action{bottom:210px;font-size:11px;padding:10px}.expedition-entry #controls-help{bottom:8px;right:8px}.expedition-entry .night-tools{gap:4px;max-width:280px}.expedition-entry .night-tools button{min-height:34px;height:34px}#entry-hint{max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}}
 @media(prefers-reduced-motion:reduce){.entry-spinner{animation:none;border-color:#efcf81}}
 .expedition-entry #night-reset{width:auto;font-size:11px;white-space:nowrap}
+
+/* Mobile play owns the viewport; keyboard instructions stay in the help menu. */
+body.entry-touch{overscroll-behavior:none;padding:0}
+.entry-touch .entry-header{height:calc(64px + env(safe-area-inset-top));padding:calc(8px + env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 8px max(12px,env(safe-area-inset-left));gap:8px}
+.entry-touch .entry-header strong{font-size:11px}.entry-touch .entry-header span{font-size:8px}.entry-touch .entry-header>a{max-width:72px;font-size:11px}
+.entry-touch .entry-header :is(a,button){min-height:44px;display:flex;align-items:center;justify-content:center}
+.entry-touch .entry-header .view-nav button{font-size:10px;padding:8px}
+.entry-touch #world{height:calc(100dvh - 64px - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:0}
+.entry-touch .entry-footer{display:none}
+.entry-touch #touch-controls{top:calc(64px + env(safe-area-inset-top));bottom:env(safe-area-inset-bottom)}
+.entry-touch #night-hud{left:max(12px,env(safe-area-inset-left));top:12px;width:calc(100% - 24px - env(safe-area-inset-left) - env(safe-area-inset-right));max-width:340px}
+.entry-touch #night-event{min-height:0;max-width:100%;font-size:11px}.entry-touch #night-event:empty{display:none}.entry-touch #night-count{font-size:26px}
+.entry-touch .night-tools{display:flex;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-x;pointer-events:auto;max-width:100%;padding:0 0 6px;gap:6px;scrollbar-width:thin}
+.entry-touch .night-tools button{flex-shrink:0;min-height:44px;min-width:44px;height:44px;border-radius:12px;touch-action:pan-x}
+.entry-touch :is(#night-flare,#night-reload,#night-view){display:none!important}
+.entry-touch #night-action{bottom:248px;max-width:calc(100% - 24px);min-height:44px}
+.entry-touch #night-chat{top:12px;bottom:12px;height:auto;left:12px;right:12px;width:auto}
+.entry-touch #controls-help{bottom:auto;right:max(12px,env(safe-area-inset-right));top:190px;min-width:44px;min-height:44px}
+.entry-touch :is(#night-dialog,#night-journal){max-height:calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));padding:20px}
+@media(max-height:500px) and (orientation:landscape){.entry-touch .entry-header>div{display:none}.entry-touch .entry-header{height:calc(52px + env(safe-area-inset-top));padding-top:calc(4px + env(safe-area-inset-top));padding-bottom:4px}.entry-touch #world{height:calc(100dvh - 52px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}.entry-touch #touch-controls{top:calc(52px + env(safe-area-inset-top))}.entry-touch #night-hud{left:145px;top:8px;width:calc(100% - 340px);max-width:340px}.entry-touch #night-action{bottom:20px;max-width:calc(100% - 340px);font-size:10px}.entry-touch #controls-help{top:8px;right:auto;left:18px}}
