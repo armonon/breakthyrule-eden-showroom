@@ -46,22 +46,18 @@ window.createEdenExtras=function({T,scene,camera,garden,combat,secrets,collectio
   for(const y of [.04,.96])for(const z of [-.5,.5]){const band=new T.Mesh(new T.BoxGeometry(1.04,.06,.04),iron);band.position.set(0,y,z);crate.add(band);}
   crate.traverse(n=>{if(n.isMesh){n.castShadow=true;n.userData.onPick=()=>openDrop();addPickable(n);}});}
  const beam=new T.Mesh(new T.CylinderGeometry(.55,.9,40,24,1,true),new T.MeshBasicMaterial({color:0xfff1c4,transparent:true,opacity:.22,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,fog:false}));beam.position.set(DROP_AT.x,20,DROP_AT.z);beam.visible=false;scene.add(beam);
- const chip=document.createElement('div');chip.id='eden-drop';chip.hidden=true;world.append(chip);chip.onclick=()=>openDrop(true);
  function dropState(){
   const ms=force?Date.now()-forcedAt:Date.now()%3600000,minutes=ms/60000,hour=Math.floor((force?forcedAt:Date.now())/3600000);
   return {live:minutes<DROP_MINUTES,age:ms/1000,untilNext:(3600000-ms)/1000,featured:hour%collection.length};
  }
- function openDrop(fromChip=false){const s=dropState();if(!s.live)return;const p=getPlayer();if(!fromChip&&p&&Math.hypot(p.position.x-DROP_AT.x,p.position.z-DROP_AT.z)>9){secrets.notify('The Drop is live by the east lawn. Walk over to open it.');return;}inspectGarment(s.featured);if(!progress.drops?.includes(Math.floor(Date.now()/3600000))){(progress.drops??=[]).push(Math.floor(Date.now()/3600000));progress.drops=progress.drops.slice(-24);secrets.changed();}}
- let dropAnnounced=false;
+ function openDrop(){const s=dropState();if(!s.live)return;const p=getPlayer();if(p&&Math.hypot(p.position.x-DROP_AT.x,p.position.z-DROP_AT.z)>9){secrets.notify('Move closer to open this crate.');return;}inspectGarment(s.featured);if(!progress.drops?.includes(Math.floor(Date.now()/3600000))){(progress.drops??=[]).push(Math.floor(Date.now()/3600000));progress.drops=progress.drops.slice(-24);secrets.changed();}}
  function updateDrop(t){
-  const s=dropState(),format=x=>Math.floor(x/60)+':'+String(Math.floor(x%60)).padStart(2,'0');
+  const s=dropState();
   crate.visible=beam.visible=s.live;
   if(s.live){
    const fall=Math.min(1,s.age/6),ease=1-(1-fall)**3;crate.position.set(DROP_AT.x,30*(1-ease),DROP_AT.z);crate.rotation.y=reduced?0:t*.3;
    beam.material.opacity=.22*(fall<1?1:Math.max(.25,1-(s.age-6)/30));
-   chip.hidden=expeditionActive();chip.textContent='THE DROP · LIVE · '+collection[s.featured].name.toUpperCase();
-   if(!dropAnnounced){dropAnnounced=true;secrets.notify('THE DROP is falling into the garden: '+collection[s.featured].name,'found');}
-  }else{dropAnnounced=false;chip.hidden=s.untilNext>600||expeditionActive();chip.textContent='NEXT DROP · '+format(s.untilNext);}
+  }
   return s.live&&s.age<7;
  }
  // ---------- Mile marker ----------
