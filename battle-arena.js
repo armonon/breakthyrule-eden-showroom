@@ -48,8 +48,12 @@
  // most is pinged to everyone every PING_EVERY seconds; a dropped page left alone PAGE_RESET seconds (or one nobody
  // collects for PAGE_SHUFFLE) goes back to a page spot. The Moon Temple only takes pages at night; when all eight
  // are in, whoever delivered most wins the ceremony and the pages scatter again.
- const PAGE_COUNT=8,PAGE_RESET=45,PAGE_SHUFFLE=120,PING_EVERY=20,PING_SHOW=8,SOUL_TIME=9;
+ const PAGE_COUNT=8,PAGE_RESET=120,PAGE_SHUFFLE=120,PING_EVERY=20,PING_SHOW=8,SOUL_TIME=9;
  // Day and night (seconds): night brings the Attendant and opens the temple.
+ // The Watcher: drawn to the pages. He hunts whoever carries them (a hit makes them drop everything), picks up
+ // pages that have been moved and carries them back to where they belong, and otherwise walks between the page spots.
+ // Slower by day, faster and far more dangerous at night; he cannot reach the rooftops.
+ const WATCHER={day:2.4,night:3.7,carry:3,hitDay:22,hitNight:55,every:1.4,hunt:60};
  const CYCLE={day:180,dusk:20,night:120,dawn:20},NIGHT_MAX=.86,ATTENDANT={speed:3.9,hit:55,every:1.4,stun:150,stunFor:8};
  const SUPPLY_TABLE=[[30,{weapon:'sniper'}],[30,{weapon:'rifle'}],[20,'c4'],[20,{weapon:'smg'}]];
  const STREAKS={2:'DOUBLE KILL',3:'TRIPLE KILL',4:'OVERKILL'},SPREES={5:'KILLING SPREE',10:'RAMPAGE',15:'UNTOUCHABLE'};
@@ -301,7 +305,7 @@
     else if(had>=2&&target===player)setTimeout(()=>announce('YOUR POWER IS LOST'),900);
     setPower(target,0);}
    target.deaths=(target.deaths||0)+1;target.streak=0;target.multi=0;
-   const how=meta.kind==='fall'?'THE FALL':meta.kind==='attendant'?'THE ATTENDANT':meta.kind==='zone'?'THE NIGHT':meta.weapon?W(meta.weapon)?.name||meta.weapon.toUpperCase():'';
+   const how=meta.kind==='fall'?'THE FALL':meta.kind==='attendant'?'THE WATCHER':meta.kind==='zone'?'THE NIGHT':meta.weapon?W(meta.weapon)?.name||meta.weapon.toUpperCase():'';
    pushFeed(attacker&&attacker!==target?`${nameOf(attacker)} <i>${how}${meta.head?' · HEAD':''}</i> ${nameOf(target)}`:`${nameOf(target)} <i>${how||'FELL'}</i>`);
    // Drop what they carried.
    const p=posOf(target);let k=0;const spot=()=>{const a=k++*1.3;return [p.x+Math.cos(a)*.7,p.z+Math.sin(a)*.7];};
@@ -565,7 +569,7 @@
      q('.ar-alive').textContent=player?.score||0;q('.ar-top-label').textContent=player?`SCORE · #${everyone.indexOf(player)+1} OF ${everyone.length}`:'SCORE';
      const un=untilNight(),mm=x=>`${Math.floor(x/60)}:${String(Math.floor(x)%60).padStart(2,'0')}`;
      const open=templeOpen(),inT=pages.filter(pg=>pg.state==='delivered').length,mine=player?pagesOf(player):0;
-     q('.ar-zone').textContent=(open?`MOON TEMPLE OPEN · DAWN IN ${mm(-un)}`:`TEMPLE OPENS IN ${mm(un)}`)+(event?.kind==='supply'?` · ${event.label}`:'');
+     q('.ar-zone').textContent=(open?`MOON TEMPLE OPEN · DAWN IN ${mm(-un)}`:`TEMPLE OPENS IN ${mm(un)}`)+(event?.kind==='supply'?` · ${event.label}`:'')+(window.edenStory?.has('pages')&&!window.edenStory.has('office')?' · THE OFFICE IS OPEN: THE PYRAMID':'');
      q('.ar-pages').innerHTML=pages.map(pg=>`<i class="pg ${pg.state}${pg.carrier===player?' mine':''}" title="${pg.state}"></i>`).join('')+`<span>${mine?`<b>${mine}</b> CARRIED · `:''}${inT}/${PAGE_COUNT} IN THE TEMPLE${pinged&&clock<pingUntil?` · <em>${pinged===player?'YOU ARE':nameOf(pinged)+' IS'} PINGED</em>`:''}</span>`;
      {const pw=player?.power||0,lv=Math.min(POWER_MAX,pw);q('.ar-power').innerHTML=pw?`<b>POWER ${pw}</b><span>+${Math.round(lv*POWER_DMG*100)}% DAMAGE · +${lv*POWER_SHIELD} SHIELD${pw>=POWER_GLOW?' · <em>YOU GLOW RED</em>':''}</span>`:'';
       const top=strongest();if(top&&top!==player)q('.ar-power').innerHTML+=`<small>STRONGEST: ${nameOf(top)} · POWER ${top.power}</small>`;}
@@ -590,6 +594,7 @@
      for(const pg of pages){if(!pg.loot)continue;const [x,y]=toMap(pg.loot.pos.x,pg.loot.pos.z);map.fillStyle=pg.state==='loose'?'#fff':'#f3e6c4';map.fillRect(x-2,y-2.5,4,5);}
      if(pinged&&pinged.alive&&clock<pingUntil&&pinged!==player){const q2=posOf(pinged),[x,y]=toMap(q2.x,q2.z);map.strokeStyle='#ff5a4a';map.lineWidth=1.5;map.beginPath();map.arc(x,y,4+((clock*2)%1)*6,0,TAU);map.stroke();map.fillStyle='#ff5a4a';map.beginPath();map.arc(x,y,2.5,0,TAU);map.fill();}
      for(const c of combatants()){if(c===player||(c.power||0)<POWER_GLOW)continue;const q2=posOf(c),[x,y]=toMap(q2.x,q2.z),r0=2.5+Math.min(POWER_MAX,c.power)*.35;map.fillStyle=`rgba(255,42,26,${.55+.45*Math.sin(clock*7)})`;map.beginPath();map.arc(x,y,r0,0,TAU);map.fill();}
+     if(window.edenStory?.has('pages')){const pg=garden.pyramid?.inspect?.();if(pg){const [x,y]=toMap(pg.x,pg.z+24);map.strokeStyle='#c183ff';map.lineWidth=2;map.strokeRect(x-4,y-4,8,8);}}
      if(attendant){const [x,y]=toMap(attendant.pos.x,attendant.pos.z);map.fillStyle='#b23cff';map.beginPath();map.arc(x,y,3.5+Math.sin(clock*8),0,TAU);map.fill();}
      if(event){const at=event.kind==='bounty'?(event.target?.alive?posOf(event.target):null):event.pos;if(at){const [x,y]=toMap(at.x,at.z),pulse=3+Math.sin(clock*6)*1.2;
       map.strokeStyle=map.fillStyle=event.kind==='supply'?'#ffd27a':event.kind==='hill'?'#7fe3ff':event.kind==='pages'?'#f3e6c4':'#ff6b5a';map.lineWidth=1.5;map.beginPath();
@@ -708,9 +713,10 @@
    const title=PAGE_INFO[pg.i]?.title||'A LOST PAGE';
    pg.loot=dropItem({type:'page',page:pg.i,rarity:'epic',label:`PAGE ${pg.i+1} · ${title.toUpperCase()}${at.y>.5?' · ON THE ROOF':''}`},at.x,at.z);
    if(at.y>.5&&pg.loot){pg.loot.y=at.y;pg.loot.pos.y=at.y;pg.loot.group.position.y=at.y;}
-   pg.state=loose?'loose':'home';pg.carrier=null;pg.since=clock;
+   pg.state=loose?'loose':'home';pg.carrier=null;pg.since=clock;if(!loose)pg.home=at.clone();
   }
   function scatterPages(){
+   if(attendant){attendant.page=null;attendant.fetch=null;attendant.think=0;}
    for(const pg of pages)if(pg.loot&&loot.includes(pg.loot))removeLoot(pg.loot);
    pages=[];for(let i=0;i<PAGE_COUNT;i++){const pg={i,state:'home',carrier:null,loot:null,since:clock,by:null};pages.push(pg);placePage(pg,pageSpot(i));}
    for(const c of [player,...bots])if(c)c.delivered=0;
@@ -729,6 +735,8 @@
    announce(`${nameOf(c)} ${c===player?'DELIVERED':'DELIVERED'} ${k} PAGE${k>1?'S':''} · ${in_}/${PAGE_COUNT} IN THE TEMPLE`);
    pushFeed(`${nameOf(c)} <i>DELIVERED ${k} PAGE${k>1?'S':''}</i>`);chime([523,659,784,1046],.07,.08);
    if(in_>=PAGE_COUNT){
+    // The story's first milestone, locked for good: the office opens.
+    if(window.edenStory?.set('pages')){setTimeout(()=>{announce('ALL EIGHT PAGES · THE OFFICE IS OPEN');o.onPagesComplete?.(true);},900);setTimeout(()=>announce('FOLLOW THE ROAD TO THE PYRAMID'),4200);}
     const best=[player,...bots].filter(Boolean).sort((a,b)=>(b.delivered||0)-(a.delivered||0))[0];
     best.score=(best.score||0)+POINTS.ceremony;round++;
     setTimeout(()=>{announce(`THE CEREMONY · ${best===player?'YOU WIN IT':nameOf(best)+' WINS IT'} · +${POINTS.ceremony} · THE PAGES SCATTER AGAIN`);pushFeed(`${nameOf(best)} <i>WON THE CEREMONY</i>`);},1800);
@@ -742,6 +750,7 @@
     if(pg.state==='loose'&&clock-pg.since>PAGE_RESET){placePage(pg,pageSpot(pg.i));pushFeed(`<i>PAGE ${pg.i+1} RETURNED TO ITS PLACE</i>`);}
     else if(pg.state==='home'&&clock-pg.since>PAGE_SHUFFLE){placePage(pg,pageSpot(pg.i,pg.loot?.pos));}
     else if(pg.state==='carried'&&!pg.carrier?.alive)placePage(pg,pageSpot(pg.i),true);
+    // (state 'watcher': in the Watcher's hand on the way home)
    }
    // The Moon Temple: open (gold) at night, shut (dim red) by day.
    const open=templeOpen();
@@ -762,29 +771,45 @@
   }
   function updateNight(dt){
    const n=nightLevel();o.setNight(n*NIGHT_MAX);
-   if(n>.5&&lastNight<=.5)announce('NIGHT FALLS · THE MOON TEMPLE IS OPEN · THE ATTENDANT HUNTS');
+   if(n>.5&&lastNight<=.5)announce('NIGHT FALLS · THE MOON TEMPLE IS OPEN · THE WATCHER GROWS BOLD');
    if(n<=.5&&lastNight>.5)announce('DAWN · THE TEMPLE CLOSES · HOLD ON TO YOUR PAGES');
    lastNight=n;
+   updateWatcher(dt,n);
+  }
+  function watcherPageMesh(){const m=new T.Mesh(new T.PlaneGeometry(.32,.42),new T.MeshStandardMaterial({color:0xf3e6c4,emissive:0xffcf7a,emissiveIntensity:.8,roughness:.9,side:T.DoubleSide}));m.userData.noHit=true;m.raycast=()=>{};m.visible=false;root.add(m);return m;}
+  function updateWatcher(dt,n){
    const w=garden.district?.watcher;if(!w)return;
-   if(n<.6){if(attendant){attendant=null;w.visible=false;}return;}
-   if(!attendant){const spot=farSpawn();attendant={pos:spot,stunUntil:0,hurt:0,hitT:0};w.visible=true;}
-   const a=attendant,targets=combatants();let target=null,bd=1e9;
-   for(const c of targets){const d=posOf(c).distanceTo(a.pos);if(d<bd){bd=d;target=c;}}
-   a.hitT-=dt;
-   if(target&&clock>=a.stunUntil){
-    const to=posOf(target).clone().sub(a.pos).setY(0),d=to.length();
-    if(d>1.2)a.pos.addScaledVector(to.normalize(),Math.min(d-1.1,ATTENDANT.speed*dt));
-    w.rotation.y=Math.atan2(to.x,to.z);
-    const tq=posOf(target),level=tq.y-(o.terrainY?o.terrainY(tq.x,tq.z):0)<1.6;
-    if(d<1.6&&a.hitT<=0&&level){a.hitT=ATTENDANT.every;damage(target,ATTENDANT.hit,null,{kind:'attendant',blast:true,dir:to.clone().normalize()});chime([62,41],.16,.09);if(target===player)o.onImpact?.(a.pos,1.2);}
+   if(!attendant){const spot=farSpawn();attendant={pos:spot,stunUntil:0,hurt:0,hitT:0,mode:'patrol',page:null,target:null,goal:null,think:0,patrolI:0,heldMesh:watcherPageMesh()};w.visible=true;}
+   const a=attendant,night=n>.5,level=c=>{const q=posOf(c);return q.y-(o.terrainY?o.terrainY(q.x,q.z):0)<1.6;};
+   w.visible=true;a.hitT-=dt;a.think-=dt;
+   // Decide: carry a page home, hunt a carrier, fetch a moved page, or patrol the page spots.
+   if(a.think<=0){a.think=.4;a.target=null;
+    if(a.page){a.mode='return';a.goal=a.page.home||pageSpot(a.page.i);}
+    else{let best=null,bs=-1e9;for(const c of combatants()){const k=pagesOf(c);if(!k||!level(c))continue;const d=posOf(c).distanceTo(a.pos);if(d>WATCHER.hunt)continue;const sc=k*12-d;if(sc>bs){bs=sc;best=c;}}
+     if(best){a.mode='hunt';a.target=best;}
+     else{let pg=null,bd=1e9;for(const x of pages){if(x.state!=='loose'||!x.loot)continue;const q=x.loot.pos;if(q.y-(o.terrainY?o.terrainY(q.x,q.z):0)>1)continue;const d=q.distanceTo(a.pos);if(d<bd){bd=d;pg=x;}}
+      if(pg){a.mode='fetch';a.fetch=pg;a.goal=pg.loot.pos.clone();}
+      else{a.mode='patrol';const homes=pages.filter(x=>x.home).map(x=>x.home);if(homes.length&&(!a.goal||a.goal.distanceTo(a.pos)<1.5)){a.patrolI=(a.patrolI+1+Math.floor(Math.random()*3))%homes.length;a.goal=homes[a.patrolI].clone();}}}}}
+   const goal=a.mode==='hunt'&&a.target?.alive?posOf(a.target):a.goal;
+   if(goal&&clock>=a.stunUntil){
+    const to=goal.clone().sub(a.pos).setY(0),d=to.length(),sp=a.page?WATCHER.carry:night?WATCHER.night:WATCHER.day;
+    if(d>1.1)a.pos.addScaledVector(to.normalize(),Math.min(d-1,sp*dt));
+    if(d>.05)w.rotation.y=Math.atan2(to.x,to.z);
+    if(a.mode==='hunt'&&a.target?.alive&&d<1.6&&a.hitT<=0&&level(a.target)){a.hitT=WATCHER.every;const t=a.target,dir=posOf(t).clone().sub(a.pos).setY(0).normalize();
+     damage(t,night?WATCHER.hitNight:WATCHER.hitDay,null,{kind:'attendant',blast:true,dir});chime([62,41],.16,.09);if(t===player)o.onImpact?.(a.pos,1.2);
+     if(t.alive&&pagesOf(t)){dropPages(t);if(t===player)announce('THE WATCHER TORE THE PAGES FROM YOU');}}
+    if(a.mode==='fetch'&&a.fetch&&d<1.3){const pg=a.fetch;if(pg.state==='loose'&&pg.loot){removeLoot(pg.loot);pg.loot=null;pg.state='watcher';pg.carrier=null;a.page=pg;a.think=0;}a.fetch=null;}
+    if(a.mode==='return'&&a.page&&d<1.3){const pg=a.page;placePage(pg,pg.home||pageSpot(pg.i));a.page=null;a.think=0;pushFeed(`<i>THE WATCHER RETURNED PAGE ${pg.i+1}</i>`);}
    }
    w.position.set(a.pos.x,groundY(a.pos.x,a.pos.z)+Math.sin(clock*1.7)*.06+(clock<a.stunUntil?-.4:0),a.pos.z);
-   // A heartbeat that quickens as it closes in on you.
-   if(player?.alive){const d=posOf(player).distanceTo(a.pos);if(d<28&&clock>=beatAt){beatAt=clock+.35+d/28*1.2;chime([55,46],.13,.11);}}
+   // The page he carries glows in his hand.
+   const hm=a.heldMesh;hm.visible=!!a.page;if(a.page){hm.position.set(a.pos.x+Math.sin(w.rotation.y)*.55,w.position.y+1.7,a.pos.z+Math.cos(w.rotation.y)*.55);hm.rotation.y=w.rotation.y;}
+   // A heartbeat that quickens as he closes in on you (always when he is hunting you).
+   if(player?.alive){const d=posOf(player).distanceTo(a.pos);if((d<28||a.target===player&&d<45)&&clock>=beatAt){beatAt=clock+.35+Math.min(1,d/28)*1.2;chime([55,46],.13,.11);}}
   }
   function hurtAttendant(amount){
    const a=attendant;if(!a||clock<a.stunUntil)return;a.hurt+=amount;
-   if(a.hurt>=ATTENDANT.stun){a.hurt=0;a.stunUntil=clock+ATTENDANT.stunFor;announce('THE ATTENDANT IS STUNNED');chime([330,247,185],.1,.06);}
+   if(a.hurt>=ATTENDANT.stun){a.hurt=0;a.stunUntil=clock+ATTENDANT.stunFor;announce('THE WATCHER IS STUNNED');chime([330,247,185],.1,.06);}
   }
   function restock(){
    for(const pad of pads){if(loot.includes(pad.l))continue;if(!pad.respawnAt)pad.respawnAt=clock+PAD_RESTOCK;else if(clock>=pad.respawnAt){pad.l=dropItem(rollItem(pad.spec),pad.x,pad.z);pad.respawnAt=0;}}
@@ -865,7 +890,7 @@
    for(const c of chests)c.group.parent?.remove(c.group);chests=[];
    for(const l of loot)l.group.parent?.remove(l.group);loot=[];feed=[];
    if(zone){zone.group.parent?.remove(zone.group);zone=null;}
-   if(event?.ring)event.ring.parent?.remove(event.ring);event=null;attendant=null;pages=[];pinged=null;templeRing?.parent?.remove(templeRing);templeRing=null;for(const d of doors){d.g.parent?.remove(d.g);for(const l of d.leaves)l.leaf.parent?.remove(l.leaf);}doors=[];beacon?.parent?.remove(beacon);beacon=null;lastNight=0;if(garden.district?.watcher)garden.district.watcher.visible=false;
+   if(event?.ring)event.ring.parent?.remove(event.ring);event=null;attendant?.heldMesh?.parent?.remove(attendant.heldMesh);attendant=null;pages=[];pinged=null;templeRing?.parent?.remove(templeRing);templeRing=null;for(const d of doors){d.g.parent?.remove(d.g);for(const l of d.leaves)l.leaf.parent?.remove(l.leaf);}doors=[];beacon?.parent?.remove(beacon);beacon=null;lastNight=0;if(garden.district?.watcher)garden.district.watcher.visible=false;
   }
   // Beyond Eden is always on: walking through the hidden door starts the match (or picks it up where you left it),
   // walking back into the garden pauses it. walkIn: keep the player where they are instead of placing them.
@@ -885,7 +910,7 @@
     player={alive:true,hp:100,shield:SHIELD_PLAYER,shieldMax:SHIELD_PLAYER,armor:0,armorMax:0,garment:null,worn:new Set(),heals:{bandage:0,medkit:0},kills:0,deaths:0,score:0,lastHurt:-9,protectUntil:SPAWN_PROTECT};
     if(!walkIn){const spot=DOOR_SPAWN();o.placePlayer(spot.x,spot.z,spot.x,spot.z-6);combat.syncLook();}
     for(let i=0;i<7;i++){const spot=farSpawn(),b=makeBot(i,new T.Vector3(spot.x,groundY(spot.x,spot.z),spot.z),rand(0,TAU));kitBot(b);b.state='roam';b.score=0;b.deaths=0;}
-    scatterPages();kitPlayer();hud.update();hud.feed();hud.announce('BEYOND EDEN · FIND THE 8 LOST PAGES');
+    scatterPages();kitPlayer();if(window.edenStory?.has('pages'))o.onPagesComplete?.(false);hud.update();hud.feed();hud.announce('BEYOND EDEN · FIND THE 8 LOST PAGES');
    }finally{entering=false;}
   }
   function suspend(){
@@ -947,10 +972,10 @@
     for(const l of loot){if(l.item.type==='page')continue;const d=l.group.position.distanceTo(p);if(d<radius*1.3){const out=l.group.position.clone().sub(p).setY(0);if(out.lengthSq()<1e-4)out.set(rand(-1,1),0,rand(-1,1));out.normalize().multiplyScalar(6*(1-d/(radius*1.3))+1);l.vel=out.add(new T.Vector3(0,4+rand(0,2),0));l.y+=.05;}}
     for(const c of chests){const d=c.pos.distanceTo(p);if(d<radius){c.jolt=.5*(1-d/radius)+.15;}}
     for(const dr of doors){const dd=Math.hypot(dr.x-p.x,dr.z-p.z);if(dd<radius+1)smashDoor(dr,new T.Vector3(dr.x-p.x,0,dr.z-p.z),9*(1-dd/(radius+1))+3);}if(attendant&&attendant.pos.distanceTo(p)<radius)hurtAttendant(dmg);for(const c of combatants()){const d=posOf(c).distanceTo(p);if(d<radius&&los(p.clone().add(new T.Vector3(0,.4,0)),eyeOf(c)))damage(c,dmg*Math.pow(1-d/radius,1.2),player,{weapon:'c4',blast:true,dir:posOf(c).clone().sub(p).setY(0).normalize()});}},
-   inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,event:event&&{kind:event.kind,label:event.label},night:+nightLevel().toFixed(2),attendant:attendant&&{x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1),stunned:clock<attendant.stunUntil},pages:player?pagesOf(player):0,power:player?.power||0,pageState:pages.map(pg=>pg.state),delivered:pages.filter(pg=>pg.state==='delivered').length,pinged:pinged?nameOf(pinged):null,templeOpen:templeOpen(),soul:!!player?.soul,nextEvent:+(nextEventAt-clock).toFixed(1),pads:pads.length,player:player&&{alive:player.alive,score:player.score||0,deaths:player.deaths||0,hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
+   inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,event:event&&{kind:event.kind,label:event.label},night:+nightLevel().toFixed(2),attendant:attendant&&{x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1),stunned:clock<attendant.stunUntil},pages:player?pagesOf(player):0,power:player?.power||0,pageState:pages.map(pg=>pg.state),delivered:pages.filter(pg=>pg.state==='delivered').length,pinged:pinged?nameOf(pinged):null,watcher:attendant&&{mode:attendant.mode,page:attendant.page?attendant.page.i:null,x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1)},templeOpen:templeOpen(),soul:!!player?.soul,nextEvent:+(nextEventAt-clock).toFixed(1),pads:pads.length,player:player&&{alive:player.alive,score:player.score||0,deaths:player.deaths||0,hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
     bots:bots.map(b=>({name:b.name,score:b.score||0,kills:b.kills||0,alive:b.alive,hp:Math.round(b.hp),shield:Math.round(b.shield),down:+(b.model.motion?.downAmount?.()||0).toFixed(2),state:b.state,weapon:b.weapon,armor:b.armor,x:+b.root.position.x.toFixed(1),z:+b.root.position.z.toFixed(1)})),
     zone:zone&&{phase:zone.phase,state:zone.state,r:+zone.r.toFixed(1),x:+zone.center.x.toFixed(1),z:+zone.center.z.toFixed(1)},chests:chests.filter(c=>c.open).length+'/'+chests.length,loot:loot.length,arsenal:combat.arsenal.inspect()}),
-   _debug:{get bots(){return bots;},get player(){return player;},get loot(){return loot;},get chests(){return chests;},interact,damage,god(v=true){godMode=v;},place:(x,z,lx,lz,dp=0)=>{o.placePlayer(x,z,lx,lz);combat.syncLook(dp);},skip(t){countdown=0;clock+=t||0;},setZone(r){if(zone){zone.r=r;}},get pages(){return pages;},deliver,setPower,night(){const u=untilNight();if(u>0)worldOffset+=u+CYCLE.dusk+1;},blood(v){bloodHit=v;}}
+   _debug:{get bots(){return bots;},get player(){return player;},get loot(){return loot;},get chests(){return chests;},interact,damage,god(v=true){godMode=v;},place:(x,z,lx,lz,dp=0)=>{o.placePlayer(x,z,lx,lz);combat.syncLook(dp);},skip(t){countdown=0;clock+=t||0;},setZone(r){if(zone){zone.r=r;}},get pages(){return pages;},get watcher(){return attendant;},dropPages,deliver,placePage,setPower,night(){const u=untilNight();if(u>0)worldOffset+=u+CYCLE.dusk+1;},blood(v){bloodHit=v;}}
   };
  }
  root.createBattleArena=createArena;

@@ -1,0 +1,13 @@
+/* Loading screens between worlds (worlds.js). */
+#world-loading{position:fixed;inset:0;z-index:90;display:grid;place-items:center;background:#07090a;color:#efe9dc;opacity:0;transition:opacity .4s ease;pointer-events:none}
+#world-loading[hidden]{display:none}
+#world-loading.in{opacity:1;pointer-events:auto}
+#world-loading.out{opacity:0}
+#world-loading.card{background:rgba(5,6,7,.82);backdrop-filter:blur(4px)}
+.wl-card{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:24px}
+.wl-kicker{font-size:10px;letter-spacing:.3em;opacity:.6}
+.wl-title{margin:0;font:600 clamp(28px,5vw,52px) 'Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.18em}
+.wl-sub{margin:0;font-size:12px;letter-spacing:.18em;opacity:.75;max-width:520px;line-height:1.6}
+.wl-bar{width:min(260px,60vw);height:2px;background:rgba(255,255,255,.12);margin-top:14px;overflow:hidden}
+.wl-bar i{display:block;height:100%;width:0;background:#efe9dc;transition:width .3s ease}
+#world-loading.card .wl-bar{display:none}

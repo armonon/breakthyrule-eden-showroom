@@ -130,3 +130,5 @@ body.soul-taken #battle-hud::after{content:'';position:fixed;inset:0;pointer-eve
 @keyframes ar-power-pulse{0%,100%{box-shadow:inset 0 0 80px 14px rgba(255,30,20,.38)}50%{box-shadow:inset 0 0 120px 26px rgba(255,30,20,.55)}}
 .ar-board td.glow{color:#ff6a5a;font-weight:700}
 @media (prefers-reduced-motion:reduce){.ar-power-glow{animation:none}}
+
+.ar-pages .pg.watcher{background:rgba(193,131,255,.55);border-color:#c183ff;box-shadow:0 0 6px rgba(193,131,255,.7)}
