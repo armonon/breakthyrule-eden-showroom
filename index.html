@@ -3,113 +3,272 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>BREAKTHYRULE — A codex worn on the body</title>
+ <title>BREAKTHYRULE — Products</title>
  <meta name="description" content="Break Thy Rule: airbrushed garments shown as rotating 3D pieces, a gallery of the clothes worn, an archive with the Librarian, and a community.">
  <meta property="og:image" content="/assets/og-default.jpg">
  <link rel="icon" type="image/png" href="/assets/favicon-32.png">
- <link rel="stylesheet" href="/site/site.css?v=2">
+ <link rel="stylesheet" href="/site/site.css?v=3">
  <link rel="stylesheet" href="/site/codex.css?v=1">
  <link rel="stylesheet" href="/breakthyrule-cover.css?v=10">
  <link rel="stylesheet" href="/site/folios.css?v=12">
  <link rel="stylesheet" href="/site/commerce.css?v=5">
  <script defer src="/assets/three.min.js?v=187"></script>
- <script defer src="/asset-loader.js?v=5"></script>
- <script defer src="/garment-catalog.js?v=11"></script>
+ <script defer src="/asset-loader.js?v=product-studio-6"></script>
+ <script defer src="/garment-catalog.js?v=hat-replacement-1"></script>
  <script defer src="/site/config.js?v=1"></script>
  <script defer src="/site/site.js?v=7"></script>
- <script defer src="/site/garment-stage.js?v=5"></script>
+ <script defer src="/site/garment-stage.js?v=product-studio-6"></script>
  <script defer src="/breakthyrule-assets.js?v=2"></script>
  <script defer src="/site/cover-title.js?v=4"></script>
  <script defer src="/breakthyrule-cover.js?v=10"></script>
- <script type="module" src="/site/cart-ui.js?v=2"></script>
- <script defer src="/site/stickers.js?v=8"></script>
+ <script type="module" src="/site/cart-ui.js?v=site-audit-1"></script>
+ <script defer src="/site/stickers.js?v=10"></script>
  <script defer src="/site/backdrop.js?v=2"></script>
- <script defer src="/site/home.js?v=3"></script>
- <script defer src="/site/gallery-reel.js?v=1"></script>
- <script type="module" src="/site/codex-lab.mjs?v=1"></script>
- <script type="module" src="/site/hero-lab.mjs?v=5"></script>
- <script defer src="/site/ad-breaks.js?v=6"></script>
+ <script defer src="/site/gallery-reel.js?v=site-audit-1"></script>
+ <link rel="stylesheet" href="/site/shop-redesign.css?v=18">
+ <script type="module" src="/site/shop-experience.mjs?v=more-tees-1"></script>
+ <link rel="stylesheet" href="/site/product-portals.css?v=2">
+ <script type="module" src="/site/product-portals.mjs?v=1"></script>
+ <link rel="stylesheet" href="/site/people-hero.css?v=1">
+ <link rel="stylesheet" href="/btr-belts/collection.css?v=transparent-3">
+ <script defer src="/btr-belts/garment-stage.js?v=product-studio-6"></script>
+ <script defer src="/btr-belts/home.js?v=1"></script>
+ <script defer src="/btr-belts/thumbnails.js?v=1"></script>
+ <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap">
+ <link rel="stylesheet" href="/site/home-about.css?v=inverted-2">
+ <script defer src="/site/about.js?v=paper-embed-1"></script>
+ <link rel="stylesheet" href="/pendant-collection/transparent-spin.css?v=1">
+ <link rel="stylesheet" href="/pendant-collection/collection.css?v=1">
+ <script type="module" src="/pendant-collection/collection.js?v=browse-rework-1"></script>
+
+ <link rel="stylesheet" href="/accessory-collection/collection.css?v=hat-shapes-4">
+ <script defer src="/accessory-collection/catalog.js?v=hat-shapes-4"></script>
+ <script defer src="/accessory-collection/viewer.js?v=product-studio-6"></script>
+ <script defer src="/accessory-collection/customizer.js?v=site-audit-1"></script>
+ <script defer src="/accessory-collection/integration.js?v=hat-replacement-1"></script>
+ <link rel="stylesheet" href="/site/bitmap-witnesses.css?v=1">
+ <script defer src="/site/bitmap-witnesses.js?v=1"></script>
+ <link rel="stylesheet" href="/site/shared-header.css?v=about-1">
+ <link rel="stylesheet" href="/site/shared-header-layout.css?v=about-1">
+ <script defer src="/site/shared-header.js?v=site-audit-1"></script>
+ <link rel="stylesheet" href="/core-collection/core.css?v=distinct-4">
+ <script defer src="/core-collection/catalog.js?v=distinct-4"></script>
+ <script defer src="/core-collection/cycle.js?v=product-studio-6"></script>
+ <script defer src="/core-collection/core.js?v=fw27-cards-1"></script>
+ <link rel="stylesheet" href="/site/mystery-bitmap.css?v=tab-loop-5">
+ <link rel="stylesheet" href="/site/discovery-hero.css?v=tab-loop-5">
+ <script type="module" src="/site/discovery-hero.mjs?v=product-studio-6"></script>
+<style id="archive-model-preview">.archive-product #viewer .halo,.archive-product #viewer .pedestal,.product-card[data-archive-hq] .halo{display:none!important}.archive-product #viewer{background:transparent!important}.product-card[data-archive-hq] .card-media:has(canvas.live) img{opacity:0!important}</style>
+<style id="replacement-hat-previews">.product-card[data-accessory-replacement] .halo{display:none!important}.product-card[data-accessory-replacement] .card-media:has(canvas[data-model-ready="true"]) img{opacity:0!important}.product-card[data-accessory-replacement] .card-media canvas{opacity:1}</style>
+<link rel="stylesheet" href="/site/collection-browse.css?v=2">
 </head>
 <body data-page="home">
  <main>
-  <section class="hero codex-hero has-collage">
-   <div class="hero-collage" aria-hidden="true"><img src="/assets/colour-collage-0524.jpg" alt="" decoding="async"><img src="/assets/colour-collage-0524.jpg" alt="" decoding="async"></div>
-   <div class="hero-copy">
-    <p class="folio ink-in">Folio I <small>Liber Vestium — the book of garments</small></p>
-    <h1 class="ink-in"><span class="dropcap">B</span>REAK<br>THY RULE</h1>
-    <p class="lede ink-in-late"><span class="rubric">A codex worn on the body.</span> Airbrushed, hand-registered garments in four chapters. Turn each one in the light, then walk the whole collection in the Garden of Eden.</p>
-    <div class="hero-actions ink-in-late">
-     <a class="solid" href="#products">Open the collection <span aria-hidden="true">↓</span></a>
-     <a class="ghost" href="/showroom">Enter the 3D showroom <span aria-hidden="true">↗</span></a>
-    </div>
-    <p class="marginalia ink-in-late">Every print is registered by hand. No two run the same; the variance is the signature.</p>
+  <section class="wearer-hero" id="wearer-hero" data-particle-hero="true" data-masthead-edge="true" aria-labelledby="wearer-title" data-current="1">
+   <div class="wearer-scenes"><img class="btr-particle-fallback" crossorigin="anonymous" src="https://apple-cover-assets--breakthyrule-eden-showroom.netlify.app/hero-film-poster.jpg" alt="Break Thy Rule film, rendered as fine color bitmap dots." width="1280" height="720" decoding="async" fetchpriority="high"></div>
+   <div class="wearer-shade" aria-hidden="true"></div>
+   <div class="wearer-topline"><span>BREAKTHYRULE / WORN IN THE WORLD</span><button type="button" id="wearer-play" aria-pressed="true" hidden>Pause photos Ⅱ</button></div>
+   <div class="wearer-content">
+    <div class="wearer-title-group"><p class="wearer-kicker">The clothes. The people. The moments.</p><h1 id="wearer-title"><span>BREAK</span><span>THY RULE</span></h1></div>
+    <div class="wearer-actions"><a href="#products">Collection <span aria-hidden="true">↓</span></a></div>
    </div>
-   <a class="hero-stage altar" id="hero-stage" aria-label="Featured garment" data-lab-hero>
-    <div class="halo" id="hero-halo"></div>
-    <div class="pedestal"></div>
-    <div class="card-media" id="hero-viewer"><img id="hero-photo" alt=""></div>
-    <div class="spot" id="hero-spot"></div>
-    <div class="hero-top"><span id="hero-chapter"></span><span>drag to turn</span></div>
-    <div class="hero-label"><span><span class="plate-no" id="hero-plate"></span><span id="hero-name"></span></span><em id="hero-price"></em></div>
-   </a>
+   <div class="wearer-bottomline"><a href="/gallery?filter=worn" class="wearer-gallery-link">Gallery <span aria-hidden="true">↗</span></a><div id="wearer-index" role="group" aria-label="Choose a wearer photograph" hidden><button type="button" data-wearer-choice="0" data-src="/images/breakthyrule/favs/full/img-2440.webp" data-thumb="/images/breakthyrule/favs/thumb/img-2440.webp" data-width="1350" data-thumb-width="480" data-height="1800" data-alt="Person walking outdoors in a black graphic sweatshirt and black trousers." data-position="50% 35%" aria-label="Show wearer photograph 1">01</button><button type="button" data-wearer-choice="1" data-src="/images/breakthyrule/favs/full/img-8369.webp" data-thumb="/images/breakthyrule/favs/thumb/img-8369.webp" data-width="1350" data-thumb-width="480" data-height="1800" data-alt="Person wearing a white printed T-shirt and black graphic trousers beside a chain-link fence." data-position="50% 35%" aria-label="Show wearer photograph 2" aria-current="true">02</button><button type="button" data-wearer-choice="2" data-src="/images/breakthyrule/favs/full/img-2805.webp" data-thumb="/images/breakthyrule/favs/thumb/img-2805.webp" data-width="1200" data-thumb-width="427" data-height="1800" data-alt="Person looking back while wearing a pale yellow T-shirt with a large illustrated back print at night." data-position="50% 35%" aria-label="Show wearer photograph 3">03</button><button type="button" data-wearer-choice="3" data-src="/images/breakthyrule/favs/full/img-1659.webp" data-thumb="/images/breakthyrule/favs/thumb/img-1659.webp" data-width="1350" data-thumb-width="480" data-height="1800" data-alt="Person wearing a printed tank top at a doorway with hands raised over their face." data-position="50% 30%" aria-label="Show wearer photograph 4">04</button><button type="button" data-wearer-choice="4" data-src="/images/breakthyrule/favs/full/img-0381.webp" data-thumb="/images/breakthyrule/favs/thumb/img-0381.webp" data-width="1350" data-thumb-width="480" data-height="1800" data-alt="Back view of a person wearing an olive jacket with a large illustrated panel and fabric flowers on the shoulders." data-position="50% 38%" aria-label="Show wearer photograph 5">05</button><button type="button" data-wearer-choice="5" data-src="/images/breakthyrule/favs/full/img-0155.webp" data-thumb="/images/breakthyrule/favs/thumb/img-0155.webp" data-width="1350" data-thumb-width="480" data-height="1800" data-alt="Person in a black beanie looking down at a black shirt with a red face-and-sun graphic outdoors." data-position="50% 35%" aria-label="Show wearer photograph 6">06</button><button type="button" data-wearer-choice="6" data-src="/images/breakthyrule/favs/full/img-0323.webp" data-thumb="/images/breakthyrule/favs/thumb/img-0323.webp" data-width="1350" data-thumb-width="480" data-height="1800" data-alt="Two people in graphic clothing in a studio, one standing and another seated beside printed artwork." data-position="50% 38%" aria-label="Show wearer photograph 7">07</button><button type="button" data-wearer-choice="7" data-src="/images/breakthyrule/favs/full/img-3589.webp" data-thumb="/images/breakthyrule/favs/thumb/img-3589.webp" data-width="1350" data-thumb-width="480" data-height="1800" data-alt="Close view of a person wearing an eye-print T-shirt beneath a pale jacket outdoors." data-position="0% 35%" aria-label="Show wearer photograph 8">08</button></div><span id="wearer-count" aria-hidden="true">02 / 08</span></div>
+  </section>
+
+
+  <section class="discovery-hero" id="photo-story" aria-label="3D collection preview">
+   <div class="discovery-atmosphere" aria-hidden="true"></div>
+   <div class="discovery-tabs" role="tablist" aria-label="Explore the collection">
+    <button id="discovery-tab-chance" type="button" role="tab" aria-selected="true" aria-controls="discovery-chance">In rotation</button>
+    <button id="discovery-tab-mystery" type="button" role="tab" aria-selected="false" aria-controls="mystery" tabindex="-1">Mystery box</button>
+   </div>
+   <div id="discovery-chance" role="tabpanel" aria-labelledby="discovery-tab-chance">
+   <div class="discovery-layout">
+    <div class="discovery-object">
+     <div id="discovery-stage" tabindex="0" role="img" aria-label="Rotating 3D product. Drag to turn, or use the left and right arrow keys."><img id="discovery-fallback" src="/core-collection/posters/core-tee-black-front.webp" alt="A piece from the BreakThyRule collection" loading="lazy"></div>
+     <span class="discovery-instruction" id="discovery-instruction">360° / DRAG TO TURN</span>
+     <span class="discovery-loading" id="discovery-loading" role="status">Finding your next piece…</span>
+    </div>
+    <div class="discovery-details" aria-busy="true">
+     <div class="discovery-meta"><span id="discovery-category">THE COLLECTION</span><span id="discovery-number">01</span></div>
+     <h3 id="discovery-name">Something unexpected.</h3>
+     <p id="discovery-description">Garments, metal, accessories and a little chance.</p>
+     <div class="discovery-price-line"><strong id="discovery-price"></strong><span id="discovery-price-note"></span></div>
+     <p class="discovery-variation" id="discovery-variation">Original pieces. Infinite possibilities.</p>
+     <a id="discovery-link" href="#products">Explore the collection <span aria-hidden="true">↗</span></a>
+     <p class="discovery-footnote" id="discovery-footnote">Every turn brings another possibility.</p>
+    </div>
+   </div>
+   <div class="discovery-timeline" aria-hidden="true"><span id="discovery-progress"></span></div>
+   </div>
+  <div id="mystery" class="discovery-mystery-panel" role="tabpanel" aria-labelledby="discovery-tab-mystery" hidden>
+   <svg class="mystery-filters" aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden;pointer-events:none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+     <filter id="mystery-ink-filter" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feColorMatrix in="SourceGraphic" type="saturate" values="0" result="mono"/>
+      <feComponentTransfer in="mono" result="tones"><feFuncR type="gamma" amplitude="1" exponent="1.12" offset="0"/><feFuncG type="gamma" amplitude="1" exponent="1.12" offset="0"/><feFuncB type="gamma" amplitude="1" exponent="1.12" offset="0"/><feFuncA type="linear" slope="0" intercept="1"/></feComponentTransfer>
+      <feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="1" seed="23" result="noise"/>
+      <feColorMatrix in="noise" type="matrix" values=".2126 .7152 .0722 0 0 .2126 .7152 .0722 0 0 .2126 .7152 .0722 0 0 0 0 0 0 1" result="grain"/>
+      <feComposite in="tones" in2="grain" operator="arithmetic" k1="0" k2="1" k3="1.7" k4="-.85" result="dither"/>
+      <feComponentTransfer in="dither" result="ink"><feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/></feComponentTransfer>
+      <feComposite in="ink" in2="SourceGraphic" operator="in"/>
+     </filter>
+    </defs>
+   </svg>
+   <div class="mystery-console">
+    <div class="mystery-print">
+    <div class="mystery-stage" id="mystery-stage" role="img" aria-label="Rotating Break Thy Rule mystery box">
+     <span class="box-shadow" aria-hidden="true"></span>
+     <div class="mystery-cube" aria-hidden="true"><div class="box-face box-front"><span>BREAK<br>THY RULE</span><b>?</b><small>CURATED BY THE HOUSE</small></div><div class="box-face box-back"><span>EXPECT<br>THE UNEXPECTED</span><b>✦</b></div><div class="box-face box-left"><span>NO TWO<br>STORIES<br>THE SAME.</span></div><div class="box-face box-right"><span>LET<br>CHANCE<br>DRESS YOU.</span></div><div class="box-face box-top"><span>BTR / MYSTERY DROP</span></div><div class="box-face box-bottom"></div></div>
+     <span class="box-coordinate" aria-hidden="true">BTR—SUPPLY / 005</span>
+    </div>
+    </div>
+    <div class="mystery-info">
+     <div class="mystery-options" role="group" aria-label="Choose a mystery package"><button type="button" data-package="one-tee" aria-pressed="true"><span class="package-name">One Tee</span><span class="package-price">$30</span></button><button type="button" data-package="outerwear" aria-pressed="false"><span class="package-name">Outerwear</span><span class="package-price">$40</span></button><button type="button" data-package="light-pack" aria-pressed="false"><span class="package-name">Light Pack</span><span class="package-price">$80</span></button><button type="button" data-package="heavy-pack" aria-pressed="false"><span class="package-name">Heavy Pack</span><span class="package-price">$120</span></button><button type="button" data-package="super-package" aria-pressed="false"><span class="package-name">Super Package</span><span class="package-price">$250</span></button></div>
+     <div class="mystery-description" aria-live="polite"><p class="tiny-label" id="box-label">1 tee</p><h3 id="box-name">One Tee</h3><p id="box-copy">One tee, selected by the house. A simple way to leave the choice to us.</p><p class="box-detail" id="box-detail">Choose your size and preferred fit, and leave any notes in the Lab.</p></div>
+     <a class="solid" id="box-cta" href="/lab?package=one-tee#packages">Choose One Tee <span aria-hidden="true">↗</span></a>
+     <button class="spin-toggle" id="box-spin" type="button" aria-pressed="false">Pause rotation Ⅱ</button>
+     <p class="fine">Select your size and preferences before adding to your bag.</p>
+    </div>
+   </div>
+  </div>
+   <span class="discovery-sr" id="discovery-status" aria-live="polite"></span>
   </section>
 
   <section class="gallery-reel" id="gallery-reel" aria-label="The gallery"></section>
 
-  <div class="rubric-ticker" id="rubric-ticker" aria-hidden="true"></div>
+  <div class="rpg-shop">
+  <nav class="shop-path wrap" aria-label="Shop sections">
+   <a href="#core">Core collection</a><a href="#products">Collection</a><a href="#metalwork">Metal + belts</a><a href="#accessories">Accessories</a><a href="#photo-story" data-discovery-open="mystery">Mystery boxes</a>
+  </nav>
 
-  <div class="ornament" aria-hidden="true"><span>✠</span></div>
-
-  <section class="section wrap" id="products">
-   <div class="section-head">
-    <div><p class="kicker">The plates</p><h2><span class="sect">§</span>The collection</h2></div>
-    <div class="chips" id="chapter-filter" role="group" aria-label="Filter by chapter"></div>
-   </div>
+  <section class="section wrap" id="core" aria-label="FW27 collection"><div class="core-grid"><article class="core-card" data-core-summary="price"><a class="core-image" data-core-model="core-tee" href="/product?item=core-tee" aria-label="Explore FW27 Crew Tee in 3D"><img style="filter:hue-rotate(0deg)" src="/core-collection/posters/core-tee-black-front.webp" alt="FW27 Crew Tee garment preview" width="800" height="960" loading="lazy" decoding="async"></a><h3><a href="/product?item=core-tee">FW27 Crew Tee</a></h3><p class="core-card-price" aria-label="Random $30 to Cut and Sew $80" title="Random to Cut &amp; Sew">$30–$80</p></article><article class="core-card" data-core-summary="price"><a class="core-image" data-core-model="core-hoodie" href="/product?item=core-hoodie" aria-label="Explore FW27 Crew Hoodie in 3D"><img style="filter:hue-rotate(223deg)" src="/core-collection/posters/core-hoodie-white-front.webp" alt="FW27 Crew Hoodie garment preview" width="800" height="960" loading="lazy" decoding="async"></a><h3><a href="/product?item=core-hoodie">FW27 Crew Hoodie</a></h3><p class="core-card-price" aria-label="Random $50 to Cut and Sew $180" title="Random to Cut &amp; Sew">$50–$180</p></article><article class="core-card" data-core-summary="price"><a class="core-image" data-core-model="core-crewneck" href="/product?item=core-crewneck" aria-label="Explore FW27 Crewneck in 3D"><img style="filter:hue-rotate(36deg)" src="/core-collection/posters/core-crewneck-black-front.webp" alt="FW27 Crewneck garment preview" width="800" height="960" loading="lazy" decoding="async"></a><h3><a href="/product?item=core-crewneck">FW27 Crewneck</a></h3><p class="core-card-price" aria-label="Random $40 to Cut and Sew $150" title="Random to Cut &amp; Sew">$40–$150</p></article></div></section>
+  <section class="section wrap shop-shelf" id="products" aria-labelledby="collection-title">
+   <div class="section-head"><div><p class="kicker">01 / Equipment chest</p><h2 id="collection-title"><span class="sect">§</span>The collection</h2></div><p class="shelf-note">Graphic tees from the collection.<br>Every piece has a point of view.</p></div>
    <div class="product-grid" id="product-grid"></div>
-   <p class="fine" id="grid-status" role="status"></p>
+   <div class="shelf-bottom collection-browse-row"><p class="fine" id="grid-status" role="status"></p><button class="ghost more-button collection-browse-action" id="collection-more" type="button" aria-controls="product-grid" aria-expanded="false">More of the collection <span aria-hidden="true">＋</span></button></div>
   </section>
 
-  <section class="section wrap lab-band" aria-labelledby="lab-band-title">
-   <div class="section-head">
-    <div><p class="kicker">Made for you</p><h2 id="lab-band-title"><span class="sect">§</span>The Garment Lab</h2></div>
-    <a class="solid" href="/lab">Open the Lab <span aria-hidden="true">↗</span></a>
+  <section class="section wrap shop-shelf" id="metalwork" aria-labelledby="metal-title">
+   <div class="section-head"><div><p class="kicker">02 / Metalwork &amp; relics</p><h2 id="metal-title"><span class="sect">§</span>Metal, meet body.</h2></div><a class="ghost" href="/belts.html">Explore belts in 3D ↗</a></div>
+   <div class="equipment-grid" id="metal-grid"></div>
+   <div class="shelf-bottom"><p class="fine">21 belt designs in 3D. Explore the necklace collection below. More metal objects are coming soon.</p><button class="ghost more-button" id="metal-more" type="button" aria-controls="metal-grid" aria-expanded="false">More metal + belts <span aria-hidden="true">＋</span></button></div>
+  </section>
+
+  <section class="section wrap belt-shelf" id="belts" aria-labelledby="belt-title"><div class="section-head"><div><p class="kicker">Metalwork / The belt collection</p><h2 id="belt-title"><span class="sect">§</span>Sculpture, worn.</h2></div></div><p class="lede">Sculptural buckles. Simple black straps. Turn every design in 3D.</p><div class="belt-grid belt-grid-home"><article class="belt-card"><a href="/product?item=belt-neon-shamrock" class="belt-card-image"><img src="/btr-belts/posters/neon-shamrock.webp" alt="Neon Shamrock Belt, sculptural buckle and black strap" width="800" height="500" loading="lazy" decoding="async"></a><div class="belt-card-copy"><h3><a href="/product?item=belt-neon-shamrock">Neon Shamrock Belt</a></h3><p class="accessory-price">$400 USD · complete belt</p><div class="belt-card-actions"><a href="/product?item=belt-neon-shamrock" class="ghost">Explore <span aria-hidden="true">↗</span></a></div></div></article><article class="belt-card"><a href="/product?item=belt-circle-of-anarchy" class="belt-card-image"><img src="/btr-belts/posters/circle-of-anarchy.webp" alt="Circle of Anarchy Belt, sculptural buckle and black strap" width="800" height="500" loading="lazy" decoding="async"></a><div class="belt-card-copy"><h3><a href="/product?item=belt-circle-of-anarchy">Circle of Anarchy Belt</a></h3><p class="accessory-price">$400 USD · complete belt</p><div class="belt-card-actions"><a href="/product?item=belt-circle-of-anarchy" class="ghost">Explore <span aria-hidden="true">↗</span></a></div></div></article><article class="belt-card"><a href="/product?item=belt-absolute-darkness" class="belt-card-image"><img src="/btr-belts/posters/absolute-darkness.webp" alt="Absolute Darkness Belt, sculptural buckle and black strap" width="800" height="500" loading="lazy" decoding="async"></a><div class="belt-card-copy"><h3><a href="/product?item=belt-absolute-darkness">Absolute Darkness Belt</a></h3><p class="accessory-price">$400 USD · complete belt</p><div class="belt-card-actions"><a href="/product?item=belt-absolute-darkness" class="ghost">Explore <span aria-hidden="true">↗</span></a></div></div></article><article class="belt-card"><a href="/product?item=belt-sara-la-kali" class="belt-card-image"><img src="/btr-belts/posters/sara-la-kali.webp" alt="Sara la kali Belt, sculptural buckle and black strap" width="800" height="500" loading="lazy" decoding="async"></a><div class="belt-card-copy"><h3><a href="/product?item=belt-sara-la-kali">Sara la kali Belt</a></h3><p class="accessory-price">$400 USD · complete belt</p><div class="belt-card-actions"><a href="/product?item=belt-sara-la-kali" class="ghost">Explore <span aria-hidden="true">↗</span></a></div></div></article></div><div class="collection-browse-row"><p class="fine">4 of 21 designs</p><a class="collection-browse-action" href="/belts.html">Belt collection</a></div></section>
+
+  <section class="section wrap" id="accessories" aria-labelledby="accessory-title"><div class="section-head"><div><p class="kicker">Accessories / The first collection</p><h2 id="accessory-title"><span class="sect">§</span>Small pieces. Big energy.</h2></div></div><p class="lede">Red centaur embroidery. White and black Apple Gloves. Mesh truckers and baseball caps, your way.</p><button type="button" class="ghost accessory-motion" data-accessory-motion aria-pressed="true">Pause previews</button><div class="accessory-grid"><article class="accessory-card" data-accessory-family="headband"><a class="accessory-image" data-accessory-model="headband-black" href="/product?item=accessory-headband-black" aria-label="Explore Black Headband in 3D"><img src="/accessory-collection/posters/headband-black.png?v=quality-3" alt="Black Headband 3D model" width="900" height="900" loading="lazy" decoding="async"></a><h3><a href="/product?item=accessory-headband-black">Black Headband</a></h3><p>Red centaur embroidery</p><a class="ghost" href="/product?item=accessory-headband-black">Explore 3D ↗</a></article><article class="accessory-card" data-accessory-family="gloves"><a class="accessory-image" data-accessory-model="gloves-white" href="/product?item=apple-gloves&amp;glove=white" aria-label="Explore White Apple Gloves in 3D"><img src="/accessory-collection/posters/gloves-white.png?v=quality-3" alt="White Apple Gloves 3D model" width="900" height="900" loading="lazy" decoding="async"></a><h3><a href="/product?item=apple-gloves&amp;glove=white">White Apple Gloves</a></h3><p>Design preview</p><a class="ghost" href="/product?item=apple-gloves&amp;glove=white">Explore 3D ↗</a></article><article class="accessory-card" data-accessory-family="skully"><a class="accessory-image" data-accessory-model="skully-black" href="/product?item=accessory-skully-black" aria-label="Explore Black Skully in 3D"><img src="/accessory-collection/posters/skully-black.png?v=quality-3" alt="Black Skully 3D model" width="900" height="900" loading="lazy" decoding="async"></a><h3><a href="/product?item=accessory-skully-black">Black Skully</a></h3><p>Red centaur embroidery</p><a class="ghost" href="/product?item=accessory-skully-black">Explore 3D ↗</a></article><article class="accessory-card" data-accessory-family="trucker"><a class="accessory-image" data-accessory-model="trucker-cobalt" href="/product?item=accessory-trucker-cobalt" aria-label="Explore Cobalt / White Trucker in 3D"><img src="/accessory-collection/posters/mesh-trucker-v2.png" alt="Cobalt / White Trucker 3D model" width="900" height="900" loading="lazy" decoding="async"></a><h3><a href="/product?item=accessory-trucker-cobalt">Cobalt / White Trucker</a></h3><p>Choose shape, colors + graphics</p><a class="ghost" href="/product?item=accessory-trucker-cobalt">Explore 3D ↗</a></article></div><div class="collection-browse-row"><p class="fine">Headwear & gloves</p><a class="collection-browse-action" href="/accessories.html">All accessories</a></div></section>
+
+  <div class="wrap workshop-witnesses" id="worn-photos">
+   <div class="witness-head"><p class="kicker">Worn by the witnesses</p><button class="witness-motion" id="witness-motion" type="button" aria-label="Pause photo movement" aria-controls="witness-strip" hidden>Ⅱ</button><a href="/gallery?filter=worn">See every photo <span aria-hidden="true">↗</span></a></div>
+   <div class="witness-strip" id="witness-strip" role="region" aria-label="Photos of Break Thy Rule worn in the world"></div>
+  </div>
+
+  <section class="home-about-section" id="production" aria-labelledby="home-paper-title">
+   <div id="home-about-paper" data-bitmap-about>
+ <svg class="print-filters" aria-hidden="true" width="0" height="0" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+   <!-- A one-bit, noise-dithered print treatment. The original photographs stay intact. -->
+   <filter id="home-bitmap-print" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feColorMatrix in="SourceGraphic" type="saturate" values="0" result="mono"/>
+    <feComponentTransfer in="mono" result="contrast"><feFuncR type="linear" slope="1.12" intercept="-.02"/><feFuncG type="linear" slope="1.12" intercept="-.02"/><feFuncB type="linear" slope="1.12" intercept="-.02"/><feFuncA type="linear" slope="0" intercept="1"/></feComponentTransfer>
+    <feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="1" seed="17" result="noise"/>
+    <feColorMatrix in="noise" type="matrix" values=".2126 .7152 .0722 0 0 .2126 .7152 .0722 0 0 .2126 .7152 .0722 0 0 0 0 0 0 1" result="gray-noise"/>
+    <feComposite in="contrast" in2="gray-noise" operator="arithmetic" k1="0" k2="1" k3="1.7" k4="-.85" result="dither"/>
+    <feComponentTransfer in="dither" result="ink"><feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/></feComponentTransfer>
+    <feComposite in="ink" in2="SourceGraphic" operator="in"/>
+   </filter>
+  </defs>
+ </svg>
+  <article class="paper-sheet" aria-labelledby="home-paper-title">
+   <header class="paper-heading">
+    <div class="document-line"><span>LOS ANGELES, CALIFORNIA</span><span>ABOUT / 001</span></div>
+    <h2 id="home-paper-title">BREAK THY RULE</h2>
+    <p class="mission-copy">We’re seekers of knowledge and truth. Our mission is to make this site an archive of authentic culture, knowledge and information—a place to explore, learn and keep asking questions. We take great pride in our products and our <a href="/archive">Archive</a>, and in the care we put into both.</p>
+   </header>
+   <div class="paper-content">
+    <aside class="printed-images" aria-label="Garments and artwork">
+     <figure class="garment-print">
+      <img class="bitmap-photo" src="/images/breakthyrule/favs/full/img-0155.webp" width="1350" height="1800" alt="Black-and-white print of a person wearing a Break Thy Rule graphic top." loading="lazy" decoding="async">
+      <figcaption>WORN OUT IN THE WORLD.</figcaption>
+     </figure>
+     <figure class="graphic-print">
+      <img class="bitmap-art" loading="lazy" decoding="async" src="/images/breakthyrule/graphics/thumb/love-gives-wings.webp" width="360" height="360" alt="Love Gives Wings: a winged heart graphic, printed in black and white.">
+      <figcaption>ARTISTS IN EVERY DROP.</figcaption>
+     </figure>
+    </aside>
+    <div class="copy-column">
+     <section class="paper-section" aria-labelledby="home-brand-heading">
+      <h3 id="home-brand-heading">01. THE BRAND</h3>
+      <p>We’re a clothing brand from Los Angeles. We collaborate with artists on every drop and print everything in house, working with vintage finds, new garments and our own cut and sew.</p>
+     </section>
+     <section class="paper-section" id="home-ready" aria-labelledby="home-ready-heading">
+      <h3 id="home-ready-heading">02. READY NOW</h3>
+      <p>We pick from garments already in our selection: vintage tees, crewnecks and some new pieces too. Having these garments on hand means we can get your order out sooner.</p>
+      <p class="typed-note">On hand. Out sooner.</p>
+     </section>
+    </div>
+    <div class="copy-column">
+     <section class="paper-section" id="home-made" aria-labelledby="home-made-heading">
+      <h3 id="home-made-heading">03. MADE TO ORDER</h3>
+      <p>Each garment is constructed in LA’s Fashion District, then printed in house and finished with its details and additions.</p>
+      <p>Allow <strong>2–3 weeks for making.</strong> That time gives us room to work carefully, refine the details and give your piece the attention it needs.</p>
+     </section>
+     <section class="paper-section" id="home-notes" aria-labelledby="home-notes-heading">
+      <h3 id="home-notes-heading">04. YOUR NOTES</h3>
+      <p>Have something in mind? Add a note to your order. We’ll consider your ideas and how we might incorporate them into the garment—a detail, a direction or something you’d like us to keep in mind.</p>
+     </section>
+    </div>
    </div>
-   <p class="lede">Everything is printed in house in Los Angeles. Build your own piece, or let chance decide.</p>
-   <div class="lab-band-grid">
-    <a class="lab-card" href="/lab?c=canvas&amp;g=tee#build"><span class="lab-card-no">I</span><strong>The Canvas</strong><span>A blank — vintage or new — printed with our artwork.</span><em>from $60</em></a>
-    <a class="lab-card" href="/lab?c=cut-sew&amp;g=hoodie#build"><span class="lab-card-no">II</span><strong>Cut &amp; Sew</strong><span>Made from scratch in 100% cotton. A handcrafted, brand-new piece.</span><em>from $80</em></a>
-    <a class="lab-card" href="/lab#relic"><span class="lab-card-no">III</span><strong>The Relic Box</strong><span>A curated box of new and repurposed garments.</span><em>$120</em></a>
-    <a class="lab-card" href="/lab#trinity"><span class="lab-card-no">IV</span><strong>The Trinity</strong><span>Three tees, one bundle.</span><em>$60</em></a>
+   <footer class="paper-footer"><span>ARTIST COLLABORATIONS. IN-HOUSE PRINTING.</span><a href="/?nocover=1#products">Collection ↗</a></footer>
+  </article>
+    <footer class="desk-footer">
+     <div class="print-controls"><button type="button" data-print-motion hidden>Pause images</button><span data-print-hint hidden>Click a print for the next one.</span></div>
+     <a class="full-about-link" href="/about">Open the About page ↗</a>
+    </footer>
+    <p class="sr-only" data-print-status role="status"></p>
    </div>
   </section>
 
-  <div class="ornament" aria-hidden="true"><span>❦</span></div>
 
-  <section class="section wrap codex-wall" id="codex" aria-labelledby="codex-title">
-   <div class="section-head">
-    <div><p class="kicker">The graphics</p><h2 id="codex-title"><span class="sect">§</span>The codex, pasted up</h2></div>
-    <div class="wall-actions"><button type="button" class="ghost" id="wall-shuffle">Shuffle the wall</button><button type="button" class="solid" id="wall-cover">See all <span id="wall-count"></span> graphics <span aria-hidden="true">↗</span></button></div>
-   </div>
-   <p class="lede wall-lede"><span class="rubric">Every line of the codex is drawn for the body first and the wall second.</span> Drag them around, slap a new one down on bare paper, click one to read it — or drag one onto a garment below to try it on.</p>
-   <div class="sticker-board"><div class="board-rail left"></div><div class="board-wall" id="board-wall" aria-label="Wall of Break Thy Rule graphics"></div><div class="board-rail right"></div></div>
-   <div class="codex-lab" id="codex-lab"></div>
-   <div class="witness-head"><p class="kicker">Worn by the witnesses</p><a href="/gallery?filter=worn">See every photo <span aria-hidden="true">↗</span></a></div>
-   <div class="witness-strip" id="witness-strip"></div>
-  </section>
 
-  <div class="ornament" aria-hidden="true"><span>✠</span></div>
+  </div>
 
-  <section class="section wrap">
-   <div class="teasers">
-    <a class="teaser" href="/gallery"><div class="teaser-img" data-numeral="II" style="background-image:url('/assets/colour-collage-0524.jpg')"></div><p class="kicker">Gallery</p><h3>Worn in real life</h3><p>Garments, models and the people wearing them.</p></a>
-    <a class="teaser" href="/archive"><div class="teaser-img" data-numeral="III" style="background-image:url('/assets/librarian-realistic.png');background-color:#ddd"></div><p class="kicker">Archive</p><h3>The Librarian's archive</h3><p>Topics behind every chapter, the shelf, and the discussion around them.</p></a>
-   </div>
-  </section>
-
-  <section class="showroom-band">
-   <div class="wrap">
-    <div><p class="kicker" style="color:#e9c5bf">Chapter 00 / Eden</p><h2>Walk the collection</h2><p class="lede" style="color:#ddd">The full 3D showroom: a sunlit garden, the museum, the library and the night district.</p></div>
-    <a class="solid" href="/showroom">Enter the showroom <span aria-hidden="true">↗</span></a>
+  <section class="product-portals wrap" id="product-portals" aria-label="Explore destinations">
+   <div class="portal-controls"><button id="portal-motion-toggle" type="button" aria-pressed="true" aria-label="Pause portal animations" hidden>Ⅱ</button></div>
+   <div class="portal-grid">
+    <a class="portal-card portal-eden" data-portal="eden" href="/showroom" aria-label="Enter Eden">
+     <span class="portal-visual" data-portal-stage aria-hidden="true">
+      <span class="portal-orbit"></span><span class="portal-object-shadow"></span>
+      <svg class="portal-fallback" viewBox="0 0 240 240" fill="none"><defs><linearGradient id="portal-apple-red" x1="45" y1="55" x2="180" y2="210"><stop stop-color="#ef5348"/><stop offset="1" stop-color="#7f131b"/></linearGradient></defs><path d="M120 63c-7-23 0-39 10-46" stroke="#604329" stroke-width="12" stroke-linecap="round"/><path d="M130 44c10-28 42-31 58-17-15 25-39 32-58 17Z" fill="#759141" stroke="#354824" stroke-width="4"/><path d="M120 65c-31-22-73-5-77 38-4 45 24 107 54 109 13 1 18-10 24-10 7 0 14 10 27 8 31-5 53-63 49-106-3-37-40-59-77-39Z" fill="url(#portal-apple-red)" stroke="#441c1b" stroke-width="4"/><path d="M65 103c5-18 15-25 28-27" stroke="#ffb18a" stroke-width="7" stroke-linecap="round" opacity=".75"/><ellipse cx="125" cy="131" rx="36" ry="32" fill="#fff9e8" stroke="#211b18" stroke-width="7"/><ellipse cx="134" cy="133" rx="15" ry="21" fill="#171c17"/><circle cx="140" cy="126" r="5" fill="#fff"/><path d="m97 180 13-12 13 9 16-12 12 11" stroke="#391d1b" stroke-width="4"/></svg>
+      <canvas data-portal-canvas></canvas>
+     </span>
+     <span class="portal-label"><strong>Eden</strong></span>
+    </a>
+    <a class="portal-card portal-lab" data-portal="lab" href="/lab#build" aria-label="Enter Garment Lab">
+     <span class="portal-visual" data-portal-stage aria-hidden="true">
+      <span class="portal-orbit"></span><span class="portal-object-shadow"></span>
+      <svg class="portal-fallback" viewBox="0 0 240 240" fill="none"><path d="m80 40-29 13-37 42 35 31 27-23v105h89V103l25 23 36-31-38-42-29-13c-11 25-67 25-79 0Z" fill="#d5c9ad" stroke="#423a2c" stroke-width="5" transform="translate(8 -3) rotate(8 120 120)"/><path d="m80 40-29 13-37 42 35 31 27-23v105h89V103l25 23 36-31-38-42-29-13c-11 25-67 25-79 0Z" fill="#f1eadc" stroke="#524a3d" stroke-width="4"/><path d="M80 40c9 40 69 40 79 0M84 196h74M76 103 81 75m84 28-5-28" stroke="#b8ab92" stroke-width="3"/><text x="120" y="126" fill="#a93b31" text-anchor="middle" font-size="27" font-family="Georgia" font-weight="bold">BTR</text><path d="m104 145 16-12 16 12-16 22Z" fill="#a93b31"/></svg>
+      <canvas data-portal-canvas></canvas>
+     </span>
+     <span class="portal-label"><strong>Garment Lab</strong></span>
+    </a>
+    <a class="portal-card portal-gallery" data-portal="gallery" href="/gallery" aria-label="Enter Gallery">
+     <span class="portal-visual" data-portal-stage aria-hidden="true">
+      <span class="portal-orbit"></span><span class="portal-object-shadow"></span>
+      <svg class="portal-fallback" viewBox="0 0 240 240" fill="none"><path d="m42 71 139-7 21 16-2 101-156 6-20-19 2-81Z" fill="#363b36" stroke="#171e1a" stroke-width="5"/><path d="m42 71 141-7 19 16-160 7Z" fill="#bdab7a"/><path d="m27 87 16 1 1 99-20-19Z" fill="#91816a"/><path d="m62 67 3-16 44-2 8 15" fill="#a29476" stroke="#3c3b30" stroke-width="4"/><rect x="145" y="90" width="38" height="21" rx="2" fill="#c4c6ae" stroke="#171e1a" stroke-width="4"/><circle cx="108" cy="137" r="45" fill="#ae9761" stroke="#171e1a" stroke-width="7"/><circle cx="108" cy="137" r="33" fill="#273832" stroke="#d3c396" stroke-width="4"/><circle cx="108" cy="137" r="22" fill="#142522"/><path d="m95 120 18-5 8 9-23 8Z" fill="#8cad9c" opacity=".8"/><path d="M54 102h20M151 163h28" stroke="#b8a26f" stroke-width="4"/></svg>
+      <canvas data-portal-canvas></canvas>
+     </span>
+     <span class="portal-label"><strong>Gallery</strong></span>
+    </a>
+    <a class="portal-card portal-archive" data-portal="archive" href="/archive" aria-label="Enter Archive">
+     <span class="portal-visual" data-portal-stage aria-hidden="true">
+      <span class="portal-orbit"></span><span class="portal-object-shadow"></span>
+      <svg class="portal-fallback" viewBox="0 0 240 240" fill="none"><path d="m61 42 112-8 17 13v153l-115 10-20-14Z" fill="#36261d" stroke="#201812" stroke-width="4"/><path d="m76 58 113-10v143L76 202Z" fill="#d9c69c" stroke="#382a1a" stroke-width="3"/><path d="m84 68 96-8M84 77l96-8M84 184l96-9M84 192l96-9" stroke="#ad976d" stroke-width="2"/><path d="m56 43 113-9 5 155-114 9Z" fill="#714535" stroke="#2d2118" stroke-width="5"/><path d="m66 57 94-8 3 126-94 8Z" stroke="#c2a56a" stroke-width="3"/><path d="m55 44 15 2 4 149-13 3Z" fill="#472e24"/><path d="m112 75 24 27-23 30-24-27Z" fill="#bd9b52"/><text x="118" y="157" fill="#e4ce91" text-anchor="middle" font-size="16" font-family="Georgia" font-weight="bold">CODEX</text></svg>
+      <canvas data-portal-canvas></canvas>
+     </span>
+     <span class="portal-label"><strong>Archive</strong></span>
+    </a>
    </div>
   </section>
  </main>

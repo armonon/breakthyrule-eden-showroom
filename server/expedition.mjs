@@ -20,7 +20,9 @@ export class ExpeditionError extends Error {
   constructor(status, message) { super(message); this.status = status; }
 }
 
-export function createExpeditionService({createEngine = loadExpeditionEngine(), clock = () => performance.now()/1000,
+// Keep the monotonic process clock on a shared epoch so reconnects after a
+// restart do not move the room's public simulation timestamps backwards.
+export function createExpeditionService({createEngine = loadExpeditionEngine(), clock = () => (performance.timeOrigin+performance.now())/1000,
   grace = 60, maxRooms = 64, onResult = () => {}, storageDir=null, storageAdapter=null, wallClock=()=>Date.now()/1000} = {}) {
   const rooms = new Map(), sessions = new Map(), accounts = new Map(), limits = new Map();
   const digest=token=>crypto.createHash('sha256').update(token).digest('hex');
