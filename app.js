@@ -6,7 +6,8 @@ const bookDialog=$('book-dialog');
 const librarianDialog=$('librarian-dialog');
 const uploadDialog=$('upload-dialog');
 const residentDialog=$('resident-dialog');
-function modalOpen(){return !!document.querySelector('dialog[open]');}
+function pageActive(){return window.showroomPageActive?.()??!document.hidden;}
+function modalOpen(){return !pageActive()||!!document.querySelector('dialog[open]');}
 let posterTurns=0,currentPoster=null;
 const posterView=posterDialog.querySelector('.poster-view');
 function fitPoster(){
@@ -318,7 +319,7 @@ const motion=createPlayerMotion(),walkVelocity=new T.Vector3(),sway=createCamera
 const moveKeys=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright']);
 const finePointer=matchMedia('(pointer: fine)').matches;
 $('movement-hint').textContent=finePointer?'W A S D TO MOVE / CLICK TO LOOK · C CROUCH':'DRAG TO LOOK / TAP TO EXPLORE';
-function requestDraw(){if(!frame&&!document.hidden)frame=requestAnimationFrame(draw);}
+function requestDraw(){if(!frame&&pageActive())frame=requestAnimationFrame(draw);}
 // Hit-stop: on a solid hit the picture holds for a few hundredths of a second, which is what sells the impact.
 let hitStopUntil=0;function hitStop(ms){if(!reduced)hitStopUntil=Math.max(hitStopUntil,performance.now()+ms);}
 // F9: frame rate, frame times and draw calls, to see what the game is doing on this machine.
@@ -326,7 +327,7 @@ let lastShiftShown=null,socialShift=null,perfBox=null,perfOn=false;const perf={n
 function perfFrame(raw){if(!perfOn||!raw)return;perf.n++;perf.sum+=raw;perf.worst=Math.max(perf.worst,raw);const now=performance.now();if(now-perf.at<500)return;perf.at=now;
  const i=renderer.info.render;perfBox.textContent=`${Math.round(perf.n/perf.sum)} FPS · ${(perf.sum/perf.n*1000).toFixed(1)} ms avg · ${(perf.worst*1000).toFixed(0)} ms worst · ${i.calls} draws · ${Math.round(i.triangles/1000)}k tris · ${graphics.toUpperCase()} · ×${renderer.getPixelRatio().toFixed(2)}`;perf.n=perf.sum=perf.worst=0;}
 document.addEventListener('keydown',e=>{if(e.key!=='F9')return;e.preventDefault();perfOn=!perfOn;if(!perfBox){perfBox=document.createElement('div');perfBox.id='perf-hud';perfBox.style.cssText='position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:80;background:rgba(0,0,0,.6);color:#9effa8;font:600 11px monospace;padding:4px 10px;pointer-events:none;letter-spacing:.04em';document.body.append(perfBox);}perfBox.hidden=!perfOn;perfBox.textContent='measuring…';requestDraw();});
-function draw(time){frame=0;if(!state.ready)return;if(time<hitStopUntil){previous=time;frame=requestAnimationFrame(draw);return;}if(lookLocked&&modalOpen())document.exitPointerLock?.();quality.frame(time,!!previous);const raw=Math.min((time-(previous||time))/1000,.25),dt=Math.min(raw,.05);previous=time;perfFrame(raw);
+function draw(time){frame=0;if(!pageActive()){previous=0;quality.pause();return;}if(!state.ready)return;if(time<hitStopUntil){previous=time;frame=requestAnimationFrame(draw);return;}if(lookLocked&&modalOpen())document.exitPointerLock?.();quality.frame(time,!!previous);const raw=Math.min((time-(previous||time))/1000,.25),dt=Math.min(raw,.05);previous=time;perfFrame(raw);
  // Movement and the match run in steps of at most 50 ms, so a long frame catches up instead of slowing the game down
  // and snapping back (what reads as rubber banding when the frame rate dips).
  const steps=Math.max(1,Math.ceil(raw/.05-1e-6)),sdt=(raw||.016)/steps;
@@ -556,7 +557,9 @@ renderer.domElement.addEventListener('pointermove',event=>{if(drag){const dx=eve
 renderer.domElement.addEventListener('pointerup',event=>{if(drag){suppressClickUntil=drag.moved?performance.now()+300:0;drag=null;renderer.domElement.releasePointerCapture(event.pointerId);}});
 renderer.domElement.addEventListener('pointercancel',()=>{drag=null;suppressClickUntil=0;});
 new ResizeObserver(()=>{renderer.setSize(stage.clientWidth,stage.clientHeight);camera.aspect=stage.clientWidth/stage.clientHeight;camera.updateProjectionMatrix();if(followResident)focusResident(followResident);else if(state.view==='free'){camera.position.copy(targetPosition);camera.lookAt(targetAim);requestDraw();}else go(state.view,true);}).observe(stage);
-document.addEventListener('visibilitychange',()=>{keys.clear();drag=null;if(!document.hidden)requestDraw();});
+function pageVisibilityChanged(){keys.clear();drag=null;previous=0;quality.pause();if(!pageActive()){cancelAnimationFrame(frame);frame=0;}else requestDraw();}
+document.addEventListener('visibilitychange',pageVisibilityChanged);
+document.addEventListener('btr:page-visibility',pageVisibilityChanged);
 renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();fallback();});
 function enterMultiplayer(){if(expedition?.active())return;if(!state.ready){pendingMultiplayerSpawn=true;return;}pendingMultiplayerSpawn=false;motion.reset();freeView();targetPosition.set(-2+Math.random()*4,1.7,11+Math.random()*3);targetAim.copy(targetPosition).add(new T.Vector3(0,-.15,-5));camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();}
 function focusVisitor(p){
