@@ -1,0 +1,67 @@
+/* Only Eden's mobile exploration HUD. The existing desktop and game-mode HUDs remain independent. */
+body.eden-mobile{--em-cream:#f4f0df;--em-line:#eee7d34d;--em-dark:#182922e8}
+body.eden-mobile-explore #world{height:100svh!important;height:100dvh!important;min-height:0!important}
+body.eden-mobile #scene canvas{touch-action:none}
+body.eden-mobile-explore :is(#btr-site-header,.btr-world-tools,.site-header,.world-footer){display:none!important}
+body.eden-mobile-explore :is(.world-topline,.world-caption,#social-launcher,#character-launcher,#social-move,#controls-help,#garden-effects,#shelf-actions,#lost-eden-tools){display:none!important}
+#eden-mobile-hud{position:absolute;inset:0;z-index:9;pointer-events:none;color:var(--em-cream);font-family:'DM Sans',Arial,sans-serif;user-select:none;-webkit-user-select:none}
+#eden-mobile-hud[hidden],#eden-mobile-hud [hidden]{display:none!important}
+#eden-mobile-hud button,#eden-mobile-hud a{pointer-events:auto;touch-action:manipulation}
+#eden-mobile-hud button{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;color:inherit;background:var(--em-dark);border:1px solid var(--em-line);border-radius:18px;box-shadow:0 3px 12px #0002;font:500 10px/1.2 'DM Sans',Arial,sans-serif;letter-spacing:.02em;min-width:48px;min-height:48px;padding:8px}
+#eden-mobile-hud button:active,#eden-mobile-hud button.on,#eden-mobile-hud button[aria-pressed=true]{background:var(--em-cream);color:#22382e;border-color:var(--em-cream)}
+#eden-mobile-hud svg{width:22px;height:22px;flex-shrink:0}
+#eden-mobile-hud .em-top{position:absolute;left:max(16px,env(safe-area-inset-left));right:max(16px,env(safe-area-inset-right));top:calc(12px + env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:4}
+.em-brand{display:grid;gap:2px;text-shadow:0 1px 12px #0008;background:#182922dc;border:1px solid var(--em-line);padding:9px 14px;border-radius:16px;min-height:52px}
+.em-brand small{font-size:8px;letter-spacing:.15em;opacity:.75}.em-brand strong{font:600 18px/1 'Barlow Condensed',sans-serif;letter-spacing:.18em}
+.em-top-actions{display:flex;gap:8px}.em-top-actions button{width:52px}
+#eden-mobile-hud .em-place{position:absolute;top:calc(76px + env(safe-area-inset-top));left:max(20px,env(safe-area-inset-left));max-width:calc(100% - 40px);font-size:10px;letter-spacing:.12em;text-transform:uppercase;text-shadow:0 1px 5px #000,0 1px 18px #000}
+.em-look{position:absolute;inset:100px 0 0;pointer-events:auto;touch-action:none;z-index:0}
+.em-controls{position:absolute;inset:0;pointer-events:none;z-index:2}
+.em-stick{position:absolute;left:calc(20px + env(safe-area-inset-left));bottom:calc(34px + env(safe-area-inset-bottom));width:116px;height:116px;border-radius:50%;pointer-events:auto;touch-action:none;background:#192a2238;border:1px solid #fff9;box-shadow:0 3px 16px #0002}
+.em-ring{position:absolute;inset:15px;border:1px solid #fff3;border-radius:50%}
+.em-stick i{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px;border-radius:50%;background:#f4f0dfd9;border:1px solid #fff9;box-shadow:0 3px 10px #0003;will-change:transform}
+.em-stick.engaged{background:#192a2259;border-color:#f4f0df}.em-stick.running{border-color:#e8dba2;box-shadow:0 0 0 4px #e8dba21f}
+.em-stick-label{position:absolute;top:calc(100% + 8px);width:100%;text-align:center;font-size:8px;letter-spacing:.16em;text-shadow:0 1px 5px #000}
+#eden-mobile-hud .em-controls button{position:absolute;touch-action:none}
+#eden-mobile-hud .em-run{left:calc(41px + env(safe-area-inset-left));bottom:calc(160px + env(safe-area-inset-bottom));min-width:74px;min-height:44px;border-radius:24px;flex-direction:row;gap:12px;font-size:11px}.em-run span{font-size:17px}
+#eden-mobile-hud .em-jump{right:calc(20px + env(safe-area-inset-right));bottom:calc(28px + env(safe-area-inset-bottom));width:68px;height:68px;border-radius:50%;background:#f4f0dfec;color:#22382e;border-color:#fff9}
+#eden-mobile-hud .em-jump svg{width:26px;height:26px}
+#eden-mobile-hud .em-crouch{right:calc(101px + env(safe-area-inset-right));bottom:calc(30px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%}
+#eden-mobile-hud .em-view{right:calc(24px + env(safe-area-inset-right));bottom:calc(112px + env(safe-area-inset-bottom));width:52px;height:52px;border-radius:50%}
+#eden-mobile-hud .em-use{right:calc(90px + env(safe-area-inset-right));bottom:calc(108px + env(safe-area-inset-bottom));width:68px;height:60px;border-radius:18px}
+.em-reticle{position:absolute;left:50%;top:50%;width:5px;height:5px;transform:translate(-50%,-50%);border:1px solid #22382e88;border-radius:50%;background:#f4f0dfc9;box-shadow:0 0 3px #0005}
+.em-tip,.em-feedback{position:absolute;bottom:calc(222px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 40px);margin:0;padding:9px 14px;border:1px solid var(--em-line);border-radius:14px;background:var(--em-dark);text-align:center;font-size:11px;line-height:1.7;letter-spacing:0}
+.em-feedback{bottom:calc(215px + env(safe-area-inset-bottom));z-index:5}
+#eden-mobile-hud.is-blocked :is(.em-tip,.em-feedback){display:none}
+#eden-mobile-menu{margin:auto auto max(0px,env(safe-area-inset-bottom));width:min(100%,520px);height:auto;max-height:calc(90svh - env(safe-area-inset-top));padding:0;border:1px solid #d9dfd1;border-radius:24px 24px 0 0;background:#f4f2e9;color:#23372e;box-shadow:0 -10px 60px #0003;letter-spacing:0;overflow:auto;overscroll-behavior:contain}
+#eden-mobile-menu::backdrop{background:#0a191266;backdrop-filter:blur(3px)}
+#eden-mobile-menu header{display:flex;justify-content:space-between;align-items:center;padding:24px 22px 16px;position:sticky;top:0;background:#f4f2e9;z-index:1}
+#eden-mobile-menu header small{font-size:9px;letter-spacing:.2em;color:#67776c}#eden-mobile-menu h2{font:600 28px/1.2 'Barlow Condensed',sans-serif;margin:4px 0 0;letter-spacing:.03em}
+#eden-mobile-menu .em-close{min-width:46px;min-height:46px;border:1px solid #ccd3c7;background:#fff9;border-radius:50%;font-size:26px}
+.em-menu-body{padding:0 22px 24px}.em-menu-body section{margin-top:22px}.em-menu-body section:first-child{margin-top:5px}.em-menu-body h3{font:600 10px/1.5 'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:.14em;margin:0 0 10px;color:#67776c}
+.em-destinations,.em-shortcuts,.em-museum-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.em-menu-body button{min-height:52px;border:1px solid #d3d9cd;border-radius:12px;background:#fff9;text-align:left;color:#23372e;padding:12px;font:500 12px/1.4 'DM Sans',sans-serif}
+.em-destinations button{min-height:74px;display:grid;gap:3px}.em-destinations strong{font-weight:600}.em-destinations small{font-size:10px;color:#67776c}.em-menu-body button:active{background:#e1e8db}
+.em-how p{font-size:12px;line-height:1.7;color:#536456;margin:0 0 8px}.em-home{display:block;margin-top:18px;padding:12px 0;font-size:12px;text-decoration:underline}
+body.eden-mobile-explore :is(#npc-prompt,#music-prompt){z-index:12;top:calc(108px + env(safe-area-inset-top))!important;left:50%!important;max-width:calc(100% - 32px);min-height:46px;transform:translateX(-50%);font-size:11px}
+body.eden-mobile-explore #door-prompt{z-index:12;max-width:calc(100% - 32px)}
+body.eden-mobile #social-panel{top:calc(80px + env(safe-area-inset-top));bottom:calc(16px + env(safe-area-inset-bottom));right:12px;width:calc(100% - 24px);height:auto;z-index:25}
+body.eden-mobile-explore #retry-rack{bottom:auto;top:calc(155px + env(safe-area-inset-top));right:16px;z-index:12}
+body.eden-mobile-explore #play-tip{display:none}
+@media(max-width:360px){.em-stick{left:14px;width:104px;height:104px}#eden-mobile-hud .em-crouch{right:88px;width:50px;height:50px}#eden-mobile-hud .em-use{right:83px;width:60px}.em-tip{font-size:10px}}
+@media(max-height:500px) and (orientation:landscape){#eden-mobile-hud .em-top{top:calc(8px + env(safe-area-inset-top))}.em-brand{min-height:44px;padding:7px 12px}.em-brand small{font-size:7px}#eden-mobile-hud .em-place{top:64px}.em-stick{width:100px;height:100px;bottom:calc(22px + env(safe-area-inset-bottom))}#eden-mobile-hud .em-run{bottom:calc(132px + env(safe-area-inset-bottom))}#eden-mobile-hud .em-jump{bottom:calc(18px + env(safe-area-inset-bottom));width:60px;height:60px}#eden-mobile-hud .em-crouch{bottom:calc(20px + env(safe-area-inset-bottom))}#eden-mobile-hud .em-view{bottom:calc(94px + env(safe-area-inset-bottom))}#eden-mobile-hud .em-use{bottom:calc(94px + env(safe-area-inset-bottom));height:52px}.em-tip{display:none}.em-feedback{bottom:24px;max-width:38%}#eden-mobile-menu{max-height:94svh}.em-destinations{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* The shared website header uses important rules; Eden has its own compact navigation on touch. */
+html body.eden-mobile-explore header#btr-site-header.btr-about-header[data-shared-header="about"]{display:none!important}
+body.eden-mobile-explore #eden-drop{top:calc(75px + env(safe-area-inset-top))!important;right:max(16px,env(safe-area-inset-right))!important;left:auto!important;bottom:auto!important;transform:none!important;max-width:130px;padding:6px 9px;font-size:8px;z-index:10}
+body.eden-mobile-explore .em-place{max-width:calc(100% - 170px)}
+
+body.eden-mobile-explore{overflow:hidden;overscroll-behavior:none;--btr-header-height:0px!important}
+
+/* Keep fighting within reach, but leave the garden view clear until requested. */
+body.eden-mobile-explore #fight-pad{display:none}
+body.eden-mobile-explore.eden-mobile-fight #fight-pad{display:grid;grid-template-columns:repeat(2,64px);gap:8px;right:calc(22px + env(safe-area-inset-right));left:auto;bottom:calc(188px + env(safe-area-inset-bottom));z-index:11}
+body.eden-mobile-explore #fight-pad button{min-width:0;min-height:48px;background:var(--em-dark);color:var(--em-cream);border:1px solid var(--em-line);border-radius:16px;font:500 10px 'DM Sans',Arial,sans-serif;letter-spacing:.04em}
+body.eden-mobile-explore #fight-pad button:active{background:var(--em-cream);color:#22382e}
+body.eden-mobile-explore #fight-hud{top:calc(118px + env(safe-area-inset-top));z-index:11;font-size:8px;gap:8px;width:calc(100% - 40px)}
+body.eden-mobile-explore #fight-hud .fight-keys{display:none}
+@media(max-height:500px) and (orientation:landscape){body.eden-mobile-explore.eden-mobile-fight #fight-pad{bottom:calc(160px + env(safe-area-inset-bottom));grid-template-columns:repeat(2,60px)}body.eden-mobile-explore #fight-pad button{min-height:44px}body.eden-mobile-explore #fight-hud{top:16px;width:36%}}

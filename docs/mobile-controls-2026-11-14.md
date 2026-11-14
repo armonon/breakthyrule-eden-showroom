@@ -1,0 +1,11 @@
+# Eden mobile controls — 2026-11-14
+
+Eden now has a dedicated touch interface: left movement stick, simultaneous camera dragging, full-forward sprint or Run toggle, Jump, held Crouch/slide, first/third-person View, and scene interaction. A compact top bar exposes Shop, Menu, and optional Fight controls. The menu gathers destinations, character creation, chat, library, residents, sound, and camera settings.
+
+The HUD fills the visible viewport, respects safe-area insets, and rearranges for landscape. Desktop and other modes retain their existing interfaces. Menus, chat, loading screens, pointer cancellation, rotation, lost focus, and page hiding release held movement and fight inputs. Taps use the existing scene raycaster; there is no second interaction implementation.
+
+Files: `eden-mobile.js`, `eden-mobile.css`, the small adapter in `app.js`, and script/style references in `index.html` and `showroom.html`. The Eden adapter is disabled outside the Eden world and while another game mode is active. The showroom entry is restored as a copy of the current game entry, so existing `/showroom` links resolve again.
+
+Validation: syntax checks and a short Chrome touch-emulation check at 390×844 and 844×390. Verified simultaneous movement/look, release, sprint toggle, jump, view switch, menu opened with a second finger while crouching, destination navigation, Shop pausing controls, optional Fight button hit targets, and landscape bounds. No JavaScript page errors. This is not a physical iPhone/Android or sustained-performance certification.
+
+Integration note: production switched during this task from `6af8ac92db90d12efbfbc8ec` to the `614409aa452ce8d655a7b383e3010fd105ba7617` world-loader release. The mobile change was rebased onto that newer source; its story/world logic is retained. The newer deployment independently removed the former website pages, 1,502 asset paths, and its `lab` function, and added 206 paths. This patch restores `/showroom`, but does not restore those unrelated site/backend removals. The prior continuation work remains on `codex/expedition-continuation-20261114` at `589bfaf0ee15352121d82eb473b046390b4c7a2d` and its Netlify deployment for recovery if needed.
