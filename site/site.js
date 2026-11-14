@@ -26,7 +26,6 @@
   el('div',{className:'foot-links'},
    el('a',{href:'/about',textContent:'About'}),
    el('a',{href:'/lab',textContent:'Garment Lab'}),
-   el('a',{href:'/reliquary',textContent:'Reliquary'}),
    el('a',{href:'/showroom',textContent:'3D Showroom'}),
    el('a',{href:'/broadcast.html',textContent:'Broadcast Room'}),
    el('a',{href:siteConfig.instagram,textContent:'Instagram',target:'_blank',rel:'noopener'}),
