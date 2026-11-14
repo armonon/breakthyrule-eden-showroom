@@ -1,0 +1,200 @@
+{
+  "scope": "Earlier real-input browser runs. Not final commit acceptance; no new browser tests after user requested code and Git push.",
+  "reports": [
+    {
+      "report": "lillypad-native-browser-qa.json",
+      "sha256": "ee6373a4d689a6d0b122cce9c99565a85f6182a2378443b576713a9a55ef8ad4",
+      "startedAt": "2026-11-14T15:10:26.465Z",
+      "passed": true,
+      "checks": {
+        "realInputMovement": true,
+        "bellCountdown": true,
+        "flareAmmo": true,
+        "reload": true,
+        "flatGroundBail": true,
+        "animationLoaded": true
+      },
+      "browser": "157.0.8103.78",
+      "errors": 0,
+      "warnings": 2,
+      "failures": 0
+    },
+    {
+      "report": "lillypad-solo-acceptance.json",
+      "sha256": "0c358a5bdeeb4121a60b4dfaca915690cffd2f8d39620591ce1c88294a9eeb8f",
+      "startedAt": "2026-11-14T15:14:04.570Z",
+      "passed": true,
+      "checks": {
+        "bell": true,
+        "eightPages": true,
+        "pyramidEscape": true,
+        "retry": true,
+        "safeReset": true,
+        "returnToEden": true
+      },
+      "browser": "157.0.8103.78",
+      "errors": 0,
+      "warnings": 2,
+      "failures": 1
+    },
+    {
+      "report": "lillypad-loss-acceptance.json",
+      "sha256": "40f76d57986e2040a7ef6bd1a715c4f417516c566e0b989603e7a8b3abd4ea05",
+      "startedAt": "2026-11-14T15:22:16.474Z",
+      "passed": true,
+      "checks": {
+        "bell": true,
+        "capture": true,
+        "capturedMovementBlocked": true,
+        "retry": true,
+        "safeReset": true,
+        "returnToEden": true
+      },
+      "browser": "157.0.8103.78",
+      "errors": 0,
+      "warnings": 3,
+      "failures": 2
+    },
+    {
+      "report": "lillypad-roof-acceptance.json",
+      "sha256": "7ad8b356f8c2b92b238c22f4a085b755236eb3fd5ea86dc1a0c2696dd25ba9fe",
+      "startedAt": "2026-11-14T15:49:16.453Z",
+      "passed": true,
+      "checks": {
+        "templeClimb": true,
+        "roofNetwork": true
+      },
+      "browser": "157.0.8103.78",
+      "errors": 0,
+      "warnings": 0,
+      "failures": 0
+    },
+    {
+      "report": "lillypad-roof-small.json",
+      "sha256": "549badc850f156cb4371ab43dba1d0154cb3d98a20beda3ef30fc71ca096adb9",
+      "startedAt": "2026-11-14T15:54:39.843Z",
+      "passed": true,
+      "checks": {
+        "templeClimb": true,
+        "roofNetwork": true
+      },
+      "browser": "157.0.8103.78",
+      "errors": 0,
+      "warnings": 0,
+      "failures": 0
+    },
+    {
+      "report": "lillypad-roof-large.json",
+      "sha256": "b90be41fdc1e3e021d2c23175226d51a54af0e366ae1019176ee4186e9e3196a",
+      "startedAt": "2026-11-14T15:59:59.168Z",
+      "passed": true,
+      "checks": {
+        "templeClimb": true,
+        "roofNetwork": true
+      },
+      "browser": "157.0.8103.78",
+      "errors": 0,
+      "warnings": 0,
+      "failures": 0
+    },
+    {
+      "report": "lillypad-gardens-small.json",
+      "sha256": "56183fb72f2b983dbe2e37f071e2e2fcdb98ad76fa0b6c23acef7341e722cbc0",
+      "startedAt": "2026-11-14T16:07:29.287Z",
+      "passed": true,
+      "checks": {
+        "gardens": true
+      },
+      "browser": "157.0.8103.78",
+      "errors": 0,
+      "warnings": 0,
+      "failures": 0
+    },
+    {
+      "report": "lillypad-observatory-corrections.json",
+      "sha256": "f9ec3ff9f0fd6d3fe78fdb18fd25bffe0dd6263b3f8b7b4e1f68e727e8ced59a",
+      "startedAt": "2026-11-14T16:21:40.513Z",
+      "passed": true,
+      "checks": {
+        "observatory": true
+      },
+      "browser": "157.0.8103.78",
+      "errors": 0,
+      "warnings": 0,
+      "failures": 0
+    },
+    {
+      "report": "body-view-acceptance.json",
+      "sha256": "67d563ef64a158147412fe6932e8f6af9d9a2ee06e83b5bbe3544bab3660ac3a",
+      "startedAt": null,
+      "passed": true,
+      "checks": {
+        "body145": true,
+        "body175": true,
+        "body210": true
+      },
+      "browser": null,
+      "errors": 0,
+      "warnings": 0,
+      "failures": 0
+    },
+    {
+      "report": "entry-acceptance.json",
+      "sha256": "bd90b33330636028e45ce03fb114eaa3cf32c653678d3ed67b6ef026a43d4144",
+      "startedAt": null,
+      "passed": true,
+      "checks": {
+        "failedLoadRetry": true,
+        "noUnrelatedAssets": true,
+        "remapAndComfort": true,
+        "touchMovement": true,
+        "touchJump": true,
+        "touchLook": true,
+        "touchView": true
+      },
+      "browser": null,
+      "errors": 0,
+      "warnings": 0,
+      "failures": 0
+    },
+    {
+      "report": "showroom-acceptance.json",
+      "sha256": "09644932c84542415a179f50da4487787f2f7f1ac334cdca675aa962f459547b",
+      "startedAt": null,
+      "passed": true,
+      "checks": {
+        "showroomReady": true,
+        "realGarmentPhoto": true,
+        "foundingBooks": true,
+        "unavailableUploadsExplained": true,
+        "localBookSearch": true,
+        "missingRelayExplained": true,
+        "studioMounted": true,
+        "studioQuickReturn": true,
+        "accountAndSavedCharacter": true,
+        "privateTestChat": true,
+        "waveControl": true,
+        "labLoads": true
+      },
+      "browser": null,
+      "errors": 0,
+      "warnings": 5,
+      "failures": 4
+    },
+    {
+      "report": "studio-interaction.json",
+      "sha256": "36679614fbb80c54f54288d193dcad5c90028bd4946680a11736ce5c3af4baa2",
+      "startedAt": null,
+      "passed": true,
+      "checks": {
+        "mixerClick": true,
+        "tempoInteractive": true,
+        "sessionPreserved": true
+      },
+      "browser": null,
+      "errors": 0,
+      "warnings": 1,
+      "failures": 0
+    }
+  ]
+}

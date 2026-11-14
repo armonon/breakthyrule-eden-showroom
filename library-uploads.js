@@ -4,7 +4,7 @@ window.createLibraryUploads=function({onBooksChanged,onOpen,onClose}){
  let busy=false;
  const shared=window.communityLibrary;
  async function load(){
-  await shared.refresh();status.textContent=shared.isConnected()?'PDF only / up to 4 MB each':'Upload service unavailable. Please try again.';return shared.isConnected();
+  await shared.refresh();$('choose-pdfs').disabled=input.disabled=!shared.isConnected();status.textContent=shared.isConnected()?'PDF only / up to 4 MB each':shared.availability().reason;return shared.isConnected();
  }
  const ready=load();
  function open(){onOpen();if(!busy){$('upload-results').replaceChildren();load();}if(!dialog.open)dialog.showModal();}
@@ -22,6 +22,7 @@ window.createLibraryUploads=function({onBooksChanged,onOpen,onClose}){
  }
  async function add(files){
   if(busy||!files.length)return;
+  if(!shared.isConnected()){status.textContent=shared.availability().reason;input.value='';return;}
   if(!$('pdf-rights').checked){status.textContent='Confirm you have permission to share these PDFs publicly.';input.value='';return;}
   if(files.length>20){status.textContent='Choose up to 20 PDFs at a time.';return;}
   busy=true;$('choose-pdfs').disabled=true;dialog.setAttribute('aria-busy','true');
@@ -37,7 +38,7 @@ window.createLibraryUploads=function({onBooksChanged,onOpen,onClose}){
     message.textContent=result.duplicate?'Already on the shelf':'Added to the shelf';row.className='upload-success';onBooksChanged(last);
    }catch(error){failed++;message.textContent=error.message;row.className='upload-error';}
   }
-  busy=false;$('choose-pdfs').disabled=false;dialog.setAttribute('aria-busy','false');input.value='';
+  busy=false;$('choose-pdfs').disabled=!shared.isConnected();dialog.setAttribute('aria-busy','false');input.value='';
   status.textContent=added+' added'+(failed?' / '+failed+' could not be added':'')+'.';
  }
  input.onchange=()=>add([...input.files]);

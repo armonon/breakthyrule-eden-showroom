@@ -11,7 +11,35 @@
 (function(root){
  let data=null,loading=null;const decoded=new Map();
  const b64=(s,Type)=>{const bin=atob(s),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Type(u.buffer);};
- function load(){loading??=fetch('/assets/anim/clips.json?v=1').then(r=>r.json()).then(j=>{data=j;return j;}).catch(e=>{console.warn('Animation clips unavailable',e);loading=null;});return loading;}
+ function validate(j){
+  if(!Array.isArray(j?.bones)||!j.bones.length||j.bones.length>128||new Set(j.bones).size!==j.bones.length||j.bones.some(n=>typeof n!=='string')||!j.sources||!j.clips||!Object.keys(j.clips).length)throw Error('Invalid animation library.');
+  const encoded=(s,bytes)=>typeof s==='string'&&s.length===4*Math.ceil(bytes/3)&&/^[A-Za-z0-9+/]*={0,2}$/.test(s)&&s.length/4*3-(s.endsWith('==')?2:s.endsWith('=')?1:0)===bytes;
+  for(const source of Object.values(j.sources)){
+   if(!source?.dirs||Object.values(source.dirs).some(v=>!Array.isArray(v)||v.length!==3||v.some(n=>!Number.isFinite(n))))throw Error('Invalid animation source directions.');
+  }
+  for(const [id,c] of Object.entries(j.clips)){
+   if(!c||!Object.hasOwn(j.sources,c.src)||!Number.isInteger(c.n)||c.n<2||c.n>36000||!Number.isFinite(c.fps)||c.fps<=0||c.fps>240||!Number.isFinite(c.duration)||c.duration<=0||!encoded(c.q,c.n*j.bones.length*8)||!encoded(c.hip,c.n*2))throw Error('Invalid animation clip: '+id);
+  }
+  return j;
+ }
+ async function request(){
+  for(let attempt=0;attempt<2;attempt++){
+   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+   try{
+    const response=await fetch('/assets/anim/clips.json?v=20261114-ual-standard',{signal:controller.signal});
+    if(!response.ok){const error=Error('Animation library HTTP '+response.status);error.retry=response.status>=500||response.status===429;throw error;}
+    return validate(await response.json());
+   }catch(error){
+    if(attempt||!(error.retry||error.name==='AbortError'||error instanceof TypeError))throw error;
+   }finally{clearTimeout(timer);}
+   await new Promise(resolve=>setTimeout(resolve,750));
+  }
+ }
+ function load(){
+  if(data)return Promise.resolve(data);
+  loading??=request().then(j=>{data=j;return j;}).catch(e=>{console.warn('Animation clips unavailable; keeping procedural movement.',e);loading=null;});
+  return loading;
+ }
  function clip(id){if(!data?.clips[id])return null;let c=decoded.get(id);if(!c){const s=data.clips[id];c={...s,q:b64(s.q,Int16Array),hip:b64(s.hip,Int16Array)};decoded.set(id,c);}return c;}
  const MASKS={};
  function masks(){if(MASKS.full)return MASKS;const B=data.bones;
@@ -28,11 +56,13 @@
   const parent=bones.map(b=>{let p=b?.parent;while(p&&!set.has(p)&&p.isBone)p=p.parent;return p&&set.has(p)?bones.indexOf(p):-1;});
   // Our rest direction: towards the child the bake used (in rest every rig bone is unrotated, so local = world axes).
   const CH={root:'spine03',spine03:'spine02',spine02:'spine01',spine01:'neck01',neck01:'head'};for(const s of 'LR')Object.assign(CH,{[`clavicle.${s}`]:`upperarm01.${s}`,[`upperarm01.${s}`]:`lowerarm01.${s}`,[`lowerarm01.${s}`]:`wrist.${s}`,[`wrist.${s}`]:`middle1.${s}`,[`upperleg01.${s}`]:`lowerleg01.${s}`,[`lowerleg01.${s}`]:`foot.${s}`,[`foot.${s}`]:`toes.${s}`});
-  const worldRest=new Map();const wr=b=>{if(!b)return new T.Vector3();if(worldRest.has(b))return worldRest.get(b);const p=b.parent&&b.parent.isBone?wr(b.parent):new T.Vector3();const v=p.clone().add(b.position);worldRest.set(b,v);return v;};
+  // Retarget from immutable bind inverses. First use can happen during a bob,
+  // jump or restored pose; current bone positions are not the bind pose then.
+  const worldRest=new Map();const wr=b=>{if(!b)return new T.Vector3();if(worldRest.has(b))return worldRest.get(b);const i=model.skeleton.bones.indexOf(b),inverse=model.skeleton.boneInverses[i];const v=inverse?new T.Vector3().setFromMatrixPosition(inverse.clone().invert()):(b.parent?.isBone?wr(b.parent):new T.Vector3()).clone().add(b.position);worldRest.set(b,v);return v;};
   const ours=B.map((n,i)=>{const b=bones[i],c=CH[n]&&bone(CH[n]);if(!b||!c)return null;const d=wr(c).clone().sub(wr(b));return d.lengthSq()>1e-10?d.normalize():null;});
   const corr={};
   for(const [src,{dirs}] of Object.entries(data.sources))corr[src]=B.map((n,i)=>{const s=dirs[n],o=ours[i];if(!s||!o)return new T.Quaternion();return new T.Quaternion().setFromUnitVectors(o,new T.Vector3(...s));});
-  const pelvis=bone('root'),r={bones,parent,corr,hipY:pelvis?pelvis.position.y:1,pelvis,q:B.map(()=>new T.Quaternion()),l:B.map(()=>new T.Quaternion())};
+  const pelvis=bone('root'),r={bones,parent,corr,hipY:model.userData?.animBindHipY??(pelvis?pelvis.position.y:1),pelvis,q:B.map(()=>new T.Quaternion()),l:B.map(()=>new T.Quaternion())};
   model.userData||(model.userData={});model.userData.animRig=r;return r;
  }
  // Pose one clip at time t (seconds): world rotations into r.q, returns the hip offset in metres.
@@ -53,5 +83,5 @@
     const local=p<0?r.l[i].copy(r.q[i]):r.l[i].copy(r.q[p]).invert().multiply(r.q[i]);b.quaternion.slerp(local,L.weight*m[i]);}
    if(m[0]&&r.pelvis)r.pelvis.position.y+=hip*L.weight;}
  }
- root.GardenAnim={load,ready:()=>!!data,clip,masks:()=>data?masks():null,apply,duration:id=>data?.clips[id]?.duration||0,phase0:id=>data?.clips[id]?.phase0||0,has:id=>!!data?.clips[id]};
+ root.GardenAnim={load,ready:()=>!!data,clip,masks:()=>data?masks():null,apply,duration:id=>data?.clips[id]?.duration||0,phase0:id=>data?.clips[id]?.phase0||0,has:id=>!!data&&Object.hasOwn(data.clips,id)};
 })(window);

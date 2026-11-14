@@ -1,0 +1,69 @@
+{
+  "scope": "Historical focused runs overlap; do not sum these counts or treat as final-build/full-browser acceptance. No full suite rerun for this push.",
+  "runs": [
+    {
+      "report": "lillypad-tests-controller-foundation.json",
+      "contentVersion": "f3f2cd56ba3fe28e32b9fdac9f75e3e7998307658743e5f92c81dc8b35ccee0d",
+      "tests": 174,
+      "pass": 174,
+      "fail": 0,
+      "duration_ms": 10261.371833
+    },
+    {
+      "report": "selected-rig-memory-runtime.log",
+      "sha256": "f963d57b08290080c64304dafef8f8a9a3b0f1b53e64e949b904aaf2de6b06bb",
+      "tests": "3",
+      "pass": "3",
+      "fail": "0",
+      "duration_ms": "2453.140459"
+    },
+    {
+      "report": "ragdoll-checkpoint-first.log",
+      "sha256": "e628ed2b62fb3c42585d8b2913db4b6cf9f2593e0b4d12f8cef273f7f550c382",
+      "tests": "3",
+      "pass": "3",
+      "fail": "0",
+      "duration_ms": "489.966208"
+    },
+    {
+      "report": "animation-strict-checkpoint.log",
+      "sha256": "49cbe2ad9fad323f38ad4d4b52d9df2c11850bb780ef3fd82d4de98767826296",
+      "tests": "5",
+      "pass": "5",
+      "fail": "0",
+      "duration_ms": "2286.614167"
+    },
+    {
+      "report": "shared-physical-actor.log",
+      "sha256": "450c091cd9f65dc5f0e2746b31244ce33e5bba1decaf35b89e663e21ba00a6ef",
+      "tests": "4",
+      "pass": "4",
+      "fail": "0",
+      "duration_ms": "2100.761666"
+    },
+    {
+      "report": "input-action-receipts.log",
+      "sha256": "8835b1404d09eae374c190a0101fcd800626b1412c8ca49579e080a4df5c6d94",
+      "tests": "8",
+      "pass": "8",
+      "fail": "0",
+      "duration_ms": "2097.504166"
+    },
+    {
+      "report": "authoritative-service-first.log",
+      "sha256": "3183b348a69d5c55cf1a74613e384a8e95ab27eaff0be7d0184a632fddecea2f",
+      "tests": "1",
+      "pass": "1",
+      "fail": "0",
+      "duration_ms": "2065.600209"
+    },
+    {
+      "report": "controller-ledge-fixed.log",
+      "sha256": "a792521b1cc0d0cce33e8bd041b1545ba61edc9dba530e8b2b6bcb57d84d6ab7",
+      "tests": "15",
+      "pass": "15",
+      "fail": "0",
+      "duration_ms": "1148.730625"
+    }
+  ]
+}

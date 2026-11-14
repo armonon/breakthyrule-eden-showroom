@@ -4,11 +4,19 @@
 const JOLT_URL = '/assets/vendor/jolt-physics-1.1.1/jolt-physics.wasm.js';
 const LAYER_STATIC = 0, LAYER_MOVING = 1;
 const deg = d => d * Math.PI / 180;
+const usedRuntimes=new WeakSet();
 
-export async function createJoltWorld() {
+export async function createJoltWorld({ moduleURL = JOLT_URL, moduleOptions = {} } = {}) {
   const started = performance.now();
-  const { default: initJolt } = await import(JOLT_URL);
-  const Jolt = await initJolt();
+  const { default: initJolt } = await import(moduleURL);
+  const Jolt = await initJolt(moduleOptions);
+  return createJoltWorldFromRuntime(Jolt, started);
+}
+// JoltInterface owns module-global types in this vendored binding. Give each
+// independently disposed world its own initialized WASM instance.
+export function createJoltWorldFromRuntime(Jolt, started=performance.now()) {
+  if(usedRuntimes.has(Jolt))throw new Error('A physics runtime cannot be reused across independent world lifetimes.');
+  usedRuntimes.add(Jolt);
   const settings = new Jolt.JoltSettings();
   settings.mMaxWorkerThreads = 0;
   const pairs = new Jolt.ObjectLayerPairFilterTable(2);
@@ -24,16 +32,23 @@ export async function createJoltWorld() {
   Jolt.destroy(settings);
   const system = jolt.GetPhysicsSystem(), bodies = system.GetBodyInterface();
   const v = new Jolt.Vec3(), r = new Jolt.RVec3(), q = new Jolt.Quat();
-  function box(center, half) {
+  function box(center, half, bodyId=null) {
+    if(![center,half].every(a=>Array.isArray(a)&&a.length===3&&a.every(Number.isFinite))||half.some(n=>n<=0)||bodyId!==null&&(!Number.isSafeInteger(bodyId)||bodyId<0||bodyId>0xffffffff))throw Error('Invalid physics box.');
     v.Set(half[0], half[1], half[2]); r.Set(center[0], center[1], center[2]); q.Set(0, 0, 0, 1);
     const shape = new Jolt.BoxShape(v, .02), make = new Jolt.BodyCreationSettings(shape, r, q, Jolt.EMotionType_Static, LAYER_STATIC);
     make.mFriction = .8;
-    const body = bodies.CreateBody(make); Jolt.destroy(make);
-    bodies.AddBody(body.GetID(), Jolt.EActivation_DontActivate);
-    return { remove() { const id = body.GetID(); bodies.RemoveBody(id); bodies.DestroyBody(id); } };
+    let id=bodyId===null?null:new Jolt.BodyID(bodyId),body;
+    try{body=id?bodies.CreateBodyWithID(id,make):bodies.CreateBody(make);}finally{Jolt.destroy(make);}
+    if(!body||!Jolt.getPointer(body)){if(id)Jolt.destroy(id);throw Error('Physics body allocation failed.');}
+    id??=new Jolt.BodyID(body.GetID().GetIndexAndSequenceNumber());
+    bodies.AddBody(id, Jolt.EActivation_DontActivate);
+    const spec={id:id.GetIndexAndSequenceNumber(),center:[...center],half:[...half]};let removed=false;
+    return { capture:()=>structuredClone(spec),remove() { if(removed)return;removed=true;bodies.RemoveBody(id); bodies.DestroyBody(id);Jolt.destroy(id); } };
   }
+  let disposed=false;
   return { Jolt, jolt, system, bodies, box, step: dt => jolt.Step(dt, 1), initMs: performance.now() - started,
-    heapBytes: () => Jolt.HEAPU8?.buffer?.byteLength ?? null };
+    heapBytes: () => Jolt.HEAPU8?.buffer?.byteLength ?? null,
+    dispose() { if(disposed)return;disposed=true;Jolt.destroy(v); Jolt.destroy(r); Jolt.destroy(q); Jolt.destroy(jolt); } };
 }
 
 // a/b: capsule ends. limit: [normal half cone, plane half cone, twist]. tilt: degrees toward `toward` for the neutral angle.
@@ -51,24 +66,28 @@ for (const s of ['L', 'R']) PARTS.push(
   { bone: 'foot.' + s, parent: 'lowerleg01.' + s, a: b => b('foot.' + s), b: b => b('toes.' + s), r: .042, mass: 1.1, axis: [0, 0, 1], plane: [0, 1, 0], limit: [10, 26, 8], torque: 90 },
 );
 
-export function createRagdoll(world, T, model) {
+export function createRagdoll(world, T, model, {groupId=null}={}) {
   const { Jolt, system, bodies } = world;
+  groupId??=(createRagdoll.next = (createRagdoll.next || 0) + 1);
+  if(!Number.isSafeInteger(groupId)||groupId<0||groupId>0xffffffff)throw Error('Invalid ragdoll collision group.');
   const group = model.root, scale = group.scale.x, bones = model.skeleton.bones, rest = new Map();
   bones.forEach((bone, i) => { const e = model.skeleton.boneInverses[i].elements; rest.set(bone.name, new T.Vector3(-e[12], -e[13], -e[14]).multiplyScalar(scale)); });
-  const point = name => { const p = rest.get(name).clone(); p.add3 = (x, y, z) => p.add(new T.Vector3(x, y, z)); p.lerp3 = (o, k) => { const c = p.clone().lerp(o, k); c.add3 = p.add3; return c; }; return p; };
+  const point = name => { const p = (rest.get(name) || rest.get(name.replace('toes.', 'toe.'))).clone(); p.add3 = (x, y, z) => p.add(new T.Vector3(x, y, z)); p.lerp3 = (o, k) => { const c = p.clone().lerp(o, k); c.add3 = p.add3; return c; }; return p; };
   const skeleton = new Jolt.Skeleton(), make = new Jolt.RagdollSettings();
+  const temporary=[],keep=value=>(temporary.push(value),value);
+  try {
   make.mSkeleton = skeleton;
-  PARTS.forEach(part => skeleton.AddJoint(new Jolt.JPHString(part.bone, part.bone.length), part.parent ? PARTS.findIndex(p => p.bone === part.parent) : -1));
+  PARTS.forEach(part => {const name=new Jolt.JPHString(part.bone,part.bone.length);try{skeleton.AddJoint(name,part.parent?PARTS.findIndex(p=>p.bone===part.parent):-1);}finally{Jolt.destroy(name);}});
   make.mParts.resize(PARTS.length);
-  const vec = (x, y, z) => new Jolt.Vec3(x, y, z), up = new T.Vector3(0, 1, 0), turn = new T.Quaternion();
+  const vec = (x, y, z) => keep(new Jolt.Vec3(x, y, z)), up = new T.Vector3(0, 1, 0), turn = new T.Quaternion();
   PARTS.forEach((part, i) => {
     const out = make.mParts.at(i), head = rest.get(part.bone), a = part.a(point), b = part.b(point), mid = a.clone().add(b).multiplyScalar(.5).sub(head);
     const length = a.distanceTo(b), dir = b.clone().sub(a).normalize();
     turn.setFromUnitVectors(up, dir);
-    const capsule = new Jolt.CapsuleShapeSettings(Math.max(length / 2, .005), part.r), placed = new Jolt.RotatedTranslatedShapeSettings(vec(mid.x, mid.y, mid.z), new Jolt.Quat(turn.x, turn.y, turn.z, turn.w), capsule);
-    const result = placed.Create(); if (result.HasError()) throw Error(result.GetError().c_str());
-    out.SetShape(result.Get());
-    out.mPosition = new Jolt.RVec3(head.x, head.y, head.z); out.mRotation = new Jolt.Quat(0, 0, 0, 1);
+    const capsule = new Jolt.CapsuleShapeSettings(Math.max(length / 2, .005), part.r), placed = new Jolt.RotatedTranslatedShapeSettings(vec(mid.x, mid.y, mid.z), keep(new Jolt.Quat(turn.x, turn.y, turn.z, turn.w)), capsule);
+    let result;try{result=placed.Create();if(result.HasError())throw Error(result.GetError().c_str());out.SetShape(result.Get());}
+    finally{result?.Clear();Jolt.destroy(placed);} // releases the retained capsule settings too
+    out.mPosition = keep(new Jolt.RVec3(head.x, head.y, head.z)); out.mRotation = keep(new Jolt.Quat(0, 0, 0, 1));
     out.mMotionType = Jolt.EMotionType_Dynamic; out.mObjectLayer = LAYER_MOVING;
     out.mOverrideMassProperties = Jolt.EOverrideMassProperties_CalculateInertia; out.mMassPropertiesOverride.mMass = part.mass;
     out.mFriction = .7; out.mRestitution = 0; out.mLinearDamping = .05; out.mAngularDamping = .35;
@@ -78,7 +97,7 @@ export function createRagdoll(world, T, model) {
     const c = Math.cos(deg(part.tilt || 0)), s = Math.sin(deg(part.tilt || 0));
     const twist1 = d.clone().multiplyScalar(c).addScaledVector(t, s), plane1 = t.clone().multiplyScalar(c).addScaledVector(d, -s);
     const joint = new Jolt.SwingTwistConstraintSettings();
-    joint.mPosition1 = joint.mPosition2 = new Jolt.RVec3(head.x, head.y, head.z);
+    joint.mPosition1 = joint.mPosition2 = keep(new Jolt.RVec3(head.x, head.y, head.z));
     joint.mTwistAxis1 = vec(twist1.x, twist1.y, twist1.z); joint.mPlaneAxis1 = vec(plane1.x, plane1.y, plane1.z);
     joint.mTwistAxis2 = vec(d.x, d.y, d.z); joint.mPlaneAxis2 = vec(t.x, t.y, t.z);
     joint.mNormalHalfConeAngle = deg(part.limit[0]); joint.mPlaneHalfConeAngle = deg(part.limit[1]);
@@ -92,10 +111,14 @@ export function createRagdoll(world, T, model) {
   make.DisableParentChildCollisions();
   make.CalculateBodyIndexToConstraintIndex();
   make.CalculateConstraintIndexToBodyIdxPair();
-  const ragdoll = make.CreateRagdoll(createRagdoll.next = (createRagdoll.next || 0) + 1, 0, system);
+  }catch(error){Jolt.destroy(make);throw error;}finally{for(const value of temporary)Jolt.destroy(value);}
+  // Crossing this call transfers settings ownership, including native failure cleanup.
+  const ragdoll = make.CreateRagdoll(groupId, 0, system);
+  if(!ragdoll||!Jolt.getPointer(ragdoll))throw Error('Ragdoll body allocation failed.');
   const pose = new Jolt.SkeletonPose(); pose.SetSkeleton(make.GetSkeleton());
   const ids = PARTS.map((_, i) => new Jolt.BodyID(ragdoll.GetBodyID(i).GetIndexAndSequenceNumber())), joints = PARTS.map((_, i) => i ? Jolt.castObject(ragdoll.GetConstraint(i - 1), Jolt.SwingTwistConstraint) : null);
   const partIndex = new Map(PARTS.map((p, i) => [p.bone, i])), parentIndex = PARTS.map(p => p.parent ? partIndex.get(p.parent) : -1);
+  const contactEnds = PARTS.map(part => [part.a(point), part.b(point)].map(p => p.sub(rest.get(part.bone))));
   const totalMass = PARTS.reduce((m, p) => m + p.mass, 0), groupQ = new T.Quaternion(), invGroup = new T.Quaternion(), P = PARTS.map(() => new T.Vector3()), Q = PARTS.map(() => new T.Quaternion());
   const prevP = PARTS.map(() => new T.Vector3()), prevQ = PARTS.map(() => new T.Quaternion()), world_ = new Map(), tmpQ = new T.Quaternion(), tmpV = new T.Vector3();
   const rv = new Jolt.RVec3(), jq = new Jolt.Quat(), jv = new Jolt.Vec3(), jw = new Jolt.Vec3();
@@ -141,13 +164,13 @@ export function createRagdoll(world, T, model) {
     // Call each frame while animated, so a hit can inherit how fast each bone was already moving.
     remember() { readBones(); P.forEach((p, i) => { prevP[i].copy(p); prevQ[i].copy(Q[i]); }); hasPrev = true; },
     // impulse(y): extra velocity for a body at height y above the feet.
-    start({ impulse = null, dt = 1 / 60, active = false } = {}) {
+    start({ impulse = null, velocity = null, dt = 1 / 60, active = false } = {}) {
       const hadPrev = hasPrev; loadPose();
       if (!inWorld) { ragdoll.AddToPhysicsSystem(Jolt.EActivation_Activate); inWorld = true; }
       ragdoll.SetPose(pose); ragdoll.ResetWarmStart();
       const base = group.getWorldPosition(new T.Vector3()).y, w = new T.Vector3(), dq = new T.Quaternion();
       ids.forEach((id, i) => {
-        const v = hadPrev ? P[i].clone().sub(prevP[i]).divideScalar(dt) : new T.Vector3();
+        const v = velocity ? new T.Vector3(velocity.x, velocity.y, velocity.z) : hadPrev ? P[i].clone().sub(prevP[i]).divideScalar(dt) : new T.Vector3();
         if (hadPrev) { dq.copy(Q[i]).multiply(prevQ[i].clone().invert()); if (dq.w < 0) dq.set(-dq.x, -dq.y, -dq.z, -dq.w); const s = Math.hypot(dq.x, dq.y, dq.z); w.set(dq.x, dq.y, dq.z).multiplyScalar(s > 1e-5 ? 2 * Math.atan2(s, dq.w) / s / dt : 0); } else w.set(0, 0, 0);
         if (impulse) v.add(impulse(P[i].y - base));
         jv.Set(v.x, v.y, v.z); jw.Set(w.x, w.y, w.z); bodies.SetLinearAndAngularVelocity(id, jv, jw);
@@ -182,6 +205,14 @@ export function createRagdoll(world, T, model) {
       }
     },
     pelvis: () => posOf(ids[0]),
+    velocity: () => velOf(ids[0]),
+    translate(delta) {
+      if(!inWorld)return false;
+      for(const id of ids){const p=posOf(id).add(delta);rv.Set(p.x,p.y,p.z);bodies.SetPosition(id,rv,Jolt.EActivation_Activate);}
+      ragdoll.ResetWarmStart();return true;
+    },
+    // Exact capsule endpoint spheres, in physics space (not animated bones).
+    supportPoints: () => PARTS.flatMap((part, i) => { const p = posOf(ids[i]), q = rotOf(ids[i]); return contactEnds[i].map(end => ({ point: end.clone().applyQuaternion(q).add(p), radius: part.r })); }),
     maxSpeed() { let m = 0; for (const id of ids) m = Math.max(m, velOf(id).length()); return m; },
     // Widest gap between a joint's anchor as seen from parent and child: how far the chain has pulled apart.
     jointGap() {
@@ -194,6 +225,20 @@ export function createRagdoll(world, T, model) {
       });
       return max;
     },
+    captureState(){return {version:1,groupId,ids:ids.map(id=>id.GetIndexAndSequenceNumber()),inWorld,motorState,strength,hasPrev,prevP:prevP.map(p=>p.toArray()),prevQ:prevQ.map(q=>q.toArray())};},
+    // This restores only the JS bookkeeping and world membership. The host must
+    // restore the matching complete Jolt state next, before any simulation step.
+    restoreState(value){
+      const tuples=(a,n)=>Array.isArray(a)&&a.length===PARTS.length&&a.every(v=>Array.isArray(v)&&v.length===n&&v.every(Number.isFinite));
+      if(!value||value.version!==1||value.groupId!==groupId||!Array.isArray(value.ids)||value.ids.length!==ids.length||value.ids.some((id,i)=>id!==ids[i].GetIndexAndSequenceNumber())||!['inWorld','motorState','hasPrev'].every(k=>typeof value[k]==='boolean')||!Number.isFinite(value.strength)||value.strength<0||value.strength>1||!tuples(value.prevP,3)||!tuples(value.prevQ,4))throw Error('Incompatible ragdoll checkpoint.');
+      if(value.inWorld&&!inWorld)ragdoll.AddToPhysicsSystem(Jolt.EActivation_Activate);
+      if(!value.inWorld&&inWorld)ragdoll.RemoveFromPhysicsSystem();
+      inWorld=value.inWorld;motorState=value.motorState;strength=value.strength;hasPrev=value.hasPrev;
+      prevP.forEach((p,i)=>p.fromArray(value.prevP[i]));prevQ.forEach((q,i)=>q.fromArray(value.prevQ[i]));
+    },
+    // Ragdoll owns a RefConst<RagdollSettings>. Its destructor releases and
+    // deletes `make`; explicitly destroying it again corrupts the WASM heap.
+    dispose() { api.end(); ids.forEach(id => Jolt.destroy(id)); Jolt.destroy(pose); Jolt.destroy(ragdoll); for (const value of [rv, jq, jv, jw]) Jolt.destroy(value); },
     end() { if (inWorld) { setMotors(false); ragdoll.RemoveFromPhysicsSystem(); inWorld = false; } hasPrev = false; },
   };
   return api;

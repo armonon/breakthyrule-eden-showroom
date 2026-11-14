@@ -20,7 +20,7 @@ window.createLibrarianConversation=function({onOpen,onClose}){
    const labels=new Set();
    for(const link of (book.links||[])){const href=safeURL(link.url);if(!href||labels.has(link.label))continue;labels.add(link.label);const anchor=document.createElement('a');anchor.href=href;anchor.target='_blank';anchor.rel='noopener noreferrer';anchor.textContent=link.label;anchor.append(icon('arrow-up-right'));anchor.onclick=()=>window.communityLibrary.read({...sharedBook(book),url:link.url}).then(()=>{$('librarian-action-status').textContent='On the shared stand: '+book.title;}).catch(error=>{$('librarian-action-status').textContent=error.message;});links.append(anchor);if(labels.size===3)break;}
    const selected=sharedBook(book),existing=window.communityLibrary?.getState().likes.find(entry=>new URL(entry.url,location.origin).href===safeURL(selected.url)),liked=!!existing?.liked;
-   const like=document.createElement('button');like.className='icon-button atlas-like';like.type='button';like.title=(liked?'Unlike ':'Like ')+book.title;like.setAttribute('aria-label',like.title);like.setAttribute('aria-pressed',String(liked));like.disabled=!selected.url||liking.has(selected.url);like.append(icon('heart'));
+   const like=document.createElement('button');like.className='icon-button atlas-like';like.type='button';like.title=(liked?'Unlike ':'Like ')+book.title;like.setAttribute('aria-label',like.title);like.setAttribute('aria-pressed',String(liked));like.disabled=!selected.url||liking.has(selected.url)||!window.communityLibrary.isConnected();if(!window.communityLibrary.isConnected())like.title=window.communityLibrary.availability().reason;like.append(icon('heart'));
    const count=document.createElement('span');count.textContent=existing?.likes||0;like.append(count);
    like.onclick=async()=>{liking.add(selected.url);like.disabled=true;try{await window.communityLibrary.like(selected,!liked);$('librarian-action-status').textContent=liked?'Removed your like.':'Added to the Atlas community shelf.';}catch(error){$('librarian-action-status').textContent=error.message;}finally{liking.delete(selected.url);renderResults();}};links.append(like);
    content.append(title,byline,meta,links);row.append(cover,content);fragment.append(row);
@@ -28,11 +28,11 @@ window.createLibrarianConversation=function({onOpen,onClose}){
   $('librarian-results').replaceChildren(fragment);$('librarian-more').hidden=books.length<=limit;
   $('librarian-count').textContent=books.length+' '+(books.length===1?'book':'books');
   $('librarian-empty').hidden=books.length>0||busy;
-  $('librarian-empty').textContent=source!=='all'?'No matches from this source.':snapshot.failed.length===snapshot.total?'The catalogs are unavailable right now. Please try again in a moment.':'I haven\'t found a match. Shall we try another title, author, or subject?';
+  $('librarian-empty').textContent=source!=='all'?'No matches from this source.':snapshot.failed.length?'No matches yet. Some catalogs are unavailable, so this search is incomplete.':'I haven\'t found a match. Shall we try another title, author, or subject?';
   window.lucide.createIcons();
  }
  function updateSources(){const select=$('librarian-source'),selected=select.value;select.replaceChildren(new Option('All sources','all'));for(const source of [...new Set(snapshot.books.flatMap(book=>book.sources||[]))].sort())select.add(new Option(source,source));select.value=[...select.options].some(o=>o.value===selected)?selected:'all';}
- function progress(result){snapshot=result;updateSources();$('librarian-status').textContent=result.completed+' / '+result.total+' catalogs searched'+(result.failed.length?' / '+result.failed.length+' unavailable':'');renderResults();}
+ function progress(result){snapshot=result;updateSources();$('librarian-status').textContent=result.completed+' / '+result.total+' catalogs checked · '+(result.successful??result.completed-result.failed.length)+' responded'+(result.failed.length?' · Unavailable: '+(result.failures||result.failed.map(name=>({name}))).map(f=>f.name+(f.reason?' ('+f.reason+')':'')).join('; '):'');renderResults();}
  async function search(value){
   const query=String(value).trim().slice(0,200);if(!query){$('librarian-query').focus();return;}
   controller?.abort();controller=new AbortController();const id=++version;currentQuery=query;limit=20;
@@ -42,7 +42,7 @@ window.createLibrarianConversation=function({onOpen,onClose}){
   try{
    const result=await window.LibrarianSearch.search(query,{signal:controller.signal,onProgress:result=>{if(id===version)progress(result);}});
    if(id!==version)return;setBusy(false);progress(result);
-   $('librarian-speech').textContent=result.books.length?'Here is what I found. Take your time; a good book is worth it.':result.failed.length===result.total?'I couldn\'t reach the catalogs just now. We can try again.':'Nothing on that search yet. Try a shorter title or an author\'s name.';
+   $('librarian-speech').textContent=result.books.length?'Here is what I found. Take your time; a good book is worth it.':result.failed.length?'Some catalogs could not respond, so this search is incomplete. Your shelf remains available.':'Nothing on that search yet. Try a shorter title or an author\'s name.';
    $('librarian-retry').hidden=result.failed.length===0;
   }catch(error){if(id!==version||error.name==='AbortError')return;setBusy(false);$('librarian-speech').textContent='Something interrupted the search. Shall we try again?';$('librarian-status').textContent='Search unavailable';$('librarian-retry').hidden=false;renderResults();}
  }

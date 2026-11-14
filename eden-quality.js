@@ -3,10 +3,12 @@
 // ratio a step when frames keep arriving late and raises it again after several seconds of smooth frames. Only
 // consecutive frames count, so the idle/on-demand pauses in the render loop never read as slowness.
 // When frames are still late at the lowest pixel ratio, onFloor() is called (at most every 2.5 s) so the host can
-// shed per-pixel effects too.
-window.createAdaptiveResolution=function(renderer,{max=Math.min(devicePixelRatio,1.5),min=.75,step=.25,onChange=()=>{},onFloor=()=>{}}={}){
+// diagnose pressure or adjust reversible rendering cost without overwriting artistic settings.
+window.createAdaptiveResolution=function(renderer,{max=Math.min(devicePixelRatio,1.5),min=.75,step=.25,targetFps=null,onChange=()=>{},onFloor=()=>{}}={}){
+ // An explicit gameplay budget avoids mistaking consistently slow rendering for a slow display.
+ const target=Number.isFinite(targetFps)&&targetFps>0?1000/Math.min(240,Math.max(15,targetFps)):null;
  const RATES=[30,48,50,60,75,90,100,120,144,165,240];
- let ratio=max,vsync=1000/60,shortest=Infinity,average=0,smoothSince=0,lastChange=0,last=0,frames=0;
+ let ratio=max,vsync=target||1000/60,shortest=Infinity,average=0,smoothSince=0,lastChange=0,last=0,frames=0;
  renderer.setPixelRatio(ratio);
  function set(next,time){
   next=Math.max(min,Math.min(max,Math.round(next/step)*step));if(next===ratio)return;
@@ -19,17 +21,18 @@ window.createAdaptiveResolution=function(renderer,{max=Math.min(devicePixelRatio
    const interval=time-last;last=time;if(interval<=0||interval>250)return;
    if(++frames<240)return; // ignore the first ~4 s: loading and shader compiles make every frame slow
    // Shortest interval seen, snapped to the nearest standard refresh rate (jitter must not lower the baseline).
-   shortest=Math.min(shortest,Math.max(interval,4));vsync=1000/RATES.reduce((best,hz)=>Math.abs(1000/hz-shortest)<Math.abs(1000/best-shortest)?hz:best);
+   shortest=Math.min(shortest,Math.max(interval,4));vsync=target||1000/RATES.reduce((best,hz)=>Math.abs(1000/hz-shortest)<Math.abs(1000/best-shortest)?hz:best);
    average=average?average+(interval-average)*.08:interval;
+   if(average>vsync*(target?1.15:1.6))smoothSince=0;
    if(time-lastChange<2500)return;
-   if(average>vsync*1.6){if(ratio>min)set(ratio-step,time);else{lastChange=time;average=vsync;onFloor();}}
-   else if(average<vsync*1.25){if(!smoothSince)smoothSince=time;else if(time-smoothSince>8000&&ratio<max)set(ratio+step,time);}
+   if(average>vsync*(target?1.15:1.6)){if(ratio>min)set(ratio-step,time);else{lastChange=time;average=vsync;onFloor();}}
+   else if(average<vsync*(target?1.05:1.25)){if(!smoothSince)smoothSince=time;else if(time-smoothSince>8000&&ratio<max)set(ratio+step,time);}
    else smoothSince=0;
   },
-  pause(){last=0;},
+  pause(){last=0;smoothSince=0;average=0;},
   // The graphics setting moves the ceiling; the current ratio follows it down at once, or climbs to it later.
   setMax(next){max=next;if(ratio>max){ratio=max;renderer.setPixelRatio(ratio);onChange(ratio);}},
-  inspect:()=>({pixelRatio:ratio,max,min,frameMs:+average.toFixed(1),vsyncMs:+vsync.toFixed(1)})
+  inspect:()=>({pixelRatio:ratio,max,min,frameMs:+average.toFixed(1),vsyncMs:+vsync.toFixed(1),targetFps:target?+(1000/target).toFixed(2):null})
  };
 };
 

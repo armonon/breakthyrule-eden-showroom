@@ -4,7 +4,7 @@
 // each instanced across the garden; leaf clusters use normals bent away from the crown centre so canopies shade as
 // volumes, not as flat cards. Ground cover: rounded shrubs (kept clear of placed props), ferns at tree bases and
 // wildflower patches (grass is eden-grass.js). Leaves sway in the wind unless motion is reduced.
-window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel=null}){
+window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel=null,forestOnly=false}){
  let seed=90210;
  const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;},between=(a,b)=>a+(b-a)*random();
  const up=new T.Vector3(0,1,0),dummy=new T.Object3D(),time={value:0};
@@ -146,6 +146,13 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
   return toGeometry(fronds);
  }
 
+ // The expedition entry uses the exact woodland templates without constructing the
+ // Eden orchard or requesting its hero tree, flowers, props and billboard assets.
+ if(forestOnly){
+  const templates=[0,1].map(()=>buildTree(species.forest)),cypress=buildCypress(80,1.35);
+  const forest={trees:templates.map(t=>({wood:t.wood,foliage:t.foliage,material:leafMaterial,height:t.height})).concat([{wood:cypress.wood,foliage:cypress.foliage,material:cypressMaterial,height:cypress.height}]),fern:{geometry:buildFern(),material:fernMaterial}};
+  return {forest,ready:Promise.resolve(),update(t){time.value=t;}};
+ }
  const shadowed=(mesh,cast=true)=>{mesh.castShadow=cast;mesh.receiveShadow=true;garden.add(mesh);return mesh;};
  const gardenMeshes=[];
  function instance(geometry,material,matrices,tints,cast=true){

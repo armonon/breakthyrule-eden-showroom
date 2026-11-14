@@ -1,9 +1,13 @@
-Animation clips in clips.json (baked by tools/animation/bake-clips.cjs):
+Breakthyrule animation library — 62 clips
 
-- Quaternius, Universal Animation Library and Universal Animation Library 2 (Standard).
-  CC0 1.0 Universal (public domain). https://quaternius.com
-- Microsoft Rocketbox animations (Assets/Animations), https://github.com/microsoft/Microsoft-Rocketbox
-  MIT License, Copyright (c) 2020 Microsoft. The full licence text is in the source repository's LICENSE.md:
-  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-  documentation files, to deal in the Software without restriction, subject to including the copyright notice and
-  this permission notice in all copies or substantial portions of the Software.
+51 in-place clips retargeted from Quaternius Universal Animation Libraries 1 and 2 (Standard).
+License: CC0-1.0. Original notices: licenses/ual1-CC0.txt and licenses/ual2-CC0.txt.
+Sources: https://quaternius.itch.io/universal-animation-library
+         https://quaternius.itch.io/universal-animation-library-2
+
+11 retained Microsoft Rocketbox clips. License: MIT. See licenses/Rocketbox-LICENSE.md.
+These use the existing game skeleton; first-person and procedural motion remain game code.
+
+Runtime clips.json SHA-256: 3fb2914d5787bd9eb6da41745114503312ef5c6e67cc8c111d18741cb5cb262c
+Portable source/build kit is retained separately (not a runtime download):
+animation-build-kit.tar.gz SHA-256 f3160519e8c4085e22b4a0670f82783c1430d0759db5edbab22b421ee1c04899.

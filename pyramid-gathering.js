@@ -45,20 +45,11 @@ window.createPyramidGathering=function(T,parent,{stone,onChange=()=>{},reduced=f
   atlas.colorSpace=T.SRGBColorSpace;atlas.anisotropy=4;
   for(let i=0;i<6;i++){const map=atlas.clone();map.repeat.set(1/6,1);map.offset.set(i/6,0);map.needsUpdate=true;materials.push(new T.MeshBasicMaterial({map,alphaTest:.12,side:T.DoubleSide,color:0xc3b6a4,toneMapped:false}));}
   function guest(x,z,variant,h){const card=new T.Mesh(plane,materials[variant]);card.name='Masked guest image card';card.scale.set(h*(2120/6/742),h,1);card.position.set(x,h/2+.04,z);card.userData.variant=variant;hall.add(card);guests.push(card);}
-  for(let ring=0;ring<2;ring++){
-   const count=ring?30:20,radius=ring?13.3:8.5;
-   for(let i=0;i<count;i++){const a=i/count*Math.PI*2,x=Math.sin(a)*radius,z=Math.cos(a)*radius;if(z>0&&Math.abs(x)<2.6)continue;guest(x,z,(i+ring*2)%6,1.85+(i%4)*.055);}
-  }
-  guest(0,-3.5,2,2.08);loaded=true;resolveReady();onChange();
+  for(const p of window.pyramidGatheringGuests())guest(p.x,p.z,p.variant,p.height);loaded=true;resolveReady();onChange();
  },undefined,()=>{failed=true;resolveReady();onChange();});
  return {
   ready,
-  blocks(x,z){
-   const room=Math.abs(x)<17.45&&Math.abs(z)<17.45,passage=Math.abs(x)<1.42&&z>=17&&z<25.1;
-   if(!room&&!passage)return true;
-   if(pillars.some(p=>Math.hypot(x-p.x,z-p.z)<.8))return true;
-   return guests.some(card=>Math.hypot(x-card.position.x,z-card.position.z)<.38);
-  },
+  blocks:window.createPyramidCollision().gathering,
   update(time,viewer){
    const x=viewer.position.x-parent.position.x,z=viewer.position.z-parent.position.z;
    inside=(Math.abs(x)<17.8&&Math.abs(z)<17.8)||(Math.abs(x)<1.7&&z>=17&&z<24.6);

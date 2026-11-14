@@ -2,6 +2,8 @@
 // Generated from Librarian Atlas src/main.js by work/sync-librarian-engine.cjs.
 // Reuses its 15 catalog adapters, ISBN/fuzzy deduplication and relevance ranking.
 // No app storage, credentials, PDF imports or deployment metadata are copied.
+// Provider compatibility: OpenAlex uses book|dissertation and per_page<=100;
+// Crossref projection omits unsupported language. Covered by library-provider-test.mjs.
 window.createLibrarianAtlasEngine=function(request){
 const OPEN_LIBRARY_OFFSETS=[0],GOOGLE_OFFSETS=[0],GUTENDEX_PAGES=[1];
 const POLITE_MAILTO='librarian-atlas@users.noreply.github.com';
@@ -61,7 +63,7 @@ async function gutenberg(q) {
 
 async function openAlex(q) {
   const term = q.replace(/^isbn:/i, '').trim();
-  const data = await json(`https://api.openalex.org/works?search=${encodeURIComponent(term)}&filter=type:book|monograph|dissertation&per-page=200&mailto=${encodeURIComponent(POLITE_MAILTO)}`);
+  const data = await json(`https://api.openalex.org/works?search=${encodeURIComponent(term)}&filter=type:book|dissertation&per_page=100&mailto=${encodeURIComponent(POLITE_MAILTO)}`);
   return (data.results || []).map(w => {
     const oa = w.open_access || {}, loc = w.best_oa_location || w.primary_location || {}, doi = (w.doi || '').replace(/^https?:\/\/doi\.org\//, '');
     const abstract = reconstructAbstract(w.abstract_inverted_index);
@@ -78,7 +80,7 @@ async function openAlex(q) {
 
 async function crossref(q) {
   const term = q.replace(/^isbn:/i, '').trim();
-  const data = await json(`https://api.crossref.org/works?query=${encodeURIComponent(term)}&filter=type:monograph,type:book,type:reference-book&rows=100&select=title,author,published,ISBN,publisher,type,abstract,subject,language,DOI&mailto=${encodeURIComponent(POLITE_MAILTO)}`);
+  const data = await json(`https://api.crossref.org/works?query=${encodeURIComponent(term)}&filter=type:monograph,type:book,type:reference-book&rows=100&select=title,author,published,ISBN,publisher,type,abstract,subject,DOI&mailto=${encodeURIComponent(POLITE_MAILTO)}`);
   return (data.message?.items || []).map(it => {
     const doi = it.DOI || '', yr = (it.published?.['date-parts']?.[0] || [])[0] || '';
     return {

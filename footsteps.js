@@ -4,10 +4,10 @@
 // toggle's setting (localStorage 'eden-effects-muted', button #garden-effects).
 (function(root){
  root.createFootsteps=function(){
-  let context=null,noise=null,lastStep=0;
+  let context=null,noise=null,lastStep=0,disposed=false;
   const muted=()=>{try{return localStorage.getItem('eden-effects-muted')==='1';}catch{return false;}};
   function ready(){
-   if(muted())return null;
+   if(disposed||muted())return null;
    try{const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return null;context ||= new Audio();if(context.state==='suspended')context.resume().catch(()=>{});}catch{return null;}
    if(context.state!=='running')return null;
    if(!noise){noise=context.createBuffer(1,Math.ceil(context.sampleRate*.4),context.sampleRate);const d=noise.getChannelData(0);let seed=12345;for(let i=0;i<d.length;i++){seed=(seed*1664525+1013904223)>>>0;d[i]=seed/2147483648-1;}}
@@ -40,7 +40,8 @@
     o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.25);burst(ac,surface,t,.9+strength,1.6);lastStep=t;
    },
    // Slides scrape the surface for their whole length.
-   slide(surface,duration=.7){const ac=ready();if(!ac)return;burst(ac,surface,ac.currentTime,1.1,duration/.08);}
+   slide(surface,duration=.7){const ac=ready();if(!ac)return;burst(ac,surface,ac.currentTime,1.1,duration/.08);},
+   dispose(){if(disposed)return;disposed=true;document.removeEventListener('pointerdown',unlock,true);document.removeEventListener('keydown',unlock,true);context?.close().catch(()=>{});context=null;noise=null;}
   };
  };
 })(window);

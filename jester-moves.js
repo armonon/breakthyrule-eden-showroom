@@ -1,7 +1,7 @@
 'use strict';
 // The Violet Trickster's move set. Poses are written in rig space (the jester faces +Z, rest pose
 // hangs the arms down), then baked into ordinary AnimationClips for his skeleton. Any Mixamo clips
-// listed in /residents/animations/manifest.json replace the hand-made versions at load time.
+// declared by a resident animationManifest replace the procedural versions at load time.
 (function(root){
  const BONES=['hips','spine','neck','head','armL','forearmL','handL','armR','forearmR','handR','thighL','shinL','footL','thighR','shinR','footR'];
  const SIDE={L:-1,R:1};
@@ -131,22 +131,28 @@
  }
  function createJesterMoves(T,object){
   const data=restData(T,object),clips={},meta={};
+  let optional={state:'disabled',url:null,loaded:[],errors:[]};
   for(const [name,spec] of Object.entries(CLIPS)){clips[name]=bake(T,data,name,spec);meta[name]={loop:!!spec.loop,hit:spec.hit,duration:clips[name].duration,source:'procedural'};}
   return {
-   clips,meta,
-   async loadMixamo(url='/residents/animations/manifest.json'){
-    let manifest;try{const response=await fetch(url,{signal:AbortSignal.timeout(8000)});if(!response.ok)return [];manifest=await response.json();}catch{return [];}
+   clips,meta,inspect:()=>({...optional,loaded:optional.loaded.slice(),errors:optional.errors.slice()}),
+   async loadMixamo(url=null){
+    if(!url){optional={state:'disabled',url:null,loaded:[],errors:[]};return [];}
+    optional={state:'loading',url,loaded:[],errors:[]};let manifest;
+    try{const response=await fetch(url,{signal:AbortSignal.timeout(8000)});if(!response.ok)throw Error('HTTP '+response.status);manifest=await response.json();
+     if(!manifest||typeof manifest!=='object'||Array.isArray(manifest)||!manifest.clips||typeof manifest.clips!=='object'||Array.isArray(manifest.clips)||Object.keys(manifest.clips).length>64)throw Error('Invalid animation manifest.');
+     for(const [name,entry] of Object.entries(manifest.clips)){const file=typeof entry==='string'?entry:entry?.file;if(!name||typeof file!=='string'||!file||file.length>4096||!['http:','https:'].includes(new URL(file,new URL(url,location.href)).protocol))throw Error('Invalid animation entry: '+name);}
+    }catch(error){optional.state='fallback';optional.errors.push(error.message);console.warn('Resident optional animations unavailable:',url,error.message);return [];}
     const loaded=[];
-    for(const [name,entry] of Object.entries(manifest.clips||{})){
+    for(const [name,entry] of Object.entries(manifest.clips)){
      const file=typeof entry==='string'?{file:entry}:entry;
      try{
       const gltf=await window.showroomAssets.model(new URL(file.file,new URL(url,location.href)).href);
-      const clip=gltf.animations.find(c=>!file.clip||c.name===file.clip)||gltf.animations[0];if(!clip)continue;
+      const clip=file.clip?gltf.animations.find(c=>c.name===file.clip):gltf.animations[0];if(!clip)throw Error('Named animation clip is missing.');
       clips[name]=retarget(T,data,gltf.scene,clip,{inPlace:file.inPlace!==false});clips[name].name=name;
       meta[name]={loop:file.loop??meta[name]?.loop??false,hit:file.hit??meta[name]?.hit,duration:clips[name].duration,source:'mixamo'};loaded.push(name);
-     }catch(error){console.warn('Mixamo clip unavailable:',name,error);}
+     }catch(error){optional.errors.push(name+': '+error.message);console.warn('Mixamo clip unavailable:',name,error);}
     }
-    return loaded;
+    optional.state=optional.errors.length?'fallback':'ready';optional.loaded=loaded;return loaded;
    },
    retarget:(source,clip,options)=>retarget(T,data,source,clip,options)
   };
