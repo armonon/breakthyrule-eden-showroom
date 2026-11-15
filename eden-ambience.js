@@ -19,7 +19,9 @@ window.createEdenAmbience=function({reduced=false}={}){
   for(let i=0;i<n;i++){const s=t+i*.11;o.frequency.setValueAtTime(base*(1+Math.random()*.3),s);o.frequency.exponentialRampToValueAtTime(base*(1.4+Math.random()*.5),s+.07);g.gain.linearRampToValueAtTime(.05,s+.01);g.gain.linearRampToValueAtTime(0,s+.09);}
   const pan=ctx.createStereoPanner?ctx.createStereoPanner():null;if(pan){pan.pan.value=Math.random()*1.6-.8;o.connect(g).connect(pan).connect(master);}else o.connect(g).connect(master);o.start(t);o.stop(t+n*.11+.1);}
  function cricket(t){for(let k=0;k<3;k++){const o=ctx.createOscillator(),g=ctx.createGain();o.type='square';o.frequency.value=4300+Math.random()*300;const s=t+k*.09;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.006,s+.01);g.gain.linearRampToValueAtTime(0,s+.05);o.connect(g).connect(master);o.start(s);o.stop(s+.06);}}
- function step(t,soft){const src=ctx.createBufferSource();src.buffer=noiseBuffer(.12);const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=soft?700:1500;const g=ctx.createGain();g.gain.setValueAtTime(soft?.07:.1,t);g.gain.exponentialRampToValueAtTime(.001,t+.11);src.connect(f).connect(g).connect(master);src.start(t);}
+ // Four cached step noises, picked in turn, instead of a new buffer every footstep.
+ let stepBuffers=null,stepPick=0;
+ function step(t,soft){const src=ctx.createBufferSource();stepBuffers??=[0,1,2,3].map(()=>noiseBuffer(.12));src.buffer=stepBuffers[stepPick++%4];const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=soft?700:1500;const g=ctx.createGain();g.gain.setValueAtTime(soft?.07:.1,t);g.gain.exponentialRampToValueAtTime(.001,t+.11);src.connect(f).connect(g).connect(master);src.start(t);}
  function tone(from,to,dur,gain,delay=0,type='sine'){if(!ctx)return;const t=ctx.currentTime+delay,o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(from,t);o.frequency.exponentialRampToValueAtTime(to,t+dur);g.gain.setValueAtTime(gain,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g).connect(master);o.start(t);o.stop(t+dur+.05);}
  return {
   // position: the visitor's feet; night: 0..1; onRoad: brick surface

@@ -7,7 +7,9 @@ const librarianDialog=$('librarian-dialog');
 const uploadDialog=$('upload-dialog');
 const residentDialog=$('resident-dialog');
 function pageActive(){return window.showroomPageActive?.()??!document.hidden;}
-function modalOpen(){return !pageActive()||!!document.querySelector('dialog[open]');}
+// Asked many times a frame; the document query runs at most once every 8 ms.
+let modalAnswer=false,modalAsked=-1e9;
+function modalOpen(){const t=performance.now();if(t-modalAsked<8)return modalAnswer;modalAsked=t;return modalAnswer=!pageActive()||!!document.querySelector('dialog[open]');}
 let posterTurns=0,currentPoster=null;
 const posterView=posterDialog.querySelector('.poster-view');
 function fitPoster(){
@@ -353,7 +355,7 @@ doorPrompt.onclick=()=>{toggleDoor();renderer.domElement.focus({preventScroll:tr
 // Opening goes through the Gilded Sentinel; closing is always allowed.
 function toggleDoor(){if(garden.skybox.isOpen()||!secrets||secrets.tryDoor())garden.skybox.toggle();requestDraw();}
 function updateDoorPrompt(){
- const sky=garden.skybox,point=sky.marker.clone().project(camera),near=sky.distance(targetPosition);
+ const sky=garden.skybox,near=sky.distance(targetPosition);if(near>3.8){if(!doorPrompt.hidden)doorPrompt.hidden=true;return;}const point=sky.marker.clone().project(camera);
  doorPrompt.hidden=modalOpen()||!['free','spawn'].includes(state.view)||near>3.8||point.z< -1||point.z>1||Math.abs(point.x)>.9||Math.abs(point.y)>.85;
  if(!doorPrompt.hidden){const label=(sky.isOpen()?'CLOSE THE DOOR':'OPEN THE DOOR')+(finePointer?'  (E)':'');if(doorPrompt.textContent!==label)doorPrompt.textContent=label;doorPrompt.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,110,stage.clientWidth-110)+'px';doorPrompt.style.top=Math.max(125,(1-point.y)*stage.clientHeight/2-10)+'px';}
 }
@@ -365,8 +367,11 @@ function updateShelfActions(){
  controls.hidden=modalOpen()||!['library','spawn','free'].includes(state.view)||point.z< -1||point.z>1||Math.abs(point.x)>.96||Math.abs(point.y)>.9||camera.position.distanceTo(gardenLibrary.marker)>24;
  if(!controls.hidden){const margin=controls.offsetWidth/2+12;controls.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,margin,stage.clientWidth-margin)+'px';controls.style.top=T.MathUtils.clamp((1-point.y)*stage.clientHeight/2,145,stage.clientHeight-170)+'px';}
 }
-function updateNPCPrompt(){loadNearbyAssets();const point=librarianNPC.marker.clone().project(camera),button=$('npc-prompt');button.hidden=modalOpen()||pockets?.enclosed(camera.position)||state.view==='film'||point.z< -1||point.z>1||Math.abs(point.x)>.85||Math.abs(point.y)>.78||camera.position.distanceTo(librarianNPC.marker)>22;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,105,stage.clientWidth-105)+'px';button.style.top=Math.max(125,(1-point.y)*stage.clientHeight/2-20)+'px';}}
+function updateNPCPrompt(){loadNearbyAssets();if(camera.position.distanceTo(librarianNPC.marker)>22){const b=$('npc-prompt');if(!b.hidden)b.hidden=true;return;}const point=librarianNPC.marker.clone().project(camera),button=$('npc-prompt');button.hidden=modalOpen()||pockets?.enclosed(camera.position)||state.view==='film'||point.z< -1||point.z>1||Math.abs(point.x)>.85||Math.abs(point.y)>.78||camera.position.distanceTo(librarianNPC.marker)>22;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,105,stage.clientWidth-105)+'px';button.style.top=Math.max(125,(1-point.y)*stage.clientHeight/2-20)+'px';}}
+// Lazy loads near the librarian and the rack: checked four times a second, not every frame.
+let nearbyCheckedAt=-1e9;
 function loadNearbyAssets(){
+ {const t=performance.now();if(t-nearbyCheckedAt<250)return;nearbyCheckedAt=t;}
  if(camera.position.distanceTo(librarianNPC.marker)<16)librarianNPC.load();
  if(collectionRack&&camera.position.distanceTo(collectionRack.rack.getWorldPosition(new T.Vector3()))<12&&!rackLoading&&!rackModels.size&&!rackFailures.size)loadRackModels();
 }
@@ -767,7 +772,7 @@ const play=window.createPlayMenu?.({nav:document.querySelector('.view-nav'),afte
   {id:'arena',title:'ONLINE ARENA',text:'Swords and crossbows against other visitors.',keys:'1 / 2 WEAPONS · TAB SCORES',available:()=>!!window.showroomDeployment?.realtime,note:'Online PvP with swords and crossbows. Opens when the live server is running.',run:()=>arenaLaunch.click()}
  ]});
 
-window.breakThyRuleShowroom={scene:()=>scene,renderer:()=>renderer,combat:()=>combat,battle:()=>battle,fists:()=>fists,fight:key=>fists?.key(key,true),teleport(x,z,yaw=Math.PI){if(!state.ready)return;freeView();motion.reset();walkVelocity.set(0,0,0);targetPosition.set(x,1.75+groundHeight(groundPoint.set(x,0,z)),z);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,Math.cos(yaw)).multiplyScalar(5));camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();},go,inspect,showSide,focusResident,
+window.breakThyRuleShowroom={_player:()=>({targetPosition,motion,walkVelocity,movement}),scene:()=>scene,renderer:()=>renderer,combat:()=>combat,battle:()=>battle,fists:()=>fists,fight:key=>fists?.key(key,true),teleport(x,z,yaw=Math.PI){if(!state.ready)return;freeView();motion.reset();walkVelocity.set(0,0,0);targetPosition.set(x,1.75+groundHeight(groundPoint.set(x,0,z)),z);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,Math.cos(yaw)).multiplyScalar(5));camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();},go,inspect,showSide,focusResident,
  // camera placement for captures and checks: stand at (x,z) looking toward (lx,ly,lz)
  place(x,z,lx,lz,ly=1.75){if(expedition?.active())expedition.leave();motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,ly,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.lookAt(aim);requestDraw();},
 third:on=>{lastThirdToggle=0;return setThird(!!on);},bodyAnim:()=>({...bodyAnim,playing:['slideLoop','jumpLoop','dash','roll','climbUp','getUp','wave','cheer'].filter(id=>playerBody?.animPlaying?.(id))}),bodyClip:(id,o)=>playerBody?.anim?.(id,o),climbs:()=>garden.nightBuilt()?garden.district.climbs:[],horror:()=>horror,worlds:()=>worlds,story:()=>window.edenStory,parkour:()=>pk(),// Run the movement logic n steps of dt with keys held (and Space pressed on the first step), without drawing.

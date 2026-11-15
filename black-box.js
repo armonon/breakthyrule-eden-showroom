@@ -5,10 +5,10 @@ window.edenValley=(()=>{
  const x=-12,z=42,floor=6.8,rim=15,depth=5,ease=t=>t<=0?0:t>=1?1:t*t*(3-2*t);
  // The path in: from the garden's south edge round to the east rim, so the gap in the trees faces away from the library.
  const path=[[-2.4,25.2],[-1.6,30],[3,34.5],[3.6,40.6]];
- const near=(px,pz,[ax,az],[bx,bz])=>{const dx=bx-ax,dz=bz-az,t=Math.max(0,Math.min(1,((px-ax)*dx+(pz-az)*dz)/(dx*dx+dz*dz)));return Math.hypot(px-ax-dx*t,pz-az-dz*t)<1.6;};
+ const near=(px,pz,A,Bp)=>{const ax=A[0],az=A[1],bx=Bp[0],bz=Bp[1],dx=bx-ax,dz=bz-az,t=Math.max(0,Math.min(1,((px-ax)*dx+(pz-az)*dz)/(dx*dx+dz*dz)));return Math.hypot(px-ax-dx*t,pz-az-dz*t)<1.6;};
  return {x,z,floor,rim,depth,path,
   // Beyond the garden's south edge only the path and the valley can be walked.
-  reaches:(px,pz)=>Math.hypot(px-x,pz-z)<rim+.5||path.some((p,i)=>i&&near(px,pz,path[i-1],p)),
+  reaches:(px,pz)=>{if(Math.hypot(px-x,pz-z)<rim+.5)return true;for(let i=1;i<path.length;i++)if(near(px,pz,path[i-1],path[i]))return true;return false;},
   height:(px,pz)=>-depth*(1-ease((Math.hypot(px-x,pz-z)-floor)/(rim-floor)))};
 })();
 

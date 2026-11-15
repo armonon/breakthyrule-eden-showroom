@@ -85,8 +85,8 @@
   const walls=()=>garden.district?.walls||[];
   function segBlocked(a,b){
    const dx=b.x-a.x,dz=b.z-a.z;
-   for(const [x,z,w,d] of walls()){const minX=x-w/2,maxX=x+w/2,minZ=z-d/2,maxZ=z+d/2;let t0=0,t1=1;
-    for(const [p,dd,mn,mx] of [[a.x,dx,minX,maxX],[a.z,dz,minZ,maxZ]]){if(Math.abs(dd)<1e-9){if(p<mn||p>mx){t0=2;break;}}else{let u=(mn-p)/dd,v=(mx-p)/dd;if(u>v)[u,v]=[v,u];t0=Math.max(t0,u);t1=Math.min(t1,v);if(t0>t1)break;}}
+   const W=walls();for(let i=0;i<W.length;i++){const x=W[i][0],z=W[i][1],w=W[i][2],d=W[i][3],minX=x-w/2,maxX=x+w/2,minZ=z-d/2,maxZ=z+d/2;let t0=0,t1=1;
+    for(let k=0;k<2;k++){const p=k?a.z:a.x,dd=k?dz:dx,mn=k?minZ:minX,mx=k?maxZ:maxX;if(Math.abs(dd)<1e-9){if(p<mn||p>mx){t0=2;break;}}else{let u=(mn-p)/dd,v=(mx-p)/dd;if(u>v){const sw=u;u=v;v=sw;}t0=Math.max(t0,u);t1=Math.min(t1,v);if(t0>t1)break;}}
     if(t0<=t1&&t0<1&&t1>0)return t0;}
    return null;
   }
@@ -394,6 +394,11 @@
    c.glow.visible=false;
   }
 
+  // Animation level of detail: bots far away or behind the camera pose every 2nd to 4th frame (the rig works out its
+  // own elapsed time, so the motion is unchanged, just sampled less often). Simulation and aim stay every frame.
+  const lodTo=new T.Vector3(),lodFwd=new T.Vector3();
+  function animateNow(b){lodTo.copy(b.root.position).sub(camera.position);const d=lodTo.length();camera.getWorldDirection(lodFwd);
+   const every=lodTo.dot(lodFwd)<-2&&d>4?4:d>40?3:d>20?2:1;b.animTick=(b.animTick||0)+1;return b.animTick%every===0;}
   function updateBot(b,dt){
    updateFlash(b,dt);
    const p=b.root.position;
@@ -483,7 +488,7 @@
     b.stride=Math.min(1,b.stride+dt*4);}else b.stride=Math.max(0,b.stride-dt*4);
    p.y=groundY(p.x,p.z);
    const dh=((b.heading-b.root.rotation.y+Math.PI*3)%TAU)-Math.PI;b.root.rotation.y+=dh*Math.min(1,dt*8);
-   b.model.animate?.(clock,Math.min(1,b.stride*(speed/4.2)));
+   if(animateNow(b))b.model.animate?.(clock,Math.min(1,b.stride*(speed/4.2)));
   }
   function botShoot(b,target,w,dist){
    const held=b.model.motion?.held?.()?.mesh,from=(held?.parent?held:b.hand).getWorldPosition(new T.Vector3()).add(new T.Vector3(0,.05,0));
@@ -909,7 +914,8 @@
     buildDoors();templeRing=hillRing(temple());templeRing.scale.setScalar(.55);beacon=makeBeacon();pinged=null;pingAt=clock+PING_EVERY;round=1;
     player={alive:true,hp:100,shield:SHIELD_PLAYER,shieldMax:SHIELD_PLAYER,armor:0,armorMax:0,garment:null,worn:new Set(),heals:{bandage:0,medkit:0},kills:0,deaths:0,score:0,lastHurt:-9,protectUntil:SPAWN_PROTECT};
     if(!walkIn){const spot=DOOR_SPAWN();o.placePlayer(spot.x,spot.z,spot.x,spot.z-6);combat.syncLook();}
-    for(let i=0;i<7;i++){const spot=farSpawn(),b=makeBot(i,new T.Vector3(spot.x,groundY(spot.x,spot.z),spot.z),rand(0,TAU));kitBot(b);b.state='roam';b.score=0;b.deaths=0;}
+    // One bot per task: building all seven characters at once was a half-second freeze on entering Beyond Eden.
+    for(let i=0;i<7;i++){if(!active)break;const spot=farSpawn(),b=makeBot(i,new T.Vector3(spot.x,groundY(spot.x,spot.z),spot.z),rand(0,TAU));kitBot(b);b.state='roam';b.score=0;b.deaths=0;if(i<6)await new Promise(r=>setTimeout(r,16));}
     scatterPages();kitPlayer();if(window.edenStory?.has('pages'))o.onPagesComplete?.(false);hud.update();hud.feed();hud.announce('BEYOND EDEN · FIND THE 8 LOST PAGES');
    }finally{entering=false;}
   }

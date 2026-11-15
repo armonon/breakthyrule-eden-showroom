@@ -16,6 +16,22 @@
  // shared simulation and prediction stay in step.
  const MOM={build:1/3.2,air:.04,walk:.55,stop:1.6,speed:.45,jump:.22},HOLD_MAX=.28,HOLD_LIFT=9;
  let momentum=0,jumpHold=-1;
+ // Safety net: whatever left the body overlapping solid geometry (a climb that began and failed on a crate edge, a
+ // respawn on a prop, a world edit), step it out to the nearest free spot: up onto the obstacle if it is low enough,
+ // else outward in widening rings at the same height (in the air) or on the floor there (on the ground). Pure
+ // geometry, so the shared simulation does the same.
+ let unsticks=0;
+ function unstick(){
+  const P=h.pk();if(!P||P.active?.()||vault)return false;const f=feetPoint();if(fits(f))return false;
+  const air=motion.inspect().airborne,height=bodyHeight();let to=null;
+  const top=P.floorAt(f.x,f.z,f.y+1.3);if(top>f.y+1e-3&&fits({x:f.x,y:top,z:f.z},height))to={x:f.x,y:top,z:f.z};
+  for(let r=.12;!to&&r<=2.41;r+=.12)for(let a=0;a<16&&!to;a++){const x=f.x+Math.cos(a*Math.PI/8)*r,z=f.z+Math.sin(a*Math.PI/8)*r;
+   const y=air?f.y:(P.supportAt||P.floorAt)(x,z,f.y+.45,profile().radius);if(y<=f.y+.46&&fits({x,y,z},height))to={x,y,z};}
+  if(!to)return false;
+  const d=new T.Vector3(to.x-f.x,to.y-f.y,to.z-f.z);targetPosition.add(d);targetAim.add(d);unsticks++;
+  if(!air){motion.reset();}else motion.set(Math.max(0,motion.inspect().height+d.y),motion.inspect().velocity);
+  slide=null;return true;
+ }
  function updateMomentum(dt){
   const P=h.parkour?.(),kind=P?.active?.()?P.kind?.():null,air=motion.inspect().airborne,sp=Math.hypot(walkVelocity.x,walkVelocity.z);
   const bonus=P?.takeMomentumBonus?.()||0;if(bonus)momentum=Math.min(1,momentum+bonus);
@@ -34,6 +50,9 @@
  const sweep=(a,b,height=bodyHeight())=>h.pk()?.bodySweep?.(a,b,height,profile().radius)??(fits(b,height)?1:0);
 function move(dt,tick=null){
  updateMomentum(dt);
+ moveStep(dt,tick);unstick();
+}
+function moveStep(dt,tick=null){
  if((h.expedition&&!h.expedition.canMove())||h.playerBody?.downed()){cancelTraversal();walkVelocity.set(0,0,0);return;}
  if(h.parkour()?.active()){if(h.parkourOn())h.parkour().update(dt,tick);else h.parkour().reset();return;}
  if(updateVault(dt))return;
@@ -258,6 +277,7 @@ function updateJump(dt){
   // Exactly one answer to "what is the player doing".
   state:()=>h.parkour()?.kind()||(vault?'vault':dive?'dive':slide?slide.kind:motion.inspect().airborne?'air':proneT>0?'prone':crouchAmount>.1?'crouch':'ground'),
   get proneT(){return proneT;},set proneT(v){proneT=v;},get crouchHeld(){return crouchHeld;},set crouchHeld(v){crouchHeld=v;},get crouchAmount(){return crouchAmount;},
+  unsticks:()=>unsticks,
   counts:()=>({vaults:vaultCount,wallPops,rolls,dives:diveCount,tackles:tackleCount,bumps:bumpCount})};
  return api;
  };

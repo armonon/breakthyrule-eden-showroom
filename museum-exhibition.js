@@ -19,6 +19,7 @@ export async function createMuseumExhibition(T,{place,camera,stage,onChange=()=>
  const art=(slug,title)=>({title,image:'/assets/museum-gallery/graphics-'+slug+'.webp',url:'/assets/museum-gallery/graphics-'+slug+'.webp',credit:'Break Thy Rule artwork archive',kind:'Artwork'});
  const photo=(index)=>{const item=window.showroomCollection[index]||window.showroomCollection[0];return {title:item.name,image:item.images[0],url:item.images[0],credit:'Break Thy Rule garment photograph',kind:'Garment'};};
  const news=(n)=>{const p=pages[Math.max(0,Math.min(pages.length-1,n-1))];return {title:p.title||'The Daily Apple',image:p.file||p.url,url:pdf+'#page='+p.page,credit:'The Daily Apple · American Worlds Fairs · Architecture and Landscapes',page:p.page,kind:'Newspaper'};};
+ let outsideSettled=false;
  const book=(index)=>{const b=window.showroomBooks?.[index]||window.showroomBooks?.[0];return {title:b.title,image:b.cover,url:b.url,credit:b.author+' · from the existing library',kind:'Book'};};
  const collage={title:'Colour Collage / IMG_0524',image:'/assets/colour-collage-0524.jpg',url:'/assets/colour-collage-0524.jpg',credit:'Owner-supplied artwork · house archive',kind:'Artwork'};
  const A={flower:art('flowers-of-avalon-1','Flowers of Avalon'),jester:art('jester-of-avalon','Jester of Avalon'),angel:art('angel-copy','Angel'),silver:art('silver-angel','Silver Angel'),walker:art('the-walker','The Walker'),dove:art('white-dove','White Dove'),seed:art('the-seed','The Seed'),horse:art('to-avalon','To Avalon'),chariot:art('gods-chariot','Gods Chariot'),eye:art('eye-see-you','Eye See You'),cross:art('cross-of-avalon','Cross of Avalon')};
@@ -176,6 +177,8 @@ export async function createMuseumExhibition(T,{place,camera,stage,onChange=()=>
   update(position,inside){
    if(disposed)return;if(inside!==insideNow)document.body.classList.toggle('lost-eden-inside',inside);insideNow=inside;const now=performance.now(),dialog=!!document.querySelector('dialog[open]');ui.hidden=!inside||dialog||document.hidden;
    if(!initialVisit&&window.breakThyRuleShowroom?.getState().ready){initialVisit=true;const target=new URLSearchParams(location.search).get('exhibit');const f=frames.find(x=>x.id===target);if(f)visit(f);}
+   // Away from the exhibition, settle once (hide everything, release textures) and then skip the per-frame work.
+   if(!inside){if(outsideSettled)return;outsideSettled=true;}else outsideSettled=false;
    for(const f of frames){f.distance=inside?position.distanceTo(f.world):Infinity;f.wanted=inside&&f.distance<(f.wanted?32:23);f.mount.visible=inside&&f.distance<65;for(const l of f.layers)l.mesh.visible=f.wanted&&!!l.entry.texture;}
    for(const e of pool.values()){e.wanted=e.refs.some(l=>l.frame.wanted);e.distance=Math.min(...e.refs.map(l=>l.frame.distance));if(!e.wanted)release(e);}
    for(const e of [...pool.values()].sort((a,b)=>a.distance-b.distance)){if(active>=3)break;if(e.wanted&&!e.loading&&!e.texture&&now>=e.retryAt)void load(e);}maxConcurrent=Math.max(maxConcurrent,active);

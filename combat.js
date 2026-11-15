@@ -367,7 +367,23 @@
    }
    return null;
   }
-  function groundAt(x,z,from=12){const h=worldHits(new T.Vector3(x,from,z),new T.Vector3(0,-1,0),40);return h?h.point.y:0;}
+  // Ground height: a downward ray against static scenery only (no animated characters, instanced foliage or effects),
+  // gathered every few seconds, with results cached per 25 cm cell. Ray-testing skinned characters vertex by vertex
+  // was the main cause of hitches when bots spread over Beyond Eden.
+  let groundList=null,groundListAt=-1e9;const groundCache=new Map(),groundDown=new T.Vector3(0,-1,0),groundFrom=new T.Vector3();
+  function groundMeshes(){
+   const now=performance.now();if(groundList&&now-groundListAt<3000)return groundList;groundListAt=now;groundCache.clear();groundList=[];
+   scene.traverseVisible(ob=>{if(!ob.isMesh||ob.isSkinnedMesh||ob.isInstancedMesh||ob===o.sky||ob.userData.noHit)return;const g=ob.geometry;if(!g?.attributes?.position)return;
+    for(let v=ob.parent;v;v=v.parent)if(v===fxGroup||v.userData.noHit||v.userData.characterStyle)return;
+    if(ob.material&&(ob.material.visible===false||(ob.material.transparent&&ob.material.opacity<.25)))return;
+    if(!g.boundingSphere)g.computeBoundingSphere();if(!(g.boundingSphere?.radius<=90))return;if(!g.boundingBox)g.computeBoundingBox();groundList.push(ob);});
+   return groundList;
+  }
+  function groundAt(x,z,from=12){
+   const list=groundMeshes(),key=Math.round(x*4)+':'+Math.round(z*4)+':'+Math.round(from*2);let y=groundCache.get(key);if(y!==undefined)return y;
+   raycaster.set(groundFrom.set(x,from,z),groundDown);raycaster.near=.02;raycaster.far=40;const hit=raycaster.intersectObjects(list,false)[0];
+   y=hit?hit.point.y:0;if(groundCache.size>20000)groundCache.clear();groundCache.set(key,y);return y;
+  }
   function targetOf(object){let v=object;while(v){if(v.userData.target)return v.userData.target;v=v.parent;}return null;}
 
   let rangeOn=false,rangeRoot=null;
@@ -1081,6 +1097,7 @@
    hud.toast('THE RANGE · steel at 10, 18, 28 and 43 m · posts for the axe');
   }
 
+  let hudFrameAt=-1e9;
   function requestFrame(){o.requestDraw();}
 
   function update(time,dt){
@@ -1166,7 +1183,8 @@
     lerp(r0[2],0,adsBlend)+rig.sprintRot[2]*sprintBlend+act.rz+anim.rotZ.step(0,dt)*.02+swx*.08+bobX*2-latK*.09,'YXZ');
    if(w.id==='c4'){const live=charges.some(c=>!c.done);const r=m.parts.remote;r.visible=live||lastTime-(state.c4press||-9)<.6;const press=lastTime-(state.c4press||-9);r.position.set(-.2+bobX,-.16+bobY+(press<.2?-.01:0),-.34);m.parts.button.position.z=press<.15?.008:.012;m.parts.remoteLed.material.emissiveIntensity=press<.6?6:(Math.floor(time*2)%2?2:.2);}
    poseArms(w,s,m);
-   hud.update();
+   // The weapon HUD refreshes 10 times a second from here; equips, pickups and reloads refresh it at once.
+   {const t=performance.now();if(t-hudFrameAt>100){hudFrameAt=t;hud.update();}}
   }
 
   // Called by the host right before it renders the scene, after anything else touched the lights.

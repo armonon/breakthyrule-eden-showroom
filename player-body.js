@@ -36,7 +36,7 @@
   // knee-high birdbath does not raise the hands but a wall, shelf or pillar does, with its true surface normal.
   let nearby=[],gathered=-1e9;const sphere=new T.Sphere();
   function gather(){
-   nearby=[];scene.traverseVisible(node=>{if(!node.isMesh||node.isSkinnedMesh||node.isInstancedMesh||node.isSprite||node.material?.transparent)return;for(let p=node.parent;p;p=p.parent)if(p.userData.characterStyle)return;const g=node.geometry;if(!g?.attributes.position?.count)return;if(!g.boundingSphere){if(!g.attributes.position.array.every(Number.isFinite))return;g.computeBoundingSphere();}if(!Number.isFinite(g.boundingSphere.radius))return;sphere.copy(g.boundingSphere).applyMatrix4(node.matrixWorld);if(sphere.radius<40&&(g.index?g.index.count:g.attributes.position.count)<60000&&sphere.distanceToPoint(camera.position)<2.5)nearby.push(node);});
+   nearby=[];scene.traverseVisible(node=>{if(!node.isMesh||node.isSkinnedMesh||node.isInstancedMesh||node.isSprite||node.material?.transparent)return;for(let p=node.parent;p;p=p.parent)if(p.userData.characterStyle)return;const g=node.geometry;if(!g?.attributes.position?.count)return;if(!g.boundingSphere){if(!g.attributes.position.array.every(Number.isFinite))return;g.computeBoundingSphere();}if(!Number.isFinite(g.boundingSphere.radius))return;sphere.copy(g.boundingSphere).applyMatrix4(node.matrixWorld);if(sphere.radius<40&&(g.index?g.index.count:g.attributes.position.count)<24000&&sphere.distanceToPoint(camera.position)<2.5){if(!g.boundingBox)g.computeBoundingBox();nearby.push(node);}});
   }
   // Brush: shrubs, ferns and tall grass are instanced; index every plant that reaches the waist in a 2 m grid.
   let plants=new Map(),indexed=-1e9,brush=0;

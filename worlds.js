@@ -31,7 +31,7 @@
   // without WebGL it shows the poster. Chapter cards skip it and stay a light plate over the live world.
   const film=(()=>{
    const A=n=>'https://apple-cover-assets--breakthyrule-eden-showroom.netlify.app/'+n,still=matchMedia('(prefers-reduced-motion: reduce)');
-   let cv=null,video=null,poster=null,r=null,failed=false,raf=0,last=0,on=false,dis=1,target=1,mx=-9999,my=-9999,rx=-9999,ry=-9999,born=-1e4,loading=null;
+   let cv=null,video=null,poster=null,r=null,failed=false,raf=0,last=0,shown=-3,uploaded=-1e9,on=false,dis=1,target=1,mx=-9999,my=-9999,rx=-9999,ry=-9999,born=-1e4,loading=null;
    function size(){if(!r)return;const w=innerWidth,h=innerHeight;r.resize(w,h,Math.max(w<700?2:2.8,Math.sqrt(w*h/95000)));}
    function init(){
     if(loading)return loading;
@@ -46,7 +46,10 @@
    function tick(now){
     raf=0;if(!r)return;const dt=Math.min(.1,last?(now-last)/1000:.016);last=now;dis+=(target-dis)*(still.matches?1:1-Math.exp(-dt*(target?3.2:2.4)));
     const src=video.readyState>=2&&!video.paused?video:poster.complete&&poster.naturalWidth?poster:null;
-    if(src&&r.setFrame(src)){r.draw({scrollDissolve:still.matches?0:dis,mouseX:mx,mouseY:my,hover:mx>-9999&&!still.matches?1:0,rippleX:rx,rippleY:ry,rippleAge:still.matches?10:(now-born)/1000});cv.classList.add('on');}
+    // Upload only a new picture: a changed video frame (at most 30 a second) or the poster once.
+    const stamp=src===video?Math.floor(video.currentTime*30):src?-1:-2,fresh=src&&stamp!==shown&&now-uploaded>=33;
+    if(fresh&&r.setFrame(src)){shown=stamp;uploaded=now;}
+    if(src&&shown!==-3){r.draw({scrollDissolve:still.matches?0:dis,mouseX:mx,mouseY:my,hover:mx>-9999&&!still.matches?1:0,rippleX:rx,rippleY:ry,rippleAge:still.matches?10:(now-born)/1000});cv.classList.add('on');}
     if(on||dis<.985)raf=requestAnimationFrame(tick);else{last=0;cv.classList.remove('on');}
    }
    return {
