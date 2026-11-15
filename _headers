@@ -1,0 +1,5 @@
+/site/enhancements/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/fast-models/*
+  Cache-Control: public, max-age=31536000, immutable
