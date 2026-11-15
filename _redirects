@@ -1,10 +1,10 @@
 /about /about.html 200
 /about/ /about.html 200
 
-/mystery-box /discovery-product.html 200
-/mystery-box/ /discovery-product.html 200
-/random-shirt /discovery-product.html 200
-/random-shirt/ /discovery-product.html 200
+/mystery-box /lab.html 200
+/mystery-box/ /lab.html 200
+/random-shirt /lab.html 200
+/random-shirt/ /lab.html 200
 
 # The old local Studio snapshot has no app bundle. Open the existing original.
 /studio https://sattarimusic.com/studio 302!
