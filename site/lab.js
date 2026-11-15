@@ -657,6 +657,8 @@ $('package-form').addEventListener('change', e => {
   const input = e.target;
   if (productPage === 'mystery' && input.name === 'package' && input.value !== packageState.package) {
     const url = new URL(location.href); url.searchParams.set('package', input.value); url.searchParams.delete('edit'); url.hash = '';
+    // Keep this history entry consistent when the browser restores its form controls on Back.
+    for (const option of $('package-options').querySelectorAll('input')) option.checked = option.value === packageState.package;
     location.assign(url); return;
   }
   if (input.name === 'package') selectPackage(input.value);
