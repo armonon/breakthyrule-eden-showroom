@@ -89,6 +89,7 @@
   }
   const ready=loadStyle(hatStyle(item));
   return {ready,
+   setVariant(next){item={...item,...next};return loadStyle(null);},
    setStyle(style){if(!style?.model)return Promise.resolve(false);if(currentStyle?.id===style.id&&stage.getAttribute('aria-busy')!=='true')return Promise.resolve(true);return loadStyle(style);},
    getStyle(){return currentStyle;},
    setColors(value){Object.assign(colors,value);setColors(model,colors);request();},

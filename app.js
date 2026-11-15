@@ -371,7 +371,22 @@ function loadNearbyAssets(){
  if(collectionRack&&camera.position.distanceTo(collectionRack.rack.getWorldPosition(new T.Vector3()))<12&&!rackLoading&&!rackModels.size&&!rackFailures.size)loadRackModels();
 }
 function markView(){const libraryView=state.view==='library'||state.view==='librarian',musicView=state.view==='amphitheater';stage.classList.toggle('watching-film',state.view==='film');wallFilm?.setInteractive(state.view==='film');$('browse-library').hidden=!libraryView;$('talk-librarian').hidden=!libraryView;$('inspect-jacket').hidden=libraryView||musicView;$('open-music').hidden=!musicView;for(const [id,view]of[['spawn','spawn'],['library-view','library'],['approach','approach'],['wall-view','wall'],['film-view','film'],['amphitheater-view','amphitheater']]){const selected=state.view===view||(view==='wall'&&state.view==='lookbook')||(view==='library'&&state.view==='librarian');$(id).classList.toggle('selected',selected);$(id).setAttribute('aria-pressed',String(selected));}}
+let edenNavigation=0;
 function go(view,instant=false){
+ // Returning to a garden destination must restore Eden before moving the camera.
+ // Otherwise a Museum pocket can stay hidden after a visit to Beyond Eden.
+ const navigation=++edenNavigation;
+ if(worlds&&(worlds.loading()||worlds.world()!=='eden')){
+  return (async()=>{
+   while(worlds.loading()){
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+    if(navigation!==edenNavigation)return;
+   }
+   if(navigation!==edenNavigation)return;
+   if(worlds.world()!=='eden')await worlds.enter('eden',{title:'GARDEN OF EDEN',sub:view==='wall'?'THE LOST EDEN ARCHIVE':'BACK TO THE GARDEN',kicker:'RETURNING FROM BEYOND EDEN',min:400});
+   if(navigation===edenNavigation)return go(view,instant);
+  })();
+ }
  if(view==='film'||view==='lookbook')view='wall';
  if(expedition?.active())expedition.leave();
  if(battle?.active())battle.suspend();
@@ -381,7 +396,7 @@ function go(view,instant=false){
  playerBail?.cancel();if(view==='free')view='spawn';state.view=view;keys.clear();walkVelocity.set(0,0,0);markView();if(!state.ready)return;motion.reset();
  if(view==='approach')loadRackModels();
  if(view==='library'||view==='librarian')librarianNPC.load();
- $('poster-links').hidden=view!=='wall'&&view!=='lookbook';if($('gallery-wall-switch'))$('gallery-wall-switch').textContent=view==='lookbook'?'ART WALL':'PHOTO WALL';$('film-link').hidden=view!=='film';$('retry-film').hidden=view!=='film'||filmStatus!=='unavailable';document.querySelector('.world-caption h1').textContent=view==='spawn'?'GARDEN OF EDEN':view==='film'?'THE SCREEN':view==='lookbook'?'THE PHOTO WALL':view==='wall'?'THE ARTWORK':'THE VAULT';document.querySelector('.world-caption .edition').textContent=view==='spawn'?'BREAKTHYRULE / IN THE BEGINNING':view==='film'?'MOVING SIGNAL / BREAKTHYRULE':view==='lookbook'?'BREAKTHYRULE / '+collection.length+' PHOTOGRAPHS':view==='wall'?'BREAKTHYRULE / ARTWORK':'BREAKTHYRULE / '+collection.length+' 3D GARMENTS';
+ $('poster-links').hidden=view!=='wall'&&view!=='lookbook';if($('gallery-wall-switch'))$('gallery-wall-switch').textContent=view==='lookbook'?'ART WALL':'PHOTO WALL';$('film-link').hidden=view!=='film';$('retry-film').hidden=view!=='film'||filmStatus!=='unavailable';document.querySelector('.world-caption h1').textContent=view==='spawn'?'GARDEN OF EDEN':view==='film'?'THE SCREEN':view==='lookbook'?'THE PHOTO WALL':view==='wall'?'THE LOST EDEN ARCHIVE':'THE VAULT';document.querySelector('.world-caption .edition').textContent=view==='spawn'?'BREAKTHYRULE / IN THE BEGINNING':view==='film'?'MOVING SIGNAL / BREAKTHYRULE':view==='lookbook'?'BREAKTHYRULE / '+collection.length+' PHOTOGRAPHS':view==='wall'?'MUSEUM / EXHIBITION, SCULPTURE & THE DAILY APPLE':'BREAKTHYRULE / '+collection.length+' 3D GARMENTS';
  if(view==='library'){document.querySelector('.world-caption h1').textContent='THE OPEN LIBRARY';document.querySelector('.world-caption .edition').textContent='THE OPEN LIBRARY / '+window.showroomBooks.length+' TEXTS';}
  if(view==='librarian'){document.querySelector('.world-caption h1').textContent='THE LIBRARIAN';document.querySelector('.world-caption .edition').textContent='THE GARDEN KEEPER';}
  if(view==='amphitheater'){document.querySelector('.world-caption h1').textContent='THE AMPHITHEATER';document.querySelector('.world-caption .edition').textContent='EDEN / SOUND GARDEN';}
@@ -534,7 +549,7 @@ function updateFeel(dt){
 }
 function setMovement(key,pressed){
  if(pressed&&(!state.ready||modalOpen()||expedition&&!expedition.canMove()))return;
- if(key==='space'){if(pressed)movement.jump();return;}
+ if(key==='space'){if(pressed){if(!keys.has(key)){keys.add(key);movement.jump();}}else keys.delete(key);if(state.ready)requestDraw();return;}
  if(!moveKeys.has(key)&&key!=='shift')return;
  if(pressed&&moveKeys.has(key))renderer.domElement.focus({preventScroll:true});
  if(key==='shift'&&expeditionPrefs()?.sprintMode==='toggle'){if(pressed){if(keys.has(key))keys.delete(key);else keys.add(key);}requestDraw();return;}
@@ -542,7 +557,7 @@ function setMovement(key,pressed){
  if(state.ready)requestDraw();
 }
 document.addEventListener('keydown',event=>{if(modalOpen()||event.ctrlKey||event.metaKey||event.altKey||event.isComposing||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;const key=event.code==='Space'?'space':event.key.toLowerCase();if(['f','g','q'].includes(key)&&fistsEngaged()){event.preventDefault();event.stopImmediatePropagation();fists.key(key,true,event.repeat);requestDraw();return;}if((key==='a'||key==='d')&&state.ready&&!event.repeat&&!arena?.active())movement.tapDodge(key);if(key==='t'&&!event.repeat&&!combat?.armed()){event.preventDefault();playEmote();return;}if(key==='v'&&thirdOn&&!event.repeat){event.preventDefault();thirdSide*=-1;requestDraw();return;}if(key==='c'&&!event.repeat)parkour?.crouchPressed();if(key==='c'&&state.ready&&!arena?.active()&&(!expedition?.active()||expedition.canMove())&&!playerBail?.active){event.preventDefault();if(!event.repeat){movement.crouchHeld=expeditionPrefs()?.crouchMode==='toggle'?!movement.crouchHeld:true;if(movement.crouchHeld)movement.startSlide();}return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&garden.skybox.distance(targetPosition)<3.8){event.preventDefault();toggleDoor();return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&!battle?.active()&&secrets?.interact()){event.preventDefault();return;}if(state.ready&&key==='m'&&!event.repeat&&ambience){ambience.setMuted(!ambience.muted);secrets?.notify(ambience.muted?'Garden ambience muted (M)':'Garden ambience on (M)');return;}if((moveKeys.has(key)||key==='shift'||key==='space')&&state.ready){if(key==='space'&&['BUTTON','A'].includes(event.target.tagName))return;event.preventDefault();if(!event.repeat)setMovement(key,true);}});
-document.addEventListener('keyup',event=>{const key=event.key.toLowerCase();if(key==='c'&&expeditionPrefs()?.crouchMode!=='toggle')movement.crouchHeld=false;if(fists&&['f','g','q'].includes(key))fists.key(key,false);setMovement(key,false);});
+document.addEventListener('keyup',event=>{const key=event.code==='Space'?'space':event.key.toLowerCase();if(key==='c'&&expeditionPrefs()?.crouchMode!=='toggle')movement.crouchHeld=false;if(fists&&['f','g','q'].includes(key))fists.key(key,false);setMovement(key,false);});
 for(const button of $('social-move').querySelectorAll('button')){button.onpointerdown=event=>{if(event.button!==0)return;event.preventDefault();button.setPointerCapture(event.pointerId);setMovement(button.dataset.key,true);};button.onpointerup=button.onpointercancel=button.onlostpointercapture=()=>setMovement(button.dataset.key,false);}
 document.addEventListener('focusin',event=>{if(modalOpen()||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName)){keys.clear();if(state.ready)requestDraw();}});
 window.addEventListener('blur',()=>{keys.clear();drag=null;movement.crouchHeld=false;fists?.key('q',false);if(state.ready)requestDraw();});
@@ -721,9 +736,9 @@ const touch=window.createTouchControls?.({host:stage.parentElement,combat:()=>co
 const edenMobile=window.createEdenMobile?.({host:stage.parentElement,ready:()=>state.ready,
  active:()=>(worlds?.world()??'eden')==='eden'&&!expedition?.active()&&!battle?.active()&&!combat?.armed()&&!arena?.active(),
  blocked:()=>modalOpen()||worlds?.loading()||!$('social-panel').hidden,
- move:(key,pressed)=>setMovement(key,pressed),jump(){freeView();movement.jump();requestDraw();},
+ move:(key,pressed)=>setMovement(key,pressed),jump(pressed=true){if(pressed)freeView();setMovement('space',pressed);},
  crouch(held){if(held){parkour?.crouchPressed();freeView();movement.crouchHeld=true;movement.startSlide();}else movement.crouchHeld=false;if(state.ready)requestDraw();},
- view(){freeView();lastThirdToggle=0;setThird(!thirdOn);},isThird:()=>thirdOn,tap:interactWithScene,
+ view(){freeView();lastThirdToggle=0;setThird(!thirdOn);},isThird:()=>thirdOn,tap:event=>horror?.interact?.()||interactWithScene(event),
  stop(){keys.clear();walkVelocity.set(0,0,0);movement.crouchHeld=false;drag=null;if(state.ready)requestDraw();},
  look(dx,dy){const d=targetAim.clone().sub(targetPosition).normalize(),sens=.0034*(window.edenSettings?.get('sens')??1),yaw=Math.atan2(d.x,-d.z)+dx*sens,pitch=T.MathUtils.clamp(Math.asin(T.MathUtils.clamp(d.y,-1,1))-dy*sens*(window.edenSettings?.get('invertY')?-1:1),-1.35,1.35);freeView();targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));requestDraw();}
 });
@@ -742,12 +757,12 @@ const play=window.createPlayMenu?.({nav:document.querySelector('.view-nav'),afte
  onOpen(){keys.clear();walkVelocity.set(0,0,0);if(document.pointerLockElement)document.exitPointerLock();},onClose:requestDraw,
  context:()=>battle?.active()?'battle':arena?.active()?'arena':expedition?.active()?'expedition':combat?.armed()||combat?.inRange()?'armed':fistsEngaged()?'fists':'walk',
  items:[
-  {id:'battle',title:'OPEN MATCH',text:'Beyond Eden is always live: walk through the hidden door and you are in. Find guns, take on the bots, chase supply drops, hold the hill and claim bounties. Die and you are back in seconds.',keys:'F LOOT · H HEAL · TAB SCORES',available:finePointerOnly,note:'Needs a mouse and keyboard.',
-   run(){battleLaunch.click();play?.hint('battle','GRAB A GUN FROM THE PADS · CHASE THE EVENTS · TAB FOR SCORES · WALK BACK THROUGH THE DOOR TO REST');}},
+  {id:'battle',title:'BEYOND EDEN · STORY',text:'Enter the hidden door. Recover eight pages, enter the office, face the masked crowd and discover the black cube’s garment lab.',keys:'F INTERACT · EIGHT PAGES · THE BLACK CUBE',
+   run(){battleLaunch.click();play?.hint('battle','RECOVER EIGHT PAGES · FOLLOW THE ROAD TO THE OFFICE · WALK BACK THROUGH THE DOOR TO RETURN TO EDEN');}},
   {id:'jester',title:'FIGHT THE JESTER',text:'The Violet Trickster dances by the museum. Punch him and he fights back: uppercuts, tackles and taunts.',keys:'F JAB · G HAYMAKER · Q BLOCK',run:goToJester},
   {id:'range',title:'FIRING RANGE',text:'Steel targets and posts on the brick road, beyond the hidden door. Try every weapon.',keys:'1–7 DRAW · CLICK FIRE · X PUT AWAY',available:finePointerOnly,note:'Needs a mouse and keyboard.',
    run(){rangeLaunch.click();play?.hint('range','1–7 DRAW · CLICK TO FIRE · WHEEL SWAPS · X PUTS IT AWAY · ? FOR ALL CONTROLS');}},
-  {id:'expedition',title:'BEYOND EDEN',text:'Explore the old civilization. In solo, ring the temple bell to begin the hunt, then recover eight pages. Three defensive flares buy time.',keys:'E INTERACT · F FLASHLIGHT · G FLARE',run:()=>nightLaunch.click()},
+  {id:'expedition',title:'SOLO HUNT',text:'The separate bell-start expedition: ring the Moon Temple bell, recover eight pages and reach the pyramid. Three defensive flares buy time.',keys:'E INTERACT · F FLASHLIGHT · G FLARE',run:()=>nightLaunch.click()},
   {id:'arena',title:'ONLINE ARENA',text:'Swords and crossbows against other visitors.',keys:'1 / 2 WEAPONS · TAB SCORES',available:()=>!!window.showroomDeployment?.realtime,note:'Online PvP with swords and crossbows. Opens when the live server is running.',run:()=>arenaLaunch.click()}
  ]});
 
