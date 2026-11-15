@@ -1,0 +1,228 @@
+{
+  "slug": "stickman",
+  "title": "stickman",
+  "duration_seconds": 10,
+  "fps": 24,
+  "frames": 240,
+  "rotation_degrees": 360,
+  "source_key": "f8eb4b3c84fe0a5995aa6da8f823601727899ebdd6f694474679852f4fae00b0",
+  "alpha_method": "Original RGBA alpha, packed right of RGB in H.264; reconstructed by WebGL. No chroma key.",
+  "assets": [
+    {
+      "file": "stickman-full-poster.png",
+      "bytes": 173682,
+      "sha256": "8a18771843be19b081e03c8a7ce29e667b811c470bfa524daaf3f6414df78126",
+      "type": "transparent-poster",
+      "width": 640,
+      "height": 900
+    },
+    {
+      "file": "stickman-full-packed.mp4",
+      "bytes": 2434215,
+      "sha256": "953266afda15fd6dadef6cd8629e72b825ed145544281dc75f601ccb27e4bf50",
+      "type": "packed-alpha-h264",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 900,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "2434215"
+        }
+      }
+    },
+    {
+      "file": "stickman-detail-poster.png",
+      "bytes": 388812,
+      "sha256": "d23895a290607a21fbd2f345142f6b94d6f199fb0cefd004ee31702a81fee181",
+      "type": "transparent-poster",
+      "width": 1220,
+      "height": 900
+    },
+    {
+      "file": "stickman-detail-packed.mp4",
+      "bytes": 2744030,
+      "sha256": "db0473680d5e9f8973e841bf47cade5f39a5f431017d52ba4ae5089eb6f3ba5e",
+      "type": "packed-alpha-h264",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 2440,
+            "height": 900,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "2744030"
+        }
+      }
+    },
+    {
+      "file": "stickman-with-chain-360.mp4",
+      "bytes": 2283390,
+      "sha256": "59377c1542e06735b6a531583469de08380dc14329c49a7480df08ca9a6c14a1",
+      "type": "standard-mp4",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "2283390"
+        }
+      }
+    }
+  ],
+  "views": {
+    "full": {
+      "width": 640,
+      "height": 900,
+      "packed": "stickman-full-packed.mp4",
+      "poster": "stickman-full-poster.png",
+      "decoded_alpha_cardinal_samples": [
+        {
+          "frame": 1,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 61,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 121,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 181,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        }
+      ]
+    },
+    "detail": {
+      "width": 1220,
+      "height": 900,
+      "packed": "stickman-detail-packed.mp4",
+      "poster": "stickman-detail-poster.png",
+      "decoded_alpha_cardinal_samples": [
+        {
+          "frame": 1,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 61,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 121,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 181,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        }
+      ]
+    }
+  },
+  "passed": true,
+  "download": "stickman-with-chain-360.mp4",
+  "encode_seconds": 29.3
+}
