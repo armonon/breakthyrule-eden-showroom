@@ -2,7 +2,7 @@
 (function(root){
  // Persist physical inputs, then translate them to the established gameplay keys.
  // Touch controls send semantic actions and intentionally bypass desktop bindings.
- const STORAGE='eden-game-bindings-v1',ALL=['walk','combat','battle','arena','fists','expedition'];
+ const STORAGE='eden-game-bindings-v1',ALL=['walk','combat','battle','arena','fists','expedition','horror'];
  const actions=[],add=(id,label,key,inputs,contexts=ALL)=>actions.push({id,label,key,inputs,contexts});
  add('forward','Move forward / climb','w',['KeyW','ArrowUp']);add('back','Move back / drop','s',['KeyS','ArrowDown']);
  add('left','Move left / shimmy','a',['KeyA','ArrowLeft']);add('right','Move right / shimmy','d',['KeyD','ArrowRight']);
@@ -12,17 +12,18 @@
  add('help','Controls help','?',['Slash']);add('menu','Play menu','menu',['KeyP']);
  add('interact','Interact / collect / ring bell','e',['KeyE'],['walk','expedition']);
  add('flashlight','Flashlight','f',['KeyF'],['expedition']);add('flare','Fire flare','g',['KeyG','Mouse0'],['expedition']);
- add('reload','Reload','r',['KeyR'],['expedition','combat','battle','walk']);
+ add('reload','Reload','r',['KeyR'],['expedition','combat','battle','walk','horror']);
  add('bail','Bail / get up','b',['KeyB'],['expedition']);add('journal','Page journal','j',['KeyJ'],['expedition']);
  add('chat','Party chat','chat',['Enter'],['expedition']);
  add('useTarget','Use object under cursor','use',['Mouse0'],['walk']);add('ambience','Mute garden ambience','m',['KeyM'],['walk','fists']);
  add('punch','Punch / jab','f',['KeyF','Mouse0'],['fists']);add('haymaker','Haymaker','g',['KeyG'],['fists']);add('block','Block','q',['KeyQ','Mouse2'],['fists']);
  add('gardenPunch','Punch','f',['KeyF'],['walk']);
- add('fire','Fire / attack','fire',['Mouse0'],['combat','battle','arena']);add('aim','Aim / block / alternate fire','aim',['Mouse2'],['combat','battle','arena']);
- add('swap','Previous weapon / swap','q',['KeyQ'],['walk','combat','battle','arena']);
- add('holster','Holster weapon','x',['KeyX','Digit0'],['walk','combat','battle']);add('bash','Melee bash','b',['KeyB'],['combat','battle']);
- add('detonate','Detonate C4','g',['KeyG'],['combat','battle']);
- for(let n=1;n<=7;n++)add('weapon'+n,'Weapon slot '+n,String(n),['Digit'+n],n<=2?['walk','combat','battle','arena']:['walk','combat','battle']);
+ add('fire','Fire / attack','fire',['Mouse0'],['combat','battle','arena','horror']);add('aim','Aim / block / alternate fire','aim',['Mouse2'],['combat','battle','arena','horror']);
+ add('swap','Previous weapon / swap','q',['KeyQ'],['walk','combat','battle','arena','horror']);
+ add('holster','Holster weapon','x',['KeyX','Digit0'],['walk','combat','battle','horror']);add('bash','Melee bash','b',['KeyB'],['combat','battle','horror']);
+ add('detonate','Detonate C4','g',['KeyG'],['combat','battle','horror']);
+ for(let n=1;n<=7;n++)add('weapon'+n,'Weapon slot '+n,String(n),['Digit'+n],n<=2?['walk','combat','battle','arena','horror']:['walk','combat','battle','horror']);
+ add('chapterInteract','Take story ticket / enter garment lab','chapter',['KeyF'],['horror']);
  add('loot','Interact / pick up loot','f',['KeyF'],['battle']);add('heal','Heal','h',['KeyH'],['battle']);add('scores','Scores','tab',['Tab'],['battle','arena']);
  const byId=new Map(actions.map(a=>[a.id,a])),copy=v=>Object.fromEntries(Object.entries(v).map(([k,a])=>[k,[...a]])),defaults=()=>Object.fromEntries(actions.map(a=>[a.id,[...a.inputs]]));
  const overlap=(a,b)=>a.contexts.some(c=>b.contexts.includes(c));
@@ -58,12 +59,27 @@
   hint:id=>(bindings[id]||[]).map(label).join(' / '),setContext:fn=>{context=fn;pressed.clear();},context:()=>context(),onChange(fn){subscribers.add(fn);return()=>subscribers.delete(fn);},clear:()=>pressed.clear()};
  // Convert bound mouse buttons once, without manufacturing pointer-lock or trust.
  // Native mouse-look still receives its motion, and a first click still acquires focus.
- const doc=root.document;function mouse(e,up){if(e.pointerType&&e.pointerType!=='mouse'&&e.pointerType!=='pen')return;if(!up&&(blockedModifiers(e)||doc.querySelector?.('dialog[open], [aria-modal="true"]')||e.target?.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target?.tagName)))return;
-  const physical='Mouse'+e.button;if(!up&&!doc.pointerLockElement&&!e.target?.closest?.('#scene canvas'))return;
+ const doc=root.document,mousePointers=new Map(),buttonMasks=[1,4,2,8,16];
+ function mouseEdge(e,button,up){const physical='Mouse'+button;
+  if(!up&&(blockedModifiers({code:physical,ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:e.altKey,isComposing:e.isComposing})||doc.querySelector?.('dialog[open], [aria-modal="true"]')||e.target?.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target?.tagName)))return;
+  if(!up&&!doc.pointerLockElement&&!e.target?.closest?.('#scene canvas'))return;
   const id=actions.find(a=>a.contexts.includes(context())&&bindings[a.id].includes(physical))?.id,k=up?pressed.get(physical):byId.get(id)?.key;if(!k)return;
   if(!up&&!doc.pointerLockElement&&['fire','aim','g','use','f'].includes(k))return;
   if(up)pressed.delete(physical);else pressed.set(physical,k);if(up&&[...pressed.values()].includes(k))return;
   e.preventDefault?.();const event=new root.KeyboardEvent(up?'keyup':'keydown',{key:k,bubbles:true,cancelable:true});Object.defineProperty(event,'edenMappedKey',{value:k});Object.defineProperty(event,'edenInputCode',{value:physical});(doc.pointerLockElement||e.target||doc).dispatchEvent(event);
  }
- if(doc?.addEventListener){doc.addEventListener('pointerdown',e=>mouse(e,false));doc.addEventListener('pointerup',e=>mouse(e,true));doc.addEventListener('pointercancel',e=>mouse(e,true));doc.addEventListener('visibilitychange',()=>pressed.clear());root.addEventListener?.('blur',()=>pressed.clear());}
+ // Chord changes (aim + fire) arrive as pointermove, not a second pointerdown.
+ // Reconcile the complete button mask, including releases while another stays down.
+ function mouse(e,cancel=false){
+  if(e.pointerType&&e.pointerType!=='mouse'&&e.pointerType!=='pen')return;
+  const id=e.pointerId??'mouse',previous=mousePointers.get(id),before=previous?.buttons||0;
+  if(!previous&&e.type!=='pointerdown')return;
+  const mask=buttonMasks[e.button]||0,after=cancel?0:Number.isInteger(e.buttons)?e.buttons:e.type==='pointerdown'?before|mask:before&~mask;
+  if(after)mousePointers.set(id,{buttons:after,target:e.target||previous?.target});else mousePointers.delete(id);
+  for(let button=0;button<buttonMasks.length;button++){const bit=buttonMasks[button];if((before&bit)&&!(after&bit))mouseEdge(e,button,true);}
+  if(!cancel)for(let button=0;button<buttonMasks.length;button++){const bit=buttonMasks[button];if(!(before&bit)&&(after&bit))mouseEdge(e,button,false);}
+ }
+ function releaseMouse(){for(const [pointerId,pointer] of mousePointers)mouse({pointerId,pointerType:'mouse',type:'pointercancel',target:pointer.target},true);mousePointers.clear();}
+ if(doc?.addEventListener){for(const type of ['pointerdown','pointermove','pointerup'])doc.addEventListener(type,e=>mouse(e));for(const type of ['pointercancel','lostpointercapture'])doc.addEventListener(type,e=>mouse(e,true));doc.addEventListener('pointerlockchange',()=>{if(!doc.pointerLockElement)releaseMouse();});doc.addEventListener('visibilitychange',()=>{releaseMouse();pressed.clear();});root.addEventListener?.('blur',()=>{releaseMouse();pressed.clear();});}
+ subscribers.add(()=>mousePointers.clear());
 })(typeof window==='object'?window:globalThis);

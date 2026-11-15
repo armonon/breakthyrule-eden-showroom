@@ -18,3 +18,30 @@ test('mouse and keyboard alternatives share hold state and releases do not get s
 test('legacy bail migration, reset and denied storage remain usable',()=>{const s=setup({'eden-expedition-preferences-v1':'{"bailKey":"n"}'},true);assert.equal(s.api.get().bail[0],'KeyN');let changes=0;const off=s.api.onChange(()=>changes++);const result=s.api.set('bail',0,'KeyH');assert.equal(result.ok,true);assert.equal(result.saved,false);assert.equal(s.api.get().bail[0],'KeyH');s.api.reset();assert.equal(s.api.get().bail[0],'KeyB');assert.equal(changes,2);off();s.api.reset();assert.equal(changes,2);});
 
 test('standalone Ctrl/Alt bindings allow held crouch movement only under gameplay pointer lock',()=>{const s=setup();assert.equal(s.api.set('crouch',0,'ControlLeft').ok,true);const down=s.event('ControlLeft','keydown',{ctrlKey:true});assert.equal(s.api.blockedModifiers(down),false);assert.equal(s.api.key(down),'c');const walk=s.event('KeyW','keydown',{ctrlKey:true});assert.equal(s.api.blockedModifiers(walk),false);s.document.pointerLockElement=null;assert.equal(s.api.blockedModifiers(walk),true,'browser shortcuts outside gameplay remain native');assert.equal(s.api.blockedModifiers(s.event('KeyW','keydown',{metaKey:true})),true);});
+
+test('mouse chord mask changes fire while aiming and release each action independently',()=>{
+ const s=setup();s.api.setContext(()=> 'combat');
+ s.pointer('pointerdown',2,{buttons:2,pointerId:1});
+ s.pointer('pointermove',0,{buttons:3,pointerId:1});
+ s.pointer('pointermove',-1,{buttons:3,pointerId:1});
+ s.pointer('pointermove',0,{buttons:2,pointerId:1});
+ s.pointer('pointerup',2,{buttons:0,pointerId:1});
+ assert.deepEqual(s.events.map(e=>[e.type,e.edenMappedKey]),[['keydown','aim'],['keydown','fire'],['keyup','fire'],['keyup','aim']]);
+});
+test('cancel and lost capture release the whole mouse chord even with button minus one',()=>{
+ for(const type of ['pointercancel','lostpointercapture']){
+  const s=setup();s.api.setContext(()=> 'combat');s.pointer('pointerdown',0,{buttons:1,pointerId:9});s.pointer('pointermove',2,{buttons:3,pointerId:9});s.pointer(type,-1,{buttons:0,pointerId:9});
+  assert.deepEqual(s.events.slice(-2).map(e=>[e.type,e.edenMappedKey]),[['keyup','fire'],['keyup','aim']]);
+  const count=s.events.length;s.pointer('pointerup',0,{buttons:0,pointerId:9});assert.equal(s.events.length,count,'late release cannot repeat an action');
+ }
+});
+test('mouse aiming and firing work while a remapped Ctrl crouch is held',()=>{
+ const s=setup();s.api.setContext(()=> 'combat');s.api.set('crouch',0,'ControlLeft');s.api.key(s.event('ControlLeft','keydown',{ctrlKey:true}));
+ s.pointer('pointerdown',2,{buttons:2,ctrlKey:true});s.pointer('pointermove',0,{buttons:3,ctrlKey:true});
+ assert.deepEqual(s.events.map(e=>e.edenMappedKey),['aim','fire']);
+});
+test('unlocked press and UI-origin drag cannot turn into a held combat action after locking',()=>{
+ const s=setup();s.api.setContext(()=> 'combat');s.document.pointerLockElement=null;s.pointer('pointerdown',0,{buttons:1});s.document.pointerLockElement=s.canvas;s.pointer('pointermove',-1,{buttons:1});assert.equal(s.events.length,0);
+ s.pointer('pointerup',0,{buttons:0});s.pointer('pointerdown',0,{buttons:1});assert.equal(s.events.at(-1).edenMappedKey,'fire');s.blur();assert.equal(s.events.at(-1).type,'keyup');
+ const count=s.events.length;s.pointer('pointerdown',0,{buttons:1,target:{tagName:'BUTTON'}});s.pointer('pointermove',-1,{buttons:1});assert.equal(s.events.length,count,'dragging from a UI control cannot begin firing');
+});
