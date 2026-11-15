@@ -3,7 +3,7 @@ html body.silkroad-product { --studio-paper:#e5e4cf; --studio-line:#7b8460; --st
 html body.silkroad-product main { max-width:1500px; margin:auto; }
 html body.silkroad-product .studio-trail { display:flex;gap:10px;align-items:center;margin:24px auto 16px;width:calc(100% - 64px);font:11px/1.5 'Courier New',monospace;color:#b8bd9d; }
 html body.silkroad-product .studio-trail a { color:inherit;text-decoration:none; }
-html body.silkroad-product .product-page { display:grid!important;grid-template-columns:minmax(0,1.1fr) minmax(350px,.9fr);gap:26px;width:calc(100% - 64px)!important;max-width:none;margin:0 auto 60px!important;align-items:start; }
+html body.silkroad-product .product-page { display:grid!important;grid-template-columns:minmax(0,1.1fr) minmax(350px,.9fr);gap:26px;width:calc(100% - 64px)!important;max-width:none;margin:0 auto 24px!important;align-items:start; }
 html body.silkroad-product #viewer { position:sticky!important;top:88px;min-width:0;width:100%;height:auto!important;min-height:550px!important;margin:0!important;border:1px solid #6e7950!important;background:radial-gradient(ellipse at 50% 40%,#44543b66,transparent 70%)!important;box-shadow:inset 0 0 0 5px #192319,5px 5px 0 #0007!important;overflow:hidden; }
 html body.silkroad-product #viewer.core-media .core-frame,html body.silkroad-product #viewer .stage-frame,html body.silkroad-product #viewer .accessory-stage { height:clamp(390px,58vh,650px)!important;min-height:0!important;aspect-ratio:auto!important; }
 html body.silkroad-product #viewer.viewer { height:clamp(520px,75vh,760px)!important; }
@@ -16,7 +16,7 @@ html body.silkroad-product #name { font:700 clamp(30px,3.1vw,48px)/1.08 'Arial N
 html body.silkroad-product #price { font:700 28px/1.2 'Courier New',monospace!important;letter-spacing:-.06em;color:#293b1f!important;margin:0 0 12px!important; }
 html body.silkroad-product #tagline { color:#536044!important;font:13px/1.6 'DM Sans',sans-serif!important;margin:0 0 24px!important; }
 html body.silkroad-product #model-note { color:#536044;font-size:11px; }
-html body.silkroad-product .studio-config { display:flex;flex-direction:column;gap:18px; }
+html body.silkroad-product .studio-config { display:flex;flex-direction:column;gap:14px; }
 html body.silkroad-product .studio-config-title { display:flex;justify-content:space-between;gap:10px;align-items:baseline;border-top:1px solid #7d896655;padding-top:18px; }
 html body.silkroad-product .studio-config-title h2 { font:700 20px/1.3 'Courier New',monospace!important;margin:0;color:#172316!important; }
 html body.silkroad-product .studio-config-title > span { font:10px/1.4 'Courier New',monospace;color:#5b674c; }
@@ -55,29 +55,22 @@ html body.silkroad-product .studio-lab-link { color:#34432a;font:12px/1.5 'DM Sa
 html body.silkroad-product #product-config .studio-text-button { min-height:42px;padding:8px 10px;background:#eeeddb!important;color:#34432a!important;border:1px solid #929b76!important;font:12px/1.5 'DM Sans',sans-serif!important;cursor:pointer; }
 html body.silkroad-product .studio-pick-actions { display:flex;gap:8px;flex-wrap:wrap; }
 html body.silkroad-product .studio-chain { margin:0;padding:12px;border:1px solid #929b76;font:13px/1.6 'DM Sans',sans-serif; }
-html body.silkroad-product .studio-story { display:grid;grid-template-columns:minmax(220px,.7fr) minmax(0,1.3fr);gap:32px;margin:0 auto 64px;width:calc(100% - 64px);border-top:1px solid #9cab6f66;padding-top:32px; }
-html body.silkroad-product .studio-story-intro h2,html body.silkroad-product .studio-gallery h2 { font:700 clamp(24px,2.6vw,36px)/1.1 'Courier New',monospace!important;letter-spacing:-.05em;color:#e5e4cf!important;margin:0 0 16px; }
-html body.silkroad-product .studio-story p { font:12px/1.8 'DM Sans',sans-serif;color:#bfc4ad; }
-html body.silkroad-product .studio-rules { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px; }
-html body.silkroad-product .studio-rules h3 { color:#e5e4cf;font:600 15px/1.4 'DM Sans',sans-serif;margin:0 0 8px; }
-html body.silkroad-product .studio-rules p { margin:0; }
-html body.silkroad-product .studio-price-table { grid-column:1/-1;border-top:1px solid #9cab6f44;padding-top:18px; }
-html body.silkroad-product .studio-price-table summary { font:12px/1.5 'Courier New',monospace;color:#d3d8ba;cursor:pointer; }
-html body.silkroad-product .studio-table-scroll { overflow-x:auto; }
-html body.silkroad-product .studio-price-table table { width:100%;font:12px/1.5 'DM Sans',sans-serif;border-collapse:collapse;margin-top:16px; }
-html body.silkroad-product .studio-price-table th,html body.silkroad-product .studio-price-table td { text-align:left;padding:10px;border-bottom:1px solid #9cab6f33;color:#d3d8ba; }
-html body.silkroad-product .studio-price-table caption { text-align:left;color:#aebd8b;padding:10px;font-size:10px; }
-html body.silkroad-product .studio-gallery { margin:0 auto 0;width:calc(100% - 64px); }
-html body.silkroad-product .studio-gallery-head { display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:16px;margin-bottom:18px; }
-html body.silkroad-product .studio-gallery h2 { margin:0;font-size:24px!important; }
-html body.silkroad-product .studio-gallery-tools { display:flex;align-items:center;gap:12px;font:11px/1.5 'Courier New',monospace; }
-html body.silkroad-product .studio-gallery-tools button { padding:6px;min-width:36px;min-height:40px;background:transparent!important;color:#e5e4cf!important;border:0!important;box-shadow:none!important;font:12px/1.5 'Courier New',monospace!important;cursor:pointer; }
-html body.silkroad-product .studio-gallery-tools a { color:#d5df8d;text-underline-offset:4px; }
-html body.silkroad-product .studio-gallery-count { color:#aebd8b; }
-html body.silkroad-product .studio-gallery-track { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px; }
-html body.silkroad-product .studio-gallery-slide { position:relative;aspect-ratio:4/5;border:1px solid #7d896633!important;background:#182214!important;padding:0!important;overflow:hidden;box-shadow:none!important;cursor:zoom-in; }
-html body.silkroad-product .studio-gallery-slide img { width:100%;height:100%;object-fit:cover;display:block; }
-html body.silkroad-product .studio-gallery-slide span { position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,#000c);padding:40px 12px 12px;color:#f0efd9;font:11px/1.5 'DM Sans',sans-serif;text-align:left; }
+/* A small printed postcard, using the About sheet's paper and bitmap ink. */
+html body.silkroad-product .studio-print-filters { position:absolute;width:0;height:0;overflow:hidden;pointer-events:none; }
+html body.silkroad-product :is(#model-note,#tagline),html body.silkroad-product #thumbs:has(>button:only-child) { display:none!important; }
+html body.silkroad-product .studio-gallery.studio-postcard { position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:0 22px;width:calc(100% - 64px);max-width:1100px;margin:0 auto 28px;padding:22px 24px 14px;border:1px solid #fff;background:#f4f3ed;color:#181818;box-shadow:0 1px 2px #0002,3px 9px 16px #0002,16px 25px 42px #0002;transform:rotate(-.25deg);font:12px/1.4 'Courier Prime','Courier New',monospace; }
+html body.silkroad-product .studio-postcard::before { content:'';position:absolute;inset:0;pointer-events:none;opacity:.07;background-image:radial-gradient(#333 .45px,transparent .65px);background-size:3px 3px;z-index:2; }
+html body.silkroad-product .studio-gallery-track { grid-column:1;grid-row:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0; }
+html body.silkroad-product .studio-gallery-slide { position:relative;display:block;min-width:0;aspect-ratio:1.15;border:1px solid #333!important;background:#fff!important;padding:0!important;border-radius:0!important;overflow:hidden;box-shadow:none!important;cursor:zoom-in; }
+html body.silkroad-product .studio-gallery-slide img { width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(1) url(#product-bitmap-print);mix-blend-mode:multiply; }
+html body.silkroad-product .studio-postcard-stamp { position:relative;grid-column:2;grid-row:1;align-self:start;justify-self:end;display:grid;place-items:center;width:78px;height:88px;margin:0;padding:10px;border:1px dashed #666;color:inherit;background:#fff;text-decoration:none;transform:rotate(4deg); }
+html body.silkroad-product .studio-postcard-stamp::after { content:'';position:absolute;width:55px;height:55px;border:1px solid #666;border-radius:50%;left:-27px;bottom:-24px;opacity:.5;pointer-events:none; }
+html body.silkroad-product .studio-postcard-stamp img { display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;filter:grayscale(1) url(#product-bitmap-print);mix-blend-mode:multiply; }
+html body.silkroad-product .studio-postcard-footer { grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:6px;border-top:1px solid #777; }
+html body.silkroad-product .studio-gallery-tools { display:flex;align-items:center;gap:4px; }
+html body.silkroad-product .studio-gallery-tools button,html body.silkroad-product .studio-postcard-footer>a { display:inline-flex;align-items:center;justify-content:center;width:44px;min-height:40px;padding:6px;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;color:#181818!important;font:18px/1 'Courier New',monospace!important;text-decoration:none;cursor:pointer; }
+html body.silkroad-product .studio-postcard :is(button,a):hover { background-color:#deddd5!important; }
+html body.silkroad-product .studio-postcard :is(button,a):focus-visible { outline:2px dashed #181818;outline-offset:3px; }
 html body.silkroad-product .studio-gallery-dialog { width:min(1050px,calc(100vw - 20px));max-height:95dvh;padding:16px;background:#101b0e;border:1px solid #9cab6f;color:#e5e4cf; }
 html body.silkroad-product .studio-gallery-dialog::backdrop { background:#000d; }
 html body.silkroad-product .studio-gallery-dialog header,html body.silkroad-product .studio-gallery-dialog footer { display:flex;align-items:center;justify-content:space-between;gap:20px;font:12px/1.6 'Courier New',monospace; }
@@ -100,19 +93,22 @@ html body.silkroad-product :is(button,a,input,select,textarea):focus-visible { o
  html body.silkroad-product #viewer { position:relative!important;top:auto;min-height:0!important; }
  html body.silkroad-product #viewer.core-media .core-frame,html body.silkroad-product #viewer .stage-frame,html body.silkroad-product #viewer .accessory-stage { height:clamp(350px,58svh,550px)!important; }
  html body.silkroad-product #viewer.viewer { height:500px!important; }
- html body.silkroad-product .studio-trail,html body.silkroad-product .studio-story,html body.silkroad-product .studio-gallery { width:calc(100% - 32px); }
+ html body.silkroad-product .studio-trail { width:calc(100% - 32px); }
  html body.silkroad-product .product-info { padding:20px!important; }
- html body.silkroad-product .studio-story { grid-template-columns:1fr;gap:24px; }
  html body.silkroad-product .studio-gallery-track { gap:8px; }
  html body.silkroad-product .studio-gallery-tools { flex-wrap:wrap;gap:6px; }
 }
 @media(max-width:560px) {
- html body.silkroad-product .studio-rules { grid-template-columns:1fr;gap:22px; }
  html body.silkroad-product .studio-mode-grid { gap:4px; }
  html body.silkroad-product .studio-mode-grid .studio-choice-face { padding:10px 7px;min-height:90px; }
  html body.silkroad-product .studio-choice small { font-size:9px; }
- html body.silkroad-product .studio-gallery-track { grid-template-columns:1fr; }
- html body.silkroad-product .studio-gallery-slide:not(:first-child) { display:none; }
+ html body.silkroad-product .studio-gallery.studio-postcard { width:calc(100% - 32px);grid-template-columns:minmax(0,1fr) 50px;gap:0 10px;padding:14px 13px 8px;margin-bottom:20px; }
+ html body.silkroad-product .studio-gallery-track { grid-template-columns:repeat(2,minmax(0,1fr));gap:7px; }
+ html body.silkroad-product .studio-gallery-slide { aspect-ratio:4/5; }
+ html body.silkroad-product .studio-gallery-slide:nth-child(n+3) { display:none; }
+ html body.silkroad-product .studio-postcard-stamp { width:44px;height:54px;padding:5px; }
+ html body.silkroad-product .studio-postcard-stamp::after { width:30px;height:30px;left:-12px;bottom:-18px; }
+ html body.silkroad-product .studio-postcard-footer { margin-top:10px; }
  html body.silkroad-product .graphic-picker-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
  html body.silkroad-product .studio-art-grid .studio-choice { flex-basis:45%; }
 }
@@ -146,3 +142,5 @@ html body.silkroad-product #viewer :is(.core-tools,.stage-tools,.accessory-tools
 html body.silkroad-product #viewer label { color:#c2cba8!important;font:11px/1.5 'Courier New',monospace; }
 
 html body.silkroad-product :is(.btr-look-hotspot,.btr-look-launch) {display:none!important;}
+
+@media(prefers-reduced-motion:reduce){html body.silkroad-product .studio-postcard{transform:none}}

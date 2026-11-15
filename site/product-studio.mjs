@@ -1,11 +1,11 @@
 import { createGarmentGraphicsEditor } from '/site/garment-graphics-editor.mjs?v=2';
 import { graphicBaseURL, prepareGraphicBase } from '/site/graphic-base.mjs?v=1';
-import { OFFERINGS, RANDOM_OFFERINGS, offeringFor, SIZES, FITS, COLORS, formatCents } from '/labkit/catalog.mjs';
+import { offeringFor, SIZES, FITS, COLORS, formatCents } from '/labkit/catalog.mjs';
 import { PRODUCT_DESIGNS, STUDIO_PRODUCTS, GRAPHIC_COLORS } from '/labkit/product-options.mjs';
 import { normalizeItem, priceItem } from '/labkit/pricing.mjs';
 import { cart, POOL, labStatus } from '/site/cart-store.mjs?v=site-audit-1';
 import { tintProductDesign } from '/site/product-preview.mjs?v=1';
-import { mountProductGallery } from '/site/product-gallery.mjs?v=2';
+import { mountProductGallery } from '/site/product-gallery.mjs?v=postcard-1';
 const $=id=>document.getElementById(id);
 const h=(tag,props={},...kids)=>{const e=Object.assign(document.createElement(tag),props);for(const k of kids.flat())if(k!=null)e.append(k);return e;};
 const ready=document.readyState==='loading'?new Promise(r=>document.addEventListener('DOMContentLoaded',r,{once:true})):Promise.resolve();
@@ -16,26 +16,8 @@ const info=document.querySelector('.product-info');
 const trail=h('nav',{className:'studio-trail',ariaLabel:'Breadcrumb'},h('a',{href:'/?nocover=1',textContent:'Marketplace'}),h('span',{textContent:'/'}),h('span',{textContent:design?'Garments':product?.family==='necklace'?'Necklaces':product?.family==='belt'?'Belts':'Accessories'}));
 document.querySelector('.product-page').before(trail);
 const seal=h('p',{className:'studio-origin',textContent:'BREAK THY RULE / LOS ANGELES'});info.prepend(seal);
-mountStory();mountProductGallery($('product-gallery'));
+mountProductGallery($('product-gallery'));
 if(design||product)mountOptions();
-function mountStory(){
- const section=$('product-story');
- section.append(h('div',{className:'studio-story-intro'},h('p',{className:'studio-eyebrow',textContent:'The house rules'}),h('h2',{id:'studio-story-title',textContent:'Made here. Sent from here.'}),h('p',{textContent:'Every Break Thy Rule piece is made, finished and shipped from Los Angeles. Choose how your piece begins; we take care of the print, the finishing and the journey out of the studio.'})),
- h('div',{className:'studio-rules'},
- rule('01 / Random','A base chosen by the studio.','You choose the garment type and size. We choose the actual base and color; it may be vintage or new. Artwork is included. Allow up to one week to make, plus shipping.'),
- rule('02 / Blank','Your color. Our hand.','Choose an existing blank, vintage or new, and we print and finish it in Los Angeles. Black, white and random colors are included; a custom garment color adds $40. Production timing is confirmed per order; shipping follows.'),
- rule('03 / Cut & Sew','Built from the beginning.','An original 100% cotton garment, cut, sewn, printed and finished in Los Angeles. Allow 2–3 weeks to make, plus shipping. Each piece is made individually.'),
- rule('04 / The details','A clear price before you commit.','The live total follows your selected base, color and quantity. Artwork is included. Garment construction prices apply to clothing; hats, headbands, gloves, skullies, belts and necklaces use their listed product prices. Shipping and any tax are shown separately before payment. Delivery time depends on your destination.')),
- pricingTable());
-}
-function rule(label,title,copy){return h('article',{},h('p',{className:'studio-eyebrow',textContent:label}),h('h3',{textContent:title}),h('p',{textContent:copy}));}
-function pricingTable(){
- const details=h('details',{className:'studio-price-table'},h('summary',{textContent:'See the garment price list'}));
- const table=h('table',{},h('caption',{textContent:'USD per garment · artwork included · custom garment color +$40'}),h('thead',{},h('tr',{},...['Garment','Random','Blank','Cut & Sew'].map(t=>h('th',{scope:'col',textContent:t})))));
- const body=h('tbody');
- for(const g of ['tee','hoodie','crewneck','sweatpants','longsleeve','shorts'])body.append(h('tr',{},h('th',{scope:'row',textContent:OFFERINGS['cut-sew'][g]?.name||g}),...[(RANDOM_OFFERINGS[g]),OFFERINGS.canvas[g],OFFERINGS['cut-sew'][g]].map(o=>h('td',{textContent:o?formatCents(o.priceCents):'—'}))));
- table.append(body);details.append(h('div',{className:'studio-table-scroll'},table));return details;
-}
 function mountOptions(){
  let edit=params.get('edit'),saved=edit&&cart.get(edit)?.config;
  const garment=design?.garment,construction=garment==='longsleeve'?'cut-sew':'canvas';
@@ -49,8 +31,7 @@ function mountOptions(){
  const subtotal=h('strong',{className:'studio-total'}),breakdown=h('p',{className:'studio-breakdown'}),save=h('button',{type:'submit',className:'studio-save',textContent:edit?'Update saved design':'Save design'});
  const editorHost=h('section',{className:'studio-graphics-pane'}),artMode=h('div',{className:'studio-art-mode'}),settingsSummary=h('summary',{textContent:'Garment options'}),settings=h('details',{className:'studio-garment-settings',open:true},settingsSummary,fields);
  const total=h('div',{className:'studio-checkout'},h('div',{},h('span',{className:'studio-eyebrow',textContent:'Your piece / USD'}),subtotal),save);
- const notes=h('p',{className:'studio-small',textContent:'Made & shipped from Los Angeles · shipping and tax additional.'});
- form.append(h('div',{className:'studio-config-title'},h('h2',{textContent:'Make it yours'}),h('span',{textContent:design?'Garment Lab':'Studio options'})), ...(design?[artMode,settings,editorHost]:[fields]),previewNote,retryPreview,breakdown,total,feedback,notes);
+ form.append(h('div',{className:'studio-config-title'},h('h2',{textContent:'Make it yours'}),h('span',{textContent:design?'Garment Lab':'Studio options'})), ...(design?[artMode,settings,editorHost]:[fields]),previewNote,retryPreview,breakdown,total,feedback);
  $('tagline').after(form);
  const existingHat=document.querySelector('.hat-customizer');
  if(existingHat){form.insertBefore(existingHat,previewNote);existingHat.addEventListener('btr:hat-design',e=>{state.options={...state.options,...e.detail};updatePrice();});new MutationObserver(()=>{save.disabled=!!existingHat.querySelector('.hat-shape-options[aria-busy=true]');}).observe(existingHat,{attributes:true,subtree:true,attributeFilter:['aria-busy']});}
@@ -103,7 +84,6 @@ function mountOptions(){
   breakdown.textContent=price?price.lines.filter(l=>l.cents).map(l=>formatCents(l.cents)+' '+l.label).join(' + ')+(state.quantity>1?` · ${state.quantity} × ${formatCents(price.unitCents)} each`:'')+(design?' · artwork included.':' · selected colors included.'):'Choose the options for a live total.';
   const slot=design?`${state.construction}:${state.garment}`:`studio:${id}`,open=!!status?.checkout?.available&&status?.slots?.[slot]?.available>0;
   save.textContent=edit?'Update saved design':open?'Add to bag':'Save design';
-  notes.textContent=(open?'Made & shipped from Los Angeles.':'Save your configuration; ordering opens when studio capacity is available.')+' Shipping and tax additional.';
  }
  async function updatePreview(){
   const token=++previewToken,media=window.BTRProductMedia;if(!media)return;
@@ -120,7 +100,7 @@ function mountOptions(){
   const chosen=JSON.parse(JSON.stringify(state)),keep=chosen.artwork==='product-design';const caption=$('viewer').querySelector('.core-caption');if(caption)caption.textContent=keep?'Complete logo embroidery · left chest':chosen.artwork==='pick'?'Custom graphics · drag to place':'Studio chooses the print';
   const {BLANKS,createPrinter}=await import('/site/garment-print.mjs?v=graphics-editor-1');
   const url=keep?design.model:graphicBaseURL(design.model);
-  previewNote.textContent=chosen.labMode==='random'?'Design reference · the studio chooses the actual base and color.':keep?'3D design reference · each piece is made and placed by hand.':chosen.artwork==='artists-choice'?'The studio chooses your print; the preview shows the base.':'';
+  previewNote.textContent=chosen.labMode==='random'?'Design reference · the studio chooses the actual base and color.':keep?'':chosen.artwork==='artists-choice'?'The studio chooses your print; the preview shows the base.':'';
   if(!url){previewNote.textContent='Graphics are saved. Placement is confirmed by the studio for this silhouette.';return;}
   printingBusy=true;save.disabled=true;
   try{
