@@ -58,10 +58,10 @@ function questionMarks(T) {
   return root;
 }
 
+// One fabric hue across the whole garment; the print cycles with a contrasting hue offset.
 const RAINBOW_SHADER = `
 uniform float discoveryHue;
 uniform float discoveryRainbow;
-varying vec3 vDiscoveryPosition;
 vec3 discoveryHueRGB(float h){return clamp(abs(mod(h*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0,0.0,1.0);}
 vec3 discoveryInk(vec3 c){
  float hi=max(c.r,max(c.g,c.b)),lo=min(c.r,min(c.g,c.b)),d=hi-lo,h=0.0;
@@ -161,12 +161,11 @@ export function createDiscoveryStage(mount, { onTurn, onFrame, onInteraction, on
       const base = m.onBeforeCompile, cacheKey = m.customProgramCacheKey.bind(m);
       const hook = shader => {
         base.call(m, shader); Object.assign(shader.uniforms, rainbowUniforms);
-        shader.vertexShader = 'varying vec3 vDiscoveryPosition;\n' + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvDiscoveryPosition=transformed;');
         shader.fragmentShader = RAINBOW_SHADER + shader.fragmentShader
-          .replace('#include <map_fragment>', '#include <map_fragment>\nif(discoveryRainbow>.5){vec3 rainbowFabric=.12+.65*discoveryHueRGB(fract(discoveryHue+vDiscoveryPosition.y*.48+vDiscoveryPosition.x*.22));diffuseColor.rgb=rainbowFabric;}')
+          .replace('#include <map_fragment>', '#include <map_fragment>\nif(discoveryRainbow>.5){vec3 rainbowFabric=.12+.65*discoveryHueRGB(fract(discoveryHue));diffuseColor.rgb=rainbowFabric;}')
           .replace('mix(diffuseColor.rgb, d.rgb, d.a * .96)', 'mix(diffuseColor.rgb, discoveryInk(d.rgb), d.a * .96)');
       };
-      m.onBeforeCompile = hook; m.userData.discoveryRainbowHook = hook; m.customProgramCacheKey = () => cacheKey() + '|discovery-rainbow-1'; m.needsUpdate = true;
+      m.onBeforeCompile = hook; m.userData.discoveryRainbowHook = hook; m.customProgramCacheKey = () => cacheKey() + '|discovery-rainbow-2'; m.needsUpdate = true;
     });
   }
 

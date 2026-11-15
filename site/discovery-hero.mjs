@@ -1,6 +1,6 @@
 import { createSmoke } from './discovery-smoke.mjs?v=tab-loop-5';
 import { buildDiscoveryCatalog, createDiscoveryScheduler } from './discovery-catalog.mjs?v=1';
-import { createDiscoveryStage } from './discovery-stage.mjs?v=product-studio-6';
+import { createDiscoveryStage } from './discovery-stage.mjs?v=flowing-colors-1';
 import { OFFERINGS, MYSTERY_PACKAGES } from '/labkit/catalog.mjs';
 import { normalizeItem, priceItem, sidesFor } from '/labkit/pricing.mjs';
 import { newSeed } from '/labkit/random.mjs';
@@ -91,7 +91,7 @@ function labels(item, manual) {
   $('discovery-description').textContent = item.description;
   $('discovery-price').textContent = item.priceText;
   $('discovery-price-note').textContent = Number.isFinite(item.priceCents) ? 'USD' : 'Explore available options';
-  $('discovery-variation').textContent = item.rainbow ? '↻ Rainbow fabric + evolving graphics' : item.mystery ? item.mystery.countLabel + ' / a surprise inside' : item.colorway?.name || 'Original artwork';
+  $('discovery-variation').textContent = item.rainbow ? '↻ Color-shifting fabric + graphics' : item.mystery ? item.mystery.countLabel + ' / a surprise inside' : item.colorway?.name || 'Original artwork';
   $('discovery-link').href = item.href;
   $('discovery-link').replaceChildren(document.createTextNode(item.ctaText || 'View piece'), Object.assign(document.createElement('span'), { textContent: '↗' }));
   $('discovery-link').lastElementChild.setAttribute('aria-hidden', 'true');
