@@ -272,6 +272,7 @@
    const raw=meta.kind==='zone'||meta.kind==='attendant'||meta.kind==='fall';
    if(target.shield>0&&!raw){shielded=Math.min(target.shield,a);target.shield-=shielded;a-=shielded;if(target===player)hud?.shieldHit?.(shielded/40+(target.shield<=0?.5:0));if(target.shield<=0&&target===player){chime([520,330,196],.09,.05);hud?.shieldBroken?.();}}
    if(target.bot&&meta.kind!=='zone')flashBot(target,shielded>0&&a<=0?'shield':'body');
+   if(target.bot&&a>0)target.flinchT=Math.min(.32,.14+a/120); // a hit rocks them back for a moment
    if(target.armor>0&&!raw&&a>0){const absorb=Math.min(target.armor,a*.65);target.armor-=absorb;a-=absorb;}
    target.hp-=a;target.lastHurt=clock;
    if(target===player&&!godMode)bloodHit=Math.min(1,bloodHit+a/45+shielded/160+(a>0?.12:0));
@@ -401,6 +402,7 @@
    const every=lodTo.dot(lodFwd)<-2&&d>4?4:d>40?3:d>20?2:1;b.animTick=(b.animTick||0)+1;return b.animTick%every===0;}
   function updateBot(b,dt){
    updateFlash(b,dt);
+   if(b.alive&&(b.flinchT||0)>0){b.flinchT=Math.max(0,b.flinchT-dt);b.root.rotation.x=-Math.sin(Math.min(1,b.flinchT/.22)*Math.PI)*.12;if(!b.flinchT)b.root.rotation.x=0;}
    const p=b.root.position;
    if(!b.alive){if(b.respawnAt&&clock>=b.respawnAt){respawnBot(b);return;}if(b.model.motion?.downAmount?.()>0){b.model.animate?.(clock,0);return;}const k=clamp((clock-b.deathT)/.6,0,1);b.root.rotation.x=-k*k*Math.PI/2*.96;b.root.position.y=groundY(p.x,p.z)+k*.15;return;}
    if(b.frozen){b.model.animate?.(clock,0);return;}
@@ -965,6 +967,8 @@
    start,exit,update,enter,suspend,
    // Build the arena ahead of time (prewarm.js, while the player is still in Eden); start() reuses it.
    prewarm:()=>build(),
+   // Aim assist (combat.js): living enemies' head and chest points.
+   aimTargets:()=>{if(!active)return [];const out=[];for(const b of bots){if(!b.alive)continue;const p=b.root.position,s=b.root.scale?.y||1;out.push({c:b,head:new T.Vector3(p.x,p.y+1.62*s,p.z),chest:new T.Vector3(p.x,p.y+1.22*s,p.z)});}return out;},
    lowHealth:()=>active?Math.max(lowHealth(),bloodHit*.5):0,soul:()=>active&&!!player&&!player.alive&&!!player.soul,
    active:()=>active,busy:()=>active||entering,suspended:()=>suspended,dead:()=>active&&!!player&&!player.alive,
    canMove:()=>!active||phase==='live'||phase==='ended',

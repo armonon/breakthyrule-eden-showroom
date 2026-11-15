@@ -102,3 +102,13 @@ body.combat-armed #scene canvas{cursor:crosshair}
 .ch-mag.low i{background:linear-gradient(90deg,#ff5a4a,#ff9c8a)}
 .ch-slots button{border-radius:3px;transition:transform .12s,background .12s}
 .ch-slots button.active{transform:translateY(-3px);box-shadow:0 6px 18px rgba(0,0,0,.35)}
+
+/* Gunplay feedback: the hitmarker pops out and settles; headshots burn orange; kills are a thick red X that expands. */
+@keyframes ch-pop{0%{opacity:1;transform:scale(1.55)}35%{opacity:1;transform:scale(.92)}100%{opacity:0;transform:scale(1.05)}}
+@keyframes ch-kill{0%{opacity:1;transform:scale(1.8) rotate(-8deg)}25%{opacity:1;transform:scale(1) rotate(0)}70%{opacity:1;transform:scale(1.12)}100%{opacity:0;transform:scale(1.4)}}
+.ch-hit.show{animation:ch-pop .19s cubic-bezier(.2,.9,.3,1)}
+.ch-hit.head i{background:#ff9a2e;box-shadow:0 0 8px #ff7a1a,0 0 0 1px rgba(0,0,0,.55);width:15px;height:3px}
+.ch-hit.head.show{animation-duration:.26s}
+.ch-hit.kill i{background:#ff2d24;box-shadow:0 0 10px #ff2d24,0 0 0 1px rgba(0,0,0,.6);width:18px;height:3.5px}
+.ch-hit.kill.show{animation:ch-kill .46s cubic-bezier(.2,.9,.3,1)}
+@media (prefers-reduced-motion:reduce){.ch-hit.show,.ch-hit.kill.show{animation-duration:.01s}}
