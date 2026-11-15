@@ -291,3 +291,12 @@ html[data-archive-theme=night] #archive-market .topic-group summary{color:#bed4a
 @media(max-width:800px){#archive-market .library-apple{width:64px;height:64px}#archive-market .library-intro{gap:12px}}
 @media(max-width:400px){#archive-market .library-apple{width:52px;height:52px}#archive-market .library-intro{align-items:flex-start;gap:8px}}
 @media(max-width:700px){#archive-market #panel-library>.reading-sidebar{margin-top:22px}}
+
+/* Make the complete subject directory easy to discover in every reading-room tab. */
+#archive-market .topic-expand-all{display:block;width:100%;min-height:38px;margin-top:9px;padding:8px;border:1px solid #b6bfad;border-radius:0;background:transparent;color:var(--green);font:12px/1.4 Arial,sans-serif;text-align:left;cursor:pointer}
+#archive-market .topic-expand-all:hover{background:rgba(115,130,77,.15)}
+#archive-market .topic-expand-all:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+#archive-market .topic-expand-all:disabled{opacity:.6;cursor:default}
+html[data-archive-theme=night] #archive-market .topic-expand-all{border-color:#59684b;color:#bed4a4}
+html[data-archive-theme=night] #archive-market .topic-expand-all:hover{background:#25321d}
+@media(max-width:700px){#archive-market .topic-expand-all{min-height:44px}}

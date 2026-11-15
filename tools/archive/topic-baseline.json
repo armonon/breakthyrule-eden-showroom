@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 1,
+  "sourceDeploy": "6af6ec88568c9d8403bd5edf",
+  "sourceCatalogSha256": "4c40b38d8ad3925b9374b157a991965e4aa619416349e38ef3ab048a206f7cab",
+  "note": "Verified 84-topic / 13-group archive expansion before the 2026-11-14 mishap. Preserve these IDs and group memberships; additions are welcome. Change this baseline only when deliberately retiring or reorganizing subjects.",
+  "topicIds": [
+    "secret-societies",
+    "mystery-schools",
+    "initiation-ritual",
+    "alchemical-brotherhoods",
+    "fraternal-symbols",
+    "secret-languages-ciphers",
+    "lost-cities",
+    "buried-cities",
+    "underground-worlds",
+    "lost-libraries",
+    "abandoned-capitals",
+    "sunken-settlements",
+    "ancient-trade-routes",
+    "history",
+    "ancient-civilizations",
+    "tartaria",
+    "atlantis",
+    "historical-mysteries",
+    "contested-history",
+    "historical-sources",
+    "old-world",
+    "worlds-fairs",
+    "lost-architecture",
+    "historic-buildings",
+    "old-maps",
+    "cities-landscapes",
+    "architectural-ornament",
+    "forgotten-inventions",
+    "ancient-engineering",
+    "early-electricity",
+    "mechanical-automata",
+    "airships-early-aviation",
+    "water-clocks-astrolabes",
+    "historical-sound-technology",
+    "ancient-water-systems",
+    "solar-mythology",
+    "sun-temples",
+    "sungazing",
+    "ancient-astronomy",
+    "solstices-equinoxes",
+    "lunar-calendars",
+    "sacred-geometry",
+    "sacred-architecture",
+    "cathedral-symbolism",
+    "labyrinths",
+    "megaliths-stone-circles",
+    "pilgrimage-routes",
+    "dream-interpretation",
+    "lucid-dreaming",
+    "dream-journals",
+    "dream-temples",
+    "folklore-sleep",
+    "visionary-art",
+    "consciousness",
+    "meditation",
+    "gardening",
+    "heritage-gardening",
+    "seed-saving",
+    "permaculture",
+    "herbs",
+    "foraging",
+    "homesteading",
+    "natural-building",
+    "historical-crafts",
+    "fasting",
+    "nutrition",
+    "fermentation",
+    "food-preservation",
+    "sleep-rest",
+    "habits",
+    "self-knowledge",
+    "psychology",
+    "philosophy",
+    "journaling",
+    "symbols",
+    "scripture",
+    "mythology",
+    "grimoire",
+    "alchemy",
+    "money",
+    "propaganda",
+    "mind",
+    "media",
+    "political-thought"
+  ],
+  "groups": [
+    {
+      "id": "hidden-orders",
+      "ids": [
+        "secret-societies",
+        "mystery-schools",
+        "initiation-ritual",
+        "alchemical-brotherhoods",
+        "fraternal-symbols",
+        "secret-languages-ciphers"
+      ]
+    },
+    {
+      "id": "forgotten-places",
+      "ids": [
+        "lost-cities",
+        "buried-cities",
+        "underground-worlds",
+        "lost-libraries",
+        "abandoned-capitals",
+        "sunken-settlements",
+        "ancient-trade-routes"
+      ]
+    },
+    {
+      "id": "hidden-alternative-history",
+      "ids": [
+        "history",
+        "ancient-civilizations",
+        "tartaria",
+        "atlantis",
+        "historical-mysteries",
+        "contested-history",
+        "historical-sources"
+      ]
+    },
+    {
+      "id": "old-world-architecture",
+      "ids": [
+        "old-world",
+        "worlds-fairs",
+        "lost-architecture",
+        "historic-buildings",
+        "old-maps",
+        "cities-landscapes",
+        "architectural-ornament"
+      ]
+    },
+    {
+      "id": "old-technologies",
+      "ids": [
+        "forgotten-inventions",
+        "ancient-engineering",
+        "early-electricity",
+        "mechanical-automata",
+        "airships-early-aviation",
+        "water-clocks-astrolabes",
+        "historical-sound-technology",
+        "ancient-water-systems"
+      ]
+    },
+    {
+      "id": "sun-sky-calendars",
+      "ids": [
+        "solar-mythology",
+        "sun-temples",
+        "sungazing",
+        "ancient-astronomy",
+        "solstices-equinoxes",
+        "lunar-calendars"
+      ]
+    },
+    {
+      "id": "sacred-spaces",
+      "ids": [
+        "sacred-geometry",
+        "sacred-architecture",
+        "cathedral-symbolism",
+        "labyrinths",
+        "megaliths-stone-circles",
+        "pilgrimage-routes"
+      ]
+    },
+    {
+      "id": "dreams-consciousness",
+      "ids": [
+        "dream-interpretation",
+        "lucid-dreaming",
+        "dream-journals",
+        "dream-temples",
+        "folklore-sleep",
+        "visionary-art",
+        "consciousness",
+        "meditation"
+      ]
+    },
+    {
+      "id": "growing-self-sufficiency",
+      "ids": [
+        "gardening",
+        "heritage-gardening",
+        "seed-saving",
+        "permaculture",
+        "herbs",
+        "foraging",
+        "homesteading",
+        "natural-building",
+        "historical-crafts"
+      ]
+    },
+    {
+      "id": "body-food-fasting",
+      "ids": [
+        "fasting",
+        "nutrition",
+        "fermentation",
+        "food-preservation",
+        "sleep-rest"
+      ]
+    },
+    {
+      "id": "personal-growth-philosophy",
+      "ids": [
+        "habits",
+        "self-knowledge",
+        "psychology",
+        "philosophy",
+        "journaling"
+      ]
+    },
+    {
+      "id": "symbols-spirit-myth",
+      "ids": [
+        "symbols",
+        "scripture",
+        "mythology",
+        "grimoire",
+        "alchemy"
+      ]
+    },
+    {
+      "id": "power-society",
+      "ids": [
+        "money",
+        "propaganda",
+        "mind",
+        "media",
+        "political-thought"
+      ]
+    }
+  ]
+}
