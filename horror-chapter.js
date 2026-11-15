@@ -18,7 +18,7 @@
   // worlds may be a getter: app.js creates the worlds system after this chapter.
   const W=()=>typeof worldsIn==='function'?worldsIn():worldsIn;
   const story=root.edenStory;
-  let built=false,hall=null,altar=null,ticket=null,crowd=[],keys=[],showdown=null,clock=0,keyCount=0,labOpen=false,lastModel=null,prompt=null;
+  let built=false,hall=null,altar=null,ticket=null,crowd=[],keys=[],showdown=null,clock=0,keyCount=0,labOpen=false,labEntering=false,lastModel=null,prompt=null;
   const keyGeo=new T.TorusGeometry(.06,.018,6,14),keyBit=new T.BoxGeometry(.02,.12,.02),gold=new T.MeshStandardMaterial({color:0xd8b04a,metalness:.9,roughness:.3,emissive:0x5a3a08,emissiveIntensity:.6});
 
   /* ---------------------------------------------------------------- the office */
@@ -162,7 +162,11 @@
   }
 
   /* ---------------------------------------------------------------- prompts and the frame */
-  function showPrompt(text){if(!prompt){prompt=document.createElement('div');prompt.id='horror-prompt';document.body.append(prompt);}prompt.hidden=!text;if(text)prompt.innerHTML=text;}
+  function showPrompt(text){
+   if(!prompt){prompt=document.createElement('button');prompt.type='button';prompt.id='horror-prompt';prompt.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();interact();});document.body.append(prompt);}
+   prompt.hidden=!text;
+   if(text){prompt.innerHTML=text;prompt.disabled=!text.includes('<kbd>');prompt.setAttribute('aria-label',text.replace(/<[^>]*>/g,'').replace(/^F\s*/,''));}
+  }
   let labNear=false,sealedAt=-9;const dbg={};
   function update(dt){
    clock+=dt;
@@ -194,10 +198,20 @@
    const model=playerBody?.model?.();if(model&&model!==lastModel){lastModel=model;const s=saved();if(s&&!model.root.userData.freeGarment)wear(s.design);}
    showPrompt(text);
   }
-  document.addEventListener('keydown',e=>{if(e.key.toLowerCase()!=='f'||e.repeat||document.querySelector('dialog[open]')||['INPUT','TEXTAREA'].includes(e.target.tagName))return;
-   if(built&&inOffice()&&ticket?.visible&&!showdown){const a=altarWorld(),eye=camera.position;if(a&&Math.hypot(eye.x-a.x,eye.z-a.z)<2.2){ticket.visible=false;story?.set('ticket');W()?.card('THE TICKET','ADMIT ONE · IT OPENS THE BLACK CUBE IN THE GARDEN VALLEY','THE OFFICE',3400);}}
-   if(labNear&&canEnterLab()){story?.set('cube');W()?.veil({title:'THE GARMENT LAB',sub:'A HIDDEN ROOM INSIDE THE BLACK CUBE',kicker:'THE BLACK CUBE'}).then(openLab);}});
-  return {update,shotHook,openLab,wear,inspect:()=>({built,office:inOffice(),ticket:!!ticket?.visible,crowd:crowd.length,alive:crowd.filter(g=>g.alive).length,showdown:!!showdown,keysOut:keys.length,keyCount,labNear,dbg,garment:saved()?.design||null}),
+  function interact(){
+   if(labOpen||document.querySelector('dialog[open]'))return false;
+   if(labEntering)return true;
+   if(built&&inOffice()&&ticket?.visible&&!showdown){const a=altarWorld(),eye=camera.position;if(a&&Math.hypot(eye.x-a.x,eye.z-a.z)<2.2){ticket.visible=false;story?.set('ticket');W()?.card('THE TICKET','ADMIT ONE · IT OPENS THE BLACK CUBE IN THE GARDEN VALLEY','THE OFFICE',3400);requestDraw();return true;}}
+   if(labNear&&canEnterLab()){
+    if(W()?.loading?.())return true;
+    labEntering=true;story?.set('cube');
+    Promise.resolve(W()?.veil({title:'THE GARMENT LAB',sub:'A HIDDEN ROOM INSIDE THE BLACK CUBE',kicker:'THE BLACK CUBE'})).then(openLab).catch(error=>{labOpen=false;console.warn('Garment Lab could not open:',error);requestDraw();}).finally(()=>{labEntering=false;});
+    return true;
+   }
+   return false;
+  }
+  document.addEventListener('keydown',e=>{if(e.key.toLowerCase()!=='f'||e.repeat||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)||e.target.isContentEditable)return;if(interact()){e.preventDefault();e.stopPropagation();}},true);
+  return {update,shotHook,openLab,wear,interact,inspect:()=>({built,office:inOffice(),ticket:!!ticket?.visible,crowd:crowd.length,alive:crowd.filter(g=>g.alive).length,showdown:!!showdown,keysOut:keys.length,keyCount,labNear,dbg,garment:saved()?.design||null}),
    _debug:{build,startShowdown,get crowd(){return crowd;},scatterKeys,altarWorld}};
  };
 })(window);
