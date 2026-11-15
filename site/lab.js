@@ -14,11 +14,31 @@ import { isUploadId, uploadForId, uploadedArtworkUrl } from '/labkit/custom-artw
 import { uploadArtworkFile } from '/site/artwork-upload.mjs';
 import { quoteGarment, modeSelection, garmentSelection } from '/site/lab-price.mjs?v=price-square-1';
 import { createLabFlow } from '/site/lab-flow.mjs?v=3';
+import { productRoute, randomProductDesign } from '/site/lab-product-route.mjs?v=1';
 
 const $ = id => document.getElementById(id);
 const h = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); for (const k of kids.flat()) if (k != null) n.append(k); return n; };
 const nameOf = Object.fromEntries(ARTWORK_POOL.map(a => [a.id, a.display || a.name]));
 const params = new URLSearchParams(location.search);
+const productPage = productRoute(location.pathname);
+if (productPage) {
+  document.body.dataset.labProduct = productPage;
+  document.body.dataset.page = 'product';
+  const heading = document.querySelector('.lab-head'); heading.id = 'lab-product-heading';
+  const title = heading.querySelector('h1'); title.id = 'lab-product-title';
+  title.textContent = productPage === 'random' ? 'Random Shirt' : 'Mystery Box';
+  heading.querySelector('.lede').textContent = productPage === 'random'
+    ? 'Your garment and generated artwork are ready. Choose your size, or make it your own.'
+    : 'Choose your package, size and preferred fit. Leave the selection to us.';
+  const back = h('a', { href: '/?nocover=1#photo-story', textContent: '← Back' }); back.dataset.productBack = '';
+  heading.before(h('nav', { className: 'lab-product-nav', ariaLabel: 'Product navigation' }, back, h('a', { href: '/?nocover=1#photo-story', textContent: 'Collection' })));
+  const panel = $(productPage === 'random' ? 'build' : 'packages');
+  panel.setAttribute('role', 'region'); panel.setAttribute('aria-labelledby', title.id);
+  if (productPage === 'random') {
+    $('keep-draw').textContent = 'Edit these graphics';
+    $('opt-art').after($('keep-draw'));
+  }
+}
 const legacyPackage = { relic: 'heavy-pack', trinity: 'light-pack' };
 const isPackage = id => typeof id === 'string' && Object.hasOwn(MYSTERY_PACKAGES, id);
 const initialPackage = params.get('package') || legacyPackage[location.hash.slice(1)];
@@ -119,11 +139,13 @@ function renderColors() {
 }
 function renderArt() {
   $('opt-art').replaceChildren(
+    ...(state.seed ? [choice('artwork', 'random-experimental', 'Keep this generated design', { sub: 'The graphics from your selected preview.', price: 'included', checked: state.artwork === 'random-experimental' })] : []),
     ...(state.productDesign && PRODUCT_DESIGNS[state.productDesign.id] ? [choice('artwork','product-design','Keep this design',{sub:PRODUCT_DESIGNS[state.productDesign.id].name,price:'included',checked:state.artwork==='product-design'})] : []),
     choice('artwork', 'artists-choice', 'Random', { price: ARTWORK['artists-choice'].addCents ? '+' + money(ARTWORK['artists-choice'].addCents) : 'included', sub: 'The studio chooses the artwork. No reveal until it is made.', checked: state.artwork === 'artists-choice' }),
     choice('artwork', 'pick', 'Pick graphics', { price: ARTWORK.pick.addCents ? '+' + money(ARTWORK.pick.addCents) : 'included', sub: 'Choose archive graphics or upload your own.', checked: state.artwork === 'pick' })
   );
   $('altar').hidden = true;
+  if (productPage === 'random') $('keep-draw').hidden = state.artwork !== 'random-experimental';
   $('unchaos').hidden = !state.chaos;
   if ($('flow-browse')) $('flow-browse').hidden = state.artwork !== 'pick';
   if (state.artwork !== 'pick' && flow?.isBrowsing) flow.browse(false);
@@ -417,6 +439,10 @@ function renderPricing(quote) {
   document.querySelector('.flow-price-extras').textContent = (lines.artwork.cents ? '' : 'Artwork included. ') + 'Shipping and tax calculated separately.';
 }
 function renderReview() {
+  if (productPage === 'random') {
+    const name = 'Random ' + (OFFERINGS[state.construction]?.[state.garment]?.name || 'Garment');
+    $('lab-product-title').textContent = name; document.title = 'BREAKTHYRULE — ' + name;
+  }
   const n = normalizeItem(displayConfig(), { artworkPool: POOL });
   const err = $('lab-error'), add = $('add-to-cart');
   const blocked = uploadBusy || !!designIssue || (!!three.printError && state.baseMode !== 'random');
@@ -586,6 +612,10 @@ function renderPackages() {
 }
 function renderPackageDetail() {
   const p = MYSTERY_PACKAGES[packageState.package];
+  if (productPage === 'mystery') {
+    $('lab-product-title').textContent = 'Mystery Box / ' + p.name;
+    document.title = 'BREAKTHYRULE — Mystery ' + p.name;
+  }
   $('package-art').innerHTML = itemSketch({ product: 'mystery-pack', package: p.id });
   $('package-name').textContent = p.name;
   $('package-count').textContent = p.countLabel;
@@ -625,6 +655,10 @@ function selectPackage(id, updateUrl = true) {
 }
 $('package-form').addEventListener('change', e => {
   const input = e.target;
+  if (productPage === 'mystery' && input.name === 'package' && input.value !== packageState.package) {
+    const url = new URL(location.href); url.searchParams.set('package', input.value); url.searchParams.delete('edit'); url.hash = '';
+    location.assign(url); return;
+  }
   if (input.name === 'package') selectPackage(input.value);
   if (input.name === 'package-size') packageState.size = input.value;
   if (input.name === 'package-fit') packageState.fit = input.value;
@@ -700,12 +734,13 @@ if ($('placement-dialog') && !$('placement-dialog').contains($('print-place'))) 
 // ---------- tabs ----------
 const TABS = ['build', 'packages', 'catalog'];
 function showTab(id, push = true) {
+  if (productPage) id = productPage === 'mystery' ? 'packages' : 'build';
   if (id === 'relic' || id === 'trinity') id = 'packages';
   if (!TABS.includes(id)) id = 'build';
   for (const t of TABS) { $('tab-' + t).setAttribute('aria-selected', String(t === id)); $('tab-' + t).tabIndex = t === id ? 0 : -1; $(t).hidden = t !== id; }
   document.body.dataset.labTab = id;
   flow?.refresh();
-  if (push) history.replaceState(null, '', location.pathname + location.search + (id === 'build' ? '' : '#' + id));
+  if (push) history.replaceState(history.state, '', location.pathname + location.search + (productPage || id === 'build' ? '' : '#' + id));
   if (id === 'build' && three.viewer) three.viewer.redraw();
 }
 TABS.forEach(t => { $('tab-' + t).onclick = () => showTab(t); });
@@ -720,7 +755,7 @@ addEventListener('hashchange', () => showTab(location.hash.slice(1) || 'build', 
 const b64 = { enc: o => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''), dec: s => JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))))) };
 $('share-design').onclick = async () => {
   const { quantity, ...design } = config(); void quantity;
-  const url = `${location.origin}/lab?design=${b64.enc(design)}`;
+  const url = `${location.origin}${productPage === 'random' ? '/random-shirt' : '/lab'}?design=${b64.enc(design)}`;
   try { await navigator.clipboard.writeText(url); $('share-design').textContent = 'Link copied'; }
   catch { const box = $('share-url') || h('input', { id: 'share-url', className: 'share-url', readOnly: true }); box.value = url; $('share-design').after(box); box.select(); $('share-design').textContent = 'Copy the link below'; }
   setTimeout(() => { $('share-design').textContent = 'Share design'; }, 2500);
@@ -789,9 +824,16 @@ flow = createLabFlow({
   } else if (params.get('design')) {
     try { applyDesign(b64.dec(params.get('design'))); }
     catch { designIssue = 'This design link could not be read. Choose artwork again before adding this garment.'; }
+  } else if (productPage === 'random') {
+    try {
+      const design = randomProductDesign(params, { artworkPool: POOL });
+      applyDesign(design);
+      const url = new URL(location.href); url.searchParams.set('g', design.garment); url.searchParams.set('seed', design.seed); url.hash = '';
+      history.replaceState(history.state, '', url);
+    } catch { designIssue = 'This generated design could not load. Please choose your artwork again.'; }
   } else preselect(params.get('c'), params.get('g'));
   renderAll(); renderPackages(); renderCatalog(); syncPrintControls();
-  if (editId || params.get('design')) {
+  if (editId || params.get('design') || productPage === 'random') {
     const restored = ['construction', 'garment', 'color'];
     if (state.artwork !== 'pick' || state.picks.front.length + state.picks.back.length) restored.push('art');
     if (state.size && FITS[state.construction].some(fit => fit.id === state.fit)) restored.push('size');

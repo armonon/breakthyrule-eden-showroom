@@ -47,7 +47,7 @@
     let nav = header.querySelector('.tabs');
     if (!nav) { nav = create('nav', 'tabs'); brand.after(nav); }
     nav.setAttribute('aria-label', 'Main');
-    const active = ['index', 'product', 'core', 'belts', 'accessories', 'reliquary', 'passport'].includes(page)
+    const active = ['index', 'product', 'random-shirt', 'mystery-box', 'core', 'belts', 'accessories', 'reliquary', 'passport'].includes(page)
       ? 'products' : page.startsWith('lab') ? 'lab' : page;
     const links = [['/?nocover=1', 'Products'], ['/lab', 'Lab'], ['/gallery', 'Gallery'], ['/archive', 'Archive'], ['/about', 'About']];
     const oldLinks = Array.from(nav.querySelectorAll('a'));
