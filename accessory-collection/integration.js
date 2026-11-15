@@ -11,7 +11,7 @@
    const choice=new URLSearchParams(location.search).get('hat')||saved?.style||item.hatStyle;
    if((window.BTR_HAT_STYLES||[]).some(s=>s.id===choice))item={...item,hatStyle:choice};
   }
-  const media=window.mountAccessoryMedia($('viewer'),item);
+  const media=window.mountAccessoryMedia($('viewer'),item);window.BTRProductMedia={...media,item};
   $('viewer').setAttribute('aria-label','Interactive 3D '+item.name);
   if(item.family==='trucker'){document.body.classList.add('hat-product');$('name').textContent='Custom Hat';document.title='BREAKTHYRULE — Custom Hat';$('tagline').textContent='Two shapes. Your colors. Your artwork.';$('description').textContent='Choose an airy mesh trucker or a solid six-panel baseball cap. Mix the panel colors and arrange your graphics on the front.';const customizer=document.createElement('section');$('description').after(customizer);window.mountHatCustomizer(customizer,item,media);}$('showcase')?.closest('section')?.remove();
   const nav=document.createElement('div');nav.className='accessory-downloads';const index=list.findIndex(x=>x.slug===item.slug);

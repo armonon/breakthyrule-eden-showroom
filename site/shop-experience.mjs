@@ -7,9 +7,10 @@ const node = (tag, props = {}, ...children) => {
   return element;
 };
 
-// Keep all existing product destinations; the first shelf features four verified photographs.
+// Feature twelve original tee photographs; keep the rest of the collection expandable.
 const garments = window.siteGarments?.() || [];
-const featuredSlugs = ['war-witnesses-tee', 'god-loves-you-tee', 'dance-to-your-vibration-tee', 'eternal-thermal'];
+const featuredSlugs = ["war-witnesses-tee", "god-loves-you-tee", "dance-to-your-vibration-tee", "cross-tee", "jesus-star-tee", "blackmarket-baby-tee", "sacred-masters-tee", "project-star-gate-tee", "cave-painting-tee", "wanted-jesus-tee", "divine-mother-tee", "oh-allah-tee"];
+const featuredCount = featuredSlugs.length;
 const ordered = [...featuredSlugs.map(slug => garments.find(g => g.slug === slug)).filter(Boolean), ...garments.filter(g => !featuredSlugs.includes(g.slug))];
 const models = [], accessoryModels = [];
 for (const [index, garment] of ordered.entries()) {
@@ -17,7 +18,7 @@ for (const [index, garment] of ordered.entries()) {
   const image = node('img', {src: garment.photo, alt: garment.imageAlt || garment.name, loading: 'lazy', decoding: 'async'});
   const canvas = node('canvas'); canvas.setAttribute('aria-hidden', 'true');
   const media = node('div', {className: 'card-media'}, node('div', {className: 'halo lit'}), node('span', {className: 'card-badge', textContent: 'Plate ' + garment.id}), node('span', {className: 'card-numeral', textContent: garment.chapter}), ...(accessory?[]:[canvas]), image);
-  const card = node('a', {className: 'product-card', href: '/product?item=' + encodeURIComponent(garment.slug), hidden: index >= 4}, media,
+  const card = node('a', {className: 'product-card', href: '/product?item=' + encodeURIComponent(garment.slug), hidden: index >= featuredCount}, media,
     node('div', {className: 'card-body'}, node('h3', {textContent: garment.name}), node('span', {className: 'price', textContent: garment.price})));
   if(garment.model?.startsWith('/graphic-models/'))card.dataset.archiveHq='true';
   if(accessory){card.dataset.accessoryReplacement='true';accessoryModels.push({canvas:node('canvas'),url:accessory.model,family:accessory.family,item:accessory});media.append(accessoryModels.at(-1).canvas);}
@@ -52,8 +53,8 @@ function expandable(gridId, buttonId, visibleCount, label, onChange) {
   });
   update();
 }
-expandable('product-grid', 'collection-more', 4, 'More of the collection', (expanded, count) => {
-  $('grid-status').textContent = `${expanded ? count : Math.min(4, count)} of ${count} pieces`;
+expandable('product-grid', 'collection-more', featuredCount, 'More of the collection', (expanded, count) => {
+  $('grid-status').textContent = `${expanded ? count : Math.min(featuredCount, count)} of ${count} pieces`;
 });
 
 // These are collection previews, not purchasable or invented catalog SKUs.

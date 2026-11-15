@@ -3,7 +3,7 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 const root=fileURLToPath(new URL('../../',import.meta.url));
 const files=readdirSync(new URL('./',import.meta.url)).filter(name=>name.endsWith('-test.mjs')).map(name=>'tools/expedition/'+name);
-files.push('tools/movement/player-bail-test.mjs','tools/movement/dive-lifecycle-test.mjs','tools/movement/mobile-controls-test.mjs','server/expedition.test.mjs','server/expedition-http.test.mjs','server/expedition-storage.test.mjs','server/world.test.mjs');
+files.push('tools/story/horror-interaction-test.mjs','tools/movement/player-bail-test.mjs','tools/movement/dive-lifecycle-test.mjs','tools/movement/mobile-controls-test.mjs','server/expedition.test.mjs','server/expedition-http.test.mjs','server/expedition-storage.test.mjs','server/world.test.mjs');
 const soak=process.argv.includes('--soak');
 const concurrency=process.env.EDEN_TEST_CONCURRENCY||'2';
 if(!/^[1-9]\d*$/.test(concurrency))throw new Error('EDEN_TEST_CONCURRENCY must be a positive integer');
