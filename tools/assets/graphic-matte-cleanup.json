@@ -1,0 +1,513 @@
+{
+  "version": 1,
+  "method": "Remove only exterior-connected near-white/near-black matte; preserve RGB, canvas and enclosed artwork. User approved exact code cleanup.",
+  "graphics": [
+    {
+      "id": "angel-crying",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "42cc43033c17cd012dbb8c6cb446fae9fe6b19799469a499ddf7e81528cec3cd",
+          "cleaned_sha256": "09e32882ce0bc93cbfdb4849179efbb1be45e4bf5984b98db4009609621ab9cf"
+        },
+        "thumb": {
+          "source_sha256": "0e298745d7db89aef207b4b843d6d9c44015e944d059157ac9000dc249cd7b66",
+          "cleaned_sha256": "1e266fc391e337e8d7fb57af0d6646b87643c7a8ca5a3ec2007247acc1ed2086"
+        }
+      }
+    },
+    {
+      "id": "cipids",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "3d8ea1d1c2771a16230307798c059b848c9d2bf9db738687cf74d93e49da63a7",
+          "cleaned_sha256": "80f17c005288c47b203cb9a19ec7aba6a3f599cbb536097e5346c89d7df87183"
+        },
+        "thumb": {
+          "source_sha256": "fcd7e14544cccf7a95d1a3daac6b4fba52ef30d02065ef71c5d549c9d2bb4edb",
+          "cleaned_sha256": "df47c3c629bbbfe92e83ed28ee43031c8a66b6b5688ebb2818a084b2d77419b1"
+        }
+      }
+    },
+    {
+      "id": "cipids-1",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "3d8ea1d1c2771a16230307798c059b848c9d2bf9db738687cf74d93e49da63a7",
+          "cleaned_sha256": "80f17c005288c47b203cb9a19ec7aba6a3f599cbb536097e5346c89d7df87183"
+        },
+        "thumb": {
+          "source_sha256": "fcd7e14544cccf7a95d1a3daac6b4fba52ef30d02065ef71c5d549c9d2bb4edb",
+          "cleaned_sha256": "df47c3c629bbbfe92e83ed28ee43031c8a66b6b5688ebb2818a084b2d77419b1"
+        }
+      }
+    },
+    {
+      "id": "destroy",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "c1de3bc5a17f74354a6a530acb605b01d9896f2a2b649f49eaa9c4f1d5b283f4",
+          "cleaned_sha256": "c47f0926f9436b04970d933d4f312a3554283053873a8e63bb2606bc2eb697a8"
+        },
+        "thumb": {
+          "source_sha256": "9a0dc3e7c741073576384b7c70baa34c6c2dab52fb7e095feca7a99ea207c09c",
+          "cleaned_sha256": "61f885579f47455e62ef4c9eb001c8552c3ad1787e8f29eea9dc3967795ff6a5"
+        }
+      }
+    },
+    {
+      "id": "dream",
+      "matte": "black",
+      "versions": {
+        "full": {
+          "source_sha256": "b8154622ed7b021f366e9bb1fe6530729a2614bda8f7982cecfd131fa6eed824",
+          "cleaned_sha256": "411055a6ece874629ac9f8f942b06658c4d53246670404e86813424a6d926e09"
+        },
+        "thumb": {
+          "source_sha256": "94a492998e2efbe69f5e2ca51720787308831be509c4ce7d5f46d942b3531841",
+          "cleaned_sha256": "09aef089c217cfe43f2eb62aa6b42c9fc5812bd824ed49f995e9a003b038d7ee"
+        }
+      }
+    },
+    {
+      "id": "dtf-1",
+      "matte": "white",
+      "white_floor": 240,
+      "threshold_note": "Original right-edge matte is gray-white RGB242.",
+      "versions": {
+        "full": {
+          "source_sha256": "98b2757d8286fcf37113eaabdd9c52c562c174a0098336a774927cce339cc672",
+          "cleaned_sha256": "584679ccbef33e2b75cb48ca26780a9c3a028929dcab0c7e2a9a2ad0d6c62c7a"
+        },
+        "thumb": {
+          "source_sha256": "26ba1cc77be128d47da833840db91b33abfd12518a3ab6f632ab2a165a8675e7",
+          "cleaned_sha256": "88e60cc1758efc3ff72e7dfffa165a402395b30932b9c0bb015fcc3b2b92f0ad"
+        }
+      }
+    },
+    {
+      "id": "head",
+      "matte": "white",
+      "protected_polygons": [
+        [
+          [
+            0.3,
+            0.43
+          ],
+          [
+            0.4,
+            0.4
+          ],
+          [
+            0.51,
+            0.4
+          ],
+          [
+            0.59,
+            0.44
+          ],
+          [
+            0.64,
+            0.5
+          ],
+          [
+            0.665,
+            0.59
+          ],
+          [
+            0.665,
+            0.695
+          ],
+          [
+            0.64,
+            0.77
+          ],
+          [
+            0.59,
+            0.81
+          ],
+          [
+            0.53,
+            0.835
+          ],
+          [
+            0.44,
+            0.84
+          ],
+          [
+            0.37,
+            0.82
+          ],
+          [
+            0.32,
+            0.785
+          ],
+          [
+            0.29,
+            0.705
+          ],
+          [
+            0.285,
+            0.61
+          ],
+          [
+            0.28,
+            0.54
+          ]
+        ]
+      ],
+      "protection_note": "Preserve pale face with an inward-feathered silhouette; only alpha changes, never RGB.",
+      "protection_feather": 0.015,
+      "versions": {
+        "full": {
+          "source_sha256": "ef89ddc52a88d0ee535babb1430aca19297a99c304850994cbbd57fe64d93ad2",
+          "cleaned_sha256": "d2ac81519170e35903eb6be7f12de08ff1eb65296a538c808523a0a1e69b24a4"
+        },
+        "thumb": {
+          "source_sha256": "a741ceddf9d8d354b8036e65de20fe9e33a3d958934a07845f0fd189c9258143",
+          "cleaned_sha256": "9f581933f3b908aca5f239ac0d5eb31a5cff1962f9567343d68fee7b28f04128"
+        }
+      }
+    },
+    {
+      "id": "im-havin-a-ball",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "3a69e810fcd0a03ebf1d6abbb5443b79bbee7b8cc0d046cb5d5b057899e0b115",
+          "cleaned_sha256": "42ec09ce3609683ac56add39596dee4eabb27fcbdc8af9ca2caa7fcc6f06de48"
+        },
+        "thumb": {
+          "source_sha256": "47cfc57ca224400d992d4b2789f32125120d646582a17e59de146ec7bb3229ad",
+          "cleaned_sha256": "c3ca6a15ddf21faaa30b97c698b467319c9adf9a357d267ff20290f62a1f3bb8"
+        }
+      }
+    },
+    {
+      "id": "jesus-likes-music",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "4254b7877d52ae9c2abcbe02f317c23e6b50cbff0c7a9be725112892e43e143d",
+          "cleaned_sha256": "882cec374e80839009bf81c515e3daf0a77042e7b1378dda010dc0183811ee0f"
+        },
+        "thumb": {
+          "source_sha256": "8a8a7d99eead43d8f53cbafed9caefcf67375fead6161d19b1f00bc71c775ac4",
+          "cleaned_sha256": "2260634e65909cd03addb3e9a2bd064805903333c70b5d4aaf23eb7bd4cd3ecf"
+        }
+      }
+    },
+    {
+      "id": "keep-going-png",
+      "matte": "white",
+      "protected_polygons": [
+        [
+          [
+            0.11,
+            0.29
+          ],
+          [
+            0.2,
+            0.26
+          ],
+          [
+            0.29,
+            0.245
+          ],
+          [
+            0.38,
+            0.235
+          ],
+          [
+            0.405,
+            0.32
+          ],
+          [
+            0.41,
+            0.44
+          ],
+          [
+            0.37,
+            0.5
+          ],
+          [
+            0.325,
+            0.57
+          ],
+          [
+            0.31,
+            0.65
+          ],
+          [
+            0.25,
+            0.71
+          ],
+          [
+            0.19,
+            0.735
+          ],
+          [
+            0.1,
+            0.76
+          ],
+          [
+            0.065,
+            0.775
+          ],
+          [
+            0.065,
+            0.7
+          ],
+          [
+            0.075,
+            0.6
+          ],
+          [
+            0.08,
+            0.54
+          ],
+          [
+            0.08,
+            0.46
+          ],
+          [
+            0.085,
+            0.385
+          ]
+        ]
+      ],
+      "protection_note": "Preserve the intentional pale face/flag field connected to the exterior white matte.",
+      "versions": {
+        "full": {
+          "source_sha256": "e8bf7197386d828f4c4b2c36a870e72f863fe7949dacbdcb86e51df33cc0c827",
+          "cleaned_sha256": "54f45c425f528a2e7b29c09689b8453fb0f66474808f06a5d0bdaae7d4b3e09a"
+        },
+        "thumb": {
+          "source_sha256": "c775f8e70ba7ecd00ad0dbbc360f39f4e1bce196b301d6eb66042e617bca2df9",
+          "cleaned_sha256": "22fe3eaafcf4d1fe9593fdfdd0aecdc561cd710ba4061d6a45b110494f6fde82"
+        }
+      }
+    },
+    {
+      "id": "lovers",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "a65d064da823bc4e7544d680c3e9fa7459bb9c3755df871c99a938ad84561560",
+          "cleaned_sha256": "6322a3afde5dfa3e074b38c7bd330e3eda2a867ef160238b333b8fe22aabcff8"
+        },
+        "thumb": {
+          "source_sha256": "5d4665c922748416558dce67c48c26d3da7b6f5836e09c59dd4297bd41136144",
+          "cleaned_sha256": "acf7d993acc67378846ab70c647aa53d04c6362579212c13562cdba44ba523fc"
+        }
+      }
+    },
+    {
+      "id": "medicate",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "5fae84ee62dedfdf0b2e3a769d2594fae28a96d33ddc27cfb155fd1b9380948f",
+          "cleaned_sha256": "df542e05a15f354b5484d82488cf6bfff14efd8f199dfb60e252640afe14dd44"
+        },
+        "thumb": {
+          "source_sha256": "7f72c9a9e055dcefed19d754235ecc4be51d6235e75bc0d8e66cb86227c4b9db",
+          "cleaned_sha256": "7473e943a658fc301da15a7bb6afb35075eba2968e4f93c70ff2f91e9ed485b9"
+        }
+      }
+    },
+    {
+      "id": "more",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "e7976178ccba1a64d26e102c8138218daf422e896ad390d1b2f135cb3f87cc68",
+          "cleaned_sha256": "a0cdfd7fe3e97892cf5c1513455e5ad6173a59bac7586f23211eb02c788227db"
+        },
+        "thumb": {
+          "source_sha256": "7c5d4caee3c1d3a4e0d8c0bbd1534d8ffb4e09cace613ba0f290c363b1b85a0f",
+          "cleaned_sha256": "a5e02ea7b7f0d8e93895481a6c6118e44db49df501bb9a4a17c70defe1da499a"
+        }
+      }
+    },
+    {
+      "id": "pink-needs-work",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "a7a6e16702c46fd3dfeec96a9e28874e21ca3b5037d45cf4f50717bee5dd02bd",
+          "cleaned_sha256": "cc0264b3550a65d0dc59480a3ee4e48956b8e3c5120a9ad295aaafbfcce73e03"
+        },
+        "thumb": {
+          "source_sha256": "de2e346ba552a8d8e4efe1b6664a92b33c631ea7cce89c800e2b1f936239549b",
+          "cleaned_sha256": "dbdefa20a74b397bf8f8fe86e4926479a21d124bd9b597ed8149a7cc27c347e1"
+        }
+      }
+    },
+    {
+      "id": "shhh",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "87c05ffd07615bb45c13afa918851673d3206affbe610e775ac100df00cb20bd",
+          "cleaned_sha256": "dd5afab98c66f231f70d6c416d302df8d4446101ca95eac8752211178ba4be49"
+        },
+        "thumb": {
+          "source_sha256": "db394a2cd1b4c8c55e4c2137dbb6187e2ec5b7f12a9a1440ec81398c0f848df7",
+          "cleaned_sha256": "256d75f0f3c55cf06f966a8812f5b47e025759afbb712b19ff245dba683a5eb1"
+        }
+      }
+    },
+    {
+      "id": "simple",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "9d994c977245e8cc211d43cdaafabe0aedfec2b400a31dcf53a01421d5f10ed4",
+          "cleaned_sha256": "c1364cf03383613e926b0d6e8cb222f3637c3e15089d5028c675434e7ed375b6"
+        },
+        "thumb": {
+          "source_sha256": "9b44cd456c88488e79c7b42353e55a0395e14f3e6bf1c43e48f7b0e2e29ab006",
+          "cleaned_sha256": "f8e3efecccbd32bdfec1c16b05b3d7fbe3d7647976dc84474fd44f656a2aa5d1"
+        }
+      }
+    },
+    {
+      "id": "spiritual-athlete",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "564eafaae92ac025eba87fcf5ed4f504baf12eadc2ad67e37a3a168c6a2353fc",
+          "cleaned_sha256": "4b0dafa178702735528c8b5ce71625a89cdf5b0306e320824067ed1c1431f333"
+        },
+        "thumb": {
+          "source_sha256": "5be14eb21e7582c3737c1e0dbf51d022767456106b5f74563517147244a897ab",
+          "cleaned_sha256": "74f2de8f5d8628570c60efa8a36c8b2a0a2d8646b72782d552aecc260ce9949b"
+        }
+      }
+    },
+    {
+      "id": "spiritual-athlete-2",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "60e8f6024d423a75c7280b3a19f49e401c3a240e6d9954f4577d431062f5305f",
+          "cleaned_sha256": "7f761f3f067905a831a0e751496e1fb25fd59251d9808c5675d3548c3a70a6d3"
+        },
+        "thumb": {
+          "source_sha256": "7ccb30ca789108e192b8865f27b3dbe96608f7452af3d4252d4a856f42f86a64",
+          "cleaned_sha256": "15f14152cd49aabd8c11bcb753093f85aa1c03fbc07d53e8f85cde2ebcde117b"
+        }
+      }
+    },
+    {
+      "id": "thanful-for-it-all",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "0da77866c8918f9e53fab2e56c1d79337e5ae3477757e5c0932ee66b37c8cd06",
+          "cleaned_sha256": "94e433e6da782307500bc9282c74344ede986968b820ac8d3e5587d99c6fa0ac"
+        },
+        "thumb": {
+          "source_sha256": "1c1943d5018750d2ca19d79fb7aacf3ec96be1932698a0da5584accc016b9242",
+          "cleaned_sha256": "d10d10c4a575ca27ea8ce882094b4f11354b4bd2b160d15a1f091663acc9cd8f"
+        }
+      }
+    },
+    {
+      "id": "white-board-2",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "8c32cfb3e198567b8018f843659435f94bd31cee0272d39b958d55a4666a2833",
+          "cleaned_sha256": "d16dc3da7f741c0c16786ca967a28253426204f2e299df0fdc0f63276c031ed3"
+        },
+        "thumb": {
+          "source_sha256": "c3b08549ee38b0ebe3dc3287093abd9c4567b9ee14b8601759703f92eaf3e8cb",
+          "cleaned_sha256": "8812bc00edd26ff95e9eaf688040fe55f17f56d03e1989882c14ce6f0f1c354e"
+        }
+      }
+    },
+    {
+      "id": "bitcheslame2",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "f870ad7bf41cbdb835474feedaafefdc4738f4d472b20cbd5d452bddf4631e5c",
+          "cleaned_sha256": "69f6fe25a397803028ee6d9feb199c09bac8555f5c569d3d123553a8b8ffd48f"
+        },
+        "thumb": {
+          "source_sha256": "c15cabee5e392b30621a713b531c2961ccb6b65fa9dfebd7d4a1dde1d26e95d9",
+          "cleaned_sha256": "a0390101d40220ab3351b154707ff3bc8c8a6d21f2f19f57820ffd6edd841b86"
+        }
+      }
+    },
+    {
+      "id": "img-7805",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "19d70d3445c29ea8bdb89d7f050b716ae010a73c277737bf66c3c8f378ebe559",
+          "cleaned_sha256": "3bcfcdf34718dec46abd429be54f80044a25160c9aa5b0007e8dfdb8d4a558fb"
+        },
+        "thumb": {
+          "source_sha256": "052a98fba5d5ecc10911bac8777dcbc114636db65e22e95edf92bc3d78acf445",
+          "cleaned_sha256": "51e3fce87cf4059cc550c0e007ae189fa2f9967a91b77e337584fd8d1a3647b0"
+        }
+      }
+    },
+    {
+      "id": "img-7813",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "b9321549bfe4dca75ba882e0cc505d13bf12c138c46d18f4bc4a6b049a1a3e68",
+          "cleaned_sha256": "f15915204d8ab757c1e6e422fbd5bfcd2da264339587090c03fe5085406e49b5"
+        },
+        "thumb": {
+          "source_sha256": "ea993cb11e66a3867fee6761e04329be581247c4aa22814fedd107e0a28788e4",
+          "cleaned_sha256": "09bdecc796833840e4951638d9053a9057371d87f7b8fe4fb1795e6d960cd000"
+        }
+      }
+    },
+    {
+      "id": "img-7814",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "492456ce562bbd484ce430c4e728bbf9f4e85dd8b3c74c22f046657ac67db2e3",
+          "cleaned_sha256": "3524978de28eddcf35c673798bb410db608eb3a445c2f08aa55bd18a57dd9274"
+        },
+        "thumb": {
+          "source_sha256": "a5711c4f3b6238d0d356e442ff82155ca0d9fd0ddf1f7b2f2499df990738dff3",
+          "cleaned_sha256": "c6779e8fd3c79718377a3e8d03fd63b2d2f160e80fd42bd893b8e4bc55e7e113"
+        }
+      }
+    },
+    {
+      "id": "img-7816",
+      "matte": "white",
+      "versions": {
+        "full": {
+          "source_sha256": "f5e968ecdfe4264e9657c8c8fabb6f90e4c8e464828dbe70a2052b93e2ebf802",
+          "cleaned_sha256": "4e7e1765405686d0aeea8b398ca25b9ffe845f44c5e78016863678a3ea9bf07e"
+        },
+        "thumb": {
+          "source_sha256": "e51d144bb1e1a565b79b86e672c1749e2d49606ce6e310c4da0ac2b31bd37934",
+          "cleaned_sha256": "fc122b02242cd142558994e3cdc157fabf81b6fc40d38663ce45d92346a295c8"
+        }
+      }
+    }
+  ],
+  "preserved_contextual_backgrounds": {
+    "ohsofly": "Airplane pattern with white clouds as an intentional part of the design; not a plain matte.",
+    "ohsofly-1": "Exact duplicate of ohsofly; white clouds are part of the pattern.",
+    "alt-pink-tape-covers-from-on-instagram-v0-esrmrdf9kg9b1": "Dense pink collage; white gaps mix with photographic/line-art details. Exclude from automatic flat-matte pass.",
+    "milkroom111": "Newspaper collage; white paper is intentional design content, not a separate surrounding matte.",
+    "red-rider": "Dark photographic scene. Black sky/shadows belong to the artwork; do not flood-remove.",
+    "screenshot-2026-06-10-at-20900-am": "Four photographic panels with black gutters. Black border is connected to photo shadows; not a safe global connected-black removal."
+  }
+}
