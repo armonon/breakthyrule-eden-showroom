@@ -1,12 +1,1436 @@
 {
- "note": "Archive topics. `tags` pull books from books.js by tag; `chapters` pull garments from garment-catalog.js; `query` seeds the Librarian search; `circle` is the Circle space path for that topic's discussion (or set it in site/config.js → circle.spaces.topics).",
- "topics": [
-  {"id": "symbols", "title": "Symbols & Signs", "blurb": "Marks, seals and hidden codes — the visual language the prints borrow from.", "tags": ["Symbols"], "chapters": ["I"], "query": "symbols secret signs"},
-  {"id": "scripture", "title": "Scripture", "blurb": "The devotional texts behind the crosses, doves and gospel type.", "tags": ["Scripture"], "chapters": ["I"], "query": "bible apocrypha"},
-  {"id": "history", "title": "Hidden History", "blurb": "Secret societies, old orders and the long arc of power.", "tags": ["History"], "chapters": ["II"], "query": "secret societies history"},
-  {"id": "grimoire", "title": "Grimoires & Esoterica", "blurb": "Formulas, rites and the occult manuals of the archive.", "tags": ["Grimoire"], "chapters": ["III"], "query": "grimoire hermetic"},
-  {"id": "mind", "title": "Mind & Control", "blurb": "Programming, propaganda and the war for attention.", "tags": ["Mind Control"], "chapters": ["IV"], "query": "propaganda mind control"},
-  {"id": "money", "title": "Money Systems", "blurb": "Debt, currency and who prints the paper.", "tags": ["Finance"], "chapters": ["IV"], "query": "money banking history"},
-  {"id": "old-world", "title": "Old World & Architecture", "blurb": "Temples, lost cities and the buildings in the Broadcast Room.", "tags": [], "chapters": [], "query": "ancient architecture temples"}
- ]
+  "note": "Archive topics. Tags match the existing books.js inventory; an empty tags array means this topic has no assigned archive books yet. Queries seed external catalog discovery. Chapters associate existing garments. Original topic IDs remain stable for saved links and discussion notes. Groups control sidebar order; every topic belongs to one group.",
+  "groups": [
+    {
+      "id": "hidden-orders",
+      "title": "Secret Societies & Hidden Orders",
+      "ids": [
+        "secret-societies",
+        "mystery-schools",
+        "initiation-ritual",
+        "alchemical-brotherhoods",
+        "fraternal-symbols",
+        "secret-languages-ciphers"
+      ]
+    },
+    {
+      "id": "forgotten-places",
+      "title": "Forgotten Places",
+      "ids": [
+        "lost-cities",
+        "buried-cities",
+        "underground-worlds",
+        "lost-libraries",
+        "abandoned-capitals",
+        "sunken-settlements",
+        "ancient-trade-routes"
+      ]
+    },
+    {
+      "id": "hidden-alternative-history",
+      "title": "Hidden & Alternative History",
+      "ids": [
+        "history",
+        "ancient-civilizations",
+        "tartaria",
+        "atlantis",
+        "historical-mysteries",
+        "contested-history",
+        "historical-sources"
+      ]
+    },
+    {
+      "id": "old-world-architecture",
+      "title": "Old World & Architecture",
+      "ids": [
+        "old-world",
+        "worlds-fairs",
+        "lost-architecture",
+        "historic-buildings",
+        "old-maps",
+        "cities-landscapes",
+        "architectural-ornament"
+      ]
+    },
+    {
+      "id": "old-technologies",
+      "title": "Old Technologies",
+      "ids": [
+        "forgotten-inventions",
+        "ancient-engineering",
+        "early-electricity",
+        "mechanical-automata",
+        "airships-early-aviation",
+        "water-clocks-astrolabes",
+        "historical-sound-technology",
+        "ancient-water-systems"
+      ]
+    },
+    {
+      "id": "sun-sky-calendars",
+      "title": "Sun, Sky & Sacred Calendars",
+      "ids": [
+        "solar-mythology",
+        "sun-temples",
+        "sungazing",
+        "ancient-astronomy",
+        "solstices-equinoxes",
+        "lunar-calendars"
+      ]
+    },
+    {
+      "id": "sacred-spaces",
+      "title": "Symbols & Sacred Spaces",
+      "ids": [
+        "sacred-geometry",
+        "sacred-architecture",
+        "cathedral-symbolism",
+        "labyrinths",
+        "megaliths-stone-circles",
+        "pilgrimage-routes"
+      ]
+    },
+    {
+      "id": "dreams-consciousness",
+      "title": "Dreams & Inner Worlds",
+      "ids": [
+        "dream-interpretation",
+        "lucid-dreaming",
+        "dream-journals",
+        "dream-temples",
+        "folklore-sleep",
+        "visionary-art",
+        "consciousness",
+        "meditation"
+      ]
+    },
+    {
+      "id": "growing-self-sufficiency",
+      "title": "Growing & Traditional Crafts",
+      "ids": [
+        "gardening",
+        "heritage-gardening",
+        "seed-saving",
+        "permaculture",
+        "herbs",
+        "foraging",
+        "homesteading",
+        "natural-building",
+        "historical-crafts"
+      ]
+    },
+    {
+      "id": "body-food-fasting",
+      "title": "Body, Food & Fasting",
+      "ids": [
+        "fasting",
+        "nutrition",
+        "fermentation",
+        "food-preservation",
+        "sleep-rest"
+      ]
+    },
+    {
+      "id": "personal-growth-philosophy",
+      "title": "Personal Growth & Philosophy",
+      "ids": [
+        "habits",
+        "self-knowledge",
+        "psychology",
+        "philosophy",
+        "journaling"
+      ]
+    },
+    {
+      "id": "symbols-spirit-myth",
+      "title": "Symbols, Spirit & Myth",
+      "ids": [
+        "symbols",
+        "scripture",
+        "mythology",
+        "grimoire",
+        "alchemy"
+      ]
+    },
+    {
+      "id": "power-society",
+      "title": "Power & Society",
+      "ids": [
+        "money",
+        "propaganda",
+        "mind",
+        "media",
+        "political-thought"
+      ]
+    }
+  ],
+  "topics": [
+    {
+      "id": "secret-societies",
+      "title": "Secret Societies",
+      "blurb": "Histories of private orders and fraternities, alongside the claims and folklore around them.",
+      "tags": [
+        "History"
+      ],
+      "chapters": [
+        "II"
+      ],
+      "query": "secret societies history",
+      "keywords": [
+        "fraternities",
+        "private orders",
+        "freemasonry",
+        "illuminati"
+      ]
+    },
+    {
+      "id": "mystery-schools",
+      "title": "Mystery Schools",
+      "blurb": "Ancient mystery traditions, esoteric teaching and later interpretations of initiation.",
+      "tags": [],
+      "chapters": [],
+      "query": "ancient mysteries",
+      "keywords": [
+        "mystery traditions",
+        "mystery religions",
+        "esoteric schools",
+        "initiatory traditions"
+      ]
+    },
+    {
+      "id": "initiation-ritual",
+      "title": "Initiation & Ritual",
+      "blurb": "Rites of passage, ceremonial traditions and accounts of entering a community or order.",
+      "tags": [],
+      "chapters": [],
+      "query": "initiation ritual",
+      "keywords": [
+        "rites of passage",
+        "initiations",
+        "ceremony",
+        "ritual traditions"
+      ]
+    },
+    {
+      "id": "alchemical-brotherhoods",
+      "title": "Alchemical Brotherhoods",
+      "blurb": "Rosicrucian writings, alchemical circles and the literature of esoteric fellowship.",
+      "tags": [],
+      "chapters": [],
+      "query": "Rosicrucianism",
+      "keywords": [
+        "Rosicrucians",
+        "alchemical societies",
+        "esoteric orders",
+        "hermetic brotherhoods"
+      ]
+    },
+    {
+      "id": "fraternal-symbols",
+      "title": "Fraternal Symbols",
+      "blurb": "The emblems, regalia and visual traditions of fraternities and private orders.",
+      "tags": [],
+      "chapters": [],
+      "query": "Masonic symbolism",
+      "keywords": [
+        "fraternal emblems",
+        "regalia",
+        "Masonic symbols",
+        "lodge symbolism",
+        "order insignia"
+      ]
+    },
+    {
+      "id": "secret-languages-ciphers",
+      "title": "Secret Languages & Ciphers",
+      "blurb": "Coded writing, secret alphabets and the history of concealing meaning in language.",
+      "tags": [],
+      "chapters": [],
+      "query": "history cryptography",
+      "keywords": [
+        "codes",
+        "ciphers",
+        "cyphers",
+        "secret alphabets",
+        "cryptography",
+        "coded writing"
+      ]
+    },
+    {
+      "id": "lost-cities",
+      "title": "Forgotten Cities",
+      "blurb": "Abandoned settlements, archaeological rediscoveries and the legends attached to vanished places.",
+      "tags": [],
+      "chapters": [],
+      "query": "lost cities archaeology",
+      "keywords": [
+        "abandoned cities",
+        "ruins",
+        "lost civilizations",
+        "archaeology",
+        "forgotten cities",
+        "lost cities"
+      ]
+    },
+    {
+      "id": "buried-cities",
+      "title": "Buried Cities",
+      "blurb": "Excavation accounts and archaeological writing about settlements beneath later layers.",
+      "tags": [],
+      "chapters": [],
+      "query": "buried cities",
+      "keywords": [
+        "buried settlements",
+        "excavations",
+        "urban archaeology",
+        "archaeological layers"
+      ]
+    },
+    {
+      "id": "underground-worlds",
+      "title": "Underground Worlds",
+      "blurb": "Subterranean places in archaeology, travel writing, folklore and the imagination.",
+      "tags": [],
+      "chapters": [],
+      "query": "underground cities",
+      "keywords": [
+        "subterranean",
+        "underground settlements",
+        "caves",
+        "catacombs",
+        "underworld folklore"
+      ]
+    },
+    {
+      "id": "lost-libraries",
+      "title": "Lost Libraries",
+      "blurb": "Histories of vanished collections, scattered manuscripts and efforts to recover their traces.",
+      "tags": [],
+      "chapters": [],
+      "query": "lost libraries",
+      "keywords": [
+        "vanished libraries",
+        "lost books",
+        "manuscript collections",
+        "library history",
+        "scattered archives"
+      ]
+    },
+    {
+      "id": "abandoned-capitals",
+      "title": "Abandoned Capitals",
+      "blurb": "Former seats of power, their surviving remains and the stories of cities left behind.",
+      "tags": [],
+      "chapters": [],
+      "query": "ancient capitals",
+      "keywords": [
+        "former capitals",
+        "deserted capitals",
+        "abandoned cities",
+        "royal cities",
+        "historic capitals"
+      ]
+    },
+    {
+      "id": "sunken-settlements",
+      "title": "Sunken Settlements",
+      "blurb": "Underwater archaeology and historical accounts of settlements beneath the water.",
+      "tags": [],
+      "chapters": [],
+      "query": "underwater archaeology",
+      "keywords": [
+        "submerged cities",
+        "sunken cities",
+        "submerged settlements",
+        "maritime archaeology"
+      ]
+    },
+    {
+      "id": "ancient-trade-routes",
+      "title": "Ancient Trade Routes",
+      "blurb": "Caravan roads, sea passages and the movement of goods and ideas across the ancient world.",
+      "tags": [],
+      "chapters": [],
+      "query": "ancient trade routes",
+      "keywords": [
+        "Silk Road",
+        "caravan routes",
+        "maritime trade",
+        "ancient commerce",
+        "exchange networks"
+      ]
+    },
+    {
+      "id": "history",
+      "title": "Hidden History",
+      "blurb": "A broad shelf of writing about secret societies, old orders and competing accounts of power.",
+      "tags": [
+        "History"
+      ],
+      "chapters": [
+        "II"
+      ],
+      "query": "secret societies history",
+      "keywords": [
+        "hidden history",
+        "alternative history",
+        "historical narratives",
+        "old orders"
+      ]
+    },
+    {
+      "id": "ancient-civilizations",
+      "title": "Ancient Civilizations",
+      "blurb": "The societies, material cultures and surviving records of the ancient world.",
+      "tags": [],
+      "chapters": [],
+      "query": "ancient civilizations archaeology",
+      "keywords": [
+        "ancient history",
+        "archaeology",
+        "antiquity",
+        "early civilizations"
+      ]
+    },
+    {
+      "id": "tartaria",
+      "title": "Tartaria & Lost-Empire Theories",
+      "blurb": "Tartary on historical maps, alongside modern lost-empire theories and examinations of their claims.",
+      "tags": [],
+      "chapters": [],
+      "query": "Tartary maps",
+      "keywords": [
+        "Tartaria",
+        "Tartary",
+        "lost empire theories",
+        "historical maps",
+        "modern historical speculation"
+      ]
+    },
+    {
+      "id": "atlantis",
+      "title": "Atlantis & Legendary Lands",
+      "blurb": "Atlantis and other imagined or legendary places in ancient texts, folklore and later speculation.",
+      "tags": [],
+      "chapters": [],
+      "query": "Atlantis legends",
+      "keywords": [
+        "legendary lands",
+        "mythical places",
+        "lost continents",
+        "utopias",
+        "Atlantis"
+      ]
+    },
+    {
+      "id": "historical-mysteries",
+      "title": "Historical Mysteries",
+      "blurb": "Unresolved questions about the past, with accounts of the evidence and competing explanations.",
+      "tags": [],
+      "chapters": [],
+      "query": "historical mysteries",
+      "keywords": [
+        "history mysteries",
+        "unresolved history",
+        "historical enigmas",
+        "historical investigations"
+      ]
+    },
+    {
+      "id": "contested-history",
+      "title": "Contested Historical Theories",
+      "blurb": "Disputed interpretations and speculative accounts of the past, read alongside their evidence and critiques.",
+      "tags": [],
+      "chapters": [],
+      "query": "alternative history theories",
+      "keywords": [
+        "alternate history",
+        "alternative history",
+        "historical speculation",
+        "contested history",
+        "revisionism"
+      ]
+    },
+    {
+      "id": "historical-sources",
+      "title": "Historical Sources",
+      "blurb": "Primary documents, archives and methods for examining how accounts of the past are made.",
+      "tags": [],
+      "chapters": [],
+      "query": "historical primary sources",
+      "keywords": [
+        "primary sources",
+        "archives",
+        "documents",
+        "historiography",
+        "source criticism"
+      ]
+    },
+    {
+      "id": "old-world",
+      "title": "Old World & Architecture",
+      "blurb": "World's fairs, historic buildings, landscapes and architectural source material.",
+      "tags": [
+        "Architecture"
+      ],
+      "chapters": [],
+      "query": "ancient architecture temples",
+      "keywords": [
+        "old world",
+        "architecture",
+        "buildings",
+        "architectural history"
+      ]
+    },
+    {
+      "id": "worlds-fairs",
+      "title": "World's Fairs",
+      "blurb": "Expositions, exhibition buildings and the grounds and landscapes created around them.",
+      "tags": [
+        "Architecture"
+      ],
+      "chapters": [],
+      "query": "worlds fairs architecture",
+      "keywords": [
+        "world fairs",
+        "world's fairs",
+        "expositions",
+        "exhibitions",
+        "fairgrounds"
+      ]
+    },
+    {
+      "id": "lost-architecture",
+      "title": "Lost Architecture",
+      "blurb": "Demolished buildings, unrealized designs and the drawings and photographs that preserve them.",
+      "tags": [],
+      "chapters": [],
+      "query": "lost architecture",
+      "keywords": [
+        "demolished buildings",
+        "vanished architecture",
+        "unbuilt architecture",
+        "architectural records"
+      ]
+    },
+    {
+      "id": "historic-buildings",
+      "title": "Historic Buildings",
+      "blurb": "Buildings as records of craft, design, civic ambition and changing ways of life.",
+      "tags": [
+        "Architecture"
+      ],
+      "chapters": [],
+      "query": "historic buildings architecture",
+      "keywords": [
+        "architectural history",
+        "heritage",
+        "building craft",
+        "historic structures"
+      ]
+    },
+    {
+      "id": "old-maps",
+      "title": "Historical Maps",
+      "blurb": "Historical maps, atlases and the changing ways people have pictured the world.",
+      "tags": [],
+      "chapters": [],
+      "query": "historical maps cartography",
+      "keywords": [
+        "maps",
+        "cartography",
+        "atlases",
+        "antique maps",
+        "geography",
+        "historical maps",
+        "old maps"
+      ]
+    },
+    {
+      "id": "cities-landscapes",
+      "title": "Cities & Landscapes",
+      "blurb": "Urban plans, public grounds and the landscapes that connect buildings to everyday life.",
+      "tags": [
+        "Architecture"
+      ],
+      "chapters": [],
+      "query": "urban history landscape architecture",
+      "keywords": [
+        "cities",
+        "urban planning",
+        "landscapes",
+        "public grounds",
+        "landscape architecture"
+      ]
+    },
+    {
+      "id": "architectural-ornament",
+      "title": "Architectural Ornament",
+      "blurb": "Pattern books, decorative details and the craft traditions that give buildings their character.",
+      "tags": [],
+      "chapters": [],
+      "query": "architectural ornament",
+      "keywords": [
+        "decoration",
+        "pattern books",
+        "architectural detail",
+        "carving",
+        "ornamental design"
+      ]
+    },
+    {
+      "id": "forgotten-inventions",
+      "title": "Forgotten Inventions",
+      "blurb": "Overlooked devices, abandoned designs and the uneven paths of technological change.",
+      "tags": [],
+      "chapters": [],
+      "query": "history inventions",
+      "keywords": [
+        "invention history",
+        "obsolete technology",
+        "abandoned inventions",
+        "early inventions"
+      ]
+    },
+    {
+      "id": "ancient-engineering",
+      "title": "Ancient Engineering",
+      "blurb": "Books on the tools, structures and mechanical knowledge of the ancient world.",
+      "tags": [],
+      "chapters": [],
+      "query": "ancient engineering",
+      "keywords": [
+        "ancient technology",
+        "ancient mechanics",
+        "historic engineering",
+        "construction history"
+      ]
+    },
+    {
+      "id": "early-electricity",
+      "title": "Early Electricity",
+      "blurb": "Early electrical experiments, instruments and the emergence of electrical technology.",
+      "tags": [],
+      "chapters": [],
+      "query": "history electricity",
+      "keywords": [
+        "electrical history",
+        "electrostatics",
+        "early electrical experiments",
+        "electrical instruments"
+      ]
+    },
+    {
+      "id": "mechanical-automata",
+      "title": "Mechanical Automata",
+      "blurb": "Clockwork figures, moving machines and the craft of imitating life through mechanisms.",
+      "tags": [],
+      "chapters": [],
+      "query": "automata history",
+      "keywords": [
+        "automatons",
+        "clockwork",
+        "mechanical figures",
+        "moving machines",
+        "mechanical toys"
+      ]
+    },
+    {
+      "id": "airships-early-aviation",
+      "title": "Airships & Early Aviation",
+      "blurb": "Balloons, dirigibles and early flying machines in engineering histories and firsthand accounts.",
+      "tags": [],
+      "chapters": [],
+      "query": "early aviation",
+      "keywords": [
+        "airships",
+        "dirigibles",
+        "balloons",
+        "flying machines",
+        "aviation history"
+      ]
+    },
+    {
+      "id": "water-clocks-astrolabes",
+      "title": "Water Clocks & Astrolabes",
+      "blurb": "Historical instruments for measuring time, observing the sky and finding one's bearings.",
+      "tags": [],
+      "chapters": [],
+      "query": "ancient scientific instruments",
+      "keywords": [
+        "water clocks",
+        "clepsydra",
+        "astrolabes",
+        "timekeeping",
+        "astronomical instruments"
+      ]
+    },
+    {
+      "id": "historical-sound-technology",
+      "title": "Historical Sound Technology",
+      "blurb": "Acoustic instruments, sound reproduction and changing ways of making, carrying and recording sound.",
+      "tags": [],
+      "chapters": [],
+      "query": "sound technology history",
+      "keywords": [
+        "acoustics",
+        "sound recording",
+        "phonographs",
+        "sound reproduction",
+        "acoustic instruments"
+      ]
+    },
+    {
+      "id": "ancient-water-systems",
+      "title": "Ancient Water Systems",
+      "blurb": "Historical studies of aqueducts, wells, channels and the movement of water through settlements.",
+      "tags": [],
+      "chapters": [],
+      "query": "ancient water systems",
+      "keywords": [
+        "aqueducts",
+        "irrigation history",
+        "cisterns",
+        "qanats",
+        "ancient hydraulics"
+      ]
+    },
+    {
+      "id": "solar-mythology",
+      "title": "Solar Mythology",
+      "blurb": "The sun in myth, religious imagery and stories about the shape of the cosmos.",
+      "tags": [],
+      "chapters": [],
+      "query": "solar mythology",
+      "keywords": [
+        "sun myths",
+        "sun gods",
+        "solar deities",
+        "sun symbolism",
+        "solar religion"
+      ]
+    },
+    {
+      "id": "sun-temples",
+      "title": "Sun Temples",
+      "blurb": "Temples associated with solar worship, explored through architectural and religious histories.",
+      "tags": [],
+      "chapters": [],
+      "query": "sun temples",
+      "keywords": [
+        "solar temples",
+        "sun worship",
+        "solar sanctuaries",
+        "religious architecture"
+      ]
+    },
+    {
+      "id": "sungazing",
+      "title": "Sungazing Traditions & Beliefs",
+      "blurb": "Historical and cultural writings about sungazing beliefs and their place in solar spirituality.",
+      "tags": [],
+      "chapters": [],
+      "query": "sun worship",
+      "keywords": [
+        "sungazing",
+        "sun gazing",
+        "solar spirituality",
+        "solar devotion",
+        "sun veneration"
+      ]
+    },
+    {
+      "id": "ancient-astronomy",
+      "title": "Ancient Astronomy",
+      "blurb": "Historical sky observation, celestial records and early models of the heavens.",
+      "tags": [],
+      "chapters": [],
+      "query": "ancient astronomy",
+      "keywords": [
+        "early astronomy",
+        "celestial observation",
+        "star records",
+        "history of astronomy",
+        "archaeoastronomy"
+      ]
+    },
+    {
+      "id": "solstices-equinoxes",
+      "title": "Solstices & Equinoxes",
+      "blurb": "Seasonal turning points in calendars, festivals, astronomy and cultural traditions.",
+      "tags": [],
+      "chapters": [],
+      "query": "solstices equinoxes",
+      "keywords": [
+        "solstice",
+        "equinox",
+        "seasonal festivals",
+        "seasonal calendars",
+        "solar year"
+      ]
+    },
+    {
+      "id": "lunar-calendars",
+      "title": "Lunar Calendars",
+      "blurb": "Lunar timekeeping, moon cycles and the histories of calendars across cultures.",
+      "tags": [],
+      "chapters": [],
+      "query": "lunar calendars",
+      "keywords": [
+        "moon calendars",
+        "lunisolar calendars",
+        "lunar cycles",
+        "calendar history",
+        "moon phases"
+      ]
+    },
+    {
+      "id": "sacred-geometry",
+      "title": "Sacred Geometry",
+      "blurb": "Geometric forms and proportions in religious art, architecture and esoteric interpretation.",
+      "tags": [],
+      "chapters": [],
+      "query": "sacred geometry",
+      "keywords": [
+        "geometric symbolism",
+        "sacred proportions",
+        "religious geometry",
+        "geometric patterns"
+      ]
+    },
+    {
+      "id": "sacred-architecture",
+      "title": "Sacred Architecture",
+      "blurb": "Temples, churches, mosques and other places shaped by religious practice.",
+      "tags": [],
+      "chapters": [],
+      "query": "sacred architecture temples",
+      "keywords": [
+        "temples",
+        "churches",
+        "mosques",
+        "sacred spaces",
+        "religious architecture"
+      ]
+    },
+    {
+      "id": "cathedral-symbolism",
+      "title": "Cathedral Symbolism",
+      "blurb": "Reading the images, plans, sculpture and ornament of cathedrals in their historical settings.",
+      "tags": [],
+      "chapters": [],
+      "query": "cathedral symbolism",
+      "keywords": [
+        "church iconography",
+        "cathedral imagery",
+        "Gothic symbolism",
+        "ecclesiastical art"
+      ]
+    },
+    {
+      "id": "labyrinths",
+      "title": "Labyrinths",
+      "blurb": "Labyrinths and mazes in myth, manuscripts, gardens and architectural traditions.",
+      "tags": [],
+      "chapters": [],
+      "query": "labyrinths history",
+      "keywords": [
+        "mazes",
+        "labyrinth symbolism",
+        "garden mazes",
+        "labyrinth designs"
+      ]
+    },
+    {
+      "id": "megaliths-stone-circles",
+      "title": "Megaliths & Stone Circles",
+      "blurb": "Archaeological studies and cultural interpretations of standing stones and prehistoric monuments.",
+      "tags": [],
+      "chapters": [],
+      "query": "megaliths stone circles",
+      "keywords": [
+        "standing stones",
+        "megalithic monuments",
+        "stone circles",
+        "dolmens",
+        "prehistoric monuments"
+      ]
+    },
+    {
+      "id": "pilgrimage-routes",
+      "title": "Pilgrimage Routes",
+      "blurb": "Sacred journeys, travel accounts and the roads and stopping places of pilgrimage.",
+      "tags": [],
+      "chapters": [],
+      "query": "pilgrimage routes",
+      "keywords": [
+        "pilgrim roads",
+        "sacred journeys",
+        "pilgrimage history",
+        "shrines",
+        "pilgrim accounts"
+      ]
+    },
+    {
+      "id": "dream-interpretation",
+      "title": "Dream Interpretation",
+      "blurb": "Ways people have read dreams through psychology, folklore and personal reflection.",
+      "tags": [],
+      "chapters": [],
+      "query": "dream interpretation",
+      "keywords": [
+        "dreams",
+        "dreaming",
+        "dream meanings",
+        "dream symbols"
+      ]
+    },
+    {
+      "id": "lucid-dreaming",
+      "title": "Lucid Dreaming",
+      "blurb": "Books about awareness within dreams, first-person accounts and the research around them.",
+      "tags": [],
+      "chapters": [],
+      "query": "lucid dreaming",
+      "keywords": [
+        "dreams",
+        "dreaming",
+        "dream awareness"
+      ]
+    },
+    {
+      "id": "dream-journals",
+      "title": "Dream Journals",
+      "blurb": "Dream diaries, collected dreams and approaches to recording the night's images.",
+      "tags": [],
+      "chapters": [],
+      "query": "dream diaries",
+      "keywords": [
+        "dream diary",
+        "dream journaling",
+        "dream recall",
+        "dream records"
+      ]
+    },
+    {
+      "id": "dream-temples",
+      "title": "Dream Temples",
+      "blurb": "Historical accounts of dream incubation and the sacred places associated with it.",
+      "tags": [],
+      "chapters": [],
+      "query": "dream incubation",
+      "keywords": [
+        "temple sleep",
+        "dream sanctuaries",
+        "incubation rituals",
+        "sacred dreams"
+      ]
+    },
+    {
+      "id": "folklore-sleep",
+      "title": "Folklore of Sleep",
+      "blurb": "Nighttime legends, sleep customs and the figures that inhabit stories of dreaming and waking.",
+      "tags": [],
+      "chapters": [],
+      "query": "sleep folklore",
+      "keywords": [
+        "night folklore",
+        "sleep legends",
+        "dream folklore",
+        "nightmare folklore",
+        "sleep customs"
+      ]
+    },
+    {
+      "id": "visionary-art",
+      "title": "Visionary Art",
+      "blurb": "Art shaped by dreams, inner imagery, spiritual visions and imaginative worlds.",
+      "tags": [],
+      "chapters": [],
+      "query": "visionary art",
+      "keywords": [
+        "dream art",
+        "spiritual art",
+        "imaginary worlds",
+        "visionary artists",
+        "inner imagery"
+      ]
+    },
+    {
+      "id": "consciousness",
+      "title": "Consciousness & Perception",
+      "blurb": "Philosophical and scientific questions about awareness, perception and experience.",
+      "tags": [],
+      "chapters": [],
+      "query": "consciousness perception",
+      "keywords": [
+        "awareness",
+        "perception",
+        "experience",
+        "philosophy of mind",
+        "consciousness and perception"
+      ]
+    },
+    {
+      "id": "meditation",
+      "title": "Meditation",
+      "blurb": "Contemplative traditions and writing on attention, stillness and everyday practice.",
+      "tags": [],
+      "chapters": [],
+      "query": "meditation traditions",
+      "keywords": [
+        "mindfulness",
+        "contemplation",
+        "attention",
+        "stillness"
+      ]
+    },
+    {
+      "id": "gardening",
+      "title": "Gardening",
+      "blurb": "Growing plants through the seasons, from small containers to vegetable gardens.",
+      "tags": [],
+      "chapters": [],
+      "query": "vegetable gardening",
+      "keywords": [
+        "growing",
+        "plants",
+        "horticulture",
+        "vegetables",
+        "soil"
+      ]
+    },
+    {
+      "id": "heritage-gardening",
+      "title": "Heritage Gardening",
+      "blurb": "Historic gardens, heirloom varieties and gardening knowledge carried across generations.",
+      "tags": [],
+      "chapters": [],
+      "query": "heritage gardening",
+      "keywords": [
+        "heirloom gardening",
+        "historic gardens",
+        "traditional gardening",
+        "heritage plants"
+      ]
+    },
+    {
+      "id": "seed-saving",
+      "title": "Seed Saving",
+      "blurb": "Books about seed keeping, plant diversity and the traditions of preserving cultivated varieties.",
+      "tags": [],
+      "chapters": [],
+      "query": "seed saving",
+      "keywords": [
+        "seed keeping",
+        "heirloom seeds",
+        "seed banks",
+        "seed preservation",
+        "crop diversity"
+      ]
+    },
+    {
+      "id": "permaculture",
+      "title": "Permaculture",
+      "blurb": "Ecological design, food gardens and the relationships between soil, water and planting.",
+      "tags": [],
+      "chapters": [],
+      "query": "permaculture design",
+      "keywords": [
+        "ecological design",
+        "food forest",
+        "regenerative growing",
+        "sustainable gardening"
+      ]
+    },
+    {
+      "id": "herbs",
+      "title": "Herbs",
+      "blurb": "Herb gardens, culinary plants, botanical identification and traditional plant lore.",
+      "tags": [],
+      "chapters": [],
+      "query": "herbs botany gardening",
+      "keywords": [
+        "herbal",
+        "botany",
+        "herb garden",
+        "plant lore",
+        "culinary herbs"
+      ]
+    },
+    {
+      "id": "foraging",
+      "title": "Foraging",
+      "blurb": "Field guides, wild plant identification and accounts of gathering food from the landscape.",
+      "tags": [],
+      "chapters": [],
+      "query": "foraging field guide",
+      "keywords": [
+        "wild plants",
+        "field guides",
+        "wild food",
+        "plant identification"
+      ]
+    },
+    {
+      "id": "homesteading",
+      "title": "Homesteading",
+      "blurb": "Practical books on household skills, smallholdings and growing greater self-sufficiency.",
+      "tags": [],
+      "chapters": [],
+      "query": "homesteading self sufficiency",
+      "keywords": [
+        "self sufficiency",
+        "smallholding",
+        "household skills",
+        "rural living"
+      ]
+    },
+    {
+      "id": "natural-building",
+      "title": "Natural Building",
+      "blurb": "Earth, timber and other natural materials in vernacular architecture and building traditions.",
+      "tags": [],
+      "chapters": [],
+      "query": "natural building",
+      "keywords": [
+        "earth building",
+        "vernacular architecture",
+        "traditional construction",
+        "cob",
+        "adobe"
+      ]
+    },
+    {
+      "id": "historical-crafts",
+      "title": "Historical Crafts",
+      "blurb": "Traditional trades, workshop histories and the material knowledge preserved in handmade objects.",
+      "tags": [],
+      "chapters": [],
+      "query": "traditional crafts history",
+      "keywords": [
+        "traditional crafts",
+        "historic trades",
+        "handicrafts",
+        "workshop history",
+        "craft heritage"
+      ]
+    },
+    {
+      "id": "fasting",
+      "title": "Fasting Traditions & Research",
+      "blurb": "Religious and cultural fasting traditions, historical accounts and research literature.",
+      "tags": [],
+      "chapters": [],
+      "query": "fasting history research",
+      "keywords": [
+        "fasting",
+        "religious fasting",
+        "ritual fasting",
+        "fasting studies"
+      ]
+    },
+    {
+      "id": "nutrition",
+      "title": "Nutrition",
+      "blurb": "Food science, nutritional research and the history of ideas about what we eat.",
+      "tags": [],
+      "chapters": [],
+      "query": "nutrition food science",
+      "keywords": [
+        "food",
+        "diet",
+        "nutrients",
+        "food science",
+        "eating"
+      ]
+    },
+    {
+      "id": "fermentation",
+      "title": "Fermentation",
+      "blurb": "Fermented foods, culinary traditions and the science behind microbial transformations.",
+      "tags": [],
+      "chapters": [],
+      "query": "food fermentation",
+      "keywords": [
+        "fermented foods",
+        "sourdough",
+        "cultures",
+        "pickling"
+      ]
+    },
+    {
+      "id": "food-preservation",
+      "title": "Traditional Food Preservation",
+      "blurb": "Books on storing the harvest, preservation methods and the history of keeping food.",
+      "tags": [],
+      "chapters": [],
+      "query": "food preservation",
+      "keywords": [
+        "preserving",
+        "canning",
+        "drying",
+        "food storage",
+        "harvest",
+        "traditional food preservation"
+      ]
+    },
+    {
+      "id": "sleep-rest",
+      "title": "Sleep & Rest",
+      "blurb": "Sleep science, daily rhythms and cultural approaches to rest.",
+      "tags": [],
+      "chapters": [],
+      "query": "sleep rest science",
+      "keywords": [
+        "sleep",
+        "rest",
+        "circadian rhythms",
+        "sleep research"
+      ]
+    },
+    {
+      "id": "habits",
+      "title": "Habits",
+      "blurb": "Writing on routines, behavior change and the small actions that shape daily life.",
+      "tags": [],
+      "chapters": [],
+      "query": "habits behavior change",
+      "keywords": [
+        "routines",
+        "behavior",
+        "behaviour",
+        "personal growth",
+        "self development"
+      ]
+    },
+    {
+      "id": "self-knowledge",
+      "title": "Self-Knowledge",
+      "blurb": "Reflection on identity, values and the ways we come to understand ourselves.",
+      "tags": [],
+      "chapters": [],
+      "query": "self knowledge identity",
+      "keywords": [
+        "self awareness",
+        "identity",
+        "introspection",
+        "personal growth",
+        "self discovery"
+      ]
+    },
+    {
+      "id": "psychology",
+      "title": "Psychology",
+      "blurb": "Theories and research about thought, emotion, behavior and human development.",
+      "tags": [],
+      "chapters": [],
+      "query": "psychology human behavior",
+      "keywords": [
+        "behavior",
+        "behaviour",
+        "emotion",
+        "human development",
+        "thought"
+      ]
+    },
+    {
+      "id": "philosophy",
+      "title": "Philosophy",
+      "blurb": "Questions of meaning, knowledge, ethics and how to live.",
+      "tags": [],
+      "chapters": [],
+      "query": "philosophy ethics knowledge",
+      "keywords": [
+        "ethics",
+        "meaning",
+        "wisdom",
+        "epistemology",
+        "metaphysics"
+      ]
+    },
+    {
+      "id": "journaling",
+      "title": "Journaling",
+      "blurb": "Diaries, notebooks and writing practices for observation, memory and reflection.",
+      "tags": [],
+      "chapters": [],
+      "query": "journaling diaries writing",
+      "keywords": [
+        "journal",
+        "diary",
+        "notebooks",
+        "reflective writing",
+        "memoir"
+      ]
+    },
+    {
+      "id": "symbols",
+      "title": "Symbols & Signs",
+      "blurb": "Marks, seals and hidden codes — the visual language the prints borrow from.",
+      "tags": [
+        "Symbols"
+      ],
+      "chapters": [
+        "I"
+      ],
+      "query": "symbols secret signs",
+      "keywords": [
+        "symbolism",
+        "signs",
+        "seals",
+        "iconography",
+        "sacred geometry"
+      ]
+    },
+    {
+      "id": "scripture",
+      "title": "Scripture & Apocrypha",
+      "blurb": "Devotional texts, scriptural interpretation and writings beyond familiar canons.",
+      "tags": [
+        "Scripture"
+      ],
+      "chapters": [
+        "I"
+      ],
+      "query": "bible apocrypha",
+      "keywords": [
+        "scripture",
+        "apocrypha",
+        "bible",
+        "sacred texts",
+        "religion"
+      ]
+    },
+    {
+      "id": "mythology",
+      "title": "Mythology",
+      "blurb": "Myths, gods, heroes and the stories through which cultures describe their worlds.",
+      "tags": [],
+      "chapters": [],
+      "query": "mythology world myths",
+      "keywords": [
+        "myths",
+        "folklore",
+        "legends",
+        "gods",
+        "comparative mythology"
+      ]
+    },
+    {
+      "id": "grimoire",
+      "title": "Grimoires & Esoterica",
+      "blurb": "Formulas, rites and the occult manuals of the archive.",
+      "tags": [
+        "Grimoire"
+      ],
+      "chapters": [
+        "III"
+      ],
+      "query": "grimoire hermetic",
+      "keywords": [
+        "grimoires",
+        "esoterica",
+        "occult",
+        "hermetic",
+        "ritual"
+      ]
+    },
+    {
+      "id": "alchemy",
+      "title": "Alchemy",
+      "blurb": "Alchemical texts, images and the histories of material and spiritual transformation.",
+      "tags": [],
+      "chapters": [],
+      "query": "alchemy history texts",
+      "keywords": [
+        "alchemical",
+        "transformation",
+        "hermeticism",
+        "history of chemistry"
+      ]
+    },
+    {
+      "id": "money",
+      "title": "Money Systems",
+      "blurb": "Debt, currency and who prints the paper.",
+      "tags": [
+        "Finance"
+      ],
+      "chapters": [
+        "IV"
+      ],
+      "query": "money banking history",
+      "keywords": [
+        "money",
+        "banking",
+        "debt",
+        "currency",
+        "finance"
+      ]
+    },
+    {
+      "id": "propaganda",
+      "title": "Propaganda",
+      "blurb": "The history and techniques of organized persuasion in public life.",
+      "tags": [],
+      "chapters": [],
+      "query": "propaganda persuasion history",
+      "keywords": [
+        "persuasion",
+        "public opinion",
+        "messaging",
+        "political communication"
+      ]
+    },
+    {
+      "id": "mind",
+      "title": "Mind & Control",
+      "blurb": "Programming, propaganda and the war for attention.",
+      "tags": [
+        "Mind Control"
+      ],
+      "chapters": [
+        "IV"
+      ],
+      "query": "propaganda mind control",
+      "keywords": [
+        "mind control",
+        "influence",
+        "conditioning",
+        "attention",
+        "MKUltra"
+      ]
+    },
+    {
+      "id": "media",
+      "title": "Media",
+      "blurb": "Print, broadcasting and digital culture — how information circulates and shapes society.",
+      "tags": [],
+      "chapters": [],
+      "query": "media communication society",
+      "keywords": [
+        "communications",
+        "press",
+        "broadcasting",
+        "digital culture",
+        "media studies"
+      ]
+    },
+    {
+      "id": "political-thought",
+      "title": "Political Thought",
+      "blurb": "Ideas about authority, freedom, government and how people organize a shared life.",
+      "tags": [],
+      "chapters": [],
+      "query": "political philosophy",
+      "keywords": [
+        "politics",
+        "government",
+        "authority",
+        "freedom",
+        "political theory"
+      ]
+    }
+  ]
 }

@@ -1,0 +1,65 @@
+/* One destination for the live Lab draw and house-picked mystery packages. */
+#chance{--chance-paper:#eeeedf;--chance-muted:#b9bead;--chance-line:#46503e;max-width:1100px;padding-top:42px;scroll-margin-top:20px}
+#chance .chance-heading{margin:0 0 18px;color:var(--chance-paper)}
+#chance .chance-eyebrow{font:11px/1.4 'Courier Prime','Courier New',monospace;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;color:var(--chance-muted)}
+#chance .chance-heading h2{font:700 clamp(27px,3.5vw,42px)/1.1 'Courier Prime','Courier New',monospace;letter-spacing:-.035em;margin:0;color:var(--chance-paper)}
+#chance .chance-frame{border:1px solid var(--chance-line);background:#080b08;box-shadow:inset 0 0 0 4px #11170e}
+#chance .chance-modes{display:none;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--chance-line);padding:8px;gap:8px}
+#chance.is-enhanced .chance-modes{display:grid}
+#chance .chance-modes button{display:flex;align-items:center;justify-content:center;min-height:48px;padding:10px 16px;border:1px solid var(--chance-line)!important;border-radius:0!important;background:#0c110b!important;color:var(--chance-paper)!important;box-shadow:none!important;text-shadow:none!important;font:700 12px/1.3 'Courier Prime','Courier New',monospace!important;letter-spacing:.025em;cursor:pointer}
+#chance .chance-modes button[aria-selected=true]{background:var(--chance-paper)!important;border-color:var(--chance-paper)!important;color:#0a0d09!important}
+#chance .chance-modes button:hover{border-color:var(--chance-paper)!important}
+#chance .chance-modes button:focus-visible,#chance .chance-design-link:focus-visible{outline:2px solid #d6dc6c!important;outline-offset:3px}
+#chance :is(#photo-story,#mystery)[hidden]{display:none!important}
+#chance #photo-story{display:grid!important;grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)!important;gap:0!important;width:100%!important;max-width:none!important;min-height:0!important;height:auto!important;padding:0!important;margin:0!important;background:transparent!important;border:0!important;box-shadow:none!important;overflow:visible!important;scroll-margin-top:20px}
+#chance #photo-story>.hero-collage,#chance #photo-story>.hero-copy{display:none!important}
+#chance #photo-story .hero-showcase{grid-column:1;grid-row:1;display:block!important;position:relative!important;width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;padding:0!important;margin:0!important;border-right:1px dashed var(--chance-line)}
+#chance #hero-gallery-panel{display:block!important;position:relative!important;min-height:0!important;height:auto!important;width:100%!important;padding:0!important;margin:0!important;background:transparent!important;border:0!important;box-shadow:none!important;opacity:1!important;transform:none!important}
+#chance #hero-live-panel{height:460px!important;min-height:0!important;width:100%!important;margin:0!important;position:relative!important;overflow:hidden!important}
+#chance #hero-stage{display:block!important;position:absolute!important;inset:0!important;min-height:0!important;width:100%!important;height:100%!important;padding:0!important;margin:0!important;background:radial-gradient(ellipse at 50% 45%,#242c1b,transparent 70%)!important;border:0!important;box-shadow:none!important;z-index:1!important}
+#chance #hero-viewer{position:absolute!important;inset:20px 0 30px!important;width:100%!important;height:auto!important;min-height:0!important;aspect-ratio:auto!important}
+#chance #hero-viewer canvas{width:100%!important;height:100%!important}
+#chance #hero-stage .hero-top,#chance #hero-stage .hero-label,#chance #hero-stage .pedestal,#chance #hero-stage .spot,#chance #hero-stage .halo{display:none!important}
+#chance #photo-story .hero-snapshots{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;margin:0!important;z-index:2!important;pointer-events:none!important;overflow:hidden!important}
+#chance #photo-story .hero-snapshots button{pointer-events:auto!important}
+#chance #photo-story .photo-main{width:24%!important;max-width:130px!important;left:3%;top:8%;margin:0!important;padding:5px 5px 0!important}
+#chance #photo-story .photo-companion{width:23%!important;max-width:120px!important;padding:5px 5px 0!important}
+#chance #photo-story .photo-companion-left{left:3%;top:66%}
+#chance #photo-story .photo-companion-right{left:auto;right:3%;top:50%}
+#chance #photo-story .photo-frame-caption{min-height:20px!important;padding:3px!important;font-size:9px!important}
+#chance #photo-story .photo-companion span{padding:4px!important;font-size:9px!important}
+#chance #photo-story .photo-stamp{font-size:10px!important}
+#chance #photo-story .hero-gallery-tools{display:none!important}
+#chance .chance-random-info{grid-column:2;grid-row:1;align-self:center;padding:28px;min-width:0;color:var(--chance-paper);font:14px/1.6 'Courier Prime','Courier New',monospace}
+#chance .chance-random-info h3{font:700 clamp(26px,3vw,38px)/1.08 'Courier Prime','Courier New',monospace;letter-spacing:-.035em;margin:10px 0 18px;color:var(--chance-paper)}
+#chance .chance-random-info>p{color:var(--chance-muted)}
+#chance .chance-piece{display:flex;justify-content:space-between;gap:16px;align-items:baseline;border-top:1px dashed var(--chance-line);margin-top:24px;padding:18px 0;font-size:14px}
+#chance .chance-piece strong{font-size:20px;white-space:nowrap}
+#chance .chance-design-link{display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:48px;padding:12px 16px;border:1px solid var(--chance-paper)!important;background:var(--chance-paper)!important;color:#0a0d09!important;font:700 12px/1.4 'Courier Prime','Courier New',monospace!important;text-shadow:none!important;box-shadow:none!important}
+#chance .chance-design-link:hover{background:#d6dc6c!important}
+#chance .chance-note{font-size:11px!important;line-height:1.5!important;margin:14px 0 0}
+#chance #mystery{width:100%!important;max-width:none!important;padding:0!important;margin:0!important;min-height:0!important;border:0!important;scroll-margin-top:20px}
+#chance #mystery .mystery-heading{display:none!important}
+#chance #mystery .mystery-console{grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)!important;background:transparent!important;border:0!important;box-shadow:none!important;min-height:460px}
+#chance #mystery .mystery-print{border:0!important;background:transparent!important}
+#chance #mystery .mystery-stage{min-height:460px!important;height:100%!important;--box-size:clamp(170px,20vw,230px)}
+#chance #mystery .mystery-info{padding:28px!important;background:transparent!important;border-left:1px dashed var(--chance-line)!important}
+#chance #mystery .mystery-options button{font-family:'Courier Prime','Courier New',monospace!important}
+#chance #mystery .mystery-description h3{font-size:clamp(26px,3vw,38px)!important}
+#chance #mystery #box-cta{min-height:48px}
+@media(max-width:700px){
+ #chance{padding-top:28px}
+ #chance .chance-modes{padding:6px;gap:6px}
+ #chance .chance-modes button{padding:10px 6px;font-size:11px!important}
+ #chance #photo-story,#chance #mystery .mystery-console{grid-template-columns:minmax(0,1fr)!important}
+ #chance #photo-story .hero-showcase{grid-column:1;grid-row:1;border-right:0;border-bottom:1px dashed var(--chance-line)}
+ #chance #hero-live-panel{height:340px!important}
+ #chance .chance-random-info{grid-column:1;grid-row:2;padding:22px}
+ #chance .chance-random-info h3{font-size:30px}
+ #chance #mystery .mystery-print{border:0!important}
+ #chance #mystery .mystery-stage{min-height:300px!important;height:300px!important;--box-size:170px}
+ #chance #mystery .mystery-info{padding:22px!important;border-left:0!important;border-top:1px dashed var(--chance-line)!important}
+}
+@media(prefers-reduced-motion:reduce){#chance .chance-modes button,#chance .chance-design-link{transition:none!important}}
+
+#chance #photo-story :is(.photo-main,.photo-companion){bottom:auto!important}

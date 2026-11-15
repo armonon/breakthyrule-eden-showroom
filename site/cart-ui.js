@@ -1,3 +1,4 @@
+import { PRODUCT_DESIGNS, STUDIO_PRODUCTS } from '/labkit/product-options.mjs';
 // The cart: a header button and a drawer on every page of the site. Edits configurations, quantities,
 // removes lines, and starts a secure checkout (prices are recomputed on the server).
 import { cart, labStatus, money } from '/site/cart-store.mjs?v=site-audit-1';
@@ -48,15 +49,18 @@ function render(view = cart.view()) {
   checkout.disabled = checkingOut || !view.lines.length;
   if (!view.lines.length) { list.replaceChildren(h('li', { className: 'cart-empty' }, h('p', { textContent: 'Your cart is empty.' }), h('a', { href: '/lab', className: 'ghost', textContent: 'Build a garment' }))); return; }
   list.replaceChildren(...view.lines.map(l => {
-    const art = h('div', { className: 'cart-art' }); art.innerHTML = itemSketch(l.item, l.describe, 'cart-' + l.id);
+    const art = h('div', { className: 'cart-art' }); if(l.item.product==='studio-product'||l.item.productDesign){const p=l.item.product==='studio-product'?STUDIO_PRODUCTS[l.item.productId]:PRODUCT_DESIGNS[l.item.productDesign.id];art.append(h('img',{src:p.poster,alt:l.describe.title,loading:'lazy',style:'width:100%;height:100%;object-fit:contain'}));}else art.innerHTML = itemSketch(l.item, l.describe, 'cart-' + l.id);
     const single = l.item.product === 'garment' && l.item.construction === 'cut-sew';
     const minus = h('button', { type: 'button', textContent: '−', disabled: single || l.item.quantity <= 1 }); minus.setAttribute('aria-label', 'One fewer');
     const plus = h('button', { type: 'button', textContent: '+', disabled: single || l.item.quantity >= MAX_QUANTITY }); plus.setAttribute('aria-label', 'One more');
     minus.onclick = () => cart.setQuantity(l.id, l.item.quantity - 1);
     plus.onclick = () => cart.setQuantity(l.id, l.item.quantity + 1);
     const remove = h('button', { type: 'button', className: 'link', textContent: 'Remove' }); remove.onclick = () => cart.remove(l.id);
-    const editable = l.item.product === 'garment' || l.item.product === 'mystery-pack';
-    const edit = editable ? h('a', { className: 'link', href: '/lab?edit=' + encodeURIComponent(l.id) + (l.item.product === 'mystery-pack' ? '#packages' : '#build'), textContent: 'Edit' }) : null;
+    const editable = l.item.product === 'garment' || l.item.product === 'mystery-pack' || l.item.product === 'studio-product';
+    const referenceId=l.item.sourceDesign||l.item.productDesign?.id;
+    const collectionRef=Object.hasOwn(PRODUCT_DESIGNS,referenceId)&&PRODUCT_DESIGNS[referenceId].garment===l.item.garment?referenceId:null;
+    const editHref=l.item.product==='studio-product'?'/product?item='+encodeURIComponent(l.item.productId)+'&edit='+encodeURIComponent(l.id):collectionRef?'/product?item='+encodeURIComponent(collectionRef)+'&edit='+encodeURIComponent(l.id)+'&nocover=1':'/lab?edit='+encodeURIComponent(l.id)+(l.item.product==='mystery-pack'?'#packages':'#build');
+    const edit = editable ? h('a', { className: 'link', href: editHref, textContent: 'Edit' }) : null;
     return h('li', { className: 'cart-line' }, art,
       h('div', { className: 'cart-info' },
         h('strong', { textContent: l.describe.title }),

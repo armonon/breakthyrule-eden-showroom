@@ -48,7 +48,11 @@ export function drawArt(seed, artworkPool = []) {
 // garment, colour (black, white or random — never a paid custom colour), fit and the artistic direction.
 export function drawChaos(seed, { construction }, artworkPool = []) {
   const rng = mulberry32(seed ^ 0x9E3779B9);
-  const garments = Object.keys(OFFERINGS[construction] || {});
+  // Preserve existing seeded Canvas designs when the catalog adds a new style.
+  // The current studio-selected Random base does not use this legacy Chaos draw.
+  const garments = construction === 'canvas'
+    ? ['tee', 'hoodie', 'sweatpants', 'crewneck', 'shorts']
+    : Object.keys(OFFERINGS[construction] || {});
   const garment = pick(rng, garments);
   const color = pick(rng, ['black', 'white', 'random']);
   const fit = pick(rng, FITS[construction] || [{ id: 'blank' }]).id;

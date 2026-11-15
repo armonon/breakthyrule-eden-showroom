@@ -53,7 +53,8 @@ window.BTR_ACCESSORIES = [
     "raisedThreadGeometry": true,
     "stitchSegments": 1918,
     "triangles": 82336,
-    "qualityRevision": 3
+    "qualityRevision": 3,
+    "price": "$35"
   },
   {
     "slug": "headband-white",
@@ -81,7 +82,8 @@ window.BTR_ACCESSORIES = [
     "raisedThreadGeometry": true,
     "stitchSegments": 1918,
     "triangles": 82336,
-    "qualityRevision": 3
+    "qualityRevision": 3,
+    "price": "$35"
   },
   {
     "slug": "gloves-white",
@@ -106,7 +108,8 @@ window.BTR_ACCESSORIES = [
     "tagline": "The original apples. White cotton.",
     "description": "White cotton gloves with the original red and blue Apple Gloves artwork.",
     "triangles": 235786,
-    "qualityRevision": 3
+    "qualityRevision": 3,
+    "price": "$35"
   },
   {
     "slug": "apple-gloves-black",
@@ -132,7 +135,8 @@ window.BTR_ACCESSORIES = [
     "tagline": "The original apples. Black cotton.",
     "description": "Black cotton gloves with the original red and blue Apple Gloves artwork.",
     "triangles": 235786,
-    "qualityRevision": 3
+    "qualityRevision": 3,
+    "price": "$35"
   },
   {
     "slug": "skully-black",
@@ -160,7 +164,8 @@ window.BTR_ACCESSORIES = [
     "raisedThreadGeometry": true,
     "stitchSegments": 1918,
     "triangles": 215024,
-    "qualityRevision": 3
+    "qualityRevision": 3,
+    "price": "$78"
   },
   {
     "slug": "skully-white",
@@ -188,7 +193,8 @@ window.BTR_ACCESSORIES = [
     "raisedThreadGeometry": true,
     "stitchSegments": 1918,
     "triangles": 215024,
-    "qualityRevision": 3
+    "qualityRevision": 3,
+    "price": "$78"
   },
   {
     "slug": "trucker-cobalt",
@@ -217,7 +223,8 @@ window.BTR_ACCESSORIES = [
     "triangles": 66001,
     "qualityRevision": 4,
     "hatStyle": "trucker",
-    "meshFinish": "Open alpha-tested mesh"
+    "meshFinish": "Open alpha-tested mesh",
+    "price": "$45"
   },
   {
     "slug": "trucker-cherry",
@@ -246,7 +253,8 @@ window.BTR_ACCESSORIES = [
     "triangles": 66001,
     "qualityRevision": 4,
     "hatStyle": "trucker",
-    "meshFinish": "Open alpha-tested mesh"
+    "meshFinish": "Open alpha-tested mesh",
+    "price": "$45"
   },
   {
     "slug": "trucker-pink",
@@ -275,7 +283,8 @@ window.BTR_ACCESSORIES = [
     "triangles": 66001,
     "qualityRevision": 4,
     "hatStyle": "trucker",
-    "meshFinish": "Open alpha-tested mesh"
+    "meshFinish": "Open alpha-tested mesh",
+    "price": "$45"
   },
   {
     "slug": "trucker-lime",
@@ -304,7 +313,8 @@ window.BTR_ACCESSORIES = [
     "triangles": 66001,
     "qualityRevision": 4,
     "hatStyle": "trucker",
-    "meshFinish": "Open alpha-tested mesh"
+    "meshFinish": "Open alpha-tested mesh",
+    "price": "$45"
   },
   {
     "slug": "trucker-sunset",
@@ -333,7 +343,8 @@ window.BTR_ACCESSORIES = [
     "triangles": 66001,
     "qualityRevision": 4,
     "hatStyle": "trucker",
-    "meshFinish": "Open alpha-tested mesh"
+    "meshFinish": "Open alpha-tested mesh",
+    "price": "$45"
   },
   {
     "slug": "trucker-lilac",
@@ -362,6 +373,7 @@ window.BTR_ACCESSORIES = [
     "triangles": 66001,
     "qualityRevision": 4,
     "hatStyle": "trucker",
-    "meshFinish": "Open alpha-tested mesh"
+    "meshFinish": "Open alpha-tested mesh",
+    "price": "$45"
   }
 ];

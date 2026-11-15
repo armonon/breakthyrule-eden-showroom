@@ -1,0 +1,641 @@
+{
+  "brand": "Break Thy Rule",
+  "version": "garment-lab-live-3d",
+  "count": 21,
+  "modelsComplete": true,
+  "mediaType": "interactive-3d",
+  "viewer": "Garment Lab",
+  "customizationEnabledByDefault": false,
+  "products": [
+    {
+      "id": "belt-absolute-darkness",
+      "designSlug": "absolute-darkness",
+      "name": "Absolute Darkness Belt",
+      "model": "models/absolute-darkness.glb",
+      "poster": "posters/absolute-darkness.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5181740,
+      "modelSha256": "6342adf3c2a3bbed90e1483610bc6bf7d52afd4ab21e18664298881fec2fb0f3",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-blackout",
+      "designSlug": "blackout",
+      "name": "Blackout Belt",
+      "model": "models/blackout.glb",
+      "poster": "posters/blackout.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 2982380,
+      "modelSha256": "71a5444e5649b47ee0e850ddc8c6024817b5f82e5ea9c549a2de6eec70484d20",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-circle-of-anarchy",
+      "designSlug": "circle-of-anarchy",
+      "name": "Circle of Anarchy Belt",
+      "model": "models/circle-of-anarchy.glb",
+      "poster": "posters/circle-of-anarchy.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 4685892,
+      "modelSha256": "815386742205e61d1646f9ba204f7d6d0926bd4f266441818d3d5733a90142d9",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-crimson-screamer",
+      "designSlug": "crimson-screamer",
+      "name": "Crimson Screamer Belt",
+      "model": "models/crimson-screamer.glb",
+      "poster": "posters/crimson-screamer.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5189044,
+      "modelSha256": "1261466a31d354b3808e7e03d991dc41adc5d6c9849a3f74fdd97b8596359547",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-crimson-sentinel",
+      "designSlug": "crimson-sentinel",
+      "name": "Crimson Sentinel Belt",
+      "model": "models/crimson-sentinel.glb",
+      "poster": "posters/crimson-sentinel.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5183404,
+      "modelSha256": "a965542af1e178d362396f4b7eafba3bd64c50b6d2d9216aeda918d15771abef",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-equine-reverie",
+      "designSlug": "equine-reverie",
+      "name": "Equine Reverie Belt",
+      "model": "models/equine-reverie.glb",
+      "poster": "posters/equine-reverie.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5120192,
+      "modelSha256": "162a94b885d3173e9a8919aba31794222299e4bb0648b7386038d923c2fc40c8",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-ethereal-insight",
+      "designSlug": "ethereal-insight",
+      "name": "Ethereal Insight Belt",
+      "model": "models/ethereal-insight.glb",
+      "poster": "posters/ethereal-insight.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5132916,
+      "modelSha256": "f53c0bf9deebd4a5aa7b6a5b6e6fcff742a53d23d6a54add98fdc476b1c9c8e6",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-heatwave-rifle",
+      "designSlug": "heatwave-rifle",
+      "name": "Heatwave Rifle Belt",
+      "model": "models/heatwave-rifle.glb",
+      "poster": "posters/heatwave-rifle.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5250412,
+      "modelSha256": "92f10ff90f12b1deb0fb5eaf9e85f905df8af2c5f55619dffa3515ab2c7c22a2",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-lion-rampant",
+      "designSlug": "lion-rampant",
+      "name": "Lion Rampant Belt",
+      "model": "models/lion-rampant.glb",
+      "poster": "posters/lion-rampant.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5216820,
+      "modelSha256": "97659901cddc659a6645db87259507f57eee02ea4f958003859df3568f1a7ae7",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-love-birds",
+      "designSlug": "love-birds",
+      "name": "Love Birds Belt",
+      "model": "models/love-birds.glb",
+      "poster": "posters/love-birds.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5185532,
+      "modelSha256": "54012af5b4fd0e74bbcca783f9aeb87df6dc45c23905a075e1ad0deee3ea9378",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-magenta-ornate-cross",
+      "designSlug": "magenta-ornate-cross",
+      "name": "Magenta Ornate Cross Belt",
+      "model": "models/magenta-ornate-cross.glb",
+      "poster": "posters/magenta-ornate-cross.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5168572,
+      "modelSha256": "9feed94c2a949835c7ec7c8245fbb52f48377bce15331420f78838b9014773b6",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-neon-mosaic-horse-and-pink-star",
+      "designSlug": "neon-mosaic-horse-and-pink-star",
+      "name": "Neon Mosaic Horse and Pink Star Belt",
+      "model": "models/neon-mosaic-horse-and-pink-star.glb",
+      "poster": "posters/neon-mosaic-horse-and-pink-star.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5108648,
+      "modelSha256": "5c1ddcaa40a26d8cd498125dbb7db15efcb98de978aa274e434784007c802115",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-neon-shamrock",
+      "designSlug": "neon-shamrock",
+      "name": "Neon Shamrock Belt",
+      "model": "models/neon-shamrock.glb",
+      "poster": "posters/neon-shamrock.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 3153680,
+      "modelSha256": "e5568a9698d634a4427d1c9532dc962126f9c2e5d90317d73f033b03a121b254",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-obsidian-knight",
+      "designSlug": "obsidian-knight",
+      "name": "Obsidian Knight Belt",
+      "model": "models/obsidian-knight.glb",
+      "poster": "posters/obsidian-knight.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5310128,
+      "modelSha256": "4df50d9f10d8454c9878e2c692002f7262e6ab4a47bb095066d18895ea53d578",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-peaceful-flight",
+      "designSlug": "peaceful-flight",
+      "name": "Peaceful Flight Belt",
+      "model": "models/peaceful-flight.glb",
+      "poster": "posters/peaceful-flight.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5122532,
+      "modelSha256": "086eaed179e50545611f903789ce7cb0ee996feddac36a1303b3a3f7f16f590b",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-sara-la-kali",
+      "designSlug": "sara-la-kali",
+      "name": "Sara la kali Belt",
+      "model": "models/sara-la-kali.glb",
+      "poster": "posters/sara-la-kali.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 1079464,
+      "modelSha256": "c221bb98107766e8f07e38dbda20860a2351db7dfa4fefce10ad121e0aaeaafb",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-gunho",
+      "designSlug": "gunho",
+      "name": "gunho Belt",
+      "model": "models/gunho.glb",
+      "poster": "posters/gunho.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5303464,
+      "modelSha256": "1014bd51b31f1977691f6133cd7318fa385af02f0156bd91e3306ff52bd4fe5e",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-orange",
+      "designSlug": "orange",
+      "name": "orange Belt",
+      "model": "models/orange.glb",
+      "poster": "posters/orange.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5116864,
+      "modelSha256": "e82e29fd723f1969ad8507fc35a679b1439776f06ce8c748578c14b1a4ae4e10",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-prem",
+      "designSlug": "prem",
+      "name": "prem Belt",
+      "model": "models/prem.glb",
+      "poster": "posters/prem.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5211156,
+      "modelSha256": "0b66d5b14165c99814a3fc3e10fee90d8c8b60bc26bacb1f8a2c6cc658c08e65",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-shoota",
+      "designSlug": "shoota",
+      "name": "shoota Belt",
+      "model": "models/shoota.glb",
+      "poster": "posters/shoota.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5156860,
+      "modelSha256": "8f13e285402cb02fba732d7a5a2bbc436f9f7bfa83febded29e722106c6c6f81",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    },
+    {
+      "id": "belt-stickman",
+      "designSlug": "stickman",
+      "name": "stickman Belt",
+      "model": "models/stickman.glb",
+      "poster": "posters/stickman.webp",
+      "viewer": "Garment Lab / createGarmentViewer",
+      "presentation": "belt",
+      "cameraElevationDegrees": 18,
+      "spinRadiansPerSecond": 0.6283185307179586,
+      "ovalRadiiMm": [
+        155,
+        112
+      ],
+      "strapWidthMm": 40,
+      "strapThicknessMm": 3.5,
+      "strapMaterial": "Strap color",
+      "strapMesh": "BTR_Strap",
+      "strapUV": "StrapUV",
+      "defaultStrapColor": "#111111",
+      "customizationEnabled": false,
+      "modelBytes": 5288564,
+      "modelSha256": "5bc8ae3a6a97dcbe1bdd9ae33460d48d9e856c3592c4d845a7fcd743a51c4165",
+      "price": 400,
+      "currency": "USD",
+      "priceIncludes": [
+        "buckle",
+        "strap"
+      ]
+    }
+  ]
+}

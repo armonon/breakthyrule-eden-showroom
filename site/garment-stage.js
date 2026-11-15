@@ -73,6 +73,7 @@
   renderer.setPixelRatio(Math.min(devicePixelRatio,matchMedia('(pointer:coarse)').matches?1.25:1.75));
   const scene=new T.Scene();lights(scene);const camera=new T.PerspectiveCamera(30,1,.05,40);
   let model=null,yaw=.5,pitch=0,auto=!motion.matches,drag=null,frame=0,last=0,zoom=1,onScreen=true,enabled=true,dead=false,loadId=0,pending=null;
+  const graphicsListeners=new Set();
   const roots=new Map(),disposed=new WeakSet(),limit=Math.max(1,cacheLimit);
   function dispose(root){if(!root||disposed.has(root))return;disposed.add(root);const geometries=new Set(),materials=new Set(),textures=new Set();root.traverse(o=>{if(o.geometry)geometries.add(o.geometry);for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m){materials.add(m);for(const t of Object.values(m))if(t?.isTexture)textures.add(t);}});textures.forEach(t=>t.dispose());materials.forEach(m=>m.dispose());geometries.forEach(g=>g.dispose());}
   function trim(){for(const [url,entry] of roots){if(roots.size<=limit)break;if(!entry.root||entry.root===model||url===pending)continue;roots.delete(url);dispose(entry.root);}}
@@ -87,7 +88,7 @@
   function request(){if(!frame&&active())frame=requestAnimationFrame(draw);}
   function draw(time){frame=0;if(!active()){last=0;return;}const dt=Math.min((time-(last||time))/1000,.05);last=time;if(auto)yaw+=dt*spin;
    if(model)model.rotation.set(pitch,yaw,0);const d=Math.max(4.4,2.2/Math.tan(15*Math.PI/180)/camera.aspect/2.4)/zoom;
-   camera.position.set(0,.1,d);camera.lookAt(0,0,0);onFrame?.(yaw);renderer.render(scene,camera);if(auto&&model)request();else last=0;}
+   camera.position.set(0,.1,d);camera.lookAt(0,0,0);onFrame?.(yaw);renderer.render(scene,camera);for(const listener of graphicsListeners)listener();if(auto&&model)request();else last=0;}
   const handlers=[];function listen(type,handler,options){element.addEventListener(type,handler,options);handlers.push([type,handler,options]);}
   listen('pointerdown',e=>{if(e.button!==0||e.target.closest('button,a'))return;auto=false;drag={x:e.clientX,y:e.clientY,yaw,pitch};element.setPointerCapture(e.pointerId);});
   listen('pointermove',e=>{if(!drag)return;yaw=drag.yaw+(e.clientX-drag.x)*.009;pitch=Math.max(-.4,Math.min(.4,drag.pitch+(e.clientY-drag.y)*.006));request();});
@@ -105,6 +106,7 @@
    setVisible(value){enabled=!!value;visibility();},
    setAuto(v){auto=!!v;last=0;request();return auto;},isAuto:()=>auto,
    view(side){auto=false;yaw=side==='back'?Math.PI:0;pitch=0;request();},
+   graphicsCamera:()=>camera,graphicsCanvas:canvas,onGraphicsFrame(fn){graphicsListeners.add(fn);return()=>graphicsListeners.delete(fn);},
    model:()=>model,setZoom(z){zoom=Math.max(.8,Math.min(2.4,z));request();},redraw:request,
    destroy(){if(dead)return;dead=true;++loadId;cancelAnimationFrame(frame);ro.disconnect();io.disconnect();document.removeEventListener('visibilitychange',visibility);document.removeEventListener('btr:page-visibility',visibility);motion.removeEventListener('change',motionChange);handlers.forEach(([type,handler,options])=>element.removeEventListener(type,handler,options));roots.forEach(entry=>entry.promise.then(dispose).catch(()=>{}));roots.clear();dispose(model);renderer.dispose();canvas.remove();}
   };

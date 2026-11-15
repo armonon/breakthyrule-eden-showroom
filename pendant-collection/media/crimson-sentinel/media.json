@@ -1,0 +1,228 @@
+{
+  "slug": "crimson-sentinel",
+  "title": "Crimson Sentinel",
+  "duration_seconds": 10,
+  "fps": 24,
+  "frames": 240,
+  "rotation_degrees": 360,
+  "source_key": "2596c8fb1f51f8a5c966d8010afa318416c7b2db1037201c78b63841f137dcca",
+  "alpha_method": "Original RGBA alpha, packed right of RGB in H.264; reconstructed by WebGL. No chroma key.",
+  "assets": [
+    {
+      "file": "crimson-sentinel-full-poster.png",
+      "bytes": 199506,
+      "sha256": "99bdac4371f80701fa94e6583aaf9112251dfdfb14050ae8e6ec4bbd9645b695",
+      "type": "transparent-poster",
+      "width": 640,
+      "height": 900
+    },
+    {
+      "file": "crimson-sentinel-full-packed.mp4",
+      "bytes": 2870023,
+      "sha256": "aa9dc89898202bc42e4dfbe4a023806575d2e1bb6c428ff8cb4e06d2d3d22e4a",
+      "type": "packed-alpha-h264",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 900,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "2870023"
+        }
+      }
+    },
+    {
+      "file": "crimson-sentinel-detail-poster.png",
+      "bytes": 652245,
+      "sha256": "ba76d3c22e21a987ab9c490e770e82096ff1b5acc624b0187c119eb5335b5673",
+      "type": "transparent-poster",
+      "width": 1220,
+      "height": 900
+    },
+    {
+      "file": "crimson-sentinel-detail-packed.mp4",
+      "bytes": 5538191,
+      "sha256": "1c71d1636ade2fc3390895c8062a6a513318cef3f3b77229198811152da4bd89",
+      "type": "packed-alpha-h264",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 2440,
+            "height": 900,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "5538191"
+        }
+      }
+    },
+    {
+      "file": "crimson-sentinel-with-chain-360.mp4",
+      "bytes": 5006631,
+      "sha256": "a1848793efaedbb0bdda250af563ff4b7f95a2fbe7b0e7e47e6be5f354b80a2e",
+      "type": "standard-mp4",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "5006631"
+        }
+      }
+    }
+  ],
+  "views": {
+    "full": {
+      "width": 640,
+      "height": 900,
+      "packed": "crimson-sentinel-full-packed.mp4",
+      "poster": "crimson-sentinel-full-poster.png",
+      "decoded_alpha_cardinal_samples": [
+        {
+          "frame": 1,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 61,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 121,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 181,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        }
+      ]
+    },
+    "detail": {
+      "width": 1220,
+      "height": 900,
+      "packed": "crimson-sentinel-detail-packed.mp4",
+      "poster": "crimson-sentinel-detail-poster.png",
+      "decoded_alpha_cardinal_samples": [
+        {
+          "frame": 1,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 61,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 121,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 181,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        }
+      ]
+    }
+  },
+  "passed": true,
+  "download": "crimson-sentinel-with-chain-360.mp4",
+  "encode_seconds": 107.8
+}

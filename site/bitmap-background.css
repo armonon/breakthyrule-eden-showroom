@@ -1,0 +1,21 @@
+/* Monochrome page surfaces and faint pixel grain. Product images keep their color. */
+html body[data-page="home"]{
+ --paper:#0b0b0b!important;--paper-2:#171717!important;--wash:#121212!important;--cave-ground:#0b0b0b;--cave-panel:#171717;
+ --btr-bitmap-grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' shape-rendering='crispEdges'%3E%3Cpath fill='%23fff' fill-opacity='.028' d='M0 0h1v1H0zM4 2h1v1H4zM2 5h1v1H2zM6 7h1v1H6z'/%3E%3C/svg%3E");
+}
+html[data-btr-theme] body[data-page="home"]{background:var(--btr-bitmap-grain) #0b0b0b!important}
+html body[data-page="home"] #codex-backdrop[data-bitmap-background]{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;image-rendering:pixelated;opacity:1;filter:none;mix-blend-mode:normal}
+html[data-btr-theme] body[data-page="home"] .site-top,
+html[data-btr-theme] body[data-page="home"] .site-foot{background:var(--btr-bitmap-grain) #0b0b0b!important}
+html[data-btr-theme] body[data-page="home"] main #photo-story.hero-gallery,
+html[data-btr-theme] body[data-page="home"] main #gallery-reel{background:transparent!important;--reel-paper:#0b0b0b!important}
+html[data-btr-theme] body[data-page="home"] main :is(.hero-gallery-panel,.hero-unified-scene,.hero-gallery-tools,.hero-gallery-toolbar,.photo-controls,.photo-layout-tools){background:transparent!important}
+html[data-btr-theme] body[data-page="home"] main .hero-stage.altar{background:radial-gradient(ellipse at 50% 45%,#20202000,#0b0b0b00)!important}
+html[data-btr-theme] body[data-page="home"] main .halo{background:radial-gradient(ellipse,#ffffff12,transparent 70%)!important}
+html[data-btr-theme] body[data-page="home"] main :is(.product-card,.mystery-info,.production-band,.metal-card,.accessory-card,.equipment-card){background:var(--btr-bitmap-grain) #171717!important}
+html[data-btr-theme] body[data-page="home"] main .card-media{background:#1b1b1b!important}
+html[data-btr-theme] body[data-page="home"] main #hero-viewer.card-media{background:transparent!important}
+html[data-btr-theme] body[data-page="home"] main :is(.wearer-hero,.wearer-frame){background:#0b0b0b!important}
+html[data-btr-theme] body[data-page="home"] main #wearer-hero :is(.btr-bitmap-photo,img.wearer-photo){filter:grayscale(1)!important}
+html[data-btr-theme] body[data-page="home"] main .wearer-shade{background:linear-gradient(180deg,#08080855,transparent 25%,#08080822 50%,#080808eb)!important}
+@media print{body[data-page="home"] #codex-backdrop{display:none!important}}

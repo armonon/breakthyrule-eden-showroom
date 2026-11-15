@@ -1,8 +1,10 @@
+import { normalizeGraphicLayout, layoutSummary } from './graphic-layout.mjs';
+import { PRODUCT_DESIGNS, GRAPHIC_COLORS, normalizeStudioProduct, priceStudioProduct, describeStudioProduct } from './product-options.mjs';
 // Validation and pricing for Garment Lab items. Pure functions, shared by browser and server.
 // The browser uses them to show prices; the server re-runs them on every checkout and ignores any
 // price a browser sends.
 import {
-  OFFERINGS, offeringFor, CONSTRUCTIONS, COLORS, ARTWORK, SIZES, FITS, RELIC_BOX, TRINITY,
+  OFFERINGS, offeringFor, labModeFor, garmentPriceParts, CONSTRUCTIONS, COLORS, ARTWORK, SIZES, FITS, RELIC_BOX, TRINITY,
   MYSTERY_PACKAGES, MYSTERY_FITS, MYSTERY_PREFERENCES_MAX,
   CUSTOM_COLOR_MAX, MAX_QUANTITY, GARMENT_TYPES, PRINT_LIMITS, PICK_LIMITS, BACK_SIZES
 } from './catalog.mjs';
@@ -28,29 +30,40 @@ export function normalizeItem(raw, { artworkPool = [] } = {}) {
   if (!raw || typeof raw !== 'object') return { ok: false, errors: ['Item is missing.'] };
   const product = raw.product;
 
+  if (product === 'studio-product') return normalizeStudioProduct(raw, artworkPool);
+
   if (product === 'garment') {
     const construction = raw.construction;
-    const labMode = raw.labMode === 'random' ? 'random' : construction === 'cut-sew' ? 'cut-sew' : 'blank';
-    if (labMode === 'random' && (construction !== 'canvas' || raw.color !== 'random')) errors.push('Random bases are selected and colored by the studio.');
-    if (!CONSTRUCTIONS[construction]) errors.push('Choose The Canvas or Cut & Sew.');
+    const labMode = labModeFor(raw);
+    if (!Object.hasOwn(CONSTRUCTIONS, construction)) errors.push('Choose The Canvas or Cut & Sew.');
+    else if (!labMode) errors.push('Choose a valid base option for this construction.');
+    if (labMode === 'random' && (raw.color !== 'random' || raw.chaos === true)) errors.push('Random bases are selected and colored by the studio.');
     const chaos = raw.chaos === true;
     const seed = raw.seed == null ? null : Number(raw.seed);
     if ((chaos || raw.artwork === 'random-experimental') && !isSeed(seed)) errors.push('A random draw needs its seed.');
     let garment = raw.garment, color = raw.color, fit = raw.fit, artwork = raw.artwork, art = null;
-    if (chaos && CONSTRUCTIONS[construction] && isSeed(seed)) {
+    if (chaos && Object.hasOwn(CONSTRUCTIONS, construction) && isSeed(seed)) {
       const c = drawChaos(seed, { construction }, artworkPool);
       garment = c.garment; color = c.color; fit = c.fit; artwork = 'random-experimental'; art = c.art;
     } else if (artwork === 'random-experimental' && isSeed(seed)) art = drawArt(seed, artworkPool);
     const offering = offeringFor({ construction, garment, labMode });
-    if (CONSTRUCTIONS[construction] && !offering) errors.push('That garment is not offered in ' + CONSTRUCTIONS[construction].name + '.');
+    if (Object.hasOwn(CONSTRUCTIONS, construction) && !offering) errors.push('That garment is not offered in ' + CONSTRUCTIONS[construction].name + '.');
     const size = raw.size;
     if (!SIZES.includes(size)) errors.push('Choose a size.');
-    const fits = FITS[construction] || [];
+    const fits = Object.hasOwn(FITS, construction) ? FITS[construction] : [];
     if (!fits.some(f => f.id === fit)) fit = fits.length === 1 ? fits[0].id : (errors.push('Choose a fit.'), null);
-    if (!COLORS[color]) errors.push('Choose a color.');
+    if (!Object.hasOwn(COLORS, color)) errors.push('Choose a color.');
     const customColor = color === 'custom' ? clean(raw.customColor, CUSTOM_COLOR_MAX) : '';
     if (color === 'custom' && customColor.length < 2) errors.push('Name the custom color you want.');
-    if (!ARTWORK[artwork]) errors.push('Choose an artwork direction.');
+    if (!Object.hasOwn(ARTWORK,artwork)) errors.push('Choose an artwork direction.');
+    const sourceDesign = typeof raw.sourceDesign === 'string' && Object.hasOwn(PRODUCT_DESIGNS,raw.sourceDesign) ? raw.sourceDesign : null;
+    if (raw.sourceDesign != null && !sourceDesign) errors.push('The source garment is unavailable.');
+    let productDesign = null;
+    if (artwork === 'product-design') {
+      const ref = Object.hasOwn(PRODUCT_DESIGNS,raw.productDesign?.id) ? PRODUCT_DESIGNS[raw.productDesign.id] : null;
+      if (!ref) errors.push('Choose a valid collection design.');
+      else productDesign = { id: ref.id, graphic: GRAPHIC_COLORS.includes(raw.productDesign?.graphic) ? raw.productDesign.graphic : 'Red' };
+    }
     const maxQ = construction === 'cut-sew' ? 1 : MAX_QUANTITY;
     const quantity = raw.quantity == null ? 1 : qty(raw.quantity, maxQ);
     if (!quantity) errors.push(construction === 'cut-sew' ? 'Each cut & sew piece is one of one — add another for a second piece.' : `Quantity must be 1–${MAX_QUANTITY}.`);
@@ -70,9 +83,11 @@ export function normalizeItem(raw, { artworkPool = [] } = {}) {
       const selected = new Set([...picks.front, ...picks.back]);
       selectedUploads = uploaded.uploads.filter(ref => selected.has(ref.id));
     }
+    const graphicLayout = artwork === 'pick' && raw.graphicLayout != null ? normalizeGraphicLayout(raw.graphicLayout, picks) : null;
+    if (graphicLayout && !graphicLayout.ok) return graphicLayout;
     const print = normalizePrint(raw.print);
     const backSize = BACK_SIZES[raw.backSize] ? raw.backSize : 'full';
-    return { ok: true, item: { product, construction, labMode, garment, size, fit, color, customColor, artwork, chaos, seed: art ? seed : null, art, picks, print, backSize, quantity, ...(selectedUploads.length ? { uploads: selectedUploads } : {}) } };
+    return { ok: true, item: { product, construction, labMode, garment, size, fit, color, customColor, artwork, chaos, seed: art ? seed : null, art, picks, print, backSize, quantity, ...(sourceDesign ? { sourceDesign } : {}), ...(graphicLayout ? { graphicLayout: graphicLayout.layout } : {}), ...(productDesign ? { productDesign } : {}), ...(selectedUploads.length ? { uploads: selectedUploads } : {}) } };
   }
 
   if (product === 'mystery-pack') {
@@ -116,13 +131,17 @@ export function normalizeItem(raw, { artworkPool = [] } = {}) {
 
 // Price a canonical item. Returns the per-unit breakdown and the line total.
 export function priceItem(item) {
+  if (item.product === 'studio-product') return priceStudioProduct(item);
   const lines = [];
   if (item.product === 'garment') {
     const o = offeringFor(item);
-    lines.push({ label: `${item.labMode === 'random' ? 'Random base' : CONSTRUCTIONS[item.construction].name} — ${o.name}`, cents: o.priceCents });
+    const parts = garmentPriceParts(item);
+    if (!o || !parts) throw new Error('Invalid garment pricing options');
+    lines.push({ kind: 'garment', label: `${o.name} base`, cents: parts.baseCents });
+    lines.push({ kind: 'construction', label: { random: 'Random — studio selected', blank: 'Blank', 'cut-sew': 'Cut & Sew' }[parts.labMode], cents: parts.constructionCents });
     const c = COLORS[item.color];
-    lines.push({ label: item.color === 'custom' ? `Custom color: ${item.customColor}` : `${c.name}`, cents: c.addCents });
-    lines.push({ label: `Artwork: ${ARTWORK[item.artwork].name}`, cents: ARTWORK[item.artwork].addCents });
+    lines.push({ kind: 'color', label: item.color === 'custom' ? `Custom color: ${item.customColor}` : `${c.name}`, cents: c.addCents });
+    lines.push({ kind: 'artwork', label: `Artwork: ${ARTWORK[item.artwork].name}`, cents: ARTWORK[item.artwork].addCents });
   } else if (item.product === 'mystery-pack') {
     const p = MYSTERY_PACKAGES[item.package];
     lines.push({ label: p.name, cents: p.priceCents });
@@ -150,9 +169,11 @@ export function priceCart(rawItems, opts) {
 
 // Human-readable title and spec lines for carts, orders and the production dashboard.
 export function describeItem(item) {
+  if (item.product === 'studio-product') return describeStudioProduct(item);
   if (item.product === 'garment') {
     const o = offeringFor(item);
     const spec = [
+      ...(item.productDesign ? [`Design: ${PRODUCT_DESIGNS[item.productDesign.id].name}`, ...(PRODUCT_DESIGNS[item.productDesign.id].core ? [`Graphic color: ${item.productDesign.graphic}`, 'Complete logo chest embroidery · Eye back print 16 × 19 in'] : [])] : []),
       `Construction: ${item.labMode === 'random' ? 'Random base — studio selected' : CONSTRUCTIONS[item.construction].name}`,
       ...(CONSTRUCTIONS[item.construction].material ? [`Material: ${CONSTRUCTIONS[item.construction].material}`] : []),
       `Size: ${item.size}` + (FITS[item.construction].length > 1 ? ` · Fit: ${FITS[item.construction].find(f => f.id === item.fit)?.name}` : ''),
@@ -164,6 +185,7 @@ export function describeItem(item) {
     if (sides.front.length) spec.push('Front: ' + sides.front.map(id => graphicName(id, item.uploads)).join(', '));
     const bs = BACK_SIZES[item.backSize] || BACK_SIZES.full;
     if (sides.back.length) spec.push(`Back: ${sides.back.map(id => graphicName(id, item.uploads)).join(', ')} — ${bs.name.toLowerCase()}, ${bs.w} × ${bs.h} in on every size`);
+    if (item.graphicLayout) for (const side of ['front','back']) for (const layer of item.graphicLayout[side]) spec.push(layoutSummary(side, layer));
     if (item.chaos) spec.push('Drawn by Total Chaos');
     if (!isDefaultPrint(item.print)) {
       const p = item.print, where = [];

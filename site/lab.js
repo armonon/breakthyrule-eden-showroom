@@ -1,14 +1,18 @@
+import { createGarmentGraphicsEditor } from '/site/garment-graphics-editor.mjs?v=2';
+import { graphicBaseURL, prepareGraphicBase } from '/site/graphic-base.mjs?v=1';
+import { PRODUCT_DESIGNS } from '/labkit/product-options.mjs';
+import { tintProductDesign } from '/site/product-preview.mjs?v=1';
 // The Garment Lab: open configurator, mystery packages and catalog.
-import { CONSTRUCTIONS, OFFERINGS, GARMENT_TYPES, COLORS, ARTWORK, SIZES, FITS, MYSTERY_PACKAGES, MYSTERY_FITS, MYSTERY_PREFERENCES_MAX, SIZE_CHART, PICK_LIMITS, BACK_SIZES } from '/labkit/catalog.mjs';
+import { CONSTRUCTIONS, OFFERINGS, offeringFor, garmentPriceParts, GARMENT_TYPES, COLORS, ARTWORK, SIZES, FITS, MYSTERY_PACKAGES, MYSTERY_FITS, MYSTERY_PREFERENCES_MAX, SIZE_CHART, PICK_LIMITS, BACK_SIZES } from '/labkit/catalog.mjs';
 import { normalizeItem, priceItem, describeItem, sidesFor } from '/labkit/pricing.mjs';
 import { drawArt, drawChaos, newSeed } from '/labkit/random.mjs';
 import { artworkThumb, ARTWORK_POOL, PICKER_TAGS } from '/labkit/artwork-pool.mjs';
 import { itemSketch } from '/site/garment-sketch.mjs';
-import { createPrinter, BLANKS } from '/site/garment-print.mjs';
+import { createPrinter, BLANKS } from '/site/garment-print.mjs?v=graphics-editor-1';
 import { cart, POOL, labStatus, money } from '/site/cart-store.mjs?v=site-audit-1';
 import { isUploadId, uploadForId, uploadedArtworkUrl } from '/labkit/custom-artwork.mjs';
 import { uploadArtworkFile } from '/site/artwork-upload.mjs';
-import { quoteGarment, modeSelection, garmentSelection } from '/site/lab-price.mjs?v=random-prices-2';
+import { quoteGarment, modeSelection, garmentSelection } from '/site/lab-price.mjs?v=price-square-1';
 import { createLabFlow } from '/site/lab-flow.mjs?v=3';
 
 const $ = id => document.getElementById(id);
@@ -24,8 +28,8 @@ let status = null;
 // Real 3D blanks (Ghost Studio, converted to meshopt). Shorts and long sleeves show a panel instead.
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const three = { viewer: null, loaded: null, loading: null, failed: false, wanted: false, hue: 0, timer: 0 };
-const state = { quantity: 1, baseMode: 'blank', construction: 'canvas', garment: 'tee', size: null, fit: 'blank', color: 'black', customColor: '', artwork: 'artists-choice', seed: null, chaos: false, preChaos: null, editId: null, side: 'front', print: { x: 0, y: 0, scale: 1 }, picks: { front: [], back: [] }, uploads: [], backSize: 'full' };
-let flow = null;
+const state = { quantity: 1, baseMode: 'random', construction: 'canvas', garment: 'tee', size: null, fit: 'blank', color: 'random', customColor: '', artwork: 'artists-choice', productDesign: null, sourceDesign:null, graphicLayout:null, seed: null, chaos: false, preChaos: null, editId: null, side: 'front', print: { x: 0, y: 0, scale: 1 }, picks: { front: [], back: [] }, uploads: [], backSize: 'full' };
+let flow = null, graphicsEditor = null, graphicUpdateFrame=0;
 let designIssue = '', uploadBusy = false, printRevision = 0;
 const artName = id => uploadForId(id, state.uploads)?.name || nameOf[id] || id;
 const artThumb = id => isUploadId(id) ? uploadedArtworkUrl(uploadForId(id, state.uploads)) : artworkThumb(id);
@@ -51,11 +55,14 @@ function choice(group, value, title, { sub = '', price = '', checked = false, di
 const sizeButton = (group, value, checked) => { const input = h('input', { type: 'radio', name: group, value, checked, ariaLabel: value }); return h('label', { className: 'size' }, input, h('span', { textContent: value })); };
 function config() {
   const c = { product: 'garment', labMode: state.baseMode, construction: state.construction, garment: state.garment, size: state.size, fit: state.fit, color: state.baseMode === 'random' ? 'random' : state.color, artwork: state.artwork, quantity: state.quantity };
+  if(state.sourceDesign)c.sourceDesign=state.sourceDesign;
+  if (state.artwork === 'product-design' && state.productDesign) c.productDesign = {...state.productDesign};
   if (state.color === 'custom') c.customColor = state.customColor;
   if (state.artwork === 'random-experimental' || state.chaos) c.seed = state.seed;
   if (state.chaos) c.chaos = true;
   if (state.print.x || state.print.y || state.print.scale !== 1) c.print = { ...state.print };
   if (state.artwork === 'pick') {
+    if(state.graphicLayout)c.graphicLayout=state.graphicLayout;
     c.picks = { front: [...state.picks.front], back: [...state.picks.back] };
     const used = new Set([...c.picks.front, ...c.picks.back]);
     const uploads = state.uploads.filter(asset => used.has(asset.id));
@@ -77,17 +84,17 @@ function renderConstruction() {
     ['blank', 'Blank', 'Choose your color.', 'canvas'],
     ['cut-sew', 'Cut & Sew', 'Made from scratch in cotton.', 'cut-sew']
   ].map(([id, name, sub, construction]) => {
-    const selected = modeSelection(state, id), quote = selected && quoteGarment({ ...state, ...selected, quantity: 1 });
-    return choice('base-mode', id, name, { sub: selected ? sub : 'Not available for this style', price: quote ? money(quote.unitCents) : '', checked: state.baseMode === id, disabled: !selected });
+    const selected = modeSelection(state, id), parts = selected && garmentPriceParts({ ...state, ...selected, labMode: id });
+    return choice('base-mode', id, name, { sub: selected ? sub : 'Not available for this style', price: parts ? '+' + money(parts.constructionCents) : '', checked: state.baseMode === id, disabled: !selected });
   }));
-  $('construction-note').hidden = !!OFFERINGS.canvas[state.garment];
-  $('construction-note').textContent = state.garment === 'longsleeve' ? 'Choose a Random base or Cut & Sew for a long sleeve.' : 'This style is available in Cut & Sew.';
+  $('construction-note').hidden = false;
+  $('construction-note').textContent = 'Added to the garment starting price.';
 }
 function renderGarments() {
-  const names = { tee: 'T-shirt', hoodie: 'Hoodie', crewneck: 'Crewneck', sweatpants: 'Sweatpants', longsleeve: 'Long sleeve', shorts: 'Shorts' };
+  const names = { tee: 'T-shirt', hoodie: 'Hoodie', crewneck: 'Crewneck', sweatpants: 'Sweatpants', longsleeve: 'Long sleeve', shorts: 'Sweat shorts' };
   $('opt-garment').replaceChildren(...Object.entries(names).map(([id, name]) => {
-    const selected = garmentSelection(state, id), quote = selected && quoteGarment({ ...state, ...selected, quantity: 1 });
-    return choice('garment', id, name, { price: quote ? money(quote.unitCents) : '', checked: state.garment === id });
+    const base = offeringFor({ construction: 'canvas', garment: id, labMode: 'random' });
+    return choice('garment', id, name, { price: base ? money(base.priceCents) : '', checked: state.garment === id });
   }));
 }
 function renderSizes() {
@@ -112,6 +119,7 @@ function renderColors() {
 }
 function renderArt() {
   $('opt-art').replaceChildren(
+    ...(state.productDesign && PRODUCT_DESIGNS[state.productDesign.id] ? [choice('artwork','product-design','Keep this design',{sub:PRODUCT_DESIGNS[state.productDesign.id].name,price:'included',checked:state.artwork==='product-design'})] : []),
     choice('artwork', 'artists-choice', 'Random', { price: ARTWORK['artists-choice'].addCents ? '+' + money(ARTWORK['artists-choice'].addCents) : 'included', sub: 'The studio chooses the artwork. No reveal until it is made.', checked: state.artwork === 'artists-choice' }),
     choice('artwork', 'pick', 'Pick graphics', { price: ARTWORK.pick.addCents ? '+' + money(ARTWORK.pick.addCents) : 'included', sub: 'Choose archive graphics or upload your own.', checked: state.artwork === 'pick' })
   );
@@ -121,6 +129,7 @@ function renderArt() {
   if (state.artwork !== 'pick' && flow?.isBrowsing) flow.browse(false);
   renderPicker();
   renderSelectedArt();
+  document.body.classList.toggle('lab-graphics-editing',state.artwork==='pick');graphicsEditor?.sync();
 }
 // ---------- 3D blank ----------
 function fabricColor() {
@@ -135,7 +144,7 @@ function itemLike() { return { artwork: state.artwork, art: currentArt(), picks:
 function sidePlan() {
   if (state.artwork === 'random-experimental' || state.artwork === 'pick') {
     const s = sidesFor(itemLike());
-    return { front: s.front.length ? { kind: 'refs', ids: s.front } : null, back: s.back.length ? { kind: 'big', ids: s.back } : null };
+    return { front: s.front.length ? { kind: 'refs', ids: s.front, layers:state.artwork==='pick'?state.graphicLayout?.front:null } : null, back: s.back.length ? { kind: 'big', ids: s.back, layers:state.artwork==='pick'?state.graphicLayout?.back:null } : null };
   }
   if (state.artwork === 'minimal') return { front: { kind: 'minimal' }, back: null, small: true };
   if (state.artwork === 'expressive') return { front: { kind: 'expressive' }, back: { kind: 'expressive' } };
@@ -143,13 +152,15 @@ function sidePlan() {
 }
 let printer = null;
 async function printArt() {
-  if (state.baseMode === 'random' || !three.viewer?.model()) return;
+  if ((state.baseMode === 'random' && state.artwork !== 'pick') || !three.viewer?.model()) return;
+  if(state.artwork==='product-design'&&state.productDesign){tintProductDesign(three.viewer.model(),state.color,PRODUCT_DESIGNS[state.productDesign.id],state.productDesign.graphic,state.customColor);three.viewer.redraw();return;}
   printer ||= createPrinter(three.viewer);
   const kind = GARMENT_TYPES[state.garment].silhouette === 'pants' ? 'pants' : state.garment;
   const revision = ++printRevision;
   try {
     const tex = await printer.apply({ kind, plan: sidePlan(), color: fabricColor(), backSize: state.backSize, print: state.print, uploads: state.uploads });
     if (!tex || revision !== printRevision) return;
+    graphicsEditor?.previewReady();
     const hadError = three.printError;
     three.printError = '';
     if (tex.front !== three.texF || tex.back !== three.texB) { three.texF = tex.front; three.texB = tex.back; renderPrintSides(); }
@@ -163,12 +174,13 @@ async function printArt() {
 }
 function tint() { printArt(); }
 async function ensure3D() {
-  const url = BLANKS[state.garment];
+  const reference=state.artwork==='product-design'?PRODUCT_DESIGNS[state.productDesign?.id]:state.artwork==='pick'?PRODUCT_DESIGNS[state.sourceDesign]:null;
+  const url = reference?.model ? (state.artwork==='pick'?graphicBaseURL(reference.model):reference.model) : BLANKS[state.garment];
   if (!url || three.failed) return false;
   if (!three.viewer) { three.viewer = window.createGarmentViewer?.($('stage-3d'), { wheelZoom: false }) || null; if (!three.viewer) { three.failed = true; return false; } three.viewer.setAuto(!reduceMotion); }
   if (three.loaded === url) return true;
   three.loading = url; $('stage-loading').hidden = false;
-  try { await three.viewer.load(url); three.loaded = url; if (three.loading !== url) { renderThree(); return false; } return true; }
+  try { await three.viewer.load(url);if(state.artwork==='pick'&&reference)prepareGraphicBase(three.viewer.model()); three.loaded = url; if (three.loading !== url) { renderThree(); return false; } return true; }
   catch { three.failed = true; return false; }
   finally { if (three.loading === url) $('stage-loading').hidden = true; }
 }
@@ -192,7 +204,7 @@ function renderPrintSides() {
 }
 async function renderThree() {
   document.body.dataset.baseMode = state.baseMode;
-  const surprise = state.baseMode === 'random';
+  const surprise = state.baseMode === 'random' && state.artwork !== 'pick';
   if ($('flow-surprise')) $('flow-surprise').hidden = !surprise;
   if (surprise) {
     ++printRevision; three.viewer?.setAuto(false);
@@ -201,18 +213,19 @@ async function renderThree() {
     if ($('flow-placement')) $('flow-placement').hidden = true;
     return;
   }
-  const has3D = !!BLANKS[state.garment] && !three.failed;
+  const designPreview=state.artwork==='product-design'?PRODUCT_DESIGNS[state.productDesign?.id]:state.artwork==='pick'?PRODUCT_DESIGNS[state.sourceDesign]:null;
+  const has3D = !!(designPreview?.model || BLANKS[state.garment]) && !three.failed;
   $('stage-3d').hidden = !has3D; $('stage-none').hidden = has3D;
-  $('print-place').hidden = !has3D;
-  if ($('flow-placement')) $('flow-placement').hidden = !has3D || state.artwork !== 'pick';
-  $('stage-label').textContent = has3D ? 'The real blank in your colour with your artwork laid on. A preview — every print is placed by hand.' : '';
+  $('print-place').hidden = !has3D || state.artwork==='pick';
+  if ($('flow-placement')) $('flow-placement').hidden = true;
+  $('stage-label').textContent = designPreview&&state.artwork==='pick' ? 'Drag a selected graphic to place it. Switch to Rotate to turn the garment.' : designPreview ? 'Collection design reference. Your selected construction and fit are made to order.' : has3D ? 'The real blank in your colour with your artwork laid on. A preview — every print is placed by hand.' : '';
   const plan = sidePlan(), notes = [plan.note, state.color === 'random' ? 'Random colour — the house picks it; shown here undyed.' : ''].filter(Boolean);
   $('stage-note').hidden = !notes.length || !has3D || (state.artwork === 'artists-choice' && state.color !== 'random'); $('stage-note').textContent = notes.join(' ');
-  $('back-size').hidden = !hasBack() || !has3D; $('print-sides').hidden = !has3D;
+  $('back-size').hidden = !hasBack() || !has3D; $('print-sides').hidden = !has3D || !!designPreview;
   $('back-size').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.size === state.backSize)));
   if (!has3D) { renderNone(); return; }
   if (!three.wanted) return; // loads when the stage scrolls into view
-  if (await ensure3D()) { if (state.baseMode === 'random') return; tint(); three.viewer.setZoom($('zoom').value / 100); }
+  if (await ensure3D()) { if (state.baseMode === 'random' && state.artwork !== 'pick') return; tint(); three.viewer.setZoom($('zoom').value / 100); }
   else if (three.failed) renderThree();
 }
 // ---------- print placement (front print) ----------
@@ -349,6 +362,7 @@ $('pick-explicit').addEventListener('change', renderPicker);
 $('pick-filter')?.addEventListener('change', e => { pickTag = e.target.value; renderPicker(); });
 function renderSelectedArt() {
   const box = $('flow-selected-art'); if (!box) return;
+  if(state.artwork==='product-design'&&PRODUCT_DESIGNS[state.productDesign?.id]){const d=PRODUCT_DESIGNS[state.productDesign.id];box.replaceChildren(h('figure',{},h('img',{src:d.poster,alt:d.name}),h('figcaption',{textContent:d.name})));return;}
   const entries = state.artwork === 'pick' ? [...state.picks.front.map(id => ['Front', id]), ...state.picks.back.map(id => ['Back', id])] : [];
   box.replaceChildren(...(entries.length ? entries.map(([side, id]) => h('figure', {}, h('img', { src: artThumb(id), alt: artName(id) }), h('figcaption', { textContent: side }))) : [h('p', { className: 'fine', textContent: state.artwork === 'pick' ? 'No graphics selected yet.' : state.artwork === 'artists-choice' ? 'Artwork stays a surprise.' : 'Your saved artwork direction is preserved. Choose Random or Pick graphics to change it.' })]));
 }
@@ -379,26 +393,28 @@ function renderStage() {
   renderThree();
 }
 function renderPricing(quote) {
-  // Prices on choices are for one garment after making that exact selection.
-  for (const [group, select] of [['garment', garmentSelection], ['base-mode', modeSelection]]) {
-    document.querySelectorAll(`input[name="${group}"]`).forEach(input => {
-      const selected = select(state, input.value);
-      const option = selected && quoteGarment({ ...state, ...selected, quantity: 1 });
-      const label = input.closest('.choice'), title = label.querySelector('.choice-title');
-      let price = label.querySelector('.choice-price');
-      if (!price && option) { price = h('em', { className: 'choice-price' }); title.append(price); }
-      if (price) { price.textContent = option ? money(option.unitCents) : ''; price.title = 'Per garment, with the selected color and artwork'; }
-    });
+  // Garments show starting prices; construction buttons show their additional cost.
+  document.querySelectorAll('input[name="base-mode"]').forEach(input => {
+    const selected = modeSelection(state, input.value);
+    const parts = selected && garmentPriceParts({ ...state, ...selected, labMode: input.value });
+    const price = input.closest('.choice').querySelector('.choice-price');
+    if (price) { price.textContent = parts ? '+' + money(parts.constructionCents) : ''; price.title = 'Added to the garment starting price'; }
+  });
+  const total = $('flow-total'), nextTotal = quote ? money(quote.totalCents) : '—';
+  if (total.textContent !== nextTotal) {
+    total.textContent = nextTotal;
+    const tile = total.closest('.flow-price');
+    tile.classList.remove('is-updated'); void tile.offsetWidth; tile.classList.add('is-updated');
   }
-  $('flow-total').textContent = quote ? money(quote.totalCents) : '—';
   $('flow-total-label').textContent = quote?.quantity > 1 ? `${quote.quantity} garments · USD` : 'Item total · USD';
   if (!quote) { $('flow-price-detail').textContent = 'Choose a valid garment and options to see the price.'; return; }
-  const [base, color, art] = quote.lines;
-  const parts = [`${money(base.cents)} base`];
-  if (color.cents) parts.push(`${money(color.cents)} custom color`);
-  if (art.cents) parts.push(`${money(art.cents)} artwork`);
+  const lines = Object.fromEntries(quote.lines.map(line => [line.kind, line]));
+  const parts = [`Base ${money(lines.garment.cents)}`, `${{ random: 'Random', blank: 'Blank', 'cut-sew': 'Cut & Sew' }[state.baseMode]} ${money(lines.construction.cents)}`];
+  if (lines.color.cents) parts.push(`Custom color ${money(lines.color.cents)}`);
+  if (lines.artwork.cents) parts.push(`Artwork ${money(lines.artwork.cents)}`);
   const unit = parts.join(' + ');
-  $('flow-price-detail').textContent = (quote.quantity > 1 ? `${quote.quantity} × ${money(quote.unitCents)} each. Per item: ${unit}.` : `${unit}.`) + (art.cents ? '' : ' Artwork included.');
+  $('flow-price-detail').textContent = quote.quantity > 1 ? `${quote.quantity} × ${money(quote.unitCents)} each. ${unit}.` : unit;
+  document.querySelector('.flow-price-extras').textContent = (lines.artwork.cents ? '' : 'Artwork included. ') + 'Shipping and tax calculated separately.';
 }
 function renderReview() {
   const n = normalizeItem(displayConfig(), { artworkPool: POOL });
@@ -442,7 +458,7 @@ function renderTrust(info) {
   const items = [
     'Printed by hand in our Los Angeles studio.',
     state.construction === 'cut-sew' ? 'Cut and sewn from scratch in 100% cotton.' : 'Printed on a blank chosen to fit your size and colour — it may be vintage or new.',
-    info?.leadTimeDays != null ? `Made to order — about ${info.leadTimeDays} days to make, then shipping.` : 'Made to order — the production time is confirmed after you order.',
+    state.baseMode === 'random' ? 'Made to order — up to one week to make, then shipping.' : info?.leadTimeDays != null ? `Made to order — about ${info.leadTimeDays} days to make, then shipping.` : 'Made to order — the production time is confirmed after you order.',
     status?.checkout?.available ? 'Shipping and any tax are shown before you pay.' : 'Ordering is not open yet. You can save your design on this device.'
   ];
   if (status?.shippingNote) items.push(status.shippingNote);
@@ -474,6 +490,7 @@ function selectOption(e) {
   if (t.name === 'garment') {
     const selected = garmentSelection(state, t.value); if (!selected) return;
     const oldQuantity = state.quantity;
+    if(state.artwork==='pick'&&state.sourceDesign&&PRODUCT_DESIGNS[state.sourceDesign]?.garment!==selected.garment)state.sourceDesign=null;
     Object.assign(state, selected); leaveChaos();
     renderAll(); flow?.complete('garment');
     if (oldQuantity !== state.quantity) flow?.message('Cut & Sew is one piece per design. Quantity is now 1.');
@@ -482,7 +499,7 @@ function selectOption(e) {
   if (t.name === 'size') { state.size = t.value; delete $('lab-error').dataset.sticky; $('step-size').classList.remove('needs'); $('lab-error').textContent = ''; }
   if (t.name === 'fit') { state.fit = t.value; leaveChaos(); }
   if (t.name === 'color') { state.color = t.value; leaveChaos(); if (t.value === 'custom' && !state.customColor) state.customColor = $('color-picker').value; renderColors(); if (t.value === 'custom') $('color-picker').focus({ preventScroll: true }); }
-  if (t.name === 'artwork') { state.artwork = t.value; designIssue = ''; three.printError = ''; if (t.value === 'random-experimental' && !state.seed) state.seed = newSeed(); if (t.value !== 'random-experimental') leaveChaos(); renderArt(); if (t.value === 'pick') flow?.browse(true); }
+  if (t.name === 'artwork') { state.artwork = t.value; designIssue = ''; three.printError = ''; if (t.value === 'random-experimental' && !state.seed) state.seed = newSeed(); if (t.value !== 'random-experimental') leaveChaos(); renderArt(); if (t.value === 'pick') graphicsEditor?.sync(); }
   refresh();
   if (t.name === 'garment') flow?.complete('garment');
   if (t.name === 'color' && t.value !== 'custom') flow?.complete('color');
@@ -508,7 +525,7 @@ function applyChaos(full = true) {
   if (full) renderAll(); else { renderGarments(); renderSizes(); renderColors(); }
 }
 $('side-front').onclick = () => setSide('front'); $('side-back').onclick = () => setSide('back');
-function setSide(side) { state.side = side; three.viewer?.view(side); $('print-sides').querySelectorAll('.print-side').forEach((b, i) => b.classList.toggle('on', (i === 0) === (side === 'front'))); $('side-front').setAttribute('aria-pressed', String(side === 'front')); $('side-back').setAttribute('aria-pressed', String(side === 'back')); }
+function setSide(side) { state.side = side; three.viewer?.view(side); graphicsEditor?.setSide(side); $('print-sides').querySelectorAll('.print-side').forEach((b, i) => b.classList.toggle('on', (i === 0) === (side === 'front'))); $('side-front').setAttribute('aria-pressed', String(side === 'front')); $('side-back').setAttribute('aria-pressed', String(side === 'back')); }
 $('zoom').addEventListener('input', renderStage);
 $('back-size').addEventListener('click', e => { const b = e.target.closest('[data-size]'); if (!b) return; state.backSize = b.dataset.size; setSide('back'); renderStage(); renderReview(); });
 // Once someone starts choosing, the garment stops spinning so they can look at it.
@@ -713,7 +730,7 @@ function applyDesign(raw) {
   if (!n.ok) { designIssue = 'This design could not be loaded: ' + n.errors.join(' ') + ' Choose artwork again before adding this garment.'; return false; }
   if (n.item.product !== 'garment') { designIssue = 'This link does not contain a garment design. Choose your garment and artwork before adding it.'; return false; }
   const c = n.item;
-  Object.assign(state, { quantity: c.quantity ?? 1, construction: c.construction, garment: c.garment, size: raw.size ? c.size : null, fit: c.fit, color: c.color, customColor: c.customColor || '', artwork: c.artwork, seed: c.seed, chaos: !!c.chaos, print: c.print, picks: c.picks ? { front: [...c.picks.front], back: [...c.picks.back] } : { front: [], back: [] }, uploads: (c.uploads || []).map(asset => ({ ...asset })), backSize: c.backSize || 'full' });
+  Object.assign(state, { quantity: c.quantity ?? 1, construction: c.construction, garment: c.garment, size: raw.size ? c.size : null, fit: c.fit, color: c.color, customColor: c.customColor || '', artwork: c.artwork, seed: c.seed, chaos: !!c.chaos, print: c.print, productDesign: c.productDesign || null, sourceDesign:c.sourceDesign||null, graphicLayout:c.graphicLayout||null, picks: c.picks ? { front: [...c.picks.front], back: [...c.picks.back] } : { front: [], back: [] }, uploads: (c.uploads || []).map(asset => ({ ...asset })), backSize: c.backSize || 'full' });
   state.baseMode = c.construction === 'cut-sew' ? 'cut-sew' : raw.labMode === 'random' && c.color === 'random' ? 'random' : 'blank';
   designIssue = '';
   return true;
@@ -730,6 +747,16 @@ async function renderWorn() {
 }
 
 // ---------- start ----------
+const graphicsHost=h('section',{id:'lab-graphic-editor'});$('step-art').append(graphicsHost);
+graphicsEditor=createGarmentGraphicsEditor({host:graphicsHost,viewerHost:$('stage-frame'),getState:()=>state,getViewer:()=>three.viewer,getPrinter:()=>printer,
+ onActivate(){state.artwork='pick';renderArt();renderStage();renderReview();},
+ onSideChange(which){state.side=which;},
+ onChange(next){state.picks=next.picks;state.graphicLayout=next.graphicLayout;state.artwork='pick';designIssue='';three.printError='';
+  if(!graphicUpdateFrame)graphicUpdateFrame=requestAnimationFrame(()=>{graphicUpdateFrame=0;renderSelectedArt();renderReview();renderThree();});
+ },
+ onUpload(asset){if(!state.uploads.some(a=>a.id===asset.id))state.uploads.push(asset);},
+ onStatus(busy){uploadBusy=busy;renderReview();}
+});
 flow = createLabFlow({
   getBaseMode: () => state.baseMode,
   getSummary(step) {
@@ -755,7 +782,7 @@ flow = createLabFlow({
   const editId = params.get('edit'), line = editId && cart.get(editId);
   if (line?.config?.product === 'garment') {
     const c = line.config;
-    Object.assign(state, { quantity: c.quantity ?? 1, construction: c.construction, garment: c.garment, size: c.size, fit: c.fit, color: c.color, customColor: c.customColor || '', artwork: c.artwork, seed: c.seed || null, chaos: !!c.chaos, editId, print: { x: 0, y: 0, scale: 1, ...(c.print || {}) }, picks: { front: [...(c.picks?.front || [])], back: [...(c.picks?.back || [])] }, uploads: (c.uploads || []).map(asset => ({ ...asset })), backSize: c.backSize || 'full' });
+    Object.assign(state, { quantity: c.quantity ?? 1, construction: c.construction, garment: c.garment, size: c.size, fit: c.fit, color: c.color, customColor: c.customColor || '', artwork: c.artwork, seed: c.seed || null, chaos: !!c.chaos, editId, print: { x: 0, y: 0, scale: 1, ...(c.print || {}) }, productDesign: c.productDesign || null, sourceDesign:c.sourceDesign||null, graphicLayout:c.graphicLayout||null, picks: { front: [...(c.picks?.front || [])], back: [...(c.picks?.back || [])] }, uploads: (c.uploads || []).map(asset => ({ ...asset })), backSize: c.backSize || 'full' });
     state.baseMode = c.construction === 'cut-sew' ? 'cut-sew' : c.labMode === 'random' && c.color === 'random' ? 'random' : 'blank';
   } else if (line?.config?.product === 'mystery-pack') {
     Object.assign(packageState, line.config, { editId });
@@ -777,7 +804,7 @@ flow = createLabFlow({
     io.observe($('stage-frame'));
   }
   if (params.get('canceled')) { $('lab-notice').hidden = false; $('lab-notice').textContent = 'Checkout was canceled — nothing was charged, and your cart is still here.'; }
-  status = await labStatus();
+  status = await labStatus();graphicsEditor?.setUploadAvailable(!!status);
   if (status?.notice) { $('lab-notice').hidden = false; $('lab-notice').textContent = status.notice; }
   renderGarments(); renderReview(); renderPackageAvailability(); renderPackagePolicy(); renderCatalog();
 })();

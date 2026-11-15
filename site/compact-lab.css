@@ -1,0 +1,150 @@
+.compact-lab{--cgl-ink:#20231e;--cgl-paper:#eeeadd;--cgl-acid:#d9ef58;--cgl-line:#bdb9aa;margin-top:20px;color:var(--cgl-ink);background:var(--cgl-paper);border:1px solid var(--cgl-ink);box-shadow:5px 5px 0 var(--cgl-ink);font-family:var(--sans,system-ui,sans-serif)}
+/* stickers.js appends its floating drag copy to body, outside the lab. */
+.paste-ghost{position:fixed;z-index:9999;pointer-events:none;transform:translate(-50%,-50%) rotate(-6deg) scale(1.1);filter:drop-shadow(0 16px 20px rgba(40,25,10,.4))}
+.compact-lab *{box-sizing:border-box}.compact-lab button,.compact-lab input,.compact-lab a{font:inherit}.compact-lab button{color:inherit;cursor:pointer}.compact-lab button:disabled{cursor:default;opacity:.4}.compact-lab button:focus-visible,.compact-lab input:focus-visible,.compact-lab a:focus-visible,.cgl-stage:focus-visible{outline:3px solid #557006;outline-offset:3px}.compact-lab [hidden]{display:none!important}
+.cgl-console-top{display:flex;justify-content:space-between;gap:12px;padding:11px 16px;background:var(--cgl-ink);color:var(--cgl-paper);font:700 10px/1.3 var(--sans,system-ui,sans-serif);letter-spacing:.14em}.cgl-live{color:var(--cgl-acid)}
+.cgl-layout{display:grid;grid-template-columns:1.05fr 1fr;min-width:0}.cgl-view{padding:17px 20px 13px;border-right:1px solid var(--cgl-line);min-width:0}.cgl-step{display:block;font-size:9px;font-weight:700;letter-spacing:.13em;color:#626452}.cgl-garments{display:grid;grid-template-columns:repeat(4,1fr);margin-top:10px;border:1px solid var(--cgl-ink)}.cgl-garments button{border:0;border-right:1px solid var(--cgl-ink);background:transparent;padding:9px 3px;font-size:12px;font-weight:600}.cgl-garments button:last-child{border:0}.cgl-garments button[aria-pressed=true]{background:var(--cgl-ink);color:var(--cgl-acid)}
+.cgl-stage-wrap{position:relative}.cgl-stage{position:relative;height:285px;isolation:isolate;touch-action:pan-y;cursor:grab;overflow:hidden;background-image:radial-gradient(ellipse at 50% 85%,#8c907627,transparent 43%),linear-gradient(#d5d2c63d 1px,transparent 1px),linear-gradient(90deg,#d5d2c63d 1px,transparent 1px);background-size:auto,24px 24px,24px 24px}.cgl-stage:active{cursor:grabbing}.cgl-stage canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .3s;z-index:1}.cgl-stage.is-ready canvas{opacity:1}.cgl-fallback{position:absolute;width:220px;height:245px;left:50%;top:45%;transform:translate(-50%,-50%);color:#898c80;transition:opacity .25s}.cgl-fallback svg{width:100%;height:100%;filter:drop-shadow(0 10px 6px #1e241c14)}.cgl-stage.is-ready .cgl-fallback{opacity:0}.cgl-fallback-art{position:absolute;top:29%;left:36%;width:29%;height:43%;display:flex;align-items:center;justify-content:center;flex-direction:column}.cgl-fallback-art img{display:block;min-height:0;max-height:100%;object-fit:contain;width:100%;flex:1}.cgl-fallback-art[data-count="3"] img{max-height:33%}.cgl-fallback-art[data-count="2"] img{max-height:50%}
+.cgl-loading{position:absolute;bottom:24px;left:12px;right:12px;text-align:center;font-size:10px;color:#666956;z-index:2}.cgl-drop{position:absolute;inset:13px;display:grid;place-items:center;background:#d9ef58cb;border:2px dashed var(--cgl-ink);opacity:0;pointer-events:none;z-index:5;font-weight:700;font-size:12px}.sticker-dragging .cgl-drop{opacity:.5}.cgl-stage.is-over .cgl-drop{opacity:1}.cgl-drag-hint{position:absolute;bottom:9px;left:0;font-size:8px;letter-spacing:.1em;pointer-events:none;color:#626452}.cgl-spin{position:absolute;bottom:4px;right:0;border:1px solid #8f9381;background:var(--cgl-paper);border-radius:20px;font-size:10px!important;padding:6px 9px;z-index:3}.cgl-retry{position:absolute;top:10px;right:5px;z-index:3;background:var(--cgl-acid);border:1px solid var(--cgl-ink);font-size:10px!important;padding:7px 10px}.cgl-item-info{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid var(--cgl-line);padding-top:11px}.cgl-garment-title{display:block;font-family:var(--display,Georgia,serif);font-size:22px;line-height:1.2}.cgl-construction{display:block;font-size:10px;color:#626452;margin-top:3px}.cgl-price{font-size:22px;font-weight:600}
+.cgl-editor{padding:17px 20px 14px;min-width:0;display:flex;flex-direction:column}.cgl-editor-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}.cgl-count{font-size:10px;color:#626452}.cgl-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:10px 0 12px}.cgl-segment{display:flex;border:1px solid var(--cgl-ink)}.cgl-segment button{border:0;background:transparent;padding:7px 16px;font-size:11px}.cgl-segment button[aria-pressed=true]{background:var(--cgl-ink);color:var(--cgl-paper)}.cgl-swatches{display:flex;gap:9px}.cgl-swatches button{display:flex;align-items:center;gap:5px;font-size:10px;background:none;border:0;padding:4px 0}.cgl-swatches button:before{content:"";width:15px;height:15px;border-radius:50%;background:var(--swatch);border:1px solid #818473}.cgl-swatches button[aria-pressed=true]:before{outline:2px solid var(--cgl-ink);outline-offset:2px}
+.cgl-search-label{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;font-size:11px}.cgl-search-label input{min-width:0;width:53%;padding:7px 9px;border:1px solid var(--cgl-line);background:#f7f4e9;font-size:11px}.cgl-palette{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;min-height:136px}.cgl-palette button{position:relative;display:flex;flex-direction:column;justify-content:space-between;align-items:center;min-width:0;padding:4px 5px;border:1px solid var(--cgl-line);background:#faf7ec;overflow:hidden;transition:transform .15s,box-shadow .15s}.cgl-palette button:hover{transform:translateY(-2px);box-shadow:0 3px 0 var(--cgl-ink)}.cgl-palette button[aria-pressed=true]{border-color:var(--cgl-ink);background:#edf3c4;box-shadow:inset 0 0 0 1px var(--cgl-ink)}.cgl-palette img{height:42px;width:100%;object-fit:contain;mix-blend-mode:multiply}.cgl-palette button span{display:block;width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:8px;line-height:16px}.cgl-no-art{grid-column:1/-1;align-self:center;font-size:12px;color:#626452}.cgl-pagination{display:flex;justify-content:space-between;align-items:center;margin-top:5px}.cgl-page-count{font-size:9px;color:#626452}.cgl-pagination button{border:0;background:none;padding:3px 9px;font-size:15px}.cgl-picks{display:flex;gap:4px;flex-wrap:wrap;min-height:24px;margin:4px 0}.cgl-picks button{font-size:9px;background:#dcded0;border:0;border-radius:20px;padding:5px 8px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cgl-actions{display:flex;justify-content:space-between;align-items:center;gap:8px}.cgl-shuffle{border:1px solid var(--cgl-ink);background:var(--cgl-acid);padding:6px 11px;font-size:11px!important;font-weight:600!important}.cgl-text-button{background:none;border:0;padding:5px 0;font-size:10px!important;text-decoration:underline;text-underline-offset:3px}.cgl-status{min-height:28px;font-size:10px;line-height:1.4;margin:8px 0;color:#626452}.cgl-make{display:block;text-align:center;background:var(--cgl-ink);color:var(--cgl-acid)!important;text-decoration:none!important;padding:12px 10px;font-weight:600!important;font-size:12px!important;margin-top:auto}.cgl-make:hover{background:#3d4431}.cgl-note{font-size:8px;line-height:1.4;color:#626452;margin:7px 0 0}.cgl-printed .cgl-stage-wrap{animation:cgl-stamp .35s ease-out}@keyframes cgl-stamp{40%{transform:scale(1.018)}}
+@media(max-width:900px){.cgl-view,.cgl-editor{padding-left:14px;padding-right:14px}.cgl-toolbar{gap:8px}.cgl-segment button{padding:7px 11px}.cgl-swatches{gap:7px}.cgl-search-label{align-items:flex-start;flex-direction:column;gap:6px}.cgl-search-label input{width:100%}.cgl-stage{height:310px}}
+@media(max-width:600px){.cgl-layout{grid-template-columns:1fr}.cgl-view{border-right:0;border-bottom:1px solid var(--cgl-line);padding:14px}.cgl-stage{height:250px}.cgl-editor{padding:14px}.cgl-garments button{padding:11px 4px}.cgl-console-top{font-size:8px;padding:10px 12px}.cgl-search-label{flex-direction:row;align-items:center}.cgl-search-label input{width:55%}.cgl-palette{grid-template-columns:repeat(4,minmax(0,1fr))}.cgl-palette button{min-height:70px}.cgl-palette img{height:48px}.cgl-stage-wrap{margin-top:3px}.cgl-status{font-size:11px}.cgl-note{font-size:9px}.cgl-palette button span{font-size:9px}.cgl-toolbar{margin-bottom:14px}.cgl-segment button{padding:9px 18px}.cgl-swatches button{padding:10px 0}.cgl-picks button{padding:8px 10px}.cgl-pagination button{padding:7px 12px}}
+@media(prefers-reduced-motion:reduce){.compact-lab *{animation:none!important;transition:none!important;scroll-behavior:auto!important}.cgl-palette button:hover{transform:none}}
+
+/* An original old-school RPG crafting panel: stone frame, brass, wood and parchment. */
+.compact-lab{--cgl-ink:#17130d;--cgl-paper:#d9c9a5;--cgl-acid:#e2bd64;--cgl-line:#817153;color:#e7d5aa;background:linear-gradient(120deg,#4c473a,#353127);border:4px solid;border-color:#96846a #1b1710 #1b1710 #89765a;box-shadow:0 0 0 2px #2a2318,5px 6px 0 #14120ed9;font-family:Georgia,'Times New Roman',serif}
+.compact-lab button,.compact-lab input,.compact-lab a{font-size:12px}.compact-lab button:focus-visible,.compact-lab input:focus-visible,.compact-lab a:focus-visible,.compact-lab .cgl-stage:focus-visible{outline:2px solid #f9d878;outline-offset:3px}
+.compact-lab .cgl-console-top{background:linear-gradient(#6e6048,#493d2b);border-bottom:3px solid #1f190f;color:#f6d878;text-shadow:1px 2px #1c170f;letter-spacing:.06em;font:bold 12px/1.3 Georgia,serif;padding:12px 14px}.compact-lab .cgl-live{color:#d9c79e}.compact-lab .cgl-view{border-right-color:#201b12;background:linear-gradient(90deg,#423b2d55,transparent)}.compact-lab .cgl-step{font:bold 11px/1.3 Georgia,serif;color:#d7bf88;letter-spacing:.04em}.compact-lab .cgl-editor-heading{padding-bottom:2px}.compact-lab .cgl-count{font-size:12px;color:#d9c9a5}
+.compact-lab .cgl-garments{border:0;gap:4px;margin-top:9px}.compact-lab .cgl-garments button{border:2px solid;border-color:#8c7958 #211b11 #211b11 #7b694c;background:linear-gradient(#64553d,#453824);color:#e6cca0;text-shadow:1px 1px #17130d;padding:8px 3px;font:600 12px Georgia,serif}.compact-lab .cgl-garments button[aria-pressed=true]{border-color:#e7c77b #796035 #796035 #e7c77b;background:linear-gradient(#9e8150,#6a532d);color:#fff1b0}
+.compact-lab .cgl-stage{margin-top:10px;background-color:#28271f;background-image:radial-gradient(ellipse at 50% 45%,#8c79444d,transparent 65%),linear-gradient(#9b8b6230 1px,transparent 1px),linear-gradient(90deg,#9b8b6230 1px,transparent 1px);background-size:auto,28px 28px,28px 28px;border:2px solid;border-color:#17140e #716346 #716346 #17140e}.compact-lab .cgl-loading{color:#ddc894;font:12px/1.3 Georgia,serif}.compact-lab .cgl-fallback{color:#999079}.compact-lab .cgl-drag-hint{color:#d1b77f;font:10px Georgia,serif;bottom:10px;left:9px}.compact-lab .cgl-spin{color:#efd596;background:linear-gradient(#5e513a,#382e1e);border:2px solid;border-color:#9a8355 #1d180f #1d180f #9a8355;border-radius:0;bottom:8px;right:8px;font:12px Georgia,serif!important;padding:5px 8px}.compact-lab .cgl-retry{background:#8e713d;color:#fff0be;border-color:#ceb77a;font-size:12px!important}.compact-lab .cgl-drop{background:#b8994acf;color:#20180d;border-color:#f1d17f}
+.compact-lab .cgl-item-info{border-top:0;padding-top:11px}.compact-lab .cgl-garment-title{color:#f2d28e;font:24px/1.1 Georgia,serif;text-shadow:1px 2px #14120c}.compact-lab .cgl-construction{font:12px/1.3 Georgia,serif;color:#c6ba99}.compact-lab .cgl-price{font:24px Georgia,serif;color:#f4d46c;text-shadow:1px 2px #17130d}
+.compact-lab .cgl-toolbar{gap:10px}.compact-lab .cgl-segment{border:1px solid #18140c}.compact-lab .cgl-segment button{background:#29251b;color:#cbbd96;border:1px solid;border-color:#7e6c4c #17130c #17130c #7e6c4c;font:12px Georgia,serif;padding:7px 13px}.compact-lab .cgl-segment button[aria-pressed=true]{background:#8b723f;color:#fff0b1;border-color:#d6b96b #4d3e22 #4d3e22 #d6b96b}.compact-lab .cgl-swatches button{color:#e0cba0;font:12px Georgia,serif}.compact-lab .cgl-swatches button[aria-pressed=true]:before{outline-color:#f0cd72}.compact-lab .cgl-search-label{font:12px Georgia,serif;color:#dcca9f}.compact-lab .cgl-search-label input{background:#262319;border:2px solid;border-color:#16130c #84714b #84714b #16130c;color:#f2dfac;font:12px Georgia,serif;padding:6px 8px}.compact-lab .cgl-search-label input::placeholder{color:#b5a680}
+.compact-lab .cgl-palette{gap:5px;min-height:144px}.compact-lab .cgl-palette button{background:linear-gradient(#554b35,#342c1c);border:2px solid;border-color:#82704a #17130c #17130c #82704a;color:#e8d3a0;box-shadow:inset 0 0 6px #17130c;padding:4px 4px 3px}.compact-lab .cgl-palette img{background:#d4c7a5;mix-blend-mode:normal;box-shadow:0 1px 2px #1a140c;height:42px;padding:2px}.compact-lab .cgl-palette button span{font:12px/17px Georgia,serif}.compact-lab .cgl-palette button:hover{box-shadow:inset 0 0 0 1px #d3af56,0 2px 0 #17130c;transform:translateY(-1px)}.compact-lab .cgl-palette button[aria-pressed=true]{background:#806b3c;border-color:#f1d575 #9c7738 #9c7738 #f1d575;box-shadow:inset 0 0 0 1px #d1aa52;color:#fff0a6}.compact-lab .cgl-no-art{font:12px/1.4 Georgia,serif;color:#d7c7a2}
+.compact-lab .cgl-page-count{font:11px Georgia,serif;color:#c0b190}.compact-lab .cgl-pagination button{color:#f0d07b;font-size:18px}.compact-lab .cgl-picks{margin:5px 0;gap:5px}.compact-lab .cgl-picks button{border:1px solid #8f7847;border-radius:0;background:#2b261b;color:#dccba3;font:12px/1.2 Georgia,serif;padding:4px 7px}.compact-lab .cgl-shuffle{color:#f9e29c;border:2px solid;border-color:#baa36a #302615 #302615 #baa36a;background:linear-gradient(#7f6941,#574322);font:600 12px Georgia,serif!important;padding:7px 12px}.compact-lab .cgl-text-button{color:#d2be91;font:12px Georgia,serif!important}.compact-lab .cgl-status{color:#d6c7a2;font:12px/1.35 Georgia,serif;min-height:32px;margin:8px 0}.compact-lab .cgl-make{background:linear-gradient(#b29458,#7b5d2b);color:#fff1ae!important;border:2px solid;border-color:#e3c989 #49351a #49351a #d4b877;box-shadow:0 2px 0 #1b160d;text-shadow:1px 1px #392709;font:600 14px/1.2 Georgia,serif!important;letter-spacing:.02em;padding:11px 8px}.compact-lab .cgl-make:hover{background:linear-gradient(#c2a264,#896a34)}.compact-lab .cgl-note{font:11px/1.35 Georgia,serif;color:#bfb18e;margin-top:8px}
+@media(max-width:600px){.compact-lab .cgl-console-top{font-size:11px;padding:11px 10px}.compact-lab .cgl-garments button{padding:10px 3px}.compact-lab .cgl-view{border-bottom-color:#1a160e}.compact-lab .cgl-stage{height:250px}.compact-lab .cgl-palette img{height:48px}.compact-lab .cgl-picks button{padding:7px 9px}.compact-lab .cgl-segment button{padding:9px 16px}.compact-lab .cgl-toolbar{gap:10px}}
+
+/* The garment half of the shared sticker workbench. */
+.unified-workshop .compact-lab{margin:0;min-width:0;border:0;border-left:4px ridge #85714e;box-shadow:none;background:linear-gradient(90deg,#28231944,transparent);display:flex;flex-direction:column}
+.unified-workshop .cgl-console-top{display:none}
+.unified-workshop .cgl-layout{display:flex;flex-direction:column;flex:1;min-width:0}
+.unified-workshop .cgl-view{padding:20px 18px 13px;border-right:0;border-bottom:1px solid #6a5a3d}
+.unified-workshop .cgl-garments{margin-top:12px;gap:5px}.unified-workshop .cgl-garments button{padding:10px 3px}
+.unified-workshop .cgl-toolbar{margin:14px 0 9px;justify-content:space-between;gap:10px}
+.unified-workshop .cgl-stage{height:285px;margin-top:0}
+.unified-workshop .cgl-item-info{padding-top:14px}
+.unified-workshop .cgl-editor{padding:13px 18px 18px;border:0;flex:1}
+.unified-workshop .cgl-editor-heading{margin-bottom:7px}.unified-workshop .cgl-picks{margin:0 0 10px;min-height:24px}
+.unified-workshop .cgl-actions{margin:0 0 3px}.unified-workshop .cgl-status{margin:10px 0;min-height:33px}
+.unified-workshop .cgl-make{margin-top:auto}.unified-workshop .cgl-note{margin-bottom:0}
+@media(max-width:1100px){.unified-workshop .cgl-view{padding:17px 14px 12px}.unified-workshop .cgl-editor{padding:12px 14px 16px}.unified-workshop .cgl-toolbar{gap:8px}.unified-workshop .cgl-swatches{gap:7px}.unified-workshop .cgl-segment button{padding:7px 10px}.unified-workshop .cgl-garments button{font-size:11px}}
+@media(max-width:760px){.unified-workshop .compact-lab{border-left:0;background:none}.unified-workshop .cgl-view{padding:14px;border-bottom:1px solid #6a5a3d}.unified-workshop .cgl-stage{height:270px}.unified-workshop .cgl-toolbar{margin-top:13px;gap:8px}.unified-workshop .cgl-swatches button{padding:7px 0}.unified-workshop .cgl-garments button{font-size:12px}.unified-workshop .cgl-editor{padding:12px 14px 15px}.unified-workshop .cgl-picks button{padding:7px}.unified-workshop .cgl-segment button{padding:8px 14px}.unified-workshop .cgl-status{font-size:12px;min-height:30px}.unified-workshop .cgl-note{font-size:10px}}
+
+/* Keep the garment controls close; reserve the paper for the collage. */
+.unified-workshop .cgl-studio .cgl-view{padding:17px 18px 12px;border-bottom:0}
+.unified-workshop .cgl-studio .cgl-stage{height:350px;margin-top:12px}
+.unified-workshop .cgl-studio .cgl-turn-tools{display:flex;align-items:stretch;justify-content:space-between;gap:9px;margin-top:8px}
+.unified-workshop .cgl-studio .cgl-turn-tools .cgl-segment{flex:1;display:flex;max-width:270px}
+.unified-workshop .cgl-studio .cgl-turn-tools .cgl-segment button{flex:1;min-height:44px;padding:8px 12px}
+.unified-workshop .cgl-studio .cgl-turn-tools .cgl-spin{position:static;min-width:110px;min-height:44px;margin:0;padding:8px;font-size:12px!important}
+.unified-workshop .cgl-studio .cgl-fabric-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
+.unified-workshop .cgl-studio .cgl-item-info{padding:0;flex:1;min-width:0;gap:12px}
+.unified-workshop .cgl-studio .cgl-garment-title,.unified-workshop .cgl-studio .cgl-price{font-size:21px}
+.unified-workshop .cgl-studio .cgl-swatches{flex:none;gap:8px}
+.unified-workshop .cgl-studio .cgl-swatches button{min-height:44px}
+.unified-workshop .cgl-studio .cgl-editor{flex:0;padding:0 18px 16px;border:0;gap:9px}
+.unified-workshop .cgl-studio .cgl-selection{display:flex;align-items:center;gap:8px}
+.unified-workshop .cgl-studio .cgl-picks{flex:1;min-width:0;margin:0;min-height:0;gap:5px}
+.unified-workshop .cgl-studio .cgl-picks button{min-height:36px;max-width:150px;margin:0;padding:7px 9px;font-size:11px}
+.unified-workshop .cgl-studio .cgl-text-button{min-height:44px;flex:none;padding:8px;font-size:11px!important}
+.unified-workshop .cgl-studio .cgl-make{margin:0;min-height:46px;padding:12px 10px}
+.unified-workshop .cgl-studio .cgl-status.snapshot-a11y{min-height:0;margin:0}
+@media(max-width:1100px){.unified-workshop .cgl-studio .cgl-fabric-row{gap:8px}.unified-workshop .cgl-studio .cgl-construction{font-size:11px}.unified-workshop .cgl-studio .cgl-swatches button{font-size:0}.unified-workshop .cgl-studio .cgl-swatches{gap:10px}}
+@media(max-width:960px){
+ .unified-workshop .compact-lab.cgl-studio .cgl-view{padding:10px 12px 9px;background:none;border:0}
+ .unified-workshop .compact-lab.cgl-studio .cgl-stage{height:clamp(180px,26svh,230px);margin:0}
+ .unified-workshop .compact-lab.cgl-studio .cgl-turn-tools{margin-top:7px;gap:7px}
+ .unified-workshop .compact-lab.cgl-studio .cgl-turn-tools .cgl-spin{min-width:100px;font-size:11px!important}
+ .unified-workshop .compact-lab.cgl-studio .cgl-turn-tools .cgl-segment{max-width:none}
+ .unified-workshop .compact-lab.cgl-studio .cgl-garments{margin-top:8px}
+ .unified-workshop .compact-lab.cgl-studio .cgl-fabric-row{margin-top:4px;gap:10px}
+ .unified-workshop .compact-lab.cgl-studio .cgl-item-info{padding:0}
+ .unified-workshop .compact-lab.cgl-studio .cgl-swatches{gap:4px}
+ .unified-workshop .compact-lab.cgl-studio .cgl-swatches button{min-height:40px;min-width:40px;padding:8px}
+ .unified-workshop .compact-lab.cgl-studio .cgl-editor{padding:0 12px 12px;border-bottom:3px ridge #8c7956;gap:8px}
+ .unified-workshop .compact-lab.cgl-studio .cgl-picks button{min-height:36px;max-width:122px;padding:7px 8px}
+ .unified-workshop .compact-lab.cgl-studio .cgl-make{min-height:44px;padding:11px}
+}
+.unified-workshop .cgl-studio .cgl-make[aria-disabled=true]{opacity:.55;cursor:wait}
+
+/* A paired workbench: equal visual panels, with all garment tools kept nearby. */
+#codex.unified-workshop{--lab-visual-height:clamp(160px,calc(100svh - 530px),330px);max-width:1100px;padding-top:12px;scroll-margin-top:var(--workshop-top,12px)}
+#codex.unified-workshop .section-head{gap:14px;align-items:center;margin-bottom:10px;padding-bottom:10px}
+#codex.unified-workshop .section-head .kicker{display:none}
+#codex.unified-workshop .section-head h2{font-size:clamp(30px,3vw,36px);line-height:1.05}
+#codex.unified-workshop .section-head>.ghost{flex:none;font-size:12px;min-height:44px;display:flex;align-items:center}
+#codex.unified-workshop .workshop-console{min-width:0}
+#codex.unified-workshop .workshop-console-top{gap:12px;padding:8px 12px;font-size:10px;line-height:1.4}
+#codex.unified-workshop .workshop-console-top>span:last-child{font-size:10px}
+#codex.unified-workshop .workshop-bench{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px;align-items:start;min-width:0}
+#codex.unified-workshop .workshop-bench>#codex-lab{grid-column:1;grid-row:1}
+#codex.unified-workshop .workshop-bench>.workshop-art{grid-column:2;grid-row:1}
+#codex.unified-workshop .compact-lab.cgl-studio{margin:0;padding:0;min-width:0;width:100%;border:0;box-shadow:none;background:none}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-layout{display:flex;flex-direction:column;gap:6px;min-width:0}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-view{display:flex;flex-direction:column;gap:6px;min-width:0;padding:0;border:0;background:none}
+#codex.unified-workshop .workshop-art{display:flex;flex-direction:column;gap:6px;min-width:0;width:100%;padding:0;margin:0;border:0;background:none;box-shadow:none}
+#codex.unified-workshop .workshop-art-heading,#codex.unified-workshop .compact-lab.cgl-studio .cgl-view>.cgl-step{display:flex;align-items:center;justify-content:space-between;gap:10px;height:44px;min-height:44px;margin:0;padding:0}
+#codex.unified-workshop .workshop-art h3,#codex.unified-workshop .compact-lab.cgl-studio .cgl-step{margin:0;font:400 26px/1.1 var(--blackletter,Georgia,serif);letter-spacing:0;text-transform:none}
+#codex.unified-workshop .wall-motion-tools{display:flex;gap:6px;flex:none}
+#codex.unified-workshop .wall-motion-tools button{width:44px;height:44px;min-width:44px;min-height:44px;padding:0}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-stage-wrap{width:100%;min-width:0;margin:0}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-stage,#codex.unified-workshop .workshop-studio .sticker-board{box-sizing:border-box;width:100%;height:var(--lab-visual-height);min-height:0;margin:0;flex:none}
+#codex.unified-workshop .workshop-studio .sticker-board{display:grid;grid-template-columns:20px minmax(0,1fr) 20px;grid-template-rows:minmax(0,1fr);outline:0}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-fallback{height:85%;width:auto;aspect-ratio:220/245;top:46%}
+#codex.unified-workshop .workshop-art-tools{display:flex;gap:6px;margin:0}
+#codex.unified-workshop .workshop-art-tools button{min-height:44px;padding:8px 10px;font-size:12px}
+#codex.unified-workshop #wall-browse{flex:1;min-width:0;gap:6px}
+#codex.unified-workshop #wall-upload{min-width:80px;flex:none}
+#codex.unified-workshop .workshop-wall-hint{margin:0;font-size:11px;line-height:1.4}
+#codex.unified-workshop .workshop-upload-message{margin:0;font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-turn-tools{display:flex;align-items:stretch;justify-content:space-between;gap:6px;margin:0}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-turn-tools .cgl-segment{flex:1;max-width:none;min-width:0}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-turn-tools .cgl-segment button{flex:1;min-width:0;min-height:44px;padding:7px 8px;font-size:11px}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-turn-tools .cgl-spin{position:static;flex:none;min-width:96px;min-height:44px;margin:0;padding:7px 8px;font-size:11px!important}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-garments{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:0}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-garments button{min-width:0;min-height:44px;padding:8px 2px;font-size:11px}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-fabric-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;margin:0}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-item-info{display:flex;align-items:center;flex:1;min-width:0;gap:8px;padding:0;border:0}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-garment-title,#codex.unified-workshop .compact-lab.cgl-studio .cgl-price{font-size:18px;line-height:1.2}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-construction{display:none}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-swatches{flex:none;gap:4px}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-swatches button{display:flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:8px;font-size:0}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-swatches button::before{width:19px;height:19px}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-editor{display:flex;flex-direction:column;flex:none;gap:6px;min-width:0;padding:0;margin:0;border:0}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-selection{display:flex;align-items:center;gap:6px;min-width:0;margin:0}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-picks{display:flex;flex:1;flex-wrap:nowrap;align-items:center;gap:5px;min-width:0;min-height:0;margin:0;padding:3px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-picks button{flex:0 0 auto;min-height:38px;max-width:130px;margin:0;padding:7px 8px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-text-button{flex:none;min-height:44px;padding:7px;font-size:11px!important}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-make{display:flex;align-items:center;justify-content:center;min-height:44px;margin:0;padding:10px;font-size:12px!important;line-height:1.3}
+#codex.unified-workshop .compact-lab.cgl-studio .cgl-status.snapshot-a11y{min-height:0;margin:0;padding:0}
+
+@media(max-width:600px){
+ #codex.unified-workshop{--lab-visual-height:clamp(120px,16svh,160px);padding-top:8px}
+ #codex.unified-workshop .section-head{gap:10px;align-items:center}
+ #codex.unified-workshop .section-head .kicker{font-size:9px}
+ #codex.unified-workshop .section-head h2{font-size:30px}
+ #codex.unified-workshop .section-head>.ghost{max-width:110px;padding:8px;font-size:11px;text-align:center;justify-content:center}
+ #codex.unified-workshop .workshop-bench{display:block;padding:10px}
+ #codex.unified-workshop .compact-lab.cgl-studio .cgl-view{padding:0;gap:6px}
+ #codex.unified-workshop .compact-lab.cgl-studio .workshop-art{padding:0;margin:0;border:0;gap:6px}
+ #codex.unified-workshop .workshop-art h3,#codex.unified-workshop .compact-lab.cgl-studio .cgl-step{font-size:22px}
+ #codex.unified-workshop .workshop-art-heading,#codex.unified-workshop .compact-lab.cgl-studio .cgl-view>.cgl-step{height:36px;min-height:36px}
+ #codex.unified-workshop .wall-motion-tools button{width:36px;height:36px;min-width:36px;min-height:36px}
+ #codex.unified-workshop .workshop-studio .sticker-board{grid-template-columns:17px minmax(0,1fr) 17px}
+ #codex.unified-workshop .compact-lab.cgl-studio .cgl-editor{padding:0;border:0}
+ #codex.unified-workshop .workshop-wall-hint{font-size:11px}
+ #codex.unified-workshop .compact-lab.cgl-studio .cgl-picks button{max-width:115px}
+}
+
+/* Keep the shared script typography inside the compact control rows. */
+#codex.unified-workshop [data-btr-script-button]{--btr-script-size:20px;min-height:44px!important;padding-block:6px!important}
