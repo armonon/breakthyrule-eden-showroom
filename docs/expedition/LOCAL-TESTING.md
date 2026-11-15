@@ -18,7 +18,9 @@ Open the printed localhost address plus /expedition.html. /showroom.html remains
 
 ## Solo checks
 
-Enter Solo. Movement uses WASD and Shift, Space jump/ledge catch, C crouch/slide, E bell/page interaction, F flashlight, G defensive flare and R reload. The View button switches cameras. Bail defaults to B and can be remapped to N in expedition preferences. Reset position works only during safe solo exploration. The bell starts an announced countdown, then the hunt. Recover all eight pages and reach the pyramid. Check loss/retry and Return to Eden as well as winning.
+Enter Solo. Default controls use WASD/arrows and Shift, Space jump/ledge catch, C crouch/slide, E bell/page interaction, F flashlight, G defensive flare and R reload. K or the View button switches cameras; B bails or recovers, J opens the journal and P opens Play. Reset position works only during safe solo exploration. The bell starts an announced countdown, then the hunt. Recover all eight pages and reach the pyramid. Check loss/retry and Return to Eden as well as winning.
+
+Open Controls and comfort → Remap keyboard and mouse in the expedition menu, or Controls & help → Remap keyboard and mouse in Eden. Every listed game action accepts a primary and alternate physical key or mouse button. Settings persist in this browser, conflicts within the same game context are rejected, and Reset restores defaults. Escape cancels capture and Tab retains menu navigation. Touch actions keep their named behavior after keyboard remapping. Hold Jump to use the variable-height jump; drag outside the joystick circle to sprint and back inside to walk.
 
 The settings panel provides independent view sensitivity/FOV, motion-effect switches, hold/toggle controls and optional aim assistance. Reduced-motion defaults disable camera effects. Three total flares use a two-round magazine plus one reserve. The Watcher cannot be killed.
 
