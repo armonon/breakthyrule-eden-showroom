@@ -1,3 +1,4 @@
+import { PRODUCT_DESIGNS, GRAPHIC_COLORS, normalizeStudioProduct, priceStudioProduct, describeStudioProduct } from './product-options.mjs';
 // Validation and pricing for Garment Lab items. Pure functions, shared by browser and server.
 // The browser uses them to show prices; the server re-runs them on every checkout and ignores any
 // price a browser sends.
@@ -28,6 +29,8 @@ export function normalizeItem(raw, { artworkPool = [] } = {}) {
   if (!raw || typeof raw !== 'object') return { ok: false, errors: ['Item is missing.'] };
   const product = raw.product;
 
+  if (product === 'studio-product') return normalizeStudioProduct(raw, artworkPool);
+
   if (product === 'garment') {
     const construction = raw.construction;
     const labMode = raw.labMode === 'random' ? 'random' : construction === 'cut-sew' ? 'cut-sew' : 'blank';
@@ -51,6 +54,12 @@ export function normalizeItem(raw, { artworkPool = [] } = {}) {
     const customColor = color === 'custom' ? clean(raw.customColor, CUSTOM_COLOR_MAX) : '';
     if (color === 'custom' && customColor.length < 2) errors.push('Name the custom color you want.');
     if (!ARTWORK[artwork]) errors.push('Choose an artwork direction.');
+    let productDesign = null;
+    if (artwork === 'product-design') {
+      const ref = PRODUCT_DESIGNS[raw.productDesign?.id];
+      if (!ref) errors.push('Choose a valid collection design.');
+      else productDesign = { id: ref.id, graphic: GRAPHIC_COLORS.includes(raw.productDesign?.graphic) ? raw.productDesign.graphic : 'Red' };
+    }
     const maxQ = construction === 'cut-sew' ? 1 : MAX_QUANTITY;
     const quantity = raw.quantity == null ? 1 : qty(raw.quantity, maxQ);
     if (!quantity) errors.push(construction === 'cut-sew' ? 'Each cut & sew piece is one of one — add another for a second piece.' : `Quantity must be 1–${MAX_QUANTITY}.`);
@@ -72,7 +81,7 @@ export function normalizeItem(raw, { artworkPool = [] } = {}) {
     }
     const print = normalizePrint(raw.print);
     const backSize = BACK_SIZES[raw.backSize] ? raw.backSize : 'full';
-    return { ok: true, item: { product, construction, labMode, garment, size, fit, color, customColor, artwork, chaos, seed: art ? seed : null, art, picks, print, backSize, quantity, ...(selectedUploads.length ? { uploads: selectedUploads } : {}) } };
+    return { ok: true, item: { product, construction, labMode, garment, size, fit, color, customColor, artwork, chaos, seed: art ? seed : null, art, picks, print, backSize, quantity, ...(productDesign ? { productDesign } : {}), ...(selectedUploads.length ? { uploads: selectedUploads } : {}) } };
   }
 
   if (product === 'mystery-pack') {
@@ -116,6 +125,7 @@ export function normalizeItem(raw, { artworkPool = [] } = {}) {
 
 // Price a canonical item. Returns the per-unit breakdown and the line total.
 export function priceItem(item) {
+  if (item.product === 'studio-product') return priceStudioProduct(item);
   const lines = [];
   if (item.product === 'garment') {
     const o = offeringFor(item);
@@ -150,9 +160,11 @@ export function priceCart(rawItems, opts) {
 
 // Human-readable title and spec lines for carts, orders and the production dashboard.
 export function describeItem(item) {
+  if (item.product === 'studio-product') return describeStudioProduct(item);
   if (item.product === 'garment') {
     const o = offeringFor(item);
     const spec = [
+      ...(item.productDesign ? [`Design: ${PRODUCT_DESIGNS[item.productDesign.id].name}`, ...(PRODUCT_DESIGNS[item.productDesign.id].core ? [`Graphic color: ${item.productDesign.graphic}`, 'Complete logo chest embroidery · Eye back print 16 × 19 in'] : [])] : []),
       `Construction: ${item.labMode === 'random' ? 'Random base — studio selected' : CONSTRUCTIONS[item.construction].name}`,
       ...(CONSTRUCTIONS[item.construction].material ? [`Material: ${CONSTRUCTIONS[item.construction].material}`] : []),
       `Size: ${item.size}` + (FITS[item.construction].length > 1 ? ` · Fit: ${FITS[item.construction].find(f => f.id === item.fit)?.name}` : ''),

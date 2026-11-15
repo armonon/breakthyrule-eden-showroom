@@ -1,3 +1,4 @@
+import { STUDIO_PRODUCTS } from './product-options.mjs';
 // THE GARMENT LAB CATALOG — the one place prices and options are defined.
 // Shared by the browser (display) and the server (the only prices that are ever charged).
 // All money is integer cents, USD. Edit here; never in page code.
@@ -71,6 +72,7 @@ export const CUSTOM_COLOR_MAX = 40;
 
 // Artwork directions never carry a charge.
 export const ARTWORK = {
+  'product-design': { id: 'product-design', name: 'This product design', addCents: 0, blurb: 'Keep the selected collection design.' },
   'artists-choice': { id: 'artists-choice', name: "Artist's choice", addCents: 0, blurb: 'The artist decides. You trust the hand.' },
   'random-experimental': { id: 'random-experimental', name: 'Random experimental', addCents: 0, blurb: 'Drawn at the Altar of Chance from a stored seed.' },
   minimal: { id: 'minimal', name: 'Minimal', addCents: 0, blurb: 'A single mark, quiet placement.' },
@@ -174,7 +176,7 @@ export const skuFor = item =>
   item.product === 'mystery-pack' ? `mystery-pack:${item.package}:${item.size}` :
   item.product === 'trinity' ? `trinity:${item.variant}:${item.size}` :
   item.product === 'relic-box' ? `relic-box:${item.size}` : null;
-export const slotFor = item => item.product === 'garment' ? `${item.construction}:${item.garment}` : null;
+export const slotFor = item => item.product === 'garment' ? `${item.construction}:${item.garment}` : item.product === 'studio-product' ? `studio:${item.productId}` : null;
 
 export function allSkus() {
   const out = [];
@@ -184,7 +186,7 @@ export function allSkus() {
   return out;
 }
 export function allSlots() {
-  const out = [];
+  const out = Object.values(STUDIO_PRODUCTS).map(p => ({ slot: `studio:${p.id}`, label: p.name }));
   for (const [construction, garments] of Object.entries(OFFERINGS))
     for (const [garment, o] of Object.entries(garments)) out.push({ slot: `${construction}:${garment}`, label: `${CONSTRUCTIONS[construction].name} · ${o.name}` });
   for (const [garment, o] of Object.entries(RANDOM_OFFERINGS))

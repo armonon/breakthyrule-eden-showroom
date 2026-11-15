@@ -1,0 +1,228 @@
+{
+  "slug": "love-birds",
+  "title": "Love Birds",
+  "duration_seconds": 10,
+  "fps": 24,
+  "frames": 240,
+  "rotation_degrees": 360,
+  "source_key": "fda3c8419e2052611fb338875164e15eef951045ea6bff8dd4225a2f71089476",
+  "alpha_method": "Original RGBA alpha, packed right of RGB in H.264; reconstructed by WebGL. No chroma key.",
+  "assets": [
+    {
+      "file": "love-birds-full-poster.png",
+      "bytes": 186771,
+      "sha256": "bd0a9726b8f23b1294fe51590526d4aaa69cebb1e7a9534b3a8f76964d6c3867",
+      "type": "transparent-poster",
+      "width": 640,
+      "height": 900
+    },
+    {
+      "file": "love-birds-full-packed.mp4",
+      "bytes": 2602399,
+      "sha256": "dd6504223eab8b29c619c52cc28e3a1fa71376f28e3d88753dc9d2714ecae140",
+      "type": "packed-alpha-h264",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 900,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "2602399"
+        }
+      }
+    },
+    {
+      "file": "love-birds-detail-poster.png",
+      "bytes": 504508,
+      "sha256": "f5c8bb30f74f739c7d1433ee3d282e3eb5433c8948489542d542ceac02c9ec89",
+      "type": "transparent-poster",
+      "width": 1220,
+      "height": 900
+    },
+    {
+      "file": "love-birds-detail-packed.mp4",
+      "bytes": 3447980,
+      "sha256": "b86eca8b44cb7e1d6c086ad3b67e1b4ab7ad81925ee7b1d2abaa6827b462ab28",
+      "type": "packed-alpha-h264",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 2440,
+            "height": 900,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "3447980"
+        }
+      }
+    },
+    {
+      "file": "love-birds-with-chain-360.mp4",
+      "bytes": 2918441,
+      "sha256": "587e6f5059e046ec71def7dfcd4da41ad14d11bab0dc2f3ffd9c74f3cd053c17",
+      "type": "standard-mp4",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "2918441"
+        }
+      }
+    }
+  ],
+  "views": {
+    "full": {
+      "width": 640,
+      "height": 900,
+      "packed": "love-birds-full-packed.mp4",
+      "poster": "love-birds-full-poster.png",
+      "decoded_alpha_cardinal_samples": [
+        {
+          "frame": 1,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 61,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 121,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 181,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        }
+      ]
+    },
+    "detail": {
+      "width": 1220,
+      "height": 900,
+      "packed": "love-birds-detail-packed.mp4",
+      "poster": "love-birds-detail-poster.png",
+      "decoded_alpha_cardinal_samples": [
+        {
+          "frame": 1,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 61,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 121,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 181,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        }
+      ]
+    }
+  },
+  "passed": true,
+  "download": "love-birds-with-chain-360.mp4",
+  "encode_seconds": 31.0
+}

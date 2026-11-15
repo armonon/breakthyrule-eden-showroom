@@ -2,6 +2,7 @@ redirectsOrigin = "config"
 plugins = []
 
 [build]
+command = "node tools/release/check-release.mjs --write-manifest"
 publish = "."
 publishOrigin = "config"
 

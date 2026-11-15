@@ -1,3 +1,5 @@
+import { PRODUCT_DESIGNS } from '/labkit/product-options.mjs';
+import { tintProductDesign } from '/site/product-preview.mjs?v=1';
 // The Garment Lab: open configurator, mystery packages and catalog.
 import { CONSTRUCTIONS, OFFERINGS, GARMENT_TYPES, COLORS, ARTWORK, SIZES, FITS, MYSTERY_PACKAGES, MYSTERY_FITS, MYSTERY_PREFERENCES_MAX, SIZE_CHART, PICK_LIMITS, BACK_SIZES } from '/labkit/catalog.mjs';
 import { normalizeItem, priceItem, describeItem, sidesFor } from '/labkit/pricing.mjs';
@@ -24,7 +26,7 @@ let status = null;
 // Real 3D blanks (Ghost Studio, converted to meshopt). Shorts and long sleeves show a panel instead.
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const three = { viewer: null, loaded: null, loading: null, failed: false, wanted: false, hue: 0, timer: 0 };
-const state = { quantity: 1, baseMode: 'blank', construction: 'canvas', garment: 'tee', size: null, fit: 'blank', color: 'black', customColor: '', artwork: 'artists-choice', seed: null, chaos: false, preChaos: null, editId: null, side: 'front', print: { x: 0, y: 0, scale: 1 }, picks: { front: [], back: [] }, uploads: [], backSize: 'full' };
+const state = { quantity: 1, baseMode: 'blank', construction: 'canvas', garment: 'tee', size: null, fit: 'blank', color: 'black', customColor: '', artwork: 'artists-choice', productDesign: null, seed: null, chaos: false, preChaos: null, editId: null, side: 'front', print: { x: 0, y: 0, scale: 1 }, picks: { front: [], back: [] }, uploads: [], backSize: 'full' };
 let flow = null;
 let designIssue = '', uploadBusy = false, printRevision = 0;
 const artName = id => uploadForId(id, state.uploads)?.name || nameOf[id] || id;
@@ -51,6 +53,7 @@ function choice(group, value, title, { sub = '', price = '', checked = false, di
 const sizeButton = (group, value, checked) => { const input = h('input', { type: 'radio', name: group, value, checked, ariaLabel: value }); return h('label', { className: 'size' }, input, h('span', { textContent: value })); };
 function config() {
   const c = { product: 'garment', labMode: state.baseMode, construction: state.construction, garment: state.garment, size: state.size, fit: state.fit, color: state.baseMode === 'random' ? 'random' : state.color, artwork: state.artwork, quantity: state.quantity };
+  if (state.artwork === 'product-design' && state.productDesign) c.productDesign = {...state.productDesign};
   if (state.color === 'custom') c.customColor = state.customColor;
   if (state.artwork === 'random-experimental' || state.chaos) c.seed = state.seed;
   if (state.chaos) c.chaos = true;
@@ -112,6 +115,7 @@ function renderColors() {
 }
 function renderArt() {
   $('opt-art').replaceChildren(
+    ...(state.productDesign && PRODUCT_DESIGNS[state.productDesign.id] ? [choice('artwork','product-design','Keep this design',{sub:PRODUCT_DESIGNS[state.productDesign.id].name,price:'included',checked:state.artwork==='product-design'})] : []),
     choice('artwork', 'artists-choice', 'Random', { price: ARTWORK['artists-choice'].addCents ? '+' + money(ARTWORK['artists-choice'].addCents) : 'included', sub: 'The studio chooses the artwork. No reveal until it is made.', checked: state.artwork === 'artists-choice' }),
     choice('artwork', 'pick', 'Pick graphics', { price: ARTWORK.pick.addCents ? '+' + money(ARTWORK.pick.addCents) : 'included', sub: 'Choose archive graphics or upload your own.', checked: state.artwork === 'pick' })
   );
@@ -144,6 +148,7 @@ function sidePlan() {
 let printer = null;
 async function printArt() {
   if (state.baseMode === 'random' || !three.viewer?.model()) return;
+  if(state.artwork==='product-design'&&state.productDesign){tintProductDesign(three.viewer.model(),state.color,PRODUCT_DESIGNS[state.productDesign.id],state.productDesign.graphic,state.customColor);three.viewer.redraw();return;}
   printer ||= createPrinter(three.viewer);
   const kind = GARMENT_TYPES[state.garment].silhouette === 'pants' ? 'pants' : state.garment;
   const revision = ++printRevision;
@@ -163,7 +168,8 @@ async function printArt() {
 }
 function tint() { printArt(); }
 async function ensure3D() {
-  const url = BLANKS[state.garment];
+  const reference=state.artwork==='product-design'&&PRODUCT_DESIGNS[state.productDesign?.id];
+  const url = reference?.model || BLANKS[state.garment];
   if (!url || three.failed) return false;
   if (!three.viewer) { three.viewer = window.createGarmentViewer?.($('stage-3d'), { wheelZoom: false }) || null; if (!three.viewer) { three.failed = true; return false; } three.viewer.setAuto(!reduceMotion); }
   if (three.loaded === url) return true;
@@ -201,14 +207,15 @@ async function renderThree() {
     if ($('flow-placement')) $('flow-placement').hidden = true;
     return;
   }
-  const has3D = !!BLANKS[state.garment] && !three.failed;
+  const designPreview=state.artwork==='product-design'&&PRODUCT_DESIGNS[state.productDesign?.id];
+  const has3D = !!(designPreview?.model || BLANKS[state.garment]) && !three.failed;
   $('stage-3d').hidden = !has3D; $('stage-none').hidden = has3D;
   $('print-place').hidden = !has3D;
   if ($('flow-placement')) $('flow-placement').hidden = !has3D || state.artwork !== 'pick';
-  $('stage-label').textContent = has3D ? 'The real blank in your colour with your artwork laid on. A preview — every print is placed by hand.' : '';
+  $('stage-label').textContent = designPreview ? 'Collection design reference. Your selected construction and fit are made to order.' : has3D ? 'The real blank in your colour with your artwork laid on. A preview — every print is placed by hand.' : '';
   const plan = sidePlan(), notes = [plan.note, state.color === 'random' ? 'Random colour — the house picks it; shown here undyed.' : ''].filter(Boolean);
   $('stage-note').hidden = !notes.length || !has3D || (state.artwork === 'artists-choice' && state.color !== 'random'); $('stage-note').textContent = notes.join(' ');
-  $('back-size').hidden = !hasBack() || !has3D; $('print-sides').hidden = !has3D;
+  $('back-size').hidden = !hasBack() || !has3D; $('print-sides').hidden = !has3D || !!designPreview;
   $('back-size').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.size === state.backSize)));
   if (!has3D) { renderNone(); return; }
   if (!three.wanted) return; // loads when the stage scrolls into view
@@ -349,6 +356,7 @@ $('pick-explicit').addEventListener('change', renderPicker);
 $('pick-filter')?.addEventListener('change', e => { pickTag = e.target.value; renderPicker(); });
 function renderSelectedArt() {
   const box = $('flow-selected-art'); if (!box) return;
+  if(state.artwork==='product-design'&&PRODUCT_DESIGNS[state.productDesign?.id]){const d=PRODUCT_DESIGNS[state.productDesign.id];box.replaceChildren(h('figure',{},h('img',{src:d.poster,alt:d.name}),h('figcaption',{textContent:d.name})));return;}
   const entries = state.artwork === 'pick' ? [...state.picks.front.map(id => ['Front', id]), ...state.picks.back.map(id => ['Back', id])] : [];
   box.replaceChildren(...(entries.length ? entries.map(([side, id]) => h('figure', {}, h('img', { src: artThumb(id), alt: artName(id) }), h('figcaption', { textContent: side }))) : [h('p', { className: 'fine', textContent: state.artwork === 'pick' ? 'No graphics selected yet.' : state.artwork === 'artists-choice' ? 'Artwork stays a surprise.' : 'Your saved artwork direction is preserved. Choose Random or Pick graphics to change it.' })]));
 }
@@ -442,7 +450,7 @@ function renderTrust(info) {
   const items = [
     'Printed by hand in our Los Angeles studio.',
     state.construction === 'cut-sew' ? 'Cut and sewn from scratch in 100% cotton.' : 'Printed on a blank chosen to fit your size and colour — it may be vintage or new.',
-    info?.leadTimeDays != null ? `Made to order — about ${info.leadTimeDays} days to make, then shipping.` : 'Made to order — the production time is confirmed after you order.',
+    state.baseMode === 'random' ? 'Made to order — up to one week to make, then shipping.' : info?.leadTimeDays != null ? `Made to order — about ${info.leadTimeDays} days to make, then shipping.` : 'Made to order — the production time is confirmed after you order.',
     status?.checkout?.available ? 'Shipping and any tax are shown before you pay.' : 'Ordering is not open yet. You can save your design on this device.'
   ];
   if (status?.shippingNote) items.push(status.shippingNote);
@@ -713,7 +721,7 @@ function applyDesign(raw) {
   if (!n.ok) { designIssue = 'This design could not be loaded: ' + n.errors.join(' ') + ' Choose artwork again before adding this garment.'; return false; }
   if (n.item.product !== 'garment') { designIssue = 'This link does not contain a garment design. Choose your garment and artwork before adding it.'; return false; }
   const c = n.item;
-  Object.assign(state, { quantity: c.quantity ?? 1, construction: c.construction, garment: c.garment, size: raw.size ? c.size : null, fit: c.fit, color: c.color, customColor: c.customColor || '', artwork: c.artwork, seed: c.seed, chaos: !!c.chaos, print: c.print, picks: c.picks ? { front: [...c.picks.front], back: [...c.picks.back] } : { front: [], back: [] }, uploads: (c.uploads || []).map(asset => ({ ...asset })), backSize: c.backSize || 'full' });
+  Object.assign(state, { quantity: c.quantity ?? 1, construction: c.construction, garment: c.garment, size: raw.size ? c.size : null, fit: c.fit, color: c.color, customColor: c.customColor || '', artwork: c.artwork, seed: c.seed, chaos: !!c.chaos, print: c.print, productDesign: c.productDesign || null, picks: c.picks ? { front: [...c.picks.front], back: [...c.picks.back] } : { front: [], back: [] }, uploads: (c.uploads || []).map(asset => ({ ...asset })), backSize: c.backSize || 'full' });
   state.baseMode = c.construction === 'cut-sew' ? 'cut-sew' : raw.labMode === 'random' && c.color === 'random' ? 'random' : 'blank';
   designIssue = '';
   return true;
@@ -755,7 +763,7 @@ flow = createLabFlow({
   const editId = params.get('edit'), line = editId && cart.get(editId);
   if (line?.config?.product === 'garment') {
     const c = line.config;
-    Object.assign(state, { quantity: c.quantity ?? 1, construction: c.construction, garment: c.garment, size: c.size, fit: c.fit, color: c.color, customColor: c.customColor || '', artwork: c.artwork, seed: c.seed || null, chaos: !!c.chaos, editId, print: { x: 0, y: 0, scale: 1, ...(c.print || {}) }, picks: { front: [...(c.picks?.front || [])], back: [...(c.picks?.back || [])] }, uploads: (c.uploads || []).map(asset => ({ ...asset })), backSize: c.backSize || 'full' });
+    Object.assign(state, { quantity: c.quantity ?? 1, construction: c.construction, garment: c.garment, size: c.size, fit: c.fit, color: c.color, customColor: c.customColor || '', artwork: c.artwork, seed: c.seed || null, chaos: !!c.chaos, editId, print: { x: 0, y: 0, scale: 1, ...(c.print || {}) }, productDesign: c.productDesign || null, picks: { front: [...(c.picks?.front || [])], back: [...(c.picks?.back || [])] }, uploads: (c.uploads || []).map(asset => ({ ...asset })), backSize: c.backSize || 'full' });
     state.baseMode = c.construction === 'cut-sew' ? 'cut-sew' : c.labMode === 'random' && c.color === 'random' ? 'random' : 'blank';
   } else if (line?.config?.product === 'mystery-pack') {
     Object.assign(packageState, line.config, { editId });

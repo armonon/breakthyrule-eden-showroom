@@ -1,0 +1,228 @@
+{
+  "slug": "circle-of-anarchy",
+  "title": "Circle of Anarchy",
+  "duration_seconds": 10,
+  "fps": 24,
+  "frames": 240,
+  "rotation_degrees": 360,
+  "source_key": "c7ee562e4976c99965fbadade2b4e43890adbb4e6605aa32e8b14de6af93e8dd",
+  "alpha_method": "Original RGBA alpha, packed right of RGB in H.264; reconstructed by WebGL. No chroma key.",
+  "assets": [
+    {
+      "file": "circle-of-anarchy-full-poster.png",
+      "bytes": 203335,
+      "sha256": "d67fa2a1a0e541012c14ad909957ee98caa767df4321b54cac2a87e05febf34b",
+      "type": "transparent-poster",
+      "width": 640,
+      "height": 900
+    },
+    {
+      "file": "circle-of-anarchy-full-packed.mp4",
+      "bytes": 2897253,
+      "sha256": "c9d58bd5f33cba49177c037dfa0f88727d87479f2ef5ad3ef81c4417bc9a1a76",
+      "type": "packed-alpha-h264",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 900,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "2897253"
+        }
+      }
+    },
+    {
+      "file": "circle-of-anarchy-detail-poster.png",
+      "bytes": 635033,
+      "sha256": "30d2e032af0ecdd2cef7a22d1fcef73c935a023a3de22ccdc1d0052f3537866f",
+      "type": "transparent-poster",
+      "width": 1220,
+      "height": 900
+    },
+    {
+      "file": "circle-of-anarchy-detail-packed.mp4",
+      "bytes": 5356785,
+      "sha256": "e1174d391c97e84fd1c28e704e19ff764bc6087e74cc7d03daddfb2928406dd4",
+      "type": "packed-alpha-h264",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 2440,
+            "height": 900,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "5356785"
+        }
+      }
+    },
+    {
+      "file": "circle-of-anarchy-with-chain-360.mp4",
+      "bytes": 3997268,
+      "sha256": "2e7ae3da9cb6ce939f9d51c47396e09eae7ff016115818bdc29eaf01d163efb6",
+      "type": "standard-mp4",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "3997268"
+        }
+      }
+    }
+  ],
+  "views": {
+    "full": {
+      "width": 640,
+      "height": 900,
+      "packed": "circle-of-anarchy-full-packed.mp4",
+      "poster": "circle-of-anarchy-full-poster.png",
+      "decoded_alpha_cardinal_samples": [
+        {
+          "frame": 1,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 61,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 121,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 181,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        }
+      ]
+    },
+    "detail": {
+      "width": 1220,
+      "height": 900,
+      "packed": "circle-of-anarchy-detail-packed.mp4",
+      "poster": "circle-of-anarchy-detail-poster.png",
+      "decoded_alpha_cardinal_samples": [
+        {
+          "frame": 1,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 61,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 121,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 181,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        }
+      ]
+    }
+  },
+  "passed": true,
+  "download": "circle-of-anarchy-with-chain-360.mp4",
+  "encode_seconds": 86.5
+}

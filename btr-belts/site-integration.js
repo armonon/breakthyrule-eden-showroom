@@ -11,7 +11,7 @@
   const buy=$('buy');buy.textContent='Explore all 21 belts ↗';buy.href='/belts.html';buy.removeAttribute('target');buy.removeAttribute('rel');
   buy.parentElement.querySelector('a[href="/showroom"]')?.remove();
   const viewer=$('viewer');viewer.setAttribute('aria-label','Interactive 3D '+belt.name);viewer.removeAttribute('tabindex');
-  const media=window.mountBeltMedia(viewer,belt.designSlug,{baseURL});
+  const media=window.mountBeltMedia(viewer,belt.designSlug,{baseURL,customization:true});window.BTRProductMedia={...media,item:belt};
   const nav=document.createElement('div');nav.className='belt-product-actions';
   for(const [offset,label] of [[-1,'← Previous belt'],[1,'Next belt →']]){const p=BTR_BELTS[(index+offset+BTR_BELTS.length)%BTR_BELTS.length];const a=document.createElement('a');a.className='ghost';a.href='/product?item='+p.id;a.textContent=label;nav.append(a);}$('model-note').after(nav);
   $('showcase')?.closest('section')?.remove();return media;

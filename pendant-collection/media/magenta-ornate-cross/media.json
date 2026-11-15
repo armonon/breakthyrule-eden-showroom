@@ -1,0 +1,228 @@
+{
+  "slug": "magenta-ornate-cross",
+  "title": "Magenta Ornate Cross",
+  "duration_seconds": 10,
+  "fps": 24,
+  "frames": 240,
+  "rotation_degrees": 360,
+  "source_key": "c1c815190e503bfe0dec5e48b852cc1f8ba3ee816ac362c24fb6c2ac4b3bc355",
+  "alpha_method": "Original RGBA alpha, packed right of RGB in H.264; reconstructed by WebGL. No chroma key.",
+  "assets": [
+    {
+      "file": "magenta-ornate-cross-full-poster.png",
+      "bytes": 181157,
+      "sha256": "8e0508fdfd30b9ecfb6e33af3dbf768cfbfc30f70e497c9eed3f3b983c00805f",
+      "type": "transparent-poster",
+      "width": 640,
+      "height": 900
+    },
+    {
+      "file": "magenta-ornate-cross-full-packed.mp4",
+      "bytes": 2530235,
+      "sha256": "d35e9cca1e40a2a44978a26d3885e1f968c0b1a713439e6090d42184ebb27108",
+      "type": "packed-alpha-h264",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 900,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "2530235"
+        }
+      }
+    },
+    {
+      "file": "magenta-ornate-cross-detail-poster.png",
+      "bytes": 498569,
+      "sha256": "e941fbfecbc0c927643da6181b4bfcd3ff20146a509ab96b3af3122fbd71303f",
+      "type": "transparent-poster",
+      "width": 1220,
+      "height": 900
+    },
+    {
+      "file": "magenta-ornate-cross-detail-packed.mp4",
+      "bytes": 3503652,
+      "sha256": "88b0291b62ddaaa612527ef5eb41f5b0990ba0c0a0e9c02839db408a6cc79034",
+      "type": "packed-alpha-h264",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 2440,
+            "height": 900,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "3503652"
+        }
+      }
+    },
+    {
+      "file": "magenta-ornate-cross-with-chain-360.mp4",
+      "bytes": 3275221,
+      "sha256": "722ed5086f31042c882ecb3dbce8911f54c1a174280db62d6205e311df985f1f",
+      "type": "standard-mp4",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "3275221"
+        }
+      }
+    }
+  ],
+  "views": {
+    "full": {
+      "width": 640,
+      "height": 900,
+      "packed": "magenta-ornate-cross-full-packed.mp4",
+      "poster": "magenta-ornate-cross-full-poster.png",
+      "decoded_alpha_cardinal_samples": [
+        {
+          "frame": 1,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 61,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 121,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 181,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        }
+      ]
+    },
+    "detail": {
+      "width": 1220,
+      "height": 900,
+      "packed": "magenta-ornate-cross-detail-packed.mp4",
+      "poster": "magenta-ornate-cross-detail-poster.png",
+      "decoded_alpha_cardinal_samples": [
+        {
+          "frame": 1,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 61,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 121,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 181,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        }
+      ]
+    }
+  },
+  "passed": true,
+  "download": "magenta-ornate-cross-with-chain-360.mp4",
+  "encode_seconds": 30.5
+}

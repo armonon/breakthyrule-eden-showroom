@@ -42,7 +42,7 @@ root.createEdenMobile=function({host,ready,active,blocked,look,move,jump,jumpUp=
   // Native keyboard / assistive activation does not leave a held action behind.
   listen(b,'click',e=>{if(e.detail===0&&begin()){down();up();}});
  }
- hold('.em-jump',jump,jumpUp);hold('.em-crouch',()=>crouch(true),()=>crouch(false));
+ hold('.em-jump',()=>jump(true),()=>jump(false));hold('.em-crouch',()=>crouch(true),()=>crouch(false));
  activate(q('.em-view'),()=>{if(canInput()){view();updateView();dismissTip();}});
  activate(q('.em-use'),()=>{if(!canInput())return;const rect=host.getBoundingClientRect();if(!tap({clientX:rect.left+rect.width/2,clientY:rect.top+rect.height/2,pointerType:'touch'}))inform('Move closer, or tap the piece you want to explore.');});
  function activate(button,fn){let press=null,suppressUntil=0;
