@@ -1,0 +1,248 @@
+{
+  "slug": "crimson-screamer",
+  "title": "Crimson Screamer",
+  "duration_seconds": 10,
+  "fps": 24,
+  "frames": 240,
+  "rotation_degrees": 360,
+  "source_key": "ed90f179034f0216d4058de68ed113e934ac2cec7b94b5717f12325ebe50b2eb",
+  "alpha_method": "Original RGBA alpha, packed right of RGB in H.264; reconstructed by WebGL. No chroma key.",
+  "assets": [
+    {
+      "file": "crimson-screamer-full-poster.png",
+      "bytes": 189701,
+      "sha256": "942f8ad327b1025d884c2da6daf6acc8062e47ee22e45144de1279df481eae09",
+      "type": "transparent-poster",
+      "width": 640,
+      "height": 900
+    },
+    {
+      "file": "crimson-screamer-full-packed.mp4",
+      "bytes": 2613667,
+      "sha256": "f8637578e23f01b5ead9a76b28e536b6d253076f3d5b62ab7bc7a092dc50f955",
+      "type": "packed-alpha-h264",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 900,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "2613667"
+        }
+      }
+    },
+    {
+      "file": "crimson-screamer-detail-poster.png",
+      "bytes": 569486,
+      "sha256": "ea3af67d54bf47c972c5ae4783b924c1ad765ce301c9d4b52478adeaf4286bb9",
+      "type": "transparent-poster",
+      "width": 1220,
+      "height": 900
+    },
+    {
+      "file": "crimson-screamer-detail-packed.mp4",
+      "bytes": 3735856,
+      "sha256": "3c8a715e133e287d4677f8a6b43a0473d45bfa4626ef6877425cb871558fc734",
+      "type": "packed-alpha-h264",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 2440,
+            "height": 900,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "3735856"
+        }
+      }
+    },
+    {
+      "file": "crimson-screamer-with-chain-360.mp4",
+      "bytes": 3646559,
+      "sha256": "a9d2c72f42daced99a435af684d327c04651ff6ad614b9ba3b485c16d66cecd4",
+      "type": "standard-mp4",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "3646559"
+        }
+      }
+    }
+  ],
+  "views": {
+    "full": {
+      "width": 640,
+      "height": 900,
+      "packed": "crimson-screamer-full-packed.mp4",
+      "poster": "crimson-screamer-full-poster.png",
+      "decoded_alpha_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "decoded_alpha_extrema": [
+        0,
+        255
+      ],
+      "decoded_alpha_cardinal_samples": [
+        {
+          "frame": 1,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 61,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 121,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 181,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        }
+      ]
+    },
+    "detail": {
+      "width": 1220,
+      "height": 900,
+      "packed": "crimson-screamer-detail-packed.mp4",
+      "poster": "crimson-screamer-detail-poster.png",
+      "decoded_alpha_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "decoded_alpha_extrema": [
+        0,
+        255
+      ],
+      "decoded_alpha_cardinal_samples": [
+        {
+          "frame": 1,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 61,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 121,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 181,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        }
+      ]
+    }
+  },
+  "passed": true,
+  "download": "crimson-screamer-with-chain-360.mp4",
+  "encode_seconds": 29.1
+}

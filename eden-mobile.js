@@ -1,7 +1,7 @@
 'use strict';
 (function(root){
 // Eden exploration owns its touch input. Combat/expedition keep their existing adapter.
-root.createEdenMobile=function({host,ready,active,blocked,look,move,jump,jumpUp=()=>{},crouch,view,isThird,tap,stop}){
+root.createEdenMobile=function({host,ready,active,blocked,look,move,jump,jumpUp=null,crouch,view,isThird,tap,stop}){
  const media=matchMedia('(max-width: 760px), (pointer: coarse)'),abort=new AbortController(),signal=abort.signal;
  const listen=(node,event,fn,options={})=>node.addEventListener(event,fn,{...options,signal});
  const icon=(path)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
@@ -42,7 +42,8 @@ root.createEdenMobile=function({host,ready,active,blocked,look,move,jump,jumpUp=
   // Native keyboard / assistive activation does not leave a held action behind.
   listen(b,'click',e=>{if(e.detail===0&&begin()){down();up();}});
  }
- hold('.em-jump',jump,jumpUp);hold('.em-crouch',()=>crouch(true),()=>crouch(false));
+ let releaseJump=null;
+ hold('.em-jump',()=>{const release=jump(true);releaseJump=typeof release==='function'?release:jumpUp||(()=>jump(false));},()=>{const release=releaseJump;releaseJump=null;release?.();});hold('.em-crouch',()=>crouch(true),()=>crouch(false));
  activate(q('.em-view'),()=>{if(canInput()){view();updateView();dismissTip();}});
  activate(q('.em-use'),()=>{if(!canInput())return;const rect=host.getBoundingClientRect();if(!tap({clientX:rect.left+rect.width/2,clientY:rect.top+rect.height/2,pointerType:'touch'}))inform('Move closer, or tap the piece you want to explore.');});
  function activate(button,fn){let press=null,suppressUntil=0;

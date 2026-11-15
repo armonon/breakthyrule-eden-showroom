@@ -1,0 +1,228 @@
+{
+  "slug": "neon-mosaic-horse-and-pink-star",
+  "title": "Neon Mosaic Horse and Pink Star",
+  "duration_seconds": 10,
+  "fps": 24,
+  "frames": 240,
+  "rotation_degrees": 360,
+  "source_key": "4a0f0ca5225dd44f59a241bab9e5751a9b10a6caca7c5109e9003168f7f7b409",
+  "alpha_method": "Original RGBA alpha, packed right of RGB in H.264; reconstructed by WebGL. No chroma key.",
+  "assets": [
+    {
+      "file": "neon-mosaic-horse-and-pink-star-full-poster.png",
+      "bytes": 186789,
+      "sha256": "c09d59c65742a6c150ff4cbbb11549191284e26d37063dd5b0349fdfe22ebbfa",
+      "type": "transparent-poster",
+      "width": 640,
+      "height": 900
+    },
+    {
+      "file": "neon-mosaic-horse-and-pink-star-full-packed.mp4",
+      "bytes": 2671858,
+      "sha256": "670a170207537b91cdeadffd28a96209ebd07c072eddf7bea10e64004cc2ad6d",
+      "type": "packed-alpha-h264",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 900,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "2671858"
+        }
+      }
+    },
+    {
+      "file": "neon-mosaic-horse-and-pink-star-detail-poster.png",
+      "bytes": 489709,
+      "sha256": "d105655b6d74dded253527dfa21949df0bd04752092657c6c218ef89da6d273b",
+      "type": "transparent-poster",
+      "width": 1220,
+      "height": 900
+    },
+    {
+      "file": "neon-mosaic-horse-and-pink-star-detail-packed.mp4",
+      "bytes": 3562553,
+      "sha256": "d8620dcd8dcd92b90e2edae51dba5c4b331b9c827d4df4212bd0c10a27016e7c",
+      "type": "packed-alpha-h264",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 2440,
+            "height": 900,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "3562553"
+        }
+      }
+    },
+    {
+      "file": "neon-mosaic-horse-and-pink-star-with-chain-360.mp4",
+      "bytes": 2803591,
+      "sha256": "c1b16128f7cb65fffd207bcb15d0b1b8b0d1603362ac6a2729b471c078764231",
+      "type": "standard-mp4",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "2803591"
+        }
+      }
+    }
+  ],
+  "views": {
+    "full": {
+      "width": 640,
+      "height": 900,
+      "packed": "neon-mosaic-horse-and-pink-star-full-packed.mp4",
+      "poster": "neon-mosaic-horse-and-pink-star-full-poster.png",
+      "decoded_alpha_cardinal_samples": [
+        {
+          "frame": 1,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 61,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 121,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 181,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        }
+      ]
+    },
+    "detail": {
+      "width": 1220,
+      "height": 900,
+      "packed": "neon-mosaic-horse-and-pink-star-detail-packed.mp4",
+      "poster": "neon-mosaic-horse-and-pink-star-detail-poster.png",
+      "decoded_alpha_cardinal_samples": [
+        {
+          "frame": 1,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 61,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 121,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 181,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        }
+      ]
+    }
+  },
+  "passed": true,
+  "download": "neon-mosaic-horse-and-pink-star-with-chain-360.mp4",
+  "encode_seconds": 31.1
+}

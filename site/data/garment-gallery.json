@@ -1,0 +1,205 @@
+{
+  "categories": [
+    "garments"
+  ],
+  "items": [
+    {
+      "src": "/products/web/089-img_6048.webp",
+      "category": "garments",
+      "caption": "Eternal Thermal",
+      "alt": "Eternal Thermal original product photograph",
+      "product": "eternal-thermal",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/007-img_0064.webp",
+      "category": "garments",
+      "caption": "Illuminati Crewneck",
+      "alt": "Illuminati Crewneck original product photograph",
+      "product": "illuminati-crewneck",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/114-photoroom_20251017_091003.webp",
+      "category": "garments",
+      "caption": "Jesus Is My Health Insurance Hoodie",
+      "alt": "Jesus Is My Health Insurance Hoodie original product photograph",
+      "product": "jesus-health-insurance-hoodie",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/096-img_6626.webp",
+      "category": "garments",
+      "caption": "Kiss Rosary Tee — front",
+      "alt": "Kiss Rosary Tee original product photograph",
+      "product": "kiss-rosary-tee",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/008-img_0065.webp",
+      "category": "garments",
+      "caption": "All-Seeing Crewneck",
+      "alt": "All-Seeing Crewneck original product photograph",
+      "product": "green-eye-crewneck",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/035-img_0919.webp",
+      "category": "garments",
+      "caption": "WANTED: Jesus Tee",
+      "alt": "WANTED: Jesus Tee original product photograph",
+      "product": "wanted-jesus-tee",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/079-img_3462.webp",
+      "category": "garments",
+      "caption": "Atlantis Parlour Tank — front",
+      "alt": "Atlantis Parlour Tank original product photograph",
+      "product": "atlantis-parlour-tank",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/062-img_2054.webp",
+      "category": "garments",
+      "caption": "Divine Mother Tee",
+      "alt": "Divine Mother Tee original product photograph",
+      "product": "divine-mother-tee",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/093-img_6620.webp",
+      "category": "garments",
+      "caption": "Eternal Crewneck",
+      "alt": "Eternal Crewneck original product photograph",
+      "product": "eternal-crewneck",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/000-6b49f5b5-3f27-4f32-b604-01645a7ae0cd.webp",
+      "category": "garments",
+      "caption": "Cross Tee",
+      "alt": "Cross Tee original product photograph",
+      "product": "cross-tee",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/069-img_2308.webp",
+      "category": "garments",
+      "caption": "God's Chariot Crop",
+      "alt": "God's Chariot Crop original product photograph",
+      "product": "gods-chariot-crop",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/082-img_5473.webp",
+      "category": "garments",
+      "caption": "007 Angels Tee",
+      "alt": "007 Angels Tee original product photograph",
+      "product": "007-tee",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/055-img_1747.webp",
+      "category": "garments",
+      "caption": "Rosary Heart Tank — front",
+      "alt": "Rosary Heart Tank original product photograph",
+      "product": "rosary-heart-tank",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/058-img_1830.webp",
+      "category": "garments",
+      "caption": "Over the Hill Tee — front",
+      "alt": "Over the Hill Tee original product photograph",
+      "product": "over-the-hill-tee",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/027-img_0624.webp",
+      "category": "garments",
+      "caption": "Adonai 3/4 Sleeve — front",
+      "alt": "Adonai 3/4 Sleeve original product photograph",
+      "product": "adonai-tee",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/118-warlord-f.webp",
+      "category": "garments",
+      "caption": "WARLORD Longsleeve",
+      "alt": "WARLORD Longsleeve original product photograph",
+      "product": "warlord-longsleeve",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/003-black-market-baby.webp",
+      "category": "garments",
+      "caption": "Blackmarket Baby Tee",
+      "alt": "Blackmarket Baby Tee original product photograph",
+      "product": "blackmarket-baby-tee",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "src": "/products/web/006-img_0063.webp",
+      "category": "garments",
+      "caption": "Divide & Conquer Crewneck",
+      "alt": "Divide & Conquer Crewneck original product photograph",
+      "product": "divide-conquer-crewneck",
+      "source": "Product photography",
+      "ratio": 1,
+      "width": 1024,
+      "height": 1024
+    }
+  ]
+}

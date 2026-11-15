@@ -18,7 +18,7 @@
   // worlds may be a getter: app.js creates the worlds system after this chapter.
   const W=()=>typeof worldsIn==='function'?worldsIn():worldsIn;
   const story=root.edenStory;
-  let built=false,hall=null,altar=null,ticket=null,crowd=[],keys=[],showdown=null,clock=0,keyCount=0,labOpen=false,lastModel=null,prompt=null;
+  let built=false,hall=null,altar=null,ticket=null,crowd=[],keys=[],showdown=null,clock=0,keyCount=0,labOpen=false,labEntering=false,lastModel=null,prompt=null;
   const keyGeo=new T.TorusGeometry(.06,.018,6,14),keyBit=new T.BoxGeometry(.02,.12,.02),gold=new T.MeshStandardMaterial({color:0xd8b04a,metalness:.9,roughness:.3,emissive:0x5a3a08,emissiveIntensity:.6});
 
   /* ---------------------------------------------------------------- the office */
@@ -162,7 +162,11 @@
   }
 
   /* ---------------------------------------------------------------- prompts and the frame */
-  function showPrompt(text){if(!prompt){prompt=document.createElement('div');prompt.id='horror-prompt';document.body.append(prompt);}prompt.hidden=!text;if(text)prompt.innerHTML=text;}
+  function showPrompt(text){
+   if(!prompt){prompt=document.createElement('button');prompt.type='button';prompt.id='horror-prompt';prompt.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();interact();});document.body.append(prompt);}
+   prompt.hidden=!text;
+   if(text){prompt.innerHTML=text;prompt.disabled=!text.includes('<kbd>');prompt.setAttribute('aria-label',text.replace(/<[^>]*>/g,'').replace(/^F\s*/,''));}
+  }
   let labNear=false,sealedAt=-9;const dbg={};
   function update(dt){
    clock+=dt;
@@ -194,13 +198,24 @@
    const model=playerBody?.model?.();if(model&&model!==lastModel){lastModel=model;const s=saved();if(s&&!model.root.userData.freeGarment)wear(s.design);}
    showPrompt(text);
   }
-  function interactionActive(){if(labNear&&canEnterLab())return true;if(!built||!inOffice()||!ticket?.visible||showdown)return false;const a=altarWorld(),eye=camera.position;return !!a&&Math.hypot(eye.x-a.x,eye.z-a.z)<2.2;}
+  function interactionActive(){if(labEntering||labNear&&canEnterLab())return true;if(!built||!inOffice()||!ticket?.visible||showdown)return false;const a=altarWorld(),eye=camera.position;return !!a&&Math.hypot(eye.x-a.x,eye.z-a.z)<2.2;}
+  function interact(){
+   if(labOpen||document.querySelector('dialog[open]'))return false;
+   if(labEntering)return true;
+   if(built&&inOffice()&&ticket?.visible&&!showdown){const a=altarWorld(),eye=camera.position;if(a&&Math.hypot(eye.x-a.x,eye.z-a.z)<2.2){ticket.visible=false;story?.set('ticket');W()?.card('THE TICKET','ADMIT ONE · IT OPENS THE BLACK CUBE IN THE GARDEN VALLEY','THE OFFICE',3400);requestDraw();return true;}}
+   if(labNear&&canEnterLab()){
+    if(W()?.loading?.())return true;
+    labEntering=true;story?.set('cube');
+    Promise.resolve(W()?.veil({title:'THE GARMENT LAB',sub:'A HIDDEN ROOM INSIDE THE BLACK CUBE',kicker:'THE BLACK CUBE'})).then(openLab).catch(error=>{labOpen=false;console.warn('Garment Lab could not open:',error);requestDraw();}).finally(()=>{labEntering=false;});
+    return true;
+   }
+   return false;
+  }
   function onStoryKey(e){if(e.defaultPrevented||e.repeat||(window.edenControls?.blockedModifiers(e)??(e.ctrlKey||e.metaKey||e.altKey||e.isComposing))||document.querySelector('dialog[open]')||e.target.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target.tagName))return;
-   if((window.edenControls?window.edenControls.key(e)!=='chapter':e.key.toLowerCase()!=='f')||!interactionActive())return;e.preventDefault();
-   if(built&&inOffice()&&ticket?.visible&&!showdown){const a=altarWorld(),eye=camera.position;if(a&&Math.hypot(eye.x-a.x,eye.z-a.z)<2.2){ticket.visible=false;story?.set('ticket');W()?.card('THE TICKET','ADMIT ONE · IT OPENS THE BLACK CUBE IN THE GARDEN VALLEY','THE OFFICE',3400);}}
-   if(labNear&&canEnterLab()){story?.set('cube');W()?.veil({title:'THE GARMENT LAB',sub:'A HIDDEN ROOM INSIDE THE BLACK CUBE',kicker:'THE BLACK CUBE'}).then(openLab);}}
-  document.addEventListener('keydown',onStoryKey);
-  return {interactionActive,update,shotHook,openLab,wear,inspect:()=>({built,office:inOffice(),ticket:!!ticket?.visible,crowd:crowd.length,alive:crowd.filter(g=>g.alive).length,showdown:!!showdown,keysOut:keys.length,keyCount,labNear,dbg,garment:saved()?.design||null}),
+   if(window.edenControls?window.edenControls.key(e)!=='chapter':e.key.toLowerCase()!=='f')return;
+   if(interact()){e.preventDefault();e.stopPropagation();}}
+  document.addEventListener('keydown',onStoryKey,true);
+  return {interactionActive,update,shotHook,openLab,wear,interact,inspect:()=>({built,office:inOffice(),ticket:!!ticket?.visible,crowd:crowd.length,alive:crowd.filter(g=>g.alive).length,showdown:!!showdown,keysOut:keys.length,keyCount,labNear,dbg,garment:saved()?.design||null}),
    _debug:{build,startShowdown,get crowd(){return crowd;},scatterKeys,altarWorld}};
  };
 })(window);
