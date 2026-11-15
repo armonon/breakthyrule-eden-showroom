@@ -17,6 +17,7 @@ const trail=h('nav',{className:'studio-trail',ariaLabel:'Breadcrumb'},h('a',{hre
 document.querySelector('.product-page').before(trail);
 const seal=h('p',{className:'studio-origin',textContent:'BREAK THY RULE / LOS ANGELES'});info.prepend(seal);
 mountProductGallery($('product-gallery'));
+if($('product-process'))$('product-process').hidden=!design;
 if(design||product)mountOptions();
 function mountOptions(){
  let edit=params.get('edit'),saved=edit&&cart.get(edit)?.config;
