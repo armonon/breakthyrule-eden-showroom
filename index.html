@@ -58,8 +58,8 @@
  <script defer src="/core-collection/cycle.js?v=product-studio-6"></script>
  <script defer src="/core-collection/core.js?v=fw27-cards-1"></script>
  <link rel="stylesheet" href="/site/mystery-bitmap.css?v=tab-loop-5">
- <link rel="stylesheet" href="/site/discovery-hero.css?v=rotation-controls-1">
- <script type="module" src="/site/discovery-hero.mjs?v=rotation-controls-1"></script>
+ <link rel="stylesheet" href="/site/discovery-hero.css?v=rotation-controls-2">
+ <script type="module" src="/site/discovery-hero.mjs?v=rotation-controls-2"></script>
 <style id="archive-model-preview">.archive-product #viewer .halo,.archive-product #viewer .pedestal,.product-card[data-archive-hq] .halo{display:none!important}.archive-product #viewer{background:transparent!important}.product-card[data-archive-hq] .card-media:has(canvas.live) img{opacity:0!important}</style>
 <style id="replacement-hat-previews">.product-card[data-accessory-replacement] .halo{display:none!important}.product-card[data-accessory-replacement] .card-media:has(canvas[data-model-ready="true"]) img{opacity:0!important}.product-card[data-accessory-replacement] .card-media canvas{opacity:1}</style>
 <link rel="stylesheet" href="/site/collection-browse.css?v=2">
@@ -82,14 +82,7 @@
 
   <section class="discovery-hero" id="photo-story" aria-label="3D collection preview">
    <div class="discovery-atmosphere" aria-hidden="true"></div>
-   <div class="discovery-controls">
-    <div class="discovery-tabs" role="tablist" aria-label="Explore the collection">
-     <button id="discovery-tab-chance" type="button" role="tab" aria-selected="true" aria-controls="discovery-chance">In rotation</button>
-     <button id="discovery-tab-mystery" type="button" role="tab" aria-selected="false" aria-controls="mystery" tabindex="-1">Mystery box</button>
-    </div>
-    <button id="discovery-random-shirt" type="button" aria-controls="discovery-chance" disabled>Random shirt <span aria-hidden="true">↻</span></button>
-   </div>
-   <div id="discovery-chance" role="tabpanel" aria-labelledby="discovery-tab-chance">
+   <div id="discovery-chance" role="region" aria-label="In rotation">
    <div class="discovery-layout">
     <div class="discovery-object">
      <div id="discovery-stage" tabindex="0" role="img" aria-label="Rotating 3D product. Drag to turn, or use the left and right arrow keys."><img id="discovery-fallback" src="/core-collection/posters/core-tee-black-front.webp" alt="A piece from the BreakThyRule collection" loading="lazy"></div>
@@ -97,7 +90,14 @@
      <span class="discovery-loading" id="discovery-loading" role="status">Finding your next piece…</span>
     </div>
     <div class="discovery-details" aria-busy="true">
-     <div class="discovery-meta"><span id="discovery-category">THE COLLECTION</span><span id="discovery-number">01</span></div>
+     <div class="discovery-meta">
+      <span id="discovery-category">THE COLLECTION</span>
+      <div class="discovery-controls" role="group" aria-label="Preview options">
+       <button id="discovery-open-mystery" type="button" aria-controls="mystery" aria-expanded="false">Mystery box</button>
+       <button id="discovery-random-shirt" type="button" aria-controls="discovery-chance" disabled>Random shirt <span aria-hidden="true">↻</span></button>
+      </div>
+      <span id="discovery-number">01</span>
+     </div>
      <h3 id="discovery-name">Something unexpected.</h3>
      <p id="discovery-description">Garments, metal, accessories and a little chance.</p>
      <div class="discovery-price-line"><strong id="discovery-price"></strong><span id="discovery-price-note"></span></div>
@@ -108,7 +108,7 @@
    </div>
    <div class="discovery-timeline" aria-hidden="true"><span id="discovery-progress"></span></div>
    </div>
-  <div id="mystery" class="discovery-mystery-panel" role="tabpanel" aria-labelledby="discovery-tab-mystery" hidden>
+  <div id="mystery" class="discovery-mystery-panel" role="region" aria-label="Mystery box" hidden>
    <svg class="mystery-filters" aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden;pointer-events:none" xmlns="http://www.w3.org/2000/svg">
     <defs>
      <filter id="mystery-ink-filter" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
@@ -131,6 +131,7 @@
     </div>
     </div>
     <div class="mystery-info">
+     <div class="discovery-controls discovery-return"><button id="discovery-back-to-rotation" type="button" aria-controls="discovery-chance"><span aria-hidden="true">←</span> Back to rotation</button></div>
      <div class="mystery-options" role="group" aria-label="Choose a mystery package"><button type="button" data-package="one-tee" aria-pressed="true"><span class="package-name">One Tee</span><span class="package-price">$30</span></button><button type="button" data-package="outerwear" aria-pressed="false"><span class="package-name">Outerwear</span><span class="package-price">$40</span></button><button type="button" data-package="light-pack" aria-pressed="false"><span class="package-name">Light Pack</span><span class="package-price">$80</span></button><button type="button" data-package="heavy-pack" aria-pressed="false"><span class="package-name">Heavy Pack</span><span class="package-price">$120</span></button><button type="button" data-package="super-package" aria-pressed="false"><span class="package-name">Super Package</span><span class="package-price">$250</span></button></div>
      <div class="mystery-description" aria-live="polite"><p class="tiny-label" id="box-label">1 tee</p><h3 id="box-name">One Tee</h3><p id="box-copy">One tee, selected by the house. A simple way to leave the choice to us.</p><p class="box-detail" id="box-detail">Choose your size and preferred fit, and leave any notes in the Lab.</p></div>
      <a class="solid" id="box-cta" href="/lab?package=one-tee#packages">Choose One Tee <span aria-hidden="true">↗</span></a>
