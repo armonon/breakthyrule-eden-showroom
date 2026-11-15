@@ -4,7 +4,7 @@ window.showroomCollection=[
     "slug": "war-witnesses-tee",
     "name": "WAR / Witnesses Tee",
     "chapter": "IV",
-    "price": "$78",
+    "price": "$60",
     "tagline": "Front: the theatre. Back: the witnesses.",
     "description": "A two-sided airbrush bootleg. The front: three masked soldiers in faceless helmets, a blonde witness peering in from the margin, and the word WAR in pixelated red rendered like a redacted dispatch. The back: two winged figures, scattered watching eyes, the staring face of the unknown \u2014 printed edge-to-edge. Heavyweight 6oz cotton, raw white, hand-registered. Every print runs slightly different; the variance is the signature.",
     "images": [
@@ -44,7 +44,7 @@ window.showroomCollection=[
     "slug": "god-loves-you-tee",
     "name": "God Loves You Tee",
     "chapter": "IV",
-    "price": "$64",
+    "price": "$60",
     "tagline": "He has a great plan. Wear the proof.",
     "description": "A devotional bootleg. Heavyweight 6oz cotton in raw white, hand-printed with an airbrushed dove-and-hearts composition and the gospel pronouncement set in inverted serif blue. Each print is registered manually \u2014 small variation is part of the casting, not a defect. Cut boxy through the chest, regular through the body.",
     "images": [
@@ -78,7 +78,7 @@ window.showroomCollection=[
     "slug": "dance-to-your-vibration-tee",
     "name": "Dance To Your Vibration Tee",
     "chapter": "IV",
-    "price": "$64",
+    "price": "$60",
     "tagline": "Tune in. The whole world is already listening.",
     "description": "A frequency garment. Heavyweight 6oz cotton in raw white, printed with two figures in headphones and a trailing staff of music notes \u2014 airbrushed, washed, and softened. The text above reads as broadcast, not slogan. Regular through the body with a slightly cropped torso.",
     "images": [
@@ -112,7 +112,7 @@ window.showroomCollection=[
     "slug": "all-seeing-tee",
     "name": "All-Seeing Tee",
     "chapter": "I",
-    "price": "$68",
+    "price": "$60",
     "tagline": "Archive artwork concept / All-Seeing Tee",
     "description": "An archive-artwork concept on the updated shirt model. Featuring HOUSE OF HORUS, EYE SEE YOU. Explore the placement in 3D.",
     "images": [
@@ -150,7 +150,7 @@ window.showroomCollection=[
     "slug": "hermetic-hoodie",
     "name": "Hermetic Hoodie",
     "chapter": "I",
-    "price": "$158",
+    "price": "$80",
     "tagline": "Archive artwork concept / Hermetic Hoodie",
     "description": "An archive-artwork concept on the updated hoodie model. Featuring DIAMOND BODY. Explore the placement in 3D.",
     "images": [
@@ -183,7 +183,7 @@ window.showroomCollection=[
     "slug": "veil-crewneck",
     "name": "Veil Crewneck",
     "chapter": "I",
-    "price": "$142",
+    "price": "$80",
     "tagline": "Archive artwork concept / Veil Crewneck",
     "description": "An archive-artwork concept on the updated sweatshirt model. Featuring complete-logo-transparent. Explore the placement in 3D.",
     "images": [
@@ -216,7 +216,7 @@ window.showroomCollection=[
     "slug": "initiates-coach-jacket",
     "name": "Initiate's Coach Jacket",
     "chapter": "II",
-    "price": "$268",
+    "price": "$80",
     "tagline": "Archive artwork concept / Initiate's Coach Jacket",
     "description": "An archive-artwork concept on the updated jacket model. Featuring HOUSE OF HORUS. Explore the placement in 3D.",
     "images": [
@@ -311,7 +311,7 @@ window.showroomCollection=[
     "slug": "accessory-trucker-cobalt",
     "name": "Custom Trucker / Baseball Hat",
     "chapter": "A",
-    "price": "Customize",
+    "price": "$45",
     "tagline": "Your colors. Your graphics.",
     "description": "Choose a mesh trucker or solid six-panel baseball cap. Mix your front, brim and side colors, then arrange Sticker Lab artwork on the front.",
     "images": [
@@ -362,7 +362,7 @@ window.showroomCollection=[
     "slug": "cross-tee",
     "name": "Cross Tee",
     "chapter": "I",
-    "price": "$64",
+    "price": "$60",
     "tagline": "The mark that splits the world in two.",
     "description": "Raw white cotton tee, back-panel airbrushed with an ornate Gothic cross in deep red \u2014 filigree vines spreading from each arm, edge-to-edge. The reverse is blank. Heavyweight 6oz cotton, regular fit. Every print registers slightly different; the variance is the signature.",
     "images": [
@@ -396,7 +396,7 @@ window.showroomCollection=[
     "slug": "jesus-star-tee",
     "name": "Jesus\u2605 Tee",
     "chapter": "I",
-    "price": "$64",
+    "price": "$60",
     "tagline": "The name above all names, certified.",
     "description": "Raw white cotton, worn and softened. The name is set in red cursive across the chest with a heavy red star \u2014 somewhere between a bandana logo and a roadside shrine. Distressed register, deliberate. Regular fit, 6oz cotton.",
     "images": [
@@ -430,7 +430,7 @@ window.showroomCollection=[
     "slug": "blackmarket-baby-tee",
     "name": "Blackmarket Baby Tee",
     "chapter": "IV",
-    "price": "$64",
+    "price": "$60",
     "tagline": "Everything you need. No questions asked.",
     "description": "Raw white cotton, cropped. A collage of redacted IDs, ghost databases, and an AR-15 schematic frames the title text in red. The paperwork of commerce, printed flat and worn proud. Boxy crop, 6oz cotton.",
     "images": [
@@ -464,7 +464,7 @@ window.showroomCollection=[
     "slug": "family-tank",
     "name": "#Family Maxi Tank",
     "chapter": "II",
-    "price": "$68",
+    "price": "$60",
     "tagline": "The ones who were there before the agreement.",
     "description": "White ribbed cotton maxi tank, airbrushed with two figures \u2014 one burning, one winged \u2014 locked together in an embrace. \"#family\" in script below. Worn long, worn soft. Ribbed cotton, raw hem.",
     "images": [
@@ -498,7 +498,7 @@ window.showroomCollection=[
     "slug": "divide-conquer-crewneck",
     "name": "Divide & Conquer Crewneck",
     "chapter": "II",
-    "price": "$88",
+    "price": "$80",
     "tagline": "The oldest strategy, printed fresh.",
     "description": "Baby blue crewneck sweatshirt with a full-front DTG of a Roman battle scene \u2014 warriors, tigers, eagles, and chaos \u2014 set above the words \"Divide & Conquer\" in black script. Classic heavyweight fleece, pre-washed.",
     "images": [
@@ -537,7 +537,7 @@ window.showroomCollection=[
     "slug": "illuminati-crewneck",
     "name": "Illuminati Crewneck",
     "chapter": "I",
-    "price": "$88",
+    "price": "$80",
     "tagline": "The order that does not announce itself.",
     "description": "Red crewneck, front-printed with five hooded silhouettes framing a pyramid-and-eye seal. \"Illuminati\" set in black gothic lettering below. Heavyweight fleece, regular fit.",
     "images": [
@@ -571,7 +571,7 @@ window.showroomCollection=[
     "slug": "green-eye-crewneck",
     "name": "All-Seeing Crewneck",
     "chapter": "I",
-    "price": "$88",
+    "price": "$80",
     "tagline": "She sees you seeing her seeing you.",
     "description": "Vintage green raglan crewneck, chest-printed with a diptych: the pyramid-and-eye seal beside a woman covering one eye with her hand. The image says what the text won't. Cotton raglan, pre-shrunk.",
     "images": [
@@ -605,7 +605,7 @@ window.showroomCollection=[
     "slug": "sacred-masters-tee",
     "name": "Sacred Masters Tee",
     "chapter": "III",
-    "price": "$78",
+    "price": "$60",
     "tagline": "Front: the masters. Back: the mysteries.",
     "description": "A two-sided transmission. Front: an airbrushed sunburst with a mounted figure, layered against a chart of ascended masters. Back: \"serrania angelica\" \u2014 a dense collage of Kabbalistic diagrams, figures, and verse. Raw white, 6oz cotton, boxy fit.",
     "images": [
@@ -645,7 +645,7 @@ window.showroomCollection=[
     "slug": "project-star-gate-tee",
     "name": "Project Star Gate Tee",
     "chapter": "III",
-    "price": "$78",
+    "price": "$60",
     "tagline": "Declassified. Still redacted.",
     "description": "Declassified. Still redacted.",
     "images": [
@@ -685,7 +685,7 @@ window.showroomCollection=[
     "slug": "cave-painting-tee",
     "name": "Cave Painting Tee",
     "chapter": "I",
-    "price": "$64",
+    "price": "$60",
     "tagline": "The first transmission.",
     "description": "Raw white cotton, printed with a detailed cave-painting hunting sequence across the chest \u2014 labeled stages annotated in cursive script: sighting, cornering, the kill, the return. The oldest story, re-rendered. Regular fit, 6oz cotton.",
     "images": [
@@ -719,7 +719,7 @@ window.showroomCollection=[
     "slug": "adonai-tee",
     "name": "Adonai 3/4 Sleeve",
     "chapter": "III",
-    "price": "$78",
+    "price": "$120",
     "tagline": "The name that cannot be spoken, worn.",
     "description": "White boxy 3/4-sleeve tee, front-printed with a Star of David containing Adonai figures and flanked by Kabbalistic seals. The back carries the German esoteric chakra diagram \u2014 \"Der gantze Irdische Nat\u00fcrliche Finstere Mensch\" \u2014 in full-color print. Oversized cut.",
     "images": [
@@ -759,7 +759,7 @@ window.showroomCollection=[
     "slug": "wanted-jesus-tee",
     "name": "WANTED: Jesus Tee",
     "chapter": "IV",
-    "price": "$68",
+    "price": "$60",
     "tagline": "Last seen: at large.",
     "description": "Raw white cotton baby tee, front-printed with a WANTED poster composition \u2014 Jesus of Nazareth, surrealist collage, apples with eyes, and your name half-visible underneath. A bounty for the person most worth knowing. Boxy crop, 6oz cotton.",
     "images": [
@@ -793,7 +793,7 @@ window.showroomCollection=[
     "slug": "pari-tee",
     "name": "Pari Tee",
     "chapter": "IV",
-    "price": "$78",
+    "price": "$60",
     "tagline": "Front: the fairy. Back: the machine.",
     "description": "A two-sided garment. Front: \"pari\" \u2014 a Persian fairy \u2014 flanked by two winged demonic figures in red and black. Back: an all-over text collage of American signifiers, cultural debris, and contradiction \u2014 Lucifer, AMER-I-CAN, YE-24, and the rest. White, regular fit, 6oz cotton.",
     "images": [
@@ -833,7 +833,7 @@ window.showroomCollection=[
     "slug": "rosary-heart-tank",
     "name": "Rosary Heart Tank",
     "chapter": "II",
-    "price": "$68",
+    "price": "$60",
     "tagline": "Prayer worn on the body.",
     "description": "White ribbed cotton maxi tank with a red rosary shaped into a heart at center chest. The beads are counted and labeled \u2014 each decade of the prayer printed in script inside the loop. Worn long, worn soft. Ribbed cotton, raw hem.",
     "images": [
@@ -873,7 +873,7 @@ window.showroomCollection=[
     "slug": "every-kiss-tank",
     "name": "Every Kiss Begins With K Tank",
     "chapter": "II",
-    "price": "$68",
+    "price": "$60",
     "tagline": "A hallmark for the initiated.",
     "description": "White ribbed maxi tank with an airbrushed composition of a rearing black horse and a dramatic painted face below \u2014 \"every kiss begins with K\" set in cursive above. All-over print, raw hem, worn long.",
     "images": [
@@ -907,7 +907,7 @@ window.showroomCollection=[
     "slug": "over-the-hill-tee",
     "name": "Over the Hill Tee",
     "chapter": "IV",
-    "price": "$64",
+    "price": "$60",
     "tagline": "Past the summit. Still climbing.",
     "description": "White cotton baby tee, front-printed with an airbrushed warrior figure \u2014 arms raised, battle-ready \u2014 in deep red. \"over the hill\" set below in casual black type. A contradiction. Cropped, boxy.",
     "images": [
@@ -942,7 +942,7 @@ window.showroomCollection=[
     "slug": "divine-mother-tee",
     "name": "Divine Mother Tee",
     "chapter": "II",
-    "price": "$64",
+    "price": "$60",
     "tagline": "She holds them all.",
     "description": "Raw white cotton tee with a full-front DTG of a guardian angel surrounded by two cherubs \u2014 clouds, light, and \"Divine Mother\" in rose script below. Soft, clean print. Regular fit, 6oz cotton.",
     "images": [
@@ -976,7 +976,7 @@ window.showroomCollection=[
     "slug": "gods-chariot-crop",
     "name": "God's Chariot Crop",
     "chapter": "III",
-    "price": "$88",
+    "price": "$60",
     "tagline": "The throne that moves.",
     "description": "Cream ribbed crop-sleeve sweater with an airbrushed back print \u2014 angel figures riding a golden chariot amid fire and trumpets, \"Gods Chariot\" in yellow script below. Cropped, wide-arm fit. Ribbed cotton, pre-washed.",
     "images": [
@@ -1010,7 +1010,7 @@ window.showroomCollection=[
     "slug": "apple-gloves",
     "name": "Apple Gloves",
     "chapter": "II",
-    "price": "$58",
+    "price": "$35",
     "tagline": "The forbidden fruit, hand-painted.",
     "description": "A pair of white work gloves hand-painted with eye-faced apples \u2014 one red on the left, one blue on the right. Each pair is unique; the painting registers differently on every casting.",
     "images": [
@@ -1036,7 +1036,7 @@ window.showroomCollection=[
     "slug": "oh-allah-tee",
     "name": "Oh Allah Tee",
     "chapter": "I",
-    "price": "$64",
+    "price": "$60",
     "tagline": "A dua for the distracted heart.",
     "description": "Neon yellow cotton baby tee, printed with two mirrored lion figures and a dua in Arabic script \u2014 followed in English below. Bleached-out, sun-stressed. A plea and a warning in the same breath. Boxy crop.",
     "images": [
@@ -1076,7 +1076,7 @@ window.showroomCollection=[
     "slug": "atlantis-parlour-tank",
     "name": "Atlantis Parlour Tank",
     "chapter": "IV",
-    "price": "$88",
+    "price": "$60",
     "tagline": "Every pleasure has a number.",
     "description": "White ribbed maxi tank dip-dyed red at the shoulders, printed all-over with classified-looking adult newspaper advertisements \u2014 \"The Atlantis Parlour,\" \"Easy Pleasures,\" \"Satisfaction Guaranteed.\" Found language, worn as text. Raw hem.",
     "images": [
@@ -1116,7 +1116,7 @@ window.showroomCollection=[
     "slug": "007-tee",
     "name": "007 Angels Tee",
     "chapter": "IV",
-    "price": "$78",
+    "price": "$60",
     "tagline": "Licensed to feel.",
     "description": "Raw white cotton tee, airbrushed with two identical wingless angels in blue and pink, crossed revolvers at center chest. \"007\" in rose-pink block type below. The baroque meets the bargain rack. Regular fit, 6oz cotton.",
     "images": [
@@ -1150,7 +1150,7 @@ window.showroomCollection=[
     "slug": "bulletproof-tee",
     "name": "Bulletproof Tee",
     "chapter": "IV",
-    "price": "$78",
+    "price": "$60",
     "tagline": "Tested, not certified.",
     "description": "Raw white cotton tee, airbrushed with a full-front composition of a woman in chains with two crossed swords above \u2014 \"Bulletproof\" in hand-script at the top. Worn, saturated, lot-varied. Regular fit, 6oz cotton.",
     "images": [
@@ -1184,7 +1184,7 @@ window.showroomCollection=[
     "slug": "eternal-thermal",
     "name": "Eternal Thermal",
     "chapter": "II",
-    "price": "$88",
+    "price": "$120",
     "tagline": "The only word worth repeating.",
     "description": "Cream ribbed thermal long-sleeve, airbrushed with a dramatic pink-washed face, cross, heart, and \"AMEN\" \u2014 \"Eternal\" in black script below with a red lip print. The devotion is sincere. Worn soft.",
     "images": [
@@ -1218,7 +1218,7 @@ window.showroomCollection=[
     "slug": "eternal-crewneck",
     "name": "Eternal Crewneck",
     "chapter": "II",
-    "price": "$118",
+    "price": "$80",
     "tagline": "Girl with a pearl earring. Eternal.",
     "description": "Butter-yellow crewneck sweatshirt with an oversized airbrushed face \u2014 Vermeer-inspired, rendered in blue and pink tones \u2014 and \"Eternal\" in black gothic script. \"honey\" in small script at the collar. Pre-washed heavyweight fleece.",
     "images": [
@@ -1252,7 +1252,7 @@ window.showroomCollection=[
     "slug": "kiss-rosary-tee",
     "name": "Kiss Rosary Tee",
     "chapter": "II",
-    "price": "$78",
+    "price": "$60",
     "tagline": "Pray for it. Kiss it. Both.",
     "description": "Raw white cotton tee, airbrushed with a full-body angel figure \u2014 luminous blue, reaching \u2014 and a red rosary heart at the chest. \"kiss\" in cursive at the hem. Pink-red wash from airbrush gives a relic warmth. Regular fit.",
     "images": [
@@ -1292,7 +1292,7 @@ window.showroomCollection=[
     "slug": "jesus-health-insurance-hoodie",
     "name": "Jesus Is My Health Insurance Hoodie",
     "chapter": "IV",
-    "price": "$148",
+    "price": "$80",
     "tagline": "Better coverage. No co-pay.",
     "description": "Gold Champion reverse-weave hoodie, front-printed with a blurred diptych of two figures and the text \"Jesus Is My Health Insurance.\" A policy statement. Heavyweight cotton, kangaroo pocket, drawstring hood.",
     "images": [
@@ -1326,7 +1326,7 @@ window.showroomCollection=[
     "slug": "god-loves-you-v2-tee",
     "name": "GOD Loves YOU!!! Tee",
     "chapter": "IV",
-    "price": "$78",
+    "price": "$60",
     "tagline": "He has a great plan. He told them.",
     "description": "White cotton tee, printed all-over with two anime-style doll figures and a serpent-eye composition below. \"GOD Loves YOU!!! He Has A Great Plan For YOUR Life\" in blue bold type. The sincerity is the whole point. Regular fit, 6oz cotton.",
     "images": [
@@ -1360,7 +1360,7 @@ window.showroomCollection=[
     "slug": "jesus-companion-tee",
     "name": "Jesus Is My Companion Tee",
     "chapter": "II",
-    "price": "$78",
+    "price": "$60",
     "tagline": "Present in the room. Always.",
     "description": "Raw white cotton tee, airbrushed with a large pink-washed devotional face, cross, and \"Jesus is my companion\" in flowing script at top. \"AMEN\" in red below the cross. Regular fit, soft-hand airbrush finish.",
     "images": [
@@ -1394,7 +1394,7 @@ window.showroomCollection=[
     "slug": "spiritual-warfare-tank",
     "name": "Spiritual Warfare Tank",
     "chapter": "I",
-    "price": "$68",
+    "price": "$60",
     "tagline": "The war no one admits is happening.",
     "description": "White ribbed racerback maxi tank, chest-printed with \"Spiritual Warfare\" in hand-script red italics. The text is the design. Worn long, worn every day. Ribbed cotton, raw hem.",
     "images": [
@@ -1428,7 +1428,7 @@ window.showroomCollection=[
     "slug": "warlord-longsleeve",
     "name": "WARLORD Longsleeve",
     "chapter": "IV",
-    "price": "$88",
+    "price": "$120",
     "tagline": "The title, not the man.",
     "description": "Heavy black long-sleeve tee, chest-printed with \"WARLORD\" in blood-red airbrushed lettering \u2014 raised from the fabric like a scar. A name. A rank. Heavyweight cotton, regular fit.",
     "images": [

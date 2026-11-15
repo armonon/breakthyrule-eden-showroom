@@ -117,7 +117,7 @@
    const f=feetOf(),w=wish(),{f:fwd}=view(),air=P.motion.inspect().airborne&&!late;
    if(state&&['bar','pipe','rope'].includes(state.kind)){if(state.t>.12)gripJump();return true;}
    if(state?.kind==='hang'){hangJump(w);return true;}
-   if(state?.kind==='wallrun'){const s=state;const v=s.tangent.clone().multiplyScalar(s.speed*.9).addScaledVector(s.normal,4.8+1.2*mom);state=null;release(v,(6.3+1.6*mom)*Math.pow(.94,chain));chain++;bonus+=.06;stats.walljumps++;cool.wallrun=clock+.2;cool.walljump=clock+.15;P.sway.bump(.5,s.side);P.footsteps?.step(P.surface(),7);return true;}
+   if(state?.kind==='wallrun'){if(chain>=CHAIN_MAX)return true;const s=state;const v=s.tangent.clone().multiplyScalar(s.speed*.9).addScaledVector(s.normal,4.8+1.2*mom);state=null;release(v,(6.3+1.6*mom)*Math.pow(.94,chain));chain++;bonus+=.06;stats.walljumps++;cool.wallrun=clock+.2;cool.walljump=clock+.15;P.sway.bump(.5,s.side);P.footsteps?.step(P.surface(),7);return true;}
    if(state)return true;if(air)return wallKick(f,w,fwd);
    {const hit=findGrip(true);if(hit){startGrip(hit);return true;}}
    const dir=w.dir.lengthSq()>.01?w.dir.clone().normalize():fwd;
@@ -157,7 +157,7 @@
    if(s.kind==='bar'){const L=1.5,tv=s.av*L;vel=s.n.clone().multiplyScalar(Math.cos(s.ang)*tv).addScaledVector(f,1.6);vy=Math.sin(s.ang)*tv+3.6;}
    else if(s.kind==='pipe'){vel=s.n.clone().multiplyScalar(4.2+1.2*mom).addScaledVector(r,w.x*2);vy=5.4+1.2*mom;}
    else{const L=s.s+.9;vel=new T.Vector3(s.wx*L,0,s.wz*L).addScaledVector(f,1.8);vy=4.6+Math.max(0,new T.Vector3(s.wx,0,s.wz).dot(f))*1.2;}
-   vel.multiplyScalar(k);vy=Math.min(vy*k,7.5+1.5*mom);if(vel.length()>8+2*mom)vel.setLength(8+2*mom);state=null;release(vel,vy);chain++;bonus+=.04;cool.grip=clock+.22;cool.grab=clock+.15;P.sway.bump(.45,0);P.footsteps?.step(P.surface(),6);P.requestDraw();
+   vel.multiplyScalar(k);vy=Math.min(vy*k,7.5+1.5*mom);if(vel.length()>8+2*mom)vel.setLength(8+2*mom);state=null;release(vel,vy);chain=Math.min(CHAIN_MAX,chain+1);bonus+=.04;cool.grip=clock+.22;cool.grab=clock+.15;P.sway.bump(.45,0);P.footsteps?.step(P.surface(),6);P.requestDraw();
   }
   function letGo(){const s=state;state=null;release(s.kind==='pipe'?s.n.clone().multiplyScalar(.8):new T.Vector3(),0);cool.grip=clock+.5;}
   function updateGrip(dt){
@@ -350,6 +350,8 @@
   function validateState(value){refresh();const s=codec().decode(value);
    if(s.version!==1||s.sig!==sig||!['crouchAt','clock','lean','fov','lift'].every(k=>Number.isFinite(s[k]))||!s.cool||!Number.isFinite(s.cool.wallrun)||!Number.isFinite(s.cool.grab)||s.state&&!['hang','climb','warp','scramble','wallrun','bar','pipe','rope'].includes(s.state.kind))throw Error('Incompatible parkour snapshot.');
    if(s.lastUpdateTick!==null&&(!Number.isSafeInteger(s.lastUpdateTick)||s.lastUpdateTick<0)||s.clock<0||!s.stats||['wallruns','scrambles','grabs','climbs','hangs','leaps','drops','rolls','hard'].some(k=>!Number.isSafeInteger(s.stats[k])||s.stats[k]<0))throw Error('Invalid parkour counters.');
+   if(s.mom!==undefined&&(!Number.isFinite(s.mom)||s.mom<0||s.mom>1)||s.chain!==undefined&&(!Number.isSafeInteger(s.chain)||s.chain<0||s.chain>CHAIN_MAX)||s.bonus!==undefined&&(!Number.isFinite(s.bonus)||s.bonus<0||s.bonus>1)||s.cool.walljump!==undefined&&(!Number.isFinite(s.cool.walljump)||s.cool.walljump<0)||s.stats.walljumps!==undefined&&(!Number.isSafeInteger(s.stats.walljumps)||s.stats.walljumps<0))throw Error('Invalid parkour momentum snapshot.');
+   if(s.cool.grip!==undefined&&(!Number.isFinite(s.cool.grip)||s.cool.grip<0)||s.stats.grips!==undefined&&(!Number.isSafeInteger(s.stats.grips)||s.stats.grips<0))throw Error('Invalid grip counters.');
    const v=s.state,vec=p=>p?.isVector3&&[p.x,p.y,p.z].every(Number.isFinite),nums=(o,ks)=>ks.every(k=>Number.isFinite(o[k]));
    const ledge=L=>L&&L.box&&vec(L.point)&&vec(L.normal)&&vec(L.stand)&&Number.isFinite(L.top)&&(!L.tangent||vec(L.tangent));
    if(v){if(!Number.isFinite(v.t)||v.t<0)throw Error('Invalid parkour timer.');
@@ -358,14 +360,17 @@
     if(v.kind==='climb'&&(!vec(v.from)||!nums(v,['dur','entry'])||v.dur<=0||typeof v.quick!=='boolean'))throw Error('Invalid climb snapshot.');
     if(v.kind==='warp'&&(!vec(v.from)||!vec(v.to)||!nums(v,['dur','arc','entry'])||v.dur<=0||!['hang','land'].includes(v.then)||v.then==='hang'&&!ledge(v.ledge)))throw Error('Invalid leap snapshot.');
     if(v.kind==='scramble'&&(!vec(v.normal)||!nums(v,['vy'])))throw Error('Invalid scramble snapshot.');
-    if(['bar','pipe','rope'].includes(v.kind)&&(!Number.isSafeInteger(v.id)||!gripOf(v.id)||v.kind==='bar'&&(!vec(v.n)||!nums(v,['ang','av','u']))||v.kind==='pipe'&&(!vec(v.n)||!nums(v,['y']))||v.kind==='rope'&&!nums(v,['s','qx','qz','wx','wz'])))throw Error('Invalid grip snapshot.');
+    if(['bar','pipe','rope'].includes(v.kind)){
+     const g=gripOf(v.id);
+     if(!Number.isSafeInteger(v.id)||!g||g.type!==v.kind||typeof v.cReady!=='boolean'||v.kind==='bar'&&(!vec(v.n)||!nums(v,['ang','av','u'])||v.u<.06||v.u>.94||Math.abs(v.ang)>1.65)||v.kind==='pipe'&&(!vec(v.n)||!nums(v,['y','step'])||v.y<g.y0-.2||v.y>g.y1-1.05||v.step<0)||v.kind==='rope'&&(!nums(v,['s','qx','qz','wx','wz'])||v.s<.5||v.s>g.len-.1||Math.abs(v.qx)>1.2||Math.abs(v.qz)>1.2))throw Error('Invalid grip snapshot.');
+    }
     if(v.kind==='wallrun'&&(!vec(v.normal)||!vec(v.tangent)||!nums(v,['speed','vy','side','step'])||!v.box))throw Error('Invalid wallrun snapshot.');
    }
    return s;
   }
   function restoreState(value){const s=validateState(value);
    ({state,cool,crouchAt,clock,lean,fov,lift,stats,lastUpdateTick}=s);cool.walljump??=0;cool.grip??=0;stats.walljumps??=0;stats.grips??=0;
-   mom=Number.isFinite(s.mom)?clamp(s.mom,0,1):0;chain=Number.isSafeInteger(s.chain)?clamp(s.chain,0,CHAIN_MAX):0;bonus=Number.isFinite(s.bonus)?clamp(s.bonus,0,1):0;
+   mom=s.mom??0;chain=s.chain??0;bonus=s.bonus??0;
   }
   return {ropePose,setMomentum(v){mom=clamp(+v||0,0,1);},takeMomentumBonus(){const b=bonus;bonus=0;return b;},chain:()=>chain,captureState,restoreState,validateState,updated:tick=>tick!==null&&lastUpdateTick===tick,wallBeside,wallAhead,floorAt,supportAt,solid,ledgeAhead,bodyFits,bodySweep,raycast,update,onJump,air,land,dropToHang,hands,
    crouchPressed(){crouchAt=clock;},active:()=>!!state,busy:()=>['climb','warp','scramble'].includes(state?.kind),kind:()=>state?.kind||null,lean:()=>lean,fov:()=>fov,lift:()=>lift,handsFull:()=>['hang','climb','scramble','bar','pipe','rope'].includes(state?.kind),

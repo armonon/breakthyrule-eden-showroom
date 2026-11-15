@@ -105,7 +105,7 @@ const MODELS={
   const points=[{x:23,y:1.2,z:-48},{x:25,y:3.3,z:-46},{x:23,y:5.4,z:-44},{x:25,y:7.5,z:-42},roofPoint('observatory',28.5,-42.5)];
   if(points.at(-1).y>0){routes.push({id:'observatory-challenge',label:'OBSERVATORY LEDGES',difficulty:'advanced',width:1.25,points});points.slice(0,-1).forEach(p=>{deck('observatory-challenge',p.x,p.y,p.z,1.25,1.25);climbs.push({...p,id:'observatory-challenge'});});routeCues.push({...points[0],label:'ADVANCED / LEAP AND GRAB'});}
  }
- const boxes=walls.map(([x,z,w,d,top])=>({minX:x-w/2,maxX:x+w/2,minZ:z-d/2,maxZ:z+d/2,top,bottom:-1})).concat(surfaces.filter(s=>!s.field));
+ const boxes=walls.map(([x,z,w,d,top])=>({minX:x-w/2,maxX:x+w/2,minZ:z-d/2,maxZ:z+d/2,top,bottom:-1})).concat(surfaces.filter(s=>!s.field),(root.parkourGrips?.boxes||[]).map(b=>({...b})));
  const fields=surfaces.filter(s=>s.field);
  const clearance=createBodyClearance({boxes:()=>boxes,fields:()=>fields});
  const inside=(b,x,z,m=0)=>x>b.minX-m&&x<b.maxX+m&&z>b.minZ-m&&z<b.maxZ+m;

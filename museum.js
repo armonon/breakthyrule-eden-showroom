@@ -28,7 +28,7 @@ window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{},camera=null
  }
  const body=rect(-1.25-m,4.5+m,-3-m,3+m),tunnel=rect(-2.5,1-.25,-width/2+m,width/2-m);
  const columns=[-2.55,-1.75,1.75,2.55].map(z=>new T.Vector3(-2.35,0,z));
- const place=pockets.place({name:'Museum',caption:['THE MUSEUM','BREAKTHYRULE / THE GALLERY'],
+ const place=pockets.place({name:'Museum',caption:['THE LOST EDEN ARCHIVE','MUSEUM / EXHIBITION, SCULPTURE & THE DAILY APPLE'],
   position:new T.Vector3(-9,0,-1),rotation:Math.PI,offset:new T.Vector3(-1000,0,0),width,height,beyond:1,behind:1.5,
   walk:[rect(-.7,1.2,-width/2+m,width/2-m),rect(hallA.x0+m,hallA.x1-m,hallA.z0+m,hallA.z1-m),
    rect(galleryOne.x0+m,galleryOne.x1-m,hallA.z1-.6,hallB.z0+.6),rect(hallB.x0+m,hallB.x1-m,hallB.z0+m,hallB.z1-m),
