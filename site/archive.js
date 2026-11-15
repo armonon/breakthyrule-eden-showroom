@@ -18,9 +18,12 @@
  addEventListener('storage',event=>{if(event.key===themeKey||event.key===null)setTheme(event.newValue);});
  const books=window.showroomBooks||[], views=['library','archive','forum'];
  const all={id:'all',title:'Everything',blurb:'Books and source material already on our shelf.',tags:books.map(b=>b.tag),query:''};
- let topics=[all], topicsError='', subjectGroups=[];
+ let topics=[all], topicsError='', subjectGroups=[], topicsReady=false;
+ const expandTopics=$('topic-expand-all');
  const initialHash=location.hash;
  const topicRequest=(async()=>{
+  // Keep the complete directory available with the page, even on a slow connection.
+  try{const saved=JSON.parse($('archive-topics-data')?.textContent||'null');if(Array.isArray(saved?.topics)&&Array.isArray(saved?.groups)&&saved.topics.length)return saved;}catch{}
   const topicAbort=new AbortController(),topicTimer=setTimeout(()=>topicAbort.abort(),6000);
   try{const response=await fetch('/site/data/topics.json',{cache:'no-cache',signal:topicAbort.signal});if(!response.ok)throw new Error();return await response.json();}
   catch{topicsError='Topic list unavailable. You can still browse and search all books.';return {topics:[],groups:[]};}
@@ -188,8 +191,22 @@
    item.section.hidden=!visible;item.section.open=query?visible>0:openGroups.has(item.id);
    item.count.textContent=String(visible);if(visible)groups.add(item.id);
   }
-  $('topic-matches').textContent=topicsError||(query?(matched.size?`${matched.size} matching ${matched.size===1?'topic':'topics'}`:'No topics match. Try another word.'):`${groups.size} groups · ${matched.size} topics`);
+  $('topic-matches').textContent=topicsError||(!topicsReady?'Loading subjects…':query?(matched.size?`${matched.size} matching ${matched.size===1?'topic':'topics'}`:'No topics match. Try another word.'):`${groups.size} groups · ${matched.size} topics`);
+  syncExpandTopics();
  }
+ function syncExpandTopics(){
+  if(!expandTopics)return;
+  const shown=topicSections.filter(item=>!item.section.hidden),expanded=shown.length>0&&shown.every(item=>item.section.open);
+  expandTopics.hidden=!topicsReady||!shown.length;
+  expandTopics.disabled=!!$('topic-query').value.trim();
+  expandTopics.textContent=expanded?'Collapse all groups':'Expand all groups';
+  expandTopics.setAttribute('aria-expanded',String(expanded));
+ }
+ if(expandTopics)expandTopics.onclick=()=>{
+  const expand=expandTopics.getAttribute('aria-expanded')!=='true';
+  for(const item of topicSections){if(item.section.hidden)continue;expand?openGroups.add(item.id):openGroups.delete(item.id);item.section.open=expand;}
+  syncExpandTopics();
+ };
  $('topic-query').oninput=filterTopics;
  function buildTopics(){
   $('topics').replaceChildren();$('forum-topics').replaceChildren();$('library-topics').replaceChildren();archiveButtons.length=0;forumButtons.length=0;libraryButtons.length=0;topicSections.length=0;
@@ -218,7 +235,7 @@
     const summary=el('summary',{},el('span',{textContent:group.title}),count);
     const section=el('details',{className:'topic-group'},summary,el('div',{className:'topic-group-links'},...buttons));
     section.open=openGroups.has(group.id);
-    section.ontoggle=()=>{if($('topic-query').value.trim())return;section.open?openGroups.add(group.id):openGroups.delete(group.id);for(const item of topicSections)if(item.id===group.id&&item.section.open!==section.open)item.section.open=section.open;};
+    section.ontoggle=()=>{if($('topic-query').value.trim())return;section.open?openGroups.add(group.id):openGroups.delete(group.id);for(const item of topicSections)if(item.id===group.id&&item.section.open!==section.open)item.section.open=section.open;syncExpandTopics();};
     topicSections.push({id:group.id,title:group.title,members,buttons,section,count});
     $(view==='archive'?'topics':view+'-topics').append(section);
    }
@@ -269,7 +286,7 @@
  }
  $('library-search').onsubmit=event=>{event.preventDefault();searchLibrary();};
  drawLibrary();renderArchive();const route=readRoute();showView(route.view,route.topic,false);
- const loadedTopics=await topicRequest;topics.push(...(loadedTopics.topics||[]));subjectGroups=loadedTopics.groups||[];buildTopics();
+ const loadedTopics=await topicRequest;topicsReady=true;topics.push(...(loadedTopics.topics||[]));subjectGroups=loadedTopics.groups||[];buildTopics();
  $('archive-total').textContent=`${books.length} texts · ${topics.length-1} topics`;renderArchive();
  if(location.hash===initialHash){const readyRoute=readRoute();showView(readyRoute.view,readyRoute.topic,false);}else if(activeView==='forum')renderForum();
 })();

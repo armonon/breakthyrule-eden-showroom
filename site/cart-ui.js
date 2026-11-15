@@ -57,7 +57,10 @@ function render(view = cart.view()) {
     plus.onclick = () => cart.setQuantity(l.id, l.item.quantity + 1);
     const remove = h('button', { type: 'button', className: 'link', textContent: 'Remove' }); remove.onclick = () => cart.remove(l.id);
     const editable = l.item.product === 'garment' || l.item.product === 'mystery-pack' || l.item.product === 'studio-product';
-    const edit = editable ? h('a', { className: 'link', href: l.item.product === 'studio-product' ? '/product?item='+encodeURIComponent(l.item.productId)+'&edit='+encodeURIComponent(l.id) : '/lab?edit=' + encodeURIComponent(l.id) + (l.item.product === 'mystery-pack' ? '#packages' : '#build'), textContent: 'Edit' }) : null;
+    const referenceId=l.item.sourceDesign||l.item.productDesign?.id;
+    const collectionRef=Object.hasOwn(PRODUCT_DESIGNS,referenceId)&&PRODUCT_DESIGNS[referenceId].garment===l.item.garment?referenceId:null;
+    const editHref=l.item.product==='studio-product'?'/product?item='+encodeURIComponent(l.item.productId)+'&edit='+encodeURIComponent(l.id):collectionRef?'/product?item='+encodeURIComponent(collectionRef)+'&edit='+encodeURIComponent(l.id)+'&nocover=1':'/lab?edit='+encodeURIComponent(l.id)+(l.item.product==='mystery-pack'?'#packages':'#build');
+    const edit = editable ? h('a', { className: 'link', href: editHref, textContent: 'Edit' }) : null;
     return h('li', { className: 'cart-line' }, art,
       h('div', { className: 'cart-info' },
         h('strong', { textContent: l.describe.title }),

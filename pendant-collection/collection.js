@@ -21,9 +21,13 @@ const spin = (item, view, autoplay = true) => {
   return node;
 };
 
+const finishArrival = window.btrArrival?.hold('necklace catalog') || (() => {});
 await ready;
 const metalwork = document.getElementById('metalwork');
 if (metalwork && !document.getElementById('necklaces')) {
+  // Release a stalled arrival screen without cancelling the collection itself.
+  // Slow connections can still finish mounting the necklaces after entry.
+  const timeout = setTimeout(() => finishArrival(new Error('Collection still loading')), 15000);
   try {
     const response = await fetch('/pendant-collection/catalog.json?v=prices-2');
     if (!response.ok) throw new Error('Collection unavailable');
@@ -32,8 +36,12 @@ if (metalwork && !document.getElementById('necklaces')) {
     mount(items);
   } catch (error) {
     console.warn('Necklace collection:', error.message);
+    finishArrival(error);
+  } finally {
+    clearTimeout(timeout);
+    finishArrival();
   }
-}
+} else finishArrival();
 
 function mount(items) {
   const section = el('section', {className: 'section wrap pendant-shelf', id: 'necklaces'});

@@ -62,10 +62,17 @@ test('wall-run kicks respect the six-jump chain cap and round-trip without chang
 test('actual app Space handlers preserve held state, avoid repeat jumps and release after interruption',()=>{
  const app=readFileSync(new URL('app.js',root),'utf8'),handlers={},keys=new Set();let jumps=0,blocked=false;
  const c=vm.createContext({document:{addEventListener:(name,fn)=>handlers[name]=fn},modalOpen:()=>blocked,state:{ready:true},expedition:null,expeditionPrefs:()=>null,keys,moveKeys:new Set(['w','a','s','d']),movement:{jump(){assert.ok(keys.has('space'),'hold is visible when jumping');jumps++;}},renderer:{domElement:{focus(){}}},requestDraw(){},fistsEngaged:()=>false,arena:null,fists:null,thirdOn:false});
+ c.window=c;vm.runInContext(readFileSync(new URL('game-bindings.js',root),'utf8'),c);c.edenControls.setContext(()=> 'walk');
  const start=app.indexOf('function setMovement('),end=app.indexOf("document.addEventListener('keydown',event=>{if(modalOpen()",start);vm.runInContext(app.slice(start,end),c);
- for(const line of app.split('\n').filter(line=>line.startsWith("document.addEventListener('keydown',event=>{if(modalOpen()")||line.startsWith("document.addEventListener('keyup',event=>{const key=")))vm.runInContext(line,c);
- const event=(repeat=false)=>({key:' ',code:'Space',repeat,target:{tagName:'CANVAS'},preventDefault(){}});
- handlers.keydown(event());handlers.keydown(event(true));assert.equal(jumps,1);assert.ok(keys.has('space'));
- blocked=true;handlers.keyup(event());assert.equal(keys.has('space'),false,'release still works while a modal blocks presses');
- blocked=false;handlers.keydown(event());assert.equal(jumps,2);handlers.keyup(event());assert.equal(keys.has('space'),false);
+ for(const line of app.split('\n').filter(line=>line.startsWith("document.addEventListener('keydown',event=>{if(modalOpen()")||line.startsWith("document.addEventListener('keyup',event=>{const ")))vm.runInContext(line,c);
+ const event=(repeat=false,type='keydown',code='Space')=>({type,key:code==='Space'?' ':code.slice(3).toLowerCase(),code,repeat,target:{tagName:'CANVAS'},preventDefault(){}});
+ assert.equal(typeof handlers.keydown,'function');assert.equal(typeof handlers.keyup,'function');
+ handlers.keydown({...event(),key:'Unidentified'});handlers.keydown(event(true));assert.equal(jumps,1);assert.ok(keys.has('space'));
+ blocked=true;handlers.keyup(event(false,'keyup'));assert.equal(keys.has('space'),false,'release still works while a modal blocks presses');
+ blocked=false;handlers.keydown(event());assert.equal(jumps,2);handlers.keyup(event(false,'keyup'));assert.equal(keys.has('space'),false);
+ c.setMovement(' ',true);c.setMovement(' ',true);assert.equal(jumps,3,'literal Space uses the same guarded hold');c.setMovement(' ',false);assert.equal(keys.has('space'),false);
+ c.freeView=()=>{};const mobileLine=app.split('\n').find(line=>line.trimStart().startsWith('move:(key,pressed)=>setMovement(key,pressed),jump(pressed=true)'));
+ assert.ok(mobileLine);vm.runInContext('globalThis.mobile=({'+mobileLine.trim()+'});',c);
+ const release=c.mobile.jump();assert.equal(jumps,4);assert.ok(keys.has('space'));blocked=true;release();assert.equal(jumps,4);assert.equal(keys.has('space'),false);c.mobile.jumpUp();assert.equal(keys.has('space'),false);
+ blocked=false;assert.equal(c.edenControls.set('jump',0,'KeyU').ok,true);handlers.keydown(event());assert.equal(keys.has('space'),false,'old Space no longer jumps after remapping');handlers.keyup(event(false,'keyup'));handlers.keydown(event(false,'keydown','KeyU'));assert.equal(jumps,5);assert.equal(keys.has('space'),true);blocked=true;handlers.keyup(event(false,'keyup','KeyU'));assert.equal(keys.has('space'),false,'remapped jump releases through modal interruption');
 });

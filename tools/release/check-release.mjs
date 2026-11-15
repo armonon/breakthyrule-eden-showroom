@@ -5,6 +5,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
+import {parseEmbeddedTopics,validateArchiveTopics} from '../archive/validate-topics.mjs';
 
 const args=process.argv.slice(2),option=name=>{const i=args.indexOf(name);return i<0?null:args[i+1];};
 const root=path.resolve(option('--root')||fileURLToPath(new URL('../../',import.meta.url)));
@@ -51,6 +52,14 @@ function catalogAsset(value,owner,expected){
 for(const name of config.requiredEntries)requireFile(name,'public entry');
 for(const name of config.requiredRuntime)requireFile(name,'game/runtime dependency');
 for(const name of config.recoveredAssets)requireFile(name,'latest verified storefront asset baseline');
+
+// The topic catalog is fetched dynamically, so ordinary HTML/import traversal misses it.
+const archiveTopics=readJson('site/data/topics.json');
+const archiveBaseline=readJson('tools/archive/topic-baseline.json');
+let embeddedTopics=null;
+try{embeddedTopics=parseEmbeddedTopics(fs.readFileSync(path.join(root,'archive.html'),'utf8'));}
+catch(error){fail(error.message);}
+if(archiveTopics&&archiveBaseline)for(const error of validateArchiveTopics(archiveTopics,embeddedTopics,archiveBaseline))fail(error);
 
 const sculptures=readJson('assets/museum-sculptures/catalog.json');
 if(!Array.isArray(sculptures?.sculptures)||sculptures.sculptures.length<7)fail('Museum requires the seven catalogued sculptures');
@@ -117,9 +126,9 @@ if(failures.length){
   const sourceDirty=sourceStatus==null?null:sourceStatus.length>0;
   if(args.includes('--write-manifest')){
     if(!sourceCommit||!/^[a-f0-9]{40}$/i.test(sourceCommit))throw Error('A full source commit is required to stamp a release');
-    const manifest={schemaVersion:2,generatedAt:new Date().toISOString(),sourceCommit,sourceCommitRole:sourceDirty?'base commit; uncommitted files are identified by contentVersion':'build source commit',sourceDirty,sourceBranch:process.env.BRANCH||git('branch','--show-current')||null,contentVersion,animationClips:Object.keys(clips.clips||{}).length,inputAuthorityEnabled:false,publicMultiplayerHostConfigured:false,internetMusicRelayConfigured:false,netlifyPathNormalization:'lowercase',coverage:{entryCount:config.requiredEntries.length,validatedFiles:files.length,museumSculptures:sculptures.sculptures.length,newspaperPages:daily.pages.length,recoveredStorefrontAssets:config.recoveredAssets.length},files};
+    const manifest={schemaVersion:2,generatedAt:new Date().toISOString(),sourceCommit,sourceCommitRole:sourceDirty?'base commit; uncommitted files are identified by contentVersion':'build source commit',sourceDirty,sourceBranch:process.env.BRANCH||git('branch','--show-current')||null,contentVersion,animationClips:Object.keys(clips.clips||{}).length,inputAuthorityEnabled:false,publicMultiplayerHostConfigured:false,internetMusicRelayConfigured:false,netlifyPathNormalization:'lowercase',coverage:{entryCount:config.requiredEntries.length,validatedFiles:files.length,archiveTopics:archiveTopics.topics.length,archiveGroups:archiveTopics.groups.length,museumSculptures:sculptures.sculptures.length,newspaperPages:daily.pages.length,recoveredStorefrontAssets:config.recoveredAssets.length},files};
     fs.writeFileSync(path.join(root,'game-release.json'),JSON.stringify(manifest,null,2)+'\n');
   }
   if(option('--report'))fs.writeFileSync(path.resolve(option('--report')),JSON.stringify({ok:true,root,sourceCommit,sourceDirty,contentVersion,files},null,2)+'\n');
-  console.log(JSON.stringify({ok:true,sourceCommit,contentVersion,validatedFiles:files.length,museumSculptures:sculptures.sculptures.length,newspaperPages:daily.pages.length,animationClips:Object.keys(clips.clips||{}).length,manifestWritten:args.includes('--write-manifest')},null,2));
+  console.log(JSON.stringify({ok:true,sourceCommit,contentVersion,validatedFiles:files.length,archiveTopics:archiveTopics.topics.length,archiveGroups:archiveTopics.groups.length,museumSculptures:sculptures.sculptures.length,newspaperPages:daily.pages.length,animationClips:Object.keys(clips.clips||{}).length,manifestWritten:args.includes('--write-manifest')},null,2));
 }

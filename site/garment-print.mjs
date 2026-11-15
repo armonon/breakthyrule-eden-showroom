@@ -1,3 +1,4 @@
+import { drawGraphicLayer } from '/site/graphic-treatment.mjs?v=1';
 // Prints artwork onto a loaded 3D blank — shared by the Garment Lab and the shop hero.
 // Planar projection in the fabric shader, in garment space: the front gets a composition of up to three graphics,
 // the back one big print (16 × 20 in on every size). It follows the folds, turns with the garment and spans
@@ -34,7 +35,8 @@ async function sideCanvas(plan, inkLight, back, backSize, uploads) {
   const fit = (img, cx, cy, w, h) => { if (!img) return; const k = Math.min(w / img.width, h / img.height); x.drawImage(img, cx - img.width * k / 2, cy - img.height * k / 2, img.width * k, img.height * k); };
   if (plan.kind === 'big' || plan.kind === 'refs') {
     const imgs = await preloadArt(plan.ids, uploads);
-    if (plan.kind === 'big' || imgs.length === 1) fit(imgs[0], W / 2, H / 2, W, H);
+    if (plan.layers?.length) { for (const layer of plan.layers) { const index=plan.ids.indexOf(layer.id);if(imgs[index])drawGraphicLayer(x,imgs[index],layer,W,H); } }
+    else if (plan.kind === 'big' || imgs.length === 1) fit(imgs[0], W / 2, H / 2, W, H);
     else if (imgs.length === 2) { fit(imgs[0], W / 2, H * .33, W * .9, H * .62); fit(imgs[1], W / 2, H * .8, W * .7, H * .38); }
     else { fit(imgs[0], W / 2, H * .44, W * .78, H * .7); fit(imgs[1], W * .22, H * .82, W * .4, H * .34); fit(imgs[2], W * .78, H * .82, W * .4, H * .34); }
   } else if (plan.kind === 'minimal') {
@@ -88,18 +90,18 @@ const isFabric = m => !/topstitch|thread/i.test(m.name);
 //   print     { x, y, scale } — the customer's nudge of the front print
 // Returns { front, back } textures (null when a side has no print), or null when a newer apply() took over.
 export function createPrinter(viewer) {
-  let token = 0, lastKey = '', texKey = '', texF = null, texB = null, model = null;
+  let token = 0, lastKey = '', texKey = '', texF = null, texB = null, model = null, frames = null;
   async function apply({ kind, plan, color, backSize = 'full', print = { x: 0, y: 0, scale: 1 }, uploads = [] }) {
     const T = window.THREE, m = viewer.model(); if (!m || !T) return null;
     if (m !== model) { model = m; lastKey = ''; texKey = ''; }
     const my = ++token;
     // Dye
-    m.traverse(n => { if (!n.isMesh) return; for (const mat of [].concat(n.material)) { if (isFabric(mat)) { mat.map = null; mat.color.copy(color); } else mat.color.copy(color).multiplyScalar(.55); mat.needsUpdate = true; } });
+    m.traverse(n => { if (!n.isMesh || n.userData.studioOriginalArtwork) return; for (const mat of [].concat(n.material)) { if (isFabric(mat)) { mat.map = null; mat.color.copy(color); } else mat.color.copy(color).multiplyScalar(.55); mat.needsUpdate = true; } });
     // Measure the garment in its own space
     const garmentRoot = m.children[0] || m; garmentRoot.updateMatrixWorld(true);
     const inv = new T.Matrix4().copy(garmentRoot.matrixWorld).invert();
     const fabric = [], box = new T.Box3();
-    m.traverse(n => { if (!n.isMesh) return; const rel = new T.Matrix4().multiplyMatrices(inv, n.matrixWorld);
+    m.traverse(n => { if (!n.isMesh || n.userData.studioOriginalArtwork) return; const rel = new T.Matrix4().multiplyMatrices(inv, n.matrixWorld);
       if (!n.geometry.boundingBox) n.geometry.computeBoundingBox(); box.union(n.geometry.boundingBox.clone().applyMatrix4(rel));
       for (const mat of [].concat(n.material)) if (isFabric(mat)) fabric.push([n, mat]); });
     const size = box.getSize(new T.Vector3()), min = box.min, max = box.max;
@@ -117,6 +119,7 @@ export function createPrinter(viewer) {
       if (cy - hh < min.y + .03) { const room = (top - min.y - .03) / 2; const s2 = room / hh; hw *= s2; hh *= s2; cy = top - hh; }
       back = new T.Vector4(min.x + size.x * .5, cy, hw, hh);
     }
+    frames={root:garmentRoot,front:{rect:front,z:max.z},back:{rect:back,z:min.z}};
     const light = (color.r * .3 + color.g * .59 + color.b * .11) < .35;
     const key = JSON.stringify([plan, light, pr, backSize, color.getHex(), uploads]);
     if (key === lastKey) { viewer.redraw(); return { front: texF, back: texB }; }
@@ -144,5 +147,5 @@ export function createPrinter(viewer) {
     viewer.redraw();
     return { front: f, back: b };
   }
-  return { apply, textures: () => ({ front: texF, back: texB }), reset() { lastKey = ''; texKey = ''; } };
+  return { apply, frame:side=>frames?{root:frames.root,...frames[side]}:null, textures: () => ({ front: texF, back: texB }), reset() { lastKey = ''; texKey = ''; } };
 }

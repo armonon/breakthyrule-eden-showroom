@@ -105,16 +105,21 @@ window.createArena=function({T,scene,camera,renderer,player,multiplayer,requestD
  canvas.addEventListener('click',()=>{if(active&&!locked)canvas.requestPointerLock?.();});
  document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===canvas;q('.arena-lock').hidden=locked||!active;if(!locked)blocking=false;});
  document.addEventListener('mousemove',event=>{if(!active||!locked||dead)return;yaw-=event.movementX*.0024;pitch=T.MathUtils.clamp(pitch-event.movementY*.0024,-1.2,1.2);aimFromAngles();requestDraw();});
- canvas.addEventListener('mousedown',event=>{if(!active||!locked)return;if(event.button===0)attack();else if(event.button===2&&weapon==='sword')blocking=true;});
- document.addEventListener('mouseup',event=>{if(event.button===2)blocking=false;});
+ canvas.addEventListener('mousedown',event=>{if(window.edenControls||!active||!locked)return;if(event.button===0)attack();else if(event.button===2&&weapon==='sword')blocking=true;});
+ document.addEventListener('mouseup',event=>{if(!window.edenControls&&event.button===2)blocking=false;});
  canvas.addEventListener('contextmenu',event=>{if(active)event.preventDefault();});
  document.addEventListener('keydown',event=>{
-  if(!active||event.target.closest?.('input,textarea,select,[contenteditable]'))return;
-  const key=event.key.toLowerCase();
+  if(!active||event.repeat||(window.edenControls?.blockedModifiers(event)??(event.ctrlKey||event.metaKey||event.altKey||event.isComposing))||event.target?.isContentEditable||event.target.closest?.('input,textarea,select,button,a,[contenteditable]')||document.querySelector('dialog[open], [aria-modal="true"]'))return;
+  const key=window.edenControls?.key(event)??event.key.toLowerCase();
+  if(key==='fire'){event.preventDefault();if(locked)attack();return;}
+  if(key==='aim'){event.preventDefault();if(locked&&!dead&&weapon==='sword')blocking=true;return;}
   if(key==='1')setWeapon('sword');else if(key==='2')setWeapon('crossbow');else if(key==='q')setWeapon(weapon==='sword'?'crossbow':'sword');
   else if(key==='tab'){event.preventDefault();q('.arena-scores').hidden=false;renderScores();}
  });
- document.addEventListener('keyup',event=>{if(event.key==='Tab')q('.arena-scores').hidden=true;});
+ document.addEventListener('keyup',event=>{const key=window.edenControls?.key(event)??event.key.toLowerCase();if(key==='aim')blocking=false;if(key==='tab')q('.arena-scores').hidden=true;});
+ const releaseInputs=()=>{blocking=false;q('.arena-scores').hidden=true;};
+ const refreshHints=()=>{const hint=(id,fallback)=>window.edenControls?.hint(id)||fallback;q('.arena-weapon small').textContent=hint('weapon1','1')+' sword · '+hint('weapon2','2')+' crossbow · '+hint('swap','Q')+' swap · '+hint('aim','Right mouse')+' block · '+hint('scores','Tab')+' scores';q('.arena-lock small').textContent='Mouse aims · '+hint('fire','Left mouse')+' attacks · Esc frees the mouse';};
+ refreshHints();window.addEventListener('blur',releaseInputs);document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseInputs();});window.edenControls?.onChange(()=>{releaseInputs();refreshHints();});
  function setWeapon(next){if(next===weapon)return;weapon=next;blocking=false;swingStart=-1;q('.arena-weapon-name').textContent=next==='sword'?'Sword':'Crossbow';requestDraw();}
  function aimFromAngles(){player.aim.copy(player.position).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));}
  function attack(){

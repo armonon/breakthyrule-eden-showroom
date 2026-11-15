@@ -175,7 +175,7 @@
    if(built&&!crowd.length&&hall)hall.traverse(o=>{if(o.name==='Masked guest image card')crowd.push({card:o,home:o.position.clone(),alive:true,hp:2,delay:0,fall:0,speed:0});});
    const eye=camera.position;let text=null;
    // The ticket on the altar.
-   if(built&&inOffice()&&ticket?.visible&&!showdown){const a=altarWorld();if(a&&Math.hypot(eye.x-a.x,eye.z-a.z)<2.2)text='<kbd>F</kbd> TAKE THE TICKET';}
+   if(built&&inOffice()&&ticket?.visible&&!showdown){const a=altarWorld();if(a&&Math.hypot(eye.x-a.x,eye.z-a.z)<2.2)text='<kbd>'+(window.edenControls?.hint('chapterInteract')||'F')+'</kbd> TAKE THE TICKET';}
    // The crowd rushes during the showdown.
    if(showdown){showdown.t+=dt;const target=new T.Vector3(eye.x,0,eye.z);
     for(const g of crowd){const c=g.card;
@@ -192,12 +192,13 @@
    const place=pockets?.inside(eye);labNear=false;dbg.place=place?.name||null;dbg.mono=(()=>{const m=monolithWorld();return m?+Math.hypot(eye.x-m.x,eye.z-m.z).toFixed(2):null;})();
    // (The cube's inside is built far from everything else, so being this close to its monolith means you are in it.)
    {const m=monolithWorld();if(m&&Math.hypot(eye.x-m.x,eye.z-m.z)<4.6&&Math.abs(eye.y-1.7-m.y)<4){labNear=true;
-     if(canEnterLab())text=text||'<kbd>F</kbd> ENTER THE GARMENT LAB';
+     if(canEnterLab())text=text||'<kbd>'+(window.edenControls?.hint('chapterInteract')||'F')+'</kbd> ENTER THE GARMENT LAB';
      else if(clock-sealedAt>6){sealedAt=clock;W()?.chapter('lab').then(c=>W()?.card('THE CUBE IS SEALED',(c.sealed||'IT WANTS KEYS')+' · OR A TICKET','THE BLACK CUBE',2800));}}}
    // Wear the free garment again if the character was rebuilt (or on a new visit).
    const model=playerBody?.model?.();if(model&&model!==lastModel){lastModel=model;const s=saved();if(s&&!model.root.userData.freeGarment)wear(s.design);}
    showPrompt(text);
   }
+  function interactionActive(){if(labEntering||labNear&&canEnterLab())return true;if(!built||!inOffice()||!ticket?.visible||showdown)return false;const a=altarWorld(),eye=camera.position;return !!a&&Math.hypot(eye.x-a.x,eye.z-a.z)<2.2;}
   function interact(){
    if(labOpen||document.querySelector('dialog[open]'))return false;
    if(labEntering)return true;
@@ -210,8 +211,11 @@
    }
    return false;
   }
-  document.addEventListener('keydown',e=>{if(e.key.toLowerCase()!=='f'||e.repeat||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)||e.target.isContentEditable)return;if(interact()){e.preventDefault();e.stopPropagation();}},true);
-  return {update,shotHook,openLab,wear,interact,inspect:()=>({built,office:inOffice(),ticket:!!ticket?.visible,crowd:crowd.length,alive:crowd.filter(g=>g.alive).length,showdown:!!showdown,keysOut:keys.length,keyCount,labNear,dbg,garment:saved()?.design||null}),
+  function onStoryKey(e){if(e.defaultPrevented||e.repeat||(window.edenControls?.blockedModifiers(e)??(e.ctrlKey||e.metaKey||e.altKey||e.isComposing))||document.querySelector('dialog[open]')||e.target.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target.tagName))return;
+   if(window.edenControls?window.edenControls.key(e)!=='chapter':e.key.toLowerCase()!=='f')return;
+   if(interact()){e.preventDefault();e.stopPropagation();}}
+  document.addEventListener('keydown',onStoryKey,true);
+  return {interactionActive,update,shotHook,openLab,wear,interact,inspect:()=>({built,office:inOffice(),ticket:!!ticket?.visible,crowd:crowd.length,alive:crowd.filter(g=>g.alive).length,showdown:!!showdown,keysOut:keys.length,keyCount,labNear,dbg,garment:saved()?.design||null}),
    _debug:{build,startShowdown,get crowd(){return crowd;},scatterKeys,altarWorld}};
  };
 })(window);

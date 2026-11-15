@@ -87,7 +87,12 @@
     "worlds.js",
     "products/web/logo.webp",
     "site/eden-apple.css",
-    "site/shared-header.js"
+    "site/shared-header.js",
+    "site/eden-apple-red-bitmap.png",
+    "site/arrival.js",
+    "site/arrival.css",
+    "site/arrival-film.mjs",
+    "site/data/topics.json"
   ],
   "recoveredAssets": [
     "_headers",

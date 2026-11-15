@@ -24,6 +24,24 @@
   const inputs=controlled?root.createExpeditionInputs({T,world,layout,worldRevision,getRoom:()=>room,createActor,applyPose(id,pose){const p=room.players.find(p=>p.id===id);Object.assign(p,pose);p.checkpoint={x:p.x,y:p.y,z:p.z};p.poseRejected=false;if(['bail','hang','mantle','climb','ragdoll','vault','scramble'].includes(p.movement))p.reloadUntil=0;escape(p);},applyAction:(id,data)=>command(data,id,true)}):null;
   function escape(p){if(p.status==='alive'&&room.collected.length===room.pages.length&&p.y<1.2&&Math.abs(p.x-layout.exit[0])<1.35&&p.z<layout.exit[1]+1.1){p.status='escaped';p.reloadUntil=0;room.message=p.name+' reached the ceremony.';finish();}}
   const distance=(a,b)=>Math.hypot(a.x-b.x,(a.y||0)-(b.y||0),a.z-b.z);
+  // Use the accepted body stance and the same dimensions as collision. A fixed
+  // 1.3m endpoint can sit above a low roof while the actual player lies below it.
+  function stanceHeight(p){
+   if(['ragdoll','bail','prone'].includes(p.movement))return .65;
+   const profile=root.playerBodyProfile(p.character);
+   return ['crouch','slide'].includes(p.movement)?profile.crouch:profile.height;
+  }
+  function eyeHeight(p){
+   if(['ragdoll','bail','prone'].includes(p.movement))return .65*.94;
+   // Match the entry camera's steady 55cm crouch drop. The collision capsule
+   // scales differently with body height; it is not the rendered eye anchor.
+   const standing=root.playerBodyProfile(p.character).height*.94;
+   return ['crouch','slide'].includes(p.movement)?standing-.55:standing;
+  }
+  function sightAt(a,aHeight,b,bHeight){
+   // world.sight takes feet positions and adds its legacy 1.3m eye offset.
+   return world.sight({x:a.x,y:(a.y||0)+aHeight-1.3,z:a.z},{x:b.x,y:(b.y||0)+bHeight-1.3,z:b.z});
+  }
   const living=()=>room.players.filter(p=>p.status==='alive');
   const alive=()=>living().filter(p=>p.connected);
   const movementModes=new Set(['ground','walk','air','crouch','slide','dash','dive','prone','vault','hang','climb','warp','scramble','wallrun','bail','ragdoll','mantle']);
@@ -55,7 +73,12 @@
    if(now<w.repelledUntil){w.state='repelled';contacts.clear();route=[];const d=distance(w,p);if(d>.01){const q={x:w.x+(w.x-p.x)/d*dt*2,y:w.y,z:w.z+(w.z-p.z)/d*dt*2};if(q.x>=minX&&q.x<=maxX&&q.z>=minZ&&q.z<=maxZ&&world.clear(w,q,.48))Object.assign(w,q);}return;}
    if(now-room.huntStartedAt<14){w.state='waiting';return;}
    let watched=false;
-   for(const q of players){const dx=w.x-q.x,dz=w.z-q.z,d=distance(w,q),sees=q.connected&&d<30&&d>.01&&(Math.sin(q.yaw)*dx+Math.cos(q.yaw)*dz)/Math.max(.01,Math.hypot(dx,dz))>.87&&world.sight(q,w);q.dread=Math.max(0,Math.min(1,q.dread+dt*(sees?.2:-.14)));watched ||=sees&&q.dread<.8;}
+   for(const q of players){
+    const eye=eyeHeight(q),dx=w.x-q.x,dy=w.y+1.3-q.y-eye,dz=w.z-q.z,d=Math.hypot(dx,dy,dz),pitch=q.pitch||0;
+    const alignment=(Math.cos(pitch)*(Math.sin(q.yaw)*dx+Math.cos(q.yaw)*dz)+Math.sin(pitch)*dy)/Math.max(.01,d);
+    const sees=q.connected&&distance(w,q)<30&&d>.01&&alignment>.87&&sightAt(q,eye,w,1.3);
+    q.dread=Math.max(0,Math.min(1,q.dread+dt*(sees?.2:-.14)));watched ||=sees&&q.dread<.8;
+   }
    w.state=watched?'observed':room.collected.length>=5?'hunting':'stalking';
    if(Math.abs(w.y-p.y)<.4&&world.clear(w,p,.48))route=[{x:p.x,y:p.y,z:p.z}];
    else if(now>=repath){repath=now+.7;route=(w.y>.5||p.y>.5)?verticalRoute(w,p):pathBetween([w.x,w.z],[p.x,p.z]).map(([x,z])=>({x,y:0,z}));if(route.length>1&&world.clear(w,route[1],.48))route.shift();}
@@ -66,7 +89,9 @@
     else if(!world.clear(w,q,.2)){route=[];repath=now;break;}
     w.yaw=Math.atan2(next.x-w.x,next.z-w.z);Object.assign(w,q);remaining-=travel;if(travel===d)route.shift();
    }
-   for(const q of players){const contact=distance(w,q)<1.25&&Math.abs(w.y-q.y)<1&&world.sight(w,q)?(contacts.get(q.id)||0)+dt:0;contacts.set(q.id,contact);if(contact>=.65){q.status='caught';q.reloadUntil=0;room.message=q.name+' was taken by the Attendant.';}}
+   // Capture needs a clear segment to the player's body, including a crouched
+   // or ragdolled body. It is independent of whether the player is looking back.
+   for(const q of players){const contact=distance(w,q)<1.25&&Math.abs(w.y-q.y)<1&&sightAt(w,1.3,q,stanceHeight(q)*.5)?(contacts.get(q.id)||0)+dt:0;contacts.set(q.id,contact);if(contact>=.65){q.status='caught';q.reloadUntil=0;room.message=q.name+' was taken by the Attendant.';}}
    finish();
   }
   function tick(){if(!room)return null;const now=clock();accumulator+=Math.min(.25,Math.max(0,now-lastTick));lastTick=now;let n=0;while(accumulator>=1/60&&n++<15){simTime+=1/60;step(1/60);accumulator-=1/60;}return snapshot();}

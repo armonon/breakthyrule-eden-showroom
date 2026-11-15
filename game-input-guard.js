@@ -15,6 +15,13 @@
   // Clear a previous accidental highlight only when returning to the world.
   const selection=window.getSelection();if(selection&&!selection.isCollapsed)selection.removeAllRanges();
   if(event.cancelable)event.preventDefault();
+  // Cancelling pointerdown also cancels native focus. Return desktop keyboard
+  // control to the world after using a HUD button, without disturbing touch UI.
+  const canvas=element(event.target).closest('#scene canvas');
+  if(canvas&&event.isPrimary!==false&&(event.pointerType==='mouse'||event.pointerType==='pen')){
+   if(!canvas.hasAttribute('tabindex'))canvas.tabIndex=-1;
+   canvas.focus({preventScroll:true});
+  }
  },{capture:true,passive:false});
  document.addEventListener('pointermove',event=>{
   if(!pointers.has(event.pointerId))return;

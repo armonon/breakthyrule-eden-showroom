@@ -6,16 +6,47 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-test('real HTTP rooms, accounts, readiness, streaming, invalid origins, resume and leave', {timeout:20000}, async()=>{
-  const directory=await mkdtemp(path.join(os.tmpdir(),'eden-expedition-test-'));
-  const child=spawn(process.execPath,['server/eden-server.mjs','--port','0','--data',directory],{cwd:fileURLToPath(new URL('../',import.meta.url)),env:{...process.env,EDEN_ALLOWED_ORIGINS:'https://game.example.test'},stdio:['ignore','pipe','pipe']});
-  let stream;
-  try {
+// A busy development host can take longer to schedule Node. Readiness remains
+// bounded, and every failed start must reap its child instead of hanging the suite.
+const STARTUP_TIMEOUT=30000;
+async function stopServer(child){
+  if(!child?.pid||child.exitCode!==null||child.signalCode!==null)return;
+  await new Promise((resolve,reject)=>{
+    const cleanup=()=>{clearTimeout(force);clearTimeout(deadline);child.removeListener('exit',exited);};
+    const exited=()=>{cleanup();resolve();};
+    const force=setTimeout(()=>child.kill('SIGKILL'),3000);
+    const deadline=setTimeout(()=>{cleanup();reject(Error('Test server did not exit after SIGKILL'));},8000);
+    // Subscribe before signalling: a fast exit must not be missed. Signal exits
+    // have exitCode === null, so signalCode also matters on subsequent cleanup.
+    child.once('exit',exited);child.kill('SIGTERM');
+    if(child.exitCode!==null||child.signalCode!==null)exited();
+  });
+}
+async function startServer(directory,env=process.env){
+  const child=spawn(process.execPath,['server/eden-server.mjs','--port','0','--data',directory],{cwd:fileURLToPath(new URL('../',import.meta.url)),env,stdio:['ignore','pipe','pipe']});
+  let output='',errors='';
+  // Drain both pipes, including after readiness, so logging cannot stall the child.
+  child.stderr.on('data',chunk=>{errors=(errors+chunk).slice(-4000);});
+  try{
     const base=await new Promise((resolve,reject)=>{
-      const timeout=setTimeout(()=>reject(Error('Server startup timed out')),6000);
-      child.stdout.on('data',chunk=>{const match=String(chunk).match(/http:\/\/127\.0\.0\.1:\d+/);if(match){clearTimeout(timeout);resolve(match[0]);}});
-      child.once('exit',()=>{clearTimeout(timeout);reject(Error('Server exited during startup'));});
+      let settled=false;
+      const cleanup=()=>{clearTimeout(timer);child.removeListener('exit',exited);child.removeListener('error',failed);};
+      const finish=(error,url)=>{if(settled)return;settled=true;cleanup();if(error)reject(error);else resolve(url);};
+      const failed=error=>finish(error);
+      const exited=(code,signal)=>finish(Error('Server exited during startup ('+(signal||code)+')'+(errors?'\n'+errors:'')));
+      const timer=setTimeout(()=>finish(Error('Server startup timed out after '+STARTUP_TIMEOUT+'ms'+(errors?'\n'+errors:''))),STARTUP_TIMEOUT);
+      child.stdout.on('data',chunk=>{if(settled)return;output=(output+chunk).slice(-4000);const match=output.match(/http:\/\/127\.0\.0\.1:\d+/);if(match)finish(null,match[0]);});
+      child.once('exit',exited);child.once('error',failed);
     });
+    return {child,base};
+  }catch(error){await stopServer(child);throw error;}
+}
+
+test('real HTTP rooms, accounts, readiness, streaming, invalid origins, resume and leave', {timeout:120000}, async()=>{
+  const directory=await mkdtemp(path.join(os.tmpdir(),'eden-expedition-test-'));
+  let child,stream;
+  try {
+    const started=await startServer(directory,{...process.env,EDEN_ALLOWED_ORIGINS:'https://game.example.test'});child=started.child;const base=started.base;
     async function post(route,body,cookie='',origin=base){const response=await fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json',Origin:origin,...(cookie?{Cookie:cookie}:{})},body:JSON.stringify(body)});return {response,data:await response.json()};}
     assert.equal((await (await fetch(base+'/api/expedition')).json()).available,true);
     const physics=await fetch(base+'/assets/vendor/jolt-physics-1.1.1/jolt-physics.wasm.wasm',{method:'HEAD'});assert.equal(physics.status,200);assert.equal(physics.headers.get('content-type'),'application/wasm','physics supports streaming compilation instead of a warned fallback');
@@ -56,16 +87,14 @@ test('real HTTP rooms, accounts, readiness, streaming, invalid origins, resume a
     assert.equal((await post('/api/expedition',{action:'resume',token:guest.token},peerCookie)).response.status,401);
     await post('/api/expedition',{action:'leave',token:host.token},cookie);
   } finally {
-    child.kill('SIGTERM');await new Promise(resolve=>child.exitCode!==null?resolve():child.once('exit',resolve));
-    await rm(directory,{recursive:true,force:true});
+    try{await stopServer(child);}finally{await rm(directory,{recursive:true,force:true});}
   }
 });
 
-test('real process restart releases ownership and resumes authenticated room generation', {timeout:20000}, async()=>{
+test('real process restart releases ownership and resumes authenticated room generation', {timeout:120000}, async()=>{
   const directory=await mkdtemp(path.join(os.tmpdir(),'eden-restart-test-'));let child,base;
-  async function start(){child=spawn(process.execPath,['server/eden-server.mjs','--port','0','--data',directory],{cwd:fileURLToPath(new URL('../',import.meta.url)),stdio:['ignore','pipe','pipe']});
-    base=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Server startup timed out')),6000);child.stdout.on('data',chunk=>{const match=String(chunk).match(/http:\/\/127\.0\.0\.1:\d+/);if(match){clearTimeout(timer);resolve(match[0]);}});child.once('exit',()=>{clearTimeout(timer);reject(Error('Server exited during startup'));});});}
-  async function stop(){if(!child)return;child.kill('SIGTERM');await new Promise(resolve=>child.exitCode!==null?resolve():child.once('exit',resolve));child=null;}
+  async function start(){({child,base}=await startServer(directory));}
+  async function stop(){await stopServer(child);child=null;}
   async function post(route,body,cookie=''){const response=await fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json',Origin:base,Cookie:cookie},body:JSON.stringify(body)});return {response,data:await response.json()};}
   try{await start();
     const registration=await post('/api/social/register',{name:'Restart Tester',password:'temporary-restart-test-password'});
@@ -79,5 +108,5 @@ test('real process restart releases ownership and resumes authenticated room gen
     assert.equal(resumed.data.players[0].character.shirtColor,'#123456');assert.equal(resumed.data.chat[0].text,'Restart checkpoint');
     assert.ok(resumed.data.serverTime>=first.serverTime);
     assert.equal((await post('/api/expedition',{action:'resume',token:first.token,generation:'old-generation'},cookie)).response.status,409);
-  }finally{await stop();await rm(directory,{recursive:true,force:true});}
+  }finally{try{await stop();}finally{await rm(directory,{recursive:true,force:true});}}
 });

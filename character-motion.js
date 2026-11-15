@@ -331,7 +331,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
       // Preserve visible camera-space grips for local actions; the same authored
       // action still drives the torso, and progressively regains arms in third person.
       if(view.first>.001&&['pistolShoot','pistolReload','pickup','interact'].includes(L.id)){L.viewMask??=mask.slice();for(let i=0;i<mask.length;i++)L.viewMask[i]=mask[i]*(M.arms[i]?1-view.first:1);mask=L.viewMask;}
-      list.push({id:L.id,t:L.t,weight:L.w*L.weight,mask});}
+      list.push({id:L.id,t:L.t,weight:L.w*L.weight,mask,loop:L.loop});}
      A.apply(T,model,list);
      // Cosmetic torso/clip layers must not detach solved world contacts. Reuse
      // this frame's targets; do not advance gait, springs or action time twice.

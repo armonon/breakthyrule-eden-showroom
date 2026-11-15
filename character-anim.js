@@ -67,18 +67,18 @@
  }
  // Pose one clip at time t (seconds): world rotations into r.q, returns the hip offset in metres.
  const tmpA=[0,0,0,0];
- function poseWorld(T,r,c,t){
-  const n=c.n,f=c.loop?((t*c.fps)%(n-1)+(n-1))%(n-1):Math.min(n-1,Math.max(0,t*c.fps)),f0=Math.floor(f),f1=Math.min(n-1,f0+1),k=f-f0,B=r.bones.length,corr=r.corr[c.src];
+ function poseWorld(T,r,c,t,loop=c.loop){
+  const n=c.n,f=loop?((t*c.fps)%(n-1)+(n-1))%(n-1):Math.min(n-1,Math.max(0,t*c.fps)),f0=Math.floor(f),f1=Math.min(n-1,f0+1),k=f-f0,B=r.bones.length,corr=r.corr[c.src];
   for(let i=0;i<B;i++){const a=(f0*B+i)*4,b=(f1*B+i)*4,q=r.q[i];
    q.set(c.q[a]/32767,c.q[a+1]/32767,c.q[a+2]/32767,c.q[a+3]/32767);
    if(k>1e-3){const q2=r.l[i].set(c.q[b]/32767,c.q[b+1]/32767,c.q[b+2]/32767,c.q[b+3]/32767);q.slerp(q2,k);}
    q.normalize().multiply(corr[i]);}
   return ((c.hip[f0]*(1-k)+c.hip[f1]*k)/10000)*r.hipY;
  }
- // Blend layers [{id, t, weight, mask (array)}] over the current (procedural) pose.
+ // Blend layers [{id, t, weight, mask (array), loop (optional override)}] over the current (procedural) pose.
  function apply(T,model,layers){
   if(!data||!layers.length)return;const r=rig(T,model);const B=r.bones.length;
-  for(const L of layers){const c=clip(L.id);if(!c||L.weight<=.001)continue;const hip=poseWorld(T,r,c,L.t),m=L.mask||masks().full;
+  for(const L of layers){const c=clip(L.id);if(!c||L.weight<=.001)continue;const hip=poseWorld(T,r,c,L.t,L.loop),m=L.mask||masks().full;
    for(let i=0;i<B;i++){const b=r.bones[i];if(!b||!m[i])continue;const p=r.parent[i];
     const local=p<0?r.l[i].copy(r.q[i]):r.l[i].copy(r.q[p]).invert().multiply(r.q[i]);b.quaternion.slerp(local,L.weight*m[i]);}
    if(m[0]&&r.pelvis)r.pelvis.position.y+=hip*L.weight;}

@@ -1,7 +1,7 @@
 'use strict';
 (function(root){
 // Eden exploration owns its touch input. Combat/expedition keep their existing adapter.
-root.createEdenMobile=function({host,ready,active,blocked,look,move,jump,jumpUp=()=>{},crouch,view,isThird,tap,stop}){
+root.createEdenMobile=function({host,ready,active,blocked,look,move,jump,jumpUp=null,crouch,view,isThird,tap,stop}){
  const media=matchMedia('(max-width: 760px), (pointer: coarse)'),abort=new AbortController(),signal=abort.signal;
  const listen=(node,event,fn,options={})=>node.addEventListener(event,fn,{...options,signal});
  const icon=(path)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
@@ -14,7 +14,7 @@ root.createEdenMobile=function({host,ready,active,blocked,look,move,jump,jumpUp=
  sheet.innerHTML='<header><div><small>YOUR GARDEN</small><h2 id="eden-mobile-title">Explore Eden</h2></div><button type="button" class="em-close" aria-label="Close Eden menu">×</button></header><div class="em-menu-body"><section><h3>Go somewhere</h3><div class="em-destinations"></div></section><section><h3>Make yourself at home</h3><div class="em-shortcuts"></div></section><section class="em-museum" hidden><h3>Inside the museum</h3><div class="em-museum-actions"></div></section><section class="em-how"><h3>Move naturally</h3><p>Drag the left stick inside its circle to walk. Drag outside the circle to sprint; bring it back inside to walk. Drag the world to look around and tap a piece to open it.</p><p>Jump clears low obstacles. Hold Crouch to duck; use it while running to slide. View switches your camera.</p></section><a class="em-home" href="/">Back to the website ↗</a></div>';
  document.body.append(sheet);controls.hidden=true;pad.hidden=true;q('.em-reticle').hidden=true;
  let mobile=false,enabled=false,playing=false,disposed=false,stickId=null,lookId=null,lookPoint=null,fight=false,origin=null,held=new Set(),hintTimer=0,feedbackTimer=0,hintDismissed=false;
- const releases=new Map();
+ const releases=new Map(),pendingTaps=new Map();
  const capture=(node,id)=>{try{node.setPointerCapture(id);}catch{}};
  const releaseCapture=(node,id)=>{try{if(id!==null&&node.hasPointerCapture(id))node.releasePointerCapture(id);}catch{}};
  function inform(text){feedback.textContent=text;feedback.hidden=false;clearTimeout(feedbackTimer);feedbackTimer=setTimeout(()=>feedback.hidden=true,2200);}
@@ -25,8 +25,8 @@ root.createEdenMobile=function({host,ready,active,blocked,look,move,jump,jumpUp=
  function releaseStick(){const id=stickId;stickId=null;origin=null;nub.style.transform='';setMovement(0,0);stick.classList.remove('engaged');releaseCapture(stick,id);}
  function releaseLook(){const id=lookId;lookId=null;lookPoint=null;releaseCapture(pad,id);}
  function releaseFight(){for(const button of document.querySelectorAll('#fight-pad button'))button.onpointercancel?.();document.body.classList.remove('eden-mobile-fight');}
- function reset(){releaseFight();releaseStick();releaseLook();for(const release of [...releases.values()])release();releases.clear();crouch(false);stop();}
- function canInput(){return playing&&!blocked()&&!sheet.open&&!document.hidden;}
+ function reset(){releaseFight();releaseStick();releaseLook();for(const release of [...releases.values()])release();releases.clear();for(const tap of [...pendingTaps.values()])tap.cancel();crouch(false);stop();}
+ function canInput(){return !disposed&&playing&&media.matches&&ready()&&active()&&!blocked()&&!sheet.open&&!document.hidden;}
  function begin(){if(!canInput()){reset();return false;}dismissTip();return true;}
  listen(stick,'pointerdown',e=>{if(stickId!==null||e.button!==0||!begin())return;e.preventDefault();stickId=e.pointerId;const rect=stick.getBoundingClientRect();origin={x:rect.left+rect.width/2,y:rect.top+rect.height/2,r:rect.width*.36,sprintRadius:rect.width/2};stick.classList.add('engaged');capture(stick,e.pointerId);updateStick(e);});
  function updateStick(e){if(e.pointerId!==stickId||!origin)return;if(!canInput()||(e.pointerType==='mouse'&&!(e.buttons&1))){releaseStick();return;}e.preventDefault();let x=e.clientX-origin.x,y=e.clientY-origin.y;const r=Math.hypot(x,y);if(r>origin.r){x*=origin.r/r;y*=origin.r/r;}nub.style.transform=`translate(${x}px,${y}px)`;setMovement(x/origin.r,y/origin.r,r>origin.sprintRadius);}
@@ -42,16 +42,21 @@ root.createEdenMobile=function({host,ready,active,blocked,look,move,jump,jumpUp=
   // Native keyboard / assistive activation does not leave a held action behind.
   listen(b,'click',e=>{if(e.detail===0&&begin()){down();up();}});
  }
- hold('.em-jump',()=>jump(true),()=>jump(false));hold('.em-crouch',()=>crouch(true),()=>crouch(false));
+ let releaseJump=null;
+ hold('.em-jump',()=>{const release=jump(true);releaseJump=typeof release==='function'?release:jumpUp||(()=>jump(false));},()=>{const release=releaseJump;releaseJump=null;release?.();});hold('.em-crouch',()=>crouch(true),()=>crouch(false));
  activate(q('.em-view'),()=>{if(canInput()){view();updateView();dismissTip();}});
  activate(q('.em-use'),()=>{if(!canInput())return;const rect=host.getBoundingClientRect();if(!tap({clientX:rect.left+rect.width/2,clientY:rect.top+rect.height/2,pointerType:'touch'}))inform('Move closer, or tap the piece you want to explore.');});
  function activate(button,fn){let press=null,suppressUntil=0;
-  button.onpointerdown=e=>{if(e.pointerType==='touch'&&press===null)press={id:e.pointerId,x:e.clientX,y:e.clientY,moved:false};};
+  const clearPress=()=>{press=null;pendingTaps.delete(button);},cancel=()=>{clearPress();suppressUntil=performance.now()+500;};
+  button.onpointerdown=e=>{if(e.pointerType==='touch'&&press===null){press={id:e.pointerId,x:e.clientX,y:e.clientY,moved:false};pendingTaps.set(button,{id:e.pointerId,cancel});}};
   button.onpointermove=e=>{if(press?.id===e.pointerId&&Math.hypot(e.clientX-press.x,e.clientY-press.y)>10)press.moved=true;};
-  button.onpointercancel=()=>{press=null;suppressUntil=performance.now()+500;};
-  button.onpointerup=e=>{if(press?.id!==e.pointerId)return;const moved=press.moved;press=null;if(moved){suppressUntil=performance.now()+500;return;}if(e.pointerType==='touch'&&!e.isPrimary){e.preventDefault();suppressUntil=performance.now()+500;fn();}};
+  button.onpointercancel=cancel;
+  button.onpointerup=e=>{if(press?.id!==e.pointerId)return;const moved=press.moved;clearPress();if(moved){suppressUntil=performance.now()+500;return;}if(e.pointerType==='touch'&&!e.isPrimary){e.preventDefault();suppressUntil=performance.now()+500;fn();}};
   button.onclick=e=>{if(e.detail===0||performance.now()>=suppressUntil)fn();};
  }
+ // A scrolling or interrupted finger can finish outside its original button.
+ // Keep only current presses, so rebuilding menu rows does not retain old buttons.
+ for(const type of ['pointerup','pointercancel'])listen(document,type,e=>{for(const tap of [...pendingTaps.values()])if(tap.id===e.pointerId)tap.cancel();});
  function updateView(){const third=!!isThird();q('.em-view').setAttribute('aria-pressed',String(third));q('.em-view').setAttribute('aria-label',third?'Switch to first-person view':'Switch to third-person view');}
  function command(id){reset();if(sheet.open)sheet.close();const original=document.getElementById(id);if(original&&!original.disabled)original.click();}
  const placeItems=[['spawn','The garden','Back to the apple tree'],['library-view','Library','Books under the tree'],['approach','The vault','Browse the collection'],['wall-view','Museum','Art & The Daily Apple'],['amphitheater-view','Amphitheater','Music in the garden'],['play-launch','Play','Explore beyond Eden']];
@@ -71,6 +76,7 @@ root.createEdenMobile=function({host,ready,active,blocked,look,move,jump,jumpUp=
   const title=document.querySelector('.world-caption h1')?.textContent||'Garden of Eden';if(q('.em-place').textContent!==title)q('.em-place').textContent=title;updateView();
  }
  listen(document,'visibilitychange',()=>{reset();sync();});listen(window,'blur',reset);listen(window,'pagehide',reset);listen(window,'orientationchange',reset);listen(window,'resize',reset);listen(document,'btr:page-visibility',()=>{reset();sync();});listen(media,'change',()=>{reset();sync();});
+ if(root.visualViewport)listen(root.visualViewport,'resize',reset);
  // Menus and chat release movement immediately, including a finger held offscreen.
  const observer=new MutationObserver(()=>{if((blocked()||sheet.open)&&playing){playing=false;reset();controls.hidden=true;pad.hidden=true;q('.em-reticle').hidden=true;ui.classList.add('is-blocked');}});
  observer.observe(document.body,{subtree:true,attributes:true,attributeFilter:['open']});const socialPanel=document.getElementById('social-panel');if(socialPanel)observer.observe(socialPanel,{attributes:true,attributeFilter:['hidden']});

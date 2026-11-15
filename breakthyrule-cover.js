@@ -292,10 +292,10 @@ const coverNav=el('nav',{className:'btr-cover-nav'},[
  const params=new URLSearchParams(location.search);
  if(siteMode){
   decorateSiteHeader();
-  // The cover greets a visitor on the home page once per visit; the CODEX button brings it back anywhere.
+  // The arrival film owns the homepage greeting; explicit links and CODEX still open this cover.
   let seen=false;try{seen=sessionStorage.getItem('btr-cover-seen')==='1';sessionStorage.setItem('btr-cover-seen','1');}catch{}
   if(params.has('about')){cover.hidden=true;openAbout();}
-  else if(params.has('cover')||(sitePage==='home'&&!seen&&!params.has('nocover')))openCover();else cover.hidden=true;
+  else if(params.has('cover')||(sitePage==='home'&&!window.btrArrival&&!seen&&!params.has('nocover')))openCover();else cover.hidden=true;
  }else{
   decorateHeader();
   if(params.has('nocover'))cover.hidden=true;else openCover();

@@ -1,0 +1,23 @@
+/* This cover leaves the page measurable so its visible media can finish loading. */
+html.btr-arriving { overflow: hidden; }
+#btr-arrival {
+  position: fixed; inset: 0; z-index: 2147483646; isolation: isolate;
+  display: grid; align-items: end; background: #080808; color: #f8f4e9;
+  opacity: 1; transition: opacity 320ms ease;
+  font: 11px/1.5 "Courier New", monospace; letter-spacing: .12em;
+}
+#btr-arrival.is-leaving { opacity: 0; pointer-events: none; }
+#btr-arrival .arrival-film { position: absolute; inset: 0; overflow: hidden; z-index: -2; }
+#btr-arrival .arrival-film canvas,
+#btr-arrival .arrival-film img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+#btr-arrival .arrival-film video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+#btr-arrival::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(transparent 55%, #000b); }
+#btr-arrival .arrival-caption { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding: max(24px, env(safe-area-inset-top)) max(28px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(28px, env(safe-area-inset-left)); }
+#btr-arrival .arrival-brand { display: block; margin-bottom: 6px; font: inherit; font-size: 13px; letter-spacing: .2em; }
+#btr-arrival .arrival-status { margin: 0; opacity: .8; letter-spacing: .06em; }
+#btr-arrival .arrival-controls { display: flex; flex-wrap: wrap; justify-content: end; gap: 8px; }
+#btr-arrival button { min-height: 44px; padding: 10px 13px; border: 1px solid #ffffff70; border-radius: 0; background: #08080870; color: inherit; font: inherit; letter-spacing: .04em; cursor: pointer; }
+#btr-arrival button:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+#btr-arrival [hidden] { display: none !important; }
+@media (max-width: 600px) { #btr-arrival .arrival-caption { align-items: start; flex-direction: column; gap: 16px; padding: 22px; padding-bottom: max(22px, env(safe-area-inset-bottom)); } }
+@media (prefers-reduced-motion: reduce) { #btr-arrival { transition: none; } }

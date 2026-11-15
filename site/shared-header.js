@@ -36,7 +36,13 @@
     brand.classList.add('brand');
     brand.href = '/?cover';
     brand.setAttribute('aria-label', 'Break Thy Rule — open Codex');
-    brand.replaceChildren('Break Thy Rule', create('span', '', 'anonymous archive'));
+    brand.classList.add('btr-logo-brand', 'btr-logo-night');
+    const logo = create('img', 'btr-brand-logo');
+    logo.src = '/assets/brand/logo-night.svg?v=1';
+    logo.alt = 'BreakThyRule, anonymous archive';
+    logo.width = 1400; logo.height = 381;
+    logo.decoding = 'async'; logo.fetchPriority = 'high';
+    brand.replaceChildren(logo);
 
     let nav = header.querySelector('.tabs');
     if (!nav) { nav = create('nav', 'tabs'); brand.after(nav); }
@@ -62,7 +68,7 @@
     eden.setAttribute('aria-label', 'Enter Eden showroom');
     eden.title = 'Enter Eden';
     const apple = create('img', 'btr-eden-apple-logo');
-    apple.src = '/products/web/logo.webp';
+    apple.src = '/site/eden-apple-red-bitmap.png';
     apple.alt = '';
     apple.width = 40;
     apple.height = 42;
@@ -73,7 +79,7 @@
       const appleStyle = create('link');
       appleStyle.id = 'btr-eden-apple-style';
       appleStyle.rel = 'stylesheet';
-      appleStyle.href = '/site/eden-apple.css?v=f36f5fdf949d32a5';
+      appleStyle.href = '/site/eden-apple.css?v=6c160db8a4e6e5c2';
       document.head.append(appleStyle);
     }
 

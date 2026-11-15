@@ -13,19 +13,21 @@
  <link rel="stylesheet" href="/site/lab.css?v=10">
  <script defer src="/assets/three.min.js?v=187"></script>
  <script defer src="/asset-loader.js?v=product-studio-6"></script>
- <script defer src="/site/garment-stage.js?v=product-studio-6"></script>
+ <script defer src="/site/garment-stage.js?v=graphics-editor-2"></script>
  <script defer src="/site/config.js?v=1"></script>
- <script defer src="/site/site.js?v=7"></script>
- <script type="module" src="/site/cart-ui.js?v=site-audit-1"></script>
- <script type="module" src="/site/lab.js?v=product-design-1"></script>
+ <script defer src="/site/site.js?v=night-2"></script>
+ <script type="module" src="/site/cart-ui.js?v=graphics-editor-2"></script>
+ <script type="module" src="/site/lab.js?v=combined-3"></script>
  <script defer src="/site/ad-breaks.js?v=6"></script>
  <link rel="stylesheet" href="/site/shared-header.css?v=about-1">
  <link rel="stylesheet" href="/site/shared-header-layout.css?v=about-1">
- <script defer src="/site/shared-header.js?v=site-audit-1"></script>
- <link rel="stylesheet" href="/site/lab-flow.css?v=picker-board-1">
+ <script defer src="/site/shared-header.js?v=18ef90e517c7d41b"></script>
+ <link rel="stylesheet" href="/site/lab-flow.css?v=combined-3">
 <script defer src="/core-collection/cycle.js?v=product-studio-6"></script>
+<link rel="stylesheet" href="/site/garment-graphics-editor.css?v=2">
+<link rel="stylesheet" href="/site/brand-logo.css?v=night-2">
 </head>
-<body data-page="lab" class="lab-flow-build" data-base-mode="blank" data-lab-step="garment">
+<body data-page="lab" class="lab-flow-build" data-base-mode="random" data-lab-step="garment">
  <main>
   <header class="wrap lab-head">
    <div class="lab-title">
@@ -69,7 +71,7 @@
    </div>
 
    <form class="lab-steps" id="lab-form" novalidate>
-    <fieldset class="step" id="step-garment"><legend>Garment style</legend><div class="choices" id="opt-garment"></div><p class="fine price-option-note">Prices per garment, including selected color and artwork.</p></fieldset>
+    <fieldset class="step" id="step-garment"><legend>Garment style</legend><div class="choices" id="opt-garment"></div><p class="fine price-option-note">Starting prices with Random. Choose construction below.</p></fieldset>
     <fieldset class="step" id="step-construction"><legend>Construction</legend><div class="choices two" id="opt-construction"></div><p class="fine" id="construction-note" hidden></p></fieldset>
     <fieldset class="step" id="step-color"><legend><span class="step-no">III</span> Color</legend>
      <div class="choices four" id="opt-color"></div><p class="fine" id="color-mode-note" hidden>Chosen by the studio. Your color stays a surprise.</p>
@@ -108,14 +110,11 @@
     </fieldset>
    </form>
 
-   <div class="lab-flow-footer">
+   <div class="lab-flow-footer" aria-label="Your garment price">
     <p id="flow-status" role="status"></p>
-    
     <div class="flow-price" aria-live="polite" aria-atomic="true"><span id="flow-total-label">Item total · USD</span><strong id="flow-total">—</strong></div>
-    
-    <button type="button" class="ghost" id="share-design" hidden>Share design</button>
-    <button type="submit" form="lab-form" id="add-to-cart" class="solid" hidden>Save design</button>
-    <p id="flow-price-detail" aria-live="polite"></p><p class="flow-price-extras">Shipping and tax calculated separately.</p>
+    <div class="flow-price-summary"><p id="flow-price-detail" aria-live="polite"></p><p class="flow-price-extras">Artwork included. Shipping and tax calculated separately.</p></div>
+    <div class="flow-price-actions"><button type="button" class="ghost" id="share-design" hidden>Share design</button><button type="submit" form="lab-form" id="add-to-cart" class="solid" hidden>Save design</button></div>
    </div>
    <dialog id="graphics-dialog" aria-labelledby="graphics-title">
     <div class="graphics-dialog-head"><h2 id="graphics-title">Pick your graphics</h2><button type="button" id="graphics-close" class="ghost" aria-label="Close graphics">×</button></div>
@@ -180,7 +179,7 @@
   </section>
 
   <div class="mbar" id="mbar" aria-label="Your garment">
-   <div class="mbar-info"><span id="mbar-title">T-shirt — The Canvas</span><strong id="mbar-price">$60</strong></div>
+   <div class="mbar-info"><span id="mbar-title">T-shirt — The Canvas</span><strong id="mbar-price">$30</strong></div>
    <button type="button" class="solid" id="mbar-add">Add to cart</button>
   </div>
  </main>
