@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+const dir='docs/beyond-bake',read=n=>JSON.parse(fs.readFileSync(`${dir}/${n}`));
+const before=read('before/report.json'),after=read('after/report.json'),run=read('five-minute.json'),capture=read('capture.json'),ab=read('render-cost.json');
+const mean=x=>x.reduce((a,b)=>a+b,0)/x.length,round=x=>Math.round(x*100)/100;
+const frames=run.frames.filter(f=>f[0]>10000&&!f[2]).map(f=>f[1]).sort((a,b)=>a-b);
+const views=Object.keys(before.views).map(name=>{const a=before.views[name],b=after.views[name];return{name,beforeTriangles:a.shadow.triangles,afterTriangles:b.shadow.triangles,reduction:round((1-b.shadow.triangles/a.shadow.triangles)*100),beforeRenderMs:a.gpuFinishedMs,afterRenderMs:b.gpuFinishedMs,beforeRatio:a.perf.ratio,afterRatio:b.perf.ratio};});
+const samples=run.samples.map(s=>({label:s.label,at:round(s.at),programs:s.perf.programs,geometry:s.perf.geometries,pools:s.combat.pools,stats:s.combat.stats}));
+const lit=mean(ab.filter(r=>r.enabled).map(r=>r.ms)),live=mean(ab.filter(r=>!r.enabled).map(r=>r.ms));
+const summary={baseline:'7b76ce2',hardware:after.views.entry.gpu,graphics:after.graphics,viewport:after.size,views,run:{durationSeconds:round(run.frames.at(-1)[0]/1000),meanMs:round(mean(frames)),p95Ms:round(frames[Math.floor(frames.length*.95)]),maxMs:round(frames.at(-1)),spikesOver50:frames.filter(n=>n>50).length,problems:run.problems,samples},renderAB:{bakedMs:round(lit),fallbackMs:round(live),improvementPercent:round((1-lit/live)*100)},capture:{seconds:capture.seconds,audio:capture.audio,bodyHits:capture.combat.stats.bodyHits-(capture.clipStart?.bodyHits||0),headHits:capture.combat.stats.headHits-(capture.clipStart?.headHits||0),kills:capture.combat.stats.kills-(capture.clipStart?.kills||0),problems:capture.problems},audio:run.samples.at(-2).combat.audio,botRigsReused:run.samples.some(s=>s.bots?.some(b=>b.deaths>0))&&run.samples.every(s=>s.bots?.every(b=>run.samples.find(t=>t.bots?.some(a=>a.id===b.id))?.bots.find(a=>a.id===b.id)?.uuid===b.uuid))};
+fs.writeFileSync(`${dir}/summary.json`,JSON.stringify(summary,null,2)+'\n');console.log(JSON.stringify(summary,null,2));

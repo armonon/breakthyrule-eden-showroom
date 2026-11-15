@@ -17,3 +17,13 @@ test('canonical poses ignore viewer effects and global attention, and reject inc
   const before=clone(a.motion.captureState());for(const edit of [s=>s.rigKey='other',s=>s.state.speed=NaN,s=>s.sides[0].hand=null,s=>s.bones[2].q=[0,0,0,0],s=>s.view.first=1,s=>s.state.layers=[{id:'missing'}],s=>s.state.velocity={isVector3:true,x:0,y:0,z:0},s=>s.state.crouch=0,s=>s.state.punches=.5,s=>s.bones.find(b=>b.name==='neck01').scale=[.001,.001,.001],s=>Object.defineProperty(s.tune,'guardLift',{get(){throw Error('bad getter');}})]){const bad=clone(before);edit(bad);assert.throws(()=>a.motion.restoreState(bad));assert.deepEqual(clone(a.motion.captureState()),before);}
  }finally{a.dispose();b.dispose();}
 });
+
+test('visual respawn resets a fallen rig in place without reusing another skeleton checkpoint',()=>{
+ const models=['boulevard','garden'].map(character=>runtime.characterRig({...appearance,character}));
+ try{for(const model of models){model.motion=runtime.scope.GardenCharacterMotion.create(T,model);const initial=clone(model.motion.captureState()),uuid=model.root.uuid;
+  model.motion.knockdown(new T.Vector3(.4,0,1),2.4,{stay:true});for(let i=0;i<90;i++)model.motion.update(1/60);
+  assert.ok(model.motion.downAmount()>0);model.motion.revive();assert.equal(model.root.uuid,uuid);assert.equal(model.motion.downAmount(),0);assert.deepEqual(clone(model.motion.captureState()),initial);
+  model.motion.update(1/60,{velocity:new T.Vector3(1,0,0)});assert.doesNotThrow(()=>model.motion.captureState());
+ }
+ }finally{for(const m of models)m.dispose();}
+});
