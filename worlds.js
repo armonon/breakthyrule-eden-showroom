@@ -12,7 +12,7 @@
 (function(root){
  root.createWorlds=function({T,scene,renderer,camera,requestDraw}){
   // Scene roots that belong to Beyond Eden (managed by their own code too) and roots shared by both worlds.
-  const BEYOND=new Set(['Arena','Pyramid at the end of the road','Beyond Eden / the old civilization','The Attendant','Eden combat range']);
+  const BEYOND=new Set(['Arena','Pyramid at the end of the road','Beyond Eden / the old civilization','The Attendant','Eden combat range','Parkour grips']);
   const SHARED=new Set(['Garden of Eden','Eden sky box','Player body','Combat effects']);
   const classify=c=>c.isLight||c.isCamera||c.isSprite||(c.type==='Object3D'&&!c.children.length)||SHARED.has(c.name)?'shared':BEYOND.has(c.name)?'beyond':'eden';
   let world='eden',busy=false,hidden=new Set(),manifest=null,loadedScripts=new Map(),stats={switches:0,hiddenLast:0};

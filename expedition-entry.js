@@ -28,7 +28,7 @@
  if(!window.THREE){fail(new Error('The graphics engine is unavailable.'));return;}
  const T=window.THREE,targetPosition=new T.Vector3(11.7,1.75,-24),targetAim=new T.Vector3(11.7,1.75,-29),walkVelocity=new T.Vector3(),aim=new T.Vector3();
  const sway=window.createCameraSway(T,{reduced}),footsteps=window.createFootsteps?.(),state={get ready(){return ready;}};
- let movement=null,parkour=null,post=null,lighting=null,quality=null,warmup=null,flare=null,world=null,lastLandmarkCheck=-Infinity,lastBailLabel='';
+ let gripsView=null,momentumHud=null;let movement=null,parkour=null,post=null,lighting=null,quality=null,warmup=null,flare=null,world=null,lastLandmarkCheck=-Infinity,lastBailLabel='';
  const groundHeight=()=>0,surfaceAt=p=>Math.abs(p.x-11.7)<2.1?'brick':'grass';
  function shiftHeight(delta){targetPosition.y+=delta;targetAim.y+=delta;}
  function place(x,z,lx=x,lz=z-5,y=0){bail?.cancel();movement?.cancelTraversal();parkour?.reset();motion.reset();walkVelocity.set(0,0,0);targetPosition.set(x,1.75+y,z);targetAim.set(lx,1.75+y,lz);camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();}
@@ -85,7 +85,9 @@
    if(thirdBlend>.002){const forward=new T.Vector3();camera.getWorldDirection(forward);const right=new T.Vector3(-forward.z,0,forward.x).normalize(),offset=forward.multiplyScalar(-2.7).add(new T.Vector3(0,.28,0)).addScaledVector(right,.62*thirdSide).multiplyScalar(thirdBlend),length=offset.length(),dir=offset.clone().normalize();let room=length;for(let k=.2;k<length;k+=.15){const point=camera.position.clone().addScaledVector(dir,k);if(!world.clearance.fits({x:point.x,y:point.y-.12,z:point.z},.24,.12)){room=Math.max(.15,k-.2);break;}}offset.setLength(room);camera.position.add(offset);body?.cameraClearance?.(room);}
    const nextFov=T.MathUtils.lerp(p.firstFov,p.thirdFov,thirdBlend)+effectFov;if(Math.abs(camera.fov-nextFov)>.01){camera.fov=nextFov;camera.updateProjectionMatrix();}
    // Flashlight follows the final camera; network poses always use player feet.
-   garden.update(time/1000,camera);expedition?.update(time/1000,dt);lighting.update();
+   garden.update(time/1000,camera);expedition?.update(time/1000,dt);
+   gripsView??=window.parkourGrips?.mount(T,scene,{getPose:()=>parkour?.ropePose?.()})||null;gripsView?.update();
+   momentumHud??=window.createMomentumHud?.({host:document.body})||null;momentumHud?.update({momentum:movement.momentum?.()||0,chain:parkour?.chain?.()||0,mode:movement.state()});lighting.update();
    if(ready&&time-lastLandmarkCheck>2000){lastLandmarkCheck=time;const missing=Object.entries(garden.district.inspect().models).filter(([,value])=>value==='fallback');if(missing.length)$('entry-hint').textContent='Some distant landmark artwork is unavailable. Return to Eden and enter again to retry.';}
    for(const dust of puffs)if(dust.alive){dust.t+=dt;dust.alive=dust.t<.8;dust.sprite.visible=dust.alive;dust.sprite.material.opacity=Math.max(0,1-dust.t/.8)*.4;dust.sprite.scale.setScalar(.15+dust.t*.7);dust.sprite.position.y+=dt*.12;}
    if(expedition?.active()){const label=p.bailKey.toUpperCase()+' · '+(bail?.active?'Get up':'Bail');if(label!==lastBailLabel){lastBailLabel=label;$('night-bail').textContent=label;$('night-bail').title='Manual bail / recover ('+p.bailKey.toUpperCase()+')';}}

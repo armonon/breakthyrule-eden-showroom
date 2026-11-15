@@ -433,7 +433,7 @@ function prepareWalking(){
 // Parkour (parkour.js): roofs, crate staircases and walls with height beyond the door; wall-runs, climbs, hangs.
 const parkourOn=()=>garden.nightBuilt()&&targetPosition.z<garden.road.door-.2&&!arena?.active()&&!pockets?.inside(targetPosition);
 let parkour=null,playerBail=null,bailLoading=false;
-let worlds=null,lastPocket=null,officeSeen=false;
+let worlds=null,lastPocket=null,officeSeen=false;let gripsView=null,momentumHud=null;
 const expeditionPreferences=window.createExpeditionPreferences?.({onChange:()=>{movement.crouchHeld=false;keys.delete('shift');requestDraw();}});
 const expeditionPrefs=()=>expedition?.active()?expeditionPreferences?.get():null;
 function makeParkour(){if(parkour||!window.createParkour)return parkour;parkour=window.createParkour({T,walls:()=>garden.nightBuilt()?garden.district.walls:[],surfaces:()=>garden.nightBuilt()?garden.district.surfaces:[],ground:(x,z)=>groundHeight(new T.Vector3(x,0,z)),
@@ -512,6 +512,9 @@ function updateBodyAnim(){
 let deathDrop=0,lowShown=0;
 function updateFeel(dt){
  updateMatchGate();updateBodyAnim();horror?.update(dt);
+ // Bars, pipes and ropes (parkour-grips.js) appear with the district; the momentum meter (momentum-hud.js).
+ if(!gripsView&&garden.nightBuilt?.())gripsView=window.parkourGrips?.mount(T,scene,{getPose:()=>parkour?.ropePose?.()})||null;gripsView?.update();
+ momentumHud??=window.createMomentumHud?.({host:document.body})||null;momentumHud?.update({momentum:movement.momentum?.()||0,chain:parkour?.chain?.()||0,mode:movement.state()});
  {const pkt=pockets?.inside(camera.position)||null;if(pkt!==lastPocket){if(pkt?.name==='Black box')worlds?.veil({title:'THE BLACK CUBE',sub:'THE WHITE WORLD',kicker:'INSIDE THE BLACK BOX'});lastPocket=pkt;}}
  const fallen=battle?.dead?.()&&!battle.soul?.();
  deathDrop+=((fallen?1.25:0)-deathDrop)*(1-Math.exp(-(fallen?5:10)*dt));
