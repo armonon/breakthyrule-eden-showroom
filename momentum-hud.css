@@ -1,0 +1,17 @@
+/* Momentum meter (momentum-hud.js). */
+#momentum-hud{--m:0;position:fixed;left:50%;top:calc(50% + 34px);z-index:25;width:120px;height:46px;transform:translateX(-50%) translateY(6px);
+ display:grid;justify-items:center;pointer-events:none;opacity:0;transition:opacity .35s ease,transform .35s cubic-bezier(.2,.8,.2,1)}
+#momentum-hud.on{opacity:1;transform:translateX(-50%)}
+#momentum-hud svg{width:120px;height:40px;overflow:visible}
+#momentum-hud path{fill:none;stroke-width:3;stroke-linecap:round}
+#momentum-hud .mh-track{stroke:rgba(255,255,255,.16)}
+#momentum-hud .mh-fill{stroke:color-mix(in oklab,#efe9dc calc((1 - var(--m))*100%),#ff7a3d);filter:drop-shadow(0 0 calc(2px + var(--m)*6px) rgba(255,122,61,calc(var(--m)*.8)));transition:stroke-dashoffset .12s linear}
+#momentum-hud .mh-label{margin-top:-14px;font:600 8px/1 'DM Sans',Arial,sans-serif;letter-spacing:.32em;color:rgba(239,233,220,.55);text-shadow:0 1px 4px rgba(0,0,0,.6)}
+#momentum-hud.full .mh-label{color:#ffb38a}
+#momentum-hud.full .mh-fill{animation:mh-pulse .9s ease-in-out infinite}
+#momentum-hud .mh-chain{position:absolute;right:-30px;top:0;font:700 15px/1 'Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.04em;color:#ffb38a;text-shadow:0 0 10px rgba(255,122,61,.6)}
+#momentum-hud.bump .mh-chain{animation:mh-bump .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes mh-pulse{50%{stroke-width:4.2}}
+@keyframes mh-bump{from{transform:scale(1.7);opacity:.2}}
+body.touch-play #momentum-hud{top:auto;bottom:calc(14px + env(safe-area-inset-bottom))}
+@media (prefers-reduced-motion:reduce){#momentum-hud,#momentum-hud .mh-fill{transition:none}#momentum-hud.full .mh-fill,#momentum-hud.bump .mh-chain{animation:none}}

@@ -24,14 +24,14 @@ class Element extends Target {
   showModal(){this.open=true;}
   close(){this.open=false;this.fire('close');}
 }
-function setup(name,{directJump=true}={}){
+function setup(name,{directJump=true,jumpHandler=null}={}){
   const win=new Target(),document=new Target(),body=new Element('body'),media=new Target(),timers=new Map(),changes=[],keyboard=[],jumps=[];
   media.matches=true;document.body=body;document.hidden=false;document.createElement=t=>new Element(t);document.querySelector=()=>null;document.querySelectorAll=()=>[];document.getElementById=()=>null;document.dispatchEvent=e=>keyboard.push(e);
   let timer=0,blocked=false,expedition=false;
   const scope=vm.createContext(Object.assign(win,{document,matchMedia:()=>media,AbortController,console,performance:{now:()=>10000},MutationObserver:class{observe(){}disconnect(){}},KeyboardEvent:class{constructor(type,o){this.type=type;Object.assign(this,o);}},setInterval:fn=>{timers.set(++timer,fn);return timer;},clearInterval:id=>timers.delete(id),setTimeout:()=>++timer,clearTimeout(){}}));scope.window=scope;
   vm.runInContext(fs.readFileSync(new URL(name,repo),'utf8'),scope,{filename:name});
   const move=(key,on)=>changes.push({key:key.toLowerCase(),on});
-  const common={host:body,look(){},move,...(directJump?{jump:on=>jumps.push(on)}:{}),crouch(){},third(){},visible:()=>true,armed:()=>false,combat:()=>null,expedition:()=>expedition};
+  const common={host:body,look(){},move,...(directJump?{jump:on=>{jumps.push(on);jumpHandler?.(on);}}:{}),crouch(){},third(){},visible:()=>true,armed:()=>false,combat:()=>null,expedition:()=>expedition};
   const api=name==='eden-mobile.js'?scope.createEdenMobile({...common,ready:()=>true,active:()=>true,blocked:()=>blocked,view(){},isThird:()=>false,tap:()=>true,stop(){}}):scope.createTouchControls(common);
   const ui=body.children.find(e=>e.id===(name==='eden-mobile.js'?'eden-mobile-hud':'touch-controls')),stick=ui.querySelector(name==='eden-mobile.js'?'.em-stick':'.tc-stick');
   const sync=()=>{for(const fn of timers.values())fn();};
@@ -69,6 +69,14 @@ for(const file of ['eden-mobile.js','touch-controls.js']){
 test('touch jump keyboard fallback pairs Space press with release',()=>{
  const f=setup('touch-controls.js',{directJump:false}),jump=f.ui.querySelector('.tc-jump');
  jump.fire('pointerdown');jump.fire('pointercancel');assert.deepEqual(f.keyboard.map(e=>[e.type,e.key,e.code]),[['keydown',' ','Space'],['keyup',' ','Space']]);f.api.dispose();
+});
+test('actual solo entry touch callback holds Space and releases without a second jump',()=>{
+ const entry=fs.readFileSync(new URL('expedition-entry.js',repo),'utf8'),line=entry.split('\n').find(line=>line.trimStart().startsWith('jump(pressed=true){')),keys=new Set();let jumps=0,blocked=false;
+ const scope=vm.createContext({ready:true,modalOpen:()=>blocked,bail:null,keys,movement:{jump(){assert.ok(keys.has('space'));jumps++;}},requestDraw(){}});
+ assert.ok(line,'entry exposes a held-jump callback');vm.runInContext('globalThis.actions=({'+line.trim()+'});',scope);
+ const f=setup('touch-controls.js',{jumpHandler:scope.actions.jump}),jump=f.ui.querySelector('.tc-jump');
+ jump.fire('pointerdown');assert.equal(jumps,1);assert.ok(keys.has('space'));blocked=true;jump.fire('pointerup');assert.equal(jumps,1);assert.equal(keys.has('space'),false,'release works even if a modal opened');
+ blocked=false;jump.fire('pointerdown');assert.equal(jumps,2);f.win.fire('blur');assert.equal(jumps,2);assert.equal(keys.has('space'),false);f.api.dispose();
 });
 test('mobile controls retain translucent glass styles',()=>{
  const css=fs.readFileSync(new URL('eden-mobile.css',repo),'utf8')+fs.readFileSync(new URL('touch-controls.css',repo),'utf8');

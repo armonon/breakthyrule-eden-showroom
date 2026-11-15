@@ -36,7 +36,7 @@ test('held jumps rise higher than taps and replay exactly from a mid-hold snapsh
 test('older snapshots default optional momentum and wall-jump state',()=>{
  const a=make(),before=clone(a.captureState()),old=clone(before);
  delete old.movement.momentum;delete old.movement.jumpHold;
- for(const key of ['mom','chain','bonus'])delete old.parkour[key];delete old.parkour.cool.walljump;delete old.parkour.stats.walljumps;
+ for(const key of ['mom','chain','bonus'])delete old.parkour[key];delete old.parkour.cool.walljump;delete old.parkour.stats.walljumps;delete old.parkour.cool.grip;delete old.parkour.stats.grips;
  a.step(input(17,1));a.restoreState(old);equal(a.captureState(),before);
 });
 
