@@ -25,10 +25,11 @@ const finishArrival = window.btrArrival?.hold('necklace catalog') || (() => {});
 await ready;
 const metalwork = document.getElementById('metalwork');
 if (metalwork && !document.getElementById('necklaces')) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  // Release a stalled arrival screen without cancelling the collection itself.
+  // Slow connections can still finish mounting the necklaces after entry.
+  const timeout = setTimeout(() => finishArrival(new Error('Collection still loading')), 15000);
   try {
-    const response = await fetch('/pendant-collection/catalog.json?v=prices-2', {signal: controller.signal});
+    const response = await fetch('/pendant-collection/catalog.json?v=prices-2');
     if (!response.ok) throw new Error('Collection unavailable');
     const items = await response.json();
     if (!Array.isArray(items) || !items.length) throw new Error('Incomplete collection');
