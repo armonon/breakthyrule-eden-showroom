@@ -120,6 +120,6 @@
    for(const c of scene.children)if(classify(c)===name&&!c.visible){self.push(c);c.visible=true;}
    try{job=renderer.compileAsync?renderer.compileAsync(scene,camera):renderer.compile(scene,camera);job?.catch?.(()=>{});}catch(e){console.warn('Prewarm compile failed',e);}finally{for(const c of self)c.visible=false;world=was;apply();}return job;}
   syncLights(true);
-  return {enter,veil,card,chapter,chapters,world:()=>world,loading:()=>busy,apply,syncLights,compileFor,inspect:()=>({world,busy,primed,stableLights:stableLights.size+pointPool.length,pointSources:pointSources.size,...stats,film:film.inspect()})};
+  return {enter,veil,card,chapter,chapters,world:()=>world,loading:()=>busy||!el.hidden,apply,syncLights,compileFor,inspect:()=>({world,busy,primed,stableLights:stableLights.size+pointPool.length,pointSources:pointSources.size,...stats,film:film.inspect()})};
  };
 })(window);

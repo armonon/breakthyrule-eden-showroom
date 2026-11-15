@@ -10,6 +10,7 @@ try{
  // Fix internal resolution for a fair render-cost comparison; the separate
  // five-minute run retains the game's adaptive medium-quality behavior.
  await page.evaluate(`(()=>{const r=${S}.renderer(),set=r.setPixelRatio.bind(r);r.setPixelRatio=()=>set(.75);r.setPixelRatio(.75);})()`);
+ await page.evaluate(`(async()=>{const S=${S};await S.garden().ready;const start=performance.now();while(!S.prewarm()?.done&&performance.now()-start<45000)await new Promise(r=>setTimeout(r,250));S.place(0,12,0,3,1.6);})()`);await sleep(5000);
  const eden=await page.evaluate(`(()=>{const S=${S};return {perf:S.perf(),state:S.getState(),bake:edenBaked.inspect()};})()`);
  await page.shot(path.join(out,'eden.jpg'));
  await page.evaluate(`(async()=>{const S=${S},g=S.garden();while(!g.warmNight())await new Promise(r=>setTimeout(r,50));S.teleport(10,-65);await new Promise(r=>setTimeout(r,2000));while(S.worlds().loading())await new Promise(r=>setTimeout(r,100));S.battle()._debug.god();S.battle()._debug.night();g.district.prepare(nightLayout.landmarks.map(s=>s.id));const start=performance.now();while(Object.values(g.district.inspect().models).some(v=>v==='waiting'||v==='loading')){if(performance.now()-start>150000)throw Error('models timed out');await new Promise(r=>setTimeout(r,200));}})()`);
