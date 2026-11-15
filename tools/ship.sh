@@ -17,7 +17,8 @@ for attempt in 1 2 3 4;do
  # Check collections, chapters, museum catalogs and media against the complete release baseline.
  node tools/release/check-release.mjs --require-tracked
  # Syntax-check every top-level script the game pages load.
- bad=0;for f in $(grep -ohE 'src="/[^"?]+\.js' showroom.html expedition.html|sed 's#src="/##'|sort -u);do [[ -f "$f" ]]||{ echo "missing: $f" >&2;bad=1;continue; };node --check "$f" 2>/dev/null||{ echo "syntax error: $f" >&2;bad=1; };done
+ node tools/release/check-game-scripts.mjs
+ bad=0
  # Every local file the pages reference must exist in the repo (nothing may live only on Netlify).
  for f in $(grep -ohE '(src|href)="/[^"?#]+\.(js|mjs|css|png|webp|jpg|svg|json)' index.html showroom.html expedition.html product.html|sed -E 's#^(src|href)="/##'|sort -u);do [[ -e "$f" ]]||{ echo "referenced but not in repo: $f" >&2;bad=1; };done
  ((bad))&&{ echo "Fix the problems above before shipping." >&2;exit 1; }
