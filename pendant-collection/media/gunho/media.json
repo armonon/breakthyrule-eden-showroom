@@ -1,0 +1,228 @@
+{
+  "slug": "gunho",
+  "title": "gunho",
+  "duration_seconds": 10,
+  "fps": 24,
+  "frames": 240,
+  "rotation_degrees": 360,
+  "source_key": "b2f9740d71695986fc786fc1367317834b3fe94d3b55a052530a8942823a4d75",
+  "alpha_method": "Original RGBA alpha, packed right of RGB in H.264; reconstructed by WebGL. No chroma key.",
+  "assets": [
+    {
+      "file": "gunho-full-poster.png",
+      "bytes": 186803,
+      "sha256": "27a5a551c7284a9ec87c93efbeb20a616679383f6bd5bf7c40efb2e67bbf53fd",
+      "type": "transparent-poster",
+      "width": 640,
+      "height": 900
+    },
+    {
+      "file": "gunho-full-packed.mp4",
+      "bytes": 2708816,
+      "sha256": "898a4238c955adfca0d44ddcf7e518dadcf4f3426b3f1eeaf6191d583d7f9785",
+      "type": "packed-alpha-h264",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 900,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "2708816"
+        }
+      }
+    },
+    {
+      "file": "gunho-detail-poster.png",
+      "bytes": 569930,
+      "sha256": "2b2ed15ce0cabdc77bcd45ba665b3d24f0c3c40faadc2822e2d7410408aeadfc",
+      "type": "transparent-poster",
+      "width": 1220,
+      "height": 900
+    },
+    {
+      "file": "gunho-detail-packed.mp4",
+      "bytes": 4614648,
+      "sha256": "65b4ff84a0664cfd771841ecb09763e7941c1671e97bc08a533734cbe26e79de",
+      "type": "packed-alpha-h264",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 2440,
+            "height": 900,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "4614648"
+        }
+      }
+    },
+    {
+      "file": "gunho-with-chain-360.mp4",
+      "bytes": 3976958,
+      "sha256": "6474edcc50c66bb7e3162c2d96396bbfd4c83c95c0c3f0648b0c4b02bbc99e6e",
+      "type": "standard-mp4",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "24/1",
+            "nb_read_frames": "240",
+            "tags": {}
+          }
+        ],
+        "format": {
+          "duration": "10.000000",
+          "size": "3976958"
+        }
+      }
+    }
+  ],
+  "views": {
+    "full": {
+      "width": 640,
+      "height": 900,
+      "packed": "gunho-full-packed.mp4",
+      "poster": "gunho-full-poster.png",
+      "decoded_alpha_cardinal_samples": [
+        {
+          "frame": 1,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 61,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 121,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 181,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        }
+      ]
+    },
+    "detail": {
+      "width": 1220,
+      "height": 900,
+      "packed": "gunho-detail-packed.mp4",
+      "poster": "gunho-detail-poster.png",
+      "decoded_alpha_cardinal_samples": [
+        {
+          "frame": 1,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 61,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 121,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        },
+        {
+          "frame": 181,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extrema": [
+            0,
+            255
+          ]
+        }
+      ]
+    }
+  },
+  "passed": true,
+  "download": "gunho-with-chain-360.mp4",
+  "encode_seconds": 32.4
+}
