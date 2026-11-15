@@ -11,3 +11,7 @@ html body .entry-header a.btr-logo-brand{width:168px!important;height:44px!impor
 html body header#btr-site-header.btr-about-header[data-shared-header="about"] a.brand.btr-logo-brand img.btr-brand-logo{filter:none!important;opacity:1!important;mix-blend-mode:normal!important;}
 /* Night version: preserve the red emblem and wordmark, lighten only the subtitle. */
 html body a.btr-logo-brand.btr-logo-night,html body header#btr-site-header.btr-about-header[data-shared-header="about"] a.brand.btr-logo-brand.btr-logo-night{position:relative!important;background:transparent!important;border:0!important;box-shadow:none!important;}
+
+/* Keep the full-color night footer readable across the cave and commerce themes. */
+html body footer.site-foot .foot-mark,html[data-btr-theme] body footer.site-foot .foot-mark{background:transparent!important;box-shadow:none!important;}
+html body footer.site-foot .foot-mark img.btr-logo-night-image,html[data-btr-theme] body footer.site-foot .foot-mark img.btr-logo-night-image{filter:none!important;opacity:1!important;mix-blend-mode:normal!important;}
