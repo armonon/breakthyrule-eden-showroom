@@ -29,12 +29,23 @@ window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=fals
  gl_FragColor=vec4(mix(c,moonlit,night)*strength,1.);}`})));
  const pmrem=new T.PMREMGenerator(renderer);
  let envTarget=null,bakedNight=-1,skyUniform=null,bakes=0,skyStarted=false;
+ // The environment map is baked at six night levels and cached: walking the road from day into night used to
+ // re-bake it (a multi-pass GPU render) every 4% of darkness, a hitch every few steps. Now each level bakes once
+ // (the rest pre-bake in idle time after load) and switching is free. Anything that changes the bake clears it.
+ const ENV_STEPS=5,envCache=new Map(),levelOf=n=>Math.round(Math.max(0,Math.min(1,n))*ENV_STEPS)/ENV_STEPS;
+ function invalidateEnvironment(){for(const t of envCache.values())if(t!==envTarget)t.dispose();envCache.clear();}
+ function bakeLevel(level){let target=envCache.get(level);if(!target){const keep=uniforms.night.value;uniforms.night.value=level;target=pmrem.fromScene(envScene);bakes++;uniforms.night.value=keep;envCache.set(level,target);}return target;}
  function bakeEnvironment(){
   if(disposed)return;
-  const target=pmrem.fromScene(envScene);bakes++;
-  envTarget?.dispose();envTarget=target;bakedNight=uniforms.night.value;
+  const level=levelOf(uniforms.night.value),target=bakeLevel(level);
+  if(envTarget&&envTarget!==target&&![...envCache.values()].includes(envTarget))envTarget.dispose();
+  envTarget=target;bakedNight=level;
   scene.environment=settings.environment?target.texture:null;
+  prebakeSoon();
  }
+ let prebakeTimer=0;
+ function prebakeSoon(){if(prebakeTimer||disposed||!settings.environment)return;prebakeTimer=setTimeout(function next(){prebakeTimer=0;if(disposed||!settings.environment)return;
+  for(let i=0;i<=ENV_STEPS;i++){const level=i/ENV_STEPS;if(!envCache.has(level)){const run=()=>{if(!disposed&&!envCache.has(level))bakeLevel(level);prebakeTimer=setTimeout(next,400);};(window.requestIdleCallback||setTimeout)(run,{timeout:2000});prebakeTimer=-1;return;}}},1500);}
  function nightAmount(){
   if(getNight)return Math.max(0,Math.min(1,getNight()));
   if(!skyUniform)scene.getObjectByName('Garden of Eden')?.children.some(o=>(skyUniform=o.material?.uniforms?.roadNight));
@@ -64,7 +75,7 @@ window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=fals
    for(let p=0;p<w*h;p++){const e=buf[i+p*4+3],k=e?Math.pow(2,e-136):0;px[p*4]=f(buf[i+p*4]*k);px[p*4+1]=f(buf[i+p*4+1]*k);px[p*4+2]=f(buf[i+p*4+2]*k);px[p*4+3]=f(1);}
    const tex=new T.DataTexture(px,w,h,T.RGBAFormat,T.HalfFloatType);tex.magFilter=tex.minFilter=T.LinearFilter;tex.wrapS=T.RepeatWrapping;tex.needsUpdate=true;
    const sunU=Math.atan2(offset.z,offset.x)/(Math.PI*2)+.5;
-   uniforms.skyMap.value?.dispose();uniforms.skyMap.value=tex;uniforms.skyTurn.value=SKY_SUN_U-sunU;uniforms.hasSky.value=1;if(nightAmount()<.999)bakeEnvironment();
+   uniforms.skyMap.value?.dispose();uniforms.skyMap.value=tex;uniforms.skyTurn.value=SKY_SUN_U-sunU;uniforms.hasSky.value=1;invalidateEnvironment();if(nightAmount()<.999)bakeEnvironment();
   }catch(error){if(disposed||error.name==='AbortError')return;console.warn('HDR sky unavailable; keeping the painted one.',error);}
  }
  function ensureSky(){if(skyStarted||disposed||nightAmount()>=.999)return;skyStarted=true;loadSky('/assets/eden-sky.hdr?v=1');}
@@ -75,7 +86,7 @@ window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=fals
    if(disposed)return;
    const night=nightAmount();ensureSky();
    window.edenBaked?.setNight(night);
-   if(settings.environment&&(Math.abs(night-bakedNight)>.04||(night!==bakedNight&&(night===0||night===1)))){uniforms.night.value=night;bakeEnvironment();}
+   if(settings.environment&&levelOf(night)!==bakedNight){uniforms.night.value=night;bakeEnvironment();}
    if(!settings.followShadow)return;
    // Centre the frustum a little ahead of the viewer, snapped to a whole-texel grid in light space so shadow
    // edges do not shimmer, and in ~0.5 m steps so the shadow map re-renders only when the viewer has moved.
@@ -87,7 +98,7 @@ window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=fals
   set(next={}){if(disposed)return;
    const changed=Object.keys(next).filter(key=>next[key]!==settings[key]);if(!changed.length)return;
    Object.assign(settings,next);hemi.intensity=settings.environment?settings.hemi:original.hemi;uniforms.strength.value=settings.strength;
-   if(settings.environment&&(changed.includes('strength')||changed.includes('environment'))){uniforms.night.value=nightAmount();bakeEnvironment();}
+   if(settings.environment&&(changed.includes('strength')||changed.includes('environment'))){invalidateEnvironment();uniforms.night.value=nightAmount();bakeEnvironment();}
    else scene.environment=settings.environment?envTarget?.texture:null;
    if(changed.includes('followShadow')||changed.includes('shadowSize'))applyShadowFrustum();
   },
@@ -96,7 +107,7 @@ window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=fals
   dispose(){
    if(disposed)return;disposed=true;lifetime.abort();
    if(scene.environment===envTarget?.texture)scene.environment=null;
-   envTarget?.dispose();envTarget=null;uniforms.skyMap.value?.dispose();uniforms.skyMap.value=null;
+   clearTimeout(prebakeTimer);for(const t of envCache.values())if(t!==envTarget)t.dispose();envCache.clear();envTarget?.dispose();envTarget=null;uniforms.skyMap.value?.dispose();uniforms.skyMap.value=null;
    envScene.traverse(o=>{o.geometry?.dispose();for(const material of [].concat(o.material||[]))material.dispose();});envScene.clear();pmrem.dispose();
   },
   inspect:()=>({...settings,bakes,skyRequested:skyStarted,shadowMapSize:sun.shadow.mapSize.x,shadowHalfExtent:settings.followShadow?half:original.frustum.right,shadowCentre:sun.target.position.toArray().map(v=>+v.toFixed(2)),night:bakedNight})

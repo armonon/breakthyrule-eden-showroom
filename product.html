@@ -41,14 +41,28 @@
  <link rel="stylesheet" href="/site/shared-header-layout.css?v=about-1">
  <script defer src="/site/shared-header.js?v=18ef90e517c7d41b"></script>
 <style id="archive-model-preview">.archive-product #viewer .halo,.archive-product #viewer .pedestal,.product-card[data-archive-hq] .halo{display:none!important}.archive-product #viewer{background:transparent!important}.product-card[data-archive-hq] .card-media:has(canvas.live) img{opacity:0!important}</style>
-<link rel="stylesheet" href="/site/product-studio.css?v=2">
-<script type="module" src="/site/product-studio.mjs?v=graphics-editor-2"></script>
+<link rel="stylesheet" href="/site/product-studio.css?v=postcard-process-3">
+<script type="module" src="/site/product-studio.mjs?v=postcard-process-3"></script>
 <link rel="stylesheet" href="/site/garment-graphics-editor.css?v=2">
 <link rel="stylesheet" href="/site/brand-logo.css?v=night-2">
 <script type="module" src="/site/product-navigation.mjs?v=1"></script>
 <link rel="stylesheet" href="/site/product-navigation.css?v=1">
 </head>
 <body data-page="home" data-product-studio="true" class="silkroad-product">
+ <svg class="studio-print-filters" aria-hidden="true" width="0" height="0" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+   <!-- A one-bit, noise-dithered print treatment. The original photographs stay intact. -->
+   <filter id="product-bitmap-print" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feColorMatrix in="SourceGraphic" type="saturate" values="0" result="mono"/>
+    <feComponentTransfer in="mono" result="contrast"><feFuncR type="linear" slope="1.12" intercept="-.02"/><feFuncG type="linear" slope="1.12" intercept="-.02"/><feFuncB type="linear" slope="1.12" intercept="-.02"/><feFuncA type="linear" slope="0" intercept="1"/></feComponentTransfer>
+    <feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="1" seed="17" result="noise"/>
+    <feColorMatrix in="noise" type="matrix" values=".2126 .7152 .0722 0 0 .2126 .7152 .0722 0 0 .2126 .7152 .0722 0 0 0 0 0 0 1" result="gray-noise"/>
+    <feComposite in="contrast" in2="gray-noise" operator="arithmetic" k1="0" k2="1" k3="1.7" k4="-.85" result="dither"/>
+    <feComponentTransfer in="dither" result="ink"><feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/></feComponentTransfer>
+    <feComposite in="ink" in2="SourceGraphic" operator="in"/>
+   </filter>
+  </defs>
+ </svg>
  <main>
   <nav class="product-back-nav" aria-label="Product navigation"><a href="/?nocover=1#photo-story" data-product-back>← Back</a></nav>
   <section class="product-page">
@@ -78,9 +92,15 @@
     <p class="note" id="model-note"></p>
    </div>
   </section>
-  <section id="product-story" class="studio-story wrap" aria-labelledby="studio-story-title"></section>
-  <section id="product-gallery" class="studio-gallery wrap" aria-labelledby="product-gallery-title"></section>
-  <div class="ornament" aria-hidden="true"><span>❦</span></div>
+  <div class="studio-postcard-stack">
+   <section id="product-gallery" class="studio-gallery wrap" aria-label="Garments and people wearing Break Thy Rule"></section>
+   <section id="product-process" class="studio-process" aria-label="How we operate" hidden>
+    <p class="studio-process-intro">We print and finish our garments in Los Angeles, working with vintage finds, new blanks and our own cut and sew.</p>
+    <p><strong>Random</strong>Choose your garment style and size. We choose the base and color, then print and finish it in house.</p>
+    <p><strong>Blank</strong>Choose your color on an existing blank, vintage or new. We handle the printing and finishing.</p>
+    <p><strong>Cut &amp; Sew</strong>Constructed in LA’s Fashion District, then printed and finished in house.</p>
+   </section>
+  </div>
  </main>
 </body>
 </html>
