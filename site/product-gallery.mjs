@@ -1,6 +1,5 @@
 const h=(tag,props={},...kids)=>{const e=Object.assign(document.createElement(tag),props);for(const k of kids.flat())if(k!=null)e.append(k);return e;};
 const galleryLink=()=>h('a',{href:'/gallery',ariaLabel:'Open full gallery',textContent:'↗'});
-const appleStamp=()=>h('a',{href:'/about',className:'studio-postcard-stamp',ariaLabel:'About Break Thy Rule'},h('img',{src:'/site/eden-apple-red-bitmap.png',alt:'',width:40,height:42,decoding:'async'}));
 const modulo=(n,length)=>(n%length+length)%length;
 
 export async function mountProductGallery(host){
@@ -13,7 +12,7 @@ export async function mountProductGallery(host){
   const data=await response.json(),seen=new Set();
   items=(data.items||[]).filter(item=>{if(!item?.src||!['worn','garments'].includes(item.category)||seen.has(item.id||item.src))return false;seen.add(item.id||item.src);return true;});
  }catch{
-  host.classList.add('studio-postcard');host.append(appleStamp(),h('footer',{className:'studio-postcard-footer'},galleryLink()));return;
+  host.classList.add('studio-postcard','studio-photo-gallery');host.append(h('footer',{className:'studio-postcard-footer'},galleryLink()));return;
  }
  if(!items.length){host.hidden=true;return;}
  // Every two-photo window pairs a garment with a wearer, including the loop seam.
@@ -27,8 +26,8 @@ export async function mountProductGallery(host){
  const viewport=h('div',{className:'studio-gallery-window'}),track=h('div',{className:'studio-gallery-track'});
  viewport.append(track);
  const prev=h('button',{type:'button',ariaLabel:'Previous gallery slide',textContent:'←'}),next=h('button',{type:'button',ariaLabel:'Next gallery slide',textContent:'→'});
- host.classList.add('studio-postcard');host.style.setProperty('--gallery-visible',count);
- host.append(appleStamp(),viewport,h('footer',{className:'studio-postcard-footer'},h('div',{className:'studio-gallery-tools'},prev,next),galleryLink()));
+ host.classList.add('studio-postcard','studio-photo-gallery');host.style.setProperty('--gallery-visible',count);
+ host.append(viewport,h('footer',{className:'studio-postcard-footer'},h('div',{className:'studio-gallery-tools'},prev,next),galleryLink()));
  host.setAttribute('aria-roledescription','carousel');host.dataset.galleryCount=String(items.length);
  const dialog=h('dialog',{className:'studio-gallery-dialog',ariaLabel:'Gallery photograph'}),full=h('img',{alt:''}),caption=h('p'),dialogCount=h('span');
  const close=h('button',{type:'button',ariaLabel:'Close gallery photograph',textContent:'Close ×'}),dp=h('button',{type:'button',ariaLabel:'Previous photograph',textContent:'←'}),dn=h('button',{type:'button',ariaLabel:'Next photograph',textContent:'→'});

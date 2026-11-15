@@ -5,7 +5,7 @@ import { PRODUCT_DESIGNS, STUDIO_PRODUCTS, GRAPHIC_COLORS } from '/labkit/produc
 import { normalizeItem, priceItem } from '/labkit/pricing.mjs';
 import { cart, POOL, labStatus } from '/site/cart-store.mjs?v=site-audit-1';
 import { tintProductDesign } from '/site/product-preview.mjs?v=1';
-import { mountProductGallery } from '/site/product-gallery.mjs?v=postcard-motion-2';
+import { mountProductGallery } from '/site/product-gallery.mjs?v=regular-gallery-5';
 const $=id=>document.getElementById(id);
 const h=(tag,props={},...kids)=>{const e=Object.assign(document.createElement(tag),props);for(const k of kids.flat())if(k!=null)e.append(k);return e;};
 const ready=document.readyState==='loading'?new Promise(r=>document.addEventListener('DOMContentLoaded',r,{once:true})):Promise.resolve();
@@ -17,7 +17,7 @@ const trail=h('nav',{className:'studio-trail',ariaLabel:'Breadcrumb'},h('a',{hre
 document.querySelector('.product-page').before(trail);
 const seal=h('p',{className:'studio-origin',textContent:'BREAK THY RULE / LOS ANGELES'});info.prepend(seal);
 mountProductGallery($('product-gallery'));
-if($('product-process'))$('product-process').hidden=!design;
+if($('product-process')){$('product-process').hidden=!design;$('product-process').closest('.studio-postcard-stack').hidden=!design;}
 if(design||product)mountOptions();
 function mountOptions(){
  let edit=params.get('edit'),saved=edit&&cart.get(edit)?.config;
