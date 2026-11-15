@@ -30,8 +30,7 @@ function draw(garment) {
   return result;
 }
 function labLink(piece) { const { size, ...design } = piece.raw; return '/lab?design=' + encode(design) + '#build'; }
-function generated({ sequence = 1, random = Math.random } = {}) {
-  const garment = ['tee', 'tee', 'hoodie', 'crewneck'][Math.floor(random() * 4)];
+function generated({ sequence = 1, random = Math.random, garment = ['tee', 'tee', 'hoodie', 'crewneck'][Math.floor(random() * 4)] } = {}) {
   const piece = draw(garment), priceCents = priceItem(piece.item).totalCents;
   return {
     id: 'lab-random-' + sequence + '-' + piece.raw.seed, origin: 'generated', category: 'generated', renderKind: 'generated',
@@ -78,7 +77,10 @@ function retryFirstPiece() {
 }
 let mysteryOpen = false, selectedPackage = 'one-tee', detailsHovered = false, boxPaused = reduced.matches;
 let smoke = null, turnPending = false, switchTimer = 0;
-function controls() { stage?.setAuto(!paused && !mysteryOpen); }
+function controls() {
+  stage?.setAuto(!paused && !mysteryOpen);
+  $('discovery-random-shirt').disabled = !scheduler || busy || artBusy || disposed;
+}
 
 function labels(item, manual) {
   section.dataset.discoveryId = item.id;
@@ -141,6 +143,18 @@ async function advance(manual = false) {
   prepareNext();
   if (!ok && !current) { $('discovery-link').textContent = 'Explore the collection ↗'; retryFirstPiece(); }
 }
+async function randomShirt() {
+  if (!scheduler || !stage || busy || artBusy || disposed || mysteryOpen) return;
+  clearTimeout(switchTimer); switchTimer = 0; turnPending = false;
+  smoke?.clear();
+  try {
+    await show(generated({ sequence: sequence + 1, garment: 'tee' }), { manual: true });
+    prepareNext();
+  } catch (error) {
+    console.warn('Could not prepare a random shirt:', error);
+    $('discovery-status').textContent = 'Could not prepare a random shirt. Please try again.';
+  }
+}
 function selectPackage(id) {
   const offer = MYSTERY_PACKAGES[id]; if (!offer) return;
   selectedPackage = id;
@@ -157,16 +171,14 @@ function updateBoxMotion() {
   $('box-spin').setAttribute('aria-pressed', String(boxPaused));
   $('box-spin').textContent = boxPaused ? 'Resume rotation ↻' : 'Pause rotation Ⅱ';
 }
-function selectTab(mode, focus = false) {
+function selectMode(mode, focus = false) {
   mysteryOpen = mode === 'mystery';
   clearTimeout(switchTimer); switchTimer = 0; turnPending = false; detailsHovered = keyboardFocus = false;
   smoke?.clear();
-  for (const kind of ['chance', 'mystery']) {
-    const active = (kind === 'mystery') === mysteryOpen, tab = $('discovery-tab-' + kind);
-    tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1;
-    $(kind === 'chance' ? 'discovery-chance' : 'mystery').hidden = !active;
-    if (active && focus) tab.focus();
-  }
+  $('discovery-chance').hidden = mysteryOpen;
+  $('mystery').hidden = !mysteryOpen;
+  $('discovery-open-mystery').setAttribute('aria-expanded', String(mysteryOpen));
+  if (focus) $(mysteryOpen ? 'discovery-back-to-rotation' : 'discovery-open-mystery').focus({ preventScroll: true });
   section.dataset.discoveryMode = mysteryOpen ? 'mystery' : 'chance';
   stage?.setVisible(!mysteryOpen); controls(); updateBoxMotion();
   if (!mysteryOpen) { stage?.resume(); if (nearby && pageActive() && !started) void start(); }
@@ -237,17 +249,12 @@ if (section && mount) {
     button.addEventListener('click', () => selectPackage(offer.id));
   }
   selectPackage(selectedPackage);
-  document.querySelectorAll('[data-discovery-open="mystery"]').forEach(link => link.addEventListener('click', () => selectTab('mystery')));
+  document.querySelectorAll('[data-discovery-open="mystery"]').forEach(link => link.addEventListener('click', () => selectMode('mystery', true)));
   $('box-spin').addEventListener('click', () => { boxPaused = !boxPaused; updateBoxMotion(); });
-  for (const kind of ['chance', 'mystery']) {
-    const tab = $('discovery-tab-' + kind);
-    tab.addEventListener('click', () => selectTab(kind));
-    tab.addEventListener('keydown', event => {
-      if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
-      event.preventDefault(); selectTab(event.key === 'Home' ? 'chance' : event.key === 'End' ? 'mystery' : kind === 'chance' ? 'mystery' : 'chance', true);
-    });
-  }
-  selectTab('chance');
+  $('discovery-random-shirt').addEventListener('click', randomShirt);
+  $('discovery-open-mystery').addEventListener('click', () => selectMode('mystery', true));
+  $('discovery-back-to-rotation').addEventListener('click', () => selectMode('chance', true));
+  selectMode('chance');
   const details = section.querySelector('.discovery-details');
   details.addEventListener('pointerenter', event => { detailsHovered = event.pointerType === 'mouse'; });
   details.addEventListener('pointerleave', () => { detailsHovered = false; });
