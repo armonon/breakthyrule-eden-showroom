@@ -9,6 +9,10 @@ window.createAdaptiveResolution=function(renderer,{max=Math.min(devicePixelRatio
  const target=Number.isFinite(targetFps)&&targetFps>0?1000/Math.min(240,Math.max(15,targetFps)):null;
  const RATES=[30,48,50,60,75,90,100,120,144,165,240];
  let ratio=max,vsync=target||1000/60,shortest=Infinity,average=0,smoothSince=0,lastChange=0,last=0,frames=0;
+ // Every resolution change reallocates the canvas and every post-processing target: a visible hitch. To stop a
+ // borderline machine bouncing between two ratios, each drop doubles the calm time needed before climbing again
+ // (8 s, 30 s, 60 s ... 5 min), and after three drops in one session it stays where it settled.
+ let drops=0,climbWait=8000;
  renderer.setPixelRatio(ratio);
  function set(next,time){
   next=Math.max(min,Math.min(max,Math.round(next/step)*step));if(next===ratio)return;
@@ -25,14 +29,14 @@ window.createAdaptiveResolution=function(renderer,{max=Math.min(devicePixelRatio
    average=average?average+(interval-average)*.08:interval;
    if(average>vsync*(target?1.15:1.6))smoothSince=0;
    if(time-lastChange<2500)return;
-   if(average>vsync*(target?1.15:1.6)){if(ratio>min)set(ratio-step,time);else{lastChange=time;average=vsync;onFloor();}}
-   else if(average<vsync*(target?1.05:1.25)){if(!smoothSince)smoothSince=time;else if(time-smoothSince>8000&&ratio<max)set(ratio+step,time);}
+   if(average>vsync*(target?1.15:1.6)){if(ratio>min){set(ratio-step,time);drops++;climbWait=Math.min(300000,climbWait<30000?30000:climbWait*2);}else{lastChange=time;average=vsync;onFloor();}}
+   else if(average<vsync*(target?1.05:1.25)){if(!smoothSince)smoothSince=time;else if(drops<3&&time-smoothSince>climbWait&&ratio<max)set(ratio+step,time);}
    else smoothSince=0;
   },
   pause(){last=0;smoothSince=0;average=0;},
   // The graphics setting moves the ceiling; the current ratio follows it down at once, or climbs to it later.
   setMax(next){max=next;if(ratio>max){ratio=max;renderer.setPixelRatio(ratio);onChange(ratio);}},
-  inspect:()=>({pixelRatio:ratio,max,min,frameMs:+average.toFixed(1),vsyncMs:+vsync.toFixed(1),targetFps:target?+(1000/target).toFixed(2):null})
+  inspect:()=>({pixelRatio:ratio,max,min,frameMs:+average.toFixed(1),drops,climbWaitS:Math.round(climbWait/1000),vsyncMs:+vsync.toFixed(1),targetFps:target?+(1000/target).toFixed(2):null})
  };
 };
 

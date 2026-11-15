@@ -45,6 +45,7 @@ snapshots still load. World props that movement uses must come from data both si
 | Museum | `museum.js`, `museum-sculptures.js`, `museum-exhibition.js`, `museum-reader.*` |
 | Horror chapter | `story.js` (milestones), `worlds.js` + `worlds.css` (separate worlds, loading screens with the bitmap hero film), `horror-chapter.js` + `horror.css` (office, showdown, keys, black cube, garment lab), `assets/worlds/chapters.json` |
 | HUD additions | `momentum-hud.js` + `momentum-hud.css` (momentum meter) |
+| Smoothness | `prewarm.js` (idle-time texture uploads, shader compiles incl. `worlds.compileFor('beyond')`, match/weapon build), `perf-hud.js` (F8 or `?perf=1`: frame graph that names each spike; "Copy report") |
 
 Debug handles in the browser console: `breakThyRuleShowroom` (Eden: `.worlds()`, `.story()`, `.horror()`,
 `.parkour()`, `.getState()`), `breakThyRuleExpedition` (Beyond Eden).

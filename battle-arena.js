@@ -963,6 +963,8 @@
 
   return {
    start,exit,update,enter,suspend,
+   // Build the arena ahead of time (prewarm.js, while the player is still in Eden); start() reuses it.
+   prewarm:()=>build(),
    lowHealth:()=>active?Math.max(lowHealth(),bloodHit*.5):0,soul:()=>active&&!!player&&!player.alive&&!!player.soul,
    active:()=>active,busy:()=>active||entering,suspended:()=>suspended,dead:()=>active&&!!player&&!player.alive,
    canMove:()=>!active||phase==='live'||phase==='ended',

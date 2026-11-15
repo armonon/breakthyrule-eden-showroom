@@ -144,8 +144,9 @@ async function advance(manual = false) {
   if (!ok && !current) { $('discovery-link').textContent = 'Explore the collection ↗'; retryFirstPiece(); }
 }
 async function randomShirt() {
-  if (!scheduler || !stage || busy || artBusy || disposed) return;
-  selectTab('chance');
+  if (!scheduler || !stage || busy || artBusy || disposed || mysteryOpen) return;
+  clearTimeout(switchTimer); switchTimer = 0; turnPending = false;
+  smoke?.clear();
   try {
     await show(generated({ sequence: sequence + 1, garment: 'tee' }), { manual: true });
     prepareNext();
@@ -170,16 +171,14 @@ function updateBoxMotion() {
   $('box-spin').setAttribute('aria-pressed', String(boxPaused));
   $('box-spin').textContent = boxPaused ? 'Resume rotation ↻' : 'Pause rotation Ⅱ';
 }
-function selectTab(mode, focus = false) {
+function selectMode(mode, focus = false) {
   mysteryOpen = mode === 'mystery';
   clearTimeout(switchTimer); switchTimer = 0; turnPending = false; detailsHovered = keyboardFocus = false;
   smoke?.clear();
-  for (const kind of ['chance', 'mystery']) {
-    const active = (kind === 'mystery') === mysteryOpen, tab = $('discovery-tab-' + kind);
-    tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1;
-    $(kind === 'chance' ? 'discovery-chance' : 'mystery').hidden = !active;
-    if (active && focus) tab.focus();
-  }
+  $('discovery-chance').hidden = mysteryOpen;
+  $('mystery').hidden = !mysteryOpen;
+  $('discovery-open-mystery').setAttribute('aria-expanded', String(mysteryOpen));
+  if (focus) $(mysteryOpen ? 'discovery-back-to-rotation' : 'discovery-open-mystery').focus({ preventScroll: true });
   section.dataset.discoveryMode = mysteryOpen ? 'mystery' : 'chance';
   stage?.setVisible(!mysteryOpen); controls(); updateBoxMotion();
   if (!mysteryOpen) { stage?.resume(); if (nearby && pageActive() && !started) void start(); }
@@ -250,18 +249,12 @@ if (section && mount) {
     button.addEventListener('click', () => selectPackage(offer.id));
   }
   selectPackage(selectedPackage);
-  document.querySelectorAll('[data-discovery-open="mystery"]').forEach(link => link.addEventListener('click', () => selectTab('mystery')));
+  document.querySelectorAll('[data-discovery-open="mystery"]').forEach(link => link.addEventListener('click', () => selectMode('mystery', true)));
   $('box-spin').addEventListener('click', () => { boxPaused = !boxPaused; updateBoxMotion(); });
   $('discovery-random-shirt').addEventListener('click', randomShirt);
-  for (const kind of ['chance', 'mystery']) {
-    const tab = $('discovery-tab-' + kind);
-    tab.addEventListener('click', () => selectTab(kind));
-    tab.addEventListener('keydown', event => {
-      if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
-      event.preventDefault(); selectTab(event.key === 'Home' ? 'chance' : event.key === 'End' ? 'mystery' : kind === 'chance' ? 'mystery' : 'chance', true);
-    });
-  }
-  selectTab('chance');
+  $('discovery-open-mystery').addEventListener('click', () => selectMode('mystery', true));
+  $('discovery-back-to-rotation').addEventListener('click', () => selectMode('chance', true));
+  selectMode('chance');
   const details = section.querySelector('.discovery-details');
   details.addEventListener('pointerenter', event => { detailsHovered = event.pointerType === 'mouse'; });
   details.addEventListener('pointerleave', () => { detailsHovered = false; });
