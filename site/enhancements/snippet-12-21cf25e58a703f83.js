@@ -1,9 +1,13 @@
-/* Products opens at the hero; deliberate in-page collection links keep their anchor. */
+/* Fresh Products visits open at the hero; Back/Forward keeps the browsing position. */
 (() => {
  'use strict';
- const home=()=>document.body?.dataset.page==='home';
+ const home=()=>['/','/index','/index.html'].includes(location.pathname)&&document.body?.dataset.page==='home';
  const entryURL='/?nocover=1';
- let pending=false,interacted=false,frame=0;
+ const historyNavigation=performance.getEntriesByType('navigation')[0]?.type==='back_forward';
+ let pending=false,interacted=historyNavigation,frame=0;
+ function preservePosition(){
+  interacted=true;pending=false;cancelAnimationFrame(frame);frame=0;
+ }
  function resetTop(){
   if(!pending||!home())return;
   cancelAnimationFrame(frame);
@@ -18,7 +22,7 @@
   history.replaceState(history.state,'',url);
  }
  function arrive(){
-  if(!home()||(location.hash&&location.hash!=='#products'))return;
+  if(interacted||!home()||(location.hash&&location.hash!=='#products'))return;
   if(location.hash==='#products'){
    const url=new URL(location.href);url.hash='';history.replaceState(history.state,'',url);
   }
@@ -49,12 +53,16 @@
  arrive();
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
  window.addEventListener('load',resetTop,{once:true});
- window.addEventListener('pageshow',event=>{if(event.persisted)interacted=false;if(!interacted)arrive();});
- // Back from an in-page collection jump is a same-document navigation.
- window.addEventListener('popstate',()=>{if(home()&&!location.hash){interacted=false;arrive();}});
+ window.addEventListener('pageshow',event=>{
+  if(event.persisted||historyNavigation){preservePosition();return;}
+  if(!interacted)arrive();
+ });
+ // Native history restores both full-page returns and in-page collection jumps.
+ window.addEventListener('popstate',preservePosition);
+ window.addEventListener('pagehide',preservePosition);
  window.addEventListener('btr:cover-performance-state',event=>{if(!event.detail?.open)resetTop();});
  // Never pull the page back up after the visitor intentionally starts browsing.
- for(const type of ['wheel','touchstart','pointerdown','keydown'])document.addEventListener(type,()=>{interacted=true;pending=false;cancelAnimationFrame(frame);},{capture:true,passive:true});
+ for(const type of ['wheel','touchstart','pointerdown','keydown'])document.addEventListener(type,preservePosition,{capture:true,passive:true});
  document.addEventListener('click',event=>{
   if(event.button!==0||event.metaKey||event.ctrlKey||event.altKey||event.shiftKey)return;
   const target=event.target instanceof Element?event.target:null;

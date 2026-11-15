@@ -39,7 +39,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 function expandable(gridId, buttonId, visibleCount, label, onChange) {
   const grid = $(gridId), button = $(buttonId);
   const cards = [...grid.children];
-  let expanded = false;
+  // Keep this choice on its collection history entry, including a Back reload
+  // when the browser cannot retain the original document in its page cache.
+  let expanded = history.state?.btrCollectionExpanded?.[gridId] === true;
   const update = () => {
     cards.forEach((card, index) => card.hidden = !expanded && index >= visibleCount);
     button.setAttribute('aria-expanded', String(expanded));
@@ -49,6 +51,7 @@ function expandable(gridId, buttonId, visibleCount, label, onChange) {
   };
   button.addEventListener('click', () => {
     expanded = !expanded; update();
+    history.replaceState({ ...history.state, btrCollectionExpanded: { ...history.state?.btrCollectionExpanded, [gridId]: expanded } }, '');
     if (!expanded) grid.scrollIntoView({block: 'start', behavior: reduced ? 'instant' : 'smooth'});
   });
   update();

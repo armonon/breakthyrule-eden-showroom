@@ -1,13 +1,17 @@
 import { createSmoke } from './discovery-smoke.mjs?v=tab-loop-5';
-import { buildDiscoveryCatalog, createDiscoveryScheduler } from './discovery-catalog.mjs?v=1';
+import { buildDiscoveryCatalog, createDiscoveryScheduler } from './discovery-catalog.mjs?v=product-pages-1';
 import { createDiscoveryStage } from './discovery-stage.mjs?v=flowing-colors-1';
 import { OFFERINGS, MYSTERY_PACKAGES } from '/labkit/catalog.mjs';
 import { normalizeItem, priceItem, sidesFor } from '/labkit/pricing.mjs';
-import { newSeed } from '/labkit/random.mjs';
+import { newSeed, isSeed } from '/labkit/random.mjs';
 import { ARTWORK_POOL } from '/labkit/artwork-pool.mjs';
 import { createPrinter, BLANKS, preloadArt } from './discovery-print.mjs?v=1';
 
 const $ = id => document.getElementById(id), section = $('photo-story'), mount = $('discovery-stage');
+const standalone = document.body.dataset.discoveryProduct === 'true';
+const mysteryPage = standalone && /^\/mystery-box(?:\.html)?\/?$/.test(location.pathname);
+const pageParams = new URLSearchParams(location.search);
+const pageGarment = ['tee', 'hoodie', 'crewneck'].includes(pageParams.get('g')) ? pageParams.get('g') : 'tee';
 const pageActive = () => window.showroomPageActive?.() ?? !document.hidden;
 let nearby = false;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
@@ -15,27 +19,28 @@ const artPool = ARTWORK_POOL.map(a => a.id);
 const explicitArt = new Set(ARTWORK_POOL.filter(a => a.explicit).map(a => a.id));
 const money = cents => '$' + (cents / 100).toFixed(cents % 100 ? 2 : 0);
 const encode = value => btoa(unescape(encodeURIComponent(JSON.stringify(value)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-function draw(garment) {
+function draw(garment, seed) {
   let result;
   for (let i = 0; i < 36; i++) {
-    const raw = { product: 'garment', construction: 'canvas', garment, size: 'M', fit: 'blank', color: 'random', artwork: 'random-experimental', seed: newSeed(), quantity: 1 };
+    const raw = { product: 'garment', construction: 'canvas', garment, size: 'M', fit: 'blank', color: 'random', artwork: 'random-experimental', seed: i === 0 && isSeed(seed) ? seed : newSeed(), quantity: 1 };
     const normalized = normalizeItem(raw, { artworkPool: artPool });
     if (!normalized.ok) continue;
     const sides = sidesFor(normalized.item);
     if ([...sides.front, ...sides.back].some(id => explicitArt.has(id))) continue;
     result = { raw, item: normalized.item, sides };
-    if (result.sides.front.length && result.sides.back.length) break;
+    if (isSeed(seed) || result.sides.front.length && result.sides.back.length) break;
   }
   if (!result) throw new Error('Could not prepare a Lab design.');
   return result;
 }
 function labLink(piece) { const { size, ...design } = piece.raw; return '/lab?design=' + encode(design) + '#build'; }
-function generated({ sequence = 1, random = Math.random, garment = ['tee', 'tee', 'hoodie', 'crewneck'][Math.floor(random() * 4)] } = {}) {
-  const piece = draw(garment), priceCents = priceItem(piece.item).totalCents;
+function randomProductLink(piece) { return '/random-shirt?g=' + piece.raw.garment + '&seed=' + piece.raw.seed; }
+function generated({ sequence = 1, random = Math.random, garment = ['tee', 'tee', 'hoodie', 'crewneck'][Math.floor(random() * 4)], seed } = {}) {
+  const piece = draw(garment, seed), priceCents = priceItem(piece.item).totalCents;
   return {
     id: 'lab-random-' + sequence + '-' + piece.raw.seed, origin: 'generated', category: 'generated', renderKind: 'generated',
     name: 'Random ' + OFFERINGS.canvas[garment].name, description: 'A fresh draw from the Garment Lab. Artwork and color keep changing as this piece turns.',
-    priceCents, priceText: money(priceCents), currency: 'USD', href: labLink(piece), ctaText: 'Make a random piece',
+    priceCents, priceText: money(priceCents), currency: 'USD', href: standalone ? labLink(piece) : randomProductLink(piece), ctaText: standalone ? 'Choose size + customize' : 'View random piece',
     model: BLANKS[garment], rainbow: true, garment, piece,
     colorway: { kind: 'random', name: 'Rainbow / constantly changing' },
     mystery: { questionMarks: true, offerOnly: false }
@@ -75,11 +80,11 @@ function retryFirstPiece() {
     void advance();
   }, 1500);
 }
-let mysteryOpen = false, selectedPackage = 'one-tee', detailsHovered = false, boxPaused = reduced.matches;
+let mysteryOpen = false, selectedPackage = Object.hasOwn(MYSTERY_PACKAGES, pageParams.get('package')) ? pageParams.get('package') : 'one-tee', detailsHovered = false, boxPaused = reduced.matches;
 let smoke = null, turnPending = false, switchTimer = 0;
 function controls() {
   stage?.setAuto(!paused && !mysteryOpen);
-  $('discovery-random-shirt').disabled = !scheduler || busy || artBusy || disposed;
+  if ($('discovery-random-shirt').tagName === 'BUTTON') $('discovery-random-shirt').disabled = !stage || busy || artBusy || disposed;
 }
 
 function labels(item, manual) {
@@ -101,12 +106,18 @@ function labels(item, manual) {
   mount.setAttribute('aria-label', item.name + ', ' + item.priceText + '. Rotating 3D preview. Drag or use the arrow keys to turn.');
   $('discovery-fallback').hidden = true;
   if (manual) $('discovery-status').textContent = item.name + ', ' + item.priceText;
+  if (standalone) {
+    document.title = 'BREAKTHYRULE — ' + item.name;
+    // Keep a reload/share URL for this draw without adding an entry every animation frame.
+    const url = new URL(randomProductLink(item.piece), location.origin);
+    window.history.replaceState(window.history.state, '', url);
+  }
 }
 async function print(piece) {
   return printer.apply({ kind: piece.raw.garment, plan: printPlan(piece), color: new window.THREE.Color('#b9d974'), backSize: 'full', print: piece.item.print });
 }
 function prepareNext() {
-  if (disposed || !nearby || !pageActive() || next) return;
+  if (standalone || disposed || !nearby || !pageActive() || next) return;
   next = prepareDescriptor(scheduler.next());
   void stage.preload(next);
   if (next.piece) void preloadArt([...next.piece.sides.front, ...next.piece.sides.back]);
@@ -135,6 +146,13 @@ async function show(item, { manual = false, append = true, historyTarget = null 
   } finally { busy = false; controls(); section.querySelector('.discovery-details').setAttribute('aria-busy', 'false'); }
 }
 async function advance(manual = false) {
+  if (standalone) {
+    if (stage && !busy && !artBusy && !disposed && !mysteryPage) {
+      const ok = await show(generated({ garment: pageGarment, seed: Number(pageParams.get('seed')) }), { manual });
+      if (!ok && !current) retryFirstPiece();
+    }
+    return;
+  }
   if (!scheduler || !stage || busy || artBusy || disposed) return;
   if (historyIndex < history.length - 1) { await show(history[historyIndex + 1], { manual, append: false, historyTarget: historyIndex + 1 }); return; }
   const item = next || prepareDescriptor(scheduler.next()); next = null;
@@ -144,11 +162,11 @@ async function advance(manual = false) {
   if (!ok && !current) { $('discovery-link').textContent = 'Explore the collection ↗'; retryFirstPiece(); }
 }
 async function randomShirt() {
-  if (!scheduler || !stage || busy || artBusy || disposed || mysteryOpen) return;
+  if (!stage || busy || artBusy || disposed || mysteryOpen) return;
   clearTimeout(switchTimer); switchTimer = 0; turnPending = false;
   smoke?.clear();
   try {
-    await show(generated({ sequence: sequence + 1, garment: 'tee' }), { manual: true });
+    await show(generated({ sequence: sequence + 1, garment: standalone ? pageGarment : 'tee' }), { manual: true });
     prepareNext();
   } catch (error) {
     console.warn('Could not prepare a random shirt:', error);
@@ -165,6 +183,7 @@ function selectPackage(id) {
   $('box-copy').textContent = offer.blurb;
   $('box-cta').href = '/lab?package=' + encodeURIComponent(id) + '#packages';
   $('box-cta').textContent = 'Choose ' + offer.name + ' ↗';
+  if (mysteryPage) document.title = 'BREAKTHYRULE — Mystery ' + offer.name;
 }
 function updateBoxMotion() {
   $('mystery-stage').classList.toggle('paused', !mysteryOpen || boxPaused || !pageActive());
@@ -177,14 +196,14 @@ function selectMode(mode, focus = false) {
   smoke?.clear();
   $('discovery-chance').hidden = mysteryOpen;
   $('mystery').hidden = !mysteryOpen;
-  $('discovery-open-mystery').setAttribute('aria-expanded', String(mysteryOpen));
+  if ($('discovery-open-mystery').tagName === 'BUTTON') $('discovery-open-mystery').setAttribute('aria-expanded', String(mysteryOpen));
   if (focus) $(mysteryOpen ? 'discovery-back-to-rotation' : 'discovery-open-mystery').focus({ preventScroll: true });
   section.dataset.discoveryMode = mysteryOpen ? 'mystery' : 'chance';
   stage?.setVisible(!mysteryOpen); controls(); updateBoxMotion();
   if (!mysteryOpen) { stage?.resume(); if (nearby && pageActive() && !started) void start(); }
 }
 function completeTurn() {
-  if (!current || mysteryOpen || paused || disposed || !pageActive()) return;
+  if (standalone || !current || mysteryOpen || paused || disposed || !pageActive()) return;
   smoke?.puff();
   turnPending = true;
 }
@@ -208,7 +227,7 @@ async function changeArt() {
     if (my !== revision || disposed) return;
     current.piece = piece;
     stage.setRainbow(true);
-    if (current.origin === 'generated') { current.href = labLink(piece); $('discovery-link').href = current.href; }
+    if (current.origin === 'generated') { current.href = standalone ? labLink(piece) : randomProductLink(piece); $('discovery-link').href = current.href; }
   } catch (error) { console.warn('Keeping the previous random artwork.', error); }
   finally { artBusy = false; controls(); }
 }
@@ -222,13 +241,13 @@ function onFrame({ dt, auto, progress }) {
 async function start() {
   if (started || disposed) return; started = true;
   try {
-    catalog ||= await buildDiscoveryCatalog();
+    catalog ||= standalone ? [] : await buildDiscoveryCatalog();
     if (disposed) return;
     if (!nearby || !pageActive() || mysteryOpen) { started = false; return; }
     smoke ||= createSmoke(mount, { colors: ['148,155,142', '179,185,174', '205,208,196'] });
     stage = createDiscoveryStage(mount, { onFrame, onTurn: completeTurn, onInteraction: phase => { if (phase === 'end') { elapsed = 0; lastArt = 0; } } });
     stage.setVisible(!mysteryOpen); printer = createPrinter(stage); controls();
-    scheduler = createDiscoveryScheduler(catalog, { makeGenerated: generated });
+    if (!standalone) scheduler = createDiscoveryScheduler(catalog, { makeGenerated: generated });
     controls();
     // Optional isolated preview used to review a particular product; regular visits use the weighted shuffle.
     const choice = new URLSearchParams(location.search).get('discovery-preview');
@@ -246,15 +265,15 @@ if (section && mount) {
   for (const button of section.querySelectorAll('#mystery button[data-package]')) {
     const offer = MYSTERY_PACKAGES[button.dataset.package];
     button.querySelector('.package-price').textContent = money(offer.priceCents);
-    button.addEventListener('click', () => selectPackage(offer.id));
+    button.addEventListener('click', () => {
+      if (mysteryPage && offer.id !== selectedPackage) location.assign('/mystery-box?package=' + encodeURIComponent(offer.id));
+      else selectPackage(offer.id);
+    });
   }
   selectPackage(selectedPackage);
-  document.querySelectorAll('[data-discovery-open="mystery"]').forEach(link => link.addEventListener('click', () => selectMode('mystery', true)));
   $('box-spin').addEventListener('click', () => { boxPaused = !boxPaused; updateBoxMotion(); });
-  $('discovery-random-shirt').addEventListener('click', randomShirt);
-  $('discovery-open-mystery').addEventListener('click', () => selectMode('mystery', true));
-  $('discovery-back-to-rotation').addEventListener('click', () => selectMode('chance', true));
-  selectMode('chance');
+  if ($('discovery-random-shirt').tagName === 'BUTTON') $('discovery-random-shirt').addEventListener('click', randomShirt);
+  selectMode(mysteryPage ? 'mystery' : 'chance');
   const details = section.querySelector('.discovery-details');
   details.addEventListener('pointerenter', event => { detailsHovered = event.pointerType === 'mouse'; });
   details.addEventListener('pointerleave', () => { detailsHovered = false; });

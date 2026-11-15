@@ -119,7 +119,7 @@ export async function buildDiscoveryCatalog({
     items.push(base({ ...offer, id: 'mystery-' + offer.id }, 'mystery', 'mystery', {
       sourceId: offer.id, name: offer.id === 'one-tee' ? 'Mystery Tee' : 'Mystery ' + offer.name,
       description: offer.blurb, priceCents: offer.priceCents, priceText: money(offer.priceCents),
-      href: '/lab?package=' + encodeURIComponent(offer.id) + '#packages', ctaText: 'Choose mystery package',
+      href: '/mystery-box?package=' + encodeURIComponent(offer.id), ctaText: 'View mystery package',
       model: garmentType ? BLANKS[garmentType] : null,
       colorway: { kind: 'random', name: 'Selected by the house' },
       mystery: { packageId: offer.id, units: offer.units, countLabel: offer.countLabel, visualization, garmentType, questionMarks: true, offerOnly: true }
