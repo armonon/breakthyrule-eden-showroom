@@ -41,7 +41,8 @@
   return {
    start(){if(started)return;started=true;plan();setTimeout(()=>idle(slice),startDelay);},
    // Something new joined the scene (a world loaded later): scan again for new textures and hidden worlds.
-   add(fn){if(stopped)return;queue.push({kind:'task',run:fn});if(stats.done){stats.done=false;idle(slice);}},
+   // Follow-up work jumps the queue: it is the step that the work before it was waiting for.
+   add(fn){if(stopped)return;queue.unshift({kind:'task',run:fn});if(stats.done){stats.done=false;idle(slice);}},
    rescan(){if(!started||stopped)return;queue.push({kind:'scan'});if(stats.done){stats.done=false;idle(slice);}},
    stop(){stopped=true;queue=[];},
    inspect:()=>({...stats,queued:queue.length,ms:+stats.ms.toFixed(1)})

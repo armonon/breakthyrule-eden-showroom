@@ -166,7 +166,10 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  const nightNear=p=>p.z< -12||Math.hypot(p.x-9,p.z+8.5)<10;
  function buildNight(all=false){nightSteps??=[...nightBuilders];while(nightSteps.length){nightSteps.shift()();if(!all)break;}}
  const nightBuilt=()=>!!nightRoad;
- return {snake,skybox,get nightRoad(){return nightRoad;},get pyramid(){buildNight(true);return pyramid;},get district(){buildNight(true);return district;},nightBuilt,ready:Promise.allSettled(assetJobs),constrain(position,previous,feet=null,body=null){
+ return {snake,skybox,get nightRoad(){return nightRoad;},get pyramid(){buildNight(true);return pyramid;},get district(){buildNight(true);return district;},nightBuilt,
+  // prewarm.js: one Beyond Eden build step per call, in idle time, so its lights exist before its shaders compile.
+  warmNight(){buildNight();return !!nightSteps&&!nightSteps.length;},
+  ready:Promise.allSettled(assetJobs),constrain(position,previous,feet=null,body=null){
   if(position.z< -12&&!nightBuilt())buildNight(true);
   if(previous.z< -20){if(position.z< -111)pyramid.constrain(position);else{const width=T.MathUtils.lerp(2.7,90,T.MathUtils.smoothstep(-position.z,20,30));position.x=T.MathUtils.clamp(position.x,roadX-width,roadX+width);}}
   else{position.x=T.MathUtils.clamp(position.x,-20,20);if(position.z< -20&&Math.abs(position.x-roadX)>2.7)position.z=-20;}

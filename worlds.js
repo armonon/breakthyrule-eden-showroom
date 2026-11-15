@@ -13,7 +13,7 @@
  root.createWorlds=function({T,scene,renderer,camera,requestDraw}){
   // Scene roots that belong to Beyond Eden (managed by their own code too) and roots shared by both worlds.
   const BEYOND=new Set(['Arena','Pyramid at the end of the road','Beyond Eden / the old civilization','The Attendant','Eden combat range','Parkour grips']);
-  const SHARED=new Set(['Garden of Eden','Eden sky box','Player body','Combat effects']);
+  const SHARED=new Set(['Garden of Eden','Eden sky box','Player body','Combat effects','Prewarm stand-ins']);
   const classify=c=>c.isLight||c.isCamera||c.isSprite||(c.type==='Object3D'&&!c.children.length)||SHARED.has(c.name)?'shared':BEYOND.has(c.name)?'beyond':'eden';
   let world='eden',busy=false,hidden=new Set(),manifest=null,loadedScripts=new Map(),stats={switches:0,hiddenLast:0};
   // Hide the other world's roots (only those we hid get shown again, so code that hides its own objects is respected).
@@ -86,8 +86,11 @@
   // Compile the scene's shaders exactly as they will be in another world (same visible lights, so the same program
   // variants), then switch straight back: all synchronous, inside one call, so nothing is drawn in between.
   // prewarm.js uses this so the first frames after crossing the door do not compile ~100 programs.
-  function compileFor(name){if(busy||name===world)return null;const was=world;world=name;apply();let job=null;
-   try{job=renderer.compileAsync?renderer.compileAsync(scene,camera):renderer.compile(scene,camera);job?.catch?.(()=>{});}catch(e){console.warn('Prewarm compile failed',e);}finally{world=was;apply();}return job;}
+  // Roots of that world that hide themselves while the viewer is elsewhere (the district does) are shown for the
+  // compile too, so their lights count and their meshes compile; each gets its own visibility back afterwards.
+  function compileFor(name){if(busy||name===world)return null;const was=world;world=name;apply();let job=null;const self=[];
+   for(const c of scene.children)if(classify(c)===name&&!c.visible){self.push(c);c.visible=true;}
+   try{job=renderer.compileAsync?renderer.compileAsync(scene,camera):renderer.compile(scene,camera);job?.catch?.(()=>{});}catch(e){console.warn('Prewarm compile failed',e);}finally{for(const c of self)c.visible=false;world=was;apply();}return job;}
   return {enter,veil,card,chapter,chapters,world:()=>world,loading:()=>busy,apply,compileFor,inspect:()=>({world,busy,...stats,film:film.inspect()})};
  };
 })(window);

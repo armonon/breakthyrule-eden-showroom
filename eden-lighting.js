@@ -5,7 +5,11 @@ window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=fals
  let disposed=false;const lifetime=new AbortController();
  const original={hemi:hemi.intensity,mapSize:sun.shadow.mapSize.x,frustum:(({left,right,top,bottom,near,far})=>({left,right,top,bottom,near,far}))(sun.shadow.camera),position:sun.position.clone()};
  const settings={environment:true,followShadow:true,hemi:.6,strength:.7};
- const maxSize=Math.min(4096,renderer.capabilities.maxTextureSize),half=mobile?18:22;let size=mobile?2048:maxSize,texel=2*half/size,step=texel*Math.max(1,Math.round(.5/texel));
+ // Shadow re-renders are the uneven frames while walking: the map now follows in 2.5 m steps (it was 0.5 m, and small
+// camera turns crossed that), over a slightly larger area so coverage near the player is unchanged, and never more
+// often than every 120 ms. That is about a fifth of the shadow passes.
+const SHADOW_STEP=2.5,SHADOW_GAP=120;let shadowAt=-1e9,shadowPending=false;
+const maxSize=Math.min(4096,renderer.capabilities.maxTextureSize),half=mobile?20:25;let size=mobile?2048:maxSize,texel=2*half/size,step=texel*Math.max(1,Math.round(SHADOW_STEP/texel));
  const offset=original.position.clone(),look=new T.Matrix4().lookAt(offset,new T.Vector3(),new T.Vector3(0,1,0)),toLight=look.clone().invert();
  const forward=new T.Vector3(),centre=new T.Vector3();
  scene.add(sun.target);
@@ -54,7 +58,7 @@ window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=fals
  function applyShadowFrustum(){
   const cam=sun.shadow.camera;
   // The graphics setting picks the shadow map size (settings.shadowSize).
-  if(settings.shadowSize){size=Math.min(maxSize,settings.shadowSize);texel=2*half/size;step=texel*Math.max(1,Math.round(.5/texel));}
+  if(settings.shadowSize){size=Math.min(maxSize,settings.shadowSize);texel=2*half/size;step=texel*Math.max(1,Math.round(SHADOW_STEP/texel));}
   if(settings.followShadow){sun.shadow.mapSize.set(size,size);Object.assign(cam,{left:-half,right:half,top:half,bottom:-half,near:1,far:130});}
   else{sun.shadow.mapSize.set(original.mapSize,original.mapSize);Object.assign(cam,original.frustum);sun.position.copy(original.position);sun.target.position.set(0,0,0);sun.target.updateMatrixWorld();}
   cam.updateProjectionMatrix();sun.shadow.map?.dispose();sun.shadow.map=null;renderer.shadowMap.needsUpdate=true;
@@ -93,7 +97,8 @@ window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=fals
    camera.getWorldDirection(forward);forward.y=0;forward.normalize();
    centre.copy(camera.position).addScaledVector(forward,half*.4).setY(0).applyMatrix4(toLight);
    centre.x=Math.round(centre.x/step)*step;centre.y=Math.round(centre.y/step)*step;centre.applyMatrix4(look);
-   if(centre.distanceToSquared(sun.target.position)>1e-6){sun.target.position.copy(centre);sun.target.updateMatrixWorld();sun.position.copy(centre).add(offset);renderer.shadowMap.needsUpdate=true;}
+   if(centre.distanceToSquared(sun.target.position)>1e-6)shadowPending=true;
+   if(shadowPending&&performance.now()-shadowAt>=SHADOW_GAP){shadowPending=false;shadowAt=performance.now();sun.target.position.copy(centre);sun.target.updateMatrixWorld();sun.position.copy(centre).add(offset);renderer.shadowMap.needsUpdate=true;}
   },
   set(next={}){if(disposed)return;
    const changed=Object.keys(next).filter(key=>next[key]!==settings[key]);if(!changed.length)return;

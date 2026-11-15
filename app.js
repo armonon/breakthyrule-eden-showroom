@@ -535,7 +535,14 @@ function updateFeel(dt){
  updateMatchGate();updateBodyAnim();horror?.update(dt);
  // Smoothness: once ready, keep the hidden world hidden, warm up textures, shaders, the match and weapons in idle
  // time (prewarm.js), and re-sort any root added later. perf-hud.js (F8) names any spike that remains.
- if(state.ready&&!prewarm&&window.createPrewarm){if(worlds&&!worlds.loading())worlds.apply();prewarm=window.createPrewarm({T,renderer,scene,camera,tasks:[()=>combat?.ready?.(),()=>Promise.resolve(battle?.prewarm?.()).then(()=>prewarm.add(()=>worlds?.compileFor?.('beyond')))]});prewarm.start();rootCount=scene.children.length;}
+ if(state.ready&&!prewarm&&window.createPrewarm){if(worlds&&!worlds.loading())worlds.apply();prewarm=window.createPrewarm({T,renderer,scene,camera,tasks:[()=>Promise.resolve(combat?.ready?.()).then(()=>prewarm.add(()=>combat?.prewarmShaders?.())),
+  ()=>Promise.resolve(battle?.prewarm?.()).then(()=>{
+   // Every weapon as it appears on a pickup pad, then Beyond Eden built step by step (its street lamps change the
+   // light count, and so every shader variant), then one compile under Beyond's exact lights; stand-ins removed.
+   const stand=new T.Group();stand.name='Prewarm stand-ins';stand.position.set(0,-60,0);for(const w of combat?.weapons||[]){try{const m=combat.weaponModel?.(w.id);if(m)stand.add(m);}catch{}}
+   scene.add(stand);rootCount=scene.children.length;
+   const warm=()=>{if(garden.warmNight&&!garden.warmNight()){prewarm.add(warm);return;}prewarm.add(()=>worlds?.compileFor?.('beyond'));prewarm.add(()=>{scene.remove(stand);rootCount=scene.children.length;});};
+   prewarm.add(warm);})]});prewarm.start();rootCount=scene.children.length;}
  if(prewarm&&scene.children.length!==rootCount){rootCount=scene.children.length;if(worlds&&!worlds.loading())worlds.apply();prewarm.rescan();}
  // Bars, pipes and ropes (parkour-grips.js) appear with the district; the momentum meter (momentum-hud.js).
  if(!gripsView&&garden.nightBuilt?.())gripsView=window.parkourGrips?.mount(T,scene,{getPose:()=>parkour?.ropePose?.()})||null;gripsView?.update();

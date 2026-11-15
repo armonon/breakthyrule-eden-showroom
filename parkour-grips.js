@@ -89,6 +89,8 @@
     add(round,hemp,0,-g.len/2,0,.032,g.len,.032,holder);for(let y=.9;y<g.len-.3;y+=1.1)add(ring,hemp,0,-y,0,.045,.045,.045,holder).rotation.x=Math.PI/2;
     add(ball,hemp,0,-g.len,0,.08,.09,.08,holder);ropes.push({g,m:holder});}
   }
+  // One mesh per material for everything that never moves (222 draw calls -> a handful, in the main and shadow pass).
+  root.mergeStaticMeshes?.(T,group,{skip:o=>ropes.some(r=>r.m===o)});
   group.traverse(o=>{if(o.isMesh&&!ropes.some(r=>r.m===o.parent)){o.updateMatrix();o.matrixAutoUpdate=false;}});
   scene.add(group);
   const tmp=new T.Vector3(),down=new T.Vector3(0,-1,0);
