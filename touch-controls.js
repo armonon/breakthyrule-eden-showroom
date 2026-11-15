@@ -1,7 +1,7 @@
 'use strict';
 // One owner per finger; every held action has a matching release, including interruption.
 (function(root){
- root.createTouchControls=function({host=null,look,combat,third,visible,armed,expedition=()=>false,actions=()=>({}),move,jump,crouch,onReset}){
+ root.createTouchControls=function({host=null,look,combat,third,visible,armed,expedition=()=>false,actions=()=>({}),move,jump,jumpUp=null,crouch,onReset}){
   const media=matchMedia('(pointer:coarse), (any-pointer:coarse)');
   if(!media.matches&&!('ontouchstart'in root))return null;
   const abort=new AbortController(),listen=(node,type,fn,options={})=>node.addEventListener(type,fn,{...options,signal:abort.signal});
@@ -45,7 +45,7 @@
   const heldKey=k=>{key(k,true);return()=>key(k,false);};
   hold('.tc-fire',()=>{const c=combat();if(expedition())return heldKey('g');if(c?.armed()){c.touchFire(true);return()=>c.touchFire(false);}return heldKey('f');},{dragLook:true});
   hold('.tc-aim',()=>{combat()?.toggleZoom?.();});
-  hold('.tc-jump',()=>{if(jump){jump(true);return()=>jump(false);}return heldKey(' ');});
+  hold('.tc-jump',()=>{if(jump){const release=jump(true);return typeof release==='function'?release:jumpUp||(()=>jump(false));}return heldKey(' ');});
   hold('.tc-slide',()=>{if(crouch){crouch(true);return()=>crouch(false);}return heldKey('c');});
   hold('.tc-use',()=>heldKey(expedition()?'e':'f'));
   hold('.tc-reload',()=>heldKey('r'));

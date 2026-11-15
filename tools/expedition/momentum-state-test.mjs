@@ -68,4 +68,8 @@ test('actual app Space handlers preserve held state, avoid repeat jumps and rele
  handlers.keydown(event());handlers.keydown(event(true));assert.equal(jumps,1);assert.ok(keys.has('space'));
  blocked=true;handlers.keyup(event());assert.equal(keys.has('space'),false,'release still works while a modal blocks presses');
  blocked=false;handlers.keydown(event());assert.equal(jumps,2);handlers.keyup(event());assert.equal(keys.has('space'),false);
+ c.setMovement(' ',true);c.setMovement(' ',true);assert.equal(jumps,3,'literal Space uses the same guarded hold');c.setMovement(' ',false);assert.equal(keys.has('space'),false);
+ c.freeView=()=>{};const mobileLine=app.split('\n').find(line=>line.trimStart().startsWith('move:(key,pressed)=>setMovement(key,pressed),jump(pressed=true)'));
+ assert.ok(mobileLine);vm.runInContext('globalThis.mobile=({'+mobileLine.trim()+'});',c);
+ const release=c.mobile.jump();assert.equal(jumps,4);assert.ok(keys.has('space'));blocked=true;release();assert.equal(jumps,4);assert.equal(keys.has('space'),false);c.mobile.jumpUp();assert.equal(keys.has('space'),false);
 });
