@@ -1,0 +1,67 @@
+{
+  "iteration": "Before limiting persistent lights to a six-light pool",
+  "meanMs": 17.217728733402048,
+  "spikes": [
+    [
+      28.77,
+      116.6
+    ],
+    [
+      138.29,
+      133.3
+    ],
+    [
+      237.5,
+      83.3
+    ],
+    [
+      238.0,
+      83.3
+    ],
+    [
+      238.12,
+      83.4
+    ],
+    [
+      239.18,
+      66.6
+    ],
+    [
+      252.3,
+      50.1
+    ],
+    [
+      252.68,
+      50.1
+    ],
+    [
+      272.4,
+      50.1
+    ],
+    [
+      272.6,
+      66.8
+    ],
+    [
+      300.83,
+      66.7
+    ],
+    [
+      302.41,
+      50.1
+    ]
+  ],
+  "runtimeErrors": [],
+  "note": "System load was unusually high during the later part of this run. That does not establish causation; these are retained as observed failures.",
+  "nextIteration": {
+    "meanMs": 16.677608910029587,
+    "spikesOver50": 1,
+    "maxMs": 183.3,
+    "atSeconds": 132.2,
+    "label": [
+      "resolution 1 to .75",
+      "GC 26MB"
+    ],
+    "fix": "Do not feed loading-screen frames, including the fade, to adaptive resolution."
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "frames": 901,
+  "seconds": 59.998318910598755,
+  "audio": true,
+  "clipStart": {
+    "hits": 0,
+    "trueShots": 0,
+    "shots": 134,
+    "bodyHits": 48,
+    "headHits": 11,
+    "kills": 10
+  },
+  "combat": {
+    "audio": {
+      "ready": true,
+      "failed": 0,
+      "buffers": 99,
+      "groups": 38,
+      "channels": 48,
+      "active": 3,
+      "played": 2147,
+      "dropped": 0
+    },
+    "pools": {
+      "ready": true,
+      "particles": 400,
+      "tracers": 32,
+      "shells": 64,
+      "decals": 90,
+      "flips": 156
+    },
+    "aimAssist": "medium",
+    "wallPull": 0,
+    "action": null,
+    "built": true,
+    "armed": true,
+    "locked": true,
+    "weapon": "rifle",
+    "ammo": 27,
+    "focus": 1,
+    "charges": 0,
+    "stats": {
+      "hits": 0,
+      "trueShots": 0,
+      "shots": 247,
+      "bodyHits": 112,
+      "headHits": 59,
+      "kills": 39
+    },
+    "targets": 9,
+    "particles": 0
+  },
+  "problems": []
+}

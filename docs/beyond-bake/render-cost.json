@@ -1,0 +1,128 @@
+[
+  {
+    "enabled": true,
+    "ms": 4.94,
+    "lighting": {
+      "environment": true,
+      "followShadow": true,
+      "hemi": 0.6,
+      "strength": 0.7,
+      "shadowSize": 2048,
+      "bakes": 7,
+      "skyRequested": true,
+      "shadowMapSize": 2048,
+      "shadowHalfExtent": 8,
+      "shadowCentre": [
+        8.59,
+        0.4,
+        -63.07
+      ],
+      "night": 0.8
+    }
+  },
+  {
+    "enabled": false,
+    "ms": 4.75,
+    "lighting": {
+      "environment": true,
+      "followShadow": true,
+      "hemi": 0.6,
+      "strength": 0.7,
+      "shadowSize": 2048,
+      "bakes": 7,
+      "skyRequested": true,
+      "shadowMapSize": 2048,
+      "shadowHalfExtent": 25,
+      "shadowCentre": [
+        1.64,
+        -0.24,
+        -65.74
+      ],
+      "night": 0.8
+    }
+  },
+  {
+    "enabled": true,
+    "ms": 4.93,
+    "lighting": {
+      "environment": true,
+      "followShadow": true,
+      "hemi": 0.6,
+      "strength": 0.7,
+      "shadowSize": 2048,
+      "bakes": 7,
+      "skyRequested": true,
+      "shadowMapSize": 2048,
+      "shadowHalfExtent": 8,
+      "shadowCentre": [
+        8.59,
+        0.39,
+        -63.06
+      ],
+      "night": 0.8
+    }
+  },
+  {
+    "enabled": false,
+    "ms": 4.83,
+    "lighting": {
+      "environment": true,
+      "followShadow": true,
+      "hemi": 0.6,
+      "strength": 0.7,
+      "shadowSize": 2048,
+      "bakes": 7,
+      "skyRequested": true,
+      "shadowMapSize": 2048,
+      "shadowHalfExtent": 25,
+      "shadowCentre": [
+        1.64,
+        -0.24,
+        -65.74
+      ],
+      "night": 0.8
+    }
+  },
+  {
+    "enabled": true,
+    "ms": 5.21,
+    "lighting": {
+      "environment": true,
+      "followShadow": true,
+      "hemi": 0.6,
+      "strength": 0.7,
+      "shadowSize": 2048,
+      "bakes": 7,
+      "skyRequested": true,
+      "shadowMapSize": 2048,
+      "shadowHalfExtent": 8,
+      "shadowCentre": [
+        8.59,
+        0.39,
+        -63.06
+      ],
+      "night": 0.8
+    }
+  },
+  {
+    "enabled": false,
+    "ms": 4.74,
+    "lighting": {
+      "environment": true,
+      "followShadow": true,
+      "hemi": 0.6,
+      "strength": 0.7,
+      "shadowSize": 2048,
+      "bakes": 7,
+      "skyRequested": true,
+      "shadowMapSize": 2048,
+      "shadowHalfExtent": 25,
+      "shadowCentre": [
+        1.63,
+        -0.24,
+        -65.74
+      ],
+      "night": 0.8
+    }
+  }
+]

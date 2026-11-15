@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Beyond Eden · Lighting & combat review</title>
+<style>
+:root{color-scheme:dark;font:16px/1.6 system-ui,sans-serif;color:#e7e5dd;background:#111715}body{margin:0}main{max-width:1200px;margin:auto;padding:40px 22px 80px}h1{font-size:clamp(2rem,5vw,4rem);line-height:1.1;letter-spacing:-.045em;margin:.5em 0}h2{margin-top:2.5em}p{max-width:80ch;color:#b9c3ba}a{color:#c6ddb7}small,.label{color:#a9b59f}.eyebrow{letter-spacing:.18em;font-size:.75rem}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,td{text-align:left;border-bottom:1px solid #334039;padding:12px 8px}th{color:#adbb9c}section{margin:35px 0}.pair{display:grid;grid-template-columns:1fr 1fr;gap:14px}figure{margin:0}img,video{display:block;width:100%;background:#080b09;border-radius:8px}figcaption{font-size:.8rem;margin:7px 0}.cards{display:flex;gap:12px;flex-wrap:wrap}.card{padding:16px 22px;background:#202b25;border-radius:10px}.card strong{display:block;font-size:1.75rem}.scroll{overflow:auto}video{max-height:750px}footer{border-top:1px solid #334039;margin-top:40px;padding-top:20px}@media(max-width:700px){.pair{grid-template-columns:1fr}main{padding:24px 14px}td,th{padding:8px;font-size:.8rem}}
+</style>
+<main>
+<div class="eyebrow">BREAK THY RULE · MEASURED BUILD REVIEW</div>
+<h1>Beyond Eden<br>Lighting & combat</h1>
+<p>Locally baked moonlight and street lamps, recorded combat audio, bounded gunfire effects, building LOD, and reusable character rigs.</p>
+<p><a href="/showroom.html?night=1">Enter Beyond Eden ↗</a> · <a href="README.md">Implementation notes</a> · <a href="summary.json">Measured results</a></p>
+<div class="cards" id="metrics"></div>
+<p id="qualification">Measurements were captured in isolated Chrome on one Apple M3 laptop at medium graphics, 1280 × 800. They are not a performance guarantee for every device.</p>
+<p><strong>Remaining limits:</strong> first-visit shaders still prepare behind loading screens. The later screenshot run had slower frames; an overall raw GPU speedup is not established. See the implementation notes and raw reports.</p>
+<h2>Lighting comparison</h2>
+<p>Matching camera positions and night phase. Counts include visible meshes eligible to cast a shadow, rather than triangles actually rendered inside the shadow camera. Render cost is a synchronous CPU submission plus GPU-completion benchmark with forced shadow updates; it is separate from the 60 Hz frame interval.</p>
+<div class="scroll"><table><thead><tr><th>View</th><th>Before casters</th><th>After casters</th><th>Reduction</th><th>Render cost before → after</th></tr></thead><tbody id="rows"></tbody></table></div>
+<div id="views"></div>
+<h2>60 seconds of combat</h2>
+<p id="clip">Actual game raycasts, damage, reactions and audio. The capture uses god mode and a large ammunition reserve. Video recording is separate from the performance sample.</p>
+<video controls playsinline preload="metadata" src="combat-60s.mp4" poster="after/commons.jpg"></video>
+<h2>Eden comparison</h2>
+<div class="pair"><figure><img loading="lazy" src="before/eden.jpg" alt="Eden before this update"><figcaption>Before</figcaption></figure><figure><img loading="lazy" src="after/eden.jpg" alt="Eden after this update"><figcaption>After — original daylight bake retained</figcaption></figure></div>
+<footer><a href="five-minute.json">Five-minute report</a> · <a href="runtime-checks.json">Runtime checks</a> · <a href="render-cost.json">Alternating bake/fallback costs</a> · <a href="/assets/audio/combat/CREDITS.txt">Audio credits (CC0)</a> · <a href="/assets/beyond-bake/CREDITS.txt">Bake credits</a></footer>
+</main>
+<script>
+fetch('summary.json').then(r=>{if(!r.ok)throw Error(r.status);return r.json()}).then(s=>{
+ const el=(tag,text,parent)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;parent?.append(n);return n};
+ for(const [value,label] of [[s.run.meanMs+' ms','Mean frame interval'],[s.run.spikesOver50,'Frames over 50 ms outside loading'],['99','Cached CC0 audio clips']]){const c=el('div',undefined,document.getElementById('metrics'));c.className='card';el('strong',value,c);el('small',label,c)}
+ for(const v of s.views){const tr=el('tr',undefined,document.getElementById('rows'));for(const text of [v.name,v.beforeTriangles.toLocaleString(),v.afterTriangles.toLocaleString(),v.reduction+'%',v.beforeRenderMs+' → '+v.afterRenderMs+' ms'])el('td',text,tr);
+ const section=el('section',undefined,document.getElementById('views'));el('h3',v.name[0].toUpperCase()+v.name.slice(1),section);const pair=el('div',undefined,section);pair.className='pair';for(const state of ['before','after']){const fig=el('figure',undefined,pair),img=el('img',undefined,fig);img.src=state+'/'+v.name+'.jpg';img.alt=v.name+' '+state;img.loading='lazy';el('figcaption',state==='before'?'Before':'After',fig)}}
+ document.getElementById('clip').textContent+=' Clip events: '+s.capture.bodyHits+' body hits, '+s.capture.headHits+' head hits, '+s.capture.kills+' kills.';
+}).catch(()=>{document.getElementById('metrics').textContent='The measurement summary is unavailable. Screenshots, footage and raw reports remain below.'});
+</script></html>

@@ -1,0 +1,27 @@
+{
+  "sourceCommit": "6abc20d",
+  "checks": [
+    {
+      "command": "node --test tools/expedition/character-checkpoint-test.mjs server/expedition.test.mjs server/world.test.mjs",
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "command": "node --test tools/expedition/adaptive-resolution-test.mjs",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "command": "node tools/release/check-game-scripts.mjs",
+      "scriptsParsed": 102
+    },
+    {
+      "command": "node tools/release/check-release.mjs --require-tracked",
+      "validatedFiles": 608
+    }
+  ],
+  "notes": [
+    "The adaptive-resolution recovery tests now wait for the existing 60-second hysteresis interval rather than expecting the old faster recovery.",
+    "The dedicated runtime check confirms saved assist, fallback lighting, in-place revival, C4 rendering and standalone expedition readiness."
+  ]
+}

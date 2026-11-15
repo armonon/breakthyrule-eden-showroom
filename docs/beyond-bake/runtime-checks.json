@@ -1,0 +1,521 @@
+{
+  "assist": {
+    "runtime": "off",
+    "saved": "off"
+  },
+  "fallback": {
+    "live": {
+      "loaded": true,
+      "night": 0.86,
+      "gain": 1,
+      "enabled": false,
+      "world": "beyond",
+      "beyondLoaded": true,
+      "beyondScale": 77.47467041015625,
+      "scale": 1.4740643501281738,
+      "strength": 0,
+      "beyondStrength": 0,
+      "staticShadowsDisabled": false,
+      "registeredStatic": 2050
+    },
+    "baked": {
+      "loaded": true,
+      "night": 0.86,
+      "gain": 1,
+      "enabled": true,
+      "world": "beyond",
+      "beyondLoaded": true,
+      "beyondScale": 77.47467041015625,
+      "scale": 1.4740643501281738,
+      "strength": 0,
+      "beyondStrength": 1,
+      "staticShadowsDisabled": true,
+      "registeredStatic": 2050
+    }
+  },
+  "respawn": {
+    "uuid": "82a6cfa8-0bb8-4afc-b339-bd0db6ec7c25",
+    "id": "bot0",
+    "after": {
+      "alive": true,
+      "uuid": "82a6cfa8-0bb8-4afc-b339-bd0db6ec7c25",
+      "down": 0,
+      "hp": 100
+    }
+  },
+  "combatProblems": [
+    "EXC WrongDocumentError: The root document of this element is not valid for pointer lock."
+  ],
+  "expedition": {
+    "state": {
+      "ready": true,
+      "disposed": false,
+      "entry": "expedition",
+      "pos": [
+        11.7,
+        1.75,
+        -24
+      ],
+      "position": [
+        11.7,
+        1.75,
+        -24
+      ],
+      "aim": [
+        11.7,
+        1.75,
+        -29
+      ],
+      "pose": {
+        "x": 11.7,
+        "y": 0,
+        "z": -24,
+        "yaw": 3.141592653589793,
+        "pitch": 0,
+        "mode": "ground",
+        "movement": "ground",
+        "vy": 0
+      },
+      "renderedCamera": {
+        "position": [
+          11.700983591834207,
+          1.6457365456117523,
+          -24
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fov": 60
+      },
+      "movement": "ground",
+      "third": false,
+      "graphics": "medium",
+      "post": {
+        "enabled": true,
+        "ao": 0,
+        "aoRadius": 0.7,
+        "aoIntensity": 4.5,
+        "bloom": 0.2,
+        "bloomThreshold": 0.9,
+        "warmth": 0.025,
+        "saturation": 1.06,
+        "vignette": 0.22,
+        "flare": 0.8,
+        "rays": 0.7,
+        "glare": 0.9,
+        "contrast": 0.12,
+        "split": 0.035,
+        "taa": true,
+        "taaFeedback": 0.88,
+        "sharpen": 0.6,
+        "grain": 0.028,
+        "lut": 1,
+        "samples": 2,
+        "webgl2": true,
+        "size": [
+          1280,
+          690
+        ],
+        "lens": {
+          "sun": null,
+          "night": 1,
+          "lamps": 13
+        }
+      },
+      "lighting": {
+        "environment": true,
+        "followShadow": true,
+        "hemi": 0.6,
+        "strength": 0.7,
+        "shadowSize": 2048,
+        "bakes": 6,
+        "skyRequested": false,
+        "shadowMapSize": 2048,
+        "shadowHalfExtent": 8,
+        "shadowCentre": [
+          11.74,
+          -0.9,
+          -27.57
+        ],
+        "night": 1
+      },
+      "quality": {
+        "pixelRatio": 1,
+        "max": 1,
+        "min": 0.75,
+        "frameMs": 0,
+        "drops": 0,
+        "climbWaitS": 8,
+        "vsyncMs": 16.7,
+        "targetFps": 60
+      },
+      "warmup": {
+        "models": 17,
+        "textures": 212,
+        "cachedTextures": 0,
+        "compileMs": 303.599999666214,
+        "uploadMs": 128.70000076293945
+      },
+      "preferences": {
+        "bailKey": "B",
+        "cameraEffects": true,
+        "aimAssist": false,
+        "bob": true,
+        "roll": true,
+        "sway": true,
+        "shake": true,
+        "speedFov": true,
+        "firstSensitivity": 1,
+        "thirdSensitivity": 1,
+        "firstFov": 60,
+        "thirdFov": 60,
+        "crouchMode": "hold",
+        "sprintMode": "hold"
+      },
+      "body": {
+        "firstPerson": 1,
+        "ready": true,
+        "visible": false,
+        "yaw": null,
+        "wall": null,
+        "brush": 0,
+        "nearestBrush": [
+          -22.02,
+          -45.7,
+          1
+        ],
+        "plants": 77,
+        "hover": false,
+        "motion": {
+          "locomotion": [],
+          "actions": [],
+          "presentation": {
+            "firstPerson": 0.689,
+            "sprint": 0,
+            "lookLag": true
+          },
+          "phase": 0.285,
+          "speed": 4.34,
+          "weight": 1,
+          "guard": 0,
+          "ragdoll": "standing",
+          "wade": 0,
+          "hit": 0,
+          "touch": [
+            0,
+            0
+          ],
+          "punching": false
+        }
+      },
+      "sway": {
+        "perspective": 0,
+        "sprint": 0,
+        "phase": 0,
+        "slide": 0,
+        "intensity": 0,
+        "roll": 0,
+        "offset": [
+          0.001,
+          0.0007,
+          0
+        ],
+        "landing": 0
+      },
+      "expedition": {
+        "available": false,
+        "mode": "solo-ready",
+        "active": false,
+        "connected": false,
+        "state": null,
+        "avatars": 0
+      },
+      "scene": {
+        "entry": "expedition",
+        "district": {
+          "lod": {
+            "enabled": true,
+            "high": 9,
+            "low": 5
+          },
+          "routes": [
+            {
+              "id": "temple-playhouse",
+              "difficulty": "connected",
+              "points": 4
+            },
+            {
+              "id": "playhouse-hotel",
+              "difficulty": "connected",
+              "points": 5
+            },
+            {
+              "id": "gardens-tutorial",
+              "difficulty": "tutorial",
+              "points": 5
+            },
+            {
+              "id": "observatory-challenge",
+              "difficulty": "advanced",
+              "points": 5
+            }
+          ],
+          "routeDecks": 111,
+          "landmarks": [
+            {
+              "name": "The Moon Temple",
+              "x": -12,
+              "z": -43
+            },
+            {
+              "name": "The Observatory",
+              "x": 37,
+              "z": -42
+            },
+            {
+              "name": "The Silent Playhouse",
+              "x": -15,
+              "z": -74
+            },
+            {
+              "name": "The Hotel on the Hill",
+              "x": 39,
+              "z": -77
+            },
+            {
+              "name": "The Sunken Gardens",
+              "x": -14,
+              "z": -101
+            },
+            {
+              "name": "The False Gate",
+              "x": -46,
+              "z": -40
+            },
+            {
+              "name": "The Palace of Mirrors",
+              "x": -46,
+              "z": -68
+            },
+            {
+              "name": "The Redwood Chapel",
+              "x": -46,
+              "z": -97
+            },
+            {
+              "name": "The First Cathedral",
+              "x": -68,
+              "z": -50
+            },
+            {
+              "name": "The Campanile",
+              "x": -68,
+              "z": -84
+            },
+            {
+              "name": "The High Tower",
+              "x": 64,
+              "z": -42
+            },
+            {
+              "name": "The Three Arches",
+              "x": 64,
+              "z": -74
+            },
+            {
+              "name": "The Rose Window",
+              "x": 64,
+              "z": -100
+            },
+            {
+              "name": "The Organ Tower",
+              "x": 88,
+              "z": -60
+            }
+          ],
+          "batches": 25,
+          "theatre": "model",
+          "models": {
+            "temple": "model",
+            "observatory": "model",
+            "playhouse": "model",
+            "hotel": "model",
+            "gardens": "model",
+            "girard": "model",
+            "latheatre": "model",
+            "stjames": "model",
+            "vibiana": "model",
+            "methodist": "model",
+            "immanuel": "model",
+            "baptist": "model",
+            "christian": "model",
+            "firstcong": "model"
+          },
+          "pages": 0,
+          "watcher": [
+            0,
+            0,
+            0
+          ]
+        },
+        "woodland": {
+          "night": 1,
+          "sections": 12,
+          "trees": 109,
+          "district": {
+            "lod": {
+              "enabled": true,
+              "high": 9,
+              "low": 5
+            },
+            "routes": [
+              {
+                "id": "temple-playhouse",
+                "difficulty": "connected",
+                "points": 4
+              },
+              {
+                "id": "playhouse-hotel",
+                "difficulty": "connected",
+                "points": 5
+              },
+              {
+                "id": "gardens-tutorial",
+                "difficulty": "tutorial",
+                "points": 5
+              },
+              {
+                "id": "observatory-challenge",
+                "difficulty": "advanced",
+                "points": 5
+              }
+            ],
+            "routeDecks": 111,
+            "landmarks": [
+              {
+                "name": "The Moon Temple",
+                "x": -12,
+                "z": -43
+              },
+              {
+                "name": "The Observatory",
+                "x": 37,
+                "z": -42
+              },
+              {
+                "name": "The Silent Playhouse",
+                "x": -15,
+                "z": -74
+              },
+              {
+                "name": "The Hotel on the Hill",
+                "x": 39,
+                "z": -77
+              },
+              {
+                "name": "The Sunken Gardens",
+                "x": -14,
+                "z": -101
+              },
+              {
+                "name": "The False Gate",
+                "x": -46,
+                "z": -40
+              },
+              {
+                "name": "The Palace of Mirrors",
+                "x": -46,
+                "z": -68
+              },
+              {
+                "name": "The Redwood Chapel",
+                "x": -46,
+                "z": -97
+              },
+              {
+                "name": "The First Cathedral",
+                "x": -68,
+                "z": -50
+              },
+              {
+                "name": "The Campanile",
+                "x": -68,
+                "z": -84
+              },
+              {
+                "name": "The High Tower",
+                "x": 64,
+                "z": -42
+              },
+              {
+                "name": "The Three Arches",
+                "x": 64,
+                "z": -74
+              },
+              {
+                "name": "The Rose Window",
+                "x": 64,
+                "z": -100
+              },
+              {
+                "name": "The Organ Tower",
+                "x": 88,
+                "z": -60
+              }
+            ],
+            "batches": 25,
+            "theatre": "model",
+            "models": {
+              "temple": "model",
+              "observatory": "model",
+              "playhouse": "model",
+              "hotel": "model",
+              "gardens": "model",
+              "girard": "model",
+              "latheatre": "model",
+              "stjames": "model",
+              "vibiana": "model",
+              "methodist": "model",
+              "immanuel": "model",
+              "baptist": "model",
+              "christian": "model",
+              "firstcong": "model"
+            },
+            "pages": 0,
+            "watcher": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "resources": {
+        "geometries": 130,
+        "textures": 265,
+        "canvases": 1
+      },
+      "drawCalls": 256
+    },
+    "bake": {
+      "loaded": true,
+      "night": 1,
+      "gain": 1,
+      "enabled": true,
+      "world": "beyond",
+      "beyondLoaded": true,
+      "beyondScale": 77.47467041015625,
+      "scale": 1.4740643501281738,
+      "strength": 0,
+      "beyondStrength": 1,
+      "staticShadowsDisabled": true,
+      "registeredStatic": 1774
+    }
+  },
+  "problems": [
+    "EXC WrongDocumentError: The root document of this element is not valid for pointer lock."
+  ]
+}

@@ -1,0 +1,315 @@
+{
+  "baseline": "7b76ce2",
+  "hardware": "ANGLE (Apple, ANGLE Metal Renderer: Apple M3, Unspecified Version)",
+  "graphics": "medium",
+  "viewport": [
+    1280,
+    800
+  ],
+  "views": [
+    {
+      "name": "entry",
+      "beforeTriangles": 472173,
+      "afterTriangles": 37108,
+      "reduction": 92.14,
+      "beforeRenderMs": 3.74,
+      "afterRenderMs": 21.87,
+      "beforeRatio": 0.75,
+      "afterRatio": 0.75
+    },
+    {
+      "name": "commons",
+      "beforeTriangles": 317663,
+      "afterTriangles": 23520,
+      "reduction": 92.6,
+      "beforeRenderMs": 3.3,
+      "afterRenderMs": 3.49,
+      "beforeRatio": 0.75,
+      "afterRatio": 0.75
+    },
+    {
+      "name": "observatory",
+      "beforeTriangles": 465222,
+      "afterTriangles": 37120,
+      "reduction": 92.02,
+      "beforeRenderMs": 3.24,
+      "afterRenderMs": 16.32,
+      "beforeRatio": 0.75,
+      "afterRatio": 0.75
+    },
+    {
+      "name": "hotel",
+      "beforeTriangles": 314823,
+      "afterTriangles": 37120,
+      "reduction": 88.21,
+      "beforeRenderMs": 3.61,
+      "afterRenderMs": 16.94,
+      "beforeRatio": 0.75,
+      "afterRatio": 0.75
+    },
+    {
+      "name": "gardens",
+      "beforeTriangles": 317803,
+      "afterTriangles": 40128,
+      "reduction": 87.37,
+      "beforeRenderMs": 2.57,
+      "afterRenderMs": 16.87,
+      "beforeRatio": 0.75,
+      "afterRatio": 0.75
+    }
+  ],
+  "run": {
+    "durationSeconds": 302.92,
+    "meanMs": 16.67,
+    "p95Ms": 16.7,
+    "maxMs": 33.3,
+    "spikesOver50": 0,
+    "problems": [],
+    "samples": [
+      {
+        "label": "eden",
+        "at": 0.9,
+        "programs": 202,
+        "geometry": 562,
+        "pools": {
+          "ready": true,
+          "particles": 400,
+          "tracers": 32,
+          "shells": 64,
+          "decals": 90,
+          "flips": 156
+        },
+        "stats": {
+          "hits": 0,
+          "trueShots": 0,
+          "shots": 0,
+          "bodyHits": 0,
+          "headHits": 0,
+          "kills": 0
+        }
+      },
+      {
+        "label": "beyond-ready",
+        "at": 23098.2,
+        "programs": 224,
+        "geometry": 1517,
+        "pools": {
+          "ready": true,
+          "particles": 400,
+          "tracers": 32,
+          "shells": 64,
+          "decals": 90,
+          "flips": 156
+        },
+        "stats": {
+          "hits": 0,
+          "trueShots": 0,
+          "shots": 0,
+          "bodyHits": 0,
+          "headHits": 0,
+          "kills": 0
+        }
+      },
+      {
+        "label": "road-walk",
+        "at": 35110.3,
+        "programs": 224,
+        "geometry": 1517,
+        "pools": {
+          "ready": true,
+          "particles": 400,
+          "tracers": 32,
+          "shells": 64,
+          "decals": 90,
+          "flips": 156
+        },
+        "stats": {
+          "hits": 0,
+          "trueShots": 0,
+          "shots": 0,
+          "bodyHits": 0,
+          "headHits": 0,
+          "kills": 0
+        }
+      },
+      {
+        "label": "district--27",
+        "at": 45114.2,
+        "programs": 224,
+        "geometry": 1525,
+        "pools": {
+          "ready": true,
+          "particles": 400,
+          "tracers": 32,
+          "shells": 64,
+          "decals": 90,
+          "flips": 156
+        },
+        "stats": {
+          "hits": 0,
+          "trueShots": 0,
+          "shots": 0,
+          "bodyHits": 0,
+          "headHits": 0,
+          "kills": 0
+        }
+      },
+      {
+        "label": "district--61",
+        "at": 55123.2,
+        "programs": 224,
+        "geometry": 1528,
+        "pools": {
+          "ready": true,
+          "particles": 400,
+          "tracers": 32,
+          "shells": 64,
+          "decals": 90,
+          "flips": 156
+        },
+        "stats": {
+          "hits": 0,
+          "trueShots": 0,
+          "shots": 0,
+          "bodyHits": 0,
+          "headHits": 0,
+          "kills": 0
+        }
+      },
+      {
+        "label": "district--91",
+        "at": 65127.9,
+        "programs": 224,
+        "geometry": 1530,
+        "pools": {
+          "ready": true,
+          "particles": 400,
+          "tracers": 32,
+          "shells": 64,
+          "decals": 90,
+          "flips": 156
+        },
+        "stats": {
+          "hits": 0,
+          "trueShots": 0,
+          "shots": 0,
+          "bodyHits": 0,
+          "headHits": 0,
+          "kills": 0
+        }
+      },
+      {
+        "label": "firefight-49",
+        "at": 85537.7,
+        "programs": 225,
+        "geometry": 1617,
+        "pools": {
+          "ready": true,
+          "particles": 400,
+          "tracers": 32,
+          "shells": 64,
+          "decals": 90,
+          "flips": 156
+        },
+        "stats": {
+          "hits": 0,
+          "trueShots": 0,
+          "shots": 46,
+          "bodyHits": 22,
+          "headHits": 3,
+          "kills": 3
+        }
+      },
+      {
+        "label": "firefight-99",
+        "at": 105909.7,
+        "programs": 225,
+        "geometry": 1626,
+        "pools": {
+          "ready": true,
+          "particles": 400,
+          "tracers": 32,
+          "shells": 64,
+          "decals": 90,
+          "flips": 156
+        },
+        "stats": {
+          "hits": 0,
+          "trueShots": 0,
+          "shots": 90,
+          "bodyHits": 22,
+          "headHits": 3,
+          "kills": 3
+        }
+      },
+      {
+        "label": "firefight-149",
+        "at": 126291.3,
+        "programs": 225,
+        "geometry": 1678,
+        "pools": {
+          "ready": true,
+          "particles": 400,
+          "tracers": 32,
+          "shells": 64,
+          "decals": 90,
+          "flips": 156
+        },
+        "stats": {
+          "hits": 0,
+          "trueShots": 0,
+          "shots": 134,
+          "bodyHits": 32,
+          "headHits": 5,
+          "kills": 5
+        }
+      },
+      {
+        "label": "return-eden",
+        "at": 127802.4,
+        "programs": 234,
+        "geometry": 1815,
+        "pools": {
+          "ready": true,
+          "particles": 400,
+          "tracers": 32,
+          "shells": 64,
+          "decals": 90,
+          "flips": 156
+        },
+        "stats": {
+          "hits": 0,
+          "trueShots": 0,
+          "shots": 134,
+          "bodyHits": 32,
+          "headHits": 5,
+          "kills": 5
+        }
+      }
+    ]
+  },
+  "renderAB": {
+    "bakedMs": 5.03,
+    "fallbackMs": 4.77,
+    "improvementPercent": -5.31
+  },
+  "capture": {
+    "seconds": 59.998318910598755,
+    "audio": true,
+    "bodyHits": 64,
+    "headHits": 48,
+    "kills": 29,
+    "problems": []
+  },
+  "audio": {
+    "ready": true,
+    "failed": 0,
+    "buffers": 99,
+    "groups": 38,
+    "channels": 48,
+    "active": 3,
+    "played": 1108,
+    "dropped": 0
+  },
+  "botRigsReused": true
+}
