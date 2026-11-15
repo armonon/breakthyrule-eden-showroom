@@ -68,7 +68,7 @@
     eden.setAttribute('aria-label', 'Enter Eden showroom');
     eden.title = 'Enter Eden';
     const apple = create('img', 'btr-eden-apple-logo');
-    apple.src = '/products/web/logo.webp';
+    apple.src = '/site/eden-apple-red-bitmap.png';
     apple.alt = '';
     apple.width = 40;
     apple.height = 42;
@@ -79,7 +79,7 @@
       const appleStyle = create('link');
       appleStyle.id = 'btr-eden-apple-style';
       appleStyle.rel = 'stylesheet';
-      appleStyle.href = '/site/eden-apple.css?v=f36f5fdf949d32a5';
+      appleStyle.href = '/site/eden-apple.css?v=6c160db8a4e6e5c2';
       document.head.append(appleStyle);
     }
 
