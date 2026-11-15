@@ -1,4 +1,4 @@
-/* The original red apple is Eden's small, living doorway. */
+/* The red bitmap apple is Eden's small, living doorway. */
 html body header#btr-site-header.btr-about-header[data-shared-header="about"] a.enter-showroom.btr-eden-apple.btr-eden-apple.btr-eden-apple {
   display:inline-flex!important;
   align-items:center!important;
@@ -35,11 +35,12 @@ html body header#btr-site-header.btr-about-header[data-shared-header="about"] a.
   border:0!important;
   background:transparent!important;
   object-fit:contain!important;
+  image-rendering:pixelated;
   pointer-events:none;
   user-select:none;
   -webkit-user-drag:none;
   transform-origin:50% 82%;
-  filter:drop-shadow(0 2px 3px #0006);
+  filter:none;
   animation:btr-eden-apple-wobble 9s 1.2s infinite!important;
   transition:filter .2s ease;
 }
