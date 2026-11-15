@@ -1,12 +1,13 @@
 // Quotes use the same integer-cent price function as the cart and checkout.
 // This prices selected options only; normalizeItem still validates every saved/order item.
-import { OFFERINGS, offeringFor, COLORS, ARTWORK, FITS, MAX_QUANTITY } from '../labkit/catalog.mjs';
+import { OFFERINGS, offeringFor, labModeFor, COLORS, ARTWORK, FITS, MAX_QUANTITY } from '../labkit/catalog.mjs';
 import { priceItem } from '../labkit/pricing.mjs';
 
 export function quoteGarment(config) {
   if (!config || typeof config !== 'object') return null;
   const { construction, garment, color, artwork } = config;
-  const labMode = config.baseMode ?? config.labMode;
+  const labMode = labModeFor({ ...config, labMode: config.baseMode ?? config.labMode });
+  if (!labMode) return null;
   const quantity = config.quantity ?? 1;
   if (labMode === 'random' && (construction !== 'canvas' || color !== 'random')) return null;
   if (!Object.hasOwn(OFFERINGS, construction) || !offeringFor({ construction, garment, labMode }) || !Object.hasOwn(COLORS, color) || !Object.hasOwn(ARTWORK, artwork)) return null;

@@ -36,7 +36,13 @@
     brand.classList.add('brand');
     brand.href = '/?cover';
     brand.setAttribute('aria-label', 'Break Thy Rule — open Codex');
-    brand.replaceChildren('Break Thy Rule', create('span', '', 'anonymous archive'));
+    brand.classList.add('btr-logo-brand', 'btr-logo-night');
+    const logo = create('img', 'btr-brand-logo');
+    logo.src = '/assets/brand/logo-night.svg?v=1';
+    logo.alt = 'BreakThyRule, anonymous archive';
+    logo.width = 1400; logo.height = 381;
+    logo.decoding = 'async'; logo.fetchPriority = 'high';
+    brand.replaceChildren(logo);
 
     let nav = header.querySelector('.tabs');
     if (!nav) { nav = create('nav', 'tabs'); brand.after(nav); }

@@ -54,7 +54,7 @@
   modelTask=viewer.load(g.slug==='apple-gloves'&&new URLSearchParams(location.search).get('glove')==='black'?'/accessory-collection/models/apple-gloves-black.glb?v=quality-3':g.model).then(committed=>{if(committed===false)return;modelReady=true;for(const id of ['spin','front','back'])$(id).disabled=false;$('spin').setAttribute('aria-pressed',String(viewer.isAuto()));$('viewer-status').textContent='3D / drag to turn';photoMode(false);if(archiveModel){const T=window.THREE,size=new T.Box3().setFromObject(viewer.model()).getSize(new T.Vector3()),aspect=$('viewer').clientWidth/$('viewer').clientHeight,d=Math.max(4.4,2.2/Math.tan(Math.PI/12)/aspect/2.4);viewer.setZoom(Math.min(2,.76*2*d*Math.tan(Math.PI/12)/Math.max(size.y,Math.hypot(size.x,size.z)/aspect)));if(g.defaultView==='back'){viewer.view('back');viewer.setAuto(!matchMedia('(prefers-reduced-motion: reduce)').matches);}$('spin').setAttribute('aria-pressed',String(viewer.isAuto()));}window.mountAppleGloveColors?.({viewer,garment:g,photoMode});})
    .catch(()=>{$('viewer-status').textContent='3D unavailable — photographs shown';photoMode(true);});
  }else{$('viewer-status').textContent='Photographs';photoMode(true);}
- window.BTRProductMedia={viewer,ready:modelTask,item:g};
+ window.BTRProductMedia={viewer,ready:modelTask,item:g,setPhotoMode:photoMode};
  $('spin').onclick=()=>{photoMode(false);$('spin').setAttribute('aria-pressed',String(viewer?.setAuto(!viewer.isAuto())));};
  $('front').onclick=()=>{photoMode(false);viewer?.view('front');$('spin').setAttribute('aria-pressed','false');};
  $('back').onclick=()=>{photoMode(false);viewer?.view('back');$('spin').setAttribute('aria-pressed','false');};

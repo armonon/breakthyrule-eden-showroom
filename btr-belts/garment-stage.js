@@ -124,6 +124,7 @@
   renderer.setPixelRatio(Math.min(devicePixelRatio,matchMedia('(pointer:coarse)').matches?1.25:1.75));
   const scene=new T.Scene();lights(scene);const environment=presentation==='belt'?beltEnvironment(renderer):null;if(environment)scene.environment=environment.texture;const camera=new T.PerspectiveCamera(30,1,.05,40);
   let model=null,yaw=presentation==='belt'?0:.5,pitch=0,auto=!reduced,drag=null,frame=0,last=0,zoom=1,onScreen=true,destroyed=false,loadId=0,turnRadius=1,turnPlanarRadius=1,turnHalfHeight=.2,wobbleTime=0,wobblePitch=0,wobbleRoll=0;
+  const graphicsListeners=new Set();
   const roots=new Map();
   const disposeRoot=root=>{const geometries=new Set(),materials=new Set(),textures=new Set();root.traverse(o=>{if(o.geometry)geometries.add(o.geometry);for(const m of (Array.isArray(o.material)?o.material:[o.material]))if(m){materials.add(m);for(const t of Object.values(m))if(t?.isTexture)textures.add(t);}});textures.forEach(t=>t.dispose());materials.forEach(m=>m.dispose());geometries.forEach(g=>g.dispose());};
   function trimRoots(keep){for(const [url,promise] of roots){if(roots.size<=cacheLimit)break;if(url===keep)continue;roots.delete(url);promise.then(disposeRoot).catch(()=>{});}}
@@ -142,7 +143,7 @@
     const distance=Math.max(horizontal,vertical)*1.10/zoom;
     const elevation=18*Math.PI/180;camera.position.set(0,distance*Math.sin(elevation),distance*Math.cos(elevation));
    }else camera.position.set(0,.1,d);
-   camera.lookAt(0,0,0);onFrame?.(yaw);renderer.render(scene,camera);if(auto)request();else last=0;}
+   camera.lookAt(0,0,0);onFrame?.(yaw);renderer.render(scene,camera);for(const listener of graphicsListeners)listener();if(auto)request();else last=0;}
   element.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('button,a'))return;auto=false;drag={x:e.clientX,y:e.clientY,yaw,pitch};element.setPointerCapture(e.pointerId);});
   element.addEventListener('pointermove',e=>{if(!drag)return;yaw=drag.yaw+(e.clientX-drag.x)*.009;pitch=Math.max(-.4,Math.min(.4,drag.pitch+(e.clientY-drag.y)*.006));request();});
   element.addEventListener('pointerup',()=>drag=null);element.addEventListener('pointercancel',()=>drag=null);
@@ -159,6 +160,7 @@
    setAuto(v){auto=v;last=0;request();return auto;},isAuto:()=>auto,
    view(side){auto=false;yaw=side==='back'?Math.PI:0;pitch=0;wobbleTime=wobblePitch=wobbleRoll=0;request();},
    // Used by the Garment Lab: recolour the loaded model, zoom from a slider, redraw after changes.
+   graphicsCamera:()=>camera,graphicsCanvas:canvas,onGraphicsFrame(fn){graphicsListeners.add(fn);return()=>graphicsListeners.delete(fn);},
    model:()=>model,setZoom(z){zoom=Math.max(.8,Math.min(2.4,z));request();},redraw:request
   };
  };

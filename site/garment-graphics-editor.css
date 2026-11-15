@@ -1,0 +1,146 @@
+/* One compact print editor, shared by the marketplace and Garment Lab. */
+html body :is(#product-config,#step-art,.ge-drawer) .garment-graphics-editor { display:grid;gap:10px;padding:0;color:#dce4c9;min-width:0;font:12px/1.4 'DM Sans',sans-serif; }
+html body .garment-graphics-editor[hidden] { display:none!important; }
+html body :is(#product-config,#step-art,.ge-drawer) :is(.ge-top,.ge-toolbar,.ge-library-tools,.ge-library-foot,.ge-history,.ge-actions) { display:flex;align-items:center;gap:8px;min-width:0; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-top { justify-content:space-between; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-top h3 { margin:0;color:#e6ecd7;font:700 18px/1.3 'Courier New',monospace; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-count { margin-right:auto;color:#aebd91;font-size:10px; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-toolbar { justify-content:space-between;flex-wrap:wrap; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-segment { display:flex;gap:3px; }
+html body :is(#product-config,#step-art,.ge-drawer) :is(.ge-segment,.ge-history,.ge-actions,.ge-library-tools) button,
+html body :is(#product-config,#step-art,.ge-drawer) :is(.ge-expand,.ge-library-return) {
+ border:1px solid #64764c!important;border-radius:0!important;box-shadow:none!important;background:#1d2b18!important;color:#dce4c9!important;
+ min-height:34px;padding:6px 9px;font:11px/1.4 'Courier New',monospace!important;letter-spacing:0!important;cursor:pointer;
+}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-segment button[aria-pressed=true] { background:#415632!important;border-color:#b9cf82!important;color:#f2f5e5!important; }
+html body :is(#product-config,#step-art,.ge-drawer) button:disabled { opacity:.35;cursor:default; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-library { display:grid;gap:7px;padding:10px;border:1px solid #64764c;background:#101b0e;min-width:0; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-library-search { display:grid;grid-template-columns:minmax(0,1fr) minmax(95px,.7fr);gap:7px; }
+html body :is(#product-config,#step-art,.ge-drawer) :is(.ge-library-search input,.ge-library-search select) { min-width:0;width:100%;min-height:34px;margin:0;padding:6px 8px;border:1px solid #64764c!important;border-radius:0!important;background:#182414!important;color:#dce4c9!important;font:11px/1.4 'DM Sans',sans-serif!important;color-scheme:dark; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-library-tools { flex-wrap:wrap;gap:5px; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-library-tools .ge-expand { margin-left:auto; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:96px;gap:6px;height:200px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;scrollbar-gutter:stable;scrollbar-color:#899b5f #172214;min-width:0; }
+html body :is(#product-config,#step-art,.ge-drawer) button.ge-tile { display:grid;grid-template-rows:minmax(0,1fr) 13px;gap:3px;min-width:0;padding:5px!important;border:1px solid #536542!important;background:#24331f!important;color:#dce4c9!important;box-shadow:none!important;border-radius:0!important;font:9px/1.3 'DM Sans',sans-serif!important;cursor:pointer;content-visibility:auto;contain-intrinsic-size:auto 96px; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-tile img { width:100%;height:100%;min-height:0;object-fit:contain; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-tile span { overflow:hidden;white-space:nowrap;text-overflow:ellipsis; }
+html body :is(#product-config,#step-art,.ge-drawer) button.ge-tile[aria-pressed=true] { border-color:#c4db84!important;box-shadow:inset 0 0 0 1px #c4db84!important; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=board] { background-image:radial-gradient(#698044 1px,transparent 1px);background-size:13px 13px;padding:9px;gap:15px 7px;grid-auto-rows:100px; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=board] .ge-tile { transform:rotate(-4deg); }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=board] .ge-tile:nth-child(3n+2) { transform:rotate(5deg); }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-library-foot { justify-content:space-between;color:#aebd91;font:9px/1.4 'DM Sans',sans-serif; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-library-foot label { display:flex;align-items:center;gap:4px; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-library-foot input { width:13px;height:13px;accent-color:#bfd386; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-layers { display:flex;gap:6px;overflow-x:auto;min-height:0; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-layers:empty { display:none; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-layers button { display:flex;align-items:center;gap:6px;padding:4px 8px 4px 4px;min-width:0;max-width:33%;border:1px solid #64764c!important;background:#172614!important;color:#dce4c9!important;box-shadow:none!important;border-radius:0!important;font:10px/1.4 'DM Sans',sans-serif!important;cursor:pointer; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-layers button[aria-pressed=true] { border-color:#c4db84!important;background:#344a26!important; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-layers img { width:27px;height:27px;object-fit:contain; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-layers span { overflow:hidden;white-space:nowrap;text-overflow:ellipsis; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-selection { margin:0;color:#dce4c9;font:11px/1.5 'Courier New',monospace; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-controls { display:grid;grid-template-columns:1fr;gap:8px; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-control { display:grid;gap:3px;color:#c5d0b1;font:11px/1.4 'DM Sans',sans-serif; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-control > span { display:flex;justify-content:space-between; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-control output { color:#d8e895;font-variant-numeric:tabular-nums; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-control input { width:100%;height:20px;margin:0;accent-color:#bed17f;cursor:ew-resize; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-fine { border-top:1px solid #64764c55;padding-top:8px; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-fine summary { color:#aebd91;font:10px/1.5 'Courier New',monospace;cursor:pointer;margin-bottom:8px; }
+html body :is(#product-config,#step-art,.ge-drawer) :is(.ge-help,.ge-status) { margin:0;color:#aebd91;font:10px/1.5 'DM Sans',sans-serif; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-status { color:#e4d7ac; }
+html body :is(#product-config,#step-art,.ge-drawer) .ge-status:empty { display:none; }
+html body .ge-outline { position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3;overflow:visible; }
+html body[data-product-studio] #viewer .ge-viewer-button,html body #build #stage-frame .ge-viewer-button { background:#344a26!important;border:1px solid #bed17f!important;color:#eef2da!important;min-height:38px;padding:6px 12px;font:11px/1.4 'Courier New',monospace!important;box-shadow:none!important;cursor:pointer; }
+html body .ge-drawer { position:fixed;inset:16px 16px 16px auto;width:min(680px,calc(100vw - 32px));height:calc(100dvh - 32px);max-height:calc(100dvh - 32px);margin:0;padding:18px;border:2px solid #879e5b;background:#111d0e;color:#e5ebd6;overflow:hidden; }
+html body .ge-drawer:not([open]) { display:none!important; }
+html body .ge-drawer[open] { display:flex!important;flex-direction:column;gap:14px; }
+html body .ge-drawer::backdrop { background:#02070280; }
+html body .ge-drawer > header { display:flex;align-items:center;justify-content:space-between;gap:15px; }
+html body .ge-drawer header :is(p,h2) { margin:0;color:#dfe7d1; }
+html body .ge-drawer header p { font:10px/1.5 'Courier New',monospace; }
+html body .ge-drawer header h2 { font:700 24px/1.4 'Courier New',monospace; }
+html body .ge-drawer > header button { background:#344a26!important;color:#e5ebd6!important;border:1px solid #879e5b!important;padding:8px 14px;min-height:40px;font:11px/1.5 'Courier New',monospace!important;cursor:pointer; }
+html body .ge-drawer .ge-drawer-body { flex:1;min-height:0;display:flex; }
+html body .ge-drawer .ge-library { flex:1;min-height:0;grid-template-rows:auto auto minmax(0,1fr) auto; }
+html body .ge-drawer .ge-grid { height:100%;grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-rows:125px; }
+html body .studio-garment-settings { border:1px solid #64764c66;padding:10px 12px; }
+html body .studio-garment-settings > summary { color:#c5d0b1;font:11px/1.5 'Courier New',monospace;cursor:pointer; }
+html body .studio-garment-settings[open] .studio-config-fields { padding-top:16px; }
+html body.graphics-editing .product-info #name { font-size:30px!important; }
+html body.graphics-editing .product-info #tagline,html body.graphics-editing .studio-config-title { display:none!important; }
+html body.graphics-editing .product-info .studio-origin { margin-bottom:7px; }
+html body.graphics-editing .studio-config { gap:13px; }
+html body.graphics-editing .studio-art-mode legend { display:none; }
+html body.graphics-editing #viewer { top:78px; }
+html body.lab-graphics-editing #step-art .ge-controls { grid-template-columns:repeat(3,minmax(0,1fr)); }
+html body.lab-graphics-editing #step-art .ge-library { margin-top:6px; }
+html body.lab-graphics-editing #step-art #flow-browse { display:none; }
+html body :is(#product-config,#step-art,.ge-drawer) :is(button,input,select,summary):focus-visible { outline:2px solid #d4e887!important;outline-offset:2px; }
+@media(max-width:900px) {
+ html body.graphics-editing #viewer { position:sticky!important;top:var(--btr-header-height,62px);z-index:5;min-height:0!important;box-shadow:0 5px 12px #000c!important; }
+ html body.graphics-editing #viewer :is(.core-frame,.stage-frame,.accessory-stage) { height:230px!important; }
+ html body.graphics-editing #viewer.viewer { height:285px!important; }
+ html body.graphics-editing #viewer :is(.core-tools,.viewer-tools,.stage-tools) { padding:7px;gap:5px; }
+ html body.graphics-editing #viewer :is(.core-caption,.stage-label) { display:none!important; }
+ html body.graphics-editing .product-info { padding:14px!important; }
+ html body .ge-drawer { inset:auto 0 0;width:100%;height:78dvh;max-height:78dvh;padding:14px; }
+ html body .ge-drawer .ge-grid { grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:120px; }
+ html body :is(#product-config,#step-art,.ge-drawer) .ge-grid { grid-template-columns:repeat(3,minmax(0,1fr));height:180px; }
+ html body .ge-drawer .ge-grid { height:100%; }
+ html body.lab-graphics-editing #step-art .ge-controls { grid-template-columns:1fr; }
+}
+
+html body.lab-graphics-editing #stage-frame > .ge-viewer-button {position:absolute;top:12px;right:12px;z-index:5;}
+html body.lab-graphics-editing #step-art #lab-graphic-editor {background:#142010;padding:12px;border:1px solid #64764c;}
+
+.graphics-editing #photos{display:none}
+@media(max-width:900px){
+ html body.graphics-editing #viewer{height:auto!important;background:#182015!important;isolation:isolate;}
+ html body.graphics-editing #viewer :is(.core-frame,.stage-frame,.accessory-stage){height:230px!important;min-height:0!important;max-height:230px!important;aspect-ratio:auto!important;}
+ html body.graphics-editing #viewer :is(.core-stage,.stage){height:230px!important;min-height:0!important;max-height:230px!important;}
+ html body.graphics-editing #viewer .core-tools{display:flex!important;flex-wrap:nowrap!important;justify-content:space-between;min-height:47px;}
+ html body.graphics-editing #viewer .core-tools label{display:none!important;}
+ html body.graphics-editing #viewer .core-tools button{min-height:34px!important;padding:6px 8px!important;font-size:10px!important;}
+}
+html body .ge-drawer .ge-library .ge-grid{height:100%!important;}
+@media(max-width:900px){html body .ge-drawer{max-width:100vw!important;box-sizing:border-box;}}
+@media(min-width:901px){
+ html body.graphics-editing #product-config .ge-controls{grid-template-columns:repeat(3,minmax(0,1fr));}
+ html body.graphics-editing #product-config .ge-grid{height:160px;grid-auto-rows:90px;}
+ html body.graphics-editing .product-info #price{margin-block:12px!important;}
+ html body.graphics-editing .studio-config{gap:10px!important;margin-top:18px!important;}
+}
+/* Loose stickers on charcoal pixel weave; the full library keeps every image upright. */
+html body .garment-graphics-editor [hidden]{display:none!important;}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-library{border-color:#626468;background:#1c1d20;}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid{scrollbar-color:#85878b #202124;}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=wall]{display:block!important;position:relative;height:230px!important;overflow:hidden;scrollbar-gutter:auto;isolation:isolate;outline:1px solid #737579;background-color:#292a2d;background-image:linear-gradient(#5a5b602e 1px,transparent 1px),linear-gradient(90deg,#5a5b602e 1px,transparent 1px),repeating-conic-gradient(#38393d 0% 25%,#292a2d 0% 50%);background-size:32px 32px,32px 32px,8px 8px;padding:0!important;box-shadow:inset 2px 2px 0 #111216,inset -2px -2px 0 #55565b;}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=wall]::before{content:none;}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=wall] button.ge-sticker{position:absolute;display:block;grid-template-rows:none;min-height:0!important;height:auto!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;content-visibility:visible;contain-intrinsic-size:none;transform:rotate(var(--r));transition:transform .25s cubic-bezier(.3,1.6,.5,1),filter .25s;z-index:1;cursor:pointer;}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=wall] .ge-sticker img{display:block;width:100%;height:auto;max-height:125px;object-fit:contain;pointer-events:none;user-select:none;filter:drop-shadow(1px 3px 2px #241a1428);}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=wall] .ge-sticker span{display:none;}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=wall] .ge-sticker:is(:hover,:focus-visible){z-index:6;transform:rotate(calc(var(--r) * -.3)) scale(1.12);filter:drop-shadow(2px 0 #fff) drop-shadow(-2px 0 #fff) drop-shadow(0 2px #fff) drop-shadow(0 -2px #fff);}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=wall] .ge-sticker[aria-pressed=true]{outline:2px dashed #d5e891;outline-offset:3px;}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=archive]{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:156px;gap:12px;padding:12px;align-content:start;background:#26272a;}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=archive] .ge-sticker{position:static!important;inset:auto!important;width:100%!important;height:100%!important;margin:0!important;min-height:0!important;grid-template-rows:minmax(0,1fr) 14px;padding:6px!important;background:transparent!important;border:1px solid transparent!important;color:#d9dadd!important;box-shadow:none!important;transform:none!important;filter:none!important;transition:none!important;contain-intrinsic-size:auto 156px;}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=archive] .ge-sticker img{display:block;width:100%;height:100%;max-height:none;object-fit:contain;transform:none;filter:none;}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=archive] .ge-sticker span{text-align:center;font:9px/14px 'Courier New',monospace;color:#bfc1c6;}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=archive] .ge-sticker:is(:hover,:focus-visible){background:#343539!important;border-color:#85878c!important;}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=archive] .ge-sticker[aria-pressed=true]{border-color:#bdd17d!important;box-shadow:inset 0 0 0 1px #bdd17d!important;background:#30342b!important;}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-no-results{padding:20px;margin:0;color:#e1e2e5;font:12px/1.5 'Courier New',monospace;}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=archive] .ge-no-results{color:#dce4c9;grid-column:1/-1;}
+html body :is(#product-config,#step-art,.ge-drawer) :is(.ge-wall-pause,.ge-wall-shuffle){min-width:34px;font-size:16px!important;}
+html body .ge-drawer > .ge-status{margin:0;color:#e4d7ac;font:11px/1.4 'Courier New',monospace;}
+html body .ge-drawer > .ge-status:empty{display:none;}
+html body .ge-drawer{border-color:#737579;background:#1b1c1f;box-shadow:inset 2px 2px 0 #55565b;}
+html body :is(#product-config,#step-art,.ge-drawer) :is(.ge-library-search input,.ge-library-search select){border-color:#686a6f!important;background:#27282c!important;color:#ececef!important;}
+@media(max-width:900px){html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=wall]{height:210px!important;}html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=archive]{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:130px;gap:8px;padding:8px;}}
+@media(prefers-reduced-motion:reduce){html body .ge-sticker{transition:none!important;}}
+html body.silkroad-product.graphics-editing .product-info{gap:0!important;}
+html body.silkroad-product.graphics-editing .product-info #name{margin:0!important;}
+html body.silkroad-product.graphics-editing .product-info #product-config{margin-top:12px!important;}
+html body.graphics-editing .studio-preview-note:empty{display:none!important;}
+html body .garment-graphics-editor:has(.ge-controls[hidden]) .ge-help{display:none;}
+html body :is(#product-config,#step-art,.ge-drawer) .ge-grid[data-view=wall] .ge-sticker.ge-image-missing span{display:block;padding:8px;white-space:normal;background:#eee8d1;color:#1d2816;}
+html body .ge-image-missing img{display:none;}
+html body .studio-preview-retry{justify-self:start;border:1px solid #bdd17f;background:#344a26;color:#eef2da;padding:8px 12px;font:11px/1.4 'Courier New',monospace;cursor:pointer;}
+html body .studio-preview-retry[hidden]{display:none!important;}
+html body .ge-is-editing[data-graphics-mode=place] :is(.core-stage,.stage,#stage-3d){touch-action:none!important;cursor:move;}

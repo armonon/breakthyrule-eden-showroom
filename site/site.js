@@ -10,7 +10,7 @@
  window.siteEl=el;
 
  const header=el('header',{className:'site-top'});
- const logo=(cls)=>el('img',{className:'site-logo '+cls,src:'/assets/brand/logo.webp?v=1',alt:'BreakThyRule, anonymous archive',width:1400,height:381});
+ const logo=(cls)=>el('img',{className:'site-logo '+cls+(cls==='in-footer'?' btr-logo-night-image':''),src:cls==='in-footer'?'/assets/brand/logo-night.svg?v=1':'/assets/brand/logo.webp?v=1',alt:'BreakThyRule, anonymous archive',width:1400,height:381});
  const brand=el('a',{className:'brand'},logo('in-header'));brand.href='/';
  brand.setAttribute('aria-label','Break Thy Rule home');
  const nav=el('nav',{className:'tabs'});nav.setAttribute('aria-label','Main');

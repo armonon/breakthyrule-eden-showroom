@@ -4,7 +4,7 @@ import { STUDIO_PRODUCTS } from './product-options.mjs';
 // All money is integer cents, USD. Edit here; never in page code.
 
 export const CURRENCY = 'usd';
-export const CATALOG_VERSION = 2;
+export const CATALOG_VERSION = 3;
 
 export const CONSTRUCTIONS = {
   canvas: {
@@ -30,17 +30,25 @@ export const GARMENT_TYPES = {
   longsleeve: { id: 'longsleeve', noun: 'long sleeve', silhouette: 'longsleeve' }
 };
 
-// Official prices (cents). The Canvas / Cut & Sew garment offerings.
+// A Random base is the starting price. Blank adds $20; Cut & Sew has an
+// absolute garment price, represented as a surcharge above the same base.
+export const RANDOM_OFFERINGS = {
+  tee: { name: 'T-shirt', priceCents: 3000 },
+  hoodie: { name: 'Hoodie', priceCents: 5000 },
+  crewneck: { name: 'Crewneck', priceCents: 4000 },
+  sweatpants: { name: 'Sweatpants', priceCents: 5000 },
+  longsleeve: { name: 'Long sleeve', priceCents: 3500 },
+  shorts: { name: 'Shorts', priceCents: 5000 }
+};
+export const BLANK_ADD_CENTS = 2000;
+
+// Keep this existing shape for catalog cards, stock slots and older clients.
+// Canvas prices are Blank totals, while Random uses RANDOM_OFFERINGS.
 export const OFFERINGS = {
-  canvas: {
-    tee: { name: 'T-shirt', priceCents: 6000 },
-    hoodie: { name: 'Hoodie', priceCents: 8000 },
-    sweatpants: { name: 'Sweatpants', priceCents: 8000 },
-    crewneck: { name: 'Crewneck', priceCents: 8000 },
-    shorts: { name: 'Shorts', priceCents: 8000 }
-  },
+  canvas: Object.fromEntries(Object.entries(RANDOM_OFFERINGS).map(([id, offering]) =>
+    [id, { ...offering, priceCents: offering.priceCents + BLANK_ADD_CENTS }])),
   'cut-sew': {
-    tee: { name: 'T-shirt', priceCents: 8000 },
+    tee: { name: 'T-shirt', priceCents: 8500 },
     hoodie: { name: 'Heavyweight hoodie', priceCents: 18000 },
     sweatpants: { name: 'Sweatpants', priceCents: 18000 },
     crewneck: { name: 'Crewneck', priceCents: 15000 },
@@ -49,17 +57,26 @@ export const OFFERINGS = {
   }
 };
 
-export const RANDOM_OFFERINGS = {
-  tee: { name: 'T-shirt', priceCents: 3000 },
-  hoodie: { name: 'Hoodie', priceCents: 5000 },
-  crewneck: { name: 'Crewneck', priceCents: 4000 },
-  sweatpants: { name: 'Sweatpants', priceCents: 5000 },
-  longsleeve: { name: 'Long sleeve', priceCents: 3500 }
-};
+// Old designs without labMode retain their Blank / Cut & Sew interpretation.
+// A random color alone never converts a Blank design to the cheaper Random base.
+export function labModeFor(item) {
+  if (!item || typeof item !== 'object' || !Object.hasOwn(CONSTRUCTIONS, item.construction)) return null;
+  const mode = item.labMode === undefined ? (item.construction === 'cut-sew' ? 'cut-sew' : 'blank') : item.labMode;
+  if (!['random', 'blank', 'cut-sew'].includes(mode)) return null;
+  if ((mode === 'cut-sew' ? 'cut-sew' : 'canvas') !== item.construction) return null;
+  return mode;
+}
 export function offeringFor(item) {
-  return item.labMode === 'random' && item.construction === 'canvas'
-    ? RANDOM_OFFERINGS[item.garment] || OFFERINGS.canvas[item.garment]
-    : OFFERINGS[item.construction]?.[item.garment];
+  const mode = labModeFor(item);
+  if (!mode) return undefined;
+  const offerings = mode === 'random' ? RANDOM_OFFERINGS : OFFERINGS[item.construction];
+  return Object.hasOwn(offerings, item.garment) ? offerings[item.garment] : undefined;
+}
+export function garmentPriceParts(item) {
+  const offering = offeringFor(item);
+  if (!offering || !Object.hasOwn(RANDOM_OFFERINGS, item.garment)) return null;
+  const baseCents = RANDOM_OFFERINGS[item.garment].priceCents;
+  return { labMode: labModeFor(item), baseCents, constructionCents: offering.priceCents - baseCents, garmentCents: offering.priceCents };
 }
 
 export const COLORS = {

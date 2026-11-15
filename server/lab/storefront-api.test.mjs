@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {createLab,MemoryStore,ARTWORK_POOL,createHandler} from './storefront-api.mjs';
+const store=new MemoryStore(),pool=ARTWORK_POOL.map(a=>a.id),id=pool[0];
+await store.set('capacity',{slots:{'canvas:hoodie':{limit:10,used:0,reserved:0,open:true},'studio:apple-gloves':{limit:10,used:0,reserved:0,open:true}}});
+const env={CONTEXT:'deploy-preview',LAB_PREVIEW:'true',LAB_SESSION_SECRET:'local-fixture-secret-'.repeat(3),LAB_PAYMENT_PROVIDER:'test-gateway',LAB_ALLOW_TEST_GATEWAY:'true'};
+const lab=createLab({store,env,artworkPool:pool});
+const item={product:'garment',construction:'canvas',labMode:'blank',garment:'hoodie',size:'M',fit:'blank',color:'black',artwork:'pick',sourceDesign:'core-hoodie',quantity:1,picks:{front:[id],back:[]},graphicLayout:{version:1,front:[{id,x:.64,y:.61,scale:.85,rotation:36,hue:108,saturation:95}],back:[]},unitCents:1};
+const result=await lab.checkout({items:[item],idempotencyKey:'local_fixture_key_123456',origin:'https://fixture.invalid'});
+const key=new URL(result.url).searchParams.get('key');const order=await lab.customerOrder(result.orderId,key);
+assert.equal(order.items[0].unitCents,7000);assert.deepEqual(order.items[0].graphicLayout,item.graphicLayout);assert.equal(order.items[0].sourceDesign,'core-hoodie');assert(order.items[0].spec.some(s=>s.includes('hue 108')));
+const dup=await lab.checkout({items:[item],idempotencyKey:'local_fixture_key_123456',origin:'https://fixture.invalid'});assert.equal(dup.orderId,result.orderId);assert.equal(dup.duplicate,true);
+const status=await lab.publicStatus();assert.equal(status.slots['canvas:hoodie'].available,9);
+await assert.rejects(()=>lab.customerOrder(result.orderId,'wrong-key'));
+await assert.rejects(()=>lab.checkout({items:[{product:'studio-product',productId:'pendant-blackout',quantity:1}],idempotencyKey:'local_fixture_bad_123456',origin:'https://fixture.invalid'}),e=>e.status===400);
+const prod=createLab({store:new MemoryStore(),env:{...env,CONTEXT:'production'},artworkPool:pool});assert.equal((await prod.publicStatus()).checkout.available,false);
+const handle=createHandler(()=>prod,{CONTEXT:'production'});const response=await handle({method:'POST',url:new URL('https://fixture.invalid/api/lab/checkout'),headers:{},rawBody:JSON.stringify({items:[item],idempotencyKey:'local_prod_fixture_1234'})});assert.equal(response.status,503);
+console.log('PASS actual bundled function: canonical price/placement, production specs, idempotency, reservation, order isolation, removed SKU and production payment gate. No network or live payments used.');
