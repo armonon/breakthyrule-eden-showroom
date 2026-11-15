@@ -2,12 +2,14 @@
 // The browser uses them to show prices; the server re-runs them on every checkout and ignores any
 // price a browser sends.
 import {
-  OFFERINGS, CONSTRUCTIONS, COLORS, ARTWORK, SIZES, FITS, RELIC_BOX, TRINITY,
+  OFFERINGS, offeringFor, CONSTRUCTIONS, COLORS, ARTWORK, SIZES, FITS, RELIC_BOX, TRINITY,
+  MYSTERY_PACKAGES, MYSTERY_FITS, MYSTERY_PREFERENCES_MAX,
   CUSTOM_COLOR_MAX, MAX_QUANTITY, GARMENT_TYPES, PRINT_LIMITS, PICK_LIMITS, BACK_SIZES
 } from './catalog.mjs';
 import { ARTWORK_POOL } from './artwork-pool.mjs';
+import { isUploadId, normalizeUploadRefs, uploadForId } from './custom-artwork.mjs';
 const GRAPHIC_NAME = Object.fromEntries(ARTWORK_POOL.map(a => [a.id, a.display || a.name]));
-export const graphicName = id => GRAPHIC_NAME[id] || id;
+export const graphicName = (id, uploads) => GRAPHIC_NAME[id] || (uploadForId(id, uploads)?.name ? 'Your upload: ' + uploadForId(id, uploads).name : id);
 import { drawArt, drawChaos, isSeed } from './random.mjs';
 
 const clean = (s, max) => typeof s === 'string' ? s.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max) : '';
@@ -28,6 +30,8 @@ export function normalizeItem(raw, { artworkPool = [] } = {}) {
 
   if (product === 'garment') {
     const construction = raw.construction;
+    const labMode = raw.labMode === 'random' ? 'random' : construction === 'cut-sew' ? 'cut-sew' : 'blank';
+    if (labMode === 'random' && (construction !== 'canvas' || raw.color !== 'random')) errors.push('Random bases are selected and colored by the studio.');
     if (!CONSTRUCTIONS[construction]) errors.push('Choose The Canvas or Cut & Sew.');
     const chaos = raw.chaos === true;
     const seed = raw.seed == null ? null : Number(raw.seed);
@@ -37,7 +41,7 @@ export function normalizeItem(raw, { artworkPool = [] } = {}) {
       const c = drawChaos(seed, { construction }, artworkPool);
       garment = c.garment; color = c.color; fit = c.fit; artwork = 'random-experimental'; art = c.art;
     } else if (artwork === 'random-experimental' && isSeed(seed)) art = drawArt(seed, artworkPool);
-    const offering = OFFERINGS[construction]?.[garment];
+    const offering = offeringFor({ construction, garment, labMode });
     if (CONSTRUCTIONS[construction] && !offering) errors.push('That garment is not offered in ' + CONSTRUCTIONS[construction].name + '.');
     const size = raw.size;
     if (!SIZES.includes(size)) errors.push('Choose a size.');
@@ -52,14 +56,35 @@ export function normalizeItem(raw, { artworkPool = [] } = {}) {
     if (!quantity) errors.push(construction === 'cut-sew' ? 'Each cut & sew piece is one of one — add another for a second piece.' : `Quantity must be 1–${MAX_QUANTITY}.`);
     if (errors.length) return { ok: false, errors };
     let picks = null;
+    const uploaded = normalizeUploadRefs(raw.uploads);
+    if (!uploaded.ok) return { ok: false, errors: uploaded.errors };
+    if (uploaded.uploads.length && artwork !== 'pick') return { ok: false, errors: ['Uploaded artwork needs Pick your graphics.'] };
+    let selectedUploads = [];
     if (artwork === 'pick') {
-      const valid = list => [...new Set((Array.isArray(list) ? list : []).filter(id => typeof id === 'string' && artworkPool.includes(id)))];
+      const source = [...(Array.isArray(raw.picks?.front) ? raw.picks.front : []), ...(Array.isArray(raw.picks?.back) ? raw.picks.back : [])];
+      if (source.some(id => typeof id === 'string' && id.startsWith('upload_') && (!isUploadId(id) || !uploadForId(id, uploaded.uploads)))) return { ok: false, errors: ['An uploaded image is missing its access reference. Upload it again.'] };
+      const valid = list => [...new Set((Array.isArray(list) ? list : []).filter(id => typeof id === 'string' && (artworkPool.includes(id) || !!uploadForId(id, uploaded.uploads))))];
+      if (source.some(isUploadId) && (valid(raw.picks?.front).length > PICK_LIMITS.front || valid(raw.picks?.back).length > PICK_LIMITS.back)) return { ok: false, errors: ['Choose up to three graphics on the front and one on the back.'] };
       picks = { front: valid(raw.picks?.front).slice(0, PICK_LIMITS.front), back: valid(raw.picks?.back).slice(0, PICK_LIMITS.back) };
       if (!picks.front.length && !picks.back.length) return { ok: false, errors: ['Pick at least one graphic.'] };
+      const selected = new Set([...picks.front, ...picks.back]);
+      selectedUploads = uploaded.uploads.filter(ref => selected.has(ref.id));
     }
     const print = normalizePrint(raw.print);
     const backSize = BACK_SIZES[raw.backSize] ? raw.backSize : 'full';
-    return { ok: true, item: { product, construction, garment, size, fit, color, customColor, artwork, chaos, seed: art ? seed : null, art, picks, print, backSize, quantity } };
+    return { ok: true, item: { product, construction, labMode, garment, size, fit, color, customColor, artwork, chaos, seed: art ? seed : null, art, picks, print, backSize, quantity, ...(selectedUploads.length ? { uploads: selectedUploads } : {}) } };
+  }
+
+  if (product === 'mystery-pack') {
+    const packageId = raw.package, size = raw.size, fit = raw.fit;
+    if (typeof packageId !== 'string' || !Object.hasOwn(MYSTERY_PACKAGES, packageId)) errors.push('Choose a mystery package.');
+    if (!SIZES.includes(size)) errors.push('Choose a size.');
+    if (!MYSTERY_FITS.some(f => f.id === fit)) errors.push('Choose a preferred fit.');
+    const preferences = clean(raw.preferences, MYSTERY_PREFERENCES_MAX);
+    const quantity = raw.quantity == null ? 1 : qty(raw.quantity);
+    if (!quantity) errors.push(`Quantity must be 1–${MAX_QUANTITY}.`);
+    if (errors.length) return { ok: false, errors };
+    return { ok: true, item: { product, package: packageId, size, fit, preferences, quantity } };
   }
 
   if (product === 'relic-box') {
@@ -93,11 +118,14 @@ export function normalizeItem(raw, { artworkPool = [] } = {}) {
 export function priceItem(item) {
   const lines = [];
   if (item.product === 'garment') {
-    const o = OFFERINGS[item.construction][item.garment];
-    lines.push({ label: `${CONSTRUCTIONS[item.construction].name} — ${o.name}`, cents: o.priceCents });
+    const o = offeringFor(item);
+    lines.push({ label: `${item.labMode === 'random' ? 'Random base' : CONSTRUCTIONS[item.construction].name} — ${o.name}`, cents: o.priceCents });
     const c = COLORS[item.color];
     lines.push({ label: item.color === 'custom' ? `Custom color: ${item.customColor}` : `${c.name}`, cents: c.addCents });
     lines.push({ label: `Artwork: ${ARTWORK[item.artwork].name}`, cents: ARTWORK[item.artwork].addCents });
+  } else if (item.product === 'mystery-pack') {
+    const p = MYSTERY_PACKAGES[item.package];
+    lines.push({ label: p.name, cents: p.priceCents });
   } else if (item.product === 'relic-box') {
     lines.push({ label: RELIC_BOX.name, cents: RELIC_BOX.priceCents });
   } else if (item.product === 'trinity') {
@@ -123,9 +151,9 @@ export function priceCart(rawItems, opts) {
 // Human-readable title and spec lines for carts, orders and the production dashboard.
 export function describeItem(item) {
   if (item.product === 'garment') {
-    const o = OFFERINGS[item.construction][item.garment];
+    const o = offeringFor(item);
     const spec = [
-      `Construction: ${CONSTRUCTIONS[item.construction].name}`,
+      `Construction: ${item.labMode === 'random' ? 'Random base — studio selected' : CONSTRUCTIONS[item.construction].name}`,
       ...(CONSTRUCTIONS[item.construction].material ? [`Material: ${CONSTRUCTIONS[item.construction].material}`] : []),
       `Size: ${item.size}` + (FITS[item.construction].length > 1 ? ` · Fit: ${FITS[item.construction].find(f => f.id === item.fit)?.name}` : ''),
       `Color: ${item.color === 'custom' ? 'Custom — ' + item.customColor : COLORS[item.color].name}`,
@@ -133,9 +161,9 @@ export function describeItem(item) {
     ];
     if (item.art) spec.push(`Direction: ${item.art.category} / ${item.art.secondary} · ${item.art.placement} · ${item.art.technique} (seed ${item.seed})`);
     const sides = sidesFor(item);
-    if (sides.front.length) spec.push('Front: ' + sides.front.map(graphicName).join(', '));
+    if (sides.front.length) spec.push('Front: ' + sides.front.map(id => graphicName(id, item.uploads)).join(', '));
     const bs = BACK_SIZES[item.backSize] || BACK_SIZES.full;
-    if (sides.back.length) spec.push(`Back: ${sides.back.map(graphicName).join(', ')} — ${bs.name.toLowerCase()}, ${bs.w} × ${bs.h} in on every size`);
+    if (sides.back.length) spec.push(`Back: ${sides.back.map(id => graphicName(id, item.uploads)).join(', ')} — ${bs.name.toLowerCase()}, ${bs.w} × ${bs.h} in on every size`);
     if (item.chaos) spec.push('Drawn by Total Chaos');
     if (!isDefaultPrint(item.print)) {
       const p = item.print, where = [];
@@ -143,7 +171,14 @@ export function describeItem(item) {
       if (p.x) where.push(`${Math.abs(Math.round(p.x * 100))}% to the ${p.x > 0 ? "wearer's left" : "wearer's right"}`);
       spec.push(`Print: ${Math.round(p.scale * 100)}% size` + (where.length ? ', ' + where.join(', ') : ''));
     }
-    return { title: `${o.name} — ${CONSTRUCTIONS[item.construction].name}`, spec, silhouette: GARMENT_TYPES[item.garment].silhouette };
+    return { title: `${o.name} — ${item.labMode === 'random' ? 'Random base' : CONSTRUCTIONS[item.construction].name}`, spec, silhouette: GARMENT_TYPES[item.garment].silhouette };
+  }
+  if (item.product === 'mystery-pack') {
+    const p = MYSTERY_PACKAGES[item.package];
+    const spec = [`Contents: ${p.countLabel}`, `Size: ${item.size} · Fit: ${MYSTERY_FITS.find(f => f.id === item.fit)?.name}`];
+    if (p.expectedUnits) spec.push('Selection: New and vintage; cut & sew may be included, but is not guaranteed.');
+    if (item.preferences) spec.push('Preferences: ' + item.preferences);
+    return { title: p.name, spec, silhouette: 'box' };
   }
   if (item.product === 'relic-box') {
     const spec = [`Size: ${item.size} · Fit: ${RELIC_BOX.fits.find(f => f.id === item.fit)?.name}`];
@@ -166,5 +201,12 @@ export function sidesFor(item) {
   return { front: refs, back: [] };
 }
 
-// Number of physical pieces an item asks the studio to fulfil.
-export const unitsFor = item => (item.product === 'trinity' ? TRINITY.units : 1) * item.quantity;
+// Exact physical piece count. An expected range is not an exact fulfilment promise.
+export const unitsFor = item => {
+  const units = item.product === 'mystery-pack' ? MYSTERY_PACKAGES[item.package].units : item.product === 'trinity' ? TRINITY.units : 1;
+  return units === null ? null : units * item.quantity;
+};
+export const expectedUnitsFor = item => {
+  const range = item.product === 'mystery-pack' ? MYSTERY_PACKAGES[item.package].expectedUnits : null;
+  return range ? { min: range.min * item.quantity, max: range.max * item.quantity } : null;
+};

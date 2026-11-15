@@ -10,7 +10,7 @@
   const movementKey=move||key,cap=(node,id)=>{try{node.setPointerCapture(id);}catch{}};
   const uncap=(node,id)=>{try{if(id!==null&&node.hasPointerCapture(id))node.releasePointerCapture(id);}catch{}};
   const el=document.createElement('div');el.id='touch-controls';el.hidden=true;el.setAttribute('aria-label','Touch game controls');
-  el.innerHTML=`<div class="tc-look" aria-hidden="true"></div><div class="tc-stick" role="group" aria-label="Movement joystick; push forward fully to sprint"><i></i><span class="tc-stick-label">MOVE</span></div>
+  el.innerHTML=`<div class="tc-look" aria-hidden="true"></div><div class="tc-stick" role="group" aria-label="Movement joystick; drag inside the circle to walk, outside it to sprint"><i></i><span class="tc-stick-label">MOVE</span></div>
    <button type="button" class="tc-fire" aria-label="Fire">FIRE</button><button type="button" class="tc-aim" aria-label="Aim">AIM</button>
    <button type="button" class="tc-jump" aria-label="Jump">JUMP</button><button type="button" class="tc-slide" aria-label="Hold to crouch or slide while running">CROUCH</button>
    <button type="button" class="tc-use" aria-label="Interact">USE</button><button type="button" class="tc-reload" aria-label="Reload">RELOAD</button>
@@ -20,16 +20,16 @@
   let disposed=false,shown=false,sid=null,lid=null,origin=null,lastLook=null,held=new Set(),slot=0,lastMode=null;
   const releases=new Map(),blocked=()=>!!document.querySelector('dialog[open],#night-chat:not([hidden]),#social-panel:not([hidden])');
   const canInput=()=>!disposed&&!document.hidden&&visible()&&!blocked();
-  function setKeys(x,y){const want=new Set();if(y<-.25)want.add('w');if(y>.25)want.add('s');if(x<-.25)want.add('a');if(x>.25)want.add('d');if(Math.hypot(x,y)>.88&&y<-.25)want.add('Shift');
+  function setKeys(x,y,sprint=false){const want=new Set();if(y<-.25)want.add('w');if(y>.25)want.add('s');if(x<-.25)want.add('a');if(x>.25)want.add('d');if(sprint&&want.size)want.add('Shift');
    for(const k of held)if(!want.has(k))movementKey(k,false);for(const k of want)if(!held.has(k))movementKey(k,true);held=want;
-   stick.classList.toggle('running',want.has('Shift'));stick.querySelector('.tc-stick-label').textContent=want.has('Shift')?'RUNNING':'MOVE';
+   stick.classList.toggle('running',want.has('Shift'));stick.querySelector('.tc-stick-label').textContent=want.has('Shift')?'SPRINTING':'MOVE';
   }
   function endStick(){const id=sid;sid=null;origin=null;nub.style.transform='';setKeys(0,0);uncap(stick,id);}
   function endLook(){const id=lid;lid=null;lastLook=null;uncap(pad,id);}
   function reset(){endStick();endLook();for(const end of [...releases.values()])end();combat()?.touchFire?.(false);onReset?.();}
   function begin(e){if(e.button!==0||!canInput())return false;e.preventDefault();return true;}
-  function updateStick(e){if(e.pointerId!==sid||!origin)return;if(!canInput()||(e.pointerType==='mouse'&&!(e.buttons&1))){endStick();return;}e.preventDefault();let dx=e.clientX-origin.x,dy=e.clientY-origin.y;const r=Math.hypot(dx,dy),max=origin.r;if(r>max){dx*=max/r;dy*=max/r;}nub.style.transform=`translate(${dx}px,${dy}px)`;setKeys(dx/max,dy/max);}
-  listen(stick,'pointerdown',e=>{if(sid!==null||!begin(e))return;sid=e.pointerId;const r=stick.getBoundingClientRect();origin={x:r.x+r.width/2,y:r.y+r.height/2,r:r.width*.36};cap(stick,sid);updateStick(e);});
+  function updateStick(e){if(e.pointerId!==sid||!origin)return;if(!canInput()||(e.pointerType==='mouse'&&!(e.buttons&1))){endStick();return;}e.preventDefault();let dx=e.clientX-origin.x,dy=e.clientY-origin.y;const r=Math.hypot(dx,dy),max=origin.r;if(r>max){dx*=max/r;dy*=max/r;}nub.style.transform=`translate(${dx}px,${dy}px)`;setKeys(dx/max,dy/max,r>origin.sprintRadius);}
+  listen(stick,'pointerdown',e=>{if(sid!==null||!begin(e))return;sid=e.pointerId;const r=stick.getBoundingClientRect();origin={x:r.x+r.width/2,y:r.y+r.height/2,r:r.width*.36,sprintRadius:r.width/2};cap(stick,sid);updateStick(e);});
   listen(stick,'pointermove',updateStick,{passive:false});
   for(const type of ['pointerup','pointercancel','lostpointercapture'])listen(stick,type,e=>{if(e.pointerId===sid)endStick();});
   listen(pad,'pointerdown',e=>{if(lid!==null||!begin(e))return;lid=e.pointerId;lastLook={x:e.clientX,y:e.clientY};cap(pad,lid);});
@@ -46,7 +46,7 @@
   const heldKey=k=>{key(k,true);return()=>key(k,false);};
   hold('.tc-fire',()=>{const c=combat();if(expedition())return heldKey('g');if(c?.armed()){c.touchFire(true);return()=>c.touchFire(false);}return heldKey('f');},{dragLook:true});
   hold('.tc-aim',()=>{combat()?.toggleZoom?.();});
-  hold('.tc-jump',()=>{if(jump){jump();return;}return heldKey(' ');});
+  hold('.tc-jump',()=>{if(jump){const release=jump();return typeof release==='function'?release:undefined;}return heldKey(' ');});
   hold('.tc-slide',()=>{if(crouch){crouch(true);return()=>crouch(false);}return heldKey('c');});
   hold('.tc-use',()=>heldKey(expedition()?'e':'f'));
   hold('.tc-reload',()=>heldKey('r'));

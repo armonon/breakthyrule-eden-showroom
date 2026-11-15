@@ -1,3 +1,4 @@
+@import url("/site/editorial-cleanup.css?v=1");
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
 /* Same palette and type as the 3D showroom (style.css). */
 :root{color-scheme:light;--ink:#202020;--muted:#6b6b6b;--line:#e4e4e2;--red:#753a36;--paper:#fff;--wash:#f5f5f4;--display:'Barlow Condensed','Arial Narrow',sans-serif;font-family:'DM Sans',Arial,sans-serif;font-size:16px}

@@ -1,0 +1,25 @@
+
+/* Photo captions only; artwork names, garment details and viewer controls remain. */
+#masonry figcaption,
+#masonry .plate-tag,
+#lb-caption,
+#gallery-reel .reel-track a > span,
+#witness-strip .polaroid > span,
+.btr-polaroid > figcaption,
+.btr-grid.photos .btr-tile > span,
+#showcase .showcase-plate .plate-tag,
+#showcase .showcase-plate .plate-note,
+#photo-caption,
+.photo-stamp,
+#btr-lightbox .btr-lb-caption[data-btr-photo-caption],
+body:has(#image-scroll:not([hidden])) #image-caption,
+#poster-dialog:has(#poster-navigation:not([hidden])) #poster-title {
+  display: none !important;
+}
+#masonry figure { padding-bottom: 10px !important; }
+#masonry figure.cat-worn { padding-bottom: 9px !important; }
+#showcase .showcase-plate { padding-bottom: 10px !important; }
+.btr-polaroid { padding-bottom: 9px !important; }
+.btr-grid.photos .btr-tile { padding-bottom: 8px !important; }
+.photo-main { padding-bottom: 12px !important; }
+.rpg-shop .photo-main { padding-bottom: 8px !important; }

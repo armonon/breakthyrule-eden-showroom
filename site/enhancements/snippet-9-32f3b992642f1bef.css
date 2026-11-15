@@ -1,0 +1,263 @@
+@media screen {
+/* Bitmap Crypt concept. Surfaces and controls only: photo geometry stays intact. */
+html[data-btr-theme="cave"] {
+  color-scheme:dark;
+  --ink:#ebe5d1; --muted:#b0b29e; --line:#525b49;
+  --paper:#10120f; --paper-2:#1c2018; --wash:#171b14;
+  --red:#c47c70; --rubric:#d6dc6c; --gold:#a7ac85;
+  --cave-ground:#10120f; --cave-panel:#1c2018; --cave-bone:#ebe5d1;
+  --cave-moss:#d6dc6c; --cave-edge:#6c735e;
+  --cave-grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' shape-rendering='crispEdges'%3E%3Cpath fill='%23c6ceb0' fill-opacity='.045' d='M0 0h1v1H0zM4 2h1v1H4zM2 5h1v1H2zM6 7h1v1H6z'/%3E%3C/svg%3E");
+  background:#10120f;
+}
+html[data-btr-theme="cave"] body {
+  --ink:#ebe5d1!important; --muted:#b0b29e!important; --line:#525b49!important;
+  --paper:#10120f!important; --paper-2:#1c2018!important; --wash:#171b14!important;
+  --red:#c47c70!important; --rubric:#d6dc6c!important; --gold:#a7ac85!important;
+  background:var(--cave-grain) #10120f!important; color:#ebe5d1!important;
+}
+html[data-btr-theme="cave"] body::before,
+html[data-btr-theme="cave"] body::after {display:none!important}
+html[data-btr-theme="cave"] ::selection {background:#d6dc6c;color:#10120f}
+
+/* Opaque stone navigation, crisp borders, one restrained accent. */
+html[data-btr-theme="cave"] body .site-top {
+  background:var(--cave-grain) #0b0e0a!important; color:#ebe5d1!important;
+  border-bottom:1px solid #6c735e!important;
+  box-shadow:0 3px 0 #070907,0 4px 0 #394232!important;
+  backdrop-filter:none!important;
+}
+html[data-btr-theme="cave"] body .site-top .brand {background:none!important;box-shadow:none!important}
+html[data-btr-theme="cave"] body :is(.site-top .brand,.foot-mark) img {filter:grayscale(1) brightness(0) invert(.87)!important}
+html[data-btr-theme="cave"] body .site-top .tabs :is(a,button) {
+  color:#c9cdbb!important;background:transparent!important;
+  font-family:'Courier New',monospace!important;font-size:11px!important;
+  font-weight:700!important;letter-spacing:.07em!important;
+  text-shadow:none!important;border:1px solid transparent!important;
+  box-shadow:none!important;border-radius:0!important;
+}
+html[data-btr-theme="cave"] body .site-top .tabs a[aria-current="page"] {
+  background:#d6dc6c!important;color:#10120f!important;
+  border-color:#e3e7a2!important;box-shadow:2px 2px 0 #050705!important;
+}
+html[data-btr-theme="cave"] body .site-top .tabs :is(a,button):hover {
+  border-color:#6c735e!important;background:#252c20!important;color:#ebe5d1!important;
+}
+html[data-btr-theme="cave"] body .site-top :is(.enter-showroom,.cart-button,.btr-header-button) {
+  background:#171d14!important;color:#ebe5d1!important;
+  border:1px solid #6c735e!important;border-radius:0!important;
+  box-shadow:inset 1px 1px 0 #3e4835,2px 2px 0 #020402!important;
+  text-shadow:none!important;filter:none!important;
+  font-family:'Courier New',monospace!important;font-size:11px!important;
+}
+html[data-btr-theme="cave"] body .site-top .cart-count {background:#d6dc6c!important;color:#10120f!important}
+
+/* Existing photographs remain the color and light in the dark surroundings. */
+html[data-btr-theme="cave"] body main #photo-story.hero-gallery,
+html[data-btr-theme="cave"] body main #gallery-reel,
+html[data-btr-theme="cave"] body :is(.site-foot,.page-head,.shop-path) {
+  --reel-paper:#10120f;
+  background:var(--cave-grain) #10120f!important;color:#ebe5d1!important;
+  border-color:#525b49!important;box-shadow:none!important;
+}
+html[data-btr-theme="cave"] body main #photo-story>.hero-copy {
+  color:#ebe5d1!important;background:none!important;box-shadow:none!important;
+}
+html[data-btr-theme="cave"] body main :is(#hero-title,.garment-preview-title) {
+  color:#ebe5d1!important;font-family:var(--blackletter,'Pirata One',Georgia,serif)!important;
+  font-weight:400!important;text-shadow:2px 3px 0 #050705!important;
+}
+html[data-btr-theme="cave"] body main :is(#hero-title .dropcap,.garment-preview-kicker,.kicker,.sect,.folio) {color:#d6dc6c!important}
+html[data-btr-theme="cave"] body main :is(.hero-gallery-panel,.hero-unified-scene,.hero-gallery-toolbar,.hero-gallery-tools,.photo-controls,.photo-layout-tools,.hero-stage.altar) {
+  color:#c9cdbb!important;background-color:#151a12!important;border-color:#525b49!important;box-shadow:none!important;
+}
+html[data-btr-theme="cave"] body main .hero-stage.altar {background:radial-gradient(ellipse at 50% 45%,#323a25 0%,#171c13 48%,#10120f 80%)!important}
+html[data-btr-theme="cave"] body main .halo {background:radial-gradient(ellipse,#c1ce6c22,transparent 70%)!important;filter:none!important}
+html[data-btr-theme="cave"] body main #gallery-reel {--reel-ink:#ebe5d1!important}
+html[data-btr-theme="cave"] body main #gallery-reel :is(.reel-head b,.reel-live) {color:#d6dc6c!important}
+html[data-btr-theme="cave"] body main #gallery-reel .reel-foot {color:#b0b29e!important}
+html[data-btr-theme="cave"] body main #reel-motion {background:#20271b!important;color:#ebe5d1!important;border-color:#6c735e!important;box-shadow:2px 2px 0 #050705!important}
+html[data-btr-theme="cave"] body main :is(.hero-top,.photo-tip,.photo-live-label,.hero-label,.fine,.lede,#count) {color:#b0b29e!important}
+html[data-btr-theme="cave"] body main :is(.wearer-hero,.wearer-frame) {background:#10120f!important;border-color:#525b49!important}
+html[data-btr-theme="cave"] body main .wearer-shade {background:linear-gradient(180deg,#080b0755,transparent 25%,#080b0722 50%,#080b07eb)!important}
+html[data-btr-theme="cave"] body main :is(.wearer-shade::after,.wearer-bottomline) {border-color:#a6b38a66!important}
+
+/* Stone keys: no glowing rims, blur, animations or filters. */
+html[data-btr-theme="cave"] body :is(main,.site-foot) :is(.solid,.ghost,.more-button,.btr-surprise-button,.btr-feel-return a,.wearer-actions a),
+html[data-btr-theme="cave"] body main :is(#filters button,.btr-smoke-toggle,.btr-shuffle-toggle,.btr-collage-more,.chips button,.topic-list button,.photo-controls button,.photo-layout-tools button),
+html[data-btr-theme="cave"] body #btr-gallery-motion {
+  background:#1c2318!important;color:#ebe5d1!important;border:1px solid #6c735e!important;
+  border-radius:0!important;box-shadow:inset 1px 1px 0 #48533a,3px 3px 0 #050705!important;
+  text-shadow:none!important;filter:none!important;
+  font-family:'Courier New',monospace!important;font-weight:700!important;
+  letter-spacing:.055em!important;transition:background .15s,color .15s!important;
+}
+html[data-btr-theme="cave"] body :is(main,.site-foot) :is(.solid,.ghost,.btr-surprise-button,.wearer-actions a)::before,
+html[data-btr-theme="cave"] body :is(main,.site-foot) :is(.solid,.ghost,.btr-surprise-button,.wearer-actions a)::after,
+html[data-btr-theme="cave"] body .site-top :is(.enter-showroom,.cart-button,.btr-header-button)::after {box-shadow:none!important;filter:none!important;background:none!important}
+html[data-btr-theme="cave"] body main :is(#filters button,.chips button,.topic-list button)[aria-pressed="true"],
+html[data-btr-theme="cave"] body main :is(.solid,.wearer-actions a:first-child) {
+  background:#d6dc6c!important;color:#10120f!important;border-color:#e3e7a2!important;
+  box-shadow:inset 1px 1px 0 #f0efc0,3px 3px 0 #050705!important;
+}
+html[data-btr-theme="cave"] body :is(.site-top,main,.site-foot) :is(a,button,input,select,textarea):focus-visible {
+  outline:3px solid #d6dc6c!important;outline-offset:4px!important;
+}
+html[data-btr-theme="cave"] body main button.btr-collage-card:focus-visible {outline-offset:-6px!important}
+html[data-btr-theme="cave"] body main :is(.page-head .lede,#ig-link,.price,.card-numeral,.drop-tag) {color:#d6dc6c!important}
+
+/* Lower page and reading surfaces. */
+html[data-btr-theme="cave"] body main :is(.product-card,.mystery-info,.librarian,.panel,.compose,.archive-plaque,.production-band,.metal-card,.accessory-card,.equipment-card) {
+  background:var(--cave-grain) #1c2018!important;color:#ebe5d1!important;
+  border-color:#525b49!important;box-shadow:2px 3px 0 #050705!important;
+}
+html[data-btr-theme="cave"] body main :is(.product-card,.archive-plaque,.showcase-plate)::before,
+html[data-btr-theme="cave"] body main :is(.product-card,.archive-plaque,.showcase-plate)::after {background:#68745299!important}
+html[data-btr-theme="cave"] body main .card-media {background:#22271e!important}
+html[data-btr-theme="cave"] body main :is(.card-body h3,.product-info,.mystery-description h3,.librarian h3,.foot-links a,.site-foot p) {color:#ebe5d1!important}
+html[data-btr-theme="cave"] body main :is(input:not([type=color]),select,textarea) {background:#171b14!important;color:#ebe5d1!important;border-color:#6c735e!important}
+html[data-btr-theme="cave"] body main input::placeholder,
+html[data-btr-theme="cave"] body main textarea::placeholder {color:#a2ab95!important}
+html[data-btr-theme="cave"] body[data-page="lab"] :is(.step legend,.print-place legend,.breakdown tfoot th) {color:#ebe5d1!important}
+html[data-btr-theme="cave"] body[data-page="lab"] :is(.stage-note,.stage-loading,.seg,.offer,.altar) {background:#1c2018!important;color:#b0b29e!important;border-color:#6c735e!important}
+html[data-btr-theme="cave"] body[data-page="lab"] .stage-frame {background:radial-gradient(ellipse at 50% 40%,#303a25,#11150e 90%)!important;border-color:#6c735e!important;box-shadow:inset 0 0 0 7px #171d14,inset 0 0 0 8px #525b49,3px 3px 0 #050705!important}
+html[data-btr-theme="cave"] body :is(dialog.btr-collage-viewer,dialog.lightbox,dialog.shop-photo-dialog,.cart-drawer) {background:#10120f!important;color:#ebe5d1!important}
+html[data-btr-theme="cave"] body dialog.btr-collage-viewer :is(header,footer,button,#lb-count,#lb-product) {color:#ebe5d1!important;background-color:#1c2018!important;border-color:#6c735e!important}
+html[data-btr-theme="cave"] body .site-foot :is(p,a) {color:#c9cdbb!important}
+
+/* About remains a readable printed document, now mounted on dark stone. */
+html[data-btr-theme="cave"] #about-paper {--paper:#20251b;--ink:#ebe5d1;background:var(--cave-grain) #10120f!important;color:#ebe5d1!important}
+html[data-btr-theme="cave"] #about-paper .site-top {background:var(--cave-grain) #0b0e0a!important;color:#ebe5d1!important}
+html[data-btr-theme="cave"] #about-paper .paper-sheet {--ink:#20231b;background:#dedbc7!important;color:#20231b!important;border-color:#6c735e;box-shadow:4px 5px 0 #050705;transform:none}
+html[data-btr-theme="cave"] #about-paper .paper-sheet::before,
+html[data-btr-theme="cave"] #about-paper .paper-sheet::after {display:none}
+html[data-btr-theme="cave"] #about-paper :is(.document-line,.paper-footer,.desk-footer,.typed-note) {color:#b0b29e;border-color:#6c735e}
+html[data-btr-theme="cave"] #about-paper .paper-sheet :is(.document-line,.paper-footer,.typed-note) {color:#4a5042}
+html[data-btr-theme="cave"] #archive-market .market-theme-toggle {display:none!important}
+
+
+/* Companion coverage verified against fresh /lab, /archive and /product markup.
+   Deliberately excludes swatch fills, photographs, canvases and 3D scene layers. */
+
+/* The Codex splash keeps its original light palette and native controls. */
+html[data-btr-theme="cave"] #btr-cover {
+  color-scheme:light;
+  --ink:#1d1a17; --muted:#6e6458; --line:#d6cab3;
+  --paper:#f2ebdd; --paper-2:#e9e0cd; --wash:#ebe3d2;
+  --red:#8f2a22; --rubric:#a3322a; --gold:#b08a4a;
+}
+html[data-btr-theme="cave"] #btr-cover::selection,
+html[data-btr-theme="cave"] #btr-cover ::selection {background:var(--rubric);color:#fff}
+
+/* Cover photo dialogs and About mount are separate from the gallery's viewer. */
+html[data-btr-theme="cave"] :is(#btr-gallery,#btr-about,.ct-postcard-gallery) {
+  background:#10120f!important;color:#ebe5d1!important;border-color:#6c735e!important;box-shadow:5px 5px 0 #050705!important;
+}
+html[data-btr-theme="cave"] :is(.btr-gallery-head,.btr-about-copy,.btr-about-cat,.ct-postcard-gallery-stage) {
+  background:#1c2018!important;color:#ebe5d1!important;border-color:#6c735e!important;
+}
+html[data-btr-theme="cave"] :is(#btr-gallery,#btr-about) :is(.btr-btn,.btr-close,.btr-tabs button),
+html[data-btr-theme="cave"] .ct-postcard-gallery :is(.ct-postcard-gallery-close,.ct-postcard-gallery-footer button) {
+  background:#20271b!important;color:#ebe5d1!important;border-color:#6c735e!important;border-radius:0!important;
+  box-shadow:2px 2px 0 #050705!important;
+}
+html[data-btr-theme="cave"] #btr-gallery .btr-tabs button[aria-selected="true"] {background:#dedbc7!important;color:#10120f!important}
+html[data-btr-theme="cave"] #btr-gallery .btr-search {background:#171b14!important;color:#ebe5d1!important;border-color:#6c735e!important}
+html[data-btr-theme="cave"] .ct-postcard-gallery :is(.ct-postcard-gallery-hint,.ct-postcard-gallery-caption) {color:#b0b29e!important}
+html[data-btr-theme="cave"] .ct-postcard-gallery .ct-postcard-gallery-status {color:#e3a89c!important}
+
+/* Cart is appended to body, outside the main-page form rules. */
+html[data-btr-theme="cave"] #cart-drawer :is(.cart-head,.cart-line,.cart-foot,.qty,.cart-art,.cart-upsell) {border-color:#525b49!important}
+html[data-btr-theme="cave"] #cart-drawer {background:#10120f!important;color:#ebe5d1!important;border-color:#6c735e!important}
+html[data-btr-theme="cave"] #cart-drawer :is(.cart-head,.cart-foot) {background:#1c2018!important;color:#ebe5d1!important}
+html[data-btr-theme="cave"] #cart-drawer :is(.cart-lines,.cart-empty,.cart-info,.cart-row) {color:#ebe5d1!important}
+html[data-btr-theme="cave"] #cart-drawer .qty {background:#171b14!important;color:#ebe5d1!important}
+html[data-btr-theme="cave"] #cart-drawer .cart-upsell {background:#20271b!important;color:#b0b29e!important}
+html[data-btr-theme="cave"] #cart-drawer .test-badge {background:#303a25!important;color:#ebe5d1!important;border-color:#6c735e!important}
+html[data-btr-theme="cave"] #cart-drawer :is(.cart-head h2,.cart-info strong,.qty span) {color:#ebe5d1!important}
+html[data-btr-theme="cave"] #cart-drawer :is(.cart-spec,.cart-empty,.cart-note,.cart-foot .fine,.cart-upsell) {color:#b0b29e!important}
+html[data-btr-theme="cave"] #cart-drawer :is(.cart-price,.cart-subtotal,.cart-status,.cart-continue,.cart-head h2 small,.link,.cart-upsell a) {color:#d6dc6c!important}
+html[data-btr-theme="cave"] #cart-drawer :is(.cart-close,.qty button,.cart-empty .ghost) {
+  background:#20271b!important;color:#ebe5d1!important;border-color:#6c735e!important;border-radius:0!important;
+}
+html[data-btr-theme="cave"] #cart-drawer .cart-note textarea {background:#171b14!important;color:#ebe5d1!important;border-color:#6c735e!important}
+html[data-btr-theme="cave"] #cart-drawer .cart-note textarea::placeholder {color:#b0b29e!important}
+html[data-btr-theme="cave"] #cart-drawer .cart-checkout {background:#dedbc7!important;color:#10120f!important;border-color:#ebe5d1!important}
+html[data-btr-theme="cave"] #cart-drawer::backdrop {background:#050705d9!important;backdrop-filter:none!important}
+
+/* Full Garment Lab: choices use labels and spans, not generic button rules. */
+html[data-btr-theme="cave"] body[data-page="lab"] :is(.step,.special,.picker,.print-place,.mbar) {
+  background:var(--cave-grain) #1c2018!important;color:#ebe5d1!important;border-color:#525b49!important;box-shadow:none!important;
+}
+html[data-btr-theme="cave"] body[data-page="lab"] :is(.choice,.size span,.lab-tabs [role="tab"],.seg button,.pick-tags button,.pick-tile,.pick-chip,.print-side) {
+  background:#171d14!important;color:#ebe5d1!important;border-color:#6c735e!important;
+}
+html[data-btr-theme="cave"] body[data-page="lab"] :is(.choice:has(input:checked),.size:has(input:checked) span,.lab-tabs [aria-selected="true"],.seg button[aria-pressed="true"],.seg button[aria-selected="true"],.pick-tags button[aria-pressed="true"],.pick-tile.on,.print-side.on) {
+  background:#303a25!important;color:#ebe5d1!important;border-color:#d6dc6c!important;box-shadow:inset 3px 0 0 #d6dc6c!important;
+}
+html[data-btr-theme="cave"] body[data-page="lab"] :is(.choice-title,.stage-none-title,.altar-draw dd,.review-spec .title,.breakdown th) {color:#ebe5d1!important}
+html[data-btr-theme="cave"] body[data-page="lab"] :is(.choice-sub,.size-note,.review-spec,.breakdown td,.stage-label,.stage-loading,.stage-note,.trust,.offer-sub,.mbar-info span) {color:#b0b29e!important}
+html[data-btr-theme="cave"] body[data-page="lab"] :is(.choice-price,.choice-badge,.step-no,.mbar-info strong,.breakdown tfoot td,.price-tag,.offer em) {color:#d6dc6c!important}
+html[data-btr-theme="cave"] body[data-page="lab"] .lab-error {color:#e3a89c!important}
+html[data-btr-theme="cave"] body[data-page="lab"] :is(.choice,.size):has(input:focus-visible) {outline:3px solid #d6dc6c!important;outline-offset:3px!important}
+html[data-btr-theme="cave"] body[data-page="lab"] input:is([type="range"],[type="checkbox"],[type="radio"]) {accent-color:#d6dc6c}
+html[data-btr-theme="cave"] body[data-page="lab"] .mbar .solid {background:#dedbc7!important;color:#10120f!important;border-color:#ebe5d1!important}
+
+/* Compact home workbench: selected text controls only. Swatch pseudo-elements keep --swatch. */
+html[data-btr-theme="cave"] .compact-lab {
+  --cgl-ink:#ebe5d1;--cgl-paper:#1c2018;--cgl-acid:#d6dc6c;--cgl-line:#6c735e;
+  background:var(--cave-grain) #1c2018!important;color:#ebe5d1!important;border-color:#6c735e!important;box-shadow:none!important;
+}
+html[data-btr-theme="cave"] .compact-lab :is(.cgl-console-top,.cgl-view,.cgl-editor) {background:#1c2018!important;color:#ebe5d1!important;border-color:#525b49!important}
+html[data-btr-theme="cave"] .compact-lab :is(.cgl-step,.cgl-count,.cgl-construction,.cgl-page-count,.cgl-status,.cgl-note,.cgl-no-art,.cgl-search-label) {color:#b0b29e!important;text-shadow:none!important}
+html[data-btr-theme="cave"] .compact-lab :is(.cgl-garment-title,.cgl-price,.cgl-live) {color:#ebe5d1!important;text-shadow:none!important}
+html[data-btr-theme="cave"] .compact-lab :is(.cgl-garments button,.cgl-segment button,.cgl-spin,.cgl-retry,.cgl-palette button,.cgl-picks button,.cgl-shuffle,.cgl-text-button) {
+  background:#20271b!important;color:#ebe5d1!important;border-color:#6c735e!important;text-shadow:none!important;box-shadow:2px 2px 0 #050705!important;
+}
+html[data-btr-theme="cave"] .compact-lab :is(.cgl-garments button,.cgl-segment button,.cgl-palette button)[aria-pressed="true"] {background:#303a25!important;color:#ebe5d1!important;border-color:#d6dc6c!important}
+html[data-btr-theme="cave"] .compact-lab .cgl-make {background:#dedbc7!important;color:#10120f!important;border-color:#ebe5d1!important;text-shadow:none!important;box-shadow:2px 2px 0 #050705!important}
+html[data-btr-theme="cave"] .compact-lab .cgl-swatches button {color:#ebe5d1!important}
+html[data-btr-theme="cave"] .compact-lab .cgl-swatches button[aria-pressed="true"]::before {outline-color:#d6dc6c!important}
+
+/* Product viewer controls and description, without styling the garment surface. */
+html[data-btr-theme="cave"] body main .product-page :is(.product-info,.viewer-tools) {background:#1c2018!important;color:#ebe5d1!important;border-color:#525b49!important}
+html[data-btr-theme="cave"] body main .product-page :is(.product-info h1,.product-info #description) {color:#ebe5d1!important}
+html[data-btr-theme="cave"] body main .product-page :is(.note,.viewer-status) {color:#b0b29e!important}
+html[data-btr-theme="cave"] body main .product-page .viewer-tools button {background:#20271b!important;color:#ebe5d1!important;border-color:#6c735e!important}
+html[data-btr-theme="cave"] body main .product-page .viewer-tools button[aria-pressed="true"] {background:#dedbc7!important;color:#10120f!important}
+
+/* Live archive is #archive-market (its own palette and IDs outrank generic site rules). */
+html[data-btr-theme="cave"] body#archive-market {
+  --paper:#10120f;--paper-2:#1c2018;--ink:#ebe5d1;--muted:#b0b29e;--line:#525b49;--green:#d6dc6c;--red:#c47c70;--wash:#20271b;
+  background:var(--cave-grain) #10120f!important;color:#ebe5d1!important;border-top-color:#6c735e!important;
+}
+html[data-btr-theme="cave"] #archive-market .site-top {background:#0b0e0a!important;color:#ebe5d1!important}
+html[data-btr-theme="cave"] #archive-market .site-top .tabs a {color:#c9cdbb!important}
+html[data-btr-theme="cave"] #archive-market .site-top .tabs a[aria-current="page"] {color:#10120f!important;background:#d6dc6c!important}
+html[data-btr-theme="cave"] #archive-market :is(.market-welcome,.market-rail-title,.market-result-bar,.market-notes summary,.library-discovery,.reading-tabs,.forum-local-note,.forum-board,.market-empty,.market-cover-fallback) {
+  background:var(--cave-grain) #1c2018!important;color:#ebe5d1!important;border-color:#525b49!important;
+}
+html[data-btr-theme="cave"] #archive-market :is(.market-cover,.forum-board .preview-note) {background:#171b14!important;border-color:#525b49!important;color:#b0b29e!important}
+html[data-btr-theme="cave"] #archive-market :is(.market-search input,.market-search select,.topic-finder input,.library-input-row input,.library-search-options select,#sort,#library-sort,.forum-field input,.forum-field textarea,.library-pagination select) {
+  background:#171b14!important;color:#ebe5d1!important;border-color:#6c735e!important;box-shadow:none!important;
+}
+html[data-btr-theme="cave"] #archive-market :is(input,textarea)::placeholder {color:#b0b29e!important}
+html[data-btr-theme="cave"] #archive-market :is(.reading-tab,.market-search button,.library-input-row button,.library-suggestions button,.market-topics button,.library-pagination button,.forum-board .solid,.market-theme-toggle) {
+  background:#20271b!important;color:#ebe5d1!important;border-color:#6c735e!important;box-shadow:none!important;
+}
+html[data-btr-theme="cave"] #archive-market :is(.reading-tab[aria-selected="true"],.market-topics button[aria-pressed="true"],.library-input-row button,.forum-board .solid) {
+  background:#303a25!important;color:#ebe5d1!important;border-color:#d6dc6c!important;box-shadow:inset 0 -3px #d6dc6c!important;
+}
+html[data-btr-theme="cave"] #archive-market :is(.market-book strong,.market-welcome strong,.market-heading h1,.library-intro h1,.library-section-head h2,.forum-intro h1,.forum-thread h2,#shelf-label) {color:#ebe5d1!important}
+html[data-btr-theme="cave"] #archive-market :is(.market-author,.market-source,.market-breadcrumb,.market-blurb,.market-sidebar-note,.market-search-status,.sidebar-guide,.topic-group h3,.reading-tab span,.library-intro p,.library-section-head p,.forum-intro p,.library-suggestions,#library-search-help,#library-count,#result-count,.market-notes summary span,.forum-board .posts li,.forum-board .post-meta) {color:#b0b29e!important}
+html[data-btr-theme="cave"] #archive-market :is(a,.topic-group summary,.forum-board>.fine) {color:#d6dc6c!important}
+html[data-btr-theme="cave"] #archive-market :is(.market-meta,.forum-remove-image) {color:#e3a89c!important}
+html[data-btr-theme="cave"] #archive-market .market-skip {background:#dedbc7!important;color:#10120f!important;border-color:#6c735e!important}
+html[data-btr-theme="cave"] #archive-market :focus-visible {outline:3px solid #d6dc6c!important;outline-offset:3px!important}
+
+/* Portaled controls are outside main, so receive their own readable focus treatment. */
+html[data-btr-theme="cave"] :is(.cart-drawer,#btr-gallery,#btr-about,#btr-lightbox,.ct-postcard-gallery,dialog.btr-collage-viewer) :is(a,button,input,select,textarea):focus-visible {
+  outline:3px solid #d6dc6c!important;outline-offset:3px!important;
+}
+
+}

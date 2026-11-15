@@ -1,10 +1,17 @@
 'use strict';
 (async()=>{
+ // The enhanced wall owns its data and virtualized cards. Keep this initializer
+ // only as a fallback when that wall cannot mount.
+ if(window.BTRCollage?.readyWithoutLegacy){
+  window.dispatchEvent(new CustomEvent('btr:gallery-ready'));
+  if(window.BTRCollage.current)return;
+ }
  const el=window.siteEl,$=id=>document.getElementById(id);
  $('ig-link').href=siteConfig.instagram;
  const labels={all:'All',garments:'Garments',models:'Models',worn:'Worn',events:'Events',instagram:'Instagram',graphics:'The codex',adverts:'Broadsides'};
  let data={categories:[],items:[]};
  try{data=await (await fetch('/site/data/gallery.json',{cache:'no-cache'})).json();}catch{}
+ if(window.BTRCollage?.current)return;
  const items=data.items;let shown=items,current=0,filter='all';
  const present=['all',...data.categories.filter(c=>items.some(i=>i.category===c))];
  const pending=data.categories.filter(c=>!present.includes(c));

@@ -23,7 +23,7 @@ body.eden-mobile-explore :is(.world-topline,.world-caption,#social-launcher,#cha
 .em-stick.engaged{background:#192a2259;border-color:#f4f0df}.em-stick.running{border-color:#e8dba2;box-shadow:0 0 0 4px #e8dba21f}
 .em-stick-label{position:absolute;top:calc(100% + 8px);width:100%;text-align:center;font-size:8px;letter-spacing:.16em;text-shadow:0 1px 5px #000}
 #eden-mobile-hud .em-controls button{position:absolute;touch-action:none}
-#eden-mobile-hud .em-run{left:calc(41px + env(safe-area-inset-left));bottom:calc(160px + env(safe-area-inset-bottom));min-width:74px;min-height:44px;border-radius:24px;flex-direction:row;gap:12px;font-size:11px}.em-run span{font-size:17px}
+
 #eden-mobile-hud .em-jump{right:calc(20px + env(safe-area-inset-right));bottom:calc(28px + env(safe-area-inset-bottom));width:68px;height:68px;border-radius:50%;background:#f4f0dfec;color:#22382e;border-color:#fff9}
 #eden-mobile-hud .em-jump svg{width:26px;height:26px}
 #eden-mobile-hud .em-crouch{right:calc(101px + env(safe-area-inset-right));bottom:calc(30px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%}
@@ -49,7 +49,7 @@ body.eden-mobile #social-panel{top:calc(80px + env(safe-area-inset-top));bottom:
 body.eden-mobile-explore #retry-rack{bottom:auto;top:calc(155px + env(safe-area-inset-top));right:16px;z-index:12}
 body.eden-mobile-explore #play-tip{display:none}
 @media(max-width:360px){.em-stick{left:calc(14px + env(safe-area-inset-left));width:104px;height:104px}#eden-mobile-hud .em-crouch{right:calc(88px + env(safe-area-inset-right));width:50px;height:50px}#eden-mobile-hud .em-use{right:calc(83px + env(safe-area-inset-right));width:60px}.em-tip{font-size:10px}}
-@media(max-height:500px) and (orientation:landscape){#eden-mobile-hud .em-top{top:calc(8px + env(safe-area-inset-top))}.em-brand{min-height:44px;padding:7px 12px}.em-brand small{font-size:7px}#eden-mobile-hud .em-place{top:64px}.em-stick{width:100px;height:100px;bottom:calc(22px + env(safe-area-inset-bottom))}#eden-mobile-hud .em-run{bottom:calc(132px + env(safe-area-inset-bottom))}#eden-mobile-hud .em-jump{bottom:calc(18px + env(safe-area-inset-bottom));width:60px;height:60px}#eden-mobile-hud .em-crouch{bottom:calc(20px + env(safe-area-inset-bottom))}#eden-mobile-hud .em-view{bottom:calc(94px + env(safe-area-inset-bottom))}#eden-mobile-hud .em-use{bottom:calc(94px + env(safe-area-inset-bottom));height:52px}.em-tip{display:none}.em-feedback{bottom:24px;max-width:38%}#eden-mobile-menu{max-height:94svh}.em-destinations{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-height:500px) and (orientation:landscape){#eden-mobile-hud .em-top{top:calc(8px + env(safe-area-inset-top))}.em-brand{min-height:44px;padding:7px 12px}.em-brand small{font-size:7px}#eden-mobile-hud .em-place{top:64px}.em-stick{width:100px;height:100px;bottom:calc(22px + env(safe-area-inset-bottom))}#eden-mobile-hud .em-jump{bottom:calc(18px + env(safe-area-inset-bottom));width:60px;height:60px}#eden-mobile-hud .em-crouch{bottom:calc(20px + env(safe-area-inset-bottom))}#eden-mobile-hud .em-view{bottom:calc(94px + env(safe-area-inset-bottom))}#eden-mobile-hud .em-use{bottom:calc(94px + env(safe-area-inset-bottom));height:52px}.em-tip{display:none}.em-feedback{bottom:24px;max-width:38%}#eden-mobile-menu{max-height:94svh}.em-destinations{grid-template-columns:repeat(3,minmax(0,1fr))}}
 /* The shared website header uses important rules; Eden has its own compact navigation on touch. */
 html body.eden-mobile-explore header#btr-site-header.btr-about-header[data-shared-header="about"]{display:none!important}
 body.eden-mobile-explore #eden-drop{top:calc(75px + env(safe-area-inset-top))!important;right:max(16px,env(safe-area-inset-right))!important;left:auto!important;bottom:auto!important;transform:none!important;max-width:130px;padding:6px 9px;font-size:8px;z-index:10}
@@ -68,3 +68,27 @@ body.eden-mobile-explore #fight-hud .fight-keys{display:none}
 
 /* Long live-drop names stay within the phone HUD. */
 body.eden-mobile-explore #eden-drop{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-sizing:border-box}
+
+/* Small glass surfaces keep the garden visible through the controls. */
+#eden-mobile-hud button,#eden-mobile-hud .em-brand,#eden-mobile-hud .em-jump,
+body.eden-mobile-explore #fight-pad button,body.eden-mobile-explore :is(#npc-prompt,#music-prompt,#door-prompt,#retry-rack){
+ background:linear-gradient(145deg,#ffffff26,#ffffff05),#132b2433;
+ color:#fffdf5;border-color:#ffffff73;
+ -webkit-backdrop-filter:blur(6px) saturate(1.15);backdrop-filter:blur(6px) saturate(1.15);
+ box-shadow:inset 0 1px 0 #ffffff40,0 3px 12px #0000001f;
+ text-shadow:0 1px 3px #0009;
+}
+#eden-mobile-hud button:active,#eden-mobile-hud button.on,#eden-mobile-hud button[aria-pressed=true],
+body.eden-mobile-explore #fight-pad button:active{
+ background:linear-gradient(145deg,#ffffff47,#ffffff12),#294c3e52;color:#fffdf5;border-color:#ffffffc7;
+}
+#eden-mobile-hud .em-stick{background:radial-gradient(circle at 35% 20%,#ffffff1f,#ffffff03),#132b241f;border-color:#ffffff66;box-shadow:inset 0 1px 0 #ffffff26,0 3px 12px #0001}
+#eden-mobile-hud .em-stick i{background:linear-gradient(145deg,#ffffff80,#ffffff29);border-color:#ffffffb3;box-shadow:inset 0 1px 0 #ffffff80,0 2px 8px #0002}
+#eden-mobile-hud .em-stick.running{border-color:#e7efb9;box-shadow:0 0 0 4px #e7efb926,inset 0 1px 0 #ffffff40}
+#eden-mobile-hud .em-stick.running .em-stick-label{color:#f6ffd0;font-weight:700}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+ #eden-mobile-hud button,#eden-mobile-hud .em-brand,#eden-mobile-hud .em-jump,body.eden-mobile-explore #fight-pad button{background-color:#132b246b}
+}
+
+/* Keep contextual action prompts on the same transparent mobile surface. */
+body.eden-mobile-explore :is(#npc-prompt,#music-prompt,#door-prompt,#retry-rack){background:linear-gradient(145deg,#ffffff26,#ffffff05),#132b2433!important;color:#fffdf5!important}

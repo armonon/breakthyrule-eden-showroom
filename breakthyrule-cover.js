@@ -103,41 +103,8 @@
  gallery.addEventListener('click',e=>{if(e.target===gallery)gallery.close();});
  function openGallery(key){showTab(key&&tabsDef.some(t=>t[0]===key)?key:activeTab);if(!gallery.open)gallery.showModal();}
 
- /* ---------- About ---------- */
- const about=el('dialog',{id:'btr-about'});about.setAttribute('aria-labelledby','btr-about-title');
- const aboutClose=el('button',{type:'button',className:'btr-close',textContent:'×',title:'Close about'});aboutClose.setAttribute('aria-label','Close about');
- aboutClose.onclick=()=>about.close();about.addEventListener('click',e=>{if(e.target===about)about.close();});
- const aboutCollage=el('div',{className:'btr-about-collage'});aboutCollage.setAttribute('aria-hidden','true');
- const aboutGo=(label,action)=>{const b=el('button',{type:'button',className:'btr-btn',textContent:label});b.onclick=()=>{about.close();action();};return b;};
- about.append(
-  el('header',{className:'btr-gallery-head'},[el('h2',{id:'btr-about-title'},[el('small',{},[logo('btr-logo-head'),el('span',{textContent:'ABOUT'})]),'Break thy rule']),aboutClose]),
-  el('div',{className:'btr-about-body'},[
-   aboutCollage,
-   el('div',{className:'btr-about-copy'},[
-    el('p',{className:'btr-about-kicker',textContent:'Los Angeles, California'}),
-    el('p',{className:'btr-about-lede',textContent:'A clothing brand from LA.'}),
-    el('p',{textContent:'Everything is printed in house. We work with artists on every drop, and we print on vintage pieces, random blank garments, or our own cut and sew. No two runs come out the same.'}),
-    el('div',{className:'btr-about-cats'},[
-     el('div',{className:'btr-about-cat'},[el('span',{className:'btr-about-num',textContent:'I'}),el('h3',{textContent:'Cut & sew'}),el('p',{textContent:'A handcrafted, brand-new piece in 100% cotton. Cut, sewn and printed by us.'})]),
-     el('div',{className:'btr-about-cat'},[el('span',{className:'btr-about-num',textContent:'II'}),el('h3',{textContent:'Ready to ship'}),el('p',{textContent:'Printed on a random blank or a vintage find, ready to go out now.'})])
-    ]),
-    el('h3',{textContent:'Made with artists'}),
-    el('p',{textContent:'Every graphic is a collaboration. The artists bring the work; we print it by hand in our shop.'}),
-    el('div',{className:'btr-about-actions'},[
-     aboutGo('ENTER EDEN',actions.eden),aboutGo('SHOP',actions.shop),aboutGo('GALLERY',actions.gallery),aboutGo('ARCHIVE',actions.archive)
-    ])
-   ])
-  ])
- );
- function openAbout(){
-  if(!aboutCollage.childElementCount){
-   // About is about the clothes: real photos of them being worn (artwork and collages left out).
-   const notPhotos=new Set(['82dec1eb-dce2-4a7e-80f6-7b0a12cbbe4f','theodore']);
-   const picks=shuffle(favs.filter(f=>!notPhotos.has(f.id))).slice(0,12).map(f=>[f,'photo']);
-   shuffle(picks).forEach(([item,kind])=>{const f=el('figure',{className:'btr-about-piece '+kind},img(item.thumb,''));f.style.setProperty('--r',rand(-9,9).toFixed(1)+'deg');aboutCollage.append(f);});
-  }
-  if(!about.open)about.showModal();aboutClose.focus();
- }
+ /* ---------- About: a shareable, dedicated page ---------- */
+ function openAbout(){location.href='/about';}
 
  /* ---------- Cover ---------- */
  const cover=el('section',{id:'btr-cover'});cover.setAttribute('aria-label','Break Thy Rule cover');
@@ -209,7 +176,7 @@ const coverNav=el('nav',{className:'btr-cover-nav'},[
   navButton('SHOP',actions.shop),
   navButton('GALLERY',actions.gallery),
   navButton(siteMode?'ARCHIVE':'ARCHIVES',actions.archive),
-  navButton('ABOUT',()=>openAbout())
+  el('a',{className:'btr-btn',href:'/about',textContent:'ABOUT'})
  ]);coverNav.setAttribute('aria-label','Break Thy Rule sections');
  const plate=el('div',{className:'btr-plate'},[
   logo('btr-logo-plate'),
@@ -287,8 +254,8 @@ const coverNav=el('nav',{className:'btr-cover-nav'},[
   const top=document.querySelector('.site-top');if(!top)return;
   const codex=el('button',{type:'button',className:'btr-header-button codex',title:'Open the codex cover'},[graphics[0]?img(pick(graphics).thumb,'',{loading:'eager'}):null,el('span',{textContent:'CODEX'})]);
   codex.setAttribute('aria-label','Open the codex cover');codex.onclick=openCover;
-  const about=el('button',{type:'button',className:'btr-about-link',textContent:'About'});about.onclick=openAbout;
-  top.querySelector('.tabs')?.append(about);
+  const nav=top.querySelector('.tabs');
+  if(nav&&!nav.querySelector('.btr-about-link'))nav.append(el('a',{className:'btr-about-link',href:'/about',textContent:'About'}));
   (top.querySelector('.enter-showroom')||top.lastChild).before(codex);
  }
  function decorateHeader(){
@@ -298,8 +265,8 @@ const coverNav=el('nav',{className:'btr-cover-nav'},[
    codex.setAttribute('aria-label','Open the codex cover');codex.onclick=openCover;
    const gal=el('button',{type:'button',className:'btr-header-button gallery',title:'Open the gallery'},[el('span',{textContent:'GALLERY'})]);
    gal.setAttribute('aria-label','Open the gallery');gal.onclick=()=>openGallery();
-   const ab=el('button',{type:'button',className:'text-button btr-about-link',textContent:'ABOUT'});
-   ab.setAttribute('aria-label','About Break Thy Rule');ab.onclick=openAbout;
+   const ab=el('a',{className:'text-button btr-about-link',href:'/about',textContent:'ABOUT'});
+   ab.setAttribute('aria-label','About Break Thy Rule');
    actions.prepend(codex,gal);
    const shopButton=document.getElementById('view-product');(shopButton||actions.lastChild).after(ab);
   }
@@ -321,7 +288,7 @@ const coverNav=el('nav',{className:'btr-cover-nav'},[
  }
 
  window.breakthyruleGallery={open:openGallery,openAbout,openCover,closeCover,decoratePosterLinks,openLightbox};
- document.body.append(cover,gallery,about,lightbox);
+ document.body.append(cover,gallery,lightbox);
  const params=new URLSearchParams(location.search);
  if(siteMode){
   decorateSiteHeader();

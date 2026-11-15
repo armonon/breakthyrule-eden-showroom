@@ -10,12 +10,30 @@
  // Forgiveness: a jump still counts just after walking off an edge, and a press made too early is kept for a moment.
  const COYOTE=.12,JUMP_BUFFER=.15;
  let coyote=0,jumpBuffer=0;
+ // Momentum (0..1): hold a sprint and it builds (about 4 s to full); it raises sprint speed (up to +45%), the first
+ // jump's power, and through parkour.js the length of wall-runs, the height of wall-climbs and the kick of wall jumps.
+ // Jumps go higher the longer Space is held (up to HOLD_MAX seconds of extra lift). Both live in the snapshot so the
+ // shared simulation and prediction stay in step.
+ const MOM={build:1/3.2,air:.04,walk:.55,stop:1.6,speed:.45,jump:.22},HOLD_MAX=.28,HOLD_LIFT=9;
+ let momentum=0,jumpHold=-1;
+ function updateMomentum(dt){
+  const P=h.parkour?.(),kind=P?.active?.()?P.kind?.():null,air=motion.inspect().airborne,sp=Math.hypot(walkVelocity.x,walkVelocity.z);
+  const bonus=P?.takeMomentumBonus?.()||0;if(bonus)momentum=Math.min(1,momentum+bonus);
+  if(kind==='hang')momentum=Math.max(0,momentum-dt*.25);
+  else if(kind)momentum=Math.min(1,momentum+dt*.06);
+  else if(air)momentum=Math.max(0,momentum-dt*MOM.air);
+  else if(keys.has('shift')&&(keys.has('w')||keys.has('arrowup'))&&sp>4.6&&crouchAmount<.3&&proneT<=0)momentum=Math.min(1,momentum+dt*MOM.build*(1-.35*momentum));
+  else if(slide)momentum=Math.max(0,momentum-dt*.2);
+  else momentum=Math.max(0,momentum-dt*(sp>.5?MOM.walk:MOM.stop));
+  if(momentum<1e-4)momentum=0;P?.setMomentum?.(momentum);
+ }
  const profile=()=>h.bodyDimensions?.()||root.playerBodyProfile?.(root.GardenPlayerCharacter)||{height:1.75,radius:.26,crouch:1.19};
  const bodyHeight=()=>{const p=profile();return p.height+(p.crouch-p.height)*crouchAmount;};
  const feetPoint=(p=targetPosition)=>({x:p.x,y:p.y-1.75,z:p.z});
  const fits=(p,height=bodyHeight())=>h.pk()?.bodyFits?.(p,height,profile().radius)??!(h.pk()?.solid(p.x,p.z,p.y,p.y+height,profile().radius));
  const sweep=(a,b,height=bodyHeight())=>h.pk()?.bodySweep?.(a,b,height,profile().radius)??(fits(b,height)?1:0);
 function move(dt,tick=null){
+ updateMomentum(dt);
  if((h.expedition&&!h.expedition.canMove())||h.playerBody?.downed()){cancelTraversal();walkVelocity.set(0,0,0);return;}
  if(h.parkour()?.active()){if(h.parkourOn())h.parkour().update(dt,tick);else h.parkour().reset();return;}
  if(updateVault(dt))return;
@@ -23,7 +41,7 @@ function move(dt,tick=null){
  const z=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),x=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
  const forward=targetAim.clone().sub(targetPosition);forward.y=0;forward.normalize();const right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));
  const crouched=crouchAmount>.5&&!slide;
- const wish=forward.multiplyScalar(z).add(right.multiplyScalar(x));if(wish.lengthSq())wish.normalize().multiplyScalar((crouched?motion.speed(false)*.45:motion.speed(keys.has('shift')))*(1-.13*(h.combat?.weight?.()||0))*(1-.38*(h.combat?.ads?.()||0))*(proneT>0?.35:1));
+ const wish=forward.multiplyScalar(z).add(right.multiplyScalar(x));if(wish.lengthSq())wish.normalize().multiplyScalar((crouched?motion.speed(false)*.45:motion.speed(keys.has('shift'))*(keys.has('shift')?1+MOM.speed*momentum:1))*(1-.13*(h.combat?.weight?.()||0))*(1-.38*(h.combat?.ads?.()||0))*(proneT>0?.35:1));
  if(slide){
   // A slide keeps its own heading (steerable a little) and bleeds speed from a sprint burst down to a crawl.
   slide.t+=dt;const k=slide.t/slide.dur;
@@ -171,7 +189,7 @@ function tapDodge(key){
 // hard hit a short frame hold.
 let lastBump=0,bumpCount=0;
 function wallHit(into){
- const impact=into.length(),t=h.now?.()??performance.now();if(impact<2.4||t-lastBump<300)return;lastBump=t;bumpCount++;
+ const impact=into.length(),t=h.now?.()??performance.now();if(impact<2.4||t-lastBump<300)return;if(impact>4)momentum*=.4;lastBump=t;bumpCount++;
  const forward=targetAim.clone().sub(targetPosition).setY(0).normalize(),right=new T.Vector3().crossVectors(forward,new T.Vector3(0,1,0));
  const k=Math.min(1.4,impact/6);sway.bump(k,Math.sign(into.dot(right))||0);footsteps?.land(surfaceAt(targetPosition),Math.min(1,impact/8));
  h.kick(-(4*k));if(impact>5.5)hitStop(40+impact*4);{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,Math.round(3+4*k),.6);}requestDraw();
@@ -184,10 +202,12 @@ function jump(){if(!h.state.ready||h.modalOpen()||h.expedition&&!h.expedition.ca
  if(m.airborne&&!late){jumpBuffer=JUMP_BUFFER;return;}prepareWalking();
  // Jumping out of a slide carries its speed and a little more.
  if(slide?.kind==='slide'){walkVelocity.multiplyScalar(1.12);slide=null;}
- if(late)motion.set(m.height,motion.impulse);else motion.jump();jumpBuffer=0;coyote=0;airPeak=targetPosition.y-1.75-(late?m.height:0);requestDraw();}
+ const power=motion.impulse*(1+MOM.jump*momentum);if(late)motion.set(m.height,power);else motion.jump(power);jumpHold=0;jumpBuffer=0;coyote=0;airPeak=targetPosition.y-1.75-(late?m.height:0);requestDraw();}
 function updateJump(dt){
  coyote=Math.max(0,coyote-dt);if(jumpBuffer>0){jumpBuffer=Math.max(0,jumpBuffer-dt);if(!motion.inspect().airborne&&!vault&&!h.parkour()?.active())jump();}
- if(!motion.inspect().airborne)return;const before=motion.inspect().height,start=feetPoint();
+ if(!motion.inspect().airborne){jumpHold=-1;return;}
+ if(jumpHold>=0){const mi=motion.inspect();if(mi.velocity<=0||h.parkour?.()?.active?.()||!keys.has('space')||jumpHold>=HOLD_MAX)jumpHold=-1;else{const k=Math.min(dt,HOLD_MAX-jumpHold);motion.set(mi.height,mi.velocity+HOLD_LIFT*(1+.3*momentum)*k);jumpHold+=dt;}}
+ const before=motion.inspect().height,start=feetPoint();
  if(h.expedition&&!h.expedition.canMove())motion.reset();else motion.step(dt);
  let delta=motion.inspect().height-before;
  if(delta>0){const t=sweep(start,{...start,y:start.y+delta});if(t<1){delta*=t;motion.set(before+delta,0);}}
@@ -207,7 +227,7 @@ function updateJump(dt){
  if(h.parkour()?.active()){slide=null;dive=null;airTime=0;wasAirborne=false;airPeak=targetPosition.y-1.75;proneT=Math.max(0,proneT-dt);return;}
  if(airborne){airTime+=dt;airPeak=Math.max(airPeak,targetPosition.y-1.75);}else if(wasAirborne){
   const fell=airPeak-(targetPosition.y-1.75),res=Pk?.land(fell);airPeak=targetPosition.y-1.75;
-  if(res?.kind==='roll'){proneT=0;h.kick(4);h.playerBody?.anim?.('roll',{fade:.06,speed:1.9});{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,8,.8);}}else if(res?.kind==='hard'){proneT=res.stun;h.playerBody?.anim?.('jumpLand',{fade:.06,speed:1.6});}footsteps?.land(surfaceAt(targetPosition),Math.min(1,airTime/.7));if(airTime>.45){const feet=targetPosition.clone();feet.y-=1.72;puff(feet,5,.7);}airTime=0;
+  if(res?.kind==='roll'){proneT=0;h.kick(4);h.playerBody?.anim?.('roll',{fade:.06,speed:1.9});{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,8,.8);}}else if(res?.kind==='hard'){proneT=res.stun;momentum=0;h.playerBody?.anim?.('jumpLand',{fade:.06,speed:1.6});}footsteps?.land(surfaceAt(targetPosition),Math.min(1,airTime/.7));if(airTime>.45){const feet=targetPosition.clone();feet.y-=1.72;puff(feet,5,.7);}airTime=0;
   if(dive)landDive();
   // Land with C held at speed and you go straight into a slide.
   else if(crouchHeld&&!slide&&speed>4.2){slide={kind:'slide',dur:SLIDE_TIME,t:0,dir:walkVelocity.clone().setY(0).normalize(),speed:speed*1.15,noDive:true};footsteps?.slide(surfaceAt(targetPosition),SLIDE_TIME);}}
@@ -216,7 +236,7 @@ function updateJump(dt){
  if(dive)dive.t+=dt;proneT=Math.max(0,proneT-dt);
  tryTackle();
  }
- function captureState(){return root.createMovementStateCodec({T}).encode({version:1,crouchHeld,crouchAmount,slide,airTime,wasAirborne,dive,proneT,diveCount,tackleCount,airPeak,coyote,jumpBuffer,vault,vaultCount,wallPops,rolls,lastTap,lastBump,bumpCount});}
+ function captureState(){return root.createMovementStateCodec({T}).encode({version:1,crouchHeld,crouchAmount,slide,airTime,wasAirborne,dive,proneT,diveCount,tackleCount,airPeak,coyote,jumpBuffer,vault,vaultCount,wallPops,rolls,lastTap,lastBump,bumpCount,momentum,jumpHold});}
  function validateState(value){const s=root.createMovementStateCodec({T}).decode(value);
   if(s.version!==1||typeof s.crouchHeld!=='boolean'||typeof s.wasAirborne!=='boolean'||!['crouchAmount','airTime','proneT','diveCount','tackleCount','airPeak','coyote','jumpBuffer','vaultCount','wallPops','rolls','lastBump','bumpCount'].every(k=>Number.isFinite(s[k]))||s.crouchAmount<0||s.crouchAmount>1||!s.lastTap||!Number.isFinite(s.lastTap.a)||!Number.isFinite(s.lastTap.d))throw Error('Incompatible locomotion snapshot.');
   const nonnegative=['airTime','proneT','diveCount','tackleCount','coyote','jumpBuffer','vaultCount','wallPops','rolls','lastBump','bumpCount'];
@@ -225,13 +245,15 @@ function updateJump(dt){
   if(s.slide!==null&&(!s.slide||!['slide','dash'].includes(s.slide.kind)||!vec(s.slide.dir)||!numbers(s.slide,['speed','t','dur'])||s.slide.t<0||s.slide.dur<=0))throw Error('Invalid slide snapshot.');
   if(s.dive!==null&&(!s.dive||!vec(s.dive.dir)||!numbers(s.dive,['t','speed'])||s.dive.t<0))throw Error('Invalid dive snapshot.');
   if(s.vault!==null&&(!s.vault||!vec(s.vault.from)||!vec(s.vault.to)||!numbers(s.vault,['t','dur','lift','speed'])||s.vault.t<0||s.vault.dur<=0))throw Error('Invalid vault snapshot.');
+  if(s.momentum!==undefined&&(!Number.isFinite(s.momentum)||s.momentum<0||s.momentum>1)||s.jumpHold!==undefined&&(!Number.isFinite(s.jumpHold)||s.jumpHold<-1||s.jumpHold>1))throw Error('Invalid momentum snapshot.');
   return s;
  }
- function restoreState(value){const s=validateState(value);
+ function restoreState(value){const s=validateState(value);momentum=s.momentum??0;jumpHold=s.jumpHold??-1;
   ({crouchHeld,crouchAmount,slide,airTime,wasAirborne,dive,proneT,diveCount,tackleCount,airPeak,coyote,jumpBuffer,vault,vaultCount,wallPops,rolls,lastBump,bumpCount}=s);Object.assign(lastTap,s.lastTap);
  }
  const api={captureState,restoreState,validateState,move,jump,updateJump,tryVault,cancelTraversal,bodyHeight,tryStep,startSlide,tapDodge,updateCrouch,updateAir,
-  needsStep:()=>!!(keys.size||walkVelocity.lengthSq()||slide||vault||h.parkour()?.active()),
+  needsStep:()=>!!(keys.size||walkVelocity.lengthSq()||slide||vault||h.parkour()?.active()||momentum>0),
+  momentum:()=>momentum,
   get slide(){return slide;},set slide(v){slide=v;},get dive(){return dive;},set dive(v){dive=v;},get vault(){return vault;},set vault(v){if(v===null)cancelTraversal();},
   // Exactly one answer to "what is the player doing".
   state:()=>h.parkour()?.kind()||(vault?'vault':dive?'dive':slide?slide.kind:motion.inspect().airborne?'air':proneT>0?'prone':crouchAmount>.1?'crouch':'ground'),

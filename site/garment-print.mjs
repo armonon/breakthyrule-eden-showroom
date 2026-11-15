@@ -3,6 +3,7 @@
 // the back one big print (16 × 20 in on every size). It follows the folds, turns with the garment and spans
 // multi-part pieces.
 import { BACK_SIZES } from '/labkit/catalog.mjs';
+import { isUploadId, uploadForId, uploadedArtworkUrl } from '/labkit/custom-artwork.mjs';
 
 const IN = .0254;
 export const BLANKS = { tee: '/models/blanks/tee.glb', hoodie: '/models/blanks/hoodie.glb', crewneck: '/models/blanks/crewneck.glb', sweatpants: '/models/blanks/pants.glb' };
@@ -14,17 +15,25 @@ const FRONT_ZONES = { // fractions of garment width/height: centre x, centre y, 
 };
 const BACK_TOP_GAP = { tee: .075, crewneck: .08, hoodie: .30 }; // metres below the top of the garment (hoodies: below the hood)
 const imageCache = new Map();
-const loadImage = src => { if (!imageCache.has(src)) imageCache.set(src, new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; })); return imageCache.get(src); };
-export const fullArt = id => '/images/breakthyrule/graphics/full/' + id + '.webp';
-export const preloadArt = ids => Promise.all(ids.map(id => loadImage(fullArt(id)).catch(() => null)));
+const loadImage = src => { if (!imageCache.has(src)) imageCache.set(src, new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { imageCache.delete(src); no(new Error('Artwork could not be loaded.')); }; i.src = src; })); return imageCache.get(src); };
+export const fullArt = (id, uploads = []) => {
+  if (!isUploadId(id)) return '/images/breakthyrule/graphics/full/' + id + '.webp';
+  const asset = uploadForId(id, uploads);
+  if (!asset) throw new Error('An uploaded graphic is missing. Upload it again before ordering.');
+  return uploadedArtworkUrl(asset);
+};
+export const preloadArt = (ids, uploads = []) => Promise.all(ids.map(async id => {
+  try { return await loadImage(fullArt(id, uploads)); }
+  catch (error) { if (isUploadId(id)) throw new Error('An uploaded graphic could not be loaded. Try again or upload it again.'); return null; }
+}));
 
-async function sideCanvas(plan, inkLight, back, backSize) {
+async function sideCanvas(plan, inkLight, back, backSize, uploads) {
   const bs = BACK_SIZES[backSize] || BACK_SIZES.full;
   const c = document.createElement('canvas'); c.width = back ? Math.round(1024 * bs.w / bs.h) : 1024; c.height = 1024; const x = c.getContext('2d'), W = c.width, H = c.height;
   const ink = inkLight ? 'rgba(245,240,230,.92)' : 'rgba(20,18,16,.88)';
   const fit = (img, cx, cy, w, h) => { if (!img) return; const k = Math.min(w / img.width, h / img.height); x.drawImage(img, cx - img.width * k / 2, cy - img.height * k / 2, img.width * k, img.height * k); };
   if (plan.kind === 'big' || plan.kind === 'refs') {
-    const imgs = await preloadArt(plan.ids);
+    const imgs = await preloadArt(plan.ids, uploads);
     if (plan.kind === 'big' || imgs.length === 1) fit(imgs[0], W / 2, H / 2, W, H);
     else if (imgs.length === 2) { fit(imgs[0], W / 2, H * .33, W * .9, H * .62); fit(imgs[1], W / 2, H * .8, W * .7, H * .38); }
     else { fit(imgs[0], W / 2, H * .44, W * .78, H * .7); fit(imgs[1], W * .22, H * .82, W * .4, H * .34); fit(imgs[2], W * .78, H * .82, W * .4, H * .34); }
@@ -80,7 +89,7 @@ const isFabric = m => !/topstitch|thread/i.test(m.name);
 // Returns { front, back } textures (null when a side has no print), or null when a newer apply() took over.
 export function createPrinter(viewer) {
   let token = 0, lastKey = '', texKey = '', texF = null, texB = null, model = null;
-  async function apply({ kind, plan, color, backSize = 'full', print = { x: 0, y: 0, scale: 1 } }) {
+  async function apply({ kind, plan, color, backSize = 'full', print = { x: 0, y: 0, scale: 1 }, uploads = [] }) {
     const T = window.THREE, m = viewer.model(); if (!m || !T) return null;
     if (m !== model) { model = m; lastKey = ''; texKey = ''; }
     const my = ++token;
@@ -109,17 +118,22 @@ export function createPrinter(viewer) {
       back = new T.Vector4(min.x + size.x * .5, cy, hw, hh);
     }
     const light = (color.r * .3 + color.g * .59 + color.b * .11) < .35;
-    const key = JSON.stringify([plan, light, pr, backSize, color.getHex()]);
+    const key = JSON.stringify([plan, light, pr, backSize, color.getHex(), uploads]);
     if (key === lastKey) { viewer.redraw(); return { front: texF, back: texB }; }
-    lastKey = key;
-    const tk = JSON.stringify([plan, light, backSize]);
+    const tk = JSON.stringify([plan, light, backSize, uploads]);
     let f = texF, b = texB;
     if (texKey !== tk) {
-      [f, b] = await Promise.all([plan.front ? sideCanvas(plan.front, light, false, backSize) : null, plan.back ? sideCanvas(plan.back, light, true, backSize) : null]);
+      // Dispose a successfully loaded side if its partner fails; keep the last
+      // complete print until the caller reports the problem and can retry.
+      const sides = await Promise.allSettled([plan.front ? sideCanvas(plan.front, light, false, backSize, uploads) : null, plan.back ? sideCanvas(plan.back, light, true, backSize, uploads) : null]);
+      const failure = sides.find(result => result.status === 'rejected');
+      if (failure) { for (const result of sides) if (result.status === 'fulfilled') result.value?.dispose(); if (my === token) lastKey = ''; throw failure.reason; }
+      [f, b] = sides.map(result => result.value);
       if (my !== token || viewer.model() !== m) { lastKey = ''; for (const t of [f, b]) if (t && t !== texF && t !== texB) t.dispose(); return null; }
       for (const t of [texF, texB]) if (t && t !== f && t !== b) t.dispose();
       texF = f; texB = b; texKey = tk;
     }
+    lastKey = key;
     for (const [mesh, mat] of fabric) {
       const u = decalMaterial(mat);
       u.decalMap.value = f || blankTex(); u.decalMapBack.value = b || blankTex();

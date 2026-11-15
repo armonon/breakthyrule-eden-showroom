@@ -1,0 +1,25 @@
+/* The logo opens the Codex, so its separate header button is redundant. */
+.site-top > .btr-header-button.codex{display:none!important}
+
+/* A conventional, quiet cart control; keep its native count and drawer. */
+.site-top > .cart-button{
+ display:inline-flex!important;align-items:center;justify-content:center;gap:8px;
+ min-height:44px!important;padding:0 12px!important;border:1px solid #aaa79b!important;
+ border-radius:4px!important;background:#fbfaf6!important;color:#24241f!important;
+ box-shadow:none!important;text-shadow:none!important;filter:none!important;
+ transform:none!important;animation:none!important;
+ font:500 13px/1.2 'DM Sans',Arial,sans-serif!important;
+ letter-spacing:0!important;text-transform:none!important;
+ transition:background-color .15s,border-color .15s!important;
+}
+.site-top > .cart-button>span:first-child{display:inline!important}
+.site-top > .cart-button .cart-count{
+ display:inline-grid;place-items:center;min-width:21px;height:21px;padding:0 5px;
+ border-radius:50%;background:#e8e6df!important;color:#24241f!important;
+ font:500 11px/1 'DM Sans',Arial,sans-serif!important;letter-spacing:0!important;
+}
+.site-top > .cart-button.has-items .cart-count{background:#24241f!important;color:#fff!important}
+.site-top > .cart-button:hover{background:#eeede6!important;border-color:#5e5e54!important}
+.site-top > .cart-button:active{background:#e5e3da!important}
+.site-top > .cart-button:focus-visible{outline:2px solid #24241f!important;outline-offset:3px!important}
+@media(prefers-reduced-motion:reduce){.site-top > .cart-button{transition:none!important}}

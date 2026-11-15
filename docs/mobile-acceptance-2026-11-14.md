@@ -14,7 +14,7 @@ This change covers the existing Eden exploration and expedition touch adapters. 
 
 ## Automated evidence
 
-Run `node --test tools/expedition/mobile-input-test.mjs` from the game root. Eleven behavioral tests exercise the shipped adapter scripts with an event-driven DOM fixture. The first run reproduced seven failures across the original nine tests; the fixes pass all eleven current cases.
+Run `node --test tools/expedition/mobile-input-test.mjs` from the game root. Fourteen behavioral tests exercise the shipped adapter scripts with an event-driven DOM fixture. The first run reproduced seven failures across the original nine tests. After merging the latest shared controls, the suite also covers walk/sprint circle boundaries, returning from sprint to walk, and exactly-once held-jump releases for both adapters.
 
 The cases cover simultaneous move/look/crouch; pointer ownership; pointer up, cancel and lost capture; touch action semantics; disappearing buttons; unarmed visibility; mode changes; blur, page hiding, orientation, window and visual-viewport resizing; immediate dialog interruption; stale readiness; disposal; secondary-finger activation; outside-button release; and assistive click activation.
 

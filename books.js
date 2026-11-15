@@ -8,5 +8,6 @@ window.showroomBooks=[
  {title:'Terrorism and the Illuminati',author:'David Livingstone',tag:'History',cover:'terrorism-illuminati.webp',file:'Terrorism and the Illuminati - a three thousand year history - David Livingstone.pdf',sizeMB:1.9},
  {title:'Warfare, Secret Society & Spirit',author:'Various',tag:'Mind Control',cover:'warfare-secret-society.webp',file:'Warfare Secret Society Spirit Mkultra Monarch Mind Control illuminati freemasons Kabbalah.pdf',sizeMB:74.4},
  {title:'The New Money System',author:'Fritz Springmeier',tag:'Finance',cover:'new-money-system.webp',file:'The New Money System Springmeier NWO Illuminati Freemasons.pdf',sizeMB:0.1},
- {title:'The Bible Unveiled',author:'Daniel Vandinja',tag:'Scripture',cover:'bible-unveiled.webp',file:'The BIBLE Unveiled - Daniel Vandinja.pdf',sizeMB:43.1}
-].map(book=>({...book,cover:'/library/covers/'+book.cover,url:'https://breakthyrule-co.netlify.app/library/'+encodeURIComponent(book.file)}));
+ {title:'The Bible Unveiled',author:'Daniel Vandinja',tag:'Scripture',cover:'bible-unveiled.webp',file:'The BIBLE Unveiled - Daniel Vandinja.pdf',sizeMB:43.1},
+ {title:"American World's Fairs: Buildings, Grounds & Landscapes",author:'The Daily Apple',tag:'Architecture',cover:'american-worlds-fairs-architecture-and-landscapes.jpg',file:'american-worlds-fairs-architecture-and-landscapes.pdf',url:'/library/american-worlds-fairs-architecture-and-landscapes.pdf',sizeMB:17.8}
+].map(book=>({...book,cover:'/library/covers/'+book.cover,url:book.url||'https://breakthyrule-co.netlify.app/library/'+encodeURIComponent(book.file)}));

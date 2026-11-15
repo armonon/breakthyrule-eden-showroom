@@ -1,0 +1,91 @@
+@import url("/site/editorial-cleanup.css?v=1");
+/* A static sheet of landscape printer paper. All imagery prints as one-bit ink. */
+html:has(#about-paper){min-height:100%;background:#d8d8d8}
+#about-paper{--ink:#181818;--paper:#fcfcfc;margin:0;min-width:280px;min-height:100vh;min-height:100dvh;color:var(--ink);background:radial-gradient(ellipse at 40% 30%,#e8e8e8 0%,#d9d9d9 65%,#cecece 100%);font:14px/1.5 'Courier Prime','Courier New',monospace;display:grid;grid-template-rows:62px minmax(0,1fr) 24px;isolation:isolate}
+#about-paper *,#about-paper *::before,#about-paper *::after{box-sizing:border-box}
+#about-paper h1,#about-paper h2,#about-paper p,#about-paper figure{margin:0;letter-spacing:normal;text-transform:none}
+#about-paper a{color:inherit;text-underline-offset:3px}
+#about-paper button{font:inherit;cursor:pointer;touch-action:manipulation}
+#about-paper button:focus-visible,#about-paper a:focus-visible{outline:2px solid #111;outline-offset:4px}
+#about-paper [hidden]{display:none!important}
+#about-paper .skip-link{position:fixed;top:-100px;left:12px;padding:10px 14px;background:white;border:2px solid #111;z-index:99999}
+#about-paper .skip-link:focus{top:8px}
+#about-paper .print-filters{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
+#about-paper .site-top{position:relative;z-index:5;display:flex;align-items:center;gap:22px;width:calc(100% - 56px);max-width:1500px;margin:0 auto;padding:0;border-bottom:1px solid #aaa;background:transparent!important;box-shadow:none;backdrop-filter:none}
+#about-paper .brand{margin-right:auto;font:bold 18px/1.1 'Courier Prime','Courier New',monospace;text-decoration:none;white-space:nowrap}
+#about-paper .brand span{display:block;font:italic 10px/1.3 'Courier Prime','Courier New',monospace;margin-top:2px}
+#about-paper .site-top .tabs{display:flex;gap:16px;align-items:center;border:0;margin:0;padding:0}
+#about-paper .site-top .tabs a{font:11px/1.2 'Courier Prime','Courier New',monospace;padding:8px 0;color:#444;letter-spacing:0;text-transform:lowercase;background:transparent;border:0;box-shadow:none}
+#about-paper .site-top .tabs a[aria-current=page]{font-weight:bold;color:#111;text-decoration:none}
+#about-paper .enter-showroom,#about-paper .cart-button{font:11px/1.2 'Courier Prime','Courier New',monospace;white-space:nowrap;min-height:29px;padding:6px 9px;border:1px solid #999;border-radius:0;background:transparent;color:#333;box-shadow:none;transform:none;text-decoration:none}
+#about-paper .cart-button{display:flex;align-items:center;gap:5px;order:0;min-width:0;width:auto;height:auto;letter-spacing:0!important}
+#about-paper .cart-count{color:inherit;background:none;width:auto!important;min-width:0!important;height:auto!important;padding:0!important;font:10px/1 'Courier Prime','Courier New',monospace}
+#about-paper .cart-button>span:first-child{display:inline!important;font:10px/1 'Courier Prime','Courier New',monospace;letter-spacing:0!important;text-transform:none!important}
+#about-paper .paper-desk{padding:27px 40px 29px;display:grid;place-items:center;min-height:0;overflow:visible}
+#about-paper .paper-sheet{position:relative;isolation:isolate;--sheet-size:min(1100px,calc(100vw - 80px),calc((100dvh - 144px)*1.29411765));width:var(--sheet-size);aspect-ratio:11/8.5;min-width:0;padding:4.1% 4.3% 3.1%;background:var(--paper);border:1px solid #fff;box-shadow:0 1px 2px #0002,3px 9px 16px #0002,16px 25px 42px #00000012;transform:rotate(-.35deg);display:grid;grid-template-rows:auto minmax(0,1fr) auto;container-type:inline-size}
+#about-paper .paper-sheet::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:3;opacity:.035;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");mix-blend-mode:multiply}
+#about-paper .paper-sheet::after{content:'';position:absolute;left:2%;right:1%;bottom:-3px;height:3px;background:linear-gradient(90deg,#cecece,#f6f6f6 35%,#fff 75%,#d7d7d7);z-index:-1;box-shadow:0 1px 1px #0002;transform:skewX(-16deg)}
+#about-paper .paper-heading{padding-bottom:3.1cqw;border-bottom:1px solid #333}
+#about-paper .document-line{display:flex;justify-content:space-between;gap:16px;font:clamp(8px,1.15cqw,10px)/1.2 'Courier Prime','Courier New',monospace;letter-spacing:.2px;margin-bottom:2cqw}
+#about-paper .paper-heading h1{font:bold clamp(24px,4.7cqw,44px)/1 'Courier Prime','Courier New',monospace;letter-spacing:-.06em;margin:0 0 .9cqw}
+#about-paper .paper-heading>p{font:clamp(10px,1.65cqw,14px)/1.3 'Courier Prime','Courier New',monospace}
+#about-paper .paper-content{display:grid;grid-template-columns:.72fr 1fr 1.07fr;column-gap:4.1%;padding:3.5cqw 0 3cqw;min-height:0;align-items:start}
+#about-paper .printed-images{display:flex;flex-direction:column;gap:2cqw;min-width:0;align-self:stretch;justify-content:space-between}
+#about-paper .printed-images img{display:block;width:100%;height:auto;filter:grayscale(1) url(#bitmap-print);mix-blend-mode:multiply}
+#about-paper .garment-print img{aspect-ratio:4/5;object-fit:cover;object-position:50% 45%;border:1px solid #333}
+#about-paper .graphic-print{width:88%;align-self:center}
+#about-paper .graphic-print img{max-height:13cqw;object-fit:contain}
+#about-paper .printed-images figcaption{font:clamp(7px,.96cqw,9px)/1.3 'Courier Prime','Courier New',monospace;text-align:center;margin-top:1cqw;letter-spacing:0}
+#about-paper .copy-column{min-width:0;display:flex;flex-direction:column;gap:3cqw}
+#about-paper .paper-section h2{font:bold clamp(11px,1.73cqw,15px)/1.25 'Courier Prime','Courier New',monospace;margin:0 0 1.3cqw;letter-spacing:.01em}
+#about-paper .paper-section p{font:clamp(11px,1.65cqw,14px)/1.48 'Courier Prime','Courier New',monospace;overflow-wrap:normal;hyphens:none}
+#about-paper .paper-section p+p{margin-top:1.35cqw}
+#about-paper .paper-section strong{font-weight:700}
+#about-paper .paper-section .typed-note{font-style:italic;font-size:clamp(10px,1.5cqw,13px);margin-top:1.8cqw}
+#about-paper .paper-footer{display:flex;justify-content:space-between;gap:16px;align-items:center;border-top:1px solid #333;padding-top:1.9cqw;font:clamp(8px,1.13cqw,10px)/1.3 'Courier Prime','Courier New',monospace}
+#about-paper .paper-footer a{white-space:nowrap;font-weight:bold}
+#about-paper .desk-footer{display:flex;align-items:center;justify-content:space-between;width:calc(100% - 56px);margin:0 auto;color:#555;font:9px/1.3 'Courier Prime','Courier New',monospace;padding-bottom:6px;gap:20px}
+#about-paper .desk-footer>div{display:flex;gap:20px}
+#about-paper .desk-footer a{text-decoration:none}
+#about-paper .btr-gift-trigger,#about-paper .btr-discovery-invite,#about-paper .btr-discovery-footer,#about-paper .btr-feel-return,#about-paper .site-foot{display:none!important}
+/* Leave the site's cart functional while keeping the whole page monochrome. */
+#about-paper .cart-panel{filter:grayscale(1)}
+@media(max-width:1050px){#about-paper .site-top{gap:15px}#about-paper .site-top .tabs{gap:12px}#about-paper .brand{font-size:16px}#about-paper .paper-desk{padding-inline:28px}#about-paper .paper-sheet{--sheet-size:min(1100px,calc(100vw - 56px),calc((100dvh - 144px)*1.29411765));width:var(--sheet-size);padding:4.1% 4.3% 3.1%}}
+@media(min-width:761px){#about-paper .paper-sheet{min-width:min(700px,calc(100vw - 56px))}}
+@media(max-width:760px){#about-paper{grid-template-rows:77px minmax(0,1fr) 24px}#about-paper .site-top{display:grid;grid-template-columns:1fr auto auto;grid-template-rows:43px 29px;gap:0 10px;width:calc(100% - 28px)}#about-paper .brand{font-size:16px}#about-paper .brand span{font-size:9px}#about-paper .site-top .tabs{grid-row:2;grid-column:1/-1;justify-content:space-between;gap:10px}#about-paper .site-top .tabs a{font-size:11px;padding:5px 0}#about-paper .cart-button{grid-column:2;grid-row:1}#about-paper .enter-showroom{grid-column:3;grid-row:1;padding-inline:7px}#about-paper .desk-footer{width:calc(100% - 28px);font-size:8px}#about-paper .desk-footer>div{gap:12px}}
+/* The same sheet opens vertically on a phone so the typed copy stays readable. */
+@media(max-width:760px){#about-paper{grid-template-rows:77px auto 28px}#about-paper .paper-desk{padding:24px 18px 26px}#about-paper .paper-sheet{width:100%;max-width:550px;aspect-ratio:auto;padding:27px 25px 23px;transform:rotate(-.2deg);grid-template-rows:auto auto auto;container-type:normal}#about-paper .paper-heading{padding-bottom:19px}#about-paper .document-line{font-size:8px;gap:12px;margin-bottom:18px}#about-paper .paper-heading h1{font-size:30px;margin-bottom:8px;letter-spacing:-1.7px}#about-paper .paper-heading>p{font-size:11px;line-height:1.4;max-width:290px}#about-paper .paper-content{grid-template-columns:1fr;gap:25px;padding:23px 0 26px}#about-paper .printed-images{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:center}#about-paper .garment-print img{aspect-ratio:1/1;object-position:50% 45%}#about-paper .graphic-print{width:100%;align-self:center}#about-paper .graphic-print img{max-height:150px}#about-paper .printed-images figcaption{font-size:7px;margin-top:7px}#about-paper .copy-column{gap:25px}#about-paper .paper-section h2{font-size:13px;margin-bottom:10px}#about-paper .paper-section p{font-size:13px;line-height:1.55}#about-paper .paper-section p+p{margin-top:11px}#about-paper .paper-section .typed-note{font-size:12px;margin-top:12px}#about-paper .paper-footer{padding-top:16px;gap:18px;align-items:flex-start;font-size:8px;line-height:1.4}#about-paper .paper-footer>span{max-width:190px}#about-paper .paper-footer a{font-size:10px}#about-paper .desk-footer>span{font-size:7px}}
+@media(max-width:360px){#about-paper .brand{font-size:14px}#about-paper .site-top{gap:0 6px}#about-paper .enter-showroom,#about-paper .cart-button{padding-inline:5px;font-size:9px}#about-paper .paper-desk{padding-inline:13px}#about-paper .paper-sheet{padding-inline:21px}#about-paper .paper-heading h1{font-size:26px}#about-paper .document-line{font-size:7px}#about-paper .paper-footer{flex-direction:column;gap:10px}#about-paper .paper-footer>span{max-width:none}#about-paper .desk-footer>div{gap:10px}}
+@media print{@page{size:letter landscape;margin:0}html:has(#about-paper){background:white}#about-paper{display:block;min-height:0;background:white;-webkit-print-color-adjust:exact;print-color-adjust:exact}#about-paper .site-top,#about-paper .desk-footer,#about-paper .skip-link{display:none!important}#about-paper .paper-desk{display:block;padding:0}#about-paper .paper-sheet{width:11in;height:8.5in;min-height:0;aspect-ratio:auto;transform:none;box-shadow:none;border:0;padding:.5in .55in .4in;container-type:inline-size;display:grid;grid-template-rows:auto minmax(0,1fr) auto;break-inside:avoid}#about-paper .paper-sheet::after{display:none}#about-paper .paper-content{display:grid;grid-template-columns:.72fr 1fr 1.07fr;gap:4.1%;padding:3.5cqw 0 3cqw}#about-paper .printed-images{display:flex;flex-direction:column;gap:2.8cqw}#about-paper .garment-print img{aspect-ratio:3/4}#about-paper .graphic-print{width:88%}#about-paper .graphic-print img{max-height:15cqw}#about-paper .copy-column{gap:3cqw}#about-paper .paper-section p{font-size:14px;line-height:1.48}#about-paper .paper-footer{flex-direction:row;padding-top:1.9cqw}}
+
+#about-paper .enter-showroom::before,#about-paper .enter-showroom::after{display:none!important;content:none!important}
+#about-paper *,#about-paper *::before,#about-paper *::after{animation:none!important;transition:none!important}
+
+/* The mission introduces the whole site, with the garment process below. */
+#about-paper .paper-heading .mission-copy{font:clamp(11px,1.65cqw,14px)/1.45 'Courier Prime','Courier New',monospace;max-width:none;margin-top:1.5cqw}
+#about-paper .mission-copy a{font-weight:700}
+@media(min-width:761px){#about-paper .paper-heading{padding-bottom:2cqw}#about-paper .document-line{margin-bottom:1.5cqw}#about-paper .paper-content{padding:2.5cqw 0 2cqw}#about-paper .copy-column{gap:2.2cqw}#about-paper .graphic-print img{max-height:11cqw}}
+@media(max-width:760px){#about-paper .paper-heading .mission-copy{font-size:12px;line-height:1.55;margin-top:15px}}
+@media(min-width:761px) and (max-height:740px){#about-paper .paper-heading{padding-bottom:1.5cqw}#about-paper .paper-content{padding-top:1.8cqw}#about-paper .copy-column{gap:1.8cqw}#about-paper .graphic-print img{max-height:10cqw}}
+
+/* Margins follow the sheet width, not the desk surrounding it. */
+@media(min-width:761px){#about-paper .paper-sheet{padding:calc(max(700px,var(--sheet-size))*.045) calc(max(700px,var(--sheet-size))*.045) calc(max(700px,var(--sheet-size))*.035)}}
+@media print{#about-paper .paper-sheet{padding:.5in .55in .4in}}
+
+/* The printed areas dissolve; the sheet and its typography remain still. */
+#about-paper .print-swap{display:block;position:relative;width:100%;margin:0;padding:0;line-height:0;border:0;border-radius:0;background:transparent;box-shadow:none;transform:none;overflow:hidden;cursor:pointer;touch-action:manipulation}
+#about-paper .garment-print .print-swap{aspect-ratio:4/5;border:1px solid #333}
+#about-paper .graphic-print .print-swap{height:11cqw}
+#about-paper .printed-images .print-swap img{display:block;width:100%;height:100%;max-height:none;border:0;object-fit:contain}
+#about-paper .garment-print .print-swap img{object-fit:cover;object-position:50% 45%}
+#about-paper .print-swap canvas{position:absolute;inset:0;width:100%;height:100%;filter:grayscale(1) url(#bitmap-print);mix-blend-mode:multiply;pointer-events:none}
+#about-paper .print-swap.is-dissolving>img{opacity:0}
+#about-paper .print-swap:focus-visible{outline:2px dashed #111;outline-offset:4px}
+#about-paper .print-controls{align-items:center;gap:16px}
+#about-paper #print-motion{padding:2px 0;min-height:18px;border:0;border-radius:0;box-shadow:none;background:none;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+#about-paper #print-motion:disabled{cursor:default;text-decoration:none}
+#about-paper #print-hint{font-size:8px}
+#about-paper .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;padding:0;border:0}
+@media(min-width:761px) and (max-height:740px){#about-paper .graphic-print .print-swap{height:10cqw}}
+@media(max-width:760px){#about-paper .garment-print .print-swap{aspect-ratio:1}#about-paper .graphic-print .print-swap{height:auto;aspect-ratio:1;max-height:150px}#about-paper #print-hint{display:none}}
+@media print{#about-paper .print-swap canvas{display:none!important}#about-paper .print-swap>img{opacity:1!important}#about-paper .garment-print .print-swap{aspect-ratio:3/4}#about-paper .graphic-print .print-swap{height:15cqw}}

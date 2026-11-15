@@ -1,0 +1,38 @@
+/* Remove animation playback buttons while keeping their existing controllers
+   and reduced-motion behavior intact. This stylesheet is shared by every page. */
+html body :is(
+  #wearer-play,
+  #photo-play,
+  #reel-motion,
+  #btr-gallery-motion,
+  #wall-motion,
+  #box-spin,
+  #witness-motion,
+  #product-portals #portal-motion-toggle,
+  #print-motion,
+  #production #home-about-paper [data-print-motion],
+  [data-accessory-motion],
+  .accessory-tools button[data-auto],
+  .btr-belt-media .stage-tools > button.spin,
+  #auto-spin,
+  .transparent-spin__toggle,
+  .pendant-dialog-playback,
+  .cgl-spin,
+  #production-icon-pause,
+  .spool-motion-label,
+  #btr-cover .ct-model-toggle,
+  #btr-cover .btr-ad-entry-tools > button[aria-pressed],
+  #btr-shuffle-section .btr-shuffle-actions > button:last-child
+) {
+  display:none!important;
+}
+
+/* These rows contain only the removed playback control. */
+html body #product-portals .portal-controls,
+html body .belt-preview-motion {
+  display:none!important;
+}
+
+html body #btr-cover .ct-model-reset {
+  right:8px;
+}

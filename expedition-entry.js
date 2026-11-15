@@ -28,7 +28,7 @@
  if(!window.THREE){fail(new Error('The graphics engine is unavailable.'));return;}
  const T=window.THREE,targetPosition=new T.Vector3(11.7,1.75,-24),targetAim=new T.Vector3(11.7,1.75,-29),walkVelocity=new T.Vector3(),aim=new T.Vector3();
  const sway=window.createCameraSway(T,{reduced}),footsteps=window.createFootsteps?.(),state={get ready(){return ready;}};
- let movement=null,parkour=null,post=null,lighting=null,quality=null,warmup=null,flare=null,world=null,lastLandmarkCheck=-Infinity,lastBailLabel='';
+ let gripsView=null,momentumHud=null;let movement=null,parkour=null,post=null,lighting=null,quality=null,warmup=null,flare=null,world=null,lastLandmarkCheck=-Infinity,lastBailLabel='';
  const groundHeight=()=>0,surfaceAt=p=>Math.abs(p.x-11.7)<2.1?'brick':'grass';
  function shiftHeight(delta){targetPosition.y+=delta;targetAim.y+=delta;}
  function place(x,z,lx=x,lz=z-5,y=0){bail?.cancel();movement?.cancelTraversal();parkour?.reset();motion.reset();walkVelocity.set(0,0,0);targetPosition.set(x,1.75+y,z);targetAim.set(lx,1.75+y,lz);camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();}
@@ -85,7 +85,9 @@
    if(thirdBlend>.002){const forward=new T.Vector3();camera.getWorldDirection(forward);const right=new T.Vector3(-forward.z,0,forward.x).normalize(),offset=forward.multiplyScalar(-2.7).add(new T.Vector3(0,.28,0)).addScaledVector(right,.62*thirdSide).multiplyScalar(thirdBlend),length=offset.length(),dir=offset.clone().normalize();let room=length;for(let k=.2;k<length;k+=.15){const point=camera.position.clone().addScaledVector(dir,k);if(!world.clearance.fits({x:point.x,y:point.y-.12,z:point.z},.24,.12)){room=Math.max(.15,k-.2);break;}}offset.setLength(room);camera.position.add(offset);body?.cameraClearance?.(room);}
    const nextFov=T.MathUtils.lerp(p.firstFov,p.thirdFov,thirdBlend)+effectFov;if(Math.abs(camera.fov-nextFov)>.01){camera.fov=nextFov;camera.updateProjectionMatrix();}
    // Flashlight follows the final camera; network poses always use player feet.
-   garden.update(time/1000,camera);expedition?.update(time/1000,dt);lighting.update();
+   garden.update(time/1000,camera);expedition?.update(time/1000,dt);
+   gripsView??=window.parkourGrips?.mount(T,scene,{getPose:()=>parkour?.ropePose?.()})||null;gripsView?.update();
+   momentumHud??=window.createMomentumHud?.({host:document.body})||null;momentumHud?.update({momentum:movement.momentum?.()||0,chain:parkour?.chain?.()||0,mode:movement.state()});lighting.update();
    if(ready&&time-lastLandmarkCheck>2000){lastLandmarkCheck=time;const missing=Object.entries(garden.district.inspect().models).filter(([,value])=>value==='fallback');if(missing.length)$('entry-hint').textContent='Some distant landmark artwork is unavailable. Return to Eden and enter again to retry.';}
    for(const dust of puffs)if(dust.alive){dust.t+=dt;dust.alive=dust.t<.8;dust.sprite.visible=dust.alive;dust.sprite.material.opacity=Math.max(0,1-dust.t/.8)*.4;dust.sprite.scale.setScalar(.15+dust.t*.7);dust.sprite.position.y+=dt*.12;}
    if(expedition?.active()){const label=p.bailKey.toUpperCase()+' · '+(bail?.active?'Get up':'Bail');if(label!==lastBailLabel){lastBailLabel=label;$('night-bail').textContent=label;$('night-bail').title='Manual bail / recover ('+p.bailKey.toUpperCase()+')';}}
@@ -101,7 +103,7 @@
   warmup=window.createRenderWarmup(renderer,camera,scene,{signal:lifetime.signal});
   garden=window.createExpeditionScene(T,scene,{layout,reduced,mobile:stage.clientWidth<700,onChange:requestDraw,prepareModel:model=>warmup.prepare(model)});world=garden.authority;
   lighting=window.createEdenLighting(T,renderer,scene,{sun,hemi,camera,mobile:stage.clientWidth<700,getNight:()=>1});post=window.createEdenPost(T,renderer,scene,camera,{enabled:true});post.setLights({sky:garden.sky,lamps:()=>garden.district.lamps});
-  quality=window.createAdaptiveResolution(renderer,{targetFps:stage.clientWidth<700?30:60,max:Math.min(devicePixelRatio,1.25)});
+  quality=window.createAdaptiveResolution(renderer,{targetFps:stage.clientWidth<700?30:60,max:Math.min(devicePixelRatio,1.25),onFloor(){post.set({ao:0,rays:0,flare:0,glare:0});}});
   function setGraphics(value){graphics=['low','medium','high','photo'].includes(value)?value:'medium';const q=graphics==='low'?{ratio:1,post:true,samples:0,shadow:1024,ao:0}:graphics==='medium'?{ratio:1.25,post:true,samples:2,shadow:2048,ao:0}:{ratio:1.5,post:true,samples:4,shadow:4096,ao:.8};quality.setMax(Math.min(devicePixelRatio,q.ratio));post.set({enabled:q.post,samples:q.samples,ao:q.ao,rays:.7,flare:.8,glare:.9,grain:.028,bloom:.2});lighting.set({shadowSize:q.shadow});renderer.shadowMap.needsUpdate=true;try{localStorage.setItem('eden-graphics',graphics);}catch{}}
   let savedGraphics=null;try{savedGraphics=localStorage.getItem('eden-graphics');}catch{}setGraphics(savedGraphics||(stage.clientWidth<700?'low':'medium'));
   window.edenControls?.setContext(()=> 'expedition');
@@ -137,7 +139,7 @@
   touch=window.createTouchControls({host:document.body,look,combat:()=>null,third:()=>setThird(!third),visible:()=>ready&&expedition.active()&&!modalOpen(),armed:()=>false,expedition:()=>!!expedition.active(),actions:()=>({fire:!$('night-flare').hidden,reload:!$('night-reload').hidden}),
    // Touch holds release directly, independent of the keyboard's toggle preferences.
    move(key,pressed){const k=key.toLowerCase();if(pressed){if(!ready||modalOpen()||bail?.active)return;keys.add(k);}else keys.delete(k);requestDraw();},
-   jump(){if(ready&&!modalOpen()&&!bail?.active){movement.jump();requestDraw();}},
+   jump(){if(ready&&!modalOpen()&&!bail?.active){keys.add('space');movement.jump();requestDraw();return()=>{keys.delete('space');};}},
    crouch(pressed){if(pressed){if(!ready||modalOpen()||bail?.active)return;movement.crouchHeld=true;parkour.crouchPressed();movement.startSlide();}else movement.crouchHeld=false;requestDraw();},onReset:stop});
   window.breakThyRuleExpedition={getState:()=>({ready,disposed,entry:'expedition',pos:targetPosition.toArray(),position:targetPosition.toArray(),aim:targetAim.toArray(),pose:getPose(),renderedCamera:{position:camera.position.toArray(),quaternion:camera.quaternion.toArray(),fov:camera.fov},movement:movement.state(),touch:touch?.inspect(),third,graphics,post:post.inspect(),lighting:lighting.inspect(),quality:quality.inspect(),warmup:warmup.inspect(),preferences:preferences.get(),body:body.inspect(),sway:sway.inspect(),bail:bail?.inspect(),expedition:expedition.inspect(),scene:garden.inspect(),resources:{geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,canvases:document.querySelectorAll('canvas').length},drawCalls:renderer.info.render.calls}),scene:()=>scene,renderer:()=>renderer,expedition:()=>expedition,place,view:setThird,bail:toggleBail,preferences:()=>preferences.get(),returnHome:home};
   requestDraw();await garden.ready;if(disposed)return;status.textContent='Opening the Moon Temple and preparing your character…';

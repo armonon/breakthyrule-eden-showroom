@@ -432,9 +432,10 @@ function prepareWalking(){
 // Feel: crouch / slide eye drop, sprint widening, landing thuds and footsteps by surface (footsteps.js).
 // Parkour (parkour.js): roofs, crate staircases and walls with height beyond the door; wall-runs, climbs, hangs.
 const parkourOn=()=>garden.nightBuilt()&&targetPosition.z<garden.road.door-.2&&!arena?.active()&&!pockets?.inside(targetPosition);
-let parkour=null,playerBail=null,bailLoading=false,worlds=null,lastPocket=null,officeSeen=false;
+let parkour=null,playerBail=null,bailLoading=false;
+let worlds=null,lastPocket=null,officeSeen=false;let gripsView=null,momentumHud=null;
 const expeditionPreferences=window.createExpeditionPreferences?.({onChange:()=>{movement.crouchHeld=false;keys.clear();requestDraw();}});
-window.edenControls?.setContext(()=>expedition?.active()?'expedition':arena?.active()?'arena':battle?.active()?'battle':combat?.armed()?'combat':fistsEngaged()?'fists':'walk');
+window.edenControls?.setContext(()=>expedition?.active()?'expedition':arena?.active()?'arena':horror?.interactionActive()?'horror':battle?.active()?'battle':combat?.armed()?'combat':fistsEngaged()?'fists':'walk');
 const expeditionPrefs=()=>expedition?.active()?expeditionPreferences?.get():null;
 function makeParkour(){if(parkour||!window.createParkour)return parkour;parkour=window.createParkour({T,walls:()=>garden.nightBuilt()?garden.district.walls:[],surfaces:()=>garden.nightBuilt()?garden.district.surfaces:[],ground:(x,z)=>groundHeight(new T.Vector3(x,0,z)),
  player:{pos:targetPosition,aim:targetAim,vel:walkVelocity,motion,keys,bodyDimensions:()=>playerBody?.bodyDimensions()||window.playerBodyProfile(),crouchHeld:()=>movement.crouchHeld,sway,footsteps:window.createFootsteps?{step:(...a)=>footsteps?.step(...a),land:(...a)=>footsteps?.land(...a)}:null,surface:()=>surfaceAt(targetPosition),requestDraw,onFall:d=>battle?.fallDamage?.(d)}});return parkour;}
@@ -511,7 +512,10 @@ function updateBodyAnim(){
 }
 let deathDrop=0,lowShown=0;
 function updateFeel(dt){
- updateMatchGate();updateBodyAnim();
+ updateMatchGate();updateBodyAnim();horror?.update(dt);
+ // Bars, pipes and ropes (parkour-grips.js) appear with the district; the momentum meter (momentum-hud.js).
+ if(!gripsView&&garden.nightBuilt?.())gripsView=window.parkourGrips?.mount(T,scene,{getPose:()=>parkour?.ropePose?.()})||null;gripsView?.update();
+ momentumHud??=window.createMomentumHud?.({host:document.body})||null;momentumHud?.update({momentum:movement.momentum?.()||0,chain:parkour?.chain?.()||0,mode:movement.state()});
  {const pkt=pockets?.inside(camera.position)||null;if(pkt!==lastPocket){if(pkt?.name==='Black box')worlds?.veil({title:'THE BLACK CUBE',sub:'THE WHITE WORLD',kicker:'INSIDE THE BLACK BOX'});lastPocket=pkt;}}
  const fallen=battle?.dead?.()&&!battle.soul?.();
  deathDrop+=((fallen?1.25:0)-deathDrop)*(1-Math.exp(-(fallen?5:10)*dt));
@@ -531,7 +535,9 @@ function updateFeel(dt){
 }
 function setMovement(key,pressed){
  if(pressed&&(!state.ready||modalOpen()||expedition&&!expedition.canMove()))return;
- if(key==='space'){if(pressed)movement.jump();return;}
+ if(key===' ')key='space';
+ // Space stays held while pressed (player-movement.js: the longer it is held, the higher the jump).
+ if(key==='space'){if(pressed){keys.add('space');movement.jump();}else keys.delete('space');return;}
  if(!moveKeys.has(key)&&key!=='shift')return;
  if(pressed&&moveKeys.has(key))renderer.domElement.focus({preventScroll:true});
  if(key==='shift'&&expeditionPrefs()?.sprintMode==='toggle'){if(pressed){if(keys.has(key))keys.delete(key);else keys.add(key);}requestDraw();return;}
@@ -573,7 +579,17 @@ function interactWithScene(event){
  if(found){const reach=playerBody?.grab(found.point);if(reach)setTimeout(()=>openPicked(found),reach);else openPicked(found);return true;}
  if(event.pointerType!=='touch'&&!lookLocked)lockLook();return false;
 }
-renderer.domElement.addEventListener('click',event=>{if(event.pointerType==='touch'||!window.edenControls)return interactWithScene(event);if(!lookLocked){lockLook();return;}/* Bound desktop scene actions are dispatched by game-bindings.js. */});
+function onSceneClick(event){
+ if(event.pointerType==='touch'||!window.edenControls)return interactWithScene(event);
+ // Locked actions already ran through the pointer bridge. Unlocked artwork picks
+ // keep their original single-click behavior, on whichever button the user bound.
+ if(lookLocked)return;
+ const controls=window.edenControls,action=controls.action({code:'Mouse'+(event.button??0)});
+ if(controls.context()==='walk'&&action==='useTarget'){event.preventDefault();return interactWithScene(event);}
+ if((event.button??0)===0)lockLook();
+}
+renderer.domElement.addEventListener('click',onSceneClick);
+renderer.domElement.addEventListener('auxclick',onSceneClick);
 function openPicked(found){if(found.object.userData.uploadPDF)uploads.open();else if(found.object.userData.stemdeck)music.openDeck();else if(found.object.userData.amphitheater)music.open();else if(found.object.userData.librarian)conversation.open();else if(Number.isInteger(found.object.userData.bookIndex))showBook(found.object.userData.bookIndex);else if(found.object.userData.film)selectFilm();else if(found.object.userData.poster)showPoster(found.object.userData.poster);else if(Number.isInteger(found.object.userData.collectionIndex))inspect('front',found.object.userData.collectionIndex);}
 renderer.domElement.addEventListener('pointerdown',event=>{if(event.button!==0||!state.ready||combat?.capturing()||event.pointerType==='mouse'||lookLocked)return;const direction=targetAim.clone().sub(targetPosition).normalize();drag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:Math.atan2(direction.x,-direction.z),pitch:Math.asin(direction.y),moved:false};renderer.domElement.setPointerCapture(event.pointerId);});
 renderer.domElement.addEventListener('pointermove',event=>{if(drag){const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)drag.moved=true;if(drag.moved){freeView();const yaw=drag.yaw+dx*.0035,pitch=T.MathUtils.clamp(drag.pitch-dy*.0035,-1.35,.4);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));renderer.domElement.style.cursor='grabbing';requestDraw();}}else renderer.domElement.style.cursor=lookLocked?'none':hit(event)?'pointer':event.pointerType==='mouse'?'crosshair':'grab';});
@@ -685,7 +701,7 @@ expedition=window.createExpedition({getCharacter:()=>playerBody?.getAppearance()
 combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,reduced,requestDraw,thirdPerson:()=>thirdK,setThird,
  // Eden is a safe zone: weapons come out only beyond the hidden door (the open match and the firing range).
  canAct:()=>state.ready&&!modalOpen()&&!expedition?.active()&&!arena?.active()&&!pockets?.inside(camera.position)&&targetPosition.z<garden.road.door&&(battle?.canAct()??true),
- shotHook:(...a)=>battle?.shotHook(...a),onExplosion:(...a)=>battle?.onExplosion(...a),
+ shotHook:(...a)=>horror?.shotHook?.(...a)||battle?.shotHook(...a),onExplosion:(...a)=>battle?.onExplosion(...a),
  // The range is on the brick road beyond the door, where night falls: keep it in daylight while it is in use.
  onRange(on){if(on)garden.district;garden.nightRoad?.setOverride(on?0:null);},
  getLook(){const d=targetAim.clone().sub(targetPosition).normalize();return {yaw:Math.atan2(d.x,-d.z),pitch:Math.asin(T.MathUtils.clamp(d.y,-1,1))};},
@@ -710,13 +726,15 @@ battle=window.createBattleArena?.({T,scene,camera,combat,garden,terrainY:(x,z)=>
  openShop(){document.exitPointerLock?.();shop.open?.();}
 });
 // Phones and tablets: on-screen stick, look pad and buttons while playing (touch-controls.js).
+// The horror chapter after the eight pages (horror-chapter.js): the office, the showdown, keys, the cube's lab.
+const horror=window.createHorrorChapter?.({T,scene,camera,garden,pockets,worlds:()=>worlds,battle:()=>battle,playerBody,requestDraw,thirdPerson:on=>{lastThirdToggle=0;setThird(!!on);}});
 const touch=window.createTouchControls?.({host:stage.parentElement,combat:()=>combat,third:()=>{lastThirdToggle=0;setThird(!thirdOn);},armed:()=>!!combat?.armed(),expedition:()=>!!expedition?.active(),
  visible:()=>state.ready&&state.view==='free'&&!modalOpen()&&!arena?.active()&&(!!expedition?.active()||!!battle?.active()||!!combat?.armed()),
  look(dx,dy){if(combat?.armed()){combat.touchLook(dx,dy);return;}const d=targetAim.clone().sub(targetPosition).normalize(),sens=.0042*(expeditionPrefs()?.[thirdOn?'thirdSensitivity':'firstSensitivity']??window.edenSettings?.get('sens')??1),yaw=Math.atan2(d.x,-d.z)+dx*sens,pitch=T.MathUtils.clamp(Math.asin(T.MathUtils.clamp(d.y,-1,1))-dy*sens*(window.edenSettings?.get('invertY')?-1:1),-1.35,1.35);freeView();targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));requestDraw();}});
 const edenMobile=window.createEdenMobile?.({host:stage.parentElement,ready:()=>state.ready,
  active:()=>(worlds?.world()??'eden')==='eden'&&!expedition?.active()&&!battle?.active()&&!combat?.armed()&&!arena?.active(),
  blocked:()=>modalOpen()||worlds?.loading()||!$('social-panel').hidden,
- move:(key,pressed)=>setMovement(key,pressed),jump(){freeView();movement.jump();requestDraw();},
+ move:(key,pressed)=>setMovement(key,pressed),jump(){freeView();keys.add('space');movement.jump();requestDraw();},jumpUp(){keys.delete('space');},
  crouch(held){if(held){parkour?.crouchPressed();freeView();movement.crouchHeld=true;movement.startSlide();}else movement.crouchHeld=false;if(state.ready)requestDraw();},
  view(){freeView();lastThirdToggle=0;setThird(!thirdOn);},isThird:()=>thirdOn,tap:interactWithScene,
  stop(){keys.clear();walkVelocity.set(0,0,0);movement.crouchHeld=false;drag=null;if(state.ready)requestDraw();},
@@ -749,8 +767,8 @@ const play=window.createPlayMenu?.({nav:document.querySelector('.view-nav'),afte
 window.breakThyRuleShowroom={scene:()=>scene,renderer:()=>renderer,combat:()=>combat,battle:()=>battle,fists:()=>fists,fight:key=>fists?.key(key,true),teleport(x,z,yaw=Math.PI){if(!state.ready)return;freeView();motion.reset();walkVelocity.set(0,0,0);targetPosition.set(x,1.75+groundHeight(groundPoint.set(x,0,z)),z);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,Math.cos(yaw)).multiplyScalar(5));camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();},go,inspect,showSide,focusResident,
  // camera placement for captures and checks: stand at (x,z) looking toward (lx,ly,lz)
  place(x,z,lx,lz,ly=1.75){if(expedition?.active())expedition.leave();motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,ly,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.lookAt(aim);requestDraw();},
-third:on=>{lastThirdToggle=0;return setThird(!!on);},bodyAnim:()=>({...bodyAnim,playing:['slideLoop','jumpLoop','dash','roll','climbUp','getUp','wave','cheer'].filter(id=>playerBody?.animPlaying?.(id))}),bodyClip:(id,o)=>playerBody?.anim?.(id,o),climbs:()=>garden.nightBuilt()?garden.district.climbs:[],worlds:()=>worlds,story:()=>window.edenStory,parkour:()=>pk(),// Run the movement logic n steps of dt with keys held (and Space pressed on the first step), without drawing.
+third:on=>{lastThirdToggle=0;return setThird(!!on);},bodyAnim:()=>({...bodyAnim,playing:['slideLoop','jumpLoop','dash','roll','climbUp','getUp','wave','cheer'].filter(id=>playerBody?.animPlaying?.(id))}),bodyClip:(id,o)=>playerBody?.anim?.(id,o),climbs:()=>garden.nightBuilt()?garden.district.climbs:[],horror:()=>horror,worlds:()=>worlds,story:()=>window.edenStory,parkour:()=>pk(),// Run the movement logic n steps of dt with keys held (and Space pressed on the first step), without drawing.
 // Test hook: drop from h metres above the floor at (x, z), looking at (lx, lz).
 dropAt:(x,z,h,lx,lz)=>{const floor=pk()?.floorAt(x,z)??groundHeight(new T.Vector3(x,0,z));walkVelocity.set(0,0,0);targetPosition.set(x,1.75+floor+h,z);targetAim.set(lx,targetPosition.y,lz);motion.set(h,0);camera.position.copy(targetPosition);aim.copy(targetAim);},sim:(n=30,dt=1/30,hold=[],jumpFirst=false,jumpAt=[],{holdC=false,crouchAt=[]}={})=>{for(const k of hold)keys.add(k);const hadC=movement.crouchHeld;if(holdC)movement.crouchHeld=true;for(let i=0;i<n;i++){if(crouchAt.includes(i))parkour?.crouchPressed();if((jumpFirst&&i===0)||jumpAt.includes(i))movement.jump();movement.updateJump(dt);if(movement.needsStep())movement.move(dt);updateFeel(dt);}for(const k of hold)keys.delete(k);if(holdC)movement.crouchHeld=hadC;return {pos:targetPosition.toArray().map(v=>+v.toFixed(2)),feet:+(targetPosition.y-1.75).toFixed(2),pk:parkour?.inspect()};},
-face:yaw=>{targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,-Math.cos(yaw)).multiplyScalar(5));requestDraw();},vault:(x,z)=>movement.tryVault(new T.Vector3(x,0,z)),touch:()=>edenMobile?.inspect().enabled?edenMobile.inspect():touch?.inspect?.()||null,sprintTo:v=>{const f=targetAim.clone().sub(targetPosition).setY(0).normalize();walkVelocity.copy(f).multiplyScalar(v||7);},getState:()=>({...state,secrets:secrets?.inspect(),extras:extras?.inspect(),ambience:ambience?.inspect(),aim:targetAim.toArray().map(v=>+v.toFixed(3)),third:+thirdK.toFixed(2),parkour:parkour?.inspect()||null,feel:{mode:movement.state(),weaponShown:combat?.weaponShown?.()??false,lift:+(parkour?.lift()||0).toFixed(2),...movement.counts(),vault:!!movement.vault,dive:!!movement.dive,prone:+movement.proneT.toFixed(2),crouch:+movement.crouchAmount.toFixed(2),slide:movement.slide?.kind||null,fovKick:+fovKick.toFixed(1),lookLocked},combat:combat?.inspect(),fists:fists?.inspect(),position:camera.position.toArray(),arena:arena?.inspect(),movement:{...motion.inspect(),vy:motion.inspect().velocity,velocity:walkVelocity.toArray().map(v=>+v.toFixed(3)),sway:sway.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.nightBuilt()?garden.district.inspect():null,library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),lighting:lighting.inspect(),post:post.inspect(),quality:quality.inspect(),residents:residents.inspect(),bail:playerBail?.inspect(),body:playerBody?.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
+face:yaw=>{targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,-Math.cos(yaw)).multiplyScalar(5));requestDraw();},vault:(x,z)=>movement.tryVault(new T.Vector3(x,0,z)),touch:()=>edenMobile?.inspect().enabled?edenMobile.inspect():touch?.inspect?.()||null,sprintTo:v=>{const f=targetAim.clone().sub(targetPosition).setY(0).normalize();walkVelocity.copy(f).multiplyScalar(v||7);},getState:()=>({...state,secrets:secrets?.inspect(),extras:extras?.inspect(),ambience:ambience?.inspect(),aim:targetAim.toArray().map(v=>+v.toFixed(3)),third:+thirdK.toFixed(2),parkour:parkour?.inspect()||null,feel:{mode:movement.state(),weaponShown:combat?.weaponShown?.()??false,lift:+(parkour?.lift()||0).toFixed(2),...movement.counts(),vault:!!movement.vault,dive:!!movement.dive,prone:+movement.proneT.toFixed(2),crouch:+movement.crouchAmount.toFixed(2),slide:movement.slide?.kind||null,fovKick:+fovKick.toFixed(1),lookLocked},combat:combat?.inspect(),fists:fists?.inspect(),position:camera.position.toArray(),arena:arena?.inspect(),movement:{...motion.inspect(),vy:motion.inspect().velocity,momentum:+(movement.momentum?.()||0).toFixed(3),chain:parkour?.chain?.()||0,velocity:walkVelocity.toArray().map(v=>+v.toFixed(3)),sway:sway.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.nightBuilt()?garden.district.inspect():null,library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),lighting:lighting.inspect(),post:post.inspect(),quality:quality.inspect(),residents:residents.inspect(),bail:playerBail?.inspect(),body:playerBody?.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};
 })();

@@ -246,3 +246,63 @@
 /* Grid children may not grow past the screen (the photo strip scrolls instead). */
 .lab-build>*,.lab-worn,.lab-steps,.step{min-width:0}
 .print-place{min-width:0}
+
+/* Mystery packages: a compact, inverted print sheet. */
+.package-panel{--package-white:#f5f5f0;--package-black:#080808;scroll-margin-top:90px}
+.package-sheet{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);border:1px solid var(--package-white);background:var(--package-black);color:var(--package-white);font-family:'Courier New',Courier,monospace;box-shadow:7px 7px 0 #080808,8px 8px 0 #777}
+.package-sheet>*{min-width:0;padding:30px}
+.package-menu{border-right:1px solid #777;background-image:radial-gradient(#454545 .55px,transparent .7px);background-size:4px 4px}
+.package-sheet .package-eyebrow{font:11px/1.4 'Courier New',Courier,monospace;letter-spacing:.1em;text-transform:uppercase;margin:0 0 12px;color:var(--package-white)}
+.package-sheet h2{font:700 clamp(30px,3.8vw,50px)/.98 'Courier New',Courier,monospace;letter-spacing:-.07em;color:var(--package-white);margin:0 0 18px}
+.package-sheet .package-intro{font:14px/1.5 'Courier New',Courier,monospace;max-width:36em;margin:0 0 26px;color:var(--package-white)}
+.package-sheet .field-label{color:var(--package-white);font-family:'Courier New',Courier,monospace;font-weight:400;letter-spacing:.06em}
+.package-options{display:grid;gap:0;margin-top:10px;border-top:1px solid #888}
+.package-options .choice{padding:13px 15px;min-height:70px;border:0;border-bottom:1px solid #888;background:#080808;gap:6px;transition:none}
+.package-options .choice-title{font:700 19px/1.15 'Courier New',Courier,monospace;color:var(--package-white);gap:18px}
+.package-options .choice-price{font:400 17px/1 'Courier New',Courier,monospace;color:inherit}
+.package-options .choice-sub{font:12px/1.25 'Courier New',Courier,monospace;color:inherit}
+.package-options .choice:hover{box-shadow:inset 3px 0 currentColor}
+.package-options .choice:has(input:checked){background:var(--package-white);color:var(--package-black);box-shadow:inset 4px 0 #888}
+.package-options .choice:has(input:checked) .choice-title{color:var(--package-black)}
+.package-sheet .choice:has(input:focus-visible),.package-sheet .size:has(input:focus-visible){outline:2px dashed var(--package-white);outline-offset:4px;z-index:1}
+.package-details{display:grid;gap:19px;align-content:start}
+.package-summary{display:grid;grid-template-columns:65px minmax(0,1fr);gap:12px 18px;border-bottom:1px dashed #888;padding-bottom:20px}
+.package-summary .package-eyebrow{margin-bottom:5px;letter-spacing:.04em}
+.package-summary h3{font:700 clamp(22px,2.2vw,30px)/1.1 'Courier New',Courier,monospace;letter-spacing:-.04em;margin:0;color:var(--package-white)}
+.package-sheet .package-price{font:22px/1.2 'Courier New',Courier,monospace;margin:7px 0 0;color:var(--package-white)}
+.package-art{display:grid;place-items:center}
+.package-art .thumb-mark{transform:none;color:var(--package-white)}
+.package-art .thumb-mark span{color:inherit;display:block;line-height:1}
+.package-art .thumb-mark b{display:none}
+.package-copy{grid-column:1/-1;font:14px/1.5 'Courier New',Courier,monospace;color:var(--package-white);margin:0}
+.package-sheet .sizes{gap:7px;margin-top:7px}
+.package-sheet .size span{min-width:45px;min-height:44px;padding:0 11px;background:#080808;border:1px solid #888;font:14px 'Courier New',Courier,monospace;color:var(--package-white);letter-spacing:0;transition:none}
+.package-sheet .size:hover span{border-color:var(--package-white)}
+.package-sheet .size:has(input:checked) span{background:var(--package-white);color:var(--package-black);border-color:var(--package-white)}
+.package-sheet textarea{box-sizing:border-box;display:block;width:100%;min-height:72px;resize:vertical;border:1px solid #888;border-radius:0;background:#080808;color:var(--package-white);padding:10px 12px;font:14px/1.4 'Courier New',Courier,monospace}
+.package-sheet textarea::placeholder{color:#aaa;opacity:1}
+.package-sheet textarea:focus-visible,.package-sheet button:focus-visible{outline:2px dashed var(--package-white);outline-offset:4px}
+.package-sheet .package-help{font:12px/1.45 'Courier New',Courier,monospace;margin:-10px 0 0;color:#bbb}
+.package-sheet .lab-error{font:14px/1.4 'Courier New',Courier,monospace;color:var(--package-white);margin:0}
+.package-sheet .lab-error:empty{display:none}
+.package-actions{display:grid;gap:8px}
+.package-sheet .package-actions .solid{width:100%;min-height:50px;padding:12px 14px;background:var(--package-white);color:var(--package-black);border:1px solid var(--package-white);border-radius:0;font:700 15px/1.3 'Courier New',Courier,monospace;letter-spacing:0;text-transform:none;white-space:normal}
+.package-sheet .package-actions .solid:disabled{background:#222;color:#aaa;border-color:#666;opacity:1;cursor:not-allowed}
+.package-sheet #package-stock{font:12px/1.4 'Courier New',Courier,monospace;color:#ccc;margin:0}
+@media(max-width:760px){.package-sheet{grid-template-columns:1fr;box-shadow:4px 4px 0 #080808,5px 5px 0 #777}.package-sheet>*{padding:22px}.package-menu{border-right:0;border-bottom:1px solid #777}.package-sheet h2{font-size:36px}.package-sheet .package-intro{margin-bottom:20px}.package-options .choice{min-height:65px;padding:12px}.package-options .choice-title{font-size:18px}.package-details{gap:20px}}
+/* The injected Cave palette must not recolor this black-and-white print sheet. */
+#packages .package-options .choice{background:#080808!important;color:#f5f5f0!important;border-color:#888!important}
+#packages .package-options .choice:has(input:checked){background:#f5f5f0!important;color:#080808!important;border-color:#888!important;box-shadow:inset 4px 0 #888!important}
+#packages .package-options .choice-title,#packages .package-options .choice-price,#packages .package-options .choice-sub{color:inherit!important}
+#packages .package-eyebrow,#packages .package-price,#packages .field-label,#packages .package-summary h3{color:#f5f5f0!important}
+#packages .size span{background:#080808!important;color:#f5f5f0!important;border-color:#888!important}
+#packages .size:has(input:checked) span{background:#f5f5f0!important;color:#080808!important;border-color:#f5f5f0!important}
+#packages .choice:has(input:focus-visible),#packages .size:has(input:focus-visible){outline:2px dashed #f5f5f0!important;outline-offset:4px!important}
+#packages .package-art .thumb-mark,#packages .package-art .thumb-mark span{background:transparent!important;color:#f5f5f0!important;border:0!important;box-shadow:none!important}
+#packages .package-art .thumb-mark b{display:none!important}
+#packages .package-actions .solid{background:#f5f5f0!important;color:#080808!important;border-color:#f5f5f0!important}
+#packages .package-actions .solid:disabled{background:#222!important;color:#aaa!important;border-color:#666!important}
+#packages .package-policy{border-top:1px dashed #888;padding-top:12px;font:12px/1.5 'Courier New',Courier,monospace;color:#f5f5f0!important}
+#packages .package-policy summary{cursor:pointer;color:#f5f5f0!important}
+#packages .package-policy summary:focus-visible{outline:2px dashed #f5f5f0;outline-offset:4px}
+#packages .package-policy p{margin:10px 0 0;color:inherit!important}

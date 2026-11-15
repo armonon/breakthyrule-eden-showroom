@@ -1,4 +1,3 @@
-'use strict';
 window.showroomCollection=[
   {
     "id": "01",
@@ -7,7 +6,7 @@ window.showroomCollection=[
     "chapter": "IV",
     "price": "$78",
     "tagline": "Front: the theatre. Back: the witnesses.",
-    "description": "A two-sided airbrush bootleg. The front: three masked soldiers in faceless helmets, a blonde witness peering in from the margin, and the word WAR in pixelated red rendered like a redacted dispatch. The back: two winged figures, scattered watching eyes, the staring face of the unknown — printed edge-to-edge. Heavyweight 6oz cotton, raw white, hand-registered. Every print runs slightly different; the variance is the signature.",
+    "description": "A two-sided airbrush bootleg. The front: three masked soldiers in faceless helmets, a blonde witness peering in from the margin, and the word WAR in pixelated red rendered like a redacted dispatch. The back: two winged figures, scattered watching eyes, the staring face of the unknown \u2014 printed edge-to-edge. Heavyweight 6oz cotton, raw white, hand-registered. Every print runs slightly different; the variance is the signature.",
     "images": [
       "/products/war-tee-front.webp",
       "/products/war-tee-back.webp"
@@ -17,15 +16,28 @@ window.showroomCollection=[
       "BACK"
     ],
     "imageAlt": "WAR / Witnesses Tee original product photograph",
-    "model": "/models/war-witnesses-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/war-witnesses-tee-tailored-v6.glb",
-    "previousModel": "/models/war-witnesses-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/war-witnesses-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/war-witnesses-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/war-witnesses-tee.glb?v=1",
+    "previousModel": "/models/war-witnesses-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/war-witnesses-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "war-tee-front.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      },
+      {
+        "filename": "war-tee-back.png",
+        "kind": "original-product-photo-reference",
+        "side": "back"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "02",
@@ -34,7 +46,7 @@ window.showroomCollection=[
     "chapter": "IV",
     "price": "$64",
     "tagline": "He has a great plan. Wear the proof.",
-    "description": "A devotional bootleg. Heavyweight 6oz cotton in raw white, hand-printed with an airbrushed dove-and-hearts composition and the gospel pronouncement set in inverted serif blue. Each print is registered manually — small variation is part of the casting, not a defect. Cut boxy through the chest, regular through the body.",
+    "description": "A devotional bootleg. Heavyweight 6oz cotton in raw white, hand-printed with an airbrushed dove-and-hearts composition and the gospel pronouncement set in inverted serif blue. Each print is registered manually \u2014 small variation is part of the casting, not a defect. Cut boxy through the chest, regular through the body.",
     "images": [
       "/products/god-loves-you-tee.webp"
     ],
@@ -43,15 +55,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "God Loves You Tee original product photograph",
-    "model": "/models/god-loves-you-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/god-loves-you-tee-tailored-v6.glb",
-    "previousModel": "/models/god-loves-you-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/god-loves-you-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/god-loves-you-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/god-loves-you-tee.glb?v=1",
+    "previousModel": "/models/god-loves-you-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/god-loves-you-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "god-loves-you-tee.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "03",
@@ -60,7 +80,7 @@ window.showroomCollection=[
     "chapter": "IV",
     "price": "$64",
     "tagline": "Tune in. The whole world is already listening.",
-    "description": "A frequency garment. Heavyweight 6oz cotton in raw white, printed with two figures in headphones and a trailing staff of music notes — airbrushed, washed, and softened. The text above reads as broadcast, not slogan. Regular through the body with a slightly cropped torso.",
+    "description": "A frequency garment. Heavyweight 6oz cotton in raw white, printed with two figures in headphones and a trailing staff of music notes \u2014 airbrushed, washed, and softened. The text above reads as broadcast, not slogan. Regular through the body with a slightly cropped torso.",
     "images": [
       "/products/dance-to-your-vibration-tee.webp"
     ],
@@ -69,15 +89,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "Dance To Your Vibration Tee original product photograph",
-    "model": "/models/dance-to-your-vibration-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/dance-to-your-vibration-tee-tailored-v6.glb",
-    "previousModel": "/models/dance-to-your-vibration-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/dance-to-your-vibration-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/dance-to-your-vibration-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/dance-to-your-vibration-tee.glb?v=1",
+    "previousModel": "/models/dance-to-your-vibration-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/dance-to-your-vibration-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "dance-to-your-vibration-tee.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "04",
@@ -85,24 +113,37 @@ window.showroomCollection=[
     "name": "All-Seeing Tee",
     "chapter": "I",
     "price": "$68",
-    "tagline": "The eye that watches the watchers.",
-    "description": "A heavyweight 7oz cotton tee in obsidian black. The Eye of Providence is rendered in tone-on-tone matte gold embroidery at the chest, with a hand-drawn sigil printed across the back panel. Garment-dyed, pre-washed, made to be worn until it remembers you.",
+    "tagline": "Archive artwork concept / All-Seeing Tee",
+    "description": "An archive-artwork concept on the updated shirt model. Featuring HOUSE OF HORUS, EYE SEE YOU. Explore the placement in 3D.",
     "images": [
-      "/model-references/all-seeing-tee.png"
+      "/graphic-models/posters/all-seeing-tee.webp"
     ],
     "photoViews": [
-      "OUTLINE"
+      "3D CONCEPT"
     ],
-    "imageAlt": "All-Seeing Tee unverified construction outline",
-    "model": "/models/all-seeing-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/all-seeing-tee-tailored-v6.glb",
-    "previousModel": "/models/all-seeing-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/all-seeing-tee-sewn-v5.glb",
+    "imageAlt": "All-Seeing Tee archive artwork concept in 3D",
+    "model": "/graphic-models/models/all-seeing-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/all-seeing-tee.glb?v=1",
+    "previousModel": "/models/all-seeing-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/all-seeing-tee-tailored-v6.glb",
     "estimated": true,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-unverified",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified front and back remain plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-concept",
+    "modelNote": "Archive concept: HOUSE OF HORUS, EYE SEE YOU.",
+    "artworkSources": [
+      {
+        "filename": "HOUSE OF HORUS.png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      },
+      {
+        "filename": "EYE SEE YOU.png",
+        "kind": "original-archive-artwork",
+        "side": "back"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "05",
@@ -110,24 +151,32 @@ window.showroomCollection=[
     "name": "Hermetic Hoodie",
     "chapter": "I",
     "price": "$158",
-    "tagline": "As above, so below.",
-    "description": "A boxy, 14oz brushed-fleece hoodie. The full hermetic axiom is printed in a halo across the back, encircling a hand-rendered Metatron's Cube. Inverted seams, dropped shoulders, kangaroo pocket lined with silk twill.",
+    "tagline": "Archive artwork concept / Hermetic Hoodie",
+    "description": "An archive-artwork concept on the updated hoodie model. Featuring DIAMOND BODY. Explore the placement in 3D.",
     "images": [
-      "/model-references/hermetic-hoodie.png"
+      "/graphic-models/posters/hermetic-hoodie.webp"
     ],
     "photoViews": [
-      "OUTLINE"
+      "3D CONCEPT"
     ],
-    "imageAlt": "Hermetic Hoodie unverified construction outline",
-    "model": "/models/hermetic-hoodie-tailored-v6.glb",
-    "rackModel": "/rack-models/hermetic-hoodie-tailored-v6.glb",
-    "previousModel": "/models/hermetic-hoodie.glb",
-    "previousRackModel": "/rack-models/hermetic-hoodie.glb",
+    "imageAlt": "Hermetic Hoodie archive artwork concept in 3D",
+    "model": "/graphic-models/models/hermetic-hoodie.glb?v=1",
+    "rackModel": "/graphic-models/models/hermetic-hoodie.glb?v=1",
+    "previousModel": "/models/hermetic-hoodie-tailored-v6.glb",
+    "previousRackModel": "/rack-models/hermetic-hoodie-tailored-v6.glb",
     "estimated": true,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-unverified",
-    "modelNote": "Ghost Studio tailored collection. Open cloth-solved hood, drawcords, ribbed cuffs and hem. Fit and hidden surfaces estimated, not a measured scan. Unverified front and back remain plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-concept",
+    "modelNote": "Archive concept: DIAMOND BODY.",
+    "artworkSources": [
+      {
+        "filename": "DIAMOND BODY.png",
+        "kind": "original-archive-artwork",
+        "side": "back"
+      }
+    ],
+    "defaultView": "back"
   },
   {
     "id": "06",
@@ -135,24 +184,32 @@ window.showroomCollection=[
     "name": "Veil Crewneck",
     "chapter": "I",
     "price": "$142",
-    "tagline": "What the veil hides, the veil also points to.",
-    "description": "A bone-colored heavyweight crewneck in raw cotton loopback. The wordmark \"BREAKTHYRULE\" is set in inverted Roman serif at the chest, with a small Vesica Piscis emblem on the left sleeve.",
+    "tagline": "Archive artwork concept / Veil Crewneck",
+    "description": "An archive-artwork concept on the updated sweatshirt model. Featuring complete-logo-transparent. Explore the placement in 3D.",
     "images": [
-      "/model-references/veil-crewneck.png"
+      "/graphic-models/posters/veil-crewneck.webp"
     ],
     "photoViews": [
-      "OUTLINE"
+      "3D CONCEPT"
     ],
-    "imageAlt": "Veil Crewneck unverified construction outline",
-    "model": "/models/veil-crewneck-tailored-v6.glb",
-    "rackModel": "/rack-models/veil-crewneck-tailored-v6.glb",
-    "previousModel": "/models/veil-crewneck.glb",
-    "previousRackModel": "/rack-models/veil-crewneck.glb",
+    "imageAlt": "Veil Crewneck archive artwork concept in 3D",
+    "model": "/graphic-models/models/veil-crewneck.glb?v=1",
+    "rackModel": "/graphic-models/models/veil-crewneck.glb?v=1",
+    "previousModel": "/models/veil-crewneck-tailored-v6.glb",
+    "previousRackModel": "/rack-models/veil-crewneck-tailored-v6.glb",
     "estimated": true,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-unverified",
-    "modelNote": "Ghost Studio tailored collection. Relaxed long sleeves, ribbed cuffs and waistband. Fit and hidden surfaces estimated, not a measured scan. Unverified front and back remain plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-concept",
+    "modelNote": "Archive concept: complete-logo-transparent.",
+    "artworkSources": [
+      {
+        "filename": "complete-logo-transparent.png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "07",
@@ -160,49 +217,145 @@ window.showroomCollection=[
     "name": "Initiate's Coach Jacket",
     "chapter": "II",
     "price": "$268",
-    "tagline": "Cut for those who arrive at the right gate.",
-    "description": "A relaxed-fit coach jacket in matte black water-resistant nylon. Embroidered all-seeing eye over the left chest; full doctrine excerpt printed along the inner facing — only the wearer reads it.",
+    "tagline": "Archive artwork concept / Initiate's Coach Jacket",
+    "description": "An archive-artwork concept on the updated jacket model. Featuring HOUSE OF HORUS. Explore the placement in 3D.",
     "images": [
-      "/model-references/initiates-coach-jacket.png"
+      "/graphic-models/posters/initiates-coach-jacket.webp"
     ],
     "photoViews": [
-      "OUTLINE"
+      "3D CONCEPT"
     ],
-    "imageAlt": "Initiate's Coach Jacket unverified construction outline",
-    "model": "/models/initiates-coach-jacket-tailored-v6.glb",
-    "rackModel": "/rack-models/initiates-coach-jacket-tailored-v6.glb",
-    "previousModel": "/models/initiates-coach-jacket.glb",
-    "previousRackModel": "/rack-models/initiates-coach-jacket.glb",
+    "imageAlt": "Initiate's Coach Jacket archive artwork concept in 3D",
+    "model": "/graphic-models/models/initiates-coach-jacket.glb?v=1",
+    "rackModel": "/graphic-models/models/initiates-coach-jacket.glb?v=1",
+    "previousModel": "/models/initiates-coach-jacket-tailored-v6.glb",
+    "previousRackModel": "/rack-models/initiates-coach-jacket-tailored-v6.glb",
     "estimated": true,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-unverified",
-    "modelNote": "Ghost Studio tailored collection. Folded collar, snap placket and relaxed sleeves; construction details estimated. Fit and hidden surfaces estimated, not a measured scan. Unverified front and back remain plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-concept",
+    "modelNote": "Archive concept: HOUSE OF HORUS.",
+    "artworkSources": [
+      {
+        "filename": "HOUSE OF HORUS.png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "08",
     "slug": "sacrificial-beanie",
-    "name": "Sacrificial Beanie",
+    "name": "Centaur Skully",
     "chapter": "IV",
     "price": "$78",
-    "tagline": "A small thing, given in exchange.",
-    "description": "A double-layered ribbed merino beanie in oxblood. Embroidered with a single small cross of unknowing at the front. Made in a closed batch of 120; when this chapter closes it does not reopen.",
+    "tagline": "The centaur, stitched in red.",
+    "description": "A ribbed skully with a folded cuff finished with red centaur embroidery. Available in black and white.",
     "images": [
-      "/model-references/sacrificial-beanie.png"
+      "/accessory-collection/posters/skully-black.png?v=quality-3"
     ],
     "photoViews": [
-      "OUTLINE"
+      "3D PREVIEW"
     ],
-    "imageAlt": "Sacrificial Beanie unverified construction outline",
-    "model": "/models/sacrificial-beanie-tailored-v6.glb",
-    "rackModel": "/rack-models/sacrificial-beanie-tailored-v6.glb",
-    "previousModel": "/models/sacrificial-beanie.glb",
-    "previousRackModel": "/rack-models/sacrificial-beanie.glb",
+    "imageAlt": "Black ribbed skully with raised red centaur embroidery",
+    "model": "/accessory-collection/models/skully-black.glb?v=quality-3",
+    "rackModel": "/accessory-collection/models/skully-black.glb?v=quality-3",
+    "previousModel": "/models/sacrificial-beanie-tailored-v6.glb",
+    "previousRackModel": "/rack-models/sacrificial-beanie-tailored-v6.glb",
     "estimated": true,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-unverified",
-    "modelNote": "Ghost Studio tailored collection. Hollow knitted crown, folded cuff and crown seams; construction estimated. Fit and hidden surfaces estimated, not a measured scan. Unverified front and back remain plain."
+    "qualityRevision": "hat-replacement-1",
+    "modelStatus": "accessory-model",
+    "modelNote": "Red centaur embroidery. Black and white options in the accessories collection.",
+    "artworkSources": [
+      {
+        "filename": "centaur_.png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front",
+    "accessoryId": "accessory-skully-black",
+    "accessoryPreview": {
+      "slug": "skully-black",
+      "name": "Black Skully",
+      "family": "skully",
+      "color": "#131417",
+      "model": "/accessory-collection/models/skully-black.glb?v=quality-3",
+      "poster": "/accessory-collection/posters/skully-black.png?v=quality-3",
+      "dimensionsMm": [
+        183.5,
+        206.7,
+        161.2
+      ],
+      "bytes": 4822252,
+      "status": "visualization concept",
+      "editableMaster": "masters/skully-black.blend",
+      "webMaterialFinish": "matte fabric",
+      "id": "accessory-skully-black",
+      "href": "/product?item=accessory-skully-black",
+      "tagline": "The centaur, stitched in red.",
+      "description": "A ribbed skully with a folded cuff finished with red centaur embroidery. Available in black and white.",
+      "embroiderySource": "centaur_.png",
+      "embroideryColor": "#d7192b",
+      "embroideryHeightMm": 60.0,
+      "raisedThreadGeometry": true,
+      "stitchSegments": 1918,
+      "triangles": 215024,
+      "qualityRevision": 3
+    }
+  },
+  {
+    "id": "H1",
+    "slug": "accessory-trucker-cobalt",
+    "name": "Custom Trucker / Baseball Hat",
+    "chapter": "A",
+    "price": "Customize",
+    "tagline": "Your colors. Your graphics.",
+    "description": "Choose a mesh trucker or solid six-panel baseball cap. Mix your front, brim and side colors, then arrange Sticker Lab artwork on the front.",
+    "images": [
+      "/accessory-collection/posters/mesh-trucker-v2.png"
+    ],
+    "imageAlt": "Custom mesh trucker hat with changeable colors and graphics",
+    "photoViews": [
+      "3D PREVIEW"
+    ],
+    "model": "/accessory-collection/models/mesh-trucker-v2.glb",
+    "rackModel": "/accessory-collection/models/mesh-trucker-v2.glb",
+    "accessoryId": "accessory-trucker-cobalt",
+    "accessoryPreview": {
+      "slug": "trucker-cobalt",
+      "name": "Cobalt / White Trucker",
+      "family": "trucker",
+      "frontColor": "#f7f4e9",
+      "brimColor": "#2452c6",
+      "meshColor": "#f1f0e9",
+      "meshIsGeometry": false,
+      "model": "/accessory-collection/models/mesh-trucker-v2.glb",
+      "poster": "/accessory-collection/posters/mesh-trucker-v2.png",
+      "dimensionsMm": [
+        200,
+        300,
+        135
+      ],
+      "bytes": 2967912,
+      "status": "visualization concept",
+      "webMaterialFinish": "matte fabric",
+      "id": "accessory-trucker-cobalt",
+      "href": "/product?item=accessory-trucker-cobalt",
+      "tagline": "Your colors. Your graphics.",
+      "description": "Choose a mesh trucker or solid six-panel baseball cap. Mix your front, brim and side colors, then arrange Sticker Lab artwork on the front.",
+      "customizationEnabled": true,
+      "defaultGraphic": "centaur",
+      "triangles": 66001,
+      "qualityRevision": 4,
+      "hatStyle": "trucker",
+      "meshFinish": "Open alpha-tested mesh"
+    },
+    "modelStatus": "accessory-model",
+    "qualityRevision": "hat-replacement-1",
+    "defaultView": "front"
   },
   {
     "id": "09",
@@ -211,7 +364,7 @@ window.showroomCollection=[
     "chapter": "I",
     "price": "$64",
     "tagline": "The mark that splits the world in two.",
-    "description": "Raw white cotton tee, back-panel airbrushed with an ornate Gothic cross in deep red — filigree vines spreading from each arm, edge-to-edge. The reverse is blank. Heavyweight 6oz cotton, regular fit. Every print registers slightly different; the variance is the signature.",
+    "description": "Raw white cotton tee, back-panel airbrushed with an ornate Gothic cross in deep red \u2014 filigree vines spreading from each arm, edge-to-edge. The reverse is blank. Heavyweight 6oz cotton, regular fit. Every print registers slightly different; the variance is the signature.",
     "images": [
       "/products/000-6B49F5B5-3F27-4F32-B604-01645A7AE0CD.webp"
     ],
@@ -220,24 +373,32 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "Cross Tee original product photograph",
-    "model": "/models/cross-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/cross-tee-tailored-v6.glb",
-    "previousModel": "/models/cross-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/cross-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/cross-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/cross-tee.glb?v=1",
+    "previousModel": "/models/cross-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/cross-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified front remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "nu cross.png",
+        "kind": "original-archive-artwork",
+        "side": "back"
+      }
+    ],
+    "defaultView": "back"
   },
   {
     "id": "10",
     "slug": "jesus-star-tee",
-    "name": "Jesus★ Tee",
+    "name": "Jesus\u2605 Tee",
     "chapter": "I",
     "price": "$64",
     "tagline": "The name above all names, certified.",
-    "description": "Raw white cotton, worn and softened. The name is set in red cursive across the chest with a heavy red star — somewhere between a bandana logo and a roadside shrine. Distressed register, deliberate. Regular fit, 6oz cotton.",
+    "description": "Raw white cotton, worn and softened. The name is set in red cursive across the chest with a heavy red star \u2014 somewhere between a bandana logo and a roadside shrine. Distressed register, deliberate. Regular fit, 6oz cotton.",
     "images": [
       "/products/002-8EA2387E-42C7-4655-8F1F-EC4335658CEE.webp"
     ],
@@ -245,16 +406,24 @@ window.showroomCollection=[
       "PHOTO",
       "PHOTO 2"
     ],
-    "imageAlt": "Jesus★ Tee original product photograph",
-    "model": "/models/jesus-star-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/jesus-star-tee-tailored-v6.glb",
-    "previousModel": "/models/jesus-star-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/jesus-star-tee-sewn-v5.glb",
+    "imageAlt": "Jesus\u2605 Tee original product photograph",
+    "model": "/graphic-models/models/jesus-star-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/jesus-star-tee.glb?v=1",
+    "previousModel": "/models/jesus-star-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/jesus-star-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "jesus.png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "11",
@@ -272,15 +441,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "Blackmarket Baby Tee original product photograph",
-    "model": "/models/blackmarket-baby-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/blackmarket-baby-tee-tailored-v6.glb",
-    "previousModel": "/models/blackmarket-baby-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/blackmarket-baby-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/blackmarket-baby-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/blackmarket-baby-tee.glb?v=1",
+    "previousModel": "/models/blackmarket-baby-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/blackmarket-baby-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "black markey baby.png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "12",
@@ -289,7 +466,7 @@ window.showroomCollection=[
     "chapter": "II",
     "price": "$68",
     "tagline": "The ones who were there before the agreement.",
-    "description": "White ribbed cotton maxi tank, airbrushed with two figures — one burning, one winged — locked together in an embrace. \"#family\" in script below. Worn long, worn soft. Ribbed cotton, raw hem.",
+    "description": "White ribbed cotton maxi tank, airbrushed with two figures \u2014 one burning, one winged \u2014 locked together in an embrace. \"#family\" in script below. Worn long, worn soft. Ribbed cotton, raw hem.",
     "images": [
       "/products/005-fm.webp"
     ],
@@ -298,15 +475,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "#Family Maxi Tank original product photograph",
-    "model": "/models/family-tank-tailored-v6.glb",
-    "rackModel": "/rack-models/family-tank-tailored-v6.glb",
-    "previousModel": "/models/family-tank.glb",
-    "previousRackModel": "/rack-models/family-tank.glb",
+    "model": "/graphic-models/models/family-tank.glb?v=1",
+    "rackModel": "/graphic-models/models/family-tank.glb?v=1",
+    "previousModel": "/models/family-tank-tailored-v6.glb",
+    "previousRackModel": "/rack-models/family-tank-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Long ribbed knit, open armholes, scoop neckline and bound edges. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "005-fm.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "13",
@@ -315,7 +500,7 @@ window.showroomCollection=[
     "chapter": "II",
     "price": "$88",
     "tagline": "The oldest strategy, printed fresh.",
-    "description": "Baby blue crewneck sweatshirt with a full-front DTG of a Roman battle scene — warriors, tigers, eagles, and chaos — set above the words \"Divide & Conquer\" in black script. Classic heavyweight fleece, pre-washed.",
+    "description": "Baby blue crewneck sweatshirt with a full-front DTG of a Roman battle scene \u2014 warriors, tigers, eagles, and chaos \u2014 set above the words \"Divide & Conquer\" in black script. Classic heavyweight fleece, pre-washed.",
     "images": [
       "/products/006-IMG_0063.webp"
     ],
@@ -324,15 +509,28 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "Divide & Conquer Crewneck original product photograph",
-    "model": "/models/divide-conquer-crewneck-tailored-v6.glb",
-    "rackModel": "/rack-models/divide-conquer-crewneck-tailored-v6.glb",
-    "previousModel": "/models/divide-conquer-crewneck.glb",
-    "previousRackModel": "/rack-models/divide-conquer-crewneck.glb",
+    "model": "/graphic-models/models/divide-conquer-crewneck.glb?v=1",
+    "rackModel": "/graphic-models/models/divide-conquer-crewneck.glb?v=1",
+    "previousModel": "/models/divide-conquer-crewneck-tailored-v6.glb",
+    "previousRackModel": "/rack-models/divide-conquer-crewneck-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Relaxed long sleeves, ribbed cuffs and waistband. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "back boys_.png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      },
+      {
+        "filename": "divide.png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "14",
@@ -350,15 +548,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "Illuminati Crewneck original product photograph",
-    "model": "/models/illuminati-crewneck-tailored-v6.glb",
-    "rackModel": "/rack-models/illuminati-crewneck-tailored-v6.glb",
-    "previousModel": "/models/illuminati-crewneck.glb",
-    "previousRackModel": "/rack-models/illuminati-crewneck.glb",
+    "model": "/graphic-models/models/illuminati-crewneck.glb?v=1",
+    "rackModel": "/graphic-models/models/illuminati-crewneck.glb?v=1",
+    "previousModel": "/models/illuminati-crewneck-tailored-v6.glb",
+    "previousRackModel": "/rack-models/illuminati-crewneck-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Relaxed long sleeves, ribbed cuffs and waistband. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "illuminti.png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "15",
@@ -376,15 +582,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "All-Seeing Crewneck original product photograph",
-    "model": "/models/green-eye-crewneck-tailored-v6.glb",
-    "rackModel": "/rack-models/green-eye-crewneck-tailored-v6.glb",
-    "previousModel": "/models/green-eye-crewneck.glb",
-    "previousRackModel": "/rack-models/green-eye-crewneck.glb",
+    "model": "/graphic-models/models/green-eye-crewneck.glb?v=1",
+    "rackModel": "/graphic-models/models/green-eye-crewneck.glb?v=1",
+    "previousModel": "/models/green-eye-crewneck-tailored-v6.glb",
+    "previousRackModel": "/rack-models/green-eye-crewneck-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Relaxed long sleeves, ribbed cuffs and waistband. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "TAYLOR NP BORDER.png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "16",
@@ -393,7 +607,7 @@ window.showroomCollection=[
     "chapter": "III",
     "price": "$78",
     "tagline": "Front: the masters. Back: the mysteries.",
-    "description": "A two-sided transmission. Front: an airbrushed sunburst with a mounted figure, layered against a chart of ascended masters. Back: \"serrania angelica\" — a dense collage of Kabbalistic diagrams, figures, and verse. Raw white, 6oz cotton, boxy fit.",
+    "description": "A two-sided transmission. Front: an airbrushed sunburst with a mounted figure, layered against a chart of ascended masters. Back: \"serrania angelica\" \u2014 a dense collage of Kabbalistic diagrams, figures, and verse. Raw white, 6oz cotton, boxy fit.",
     "images": [
       "/products/018-IMG_0367.webp",
       "/products/019-IMG_0368.webp"
@@ -403,15 +617,28 @@ window.showroomCollection=[
       "BACK"
     ],
     "imageAlt": "Sacred Masters Tee original product photograph",
-    "model": "/models/sacred-masters-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/sacred-masters-tee-tailored-v6.glb",
-    "previousModel": "/models/sacred-masters-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/sacred-masters-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/sacred-masters-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/sacred-masters-tee.glb?v=1",
+    "previousModel": "/models/sacred-masters-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/sacred-masters-tee-tailored-v6.glb",
     "estimated": true,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-unverified",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified front and back remain plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "018-IMG_0367.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      },
+      {
+        "filename": "019-IMG_0368.png",
+        "kind": "original-product-photo-reference",
+        "side": "back"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "17",
@@ -430,15 +657,28 @@ window.showroomCollection=[
       "BACK"
     ],
     "imageAlt": "Project Star Gate Tee original product photograph",
-    "model": "/models/project-star-gate-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/project-star-gate-tee-tailored-v6.glb",
-    "previousModel": "/models/project-star-gate-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/project-star-gate-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/project-star-gate-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/project-star-gate-tee.glb?v=1",
+    "previousModel": "/models/project-star-gate-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/project-star-gate-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "project project.png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      },
+      {
+        "filename": "021-IMG_0370.png",
+        "kind": "original-product-photo-reference",
+        "side": "back"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "18",
@@ -447,7 +687,7 @@ window.showroomCollection=[
     "chapter": "I",
     "price": "$64",
     "tagline": "The first transmission.",
-    "description": "Raw white cotton, printed with a detailed cave-painting hunting sequence across the chest — labeled stages annotated in cursive script: sighting, cornering, the kill, the return. The oldest story, re-rendered. Regular fit, 6oz cotton.",
+    "description": "Raw white cotton, printed with a detailed cave-painting hunting sequence across the chest \u2014 labeled stages annotated in cursive script: sighting, cornering, the kill, the return. The oldest story, re-rendered. Regular fit, 6oz cotton.",
     "images": [
       "/products/023-IMG_0620.webp"
     ],
@@ -456,15 +696,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "Cave Painting Tee original product photograph",
-    "model": "/models/cave-painting-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/cave-painting-tee-tailored-v6.glb",
-    "previousModel": "/models/cave-painting-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/cave-painting-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/cave-painting-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/cave-painting-tee.glb?v=1",
+    "previousModel": "/models/cave-painting-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/cave-painting-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "023-IMG_0620.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "19",
@@ -473,7 +721,7 @@ window.showroomCollection=[
     "chapter": "III",
     "price": "$78",
     "tagline": "The name that cannot be spoken, worn.",
-    "description": "White boxy 3/4-sleeve tee, front-printed with a Star of David containing Adonai figures and flanked by Kabbalistic seals. The back carries the German esoteric chakra diagram — \"Der gantze Irdische Natürliche Finstere Mensch\" — in full-color print. Oversized cut.",
+    "description": "White boxy 3/4-sleeve tee, front-printed with a Star of David containing Adonai figures and flanked by Kabbalistic seals. The back carries the German esoteric chakra diagram \u2014 \"Der gantze Irdische Nat\u00fcrliche Finstere Mensch\" \u2014 in full-color print. Oversized cut.",
     "images": [
       "/products/027-IMG_0624.webp",
       "/products/026-IMG_0623.webp"
@@ -483,15 +731,28 @@ window.showroomCollection=[
       "BACK"
     ],
     "imageAlt": "Adonai 3/4 Sleeve original product photograph",
-    "model": "/models/adonai-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/adonai-tee-tailored-v6.glb",
-    "previousModel": "/models/adonai-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/adonai-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/adonai-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/adonai-tee.glb?v=1",
+    "previousModel": "/models/adonai-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/adonai-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "027-IMG_0624.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      },
+      {
+        "filename": "026-IMG_0623.png",
+        "kind": "original-product-photo-reference",
+        "side": "back"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "20",
@@ -500,7 +761,7 @@ window.showroomCollection=[
     "chapter": "IV",
     "price": "$68",
     "tagline": "Last seen: at large.",
-    "description": "Raw white cotton baby tee, front-printed with a WANTED poster composition — Jesus of Nazareth, surrealist collage, apples with eyes, and your name half-visible underneath. A bounty for the person most worth knowing. Boxy crop, 6oz cotton.",
+    "description": "Raw white cotton baby tee, front-printed with a WANTED poster composition \u2014 Jesus of Nazareth, surrealist collage, apples with eyes, and your name half-visible underneath. A bounty for the person most worth knowing. Boxy crop, 6oz cotton.",
     "images": [
       "/products/035-IMG_0919.webp"
     ],
@@ -509,15 +770,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "WANTED: Jesus Tee original product photograph",
-    "model": "/models/wanted-jesus-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/wanted-jesus-tee-tailored-v6.glb",
-    "previousModel": "/models/wanted-jesus-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/wanted-jesus-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/wanted-jesus-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/wanted-jesus-tee.glb?v=1",
+    "previousModel": "/models/wanted-jesus-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/wanted-jesus-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "035-IMG_0919.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "21",
@@ -526,7 +795,7 @@ window.showroomCollection=[
     "chapter": "IV",
     "price": "$78",
     "tagline": "Front: the fairy. Back: the machine.",
-    "description": "A two-sided garment. Front: \"pari\" — a Persian fairy — flanked by two winged demonic figures in red and black. Back: an all-over text collage of American signifiers, cultural debris, and contradiction — Lucifer, AMER-I-CAN, YE-24, and the rest. White, regular fit, 6oz cotton.",
+    "description": "A two-sided garment. Front: \"pari\" \u2014 a Persian fairy \u2014 flanked by two winged demonic figures in red and black. Back: an all-over text collage of American signifiers, cultural debris, and contradiction \u2014 Lucifer, AMER-I-CAN, YE-24, and the rest. White, regular fit, 6oz cotton.",
     "images": [
       "/products/043-IMG_1466.webp",
       "/products/042-IMG_1465.webp"
@@ -536,15 +805,28 @@ window.showroomCollection=[
       "BACK"
     ],
     "imageAlt": "Pari Tee original product photograph",
-    "model": "/models/pari-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/pari-tee-tailored-v6.glb",
-    "previousModel": "/models/pari-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/pari-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/pari-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/pari-tee.glb?v=1",
+    "previousModel": "/models/pari-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/pari-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "pari.png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      },
+      {
+        "filename": "White Board.png",
+        "kind": "original-archive-artwork",
+        "side": "back"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "22",
@@ -553,7 +835,7 @@ window.showroomCollection=[
     "chapter": "II",
     "price": "$68",
     "tagline": "Prayer worn on the body.",
-    "description": "White ribbed cotton maxi tank with a red rosary shaped into a heart at center chest. The beads are counted and labeled — each decade of the prayer printed in script inside the loop. Worn long, worn soft. Ribbed cotton, raw hem.",
+    "description": "White ribbed cotton maxi tank with a red rosary shaped into a heart at center chest. The beads are counted and labeled \u2014 each decade of the prayer printed in script inside the loop. Worn long, worn soft. Ribbed cotton, raw hem.",
     "images": [
       "/products/055-IMG_1747.webp",
       "/products/057-IMG_1749.webp"
@@ -563,15 +845,28 @@ window.showroomCollection=[
       "BACK"
     ],
     "imageAlt": "Rosary Heart Tank original product photograph",
-    "model": "/models/rosary-heart-tank-tailored-v6.glb",
-    "rackModel": "/rack-models/rosary-heart-tank-tailored-v6.glb",
-    "previousModel": "/models/rosary-heart-tank.glb",
-    "previousRackModel": "/rack-models/rosary-heart-tank.glb",
+    "model": "/graphic-models/models/rosary-heart-tank.glb?v=1",
+    "rackModel": "/graphic-models/models/rosary-heart-tank.glb?v=1",
+    "previousModel": "/models/rosary-heart-tank-tailored-v6.glb",
+    "previousRackModel": "/rack-models/rosary-heart-tank-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Long ribbed knit, open armholes, scoop neckline and bound edges. Fit and hidden surfaces estimated, not a measured scan."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "red heart.PNG",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      },
+      {
+        "filename": "057-IMG_1749.png",
+        "kind": "original-product-photo-reference",
+        "side": "back"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "23",
@@ -580,7 +875,7 @@ window.showroomCollection=[
     "chapter": "II",
     "price": "$68",
     "tagline": "A hallmark for the initiated.",
-    "description": "White ribbed maxi tank with an airbrushed composition of a rearing black horse and a dramatic painted face below — \"every kiss begins with K\" set in cursive above. All-over print, raw hem, worn long.",
+    "description": "White ribbed maxi tank with an airbrushed composition of a rearing black horse and a dramatic painted face below \u2014 \"every kiss begins with K\" set in cursive above. All-over print, raw hem, worn long.",
     "images": [
       "/products/056-IMG_1748.webp"
     ],
@@ -589,15 +884,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "Every Kiss Begins With K Tank original product photograph",
-    "model": "/models/every-kiss-tank-tailored-v6.glb",
-    "rackModel": "/rack-models/every-kiss-tank-tailored-v6.glb",
-    "previousModel": "/models/every-kiss-tank.glb",
-    "previousRackModel": "/rack-models/every-kiss-tank.glb",
+    "model": "/graphic-models/models/every-kiss-tank.glb?v=1",
+    "rackModel": "/graphic-models/models/every-kiss-tank.glb?v=1",
+    "previousModel": "/models/every-kiss-tank-tailored-v6.glb",
+    "previousRackModel": "/rack-models/every-kiss-tank-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Long ribbed knit, open armholes, scoop neckline and bound edges. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "056-IMG_1748.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "24",
@@ -606,7 +909,7 @@ window.showroomCollection=[
     "chapter": "IV",
     "price": "$64",
     "tagline": "Past the summit. Still climbing.",
-    "description": "White cotton baby tee, front-printed with an airbrushed warrior figure — arms raised, battle-ready — in deep red. \"over the hill\" set below in casual black type. A contradiction. Cropped, boxy.",
+    "description": "White cotton baby tee, front-printed with an airbrushed warrior figure \u2014 arms raised, battle-ready \u2014 in deep red. \"over the hill\" set below in casual black type. A contradiction. Cropped, boxy.",
     "images": [
       "/products/058-IMG_1830.webp",
       "/products/059-IMG_1833.webp"
@@ -616,15 +919,23 @@ window.showroomCollection=[
       "BACK"
     ],
     "imageAlt": "Over the Hill Tee original product photograph",
-    "model": "/models/over-the-hill-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/over-the-hill-tee-tailored-v6.glb",
-    "previousModel": "/models/over-the-hill-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/over-the-hill-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/over-the-hill-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/over-the-hill-tee.glb?v=1",
+    "previousModel": "/models/over-the-hill-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/over-the-hill-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "over the hill.png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "25",
@@ -633,7 +944,7 @@ window.showroomCollection=[
     "chapter": "II",
     "price": "$64",
     "tagline": "She holds them all.",
-    "description": "Raw white cotton tee with a full-front DTG of a guardian angel surrounded by two cherubs — clouds, light, and \"Divine Mother\" in rose script below. Soft, clean print. Regular fit, 6oz cotton.",
+    "description": "Raw white cotton tee with a full-front DTG of a guardian angel surrounded by two cherubs \u2014 clouds, light, and \"Divine Mother\" in rose script below. Soft, clean print. Regular fit, 6oz cotton.",
     "images": [
       "/products/062-IMG_2054.webp"
     ],
@@ -642,15 +953,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "Divine Mother Tee original product photograph",
-    "model": "/models/divine-mother-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/divine-mother-tee-tailored-v6.glb",
-    "previousModel": "/models/divine-mother-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/divine-mother-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/divine-mother-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/divine-mother-tee.glb?v=1",
+    "previousModel": "/models/divine-mother-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/divine-mother-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "divine mother.png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "26",
@@ -659,7 +978,7 @@ window.showroomCollection=[
     "chapter": "III",
     "price": "$88",
     "tagline": "The throne that moves.",
-    "description": "Cream ribbed crop-sleeve sweater with an airbrushed back print — angel figures riding a golden chariot amid fire and trumpets, \"Gods Chariot\" in yellow script below. Cropped, wide-arm fit. Ribbed cotton, pre-washed.",
+    "description": "Cream ribbed crop-sleeve sweater with an airbrushed back print \u2014 angel figures riding a golden chariot amid fire and trumpets, \"Gods Chariot\" in yellow script below. Cropped, wide-arm fit. Ribbed cotton, pre-washed.",
     "images": [
       "/products/069-IMG_2308.webp"
     ],
@@ -668,15 +987,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "God's Chariot Crop original product photograph",
-    "model": "/models/gods-chariot-crop-tailored-v6.glb",
-    "rackModel": "/rack-models/gods-chariot-crop-tailored-v6.glb",
-    "previousModel": "/models/gods-chariot-crop-sewn-v5.glb",
-    "previousRackModel": "/rack-models/gods-chariot-crop-sewn-v5.glb",
+    "model": "/graphic-models/models/gods-chariot-crop.glb?v=1",
+    "rackModel": "/graphic-models/models/gods-chariot-crop.glb?v=1",
+    "previousModel": "/models/gods-chariot-crop-tailored-v6.glb",
+    "previousRackModel": "/rack-models/gods-chariot-crop-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified front remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "gods chariot.png",
+        "kind": "original-archive-artwork",
+        "side": "back"
+      }
+    ],
+    "defaultView": "back"
   },
   {
     "id": "27",
@@ -685,7 +1012,7 @@ window.showroomCollection=[
     "chapter": "II",
     "price": "$58",
     "tagline": "The forbidden fruit, hand-painted.",
-    "description": "A pair of white work gloves hand-painted with eye-faced apples — one red on the left, one blue on the right. Each pair is unique; the painting registers differently on every casting.",
+    "description": "A pair of white work gloves hand-painted with eye-faced apples \u2014 one red on the left, one blue on the right. Each pair is unique; the painting registers differently on every casting.",
     "images": [
       "/products/074-IMG_2335.webp"
     ],
@@ -694,15 +1021,15 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "Apple Gloves original product photograph",
-    "model": "/models/apple-gloves-tailored-v6.glb",
-    "rackModel": "/rack-models/apple-gloves-tailored-v6.glb",
+    "model": "/accessory-collection/models/gloves-white.glb?v=quality-3",
+    "rackModel": "/accessory-collection/models/gloves-white.glb?v=quality-3",
     "previousModel": "/models/apple-gloves.glb",
     "previousRackModel": "/rack-models/apple-gloves.glb",
     "estimated": true,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
+    "qualityRevision": "accessory-refined-v1",
     "modelStatus": "construction-unverified",
-    "modelNote": "Ghost Studio tailored collection. Paired five-finger shapes and open wrist cavities; construction estimated. Fit and hidden surfaces estimated, not a measured scan. Unverified front and back remain plain."
+    "modelNote": "Refined white cotton glove pair with individual fingers, open cuffs and the original red and blue apple artwork. Proportions are a visualization concept, not a measured scan."
   },
   {
     "id": "28",
@@ -711,7 +1038,7 @@ window.showroomCollection=[
     "chapter": "I",
     "price": "$64",
     "tagline": "A dua for the distracted heart.",
-    "description": "Neon yellow cotton baby tee, printed with two mirrored lion figures and a dua in Arabic script — followed in English below. Bleached-out, sun-stressed. A plea and a warning in the same breath. Boxy crop.",
+    "description": "Neon yellow cotton baby tee, printed with two mirrored lion figures and a dua in Arabic script \u2014 followed in English below. Bleached-out, sun-stressed. A plea and a warning in the same breath. Boxy crop.",
     "images": [
       "/products/076-IMG_3178.webp",
       "/products/077-IMG_3180.webp"
@@ -721,15 +1048,28 @@ window.showroomCollection=[
       "BACK"
     ],
     "imageAlt": "Oh Allah Tee original product photograph",
-    "model": "/models/oh-allah-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/oh-allah-tee-tailored-v6.glb",
-    "previousModel": "/models/oh-allah-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/oh-allah-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/oh-allah-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/oh-allah-tee.glb?v=1",
+    "previousModel": "/models/oh-allah-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/oh-allah-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "076-IMG_3178.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      },
+      {
+        "filename": "077-IMG_3180.png",
+        "kind": "original-product-photo-reference",
+        "side": "back"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "29",
@@ -738,7 +1078,7 @@ window.showroomCollection=[
     "chapter": "IV",
     "price": "$88",
     "tagline": "Every pleasure has a number.",
-    "description": "White ribbed maxi tank dip-dyed red at the shoulders, printed all-over with classified-looking adult newspaper advertisements — \"The Atlantis Parlour,\" \"Easy Pleasures,\" \"Satisfaction Guaranteed.\" Found language, worn as text. Raw hem.",
+    "description": "White ribbed maxi tank dip-dyed red at the shoulders, printed all-over with classified-looking adult newspaper advertisements \u2014 \"The Atlantis Parlour,\" \"Easy Pleasures,\" \"Satisfaction Guaranteed.\" Found language, worn as text. Raw hem.",
     "images": [
       "/products/079-IMG_3462.webp",
       "/products/080-IMG_3463.webp"
@@ -748,15 +1088,28 @@ window.showroomCollection=[
       "BACK"
     ],
     "imageAlt": "Atlantis Parlour Tank original product photograph",
-    "model": "/models/atlantis-parlour-tank-tailored-v6.glb",
-    "rackModel": "/rack-models/atlantis-parlour-tank-tailored-v6.glb",
-    "previousModel": "/models/atlantis-parlour-tank.glb",
-    "previousRackModel": "/rack-models/atlantis-parlour-tank.glb",
+    "model": "/graphic-models/models/atlantis-parlour-tank.glb?v=1",
+    "rackModel": "/graphic-models/models/atlantis-parlour-tank.glb?v=1",
+    "previousModel": "/models/atlantis-parlour-tank-tailored-v6.glb",
+    "previousRackModel": "/rack-models/atlantis-parlour-tank-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Long ribbed knit, open armholes, scoop neckline and bound edges. Fit and hidden surfaces estimated, not a measured scan."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "7.png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      },
+      {
+        "filename": "5.png",
+        "kind": "original-archive-artwork",
+        "side": "back"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "30",
@@ -774,15 +1127,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "007 Angels Tee original product photograph",
-    "model": "/models/007-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/007-tee-tailored-v6.glb",
-    "previousModel": "/models/007-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/007-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/007-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/007-tee.glb?v=1",
+    "previousModel": "/models/007-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/007-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "082-IMG_5473.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "31",
@@ -791,7 +1152,7 @@ window.showroomCollection=[
     "chapter": "IV",
     "price": "$78",
     "tagline": "Tested, not certified.",
-    "description": "Raw white cotton tee, airbrushed with a full-front composition of a woman in chains with two crossed swords above — \"Bulletproof\" in hand-script at the top. Worn, saturated, lot-varied. Regular fit, 6oz cotton.",
+    "description": "Raw white cotton tee, airbrushed with a full-front composition of a woman in chains with two crossed swords above \u2014 \"Bulletproof\" in hand-script at the top. Worn, saturated, lot-varied. Regular fit, 6oz cotton.",
     "images": [
       "/products/094-IMG_6621.webp"
     ],
@@ -800,15 +1161,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "Bulletproof Tee original product photograph",
-    "model": "/models/bulletproof-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/bulletproof-tee-tailored-v6.glb",
-    "previousModel": "/models/bulletproof-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/bulletproof-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/bulletproof-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/bulletproof-tee.glb?v=1",
+    "previousModel": "/models/bulletproof-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/bulletproof-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "094-IMG_6621.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "32",
@@ -817,7 +1186,7 @@ window.showroomCollection=[
     "chapter": "II",
     "price": "$88",
     "tagline": "The only word worth repeating.",
-    "description": "Cream ribbed thermal long-sleeve, airbrushed with a dramatic pink-washed face, cross, heart, and \"AMEN\" — \"Eternal\" in black script below with a red lip print. The devotion is sincere. Worn soft.",
+    "description": "Cream ribbed thermal long-sleeve, airbrushed with a dramatic pink-washed face, cross, heart, and \"AMEN\" \u2014 \"Eternal\" in black script below with a red lip print. The devotion is sincere. Worn soft.",
     "images": [
       "/products/089-IMG_6048.webp"
     ],
@@ -826,15 +1195,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "Eternal Thermal original product photograph",
-    "model": "/models/eternal-thermal-tailored-v6.glb",
-    "rackModel": "/rack-models/eternal-thermal-tailored-v6.glb",
-    "previousModel": "/models/eternal-thermal-sewn-v5.glb",
-    "previousRackModel": "/rack-models/eternal-thermal-sewn-v5.glb",
+    "model": "/graphic-models/models/eternal-thermal.glb?v=1",
+    "rackModel": "/graphic-models/models/eternal-thermal.glb?v=1",
+    "previousModel": "/models/eternal-thermal-tailored-v6.glb",
+    "previousRackModel": "/rack-models/eternal-thermal-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "089-IMG_6048.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "33",
@@ -843,7 +1220,7 @@ window.showroomCollection=[
     "chapter": "II",
     "price": "$118",
     "tagline": "Girl with a pearl earring. Eternal.",
-    "description": "Butter-yellow crewneck sweatshirt with an oversized airbrushed face — Vermeer-inspired, rendered in blue and pink tones — and \"Eternal\" in black gothic script. \"honey\" in small script at the collar. Pre-washed heavyweight fleece.",
+    "description": "Butter-yellow crewneck sweatshirt with an oversized airbrushed face \u2014 Vermeer-inspired, rendered in blue and pink tones \u2014 and \"Eternal\" in black gothic script. \"honey\" in small script at the collar. Pre-washed heavyweight fleece.",
     "images": [
       "/products/093-IMG_6620.webp"
     ],
@@ -852,15 +1229,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "Eternal Crewneck original product photograph",
-    "model": "/models/eternal-crewneck-tailored-v6.glb",
-    "rackModel": "/rack-models/eternal-crewneck-tailored-v6.glb",
-    "previousModel": "/models/eternal-crewneck.glb",
-    "previousRackModel": "/rack-models/eternal-crewneck.glb",
+    "model": "/graphic-models/models/eternal-crewneck.glb?v=1",
+    "rackModel": "/graphic-models/models/eternal-crewneck.glb?v=1",
+    "previousModel": "/models/eternal-crewneck-tailored-v6.glb",
+    "previousRackModel": "/rack-models/eternal-crewneck-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Relaxed long sleeves, ribbed cuffs and waistband. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "093-IMG_6620.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "34",
@@ -869,7 +1254,7 @@ window.showroomCollection=[
     "chapter": "II",
     "price": "$78",
     "tagline": "Pray for it. Kiss it. Both.",
-    "description": "Raw white cotton tee, airbrushed with a full-body angel figure — luminous blue, reaching — and a red rosary heart at the chest. \"kiss\" in cursive at the hem. Pink-red wash from airbrush gives a relic warmth. Regular fit.",
+    "description": "Raw white cotton tee, airbrushed with a full-body angel figure \u2014 luminous blue, reaching \u2014 and a red rosary heart at the chest. \"kiss\" in cursive at the hem. Pink-red wash from airbrush gives a relic warmth. Regular fit.",
     "images": [
       "/products/096-IMG_6626.webp",
       "/products/097-IMG_6627.webp"
@@ -879,15 +1264,28 @@ window.showroomCollection=[
       "BACK"
     ],
     "imageAlt": "Kiss Rosary Tee original product photograph",
-    "model": "/models/kiss-rosary-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/kiss-rosary-tee-tailored-v6.glb",
-    "previousModel": "/models/kiss-rosary-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/kiss-rosary-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/kiss-rosary-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/kiss-rosary-tee.glb?v=1",
+    "previousModel": "/models/kiss-rosary-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/kiss-rosary-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "096-IMG_6626.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      },
+      {
+        "filename": "097-IMG_6627.png",
+        "kind": "original-product-photo-reference",
+        "side": "back"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "35",
@@ -905,15 +1303,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "Jesus Is My Health Insurance Hoodie original product photograph",
-    "model": "/models/jesus-health-insurance-hoodie-tailored-v6.glb",
-    "rackModel": "/rack-models/jesus-health-insurance-hoodie-tailored-v6.glb",
-    "previousModel": "/models/jesus-health-insurance-hoodie.glb",
-    "previousRackModel": "/rack-models/jesus-health-insurance-hoodie.glb",
+    "model": "/graphic-models/models/jesus-health-insurance-hoodie.glb?v=1",
+    "rackModel": "/graphic-models/models/jesus-health-insurance-hoodie.glb?v=1",
+    "previousModel": "/models/jesus-health-insurance-hoodie-tailored-v6.glb",
+    "previousRackModel": "/rack-models/jesus-health-insurance-hoodie-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Open cloth-solved hood, drawcords, ribbed cuffs and hem. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "114-Photoroom_20251017_091003.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "36",
@@ -931,15 +1337,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "GOD Loves YOU!!! Tee original product photograph",
-    "model": "/models/god-loves-you-v2-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/god-loves-you-v2-tee-tailored-v6.glb",
-    "previousModel": "/models/god-loves-you-v2-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/god-loves-you-v2-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/god-loves-you-v2-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/god-loves-you-v2-tee.glb?v=1",
+    "previousModel": "/models/god-loves-you-v2-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/god-loves-you-v2-tee-tailored-v6.glb",
     "estimated": true,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-unverified",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified front and back remain plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "104-IMG_6806.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "37",
@@ -957,15 +1371,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "Jesus Is My Companion Tee original product photograph",
-    "model": "/models/jesus-companion-tee-tailored-v6.glb",
-    "rackModel": "/rack-models/jesus-companion-tee-tailored-v6.glb",
-    "previousModel": "/models/jesus-companion-tee-sewn-v5.glb",
-    "previousRackModel": "/rack-models/jesus-companion-tee-sewn-v5.glb",
+    "model": "/graphic-models/models/jesus-companion-tee.glb?v=1",
+    "rackModel": "/graphic-models/models/jesus-companion-tee.glb?v=1",
+    "previousModel": "/models/jesus-companion-tee-tailored-v6.glb",
+    "previousRackModel": "/rack-models/jesus-companion-tee-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "112-Photoroom_20251017_090559.png",
+        "kind": "original-product-photo-reference",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "38",
@@ -983,15 +1405,23 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "Spiritual Warfare Tank original product photograph",
-    "model": "/models/spiritual-warfare-tank-tailored-v6.glb",
-    "rackModel": "/rack-models/spiritual-warfare-tank-tailored-v6.glb",
-    "previousModel": "/models/spiritual-warfare-tank.glb",
-    "previousRackModel": "/rack-models/spiritual-warfare-tank.glb",
+    "model": "/graphic-models/models/spiritual-warfare-tank.glb?v=1",
+    "rackModel": "/graphic-models/models/spiritual-warfare-tank.glb?v=1",
+    "previousModel": "/models/spiritual-warfare-tank-tailored-v6.glb",
+    "previousRackModel": "/rack-models/spiritual-warfare-tank-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Long ribbed knit, open armholes, scoop neckline and bound edges. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "spiritual warfare (1).png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   },
   {
     "id": "39",
@@ -1000,7 +1430,7 @@ window.showroomCollection=[
     "chapter": "IV",
     "price": "$88",
     "tagline": "The title, not the man.",
-    "description": "Heavy black long-sleeve tee, chest-printed with \"WARLORD\" in blood-red airbrushed lettering — raised from the fabric like a scar. A name. A rank. Heavyweight cotton, regular fit.",
+    "description": "Heavy black long-sleeve tee, chest-printed with \"WARLORD\" in blood-red airbrushed lettering \u2014 raised from the fabric like a scar. A name. A rank. Heavyweight cotton, regular fit.",
     "images": [
       "/products/118-warlord-f.webp"
     ],
@@ -1009,14 +1439,22 @@ window.showroomCollection=[
       "PHOTO 2"
     ],
     "imageAlt": "WARLORD Longsleeve original product photograph",
-    "model": "/models/warlord-longsleeve-tailored-v6.glb",
-    "rackModel": "/rack-models/warlord-longsleeve-tailored-v6.glb",
-    "previousModel": "/models/warlord-longsleeve-sewn-v5.glb",
-    "previousRackModel": "/rack-models/warlord-longsleeve-sewn-v5.glb",
+    "model": "/graphic-models/models/warlord-longsleeve.glb?v=1",
+    "rackModel": "/graphic-models/models/warlord-longsleeve.glb?v=1",
+    "previousModel": "/models/warlord-longsleeve-tailored-v6.glb",
+    "previousRackModel": "/rack-models/warlord-longsleeve-tailored-v6.glb",
     "estimated": false,
     "qualitySample": false,
-    "qualityRevision": "tailored-v6",
-    "modelStatus": "construction-refined",
-    "modelNote": "Ghost Studio tailored collection. Corrected chest, relaxed sleeves and sewn hems. Fit and hidden surfaces estimated, not a measured scan. Unverified back remains plain."
+    "qualityRevision": "archive-hq-v1",
+    "modelStatus": "archive-artwork-refined",
+    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
+    "artworkSources": [
+      {
+        "filename": "WAR LORD.png",
+        "kind": "original-archive-artwork",
+        "side": "front"
+      }
+    ],
+    "defaultView": "front"
   }
 ];

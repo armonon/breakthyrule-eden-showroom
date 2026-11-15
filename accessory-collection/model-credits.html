@@ -1,0 +1,1168 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>3D model credits — BreakThyRule</title><style>body{max-width:700px;margin:8vh auto;padding:24px;background:#11130e;color:#eee6cb;font:17px/1.7 system-ui,sans-serif}h1{font-size:2rem;line-height:1.2}a{color:inherit;text-underline-offset:4px}section{margin:40px 0}h2{font-size:1.25rem}small{opacity:.7}</style><script data-btr-apple-cover="auto-retry-20261114">(function(){
+'use strict';
+const assetScriptURL = "https://apple-cover-assets--breakthyrule-eden-showroom.netlify.app/apple-cover-performance.js?v=1";
+if (!document.querySelector('script[src*="/site/cover-title.js"]')) return;
+'use strict';
+const appleScriptNonce = document.currentScript?.nonce || '';
+let appleDependencyFlight = null;
+const appleDependenciesReady = () => !!window.THREE && typeof window.ShowroomGLTFLoader === 'function';
+const appleAbortError = () => new DOMException('Apple loading cancelled', 'AbortError');
+// A shared, abortable download avoids duplicate bundle requests across cover instances.
+// Install synchronously only if the normal deferred bundle has not recovered meanwhile.
+function acquireAppleDependencies(signal) {
+ if (signal.aborted) return Promise.reject(signal.reason || appleAbortError());
+ if (appleDependenciesReady()) return Promise.resolve();
+ let flight = appleDependencyFlight;
+ if (!flight) {
+  const controller = new AbortController();
+  flight = appleDependencyFlight = { controller, users: 0, promise: null };
+  flight.promise = (async () => {
+   const response = await fetch(new URL('/assets/three.min.js?v=187', location.href).href, { signal: controller.signal, cache: 'no-cache' });
+   if (!response.ok) throw Error('3D viewer download unavailable');
+   const source = await response.text();
+   if (controller.signal.aborted) throw controller.signal.reason || appleAbortError();
+   if (appleDependenciesReady()) return;
+   const previousTHREE = window.THREE, previousLoader = window.ShowroomGLTFLoader;
+   const script = document.createElement('script');
+   if (appleScriptNonce) script.nonce = appleScriptNonce;
+   script.textContent = source;
+   try { document.head.append(script); }
+   finally {
+    script.remove();
+    // A partially available viewer may already be in use elsewhere on the site.
+    if (previousTHREE) window.THREE = previousTHREE;
+    if (previousLoader) window.ShowroomGLTFLoader = previousLoader;
+   }
+   if (!appleDependenciesReady()) throw Error('3D viewer unavailable');
+  })().finally(() => { if (appleDependencyFlight === flight) appleDependencyFlight = null; });
+ }
+ flight.users++;
+ return new Promise((resolve, reject) => {
+  let settled = false;
+  const finish = (error) => {
+   if (settled) return;
+   settled = true; signal.removeEventListener('abort', cancel); flight.users--;
+   if (!flight.users && appleDependencyFlight === flight) {
+    appleDependencyFlight = null; flight.controller.abort(appleAbortError());
+   }
+   if (error) reject(error); else resolve();
+  };
+  const cancel = () => finish(signal.reason || appleAbortError());
+  signal.addEventListener('abort', cancel, { once: true });
+  flight.promise.then(() => finish(), finish);
+ });
+}
+// The original cover-title API is shared by the home page and Eden's cover.
+const createAppleCoverTitle = function ({ actions, reduceMotion = false }) {
+ const root = document.createElement('h1');
+ root.className = 'ct ct-model';
+ root.setAttribute('aria-label', 'Break Thy Rule');
+ const style = document.createElement('style');
+ style.textContent = `
+ .ct-model{position:relative;display:block;margin:10px 0 4px;height:clamp(240px,43vh,390px);line-height:normal;isolation:isolate;overflow:hidden;border:1px solid #354132;background:#1b2b20}
+ .ct-people-scene{position:relative;isolation:isolate;margin:10px 0 4px}
+ .ct-people-scene>.ct-model{margin:0}
+ .ct-people-scene>.btr-polaroid{display:block;box-sizing:border-box;z-index:4;width:min(clamp(67px,14.08%,104px),clamp(56px,calc(18.92vh - 61.6px),104px));margin:0;padding:4px 4px 8px!important;border:1px solid #e4dfd2;background:#fff;border-radius:0;box-shadow:0 6px 14px rgba(0,0,0,.28);pointer-events:auto}
+ .ct-people-scene>.btr-polaroid figcaption{display:none!important}
+ .ct-people-scene>.btr-polaroid::before{display:block;content:'';width:37px;height:13px;top:-6px;margin-left:-18.5px}
+ .ct-people-scene>.btr-polaroid.p1{left:-18px;right:auto;top:6%;bottom:auto;--r:-9deg}
+ .ct-people-scene>.btr-polaroid.p2{left:auto;right:-18px;top:8%;bottom:auto;--r:8deg}
+ .ct-people-scene>.btr-polaroid.p3{left:-14px;right:auto;top:auto;bottom:56px;--r:6deg}
+ .ct-people-scene>.btr-polaroid.p4{left:auto;right:-14px;top:auto;bottom:56px;--r:-7deg}
+ @media(max-width:600px),(max-height:600px){
+  .ct-people-scene>.btr-polaroid{width:56px}
+  .ct-people-scene>.btr-polaroid.p1{left:-10px;top:12px}
+  .ct-people-scene>.btr-polaroid.p2{right:-10px;top:16px}
+  .ct-people-scene>.btr-polaroid.p3,.ct-people-scene>.btr-polaroid.p4{display:none}
+ }
+ .ct-people-scene>.ct-garment-card{z-index:3;width:min(clamp(56px,12.32%,90px),clamp(51px,calc(18.92vh - 65.12px),90px))}
+ .ct-people-scene>.ct-garment-card::before{background:rgba(255,221,84,.76);transform:rotate(9deg);width:30px;margin-left:-15px}
+ .ct-people-scene>.ct-garment-card.g1{left:calc(16% - 22px);right:auto;top:10%;bottom:auto;--r:8deg}
+ .ct-people-scene>.ct-garment-card.g2{left:auto;right:calc(16% - 22px);top:14%;bottom:auto;--r:-10deg}
+ .ct-people-scene>.ct-garment-card.g3{left:calc(16% - 22px);right:auto;top:auto;bottom:78px;--r:-8deg}
+ .ct-people-scene>.ct-garment-card.g4{left:auto;right:calc(16% - 22px);top:auto;bottom:72px;--r:9deg}
+ @media(max-width:600px),(max-height:600px){
+  .ct-people-scene>.ct-garment-card{width:49px}
+  .ct-people-scene>.ct-garment-card.g1{left:-16px;right:auto;top:auto;bottom:54px;--r:7deg}
+  .ct-people-scene>.ct-garment-card.g2{left:auto;right:-16px;top:auto;bottom:54px;--r:-7deg}
+  .ct-people-scene>.ct-garment-card.g3,.ct-people-scene>.ct-garment-card.g4{display:none}
+ }
+ .ct-photo-window{display:block;position:relative;width:100%;aspect-ratio:1;overflow:hidden;background:transparent}
+ .ct-people-scene>.btr-polaroid .ct-photo-window>img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;background:transparent;opacity:1;transition:opacity .42s ease}
+ @media(prefers-reduced-motion:reduce){.ct-people-scene>.btr-polaroid .ct-photo-window>img{transition:none}}
+
+ .ct-postcard-open{position:absolute;inset:0;z-index:2;display:block;width:100%;height:100%;padding:0!important;border:0!important;border-radius:0;background:transparent!important;cursor:zoom-in;touch-action:manipulation}
+ .ct-postcard-open:focus-visible{outline:3px solid #bd242d;outline-offset:3px}
+ @media(hover:hover){.ct-people-scene>.btr-polaroid:hover{box-shadow:0 8px 22px rgba(0,0,0,.4)}}
+ .ct-postcard-gallery{box-sizing:border-box;width:min(94vw,920px);max-width:none;max-height:94svh;padding:18px;border:1px solid #1d201b;background:#f6f2e8;color:#20231d;box-shadow:0 18px 70px #0007;font:400 14px/1.4 'DM Sans',sans-serif;overflow:auto}
+ .ct-postcard-gallery::backdrop{background:rgba(5,12,8,.84)}
+ .ct-postcard-gallery-top{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 12px}
+ .ct-postcard-gallery-heading{margin:0;font:700 15px/1.3 'DM Sans',sans-serif;letter-spacing:.13em}
+ .ct-postcard-gallery button{box-sizing:border-box;display:grid;place-items:center;min-width:44px;min-height:44px;padding:6px 12px;border:1px solid #20231d;border-radius:0;background:#fffdf7;color:#20231d;font:600 24px/1 'DM Sans',sans-serif;cursor:pointer;touch-action:manipulation}
+ .ct-postcard-gallery button:hover{background:#ffdd54}
+ .ct-postcard-gallery button:focus-visible{outline:3px solid #bd242d;outline-offset:3px}
+ .ct-postcard-gallery button:disabled{opacity:.4;cursor:default}
+ .ct-postcard-gallery .ct-postcard-gallery-close{background:#b92730;color:#fff;border-color:#b92730}
+ .ct-postcard-gallery .ct-postcard-gallery-close:hover{background:#971d25}
+ .ct-postcard-gallery-stage{display:flex;align-items:center;justify-content:center;position:relative;width:100%;height:min(60svh,640px);min-height:180px;overflow:hidden;background:#e5e2d9;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+ .ct-postcard-gallery-photo{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;margin:0;pointer-events:none}
+ .ct-postcard-gallery-footer{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:12px}
+ .ct-postcard-gallery-count{min-width:75px;text-align:center;font-weight:700;letter-spacing:.1em;font-variant-numeric:tabular-nums}
+ .ct-postcard-gallery-caption{margin:12px 0 0;max-width:75ch;font-size:13px;line-height:1.4}
+ .ct-postcard-gallery-hint{margin:6px 0 0;color:#555d52;font-size:11px;letter-spacing:.04em}
+ .ct-postcard-gallery-status{min-height:1.4em;margin:4px 0 0;font-size:12px;color:#8d1b25}
+ @media(max-width:600px){.ct-postcard-gallery{width:96vw;padding:12px;max-height:96svh}.ct-postcard-gallery-heading{font-size:12px}.ct-postcard-gallery-stage{height:56svh}.ct-postcard-gallery-top{gap:10px}}
+ .ct-enter-portal{position:fixed;inset:0;z-index:2147483646;pointer-events:auto;overflow:hidden;background:transparent;isolation:isolate}
+ .ct-enter-portal>.ct-enter-canvas{position:absolute;display:block;max-width:none;max-height:none;margin:0;filter:none!important;pointer-events:none;transition:transform .82s cubic-bezier(.55,.02,.82,.44);will-change:transform}
+ .ct-enter-veil{position:absolute;inset:0;z-index:1;background:#000;opacity:0;transition:opacity .28s ease;pointer-events:none}
+ .ct-entering-cover .ct-people-scene>.btr-polaroid,.ct-entering-cover .ct-model-hint,.ct-entering-cover .ct-model-reset,.ct-entering-cover .ct-model-toggle{opacity:0;transition:opacity .18s ease;pointer-events:none}
+ @media(prefers-reduced-motion:reduce){.ct-enter-portal>.ct-enter-canvas,.ct-enter-veil{transition:none}}
+ .ct-world{position:absolute;inset:0;z-index:0;overflow:hidden;background:center/cover no-repeat}
+ .ct-world video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .9s ease;pointer-events:none}
+ .ct-world::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,20,10,.04),rgba(5,20,10,.22));pointer-events:none}
+ .ct-model-stage{position:absolute;inset:0;z-index:1;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+ .ct-model-stage[data-dragging]{cursor:grabbing}
+ .ct-model-stage:focus-visible{outline:2px solid #fff;outline-offset:-5px}
+ .ct-model-hint{position:absolute;bottom:15px;left:12px;z-index:2;max-width:calc(100% - 142px);pointer-events:none;font:600 9px/1.2 'DM Sans',sans-serif;letter-spacing:.14em;color:#fff;text-shadow:0 1px 5px #000}
+ .ct-model-stage canvas{filter:drop-shadow(0 12px 12px rgba(0,0,0,.30))}
+ @media(prefers-reduced-motion:reduce){.ct-world video{transition:none}}
+ .ct-model-stage canvas{display:block;width:100%;height:100%}
+ .ct-model-status{position:absolute;inset:0;z-index:2;display:grid;place-content:center;font:700 16px/1.4 'DM Sans',sans-serif;letter-spacing:.12em;color:#fff;text-shadow:0 1px 4px #000;text-align:center}
+ .ct-model-status[hidden]{display:none}
+ .ct-model-toggle,.ct-model-reset{position:absolute;bottom:5px;right:8px;z-index:3;border:1px solid #aaa;background:rgba(255,253,247,.88);color:#333;padding:7px 10px;min-height:34px;font:600 10px/1.2 'DM Sans',sans-serif;letter-spacing:.08em;cursor:pointer}
+ .ct-model-reset{right:76px}
+ .ct-model-toggle[hidden],.ct-model-reset[hidden]{display:none}.ct-model-toggle:focus-visible,.ct-model-reset:focus-visible{outline:3px solid #c8102e;outline-offset:3px}
+ @media(max-width:600px){.ct-model{height:clamp(230px,37svh,330px)}}
+ `;
+ const world = document.createElement('span'); world.className = 'ct-world'; world.setAttribute('aria-hidden', 'true');
+ const worldBase = new URL('world-videos/', assetScriptURL).href;
+ const worldClips = ['garden', 'eden', 'library', 'broadcast', 'shop'];
+ world.style.backgroundImage = `url("${worldBase}garden.jpg")`;
+ const worldVideos = [0, 1].map(() => {
+  const video = document.createElement('video');
+  video.muted = true; video.defaultMuted = true; video.loop = true; video.playsInline = true;
+  video.setAttribute('muted', ''); video.setAttribute('playsinline', '');
+  video.preload = 'metadata'; video.disablePictureInPicture = true; video.disableRemotePlayback = true;
+  video.tabIndex = -1; world.append(video); return video;
+ });
+ const stage = document.createElement('span'); stage.className = 'ct-model-stage';
+ stage.tabIndex = 0; stage.setAttribute('role', 'group');
+ stage.setAttribute('aria-label', 'Play with the apple. Tap for a bounce, or swipe in any direction and release to spring back. A strong swipe shuffles the photos. Arrow keys rotate; Enter or Space bounces; Home resets the front; End shows the back.');
+ stage.setAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight ArrowUp ArrowDown Home End Enter Space');
+ const hint = document.createElement('span'); hint.className = 'ct-model-hint'; hint.textContent = 'TAP • SWIPE • EXPLORE'; hint.setAttribute('aria-hidden', 'true');
+ const status = document.createElement('span'); status.className = 'ct-model-status';
+ status.textContent = 'LOADING THE APPLE…'; status.setAttribute('role', 'status');
+ const toggle = document.createElement('button'); toggle.type = 'button';
+ toggle.className = 'ct-model-toggle'; toggle.hidden = false;
+ const reset = document.createElement('button'); reset.type = 'button'; reset.className = 'ct-model-reset';
+ reset.textContent = 'RESET'; reset.setAttribute('aria-label', 'Reset apple to the front'); reset.hidden = true;
+ root.append(style, world, stage, status, hint, reset, toggle);
+ let renderer, scene, camera, model, frame = 0, previous = 0;
+ let reactions = null, tapTime = null, lookAttached = false;
+ let pendingLook = null, renderWidth = 0, renderHeight = 0;
+ let orientation, rotationAxis, rotationDelta, restOrientation;
+ let spring = null, springFrozen = false, modelScale = 1;
+ let bounce = 0, bounceVelocity = 0;
+ let wobblePhase = 0, wobbleMix = 0, wobblePitch = 0, wobbleRoll = 0, wobbleRotation, wobbleEuler;
+ let running = false, visible = true, paused = reduceMotion, initialized = false, loading = false;
+ let appleAttempt = null, activeApple = null, appleEpoch = 0, retryTimer = 0, retryIndex = 0, pageActive = true;
+ const retryDelays = [2000, 4000, 8000, 16000, 30000];
+ let drag = null, velocityX = 0, velocityY = 0, resumeAt = 0, suppressClickUntil = 0;
+ const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+ paused = paused || reduced.matches;
+ function label() { toggle.textContent = paused ? 'PLAY' : 'PAUSE'; toggle.setAttribute('aria-label', paused ? 'Play apple rotation, world videos and postcards' : 'Pause apple rotation, world videos and postcards'); }
+ label();
+ // Two muted players keep the current scene moving while the next one loads.
+ let worldActive = 0, worldCursor = 0, worldTimer = 0, fadeTimer = 0, worldEpoch = 0;
+ let worldRunning = false, pendingWorld = null;
+ const worldCanPlay = () => running && visible && !document.hidden && !paused && !postcardGalleryOpen && !enteringApple;
+ function cancelPendingWorld() {
+  if (!pendingWorld) return;
+  const { video, ready, fail } = pendingWorld;
+  video.removeEventListener('canplay', ready); video.removeEventListener('error', fail);
+  video.pause(); pendingWorld = null;
+ }
+ function stopWorld() {
+  worldRunning = false; worldEpoch++;
+  clearTimeout(worldTimer); clearTimeout(fadeTimer); worldTimer = fadeTimer = 0;
+  cancelPendingWorld();
+  worldVideos.forEach((video, i) => { video.pause(); video.style.opacity = i === worldActive ? '1' : '0'; });
+ }
+ function scheduleWorld(delay = 12000) {
+  clearTimeout(worldTimer);
+  if (worldCanPlay()) worldTimer = setTimeout(advanceWorld, delay);
+ }
+ function advanceWorld() {
+  worldTimer = 0;
+  if (!worldCanPlay()) return stopWorld();
+  cancelPendingWorld();
+  const previous = worldVideos[worldActive], nextIndex = 1 - worldActive, video = worldVideos[nextIndex];
+  worldCursor = (worldCursor + 1) % worldClips.length;
+  const clip = worldClips[worldCursor], epoch = ++worldEpoch;
+  video.pause(); video.style.opacity = '0'; video.poster = worldBase + clip + '.jpg';
+  let revealed = false;
+  const detach = () => { video.removeEventListener('canplay', ready); video.removeEventListener('error', fail); if (pendingWorld?.video === video) pendingWorld = null; };
+  const fail = () => { detach(); video.pause(); scheduleWorld(4000); };
+  const ready = async () => {
+   if (revealed) return; revealed = true;
+   try { await video.play(); }
+   catch { if (epoch === worldEpoch) fail(); return; }
+   if (epoch !== worldEpoch || !worldCanPlay()) { video.pause(); return; }
+   detach(); worldActive = nextIndex; video.style.opacity = '1'; previous.style.opacity = '0';
+   clearTimeout(fadeTimer); fadeTimer = setTimeout(() => { if (worldActive === nextIndex) previous.pause(); }, 950);
+   scheduleWorld();
+  };
+  pendingWorld = { video, ready, fail };
+  video.addEventListener('canplay', ready); video.addEventListener('error', fail);
+  video.src = worldBase + clip + '.mp4'; video.load();
+  // Keep the previous clip visible if the next download stalls.
+  worldTimer = setTimeout(() => { if (epoch === worldEpoch && pendingWorld?.video === video) { worldEpoch++; cancelPendingWorld(); scheduleWorld(4000); } }, 15000);
+  if (video.readyState >= 3) ready();
+ }
+ function syncWorld() {
+  if (!worldCanPlay()) return stopWorld();
+  if (worldRunning) return;
+  worldRunning = true;
+  const video = worldVideos[worldActive], epoch = ++worldEpoch;
+  if (!video.getAttribute('src')) {
+   video.poster = worldBase + worldClips[worldCursor] + '.jpg';
+   video.src = worldBase + worldClips[worldCursor] + '.mp4';
+  }
+  video.style.opacity = '1';
+  video.play().catch(() => { /* The poster remains visible when autoplay is unavailable. */ }).finally(() => { if (epoch !== worldEpoch || !worldCanPlay()) video.pause(); });
+  scheduleWorld();
+ }
+ const garmentPostcards = [{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/Cw8wVS9Pe9k-01.webp","alt":"Pink and lavender graphic T-shirts arranged on a purple background."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/Cs4eqjLSR7--01.webp","alt":"Blue denim shorts with a colorful Seed Supply print laid flat on concrete."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/B95upoTg1AJ-01.webp","alt":"White long-sleeve shirt with a black sun and eye graphic laid on a dark reflective floor."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C5hmey2L5mW-02.webp","alt":"White short-sleeved graphic T-shirt displayed against a black background."}];
+ let postcardPools = {"people":[{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/DIzzPxITlZB.webp","alt":"Person wearing sunglasses and a pale yellow graphic hoodie in a studio."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/DC5Pt4gS30r.webp","alt":"White I Love Gaza graphic T-shirt layered beneath a bright patterned jacket."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/DCcYUOHSO2P.webp","alt":"Person in a patterned jacket and white graphic T-shirt beneath a cloudy sky."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C_Tb6LCP_5G.webp","alt":"Person wearing a pale graphic tank top, standing against a doorway with hands covering their face."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C_G8W5yy-iY.webp","alt":"Person in a white Jesus graphic T-shirt, jeans and black boots, seated against a block wall."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C_BW8cLvk3E.webp","alt":"Person wearing a white Pari butterfly graphic T-shirt and raising one hand."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C9szMN_SZgx.webp","alt":"Group wearing graphic clothing on a wooden pier at night."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C83NsWRplEq.webp","alt":"Three people in white and dark graphic outfits standing outdoors at night."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C82kCO6SKkb.webp","alt":"Close view of a person wearing a printed head covering and a black-and-white patterned top."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C80ZX61P0iW.webp","alt":"Two people wearing white shirts decorated with eye and red graphic prints."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C8wBsGwObCw.webp","alt":"Group wearing graphic shirts and printed trousers on a stone staircase."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C8s7fhypZQw.webp","alt":"Two people in a studio, one wearing a black top with a red back graphic and another seated beside a printed sheet."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/studio-gallery/img_0677.webp","alt":"Person wearing a white butterfly graphic T-shirt, a textured jacket and leopard-print trousers."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/studio-gallery/img_0678.webp","alt":"Person in a pale Jesus graphic T-shirt and wide trousers standing above a blue bay."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/studio-gallery/img_0679.webp","alt":"Person wearing an oversized white printed shirt, a cap and patterned boots outdoors at night."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/studio-gallery/img_0680.webp","alt":"Person in a white sleeveless crop top and illustrated wide-leg trousers standing between surfboards."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/studio-gallery/img_0681.webp","alt":"Person wearing sunglasses, a patterned head covering and a purple symbol-print T-shirt over white long sleeves."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/studio-gallery/img_0683.webp","alt":"Person with long hair wearing a black hoodie over a printed T-shirt and patterned trousers."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C8s67xvJ3JO.webp","alt":"Person in a black hooded top and wide white trousers standing in a pale room."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C8s6weRJYy7.webp","alt":"Three people in black and white graphic outfits standing against a pale wall."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C8dRkjUPJ2a.webp","alt":"Photo collage of a person wearing a white graphic T-shirt on a tree-lined road."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C7veSrVOd_I.webp","alt":"Two people wearing pale graphic tops and wide trousers outside a storefront at night."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C67yx-pOL8H.webp","alt":"Person in a white graphic T-shirt and illustrated white trousers on a wooded sidewalk."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C57sXDjO1-H.webp","alt":"Person wearing a black graphic outfit seated in the open doorway of a black car."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C5rowHuPgKv.webp","alt":"Person in a black graphic sweatshirt and trousers walking along a sidewalk."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C5lxMxkPcw1.webp","alt":"Person wearing sunglasses and a white illustrated T-shirt over black sleeves."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C5hmey2L5mW.webp","alt":"Person seated on a red chair wearing a white graphic T-shirt and decorated black flared trousers."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C5W4s9BvUvL.webp","alt":"Person with blond hair in a white graphic T-shirt outside a storefront."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C5P9-JSO3Wc.webp","alt":"Person in a black hooded graphic outfit standing beside a colorful figure on a city street at night."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C5OTkrjLvBZ-01.webp","alt":"Person wearing a dark hooded sweatshirt with a red sun and face graphic outdoors at night."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C5AfgkHOTAa-01.webp","alt":"Black-and-white portrait of a person in white sunglasses and a long-sleeve graphic shirt."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C5AZ7R3uSG4-01.webp","alt":"Person wearing a yellow graphic T-shirt, dark jacket and printed trousers beside a Ferris wheel at night."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C419j3ROOuk-01.webp","alt":"Two people wearing white graphic T-shirts and black printed trousers in front of a wooden fence."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C4uURwIuEo3-01.webp","alt":"Two people showing the front and back of dark tops with red graphics and printed trousers in a parking lot."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C4uURwIuEo3-02.webp","alt":"Two people wearing dark graphic outfits, with red lettering and a red sun design on their tops."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C13lGoeukcd-01.webp","alt":"Person with long hair wearing a black Seed Supply graphic shirt in sunlight."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C1Bh3BUu9Db-01.webp","alt":"Back of a printed T-shirt with a large star and illustrated symbols under red lighting."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CPwt64KMW0Y-01.webp","alt":"Person wearing a black sweatshirt and trousers with dark red graphics against a plain wall."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CPwt64KMW0Y-02.webp","alt":"Back view of a person in a rust-colored hoodie with a cream emblem and white trousers."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CPwt64KMW0Y-03.webp","alt":"Front view of a person wearing a rust-colored hoodie and white trousers with matching cream emblems."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/COJdyVjMy_N-01.webp","alt":"Person wearing a white long-sleeve shirt with a large grayscale oval graphic against a plain background."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/COJdyVjMy_N-02.webp","alt":"Person wearing a black hoodie with pale green and white illustrated figures."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/COJdyVjMy_N-03.webp","alt":"Person with long hair wearing a black hoodie with pale green and white illustrated figures."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/COJdyVjMy_N-04.webp","alt":"Person wearing a white long-sleeve shirt with a large grayscale oval print."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CI1kyGDs2uv-01.webp","alt":"Mirror photograph of a person in a purple symbol-print T-shirt, patterned head covering and dark wide-leg trousers."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CI1kyGDs2uv-02.webp","alt":"Person in a purple graphic T-shirt and chain-trimmed dark trousers raising one leg in a mirror photograph."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CIraYBCMMTj-01.webp","alt":"Person modeling a black sun-print sweatshirt and matching trousers with white sneakers in a studio."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CIraYBCMMTj-02.webp","alt":"Two people modeling black outfits with circular white graphics in a white studio."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CIraYBCMMTj-03.webp","alt":"Person in a black sun-print sweatshirt, cream trousers and a black beanie carrying a black bag."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CIraYBCMMTj-04.webp","alt":"Close view of a black sweatshirt and wide-leg trousers with white circular graphics and black shoes."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CIraYBCMMTj-05.webp","alt":"Close view of a black sweatshirt worn with cream trousers bearing a dark sun emblem."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CD2q24qjJZM-01.webp","alt":"Black-and-white portrait of a person wearing a white graphic long-sleeve shirt and layered necklaces."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CD2q24qjJZM-02.webp","alt":"Black-and-white studio photograph of a person in a white graphic shirt, dark jeans and a shoulder bag."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CD2q24qjJZM-03.webp","alt":"Black-and-white photograph of a person looking down while wearing a white graphic shirt and dark jeans."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CDfRLWOD0Yx-01.webp","alt":"Person in an orange graphic sweatshirt stepping out of a white car at night."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CDfRLWOD0Yx-02.webp","alt":"Close view of an orange sweatshirt with a large pale symbol print being worn at night."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CAEp0g9gjTU-01.webp","alt":"Person wearing a brown long-sleeve shirt with rows of human figures and white trousers outdoors."}],"garments":[{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/studio-gallery/img_0671.webp","alt":"Black flared trousers with illustrated patches on a white promotional background reading On site now."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/studio-gallery/img_0675.webp","alt":"Brightly colored graphic trucker caps arranged on a worktable in a studio."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/studio-gallery/img_0682.webp","alt":"Two rows of colorful graphic caps displayed on a studio workbench."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C5hmey2L5mW-02.webp","alt":"White short-sleeved graphic T-shirt displayed against a black background."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C3w0CQpON21-01.webp","alt":"Cream sweatshirt with an I Love Gaza design laid flat on a wood floor."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/C3w0CQpON21-02.webp","alt":"Back of a cream sweatshirt with a collage of portraits and a ceasefire message, laid flat."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/Cw8wY5_vB31-01.webp","alt":"Collage showing four sides of white graphic T-shirts against a dark background."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/Cw8wVS9Pe9k-01.webp","alt":"Pink and lavender graphic T-shirts arranged on a purple background."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/Cs4eqjLSR7--01.webp","alt":"Blue denim shorts with a colorful Seed Supply print laid flat on concrete."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CspD8u1v5aL-01.webp","alt":"Purple and yellow graphic T-shirts laid side by side on concrete."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CmHd_j4psrN-01.webp","alt":"White and gray sweatshirts and T-shirts with colorful freedom and peace graphics laid together."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CkYxWC1pZZH-01.webp","alt":"Two white sweatshirts with red sun and face graphics laid on concrete."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CWwe-q2PS5Y-02.webp","alt":"Grid of graphic sweatshirts and hoodies in different colors on a white background."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CKDD2Bys7rG-01.webp","alt":"Cream tote bag with black rifle silhouettes arranged over paper target graphics."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CKDD2Bys7rG-02.webp","alt":"Cream tote bag with black rifle silhouettes shown against a white background."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CKDD2Bys7rG-03.webp","alt":"Back of a cream tote bag with a small black emblem against a white background."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CFs0hFvsks_-01.webp","alt":"Close-up of red T-shirts layered together with purple and pink symbol prints."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CFs0hFvsks_-02.webp","alt":"Red T-shirt with purple and pink symbols displayed against a white background."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CDVEZ3MD7P6-02.webp","alt":"Red T-shirt with layered purple and pink symbols on a white background."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/CCr0V0tjYsX-01.webp","alt":"White long-sleeve shirt with a pastel-colored symbol print hanging on a black hanger."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/B_8qbe9A1yH-01.webp","alt":"Promotional collage of six colored long-sleeve shirts with human-figure prints and care instructions."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/B_8qbe9A1yH-02.webp","alt":"Red long-sleeve shirt with pale human-figure silhouettes and My Shadows lettering on a white background."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/B_8qbe9A1yH-03.webp","alt":"Yellow long-sleeve shirt with a pale figure print and lettering on a white background."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/B_8qbe9A1yH-04.webp","alt":"Pink long-sleeve shirt with red figure silhouettes and lettering on a white background."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/B_8qbe9A1yH-05.webp","alt":"Brown long-sleeve shirt with black figure silhouettes and lettering on a white background."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/B_8qbe9A1yH-06.webp","alt":"Purple long-sleeve shirt with darker figure silhouettes and lettering on a white background."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/B_8qbe9A1yH-07.webp","alt":"Gray long-sleeve shirt with dark red figure silhouettes and lettering on a white background."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/B_6DO2YAiC1-01.webp","alt":"Colorful shirts with human-figure prints layered in a circular arrangement."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/B95upoTg1AJ-01.webp","alt":"White long-sleeve shirt with a black sun and eye graphic laid on a dark reflective floor."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/B95upoTg1AJ-02.webp","alt":"Close-up of script lettering and fine linework printed on white fabric."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/B95upoTg1AJ-03.webp","alt":"Close-up of an eye inside a dark sun graphic printed on white fabric."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/B273Ua8AG7j-01.webp","alt":"Pale yellow long-sleeve shirt with blue figure silhouettes laid on dry grass."},{"src":"https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app/images/breakthyrule/instagram/B23HBIxAcHk-01.webp","alt":"Black long-sleeve shirt with white figure silhouettes and lettering laid on a wood floor."}]};
+ // Request small, cacheable square crops from the image's own Netlify site.
+ const postcardImageOrigins = new Set([
+  'https://breakthyrule-eden-showroom.netlify.app',
+  'https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app'
+ ]);
+ function postcardImageURL(source, size) {
+  try {
+   const original = new URL(source, location.origin);
+   if (!postcardImageOrigins.has(original.origin) || original.pathname.startsWith('/.netlify/')) return source;
+   const image = new URL('/.netlify/images', original.origin);
+   image.searchParams.set('url', original.pathname + original.search);
+   image.searchParams.set('w', size); image.searchParams.set('h', size);
+   image.searchParams.set('fit', 'cover'); image.searchParams.set('q', '78'); image.searchParams.set('fm', 'webp');
+   return image.href;
+  } catch { return source; }
+ }
+ function setPostcardImage(photo, source, kind) {
+  const small = postcardImageURL(source, 128);
+  photo.decoding = 'async'; photo.draggable = false; photo.width = photo.height = 128;
+  if (small !== source) {
+   const mobile = kind === 'garments' ? 39 : 46, desktop = kind === 'garments' ? 80 : 94;
+   photo.sizes = `(max-width:600px) ${mobile}px, (max-height:600px) ${mobile}px, ${desktop}px`;
+   photo.srcset = [128, 256, 384].map(size => postcardImageURL(source, size) + ' ' + size + 'w').join(', ');
+  }
+  photo.src = small;
+ }
+ const postcardSlots = [], postcardPoolCursor = { people: 0, garments: 0 };
+ let postcardCursor = 0, postcardTimer = 0, postcardEpoch = 0, postcardsRunning = false;
+ let pendingPostcard = null, galleryRequested = false;
+ let postcardShuffle = [], lastPostcardShuffle = -Infinity;
+ const postcardsCanPlay = () => worldCanPlay() && postcardSlots.length > 0;
+ function finishPendingPostcard() {
+  const pending = pendingPostcard;
+  if (!pending) return;
+  clearTimeout(pending.timer);
+  pending.photo.removeEventListener('load', pending.ready);
+  pending.photo.removeEventListener('error', pending.fail);
+  if (pending.revealed) {
+   // Pause on a complete photograph, even if a crossfade was in progress.
+   pending.photo.style.transition = 'none'; pending.photo.style.opacity = '1';
+   pending.slot.photo.remove(); pending.slot.photo = pending.photo; pending.slot.source = pending.source;
+   pending.slot.button?.setAttribute('aria-label', 'Open photo: ' + (pending.photo.alt || 'Break Thy Rule collection'));
+  } else pending.photo.remove();
+  pendingPostcard = null;
+ }
+ function stopPostcards() {
+  postcardsRunning = false; postcardEpoch++; postcardShuffle = [];
+  clearTimeout(postcardTimer); postcardTimer = 0;
+  finishPendingPostcard();
+ }
+ function schedulePostcard(delay = postcardShuffle.length ? 80 : 1600) {
+  clearTimeout(postcardTimer);
+  if (postcardsCanPlay()) postcardTimer = setTimeout(advancePostcard, delay);
+ }
+ function advancePostcard() {
+  postcardTimer = 0;
+  if (!postcardsCanPlay()) return stopPostcards();
+  let slot, burst = false;
+  while (postcardShuffle.length && !slot) {
+   const candidate = postcardShuffle.shift();
+   if (getComputedStyle(candidate.card).display !== 'none') { slot = candidate; burst = true; }
+  }
+  // Every visible frame gets a turn; small-screen hidden frames do not consume turns.
+  for (let attempt = 0; !slot && attempt < postcardSlots.length; attempt++) {
+   const candidate = postcardSlots[postcardCursor];
+   postcardCursor = (postcardCursor + 1) % postcardSlots.length;
+   if (getComputedStyle(candidate.card).display !== 'none') { slot = candidate; break; }
+  }
+  if (!slot) return schedulePostcard();
+  const pool = postcardPools[slot.kind], displayed = new Set(postcardSlots.map(item => item.source));
+  let item;
+  for (let attempt = 0; attempt < pool.length; attempt++) {
+   const candidate = pool[postcardPoolCursor[slot.kind] % pool.length];
+   postcardPoolCursor[slot.kind] = (postcardPoolCursor[slot.kind] + 1) % pool.length;
+   if (!displayed.has(candidate.src)) { item = candidate; break; }
+  }
+  if (!item) return schedulePostcard();
+  const photo = document.createElement('img');
+  photo.alt = item.alt; photo.loading = 'eager'; photo.fetchPriority = 'low';
+  photo.style.opacity = '0';
+  const epoch = ++postcardEpoch;
+  let loading = false;
+  const current = () => pendingPostcard?.photo === photo && epoch === postcardEpoch && postcardsCanPlay();
+  const fail = () => {
+   if (!current()) return;
+   finishPendingPostcard(); schedulePostcard();
+  };
+  const ready = async () => {
+   if (loading || !current()) return;
+   loading = true;
+   try { if (photo.decode) await photo.decode(); }
+   catch { fail(); return; }
+   if (!current()) return;
+   clearTimeout(pendingPostcard.timer);
+   photo.removeEventListener('load', ready); photo.removeEventListener('error', fail);
+   slot.window.append(photo); pendingPostcard.revealed = true;
+   // The current image stays opaque beneath the incoming, decoded image.
+   void photo.offsetWidth;
+   photo.style.opacity = '1';
+   if (reduced.matches) { finishPendingPostcard(); schedulePostcard(); }
+   else pendingPostcard.timer = setTimeout(() => {
+    if (!current()) return;
+    finishPendingPostcard(); schedulePostcard();
+   }, burst ? 200 : 420);
+  };
+  pendingPostcard = { slot, photo, source: item.src, ready, fail, revealed: false, timer: setTimeout(fail, 10000) };
+  photo.addEventListener('load', ready); photo.addEventListener('error', fail);
+  setPostcardImage(photo, item.src, slot.kind);
+  if (photo.complete && photo.naturalWidth) ready();
+ }
+ function shufflePostcards() {
+  if (!postcardsCanPlay() || performance.now() - lastPostcardShuffle < 1500) return;
+  lastPostcardShuffle = performance.now();
+  postcardEpoch++; clearTimeout(postcardTimer); finishPendingPostcard();
+  postcardShuffle = postcardSlots.filter(slot => getComputedStyle(slot.card).display !== 'none');
+  for (const kind of ['people', 'garments']) postcardPoolCursor[kind] = Math.floor(Math.random() * postcardPools[kind].length);
+  schedulePostcard(40);
+ }
+ function syncPostcards() {
+  if (!postcardsCanPlay()) return stopPostcards();
+  if (postcardsRunning) return;
+  postcardsRunning = true; schedulePostcard();
+ }
+ function refreshPostcardGallery() {
+  if (galleryRequested || typeof window.fetch !== 'function') return;
+  galleryRequested = true;
+  // The active gallery's fetch adapter supplies current photos; embedded pools also work offline.
+  window.fetch('/site/data/gallery.json').then(response => response.ok ? response.json() : null).then(gallery => {
+   if (!Array.isArray(gallery?.items)) return;
+   for (const [kind, category] of [['people', 'worn'], ['garments', 'garments']]) {
+    const seen = new Set(), photos = [];
+    for (const item of gallery.items) {
+     if (item.category !== category || typeof item.src !== 'string') continue;
+     const src = new URL(item.src, location.href);
+     if (!['https:', 'http:'].includes(src.protocol) || seen.has(src.href)) continue;
+     seen.add(src.href); photos.push({ src: src.href, alt: item.alt || item.caption || '' });
+    }
+    if (photos.length > 4) postcardPools[kind] = photos;
+   }
+  }).catch(() => { /* Keep the embedded gallery if a refresh is unavailable. */ });
+ }
+ function arrangePeopleCards() {
+  const cover = root.parentElement?.closest('#btr-cover');
+  if (!cover || root.parentElement.classList.contains('ct-people-scene')) return;
+  const originals = [...cover.querySelectorAll(':scope > .btr-polaroid')];
+  if (!originals.length) return;
+  const scene = document.createElement('div'); scene.className = 'ct-people-scene';
+  root.before(scene); scene.append(root);
+  // Fresh cards prevent the legacy random timer from changing visible images.
+  // Set responsive sources before inserting photos, avoiding a full-size request.
+  const peopleCards = originals.map(original => {
+   const oldPhoto = original.querySelector('img');
+   const card = document.createElement('figure'); card.className = original.className;
+   const item = { src: oldPhoto.src, alt: oldPhoto.alt };
+   original.remove(); scene.append(card);
+   return { card, item };
+  });
+  const garmentCards = garmentPostcards.map((item, index) => {
+   const card = document.createElement('figure'); card.className = 'btr-polaroid ct-garment-card g' + (index + 1);
+   scene.append(card); return { card, item };
+  });
+  for (let index = 0; index < Math.max(peopleCards.length, garmentCards.length); index++) {
+   for (const [kind, entry] of [['people', peopleCards[index]], ['garments', garmentCards[index]]]) {
+    if (!entry) continue;
+    const { card, item } = entry, photo = document.createElement('img');
+    photo.alt = item.alt; photo.style.opacity = '1'; photo.style.transition = 'none';
+    photo.loading = getComputedStyle(card).display === 'none' ? 'lazy' : 'eager';
+    // Only the initial image falls back if the CDN is temporarily unavailable.
+    photo.addEventListener('error', () => {
+     if (photo.src !== item.src) { photo.removeAttribute('srcset'); photo.src = item.src; }
+    }, { once: true });
+    setPostcardImage(photo, item.src, kind);
+    const window = document.createElement('span'); window.className = 'ct-photo-window';
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'ct-postcard-open';
+    button.setAttribute('aria-label', 'Open photo: ' + (item.alt || 'Break Thy Rule collection'));
+    button.setAttribute('aria-haspopup', 'dialog');
+    window.append(photo); card.append(window, button);
+    const slot = { card, photo, window, button, kind, source: item.src };
+    button.addEventListener('click', event => { event.stopPropagation(); finishPendingPostcard(); openPostcardGallery(slot); });
+    postcardSlots.push(slot);
+   }
+  }
+  refreshPostcardGallery();
+ }
+ // The native dialog owns keyboard focus while the selected postcard is enlarged.
+ let postcardGalleryOpen = false;
+ let postcardGallery = null, postcardGalleryItems = [], postcardGalleryIndex = 0;
+ let postcardGalleryRequest = null, postcardGalleryEpoch = 0, postcardGalleryFocus = null;
+ function postcardGalleryImageURL(source) {
+  try {
+   const original = new URL(source, location.origin);
+   if (!['https://breakthyrule-eden-showroom.netlify.app', 'https://instagram-gallery-assets--breakthyrule-eden-showroom.netlify.app'].includes(original.origin)) return source;
+   if (original.pathname.startsWith('/.netlify/')) return source;
+   const image = new URL('/.netlify/images', original.origin);
+   image.searchParams.set('url', original.pathname + original.search);
+   image.searchParams.set('w', '1200'); image.searchParams.set('fit', 'contain');
+   image.searchParams.set('q', '85'); image.searchParams.set('fm', 'webp');
+   return image.href;
+  } catch { return source; }
+ }
+ function cancelPostcardGalleryRequest() {
+  postcardGalleryEpoch++;
+  if (!postcardGalleryRequest) return;
+  const { image, ready, fail, timer } = postcardGalleryRequest;
+  clearTimeout(timer); image.removeEventListener('load', ready); image.removeEventListener('error', fail);
+  postcardGalleryRequest = null;
+ }
+ function updatePostcardGalleryCaption(index) {
+  const item = postcardGalleryItems[index];
+  postcardGallery.count.textContent = `${index + 1} / ${postcardGalleryItems.length}`;
+  postcardGallery.caption.textContent = item.alt || 'Break Thy Rule collection';
+ }
+ function loadPostcardGalleryImage(index) {
+  cancelPostcardGalleryRequest();
+  if (!postcardGalleryOpen || !postcardGalleryItems.length) return;
+  postcardGalleryIndex = (index + postcardGalleryItems.length) % postcardGalleryItems.length;
+  const requestedIndex = postcardGalleryIndex, item = postcardGalleryItems[requestedIndex];
+  const epoch = postcardGalleryEpoch, image = document.createElement('img');
+  image.alt = item.alt || 'Break Thy Rule collection'; image.decoding = 'async'; image.draggable = false;
+  image.className = 'ct-postcard-gallery-photo';
+  postcardGallery.status.textContent = 'Loading photo…'; postcardGallery.stage.setAttribute('aria-busy', 'true');
+  let decoding = false;
+  const current = () => postcardGalleryOpen && epoch === postcardGalleryEpoch && postcardGalleryRequest?.image === image;
+  const fail = () => {
+   if (!current()) return;
+   cancelPostcardGalleryRequest(); postcardGallery.stage.setAttribute('aria-busy', 'false');
+   postcardGallery.status.textContent = 'This photo could not load. Try another photo.';
+  };
+  const ready = async () => {
+   if (decoding || !current()) return;
+   decoding = true;
+   try { if (image.decode) await image.decode(); } catch { fail(); return; }
+   if (!current()) return;
+   cancelPostcardGalleryRequest(); postcardGallery.stage.replaceChildren(image);
+   updatePostcardGalleryCaption(requestedIndex);
+   postcardGallery.status.textContent = ''; postcardGallery.stage.setAttribute('aria-busy', 'false');
+  };
+  postcardGalleryRequest = { image, ready, fail, timer: setTimeout(fail, 12000) };
+  image.addEventListener('load', ready); image.addEventListener('error', fail);
+  image.src = postcardGalleryImageURL(item.src);
+  if (image.complete && image.naturalWidth) ready();
+ }
+ function stepPostcardGallery(direction) {
+  if (postcardGalleryOpen && postcardGalleryItems.length > 1) loadPostcardGalleryImage(postcardGalleryIndex + direction);
+ }
+ function closePostcardGallery(restoreFocus = true) {
+  const wasOpen = postcardGalleryOpen;
+  postcardGalleryOpen = false; cancelPostcardGalleryRequest();
+  if (postcardGallery?.dialog.open) postcardGallery.dialog.close();
+  if (postcardGallery) {
+   postcardGallery.status.textContent = ''; postcardGallery.stage.setAttribute('aria-busy', 'false');
+   postcardGallery.swipe = null;
+  }
+  if (wasOpen) sync();
+  if (wasOpen && restoreFocus && postcardGalleryFocus?.isConnected) postcardGalleryFocus.focus({ preventScroll: true });
+  postcardGalleryFocus = null;
+ }
+ function ensurePostcardGallery() {
+  if (postcardGallery) return;
+  const element = (tag, className, text) => {
+   const node = document.createElement(tag); node.className = className;
+   if (text) node.textContent = text;
+   return node;
+  };
+  const dialog = element('dialog', 'ct-postcard-gallery');
+  dialog.setAttribute('aria-label', 'Break Thy Rule postcard gallery');
+  const top = element('header', 'ct-postcard-gallery-top');
+  const heading = element('h2', 'ct-postcard-gallery-heading');
+  const close = element('button', 'ct-postcard-gallery-close', '×'); close.type = 'button'; close.setAttribute('aria-label', 'Close postcard gallery');
+  top.append(heading, close);
+  const stage = element('div', 'ct-postcard-gallery-stage');
+  const footer = element('footer', 'ct-postcard-gallery-footer');
+  const prev = element('button', 'ct-postcard-gallery-prev', '←'); prev.type = 'button'; prev.setAttribute('aria-label', 'Previous postcard photo');
+  const next = element('button', 'ct-postcard-gallery-next', '→'); next.type = 'button'; next.setAttribute('aria-label', 'Next postcard photo');
+  const count = element('span', 'ct-postcard-gallery-count'); count.setAttribute('aria-live', 'polite'); count.setAttribute('aria-atomic', 'true');
+  footer.append(prev, count, next);
+  const caption = element('p', 'ct-postcard-gallery-caption');
+  const hint = element('p', 'ct-postcard-gallery-hint', 'Swipe or use the arrows to explore.');
+  const status = element('p', 'ct-postcard-gallery-status'); status.setAttribute('role', 'status');
+  dialog.append(top, stage, footer, caption, hint, status);
+  document.body.append(dialog);
+  postcardGallery = { dialog, stage, heading, count, caption, status, close, prev, next, swipe: null };
+  close.addEventListener('click', () => closePostcardGallery());
+  prev.addEventListener('click', () => stepPostcardGallery(-1));
+  next.addEventListener('click', () => stepPostcardGallery(1));
+  dialog.addEventListener('click', event => { event.stopPropagation(); if (event.target === dialog) closePostcardGallery(); });
+  dialog.addEventListener('keydown', event => {
+   event.stopPropagation();
+   if (event.key === 'Escape') { event.preventDefault(); closePostcardGallery(); }
+   else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); stepPostcardGallery(event.key === 'ArrowRight' ? 1 : -1); }
+  });
+  dialog.addEventListener('cancel', event => { event.preventDefault(); event.stopPropagation(); closePostcardGallery(); });
+  dialog.addEventListener('close', () => { if (postcardGalleryOpen) closePostcardGallery(); });
+  stage.addEventListener('pointerdown', event => {
+   if (event.isPrimary === false || event.button !== 0) return;
+   postcardGallery.swipe = { id: event.pointerId, x: event.clientX, y: event.clientY };
+   stage.setPointerCapture?.(event.pointerId);
+  });
+  stage.addEventListener('pointerup', event => {
+   const swipe = postcardGallery.swipe;
+   if (!swipe || swipe.id !== event.pointerId) return;
+   postcardGallery.swipe = null;
+   if (stage.hasPointerCapture?.(event.pointerId)) stage.releasePointerCapture(event.pointerId);
+   const dx = event.clientX - swipe.x, dy = event.clientY - swipe.y;
+   if (Math.abs(dx) >= 45 && Math.abs(dx) > Math.abs(dy) * 1.2) stepPostcardGallery(dx < 0 ? 1 : -1);
+  });
+  stage.addEventListener('pointercancel', () => { postcardGallery.swipe = null; });
+  stage.addEventListener('lostpointercapture', () => { postcardGallery.swipe = null; });
+ }
+ function openPostcardGallery(slot) {
+  if (!slot?.source) return;
+  ensurePostcardGallery();
+  const seen = new Set();
+  postcardGalleryItems = [];
+  for (const item of [{ src: slot.source, alt: slot.photo.alt }, ...(postcardPools[slot.kind] || [])]) {
+   if (typeof item.src !== 'string' || seen.has(item.src)) continue;
+   seen.add(item.src); postcardGalleryItems.push({ src: item.src, alt: item.alt || '' });
+  }
+  postcardGalleryIndex = 0;
+  postcardGalleryFocus = slot.button || slot.card.querySelector('button') || document.activeElement;
+  postcardGallery.heading.textContent = slot.kind === 'garments' ? 'FROM THE COLLECTION' : 'WORN IN THE WILD';
+  postcardGallery.prev.disabled = postcardGallery.next.disabled = postcardGalleryItems.length < 2;
+  // Keep the tapped photo visible while its larger, uncropped version downloads.
+  const preview = document.createElement('img'); preview.className = 'ct-postcard-gallery-photo';
+  preview.alt = slot.photo.alt || 'Break Thy Rule collection'; preview.draggable = false;
+  preview.src = slot.photo.currentSrc || slot.photo.src;
+  postcardGallery.stage.replaceChildren(preview); updatePostcardGalleryCaption(0);
+  postcardGalleryOpen = true; sync();
+  if (!postcardGallery.dialog.open) postcardGallery.dialog.showModal();
+  postcardGallery.close.focus(); loadPostcardGalleryImage(0);
+ }
+
+ // The GLB keeps leaves in their own primitive, while pupil and cavity share black.
+ // Separate only the original sculpted pupil; the later opaque core stays fixed.
+ function createAppleReactions(T, object) {
+  const meshes = [];
+  object.traverse(node => { if (node.isMesh && node.geometry?.getAttribute('position')) meshes.push(node); });
+  const black = meshes.find(node => !Array.isArray(node.material) && /Pure black interior and pupil/.test(node.material?.name || ''));
+  const leaves = meshes.find(node => !Array.isArray(node.material) && node.material?.name === 'Green leaves');
+  let pupil = null, leafPivot = null;
+  if (black?.geometry.index) {
+   const geometry = black.geometry, positions = geometry.getAttribute('position'), normals = geometry.getAttribute('normal');
+   const pupilIndices = [], fixedIndices = [], index = geometry.index;
+   for (let i = 0; i < index.count; i += 3) {
+    const a = index.getX(i), b = index.getX(i + 1), c = index.getX(i + 2);
+    const x = (positions.getX(a) + positions.getX(b) + positions.getX(c)) / 3;
+    const y = (positions.getY(a) + positions.getY(b) + positions.getY(c)) / 3;
+    const z = (positions.getZ(a) + positions.getZ(b) + positions.getZ(c)) / 3;
+    // Vertices from 101275 onward are the opaque core, sclera and cavity divider.
+    const isPupil = a < 101275 && b < 101275 && c < 101275 && z > .55 && ((x - .475) / .118) ** 2 + ((y + .108) / .126) ** 2 < 1;
+    (isPupil ? pupilIndices : fixedIndices).push(a, b, c);
+   }
+   if (pupilIndices.length) {
+    const fixed = new T.BufferGeometry();
+    for (const [name, attribute] of Object.entries(geometry.attributes)) fixed.setAttribute(name, attribute);
+    fixed.setIndex(fixedIndices); fixed.boundingBox = geometry.boundingBox?.clone() || null; fixed.boundingSphere = geometry.boundingSphere?.clone() || null;
+    black.geometry = fixed;
+    const compact = new T.BufferGeometry(), map = new Map(), points = [], directions = [], compactIndices = [];
+    for (const source of pupilIndices) {
+     if (!map.has(source)) {
+      map.set(source, map.size); points.push(positions.getX(source), positions.getY(source), positions.getZ(source));
+      if (normals) directions.push(normals.getX(source), normals.getY(source), normals.getZ(source));
+     }
+     compactIndices.push(map.get(source));
+    }
+    compact.setAttribute('position', new T.Float32BufferAttribute(points, 3));
+    if (normals) compact.setAttribute('normal', new T.Float32BufferAttribute(directions, 3));
+    compact.setIndex(compactIndices); compact.computeBoundingSphere();
+    pupil = new T.Mesh(compact, black.material); pupil.name = 'Interactive black pupil';
+    pupil.position.copy(black.position); pupil.quaternion.copy(black.quaternion); pupil.scale.copy(black.scale);
+    pupil.frustumCulled = false; black.parent.add(pupil);
+   }
+  }
+  if (leaves?.parent) {
+   const parent = leaves.parent;
+   leafPivot = new T.Group(); leafPivot.name = 'Interactive leaf pivot'; leafPivot.position.set(0, .49, 0);
+   parent.add(leafPivot); leaves.position.sub(leafPivot.position); leafPivot.add(leaves);
+  }
+  const pupilBase = pupil?.position.clone(), target = new T.Vector2(), current = new T.Vector2();
+  const screen = new T.Vector3(), local = new T.Vector3(), inverse = new T.Quaternion(), normal = new T.Vector3();
+  const tangent = new T.Vector3(Math.cos(.55), 0, -Math.sin(.55)), outward = new T.Vector3(Math.sin(.55), 0, Math.cos(.55));
+  let leafTime = -1;
+  const clamp = value => Math.max(-1, Math.min(1, Number.isFinite(value) ? value : 0));
+  const center = () => { if (pupil) pupil.position.copy(pupilBase); if (leafPivot) leafPivot.rotation.set(0, 0, 0); };
+  return {
+   hasPupil: !!pupil, hasLeaves: !!leafPivot,
+   setLook(x, y) { target.set(clamp(x), clamp(y)); },
+   resetLook() { target.set(0, 0); },
+   tap() { if (leafPivot) leafTime = 0; },
+   active() { return leafTime >= 0 || current.distanceToSquared(target) > 1e-8; },
+   update(delta, orientation) {
+    const dt = Math.max(0, Math.min(Number.isFinite(delta) ? delta : 0, .08));
+    current.lerp(target, 1 - Math.exp(-12 * dt));
+    if (current.distanceToSquared(target) < 1e-8) current.copy(target);
+    if (pupil) {
+     inverse.copy(orientation).invert();
+     local.copy(screen.set(current.x, current.y, 0)).applyQuaternion(inverse);
+     normal.copy(outward).applyQuaternion(orientation);
+     const facing = Math.max(0, Math.min(1, (normal.z - .05) / .25));
+     const horizontal = clamp(local.dot(tangent)) * .038 * facing, vertical = clamp(local.y) * .020 * facing;
+     pupil.position.copy(pupilBase).addScaledVector(tangent, horizontal); pupil.position.y += vertical;
+    }
+    if (leafPivot) {
+     if (leafTime >= 0) {
+      leafTime += dt;
+      if (leafTime >= 1.15) { leafTime = -1; leafPivot.rotation.set(0, 0, 0); }
+      else {
+       const envelope = Math.exp(-3.7 * leafTime);
+       leafPivot.rotation.set(.07 * Math.sin(leafTime * 21) * envelope, 0, .17 * Math.sin(leafTime * 24) * envelope);
+      }
+     }
+    }
+    return this.active();
+   },
+   reset() { target.set(0, 0); current.set(0, 0); leafTime = -1; center(); }
+  };
+ }
+
+ // Expand the actual apple canvas into the puzzle opening before entering Eden.
+ let enteringApple = false, appleEntryCommitted = false, appleEntryState = null;
+ function restoreAppleEntryCanvas() {
+  const state = appleEntryState;
+  if (!state) return;
+  clearTimeout(state.zoomTimer); clearTimeout(state.commitTimer); clearTimeout(state.cleanupTimer);
+  cancelAnimationFrame(state.frame);
+  if (state.canvas) {
+   state.canvas.style.cssText = state.canvasStyle;
+   state.canvas.classList.remove('ct-enter-canvas');
+   if (state.canvasHidden === null) state.canvas.removeAttribute('aria-hidden');
+   else state.canvas.setAttribute('aria-hidden', state.canvasHidden);
+   if (state.next?.parentNode === state.parent) state.parent.insertBefore(state.canvas, state.next);
+   else state.parent.append(state.canvas);
+  }
+  state.cover?.classList.remove('ct-entering-cover');
+  state.overlay?.remove(); appleEntryState = null;
+ }
+ function cancelAppleEntry() {
+  restoreAppleEntryCanvas(); enteringApple = false;
+ }
+ function resetAppleEntry() {
+  cancelAppleEntry(); appleEntryCommitted = false;
+ }
+ function commitAppleEntry() {
+  if (!enteringApple || appleEntryCommitted) return;
+  appleEntryCommitted = true;
+  const state = appleEntryState;
+  if (state) {
+   clearTimeout(state.commitTimer); clearTimeout(state.zoomTimer);
+   if (state.veil) state.veil.style.opacity = '1';
+  }
+  try { actions.eden?.(); }
+  catch (error) { cancelAppleEntry(); throw error; }
+  // A successful in-place Eden action calls stop(); a navigation unloads the
+  // page. Recover gracefully if navigation was prevented by the browser.
+  if (appleEntryState === state && state) state.cleanupTimer = setTimeout(() => {
+   cancelAppleEntry(); if (running) sync();
+  }, 1800);
+ }
+ function enterAppleWorld() {
+  if (enteringApple || appleEntryCommitted) return;
+  enteringApple = true;
+  if (reduced.matches || (typeof reduceMotion !== 'undefined' && reduceMotion) || document.hidden || !model || !renderer?.domElement || !camera || !stage.getBoundingClientRect) {
+   commitAppleEntry(); return;
+  }
+  const rectangle = stage.getBoundingClientRect();
+  if (!(rectangle.width > 0 && rectangle.height > 0) || !document.body) { commitAppleEntry(); return; }
+  sync(); resetView(0);
+  const canvas = renderer.domElement, parent = canvas.parentNode;
+  if (!parent) { commitAppleEntry(); return; }
+  let holeX = rectangle.width * .36, holeY = rectangle.height * .5;
+  try {
+   // The opening is cut into the original mesh's left front quadrant.
+   model.updateMatrixWorld(true); camera.updateMatrixWorld(true);
+   const point = new window.THREE.Vector3(-.34, -.03, .66);
+   model.children[0].localToWorld(point); point.project(camera);
+   if (Number.isFinite(point.x) && Number.isFinite(point.y)) {
+    holeX = (.5 + point.x * .5) * rectangle.width;
+    holeY = (.5 - point.y * .5) * rectangle.height;
+   }
+  } catch { /* The measured front-quarter fallback still enters the opening. */ }
+  const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  const overlay = document.createElement('div'); overlay.className = 'ct-enter-portal';
+  overlay.setAttribute('role', 'status'); overlay.setAttribute('aria-label', 'Entering Eden');
+  const veil = document.createElement('div'); veil.className = 'ct-enter-veil'; veil.setAttribute('aria-hidden', 'true');
+  const cover = root.closest?.('#btr-cover');
+  const state = appleEntryState = { canvas, parent, next: canvas.nextSibling, canvasStyle: canvas.style.cssText,
+   canvasHidden: canvas.getAttribute('aria-hidden'), overlay, veil, cover, frame: 0, zoomTimer: 0, commitTimer: 0, cleanupTimer: 0 };
+  canvas.classList.add('ct-enter-canvas'); canvas.setAttribute('aria-hidden', 'true');
+  Object.assign(canvas.style, {
+   left: rectangle.left + 'px', top: rectangle.top + 'px', width: rectangle.width + 'px', height: rectangle.height + 'px',
+   transformOrigin: holeX + 'px ' + holeY + 'px', transform: 'translate3d(0,0,0) scale(1)'
+  });
+  overlay.append(canvas, veil); document.body.append(overlay); cover?.classList.add('ct-entering-cover');
+  // Force a painted initial pose before starting the cinematic approach.
+  void canvas.offsetWidth;
+  state.frame = requestAnimationFrame(() => {
+   if (appleEntryState !== state || appleEntryCommitted) return;
+   const dx = viewportWidth / 2 - rectangle.left - holeX, dy = viewportHeight / 2 - rectangle.top - holeY;
+   const scale = Math.min(32, Math.max(12, Math.hypot(viewportWidth, viewportHeight) / (rectangle.width * .13)));
+   canvas.style.transform = `translate3d(${dx}px,${dy}px,0) scale(${scale})`;
+  });
+  state.zoomTimer = setTimeout(() => { if (appleEntryState === state) veil.style.opacity = '1'; }, 570);
+  state.commitTimer = setTimeout(commitAppleEntry, 900);
+ }
+ document.addEventListener('visibilitychange', () => { if (document.hidden && enteringApple) commitAppleEntry(); });
+ reduced.addEventListener('change', event => { if (event.matches && enteringApple) commitAppleEntry(); });
+ window.addEventListener?.('pagehide', cancelAppleEntry);
+ window.addEventListener?.('pageshow', event => {
+  if (event.persisted) { resetAppleEntry(); if (running) sync(); }
+ });
+
+ // Apply each gesture around screen-space axes. Quaternion composition lets the
+ // apple tumble freely, including upside down, without a pole or gimbal lock.
+ function rotateBy(pitch, yaw) {
+  const radians = Math.hypot(pitch, yaw);
+  if (!orientation || !radians) return;
+  rotationAxis.set(pitch / radians, yaw / radians, 0);
+  rotationDelta.setFromAxisAngle(rotationAxis, radians);
+  orientation.premultiply(rotationDelta).normalize();
+ }
+ // Visual-only rocking never accumulates into the automatic yaw rotation.
+ function clearIdleWobble() { wobblePitch = wobbleRoll = wobbleMix = 0; }
+ function composedOrientation() {
+  model.quaternion.copy(orientation);
+  if (wobbleRotation && (wobblePitch || wobbleRoll)) {
+   wobbleEuler.set(wobblePitch, 0, wobbleRoll);
+   model.quaternion.premultiply(wobbleRotation.setFromEuler(wobbleEuler)).normalize();
+  }
+  return model.quaternion;
+ }
+ function stepIdleWobble(delta) {
+  if (reduced.matches) return;
+  wobblePhase += delta; wobbleMix = Math.min(1, wobbleMix + delta * 2.5);
+  const facing = 1 - 2 * (orientation.x ** 2 + orientation.y ** 2);
+  const side = Math.max(0, 1 - facing * facing) * wobbleMix;
+  wobbleRoll = Math.sin(wobblePhase * 7.5) * .19 * side;
+  wobblePitch = Math.cos(wobblePhase * 5.2) * .09 * side;
+ }
+ function catchDisplayedPose() {
+  if (!model || (!wobblePitch && !wobbleRoll)) return;
+  orientation.copy(model.quaternion); clearIdleWobble();
+ }
+ function resetView(yaw = 0) {
+  if (!orientation) return;
+  if (drag) endDrag({ pointerId: drag.id, stopPropagation() {} }, true);
+  spring = null; springFrozen = false; bounce = bounceVelocity = 0; tapTime = null; reactions?.reset();
+  clearIdleWobble();
+  orientation.setFromAxisAngle(rotationAxis.set(0, 1, 0), yaw);
+  velocityX = velocityY = 0; resumeAt = performance.now() + 2200; render();
+ }
+ function render(poseReady = false) {
+  if (!renderer || !model) return false;
+  if (!poseReady) composedOrientation();
+  // A small stretch and lift make the rebound feel soft without distorting the model.
+  model.scale.set(modelScale * (1 - bounce * .5), modelScale * (1 + bounce), modelScale * (1 - bounce * .5));
+  model.position.y = bounce * .75;
+  try { renderer.render(scene, camera); return true; }
+  catch (error) { if (!initialized) throw error; recoverApple(error); return false; }
+ }
+ function canAnimate() {
+  return running && root.isConnected && pageActive && visible && !document.hidden && !postcardGalleryOpen && !enteringApple && model && (!paused || !!drag || (spring && !springFrozen) || tapTime !== null);
+ }
+ function wakeMotion() {
+  if (!frame && canAnimate()) { previous = 0; frame = requestAnimationFrame(tick); }
+ }
+ function returnToRest() {
+  springFrozen = false;
+  if (reduced.matches) {
+   spring = null; bounce = bounceVelocity = 0;
+   orientation.copy(restOrientation); resumeAt = performance.now() + 1000; render(); return;
+  }
+  // Express the shortest orientation difference as an angular displacement.
+  const error = orientation.clone().multiply(restOrientation.clone().invert()).normalize();
+  if (error.w < 0) error.set(-error.x, -error.y, -error.z, -error.w);
+  const length = Math.hypot(error.x, error.y, error.z);
+  const angle = 2 * Math.atan2(length, error.w);
+  const factor = length > 1e-8 ? angle / length : 0;
+  spring = { x: error.x * factor, y: error.y * factor, z: error.z * factor,
+   vx: velocityX, vy: velocityY, vz: 0, elapsed: 0 };
+  bounceVelocity = Math.min(.75, .25 + angle * .13 + Math.hypot(velocityX, velocityY) * .08);
+  wakeMotion();
+ }
+ function stepSpring(delta, time) {
+  const s = spring;
+  // Fixed small substeps keep the spring stable on both fast and slow displays.
+  for (let remaining = delta; remaining > 1e-8;) {
+   const dt = Math.min(remaining, 1 / 120); remaining -= dt;
+   for (const axis of ['x', 'y', 'z']) {
+    const v = 'v' + axis;
+    s[v] += (-100 * s[axis] - 8.8 * s[v]) * dt;
+    s[axis] += s[v] * dt;
+   }
+   bounceVelocity += (-150 * bounce - 10 * bounceVelocity) * dt;
+   bounce += bounceVelocity * dt; s.elapsed += dt;
+  }
+  const angle = Math.hypot(s.x, s.y, s.z);
+  if ((angle < .0015 && Math.hypot(s.vx, s.vy, s.vz) < .02 && Math.abs(bounce) < .001 && Math.abs(bounceVelocity) < .01) || s.elapsed >= 2.4) {
+   orientation.copy(restOrientation); spring = null; bounce = bounceVelocity = 0;
+   velocityX = velocityY = 0; resumeAt = time + 1000;
+  } else if (angle > 1e-8) {
+   rotationAxis.set(s.x / angle, s.y / angle, s.z / angle);
+   orientation.setFromAxisAngle(rotationAxis, angle).multiply(restOrientation).normalize();
+  } else orientation.copy(restOrientation);
+ }
+ function resize(force = false) {
+  if (!renderer) return false;
+  const w = stage.clientWidth, h = stage.clientHeight;
+  if (!w || !h) return false;
+  // Do not reallocate the drawing buffer when reopening an unchanged cover.
+  if (force !== true && w === renderWidth && h === renderHeight) return render();
+  renderWidth = w; renderHeight = h;
+  renderer.setSize(w, h, false); camera.aspect = w / h;
+  // A sphere encloses every orientation, so the full turn stays inside the frame.
+  const vertical = camera.fov * Math.PI / 360;
+  const horizontal = Math.atan(Math.tan(vertical) * camera.aspect);
+  camera.position.z = 1.65 / Math.sin(Math.min(vertical, horizontal));
+  camera.updateProjectionMatrix(); return render();
+ }
+ function tapApple() {
+  if (!model || !running || !visible || postcardGalleryOpen || enteringApple || reduced.matches) return;
+  tapTime = 0; reactions?.tap(); wakeMotion();
+ }
+ function trackAppleLook(event) {
+  if (!reactions || paused || reduced.matches || postcardGalleryOpen || enteringApple) return;
+  // High-rate pointer events only record the newest position. Geometry is read
+  // once in the next display frame, before any drawing/style writes.
+  pendingLook = { x:event.clientX, y:event.clientY };
+ }
+ function applyAppleLook() {
+  if (!pendingLook || !reactions) return;
+  const point = pendingLook; pendingLook = null;
+  const rect = stage.getBoundingClientRect?.() || { left:0, top:0, width:stage.clientWidth, height:stage.clientHeight };
+  if (!rect.width || !rect.height) return;
+  reactions.setLook(Math.max(-1,Math.min(1,(point.x-rect.left)/rect.width*2-1)), Math.max(-1,Math.min(1,1-(point.y-rect.top)/rect.height*2)));
+ }
+ function resetAppleLook() { pendingLook = null; reactions?.resetLook(); }
+ function tick(time) {
+  frame = 0;
+  if (!canAnimate()) return;
+  const delta = previous ? Math.min((time - previous) / 1000, .08) : 0;
+  previous = time;
+  applyAppleLook();
+  if (!drag) {
+   if (spring && !springFrozen) stepSpring(delta, time);
+   else if (!paused && time >= resumeAt) {
+    // Resume a twice-faster idle turn only after the upright pose has settled.
+    const facing = 1 - 2 * (orientation.x ** 2 + orientation.y ** 2);
+    rotateBy(0, delta * 2 * (.12 + .56 * Math.max(0, 1 - facing * facing)));
+    stepIdleWobble(delta);
+   }
+  }
+  const manualReaction = tapTime !== null;
+  if (tapTime !== null) {
+   tapTime += delta;
+   if (!spring) { bounce = .09 * Math.exp(-3.8 * tapTime) * Math.sin(16 * tapTime); bounceVelocity = 0; }
+   if (tapTime >= 1.15) { tapTime = null; if (!spring) bounce = 0; }
+  }
+  const updateReactions = !reduced.matches && (!paused || manualReaction || (spring && !springFrozen));
+  if (updateReactions) reactions?.update(delta, composedOrientation());
+  render(updateReactions); if (canAnimate()) frame = requestAnimationFrame(tick);
+ }
+ function sync() {
+  syncAppleLoading();
+  syncWorld(); syncPostcards();
+  if (drag && (!running || !visible || document.hidden)) endDrag({ pointerId: drag.id, stopPropagation() {} }, true);
+  cancelAnimationFrame(frame); frame = 0; previous = 0;
+  if (canAnimate()) frame = requestAnimationFrame(tick);
+ }
+ function endDrag(event, cancelled = false) {
+  if (!drag || event.pointerId !== drag.id) return;
+  const { moved, id, time, interruptedReturn, x, y, lastX, lastY, started } = drag;
+  drag = null; stage.removeAttribute('data-dragging');
+  if (stage.hasPointerCapture?.(id)) stage.releasePointerCapture(id);
+  if (moved) {
+   suppressClickUntil = performance.now() + 450;
+   if (cancelled || performance.now() - time > 100) velocityX = velocityY = 0;
+   returnToRest();
+   if (!cancelled && Math.hypot(lastX-x,lastY-y) >= 90 && performance.now()-started <= 750) shufflePostcards();
+   if (!cancelled) event.stopPropagation();
+  } else { velocityX = velocityY = 0; if (interruptedReturn) returnToRest(); else if (!cancelled) tapApple(); }
+ }
+ stage.addEventListener('pointerdown', event => {
+  if (!model || !running || !visible || postcardGalleryOpen || enteringApple || drag || event.isPrimary === false || event.button !== 0) return;
+  // Catch a rebound at its current orientation, ready for the next gesture.
+  trackAppleLook(event);
+  const interruptedReturn = !!spring;
+  spring = null; springFrozen = false; bounce = bounceVelocity = 0; tapTime = null;
+  drag = { sensitivity: Math.PI / Math.max(Math.min(stage.clientWidth, stage.clientHeight), 240), id: event.pointerId, x: event.clientX, y: event.clientY, lastX: event.clientX, lastY: event.clientY, time: performance.now(), started: performance.now(), moved: false, interruptedReturn };
+  velocityX = velocityY = 0; stage.setPointerCapture?.(event.pointerId); wakeMotion();
+ });
+ stage.addEventListener('pointermove', event => {
+  trackAppleLook(event);
+  if (!drag || event.pointerId !== drag.id) return;
+  const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
+  if (!drag.moved) {
+   if (Math.hypot(dx, dy) < 4) return;
+   catchDisplayedPose();
+   drag.moved = true; stage.setAttribute('data-dragging', '');
+  }
+  if (event.cancelable) event.preventDefault();
+  const time = performance.now(), elapsed = Math.max((time - drag.time) / 1000, .016);
+  event.stopPropagation();
+  const sensitivity = drag.sensitivity;
+  const pitch = (event.clientY - drag.lastY) * sensitivity, yaw = (event.clientX - drag.lastX) * sensitivity;
+  rotateBy(pitch, yaw);
+  velocityX = pitch / elapsed; velocityY = yaw / elapsed;
+  const speed = Math.hypot(velocityX, velocityY);
+  if (speed > 1.5) { velocityX *= 1.5 / speed; velocityY *= 1.5 / speed; }
+  drag.lastX = event.clientX; drag.lastY = event.clientY; drag.time = time;
+  // The RAF loop draws once per display frame, even on 120–240 Hz input devices.
+  wakeMotion();
+ });
+ stage.addEventListener('pointerup', event => endDrag(event));
+ stage.addEventListener('pointerleave', event => { resetAppleLook(); if (drag && !drag.moved) endDrag(event, true); });
+ stage.addEventListener('pointercancel', event => endDrag(event, true));
+ stage.addEventListener('lostpointercapture', event => endDrag(event, true));
+ stage.addEventListener('click', event => {
+  if (performance.now() < suppressClickUntil) { event.preventDefault(); event.stopPropagation(); }
+ }, true);
+ stage.addEventListener('keydown', event => {
+  if (['Enter',' '].includes(event.key)) { event.preventDefault(); event.stopPropagation(); if (!event.repeat) tapApple(); return; }
+  if (!model || !running || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+  event.preventDefault(); event.stopPropagation(); velocityX = velocityY = 0;
+  if (event.key === 'Home' || event.key === 'End') { resetView(event.key === 'End' ? Math.PI : 0); return; }
+  catchDisplayedPose();
+  spring = null; springFrozen = false;
+  if (event.key === 'ArrowUp' || event.key === 'ArrowDown') rotateBy((event.key === 'ArrowDown' ? 1 : -1) * Math.PI / 8, 0);
+  else rotateBy(0, (event.key === 'ArrowRight' ? 1 : -1) * Math.PI / 8);
+  resumeAt = performance.now() + 2200; render();
+ });
+ stage.addEventListener('keyup', event => {
+  if (!model || !running || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+  event.preventDefault(); event.stopPropagation(); returnToRest();
+ });
+ reset.addEventListener('click', () => resetView());
+ toggle.addEventListener('click', () => { paused = !paused; springFrozen = paused; if (paused) { pendingLook = null; tapTime = null; if (!spring) bounce = 0; reactions?.reset(); render(); } label(); sync(); });
+ reduced.addEventListener('change', e => {
+  paused = e.matches;
+  if (e.matches) { clearIdleWobble(); tapTime = null; reactions?.reset(); if (!spring) bounce = bounceVelocity = 0; render(); }
+  if (e.matches && spring) { orientation.copy(restOrientation); spring = null; bounce = bounceVelocity = 0; render(); }
+  springFrozen = false; label(); sync();
+ });
+ document.addEventListener('visibilitychange', sync);
+ window.addEventListener('online', sync);
+ window.addEventListener('offline', sync);
+ window.addEventListener('pagehide', () => { pageActive = false; sync(); });
+ window.addEventListener('pageshow', () => { pageActive = true; sync(); });
+ new ResizeObserver(resize).observe(stage);
+ new IntersectionObserver(entries => { visible = entries[0].isIntersecting; sync(); }, { threshold: .01 }).observe(root);
+ function appleEligible() {
+  return running && root.isConnected && pageActive && visible && !document.hidden && navigator.onLine !== false;
+ }
+ function clearRetry() { clearTimeout(retryTimer); retryTimer = 0; }
+ function collectAppleResources(attempt, gltf = attempt.gltf) {
+  const resources = attempt.resources;
+  for (const object of new Set([gltf?.scene, ...(gltf?.scenes || [])])) object?.traverse(node => {
+   if (node.geometry) resources.add(node.geometry);
+   if (node.skeleton?.boneTexture) resources.add(node.skeleton.boneTexture);
+   for (const material of (Array.isArray(node.material) ? node.material : [node.material])) {
+    if (!material) continue;
+    resources.add(material);
+    for (const value of Object.values(material)) {
+     if (value?.isTexture) resources.add(value);
+     if (Array.isArray(value)) value.forEach(texture => { if (texture?.isTexture) resources.add(texture); });
+    }
+   }
+  });
+ }
+ function disposeApple(attempt, gltf = attempt?.gltf) {
+  if (!attempt) return;
+  // Collect both before and after reaction geometry is split. Late parses can
+  // add resources after cancellation, so disposal is tracked per resource.
+  collectAppleResources(attempt, gltf);
+  if (renderer && renderer === attempt.renderer) {
+   cancelAppleEntry(); cancelAnimationFrame(frame); frame = previous = 0;
+   if (drag) { const id = drag.id; drag = null; stage.removeAttribute('data-dragging'); if (stage.hasPointerCapture?.(id)) stage.releasePointerCapture(id); }
+   renderer = scene = camera = model = null; reactions = null;
+   orientation = rotationAxis = rotationDelta = restOrientation = wobbleRotation = wobbleEuler = null;
+   renderWidth = renderHeight = 0; pendingLook = null; tapTime = spring = null;
+   bounce = bounceVelocity = velocityX = velocityY = 0; clearIdleWobble(); reset.hidden = true;
+  }
+  for (const resource of attempt.resources) {
+   if (attempt.disposed.has(resource)) continue;
+   attempt.disposed.add(resource);
+   try { resource.dispose?.(); } catch { /* Continue releasing the other owned resources. */ }
+  }
+  if (attempt.renderer && !attempt.rendererDisposed) {
+   attempt.rendererDisposed = true;
+   attempt.renderer.domElement.removeEventListener('webglcontextlost', attempt.contextLost);
+   attempt.renderer.domElement.remove();
+   try { attempt.renderer.dispose(); } catch { /* A lost context may already be disposed. */ }
+   try { attempt.renderer.forceContextLoss?.(); } catch { /* Optional context release. */ }
+  }
+ }
+ function cancelAppleAttempt() {
+  const attempt = appleAttempt;
+  if (!attempt) return;
+  appleAttempt = null; loading = false; appleEpoch++;
+  clearTimeout(attempt.deadline); attempt.controller.abort(appleAbortError());
+  disposeApple(attempt);
+ }
+ function scheduleAppleRetry() {
+  if (!appleEligible() || initialized || retryTimer) return;
+  const delay = retryDelays[Math.min(retryIndex++, retryDelays.length - 1)];
+  retryTimer = setTimeout(() => { retryTimer = 0; initialize(); }, delay);
+ }
+ function recoverApple(error) {
+  if (!initialized) return;
+  const failed = activeApple; activeApple = null; initialized = false;
+  disposeApple(failed); status.hidden = false; status.textContent = 'TRYING AGAIN AUTOMATICALLY…';
+  console.warn('Cover apple will retry automatically:', error);
+  scheduleAppleRetry();
+ }
+ function syncAppleLoading() {
+  if (!appleEligible()) { clearRetry(); cancelAppleAttempt(); return; }
+  if (!initialized && !appleAttempt && !retryTimer) initialize();
+ }
+ async function initialize() {
+  if (initialized || loading || !appleEligible()) return;
+  clearRetry(); loading = true;
+  status.hidden = false; status.textContent = 'LOADING THE APPLE…';
+  const attempt = appleAttempt = { epoch: ++appleEpoch, controller: new AbortController(), renderer: null,
+   gltf: null, resources: new Set(), disposed: new Set(), deadline: 0, expiresAt: performance.now() + 45000, contextLost: null };
+  const signal = attempt.controller.signal;
+  const current = () => appleAttempt === attempt && attempt.epoch === appleEpoch && !signal.aborted && performance.now() < attempt.expiresAt && appleEligible();
+  const assertCurrent = () => {
+   if (!signal.aborted && performance.now() >= attempt.expiresAt) attempt.controller.abort(Error('Apple loading timed out'));
+   if (!current()) throw signal.reason || appleAbortError();
+  };
+  let rejectAbort;
+  const aborted = new Promise((resolve, reject) => { rejectAbort = () => reject(signal.reason || appleAbortError()); signal.addEventListener('abort', rejectAbort, { once: true }); });
+  attempt.deadline = setTimeout(() => attempt.controller.abort(Error('Apple loading timed out')), 45000);
+  try {
+   await Promise.race([(async () => {
+   await acquireAppleDependencies(signal); assertCurrent();
+   const T = window.THREE;
+   const modelURL = new URL('apple-leaf-optimized.glb', assetScriptURL).href;
+   const response = await fetch(modelURL, { signal }); assertCurrent();
+   if (!response.ok) throw Error('Apple model download unavailable');
+   const bytes = await response.arrayBuffer(); assertCurrent();
+   const parsed = new window.ShowroomGLTFLoader().parseAsync(bytes, new URL('.', modelURL).href);
+   const gltf = await Promise.resolve(parsed).then(result => {
+    if (!current()) { disposeApple(attempt, result); throw signal.reason || appleAbortError(); }
+    attempt.gltf = result; collectAppleResources(attempt); return result;
+   });
+   assertCurrent();
+   rotationAxis = new T.Vector3(0, 1, 0); rotationDelta = new T.Quaternion();
+   wobbleRotation = new T.Quaternion(); wobbleEuler = new T.Euler();
+   orientation = new T.Quaternion().setFromAxisAngle(rotationAxis, -.25);
+   restOrientation = orientation.clone();
+   renderer = attempt.renderer = new T.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
+   attempt.contextLost = event => {
+    event.preventDefault();
+    if (initialized && activeApple === attempt) recoverApple(Error('Apple WebGL context lost'));
+    else if (appleAttempt === attempt) attempt.controller.abort(Error('Apple WebGL context lost'));
+   };
+   renderer.domElement.addEventListener('webglcontextlost', attempt.contextLost);
+   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
+   renderer.setClearColor(0x000000, 0);
+   renderer.outputColorSpace = T.SRGBColorSpace;
+   renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
+   renderer.domElement.setAttribute('role', 'img');
+   renderer.domElement.setAttribute('aria-label', 'Red apple with green leaves, a black puzzle opening and pupil over a solid white eye. White BREAK THY RULE lettering and black puzzle seams appear on the back.');
+   stage.append(renderer.domElement);
+   scene = new T.Scene(); camera = new T.PerspectiveCamera(32, 1, .1, 100);
+   scene.add(new T.HemisphereLight(0xffffff, 0x655d50, 2.3));
+   const key = new T.DirectionalLight(0xfff4e3, 3.6); key.position.set(-3, 4, 5); scene.add(key);
+   const rim = new T.DirectionalLight(0xdce8ff, 2); rim.position.set(4, 1, -3); scene.add(rim);
+   const object = gltf.scene;
+   const box = new T.Box3().setFromObject(object), sphere = box.getBoundingSphere(new T.Sphere());
+   if (!Number.isFinite(sphere.radius) || sphere.radius <= 0) throw Error('Empty model');
+   // Fit the actual mesh rather than the box corners, keeping the apple prominent.
+   let radius = 0;
+   const point = new T.Vector3();
+   const measuredPositions = new Map();
+   object.updateMatrixWorld(true);
+   object.traverse(node => {
+    const positions = node.geometry?.attributes.position;
+    if (!positions) return;
+    // Material-split glTF primitives share position accessors. Measure each
+    // distinct accessor/transform pair once instead of rescanning all five.
+    const transforms = measuredPositions.get(positions) || [];
+    if (transforms.some(matrix => matrix.equals(node.matrixWorld))) return;
+    transforms.push(node.matrixWorld.clone()); measuredPositions.set(positions, transforms);
+    for (let i = 0; i < positions.count; i++) {
+     point.fromBufferAttribute(positions, i).applyMatrix4(node.matrixWorld);
+     radius = Math.max(radius, point.distanceTo(sphere.center));
+    }
+   });
+   sphere.radius = radius || sphere.radius;
+   reactions = createAppleReactions(T, object);
+   object.position.sub(sphere.center);
+   model = new T.Group(); model.add(object); modelScale = 1.5 / sphere.radius; model.scale.setScalar(modelScale);
+   scene.add(model);
+   if (!resize(true)) throw Error('Apple stage is not visible yet');
+   assertCurrent();
+   })(), aborted]);
+   assertCurrent();
+   initialized = true; activeApple = attempt; retryIndex = 0;
+   status.hidden = true; toggle.hidden = false; reset.hidden = false;
+  } catch (error) {
+   disposeApple(attempt);
+   if (appleAttempt === attempt) {
+    status.hidden = false; status.textContent = 'TRYING AGAIN AUTOMATICALLY…';
+    if (appleEligible()) { console.warn('Cover apple will retry automatically:', error); scheduleAppleRetry(); }
+   }
+  } finally {
+   clearTimeout(attempt.deadline); signal.removeEventListener('abort', rejectAbort);
+   if (appleAttempt === attempt) { appleAttempt = null; loading = false; }
+  }
+  if (initialized && activeApple === attempt) sync();
+ }
+ return {
+  el: root,
+  start() { resetAppleEntry(); running = true; arrangePeopleCards(); const cover = root.parentElement?.closest('#btr-cover'); if (cover && !lookAttached) { lookAttached = true; cover.addEventListener('pointermove',trackAppleLook); cover.addEventListener('pointerleave',resetAppleLook); } initialize(); resize(); sync(); },
+  stop() { pendingLook = null; running = false; cancelAppleEntry(); closePostcardGallery(false); if (tapTime !== null && !spring) bounce = bounceVelocity = 0; tapTime = null; reactions?.reset(); if (drag) endDrag({ pointerId: drag.id, stopPropagation() {} }, true); velocityX = velocityY = 0; sync(); },
+  enter() { enterAppleWorld(); }
+ };
+};
+
+Object.defineProperty(window, 'createCoverTitle', {configurable:true, get:()=>createAppleCoverTitle, set(){}});
+})();
+</script><script data-breakthyrule-instagram-gallery="20261113-gallery-toolbar" src="https://6af8781d8dcc6095494f6252--breakthyrule-eden-showroom.netlify.app/site/enhancements/snippet-1-0594d7966bf51b5e.js"></script><link data-btr-photo-cleanup="20261112" rel="stylesheet" href="/site/enhancements/snippet-2-971674497a449d50.css">
+<script data-btr-copy-cleanup="20261112" src="/site/enhancements/snippet-2-d306d3a90a23504a.js"></script><link data-btr-editorial-style="20261112" rel="stylesheet" href="/site/enhancements/snippet-3-1774398171d36599.css">
+<script data-btr-editorial-cleanup="20261112" src="/site/enhancements/snippet-3-8adfa19e2328f9a1.js"></script><script data-btr-cave-default="20261112">if(!/^\/showroom(?:\.html)?\/?$/.test(location.pathname))document.documentElement.setAttribute("data-btr-theme","cave");</script><link id="btr-cave-theme" rel="stylesheet" href="/site/enhancements/snippet-9-32f3b992642f1bef.css"></head><body><a href="/product?item=accessory-trucker-cobalt">← Back to custom hats</a><h1>3D model credits</h1><p>Both hat shapes are adapted from freely licensed models. Original creators retain their credit.</p><section><h2>Mesh trucker</h2><p><a href="https://sketchfab.com/3d-models/trucker-hat-dbb5b0e0418540328423c616049c0f64">Trucker Hat</a> by <strong>Matheus Pedreira</strong>, licensed under <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0</a>.</p><p>Adapted for BreakThyRule: source branding removed, dimensions normalized, material regions prepared for custom colors and artwork, neutral cloth and mesh textures optimized, web model exported.</p></section><section><h2>Baseball cap</h2><p><a href="https://sketchfab.com/3d-models/baseball-cap-1c1d34d73fd94e6b9e8f82b1eb7194a0">Baseball Cap</a> by <strong>Scott VanArsdale</strong>, licensed under <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0</a>.</p><p>Adapted for BreakThyRule: dimensions normalized, smooth front and side color regions added, neutral fabric prepared, rear fasteners optimized, web model exported. Original silhouette, stitched texture and curved visor retained.</p></section><small>Source downloads: the official AllenAI Objaverse dataset mirror. Attribution does not imply endorsement by the original creators. BreakThyRule graphics are separate from the source models.</small><link data-btr-button-font rel="preload" as="font" type="font/woff2" crossorigin href="https://apple-cover-assets--breakthyrule-eden-showroom.netlify.app/fonts/archivo-black-latin.woff2"><link data-btr-site-feel rel="stylesheet" href="https://apple-cover-assets--breakthyrule-eden-showroom.netlify.app/site-feel-performance.css?v=1"><script data-btr-site-feel defer src="https://apple-cover-assets--breakthyrule-eden-showroom.netlify.app/site-feel-performance.js?v=1"></script><link data-btr-dynamic rel="stylesheet" href="https://apple-cover-assets--breakthyrule-eden-showroom.netlify.app/btr-dynamic-wide-ad.css?v=1"><script data-btr-dynamic defer src="https://6af7f5f571b8f70fe0b07b0c--breakthyrule-eden-showroom.netlify.app/splash-ads.js"></script><link data-btr-splash-motion rel="stylesheet" href="https://6af7f5f571b8f70fe0b07b0c--breakthyrule-eden-showroom.netlify.app/splash-motion.css"><link data-btr-hero-flow rel="stylesheet" href="https://apple-cover-assets--breakthyrule-eden-showroom.netlify.app/lab-flow.css?v=1"><style data-btr-lab-copy-cleanup>/* Remove the introductory copy and actions, then center the live garment. */
+body[data-page="home"] #photo-story > .hero-copy{display:none!important}
+body[data-page="home"] #photo-story.hero-gallery{grid-template-columns:minmax(0,1fr)!important;gap:0!important}
+body[data-page="home"] #photo-story > .hero-showcase{grid-column:1;justify-self:center}
+</style><link data-btr-clean-header rel="stylesheet" href="/site/enhancements/snippet-7-be27844cc99f804f.css"><script data-btr-logo-codex src="/site/enhancements/snippet-7-50740425e72d74e4.js"></script><style data-btr-shop-cleanup>/* Remove the mood filter strip and numbered shortcuts from the homepage. */
+body[data-page="home"] :is(.btr-mood-bar,nav.shop-path){display:none!important}
+</style><link data-btr-bitmap-hero rel="stylesheet" href="https://apple-cover-assets--breakthyrule-eden-showroom.netlify.app/video-hero.css?v=1"><link data-btr-hero-edge rel="stylesheet" href="/site/hero-bottom.css?v=edge-2"><script type="module" data-btr-bitmap-hero src="/site/hero-bottom.mjs?v=audit-1"></script><link data-btr-ballet-font rel="preload" as="font" type="font/woff2" crossorigin href="https://apple-cover-assets--breakthyrule-eden-showroom.netlify.app/fonts/ballet-latin.woff2"><link data-btr-ballet-type rel="stylesheet" href="https://apple-cover-assets--breakthyrule-eden-showroom.netlify.app/ballet-type.css?v=2"><script data-btr-ballet-type defer src="https://apple-cover-assets--breakthyrule-eden-showroom.netlify.app/ballet-type.js?v=2"></script><script data-btr-product-entry src="/site/enhancements/snippet-12-21cf25e58a703f83.js"></script></body></html>

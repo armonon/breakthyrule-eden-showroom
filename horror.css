@@ -1,0 +1,81 @@
+/* The horror chapter (horror-chapter.js): prompts, the showdown's red light, and the in-game Garment Lab. */
+:root{--hz-ink:#efe9dc;--hz-ease:cubic-bezier(.2,.8,.2,1)}
+
+/* Interaction prompt: a glass pill with a real key cap. */
+#horror-prompt{position:fixed;left:50%;bottom:calc(22% + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:10px;
+ padding:8px 16px 8px 8px;border-radius:999px;background:rgba(8,9,10,.62);-webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2);
+ color:var(--hz-ink);font:600 11px/1 'DM Sans',Arial,sans-serif;letter-spacing:.18em;white-space:nowrap;
+ border:1px solid rgba(239,233,220,.16);box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);pointer-events:none;
+ animation:hz-pop .28s var(--hz-ease) both}
+#horror-prompt:not(:has(kbd)){padding-left:16px}
+#horror-prompt[hidden]{display:none}
+#horror-prompt kbd{display:inline-grid;place-items:center;min-width:24px;height:24px;padding:0 6px;border-radius:7px;background:var(--hz-ink);color:#0b0c0d;
+ font:700 11px/1 'DM Sans',Arial,sans-serif;letter-spacing:0;box-shadow:0 2px 0 rgba(0,0,0,.45),inset 0 -2px 0 rgba(0,0,0,.12)}
+@keyframes hz-pop{from{opacity:0;transform:translate(-50%,6px) scale(.96)}}
+body.touch-play #horror-prompt{bottom:calc(46% + env(safe-area-inset-bottom))}
+
+/* Showdown: a pulsing red vignette and a faint scan of the frame. */
+body.office-showdown #battle-hud::before{content:'';position:fixed;inset:0;pointer-events:none;
+ box-shadow:inset 0 0 140px 30px rgba(170,0,0,.5);background:radial-gradient(ellipse at center,transparent 55%,rgba(90,0,0,.28) 100%);
+ animation:office-red 1.1s ease-in-out infinite}
+@keyframes office-red{50%{box-shadow:inset 0 0 190px 48px rgba(205,0,0,.62)}}
+
+/* In-game Garment Lab. */
+#garment-lab-ingame{--gl-ink:#141414;--gl-mute:#6d6a63;--gl-line:#e3e0d8;--gl-paper:#fbfaf6;
+ width:min(920px,calc(100vw - 28px));max-height:calc(100dvh - 40px);overflow:auto;overscroll-behavior:contain;padding:28px 28px 0;
+ background:var(--gl-paper);color:var(--gl-ink);border:0;border-radius:18px;font-family:'DM Sans',Arial,sans-serif;
+ box-shadow:0 40px 120px rgba(0,0,0,.45),0 0 0 1px rgba(0,0,0,.04);scrollbar-width:thin}
+#garment-lab-ingame:focus{outline:none}
+#garment-lab-ingame[open]{animation:gl-in .42s var(--hz-ease) both}
+#garment-lab-ingame::backdrop{background:radial-gradient(circle at 50% 40%,rgba(18,18,18,.35),rgba(5,5,5,.78));-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);animation:gl-fade .3s ease both}
+@keyframes gl-in{from{opacity:0;transform:translateY(18px) scale(.98)}}
+@keyframes gl-fade{from{opacity:0}}
+#garment-lab-ingame header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:6px}
+#garment-lab-ingame h2{margin:6px 0 0;font:400 clamp(26px,4vw,36px)/1.05 Georgia,serif;letter-spacing:-.01em}
+#garment-lab-ingame small{font-size:10px;font-weight:600;letter-spacing:.22em;color:var(--gl-mute)}
+#garment-lab-ingame .gl-close{flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--gl-line);background:#fff;color:var(--gl-ink);font-size:20px;line-height:1;cursor:pointer;transition:background .2s,transform .2s var(--hz-ease)}
+#garment-lab-ingame .gl-close:hover{background:var(--gl-ink);color:#fff;transform:rotate(90deg)}
+.gl-intro{font-size:14px;line-height:1.55;color:#3c3a36;margin:0 0 18px;max-width:52ch}
+.gl-body{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:24px;align-items:start}
+.gl-preview{position:sticky;top:0;display:flex;flex-direction:column;gap:8px}
+.gl-preview canvas{width:100%;aspect-ratio:2/1;border-radius:14px;background:radial-gradient(circle at 50% 45%,#f4f2ec,#e2dfd6);box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}
+.gl-preview small{text-align:center}
+.gl-controls{display:flex;flex-direction:column;gap:4px}
+.gl-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.gl-row button,.gl-tabs button{min-height:36px;border:1px solid var(--gl-line);border-radius:999px;background:#fff;color:var(--gl-ink);padding:8px 14px;
+ font:600 10px/1 'DM Sans',Arial,sans-serif;letter-spacing:.14em;cursor:pointer;transition:background .18s,border-color .18s,color .18s,transform .18s var(--hz-ease)}
+.gl-row button:hover,.gl-tabs button:hover{border-color:var(--gl-ink)}
+.gl-row button:active,.gl-tabs button:active,.gl-thumb:active,.gl-make:active{transform:scale(.97)}
+.gl-row button[aria-pressed="true"],.gl-tabs button[aria-pressed="true"]{background:var(--gl-ink);color:#fff;border-color:var(--gl-ink)}
+.gl-tabs{display:inline-flex;align-self:flex-start;gap:2px;padding:3px;margin:4px 0 10px;border-radius:999px;background:#efede6}
+.gl-tabs button{border-color:transparent;background:transparent}
+.gl-art{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;max-height:300px;overflow:auto;padding:2px;scrollbar-width:thin;
+ -webkit-mask-image:linear-gradient(180deg,#000 88%,transparent);mask-image:linear-gradient(180deg,#000 88%,transparent)}
+.gl-thumb{position:relative;border:1px solid var(--gl-line);border-radius:10px;background:#fff;padding:5px;cursor:pointer;aspect-ratio:1;transition:border-color .18s,box-shadow .18s,transform .18s var(--hz-ease)}
+.gl-thumb:hover{border-color:#bdb9af;transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.08)}
+.gl-thumb img{width:100%;height:100%;object-fit:contain}
+.gl-thumb[aria-pressed="true"]{border-color:var(--gl-ink);box-shadow:0 0 0 2px var(--gl-ink)}
+.gl-thumb[aria-pressed="true"]::after{content:'✓';position:absolute;top:-7px;right:-7px;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--gl-ink);color:#fff;font-size:11px}
+#garment-lab-ingame footer{position:sticky;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:20px -28px 0;padding:16px 28px calc(18px + env(safe-area-inset-bottom));
+ background:linear-gradient(180deg,rgba(251,250,246,.7),var(--gl-paper) 40%);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-top:1px solid var(--gl-line)}
+.gl-real{font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--gl-ink);text-decoration:none;background:linear-gradient(currentColor,currentColor) 0 100%/0 1px no-repeat;transition:background-size .25s var(--hz-ease)}
+.gl-real:hover{background-size:100% 1px}
+.gl-make{min-height:46px;background:var(--gl-ink);color:#fff;border:0;border-radius:999px;padding:14px 22px;font:700 11px/1 'DM Sans',Arial,sans-serif;letter-spacing:.16em;cursor:pointer;
+ box-shadow:0 10px 24px rgba(0,0,0,.22);transition:transform .2s var(--hz-ease),box-shadow .2s}
+.gl-make:hover{transform:translateY(-1px);box-shadow:0 14px 30px rgba(0,0,0,.28)}
+#garment-lab-ingame :is(button,a):focus-visible{outline:2px solid #2f6fed;outline-offset:2px}
+
+/* Phones: a bottom sheet. */
+@media (max-width:700px){
+ #garment-lab-ingame{width:100vw;max-width:100vw;max-height:92dvh;margin:auto 0 0;border-radius:20px 20px 0 0;padding:20px 18px 0}
+ #garment-lab-ingame[open]{animation-name:gl-sheet}
+ #garment-lab-ingame footer{margin:16px -18px 0;padding:14px 18px calc(14px + env(safe-area-inset-bottom))}
+ .gl-body{grid-template-columns:1fr;gap:14px}
+ .gl-preview{position:static}
+ .gl-preview canvas{max-height:30dvh;object-fit:contain}
+ .gl-make{flex:1 1 100%}
+ .gl-art{grid-template-columns:repeat(auto-fill,minmax(62px,1fr));max-height:220px}}
+@keyframes gl-sheet{from{transform:translateY(100%)}}
+@media (prefers-reduced-motion:reduce){
+ #horror-prompt,#garment-lab-ingame[open],#garment-lab-ingame::backdrop,body.office-showdown #battle-hud::before{animation:none}
+ #garment-lab-ingame *{transition:none!important}}

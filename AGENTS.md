@@ -1,0 +1,56 @@
+# Working on Break Thy Rule · Eden (for every agent and person)
+
+Two agents (Codex and Claude) build this site and game in parallel. These rules keep either one from
+overwriting the other or the live site.
+
+## One source of truth
+
+- **`main` on GitHub is the live site.** Netlify publishes `main` automatically (static, `publish = "."`, no build).
+- **Never deploy by hand** (drag-and-drop, `netlify deploy`, or a base deploy with files overlaid). Files that
+  exist only in a Netlify deploy are lost the next time `main` publishes. That happened on 2026-11-14 and took the
+  collections, the about page and the bitmap hero off the site until they were recovered into git.
+- Everything the site loads must be committed. `tools/ship.sh` refuses to ship if a page references a missing file.
+
+## The loop
+
+1. Start: `git fetch origin && git merge origin/main` (or branch from `origin/main`).
+2. Work on your own branch (`codex/...`, `claude/...`). Commit small, descriptive commits.
+3. Ship: `tools/ship.sh`. It merges the latest `main`, refreshes cache versions, syntax-checks the game's scripts,
+   checks that nothing is missing, and pushes to `main` (retrying if `main` moved). `--dry-run` to check only.
+
+## Only add; never take out someone else's work
+
+- When merging, keep both sides. Never resolve a conflict by taking one whole file over the other.
+- HTML include lists (`showroom.html`, `expedition.html`): keep the union of tags, then run
+  `node tools/expedition/build-revision.mjs` (scripts) and `node tools/refresh-css-versions.mjs` (stylesheets).
+  `?v=` versions on the game pages are content hashes, so conflicts in them are never real: regenerate.
+- Removing a feature or page is fine when it is your own call or the owner asked; say so in the commit message.
+
+## Shared simulation
+
+`player-motion.js`, `player-movement.js`, `parkour.js`, `movement-state.js` and the expedition modules also run
+on the server (`server/expedition-runtime.mjs`). Keep them deterministic: no `Math.random`, no wall-clock time,
+no DOM. New movement state goes into `captureState` / `validateState` / `restoreState`, with defaults so older
+snapshots still load. World props that movement uses must come from data both sides load (see `parkour-grips.js`).
+
+## Map of the game (who added what, so you know where to look)
+
+| Area | Files |
+|---|---|
+| Eden showroom, entry point | `showroom.html`, `app.js` |
+| Public site, shop, lab | `index.html`, `product.html`, `site/`, `labkit/`, `*-collection/`, `btr-belts/` |
+| Beyond Eden expedition | `expedition.html`, `expedition-*.js`, `solo-expedition.js`, `server/expedition*.mjs` |
+| Movement and parkour | `player-movement.js` (momentum, held jumps), `parkour.js` (wall-run, wall jumps, climbing, bars/pipes/ropes), `parkour-grips.js` (the grip props) |
+| Mobile | `eden-mobile.*`, `touch-controls.*`, `game-input-guard.*` |
+| Museum | `museum.js`, `museum-sculptures.js`, `museum-exhibition.js`, `museum-reader.*` |
+| Horror chapter | `story.js` (milestones), `worlds.js` + `worlds.css` (separate worlds, loading screens with the bitmap hero film), `horror-chapter.js` + `horror.css` (office, showdown, keys, black cube, garment lab), `assets/worlds/chapters.json` |
+| HUD additions | `momentum-hud.js` + `momentum-hud.css` (momentum meter) |
+
+Debug handles in the browser console: `breakThyRuleShowroom` (Eden: `.worlds()`, `.story()`, `.horror()`,
+`.parkour()`, `.getState()`), `breakThyRuleExpedition` (Beyond Eden).
+
+## Checks
+
+- Movement: `node tools/movement/movement-test.mjs <url>/showroom.html check` (macOS Chrome path inside; on Linux
+  point it at Chromium).
+- Server: `node --test server/world.test.mjs server/expedition.test.mjs` (`server/lab` needs `npm install`).

@@ -1,0 +1,18 @@
+/* Let only the top 2% of the visible wordmark touch the film edge. */
+html[data-btr-theme] body[data-page="home"] main #wearer-hero[data-masthead-edge]{
+ --btr-photo-height:clamp(620px,calc(100svh - var(--btr-hero-header,72px)),900px);
+ --btr-ink-height:18vw;--btr-ink-offset:0px;
+ height:calc(var(--btr-photo-height) + var(--btr-ink-height)*.98 + 24px)!important;
+ min-height:0!important;max-height:none!important;
+ background:#0b0b0b!important;
+}
+#wearer-hero[data-masthead-edge] :is(.wearer-scenes,.wearer-shade){
+ top:0;bottom:auto!important;height:var(--btr-photo-height)!important;
+}
+html[data-btr-script="ballet"] body[data-page="home"] main #wearer-hero[data-masthead-edge] .wearer-content{
+ top:calc(var(--btr-photo-height) - var(--btr-ink-height)*.02 - var(--btr-ink-offset))!important;
+ bottom:auto!important;transform:none!important;
+}
+html[data-btr-theme][data-btr-script="ballet"] body[data-page="home"] main #wearer-hero[data-masthead-edge] #wearer-title{
+ line-height:1!important;margin:0!important;
+}

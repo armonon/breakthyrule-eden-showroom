@@ -966,6 +966,8 @@
     if(meta.weapon&&meta.weapon!=='melee'&&meta.weapon!=='axe'){const lim=h?h.distance:maxDist;for(const l of loot){if(l.vel||l.item.type==='page')continue;const c=l.group.position.clone().add(new T.Vector3(0,.15,0)),t=c.clone().sub(origin).dot(dir);if(t<0||t>lim)continue;if(origin.clone().addScaledVector(dir,t).distanceTo(c)<.3){l.vel=dir.clone().setY(0).multiplyScalar(2.6).add(new T.Vector3(0,2.4,0));l.y+=.05;}}}
     if(attendant){const a=attendant.pos,t=rayCapsule(origin,dir,new T.Vector3(a.x,a.y+.5,a.z),new T.Vector3(a.x,a.y+3,a.z),.45);if(t!=null&&t<maxDist&&(!h||t<h.distance))return {c:null,distance:t,head:false,point:origin.clone().addScaledVector(dir,t),apply:dmg=>{hurtAttendant(dmg);return {killed:false};}};}
     if(!h)return null;return {...h,apply:(dmg,meta)=>damage(h.c,dmg,player,{...meta,dir:dir.clone()})};},
+   // Something outside the match hurts you (the office crowd): ordinary damage, shields first.
+   hurtPlayer(amount,from=null){if(!active||!player?.alive)return;const dir=from?posOf(player).clone().sub(from).setY(0).normalize():null;damage(player,amount,null,{weapon:'melee',...(dir?{dir}:{})});},
    fallDamage(d){if(active&&player?.alive&&d>0)damage(player,d,null,{kind:'fall'});},
    tackle,doors:()=>doors.map(d=>({x:d.x,z:d.z,open:+Math.max(...d.leaves.map(l=>Math.abs(l.a))).toFixed(2),broken:d.leaves.every(l=>l.gone)})),smashDoor:i=>smashDoor(doors[i],new T.Vector3(0,0,1)),
    onExplosion(p,radius,dmg){if(!active)return;

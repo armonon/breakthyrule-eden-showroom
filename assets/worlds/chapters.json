@@ -2,11 +2,31 @@
  "version": 1,
  "note": "Chapters ship separately. status: live (playable), preview (the place is open, its encounter is still coming) or sealed (the door stays shut and says so). A chapter with a script is loaded only when its door is reached.",
  "chapters": {
-  "pages":    {"title": "Eight pages",        "status": "live"},
-  "office":   {"title": "The office",         "status": "preview", "sealed": "THE MASKS ARE WAITING · THE ALTAR IS NOT READY YET"},
-  "showdown": {"title": "The showdown",       "status": "sealed"},
-  "keys":     {"title": "The keys",           "status": "sealed"},
-  "cube":     {"title": "The black cube",     "status": "live"},
-  "lab":      {"title": "The garment lab",    "status": "sealed", "sealed": "THE CUBE IS SEALED · IT WANTS KEYS"}
+  "pages": {
+   "title": "Eight pages",
+   "status": "live"
+  },
+  "office": {
+   "title": "The office",
+   "status": "live",
+   "sealed": "THE MASKS ARE WAITING \u00b7 THE ALTAR IS NOT READY YET"
+  },
+  "showdown": {
+   "title": "The showdown",
+   "status": "live"
+  },
+  "keys": {
+   "title": "The keys",
+   "status": "live"
+  },
+  "cube": {
+   "title": "The black cube",
+   "status": "live"
+  },
+  "lab": {
+   "title": "The garment lab",
+   "status": "live",
+   "sealed": "THE CUBE IS SEALED \u00b7 IT WANTS KEYS"
+  }
  }
 }
