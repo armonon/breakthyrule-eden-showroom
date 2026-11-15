@@ -21,19 +21,26 @@ const spin = (item, view, autoplay = true) => {
   return node;
 };
 
+const finishArrival = window.btrArrival?.hold('necklace catalog') || (() => {});
 await ready;
 const metalwork = document.getElementById('metalwork');
 if (metalwork && !document.getElementById('necklaces')) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    const response = await fetch('/pendant-collection/catalog.json?v=prices-2');
+    const response = await fetch('/pendant-collection/catalog.json?v=prices-2', {signal: controller.signal});
     if (!response.ok) throw new Error('Collection unavailable');
     const items = await response.json();
     if (!Array.isArray(items) || !items.length) throw new Error('Incomplete collection');
     mount(items);
   } catch (error) {
     console.warn('Necklace collection:', error.message);
+    finishArrival(error);
+  } finally {
+    clearTimeout(timeout);
+    finishArrival();
   }
-}
+} else finishArrival();
 
 function mount(items) {
   const section = el('section', {className: 'section wrap pendant-shelf', id: 'necklaces'});
