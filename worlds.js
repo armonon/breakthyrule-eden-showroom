@@ -16,15 +16,20 @@
   const SHARED=new Set(['Garden of Eden','Eden sky box','Player body','Combat effects','Prewarm stand-ins','Pyramid lighting']);
   const classify=c=>c.isLight||c.isCamera||c.isSprite||(c.type==='Object3D'&&!c.children.length)||SHARED.has(c.name)?'shared':BEYOND.has(c.name)?'beyond':'eden';
   let world='eden',busy=false,hidden=new Set(),manifest=null,loadedScripts=new Map(),stats={switches:0,hiddenLast:0};
-  // Hidden mesh groups must not change the renderer's light-count defines. Keep
-  // a stable light proxy in the scene; its source continues to own animation and
-  // local coordinates, and hidden ancestors simply give the proxy zero intensity.
-  const stableLights=new Map(),lightPosition=new T.Vector3();
+  // A fixed pool keeps world switches from changing light-count defines without
+  // paying for every remote lamp in every fragment. Sources still own animation.
+  const stableLights=new Map(),pointSources=new Map(),lightPosition=new T.Vector3(),nearest=Array(6).fill(null),scores=Array(6).fill(0);
+  const pointPool=Array.from({length:6},()=>{const l=new T.PointLight(0xffffff,0,1,2);l.name='World light pool';l.userData.stableProxy=true;scene.add(l);return l;});
+  function shown(source){for(let p=source;p;p=p.parent){if(!p.visible)return false;if(p===scene)return true;}return false;}
   function syncLights(discover=false){
-   if(discover){const found=[];scene.traverse(o=>{if(o.isLight&&!o.castShadow&&o.parent!==scene&&!stableLights.has(o)&&!o.userData.stableProxy)found.push(o);});
-    for(const source of found){const mirror=source.clone();mirror.name='Stable light · '+(source.parent.name||source.type);mirror.userData.stableProxy=true;const mask=source.layers.mask;source.layers.disableAll();mirror.layers.mask=mask;scene.add(mirror);stableLights.set(source,{mirror,mask});}}
-   for(const [source,{mirror}] of stableLights){let shown=true,p=source;while(p&&p!==scene){shown=shown&&p.visible;p=p.parent;}shown=shown&&p===scene;
-    mirror.intensity=shown?source.intensity:0;mirror.color.copy(source.color);mirror.position.copy(source.getWorldPosition(lightPosition));
+   if(discover){const found=[];scene.traverse(o=>{if(o.isLight&&!o.castShadow&&!o.userData.stableProxy&&!pointSources.has(o)&&!stableLights.has(o)&&(o.isPointLight||o.parent!==scene))found.push(o);});
+    for(const source of found){const mask=source.layers.mask;source.layers.disableAll();if(source.isPointLight){pointSources.set(source,{source,mask,position:new T.Vector3()});continue;}
+     const mirror=source.clone();mirror.name='Stable light · '+(source.parent.name||source.type);mirror.userData.stableProxy=true;mirror.layers.mask=mask;scene.add(mirror);stableLights.set(source,{mirror,mask});}}
+   nearest.fill(null);scores.fill(0);
+   for(const entry of pointSources.values()){const source=entry.source;if(source.intensity<=0||!shown(source))continue;source.getWorldPosition(entry.position);const score=source.intensity/(1+entry.position.distanceToSquared(camera.position));
+    for(let i=0;i<6;i++)if(score>scores[i]){for(let j=5;j>i;j--){scores[j]=scores[j-1];nearest[j]=nearest[j-1];}scores[i]=score;nearest[i]=entry;break;}}
+   for(let i=0;i<6;i++){const mirror=pointPool[i],entry=nearest[i];mirror.intensity=entry?entry.source.intensity:0;if(!entry)continue;const source=entry.source;mirror.position.copy(entry.position);mirror.color.copy(source.color);mirror.distance=source.distance;mirror.decay=source.decay;mirror.layers.mask=entry.mask;}
+   for(const [source,{mirror}] of stableLights){mirror.intensity=shown(source)?source.intensity:0;mirror.color.copy(source.color);mirror.position.copy(source.getWorldPosition(lightPosition));
     if(source.groundColor)mirror.groundColor.copy(source.groundColor);for(const key of ['distance','decay','angle','penumbra'])if(key in source)mirror[key]=source[key];}
   }
 
@@ -114,6 +119,7 @@
   function compileFor(name){if(busy||name===world)return null;const was=world;world=name;apply();let job=null;const self=[];
    for(const c of scene.children)if(classify(c)===name&&!c.visible){self.push(c);c.visible=true;}
    try{job=renderer.compileAsync?renderer.compileAsync(scene,camera):renderer.compile(scene,camera);job?.catch?.(()=>{});}catch(e){console.warn('Prewarm compile failed',e);}finally{for(const c of self)c.visible=false;world=was;apply();}return job;}
-  return {enter,veil,card,chapter,chapters,world:()=>world,loading:()=>busy,apply,syncLights,compileFor,inspect:()=>({world,busy,primed,stableLights:stableLights.size,...stats,film:film.inspect()})};
+  syncLights(true);
+  return {enter,veil,card,chapter,chapters,world:()=>world,loading:()=>busy,apply,syncLights,compileFor,inspect:()=>({world,busy,primed,stableLights:stableLights.size+pointPool.length,pointSources:pointSources.size,...stats,film:film.inspect()})};
  };
 })(window);
