@@ -73,7 +73,7 @@
       const appleStyle = create('link');
       appleStyle.id = 'btr-eden-apple-style';
       appleStyle.rel = 'stylesheet';
-      appleStyle.href = '/site/eden-apple.css?v=b869d1f36747244a';
+      appleStyle.href = '/site/eden-apple.css?v=5cb7eef16f20c4e8';
       document.head.append(appleStyle);
     }
 

@@ -99,6 +99,10 @@ while(queue.length){
   }else if(name.endsWith('.css'))for(const m of text.matchAll(/@import\s+(?:url\(\s*)?['"]([^'"]+)['"]/g))urls.push(m[1]);
   for(const url of urls){const dependency=localUrl(url,name);if(dependency)requireFile(dependency,'referenced by '+name);}
 }
+if(args.includes('--require-tracked')){
+  const tracked=new Set(execFileSync('git',['ls-files','-z'],{cwd:root,encoding:'utf8'}).split('\0'));
+  for(const name of seen.keys())if(!tracked.has(name))fail(name+' exists locally but is not committed to Git');
+}
 if(failures.length){
   console.error('Release blocked: '+failures.length+' missing or invalid dependencies.');
   for(const message of [...new Set(failures)])console.error(' - '+message);

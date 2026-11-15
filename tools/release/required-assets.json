@@ -84,7 +84,10 @@
     "story.js",
     "touch-controls.js",
     "worlds.css",
-    "worlds.js"
+    "worlds.js",
+    "products/web/logo.webp",
+    "site/eden-apple.css",
+    "site/shared-header.js"
   ],
   "recoveredAssets": [
     "_headers",

@@ -14,6 +14,8 @@ for attempt in 1 2 3 4;do
  fi
  node tools/expedition/build-revision.mjs >/dev/null
  node tools/refresh-css-versions.mjs >/dev/null
+ # Check collections, chapters, museum catalogs and media against the complete release baseline.
+ node tools/release/check-release.mjs --require-tracked
  # Syntax-check every top-level script the game pages load.
  bad=0;for f in $(grep -ohE 'src="/[^"?]+\.js' showroom.html expedition.html|sed 's#src="/##'|sort -u);do [[ -f "$f" ]]||{ echo "missing: $f" >&2;bad=1;continue; };node --check "$f" 2>/dev/null||{ echo "syntax error: $f" >&2;bad=1; };done
  # Every local file the pages reference must exist in the repo (nothing may live only on Netlify).

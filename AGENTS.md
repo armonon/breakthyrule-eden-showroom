@@ -5,7 +5,7 @@ overwriting the other or the live site.
 
 ## One source of truth
 
-- **`main` on GitHub is the live site.** Netlify publishes `main` automatically (static, `publish = "."`, no build).
+- **`main` on GitHub is the live site.** Netlify publishes `main` automatically (static, `publish = "."`). Its build command validates dependencies and stamps `game-release.json` with the actual source commit.
 - **Never deploy by hand** (drag-and-drop, `netlify deploy`, or a base deploy with files overlaid). Files that
   exist only in a Netlify deploy are lost the next time `main` publishes. That happened on 2026-11-14 and took the
   collections, the about page and the bitmap hero off the site until they were recovered into git.

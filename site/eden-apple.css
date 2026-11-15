@@ -1,5 +1,5 @@
 /* The original red apple is Eden's small, living doorway. */
-html body header#btr-site-header.btr-about-header[data-shared-header="about"] a.enter-showroom.btr-eden-apple {
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] a.enter-showroom.btr-eden-apple.btr-eden-apple {
   display:inline-flex!important;
   align-items:center!important;
   justify-content:center!important;
@@ -18,6 +18,11 @@ html body header#btr-site-header.btr-about-header[data-shared-header="about"] a.
   line-height:0!important;
   text-decoration:none!important;
   -webkit-tap-highlight-color:transparent;
+}
+/* Gallery's hosted sign theme also targets this link; the apple has no sign frame. */
+html body header#btr-site-header.btr-about-header[data-shared-header="about"] a.enter-showroom.btr-eden-apple.btr-eden-apple::before {
+  display:none!important;
+  content:none!important;
 }
 html body header#btr-site-header.btr-about-header[data-shared-header="about"] a.btr-eden-apple > img {
   display:block!important;
