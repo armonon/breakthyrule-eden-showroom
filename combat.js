@@ -496,7 +496,7 @@
 
   /* ------------------------------------------------------------ C4 */
   function throwCharge(){
-   if(charges.filter(c=>!c.done).length>=WEAPONS[3].mag){hud.toast('Detonate before placing more · RIGHT CLICK');return false;}
+   if(charges.filter(c=>!c.done).length>=WEAPONS[3].mag){hud.toast('Detonate before placing more · '+controlHint('detonate','G'));return false;}
    if(arsenal){if(!(arsenal.reserve.c4>0)){hud.toast('NO CHARGES LEFT');return false;}arsenal.reserve.c4--;}
    const g=buildC4Block();g.traverse(x=>x.userData.noHit=true);world.add(g);
    const start=camera.localToWorld(new T.Vector3(.15,-.12,-.45));
@@ -737,16 +737,19 @@
      if(!current)return;
      const w=current,s=state[w.id];
      text('.ch-name',w.name+' / '+w.kind);
-     const ids=slotIds();set(el,'slots',ids.join(','),()=>{const box=q('.ch-slots');
+     const ids=slotIds(),slotHints=ids.map((id,i)=>controlHint('weapon'+(i+1),String(i+1))),holsterHint=controlHint('holster','X / 0');
+     text('.ch-keys',controlHint('fire','Left mouse')+' FIRE · '+controlHint('aim','Right mouse')+' AIM / MELEE · '+controlHint('reload','R')+' RELOAD · '+controlHint('swap','Q')+' SWAP · WHEEL OR PINCH ZOOM · '+controlHint('detonate','G')+' DETONATE · '+holsterHint+' PUT AWAY');
+     text('.ch-lock span','MOUSE TO AIM · ESC TO RELEASE · '+holsterHint+' TO PUT AWAY');text('.ch-putaway b',holsterHint);
+     set(el,'slots',ids.join(',')+'|'+slotHints.join(',')+'|'+holsterHint,()=>{const box=q('.ch-slots');
       // Empty hands first, then every weapon carried, each with its key and what is left in it.
-      const hands=document.createElement('button');hands.dataset.id='';hands.className='ch-hands';hands.innerHTML='<b>X</b>EMPTY HANDS';hands.title='Put the weapon away (X, 0 or the same number)';hands.onclick=e=>{e.stopPropagation();holster();};
-      box.replaceChildren(hands,...ids.map((id,i)=>{const W=WEAPONS.find(x=>x.id===id),b=document.createElement('button');b.dataset.id=id;b.innerHTML=`<b>${i+1}</b><span>${W.name}</span><small></small>`;b.title=W.name+' / '+W.kind;b.onclick=e=>{e.stopPropagation();if(current?.id===id)holster();else equip(id);};return b;}));cache.delete('active');});
+      const hands=document.createElement('button');hands.dataset.id='';hands.className='ch-hands';hands.innerHTML='<b></b>EMPTY HANDS';hands.firstChild.textContent=holsterHint;hands.title='Put the weapon away ('+holsterHint+')';hands.onclick=e=>{e.stopPropagation();holster();};
+      box.replaceChildren(hands,...ids.map((id,i)=>{const W=WEAPONS.find(x=>x.id===id),b=document.createElement('button');b.dataset.id=id;b.innerHTML=`<b></b><span>${W.name}</span><small></small>`;b.firstChild.textContent=slotHints[i];b.title=W.name+' / '+W.kind;b.onclick=e=>{e.stopPropagation();if(current?.id===id)holster();else equip(id);};cache.delete('ammo:'+id);return b;}));cache.delete('active');});
      set(el,'active',w.id,()=>el.querySelectorAll('.ch-slots button').forEach(b=>b.classList.toggle('active',b.dataset.id===w.id)));
      for(const b of el.querySelectorAll('.ch-slots button[data-id]:not(.ch-hands)')){const W=WEAPONS.find(x=>x.id===b.dataset.id),st=state[W.id],r=reserveOf(W);set(b.lastChild,'ammo:'+W.id,W.id==='axe'?'':W.id==='c4'?String(arsenal?arsenal.reserve.c4||0:W.mag):st.ammo+'/'+(r===Infinity?W.mag:r),(n,v)=>{n.textContent=v;});}
      if(w.id==='axe'){text('.ch-count b','∞');text('.ch-count small','');}
      else if(w.id==='c4'){const live=charges.filter(c=>!c.done).length;text('.ch-count b',String(arsenal?arsenal.reserve.c4||0:w.mag-live));text('.ch-count small',live?` · ${live} ARMED`:` / ${w.mag}`);}
      else{const r=reserveOf(w);text('.ch-count b',String(s.ammo));text('.ch-count small',' / '+(r===Infinity?w.mag:r)+(w.id==='pump'&&s.chamber===false&&s.ammo>0?' · PUMP':''));}
-     text('.ch-state',s.action?.name==='reload'?'RELOADING':(w.id!=='axe'&&w.id!=='c4'&&s.ammo===0?'EMPTY · R':''));
+     text('.ch-state',s.action?.name==='reload'?'RELOADING':(w.id!=='axe'&&w.id!=='c4'&&s.ammo===0?'EMPTY · '+controlHint('reload','R'):''));
      text('.ch-score',stats.shots?`RANGE · ${stats.hits} HITS · ${stats.trueShots} TRUE`:'');
      // Crosshair gap from spread, ring from focus
      const spreadPx=Math.max(4,currentSpread()*stage.clientHeight/(2*Math.tan(camera.fov*Math.PI/360))*1);
@@ -756,7 +759,7 @@
      set(ring,'ring',Math.max(8.5,r).toFixed(1),(n,v)=>n.setAttribute('r',v));
      cls('focusing',false); // the crosshair gap shows the spread; a gold dot means settled (TRUE SHOT)
      cls('window',inWindow());cls('winded',(s.breath||0)>.05);
-     cls('ads',adsBlend>.6&&w.id!=='axe');text('.ch-zoom',adsBlend>.05&&ZOOM[w.id]?(1+(ZOOM[w.id]-1)*adsBlend).toFixed(1)+'×'+(scoped?(breath.tired>0?' · RECOVERING':shiftHeld&&breath.hold>0?' · HOLDING '+Math.ceil(BREATH_HOLD-breath.hold):' · SHIFT STEADY'):''):'');
+     cls('ads',adsBlend>.6&&w.id!=='axe');text('.ch-zoom',adsBlend>.05&&ZOOM[w.id]?(1+(ZOOM[w.id]-1)*adsBlend).toFixed(1)+'×'+(scoped?(breath.tired>0?' · RECOVERING':shiftHeld&&breath.hold>0?' · HOLDING '+Math.ceil(BREATH_HOLD-breath.hold):' · '+controlHint('sprint','Shift')+' STEADY'):''):'');
      set(q('.ch-mag i'),'mag',w.mag&&w.id!=='axe'&&w.id!=='c4'?(s.ammo/w.mag*100).toFixed(0):'0',(n,v)=>{n.style.width=v+'%';n.parentNode.classList.toggle('low',+v<=25);});cls('melee',w.id==='axe'||w.id==='c4');
     }
    };
@@ -768,7 +771,11 @@
   const BREATH_HOLD=4,BREATH_TIRED=3;
   // Rifle and SMG recoil you can learn while aiming: the muzzle climbs, then walks right, left and right again.
   const SPRAY=[0,.2,.45,.6,.35,-.1,-.5,-.75,-.55,-.1,.35,.7,.8,.5,.1,-.3,-.6,-.6,-.3,0];
-  document.addEventListener('keydown',e=>{if(e.key==='Shift')shiftHeld=true;});document.addEventListener('keyup',e=>{if(e.key==='Shift')shiftHeld=false;});window.addEventListener('blur',()=>{shiftHeld=false;});
+  document.addEventListener('keydown',e=>{if(!inputBlocked(e)&&inputKey(e)==='shift')shiftHeld=true;});
+  document.addEventListener('keyup',onKeyUp);
+  root.addEventListener('blur',releaseInputs);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseInputs();});
+  root.edenControls?.onChange(()=>{releaseInputs();hud?.update();});
   // Zoom by scrolling the wheel, a two-finger trackpad scroll or pinch, or pinching a touch screen: the weapon comes up
   // to the sights and the view narrows to the weapon's magnification. Heavier weapons sway more, bob harder, swing
   // further behind your turns, come up to the sights slower and slow you down.
@@ -984,17 +991,31 @@
 
   /* ------------------------------------------------------------ input */
   function requestLock(){if(!armed)return;sfx.init();const el=renderer.domElement;try{const p=el.requestPointerLock?.({unadjustedMovement:true});p?.catch?.(()=>el.requestPointerLock?.());}catch{el.requestPointerLock?.();}}
-  function onLockChange(){locked=document.pointerLockElement===renderer.domElement;if(!locked){buttons.left=buttons.right=false;}hud?.update();requestFrame();}
+  function onLockChange(){locked=document.pointerLockElement===renderer.domElement;if(!locked)releaseInputs();hud?.update();requestFrame();}
   function onMouseMove(e){if(!locked||!armed||!o.canAct())return;const z=ZOOM[current?.id]||1,sens=.0021*lerp(1,Math.min(.7,1.35/z),adsBlend)*lookScale();yaw+=e.movementX*sens;pitch=clamp(pitch-e.movementY*sens*ySign(),-1.35,1.35);const heavy=1+(WEIGHT[current?.id]||0)*1.6;anim.swayX.kick(-e.movementX*.012*heavy*(1-adsBlend*.6));anim.swayY.kick(e.movementY*.012*heavy*(1-adsBlend*.6));requestFrame();}
-  function onMouseDown(e){if(!armed)return;if(!locked){if(e.target===renderer.domElement&&e.button===0)requestLock();return;}e.preventDefault();if(e.button===0){buttons.left=true;pendingFire=true;}if(e.button===2){buttons.right=true;if(current?.id==='c4')detonate();else if(setting('aim','wheel')==='hold'&&zoomable()){zoomTarget=1;o.setThird?.(false);}else bash();}requestFrame();}
-  function onMouseUp(e){if(e.button===0)buttons.left=false;if(e.button===2){buttons.right=false;if(setting('aim','wheel')==='hold')zoomTarget=0;}}
+  function inputKey(e){return root.edenControls?.key(e)??e.key?.toLowerCase()??'';}
+  function controlHint(action,fallback){return root.edenControls?.hint(action)||fallback;}
+  function inputBlocked(e){return (window.edenControls?.blockedModifiers(e)??(e.ctrlKey||e.metaKey||e.altKey||e.isComposing))||e.target?.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target?.tagName)||!!document.querySelector('dialog[open], [aria-modal="true"]');}
+  function pressButton(key){
+   if(!armed||!(locked||touchMode)||!o.canAct())return;
+   if(key==='fire'){buttons.left=true;pendingFire=true;}
+   if(key==='aim'){buttons.right=true;if(current?.id==='c4')detonate();else if(setting('aim','wheel')==='hold'&&zoomable()){zoomTarget=1;o.setThird?.(false);}else bash();}
+   requestFrame();
+  }
+  function releaseButton(key){if(key==='fire')buttons.left=false;if(key==='aim'){buttons.right=false;if(setting('aim','wheel')==='hold')zoomTarget=0;}}
+  function releaseInputs(){shiftHeld=false;buttons.left=buttons.right=false;pendingFire=false;if(setting('aim','wheel')==='hold')zoomTarget=0;}
+  function onMouseDown(e){if(!armed||inputBlocked(e))return;if(!locked){if(e.target===renderer.domElement&&e.button===0)requestLock();return;}if(root.edenControls)return;e.preventDefault();pressButton(e.button===0?'fire':e.button===2?'aim':'');}
+  function onMouseUp(e){if(!root.edenControls)releaseButton(e.button===0?'fire':e.button===2?'aim':'');}
+  function onKeyUp(e){const k=inputKey(e);if(k==='shift')shiftHeld=false;releaseButton(k);}
   function onKey(e){
-   if(e.ctrlKey||e.metaKey||e.altKey||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)||e.target.isContentEditable||document.querySelector('dialog[open]'))return;
-   const k=e.key.toLowerCase();
+   if(inputBlocked(e)||e.repeat)return;
+   if(root.edenControls&&!['walk','combat','battle'].includes(root.edenControls.context()))return;
+   const k=inputKey(e);
+   if(k==='fire'||k==='aim'){e.preventDefault();pressButton(k);return;}
    if(/^[1-7]$/.test(k)){if(!o.canAct())return;const id=slotIds()[+k-1];if(!id)return;e.preventDefault();if(armed&&current?.id===id)holster();else equip(id);return;}
    if((k==='0'||k==='`')&&armed){e.preventDefault();holster();return;}
-   if(k==='g'&&armed&&current?.id==='c4'){e.preventDefault();detonate();return;}
-   if(!armed)return;
+   if(k==='g'&&armed&&o.canAct()&&current?.id==='c4'){e.preventDefault();detonate();return;}
+   if(!armed||!o.canAct())return;
    if(k==='q'){e.preventDefault();if(previous)equip(previous);}
    if(k==='r'){e.preventDefault();reload();}
    if(k==='b'){e.preventDefault();if(current?.id==='c4')detonate();else bash();}

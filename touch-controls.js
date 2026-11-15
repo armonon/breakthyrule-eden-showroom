@@ -5,7 +5,8 @@
   const media=matchMedia('(pointer:coarse), (any-pointer:coarse)');
   if(!media.matches&&!('ontouchstart'in root))return null;
   const abort=new AbortController(),listen=(node,type,fn,options={})=>node.addEventListener(type,fn,{...options,signal:abort.signal});
-  const key=(k,down)=>{const code=k===' '?'Space':/^\d$/.test(k)?'Digit'+k:k.length===1?'Key'+k.toUpperCase():k==='Shift'?'ShiftLeft':k;document.dispatchEvent(new KeyboardEvent(down?'keydown':'keyup',{key:k,code,bubbles:true}));};
+  // Touch buttons describe game actions, not the physical keys the player remapped.
+  const key=(k,down)=>{const code=k===' '?'Space':/^\d$/.test(k)?'Digit'+k:k.length===1?'Key'+k.toUpperCase():k==='Shift'?'ShiftLeft':k;const event=new KeyboardEvent(down?'keydown':'keyup',{key:k,code,bubbles:true});Object.defineProperty(event,'edenTouchAction',{value:true});document.dispatchEvent(event);};
   const movementKey=move||key,cap=(node,id)=>{try{node.setPointerCapture(id);}catch{}};
   const uncap=(node,id)=>{try{if(id!==null&&node.hasPointerCapture(id))node.releasePointerCapture(id);}catch{}};
   const el=document.createElement('div');el.id='touch-controls';el.hidden=true;el.setAttribute('aria-label','Touch game controls');
@@ -56,8 +57,9 @@
    if(lastMode!==mode){reset();lastMode=mode;}
    if(on!==shown){shown=on;el.hidden=!on;document.body.classList.toggle('touch-play',on);if(!on)reset();}
    el.classList.toggle('armed',mode!=='unarmed');el.classList.toggle('tc-expedition',isExpedition);
-   for(const selector of ['.tc-aim','.tc-swap','.tc-melee'])q(selector).hidden=isExpedition;
-   const available=actions();q('.tc-fire').hidden=isExpedition&&available.fire===false;q('.tc-reload').hidden=isExpedition&&available.reload===false;
+   const hide=(selector,hidden)=>{const button=q(selector);if(hidden)releases.get(button)?.();button.hidden=hidden;};
+   for(const selector of ['.tc-aim','.tc-melee'])hide(selector,mode!=='armed');hide('.tc-swap',isExpedition);
+   const available=actions();hide('.tc-fire',isExpedition&&available.fire===false);hide('.tc-reload',mode==='unarmed'||isExpedition&&available.reload===false);
    q('.tc-fire').textContent=isExpedition?'FLARE':mode==='armed'?'FIRE':'PUNCH';q('.tc-fire').setAttribute('aria-label',isExpedition?'Fire nonlethal flare':mode==='armed'?'Fire':'Punch');
    combat()?.setTouch?.(on&&!isExpedition);
   }
@@ -65,6 +67,7 @@
   observer.observe(document.body,{subtree:true,attributes:true,attributeFilter:['open']});
   for(const id of ['night-chat','social-panel']){const panel=document.getElementById(id);if(panel)observer.observe(panel,{attributes:true,attributeFilter:['hidden']});}
   for(const type of ['blur','pagehide','resize','orientationchange'])listen(root,type,reset);
+  if(root.visualViewport)listen(root.visualViewport,'resize',reset);
   listen(document,'visibilitychange',()=>{reset();sync();});listen(document,'btr:page-visibility',()=>{reset();sync();});
   if(document.body.classList.contains('expedition-entry'))document.body.classList.add('entry-touch');sync();
   return {element:el,reset,dispose(){if(disposed)return;disposed=true;clearInterval(timer);observer.disconnect();abort.abort();reset();combat()?.setTouch?.(false);document.body.classList.remove('touch-play','entry-touch');el.remove();},inspect:()=>({shown,keys:[...held],stick:sid!==null,look:lid!==null,actions:releases.size,mode:lastMode})};

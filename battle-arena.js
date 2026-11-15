@@ -577,7 +577,7 @@
      if(player){const sh=Math.max(0,player.shield||0);q('.ar-shield i').style.width=(player.shieldMax?sh/player.shieldMax*100:0)+'%';q('.ar-shield span').textContent=sh>0?'SHIELD '+Math.ceil(sh):'SHIELD DOWN';q('.ar-shield').classList.toggle('down',sh<=0);
       const hp=Math.max(0,player.hp),ar=Math.max(0,player.armor);q('.ar-hp i').style.width=hp+'%';q('.ar-hp span').textContent=Math.ceil(hp)+' HP';
       q('.ar-armor i').style.width=(player.armorMax?ar/player.armorMax*100:0)+'%';q('.ar-armor span').textContent=player.garment?`${Math.ceil(ar)} · ${player.garment.name.toUpperCase()}`:'NO ARMOR';
-      q('.ar-heals').innerHTML=`<kbd>H</kbd> BANDAGE ×${player.heals.bandage} · MEDKIT ×${player.heals.medkit}`;
+      q('.ar-heals').innerHTML=`<kbd></kbd> BANDAGE ×${player.heals.bandage} · MEDKIT ×${player.heals.medkit}`;q('.ar-heals kbd').textContent=window.edenControls?.hint('heal')||'H';q('.ar-prompt kbd').textContent=window.edenControls?.hint('loot')||'F';
       q('.ar-heal-progress').style.opacity=player.healing?1:0;if(player.healing)q('.ar-heal-progress i').style.width=(player.healing.t/player.healing.dur*100)+'%';}
      if(zone){const ph=ZONE_PHASES[Math.max(0,zone.phase)],left=Math.max(0,(zone.state==='wait'?ph.wait:ph.shrink)-zone.t);
       q('.ar-zone').textContent=phase!=='live'?'':zone.state==='wait'?`NIGHT FALLS IN ${Math.floor(left/60)}:${String(Math.ceil(left)%60).padStart(2,'0')}`:`NIGHT CLOSING · ${Math.ceil(left)}s`;
@@ -860,7 +860,7 @@
    const cur=combat.inspect().weapon;let lost=null;
    if(cur&&cur!=='axe'&&cur!=='c4'){const loaded=combat.arsenal.drop(cur);const it=rollItem({weapon:cur});it.loaded=loaded;const p=posOf(player);const l=dropItem(it,p.x,p.z,new T.Vector3(dir.x*2.2+rand(-.5,.5),3.8,dir.z*2.2+rand(-.5,.5)));if(l){l.y=p.y+1.3;l.group.position.y=l.y;}lost=W(cur)?.name||cur;}
    damage(player,15,b,{weapon:'melee',dir:dir.clone()});o.onTackled?.(dir);
-   announce(lost?`${b.name} TACKLED YOU · ${lost} KNOCKED LOOSE · F TO CATCH`:`${b.name} TACKLED YOU`);chime([120,80],.14,.05);
+   announce(lost?`${b.name} TACKLED YOU · ${lost} KNOCKED LOOSE · ${window.edenControls?.hint('loot')||'F'} TO CATCH`:`${b.name} TACKLED YOU`);chime([120,80],.14,.05);
   }
   function tackle(feet,dir,speed){
    if(!active||!player?.alive)return null;
@@ -881,8 +881,9 @@
    if(!window.GardenCharacterSchema){try{const r=await fetch('/character-schema.json?v=4');if(r.ok)window.GardenCharacterSchema=await r.json();}catch{}}
    buildGrid();
    hud=buildHud();
-   document.addEventListener('keydown',e=>{if(!active||e.ctrlKey||e.metaKey||['INPUT','TEXTAREA'].includes(e.target.tagName))return;const k=e.key.toLowerCase();if(k==='f'){e.preventDefault();interact();}if(k==='h'){e.preventDefault();useHeal();}if(e.key==='Tab'){e.preventDefault();const b=hud.el.querySelector('.ar-board');b.hidden=false;hud.update();}});
-   document.addEventListener('keyup',e=>{if(e.key==='Tab'&&hud)hud.el.querySelector('.ar-board').hidden=true;});
+   document.addEventListener('keydown',e=>{if(!active||e.repeat||(window.edenControls?.blockedModifiers(e)??(e.ctrlKey||e.metaKey||e.altKey||e.isComposing))||e.target?.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target?.tagName)||document.querySelector('dialog[open], [aria-modal="true"]'))return;const k=window.edenControls?.key(e)??e.key.toLowerCase();if(k==='f'){e.preventDefault();interact();}if(k==='h'){e.preventDefault();useHeal();}if(k==='tab'){e.preventDefault();const b=hud.el.querySelector('.ar-board');b.hidden=false;hud.update();}});
+   document.addEventListener('keyup',e=>{if((window.edenControls?.key(e)??e.key.toLowerCase())==='tab'&&hud)hud.el.querySelector('.ar-board').hidden=true;});
+   const hideScores=()=>{if(hud)hud.el.querySelector('.ar-board').hidden=true;};window.addEventListener('blur',hideScores);document.addEventListener('visibilitychange',()=>{if(document.hidden)hideScores();});window.edenControls?.onChange(hideScores);
   }
   function clearMatch(){
    for(const c of [player,...bots])c?.aura?.parent?.remove(c.aura);

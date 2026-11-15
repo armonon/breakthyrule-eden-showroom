@@ -16,12 +16,12 @@ function setup({correct=null}={}){
  const context=vm.createContext({document,structuredClone,performance:{now:()=>now},matchMedia:()=>({matches:false}),location:{search:''},URLSearchParams,AbortSignal,AbortController,console,
   setInterval:(fn,ms)=>{intervals.set(++timer,{fn,ms});return timer;},clearInterval:id=>intervals.delete(id),addEventListener(){},showroomDeployment:{mode:'preview'}});
  context.window=context;
- for(const path of ['assets/night-pathfinding.js','expedition-world.js','solo-expedition.js','expedition.js'])vm.runInContext(readFileSync(new URL(path,base),'utf8'),context);
+ for(const path of ['assets/night-pathfinding.js','expedition-world.js','solo-expedition.js','game-bindings.js','expedition.js'])vm.runInContext(readFileSync(new URL(path,base),'utf8'),context);
  const controller=context.createExpedition({T:{SpotLight:Light,PointLight:Light,Object3D:Light,Vector3:Vector,MathUtils:{clamp:(x,a,b)=>Math.min(b,Math.max(a,x))}},scene,camera,
   garden:{district:{setState(){}},pyramid:{setPages(){}}},getPose:()=>({x:camera.position.x,z:camera.position.z,yaw:Math.PI}),
   correct,place:(x,z)=>camera.position.copy({x,y:1.75,z}),stopMoving(){},requestDraw(){},returnHome(){},
   layout:{bounds:[-20,40,-110,-20],spawn:[11.7,-81],exit:[11.7,-110],landmarks:[{id:'temple',name:'Moon Temple',x:11.7,z:-94,w:16,d:20}],pages:[{id:0,title:'Test',site:'temple',sockets:[[11.7,-81]]}]}});
- return {controller,element,scene,camera,intervals,advance(seconds){for(let i=0;i<seconds*60;i++){now+=1000/60;for(const timer of intervals.values())timer.fn();}},key:(key,options={})=>listeners.get('keydown')({key,repeat:false,target:{tagName:'BODY'},preventDefault(){},...options}),update:()=>controller.update(100,1/60)};
+ return {controller,bindings:context.edenControls,element,scene,camera,intervals,advance(seconds){for(let i=0;i<seconds*60;i++){now+=1000/60;for(const timer of intervals.values())timer.fn();}},key:(key,options={})=>listeners.get('keydown')({type:'keydown',key,repeat:false,target:{tagName:'BODY'},preventDefault(){},...options}),update:()=>controller.update(100,1/60)};
 }
 const flush=async()=>{await Promise.resolve();await Promise.resolve();};
 test('original controller uses deliberate E/mobile bell interaction and G/mobile flare with input guards',async()=>{
@@ -45,4 +45,13 @@ test('original controller uses deliberate E/mobile bell interaction and G/mobile
 
 test('authority corrections use physical correction hook instead of forcing a placement',async()=>{
  const corrections=[];const f=setup({correct:p=>corrections.push(p)});await f.element('night-solo').click();f.camera.position.x=999;f.advance(.2);await flush();assert.ok(corrections.length>0);assert.equal(f.camera.position.x,999,'host owns the correction; controller must not cancel physical state via place');assert.ok(corrections.every(p=>p.x<100));f.controller.leave();
+});
+
+test('real expedition actions follow remapped inputs and the old keys stop firing',async()=>{
+ const f=setup();f.bindings.set('interact',0,'KeyI');f.bindings.set('flashlight',0,'KeyL');f.bindings.set('flare',0,'KeyH');
+ await f.element('night-solo').click();f.update();f.key('e');await flush();f.advance(.1);assert.equal(f.controller.inspect().state.huntStarted,false);
+ f.key('i');await flush();f.advance(3.2);f.update();assert.equal(f.controller.inspect().state.huntStarted,true);
+ f.key('f');assert.equal(f.element('night-flash').attributes['aria-pressed'],'true');f.key('l');assert.equal(f.element('night-flash').attributes['aria-pressed'],'false');
+ f.key('g');await flush();assert.equal(f.controller.inspect().state.players[0].flares,3);f.key('h');await flush();f.update();assert.equal(f.controller.inspect().state.players[0].flares,2);assert.match(f.element('night-flare').textContent,/^H/);assert.match(f.element('night-action').attributes.title||f.element('night-action').title,/I/);
+ f.controller.leave();
 });

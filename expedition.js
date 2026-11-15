@@ -125,7 +125,9 @@ window.createExpedition=function({T,scene,camera,garden,getPose,place,stopMoving
  if($('night-reset'))$('night-reset').onclick=()=>roomAction('reset-exploration');
  if($('night-ready'))$('night-ready').onclick=()=>roomAction('ready',{ready:!player()?.ready});if($('night-reload'))$('night-reload').onclick=()=>roomAction('reload');$('night-action').onclick=collect;if($('night-flare'))$('night-flare').onclick=fireFlare;$('night-flash').onclick=()=>{flashOn=!flashOn;$('night-flash').setAttribute('aria-pressed',String(flashOn));};$('night-sound').onclick=sound;
  $('night-journal-open').onclick=()=>{stopMoving();renderJournal();$('night-journal').showModal();};$('night-journal-close').onclick=()=>$('night-journal').close();
- document.addEventListener('keydown',e=>{if(!token||document.querySelector('dialog[open]')||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)||e.ctrlKey||e.metaKey)return;if(e.key.toLowerCase()==='e'&&!e.repeat){e.preventDefault();collect();}if(e.key.toLowerCase()==='f'&&!e.repeat)$('night-flash').click();if(e.key.toLowerCase()==='g'&&!e.repeat){e.preventDefault();fireFlare();}if(e.key.toLowerCase()==='r'&&!e.repeat){e.preventDefault();roomAction('reload');}},{signal:eventAbort.signal});
+ function refreshControlHints(){for(const [id,action,label] of [['night-flash','flashlight','Flashlight'],['night-flare','flare','Fire flare'],['night-reload','reload','Reload'],['night-journal-open','journal','Page journal'],['night-chat-open','chat','Party chat'],['night-action','interact','Interact']]){const el=$(id),hint=window.edenControls?.hint(action);if(el&&hint)el.title=label+' ('+hint+')';}}
+ refreshControlHints();const removeBindingHints=window.edenControls?.onChange(refreshControlHints);if(removeBindingHints)eventAbort.signal.addEventListener('abort',removeBindingHints,{once:true});
+ document.addEventListener('keydown',e=>{if(!token||e.defaultPrevented||e.repeat||(window.edenControls?.blockedModifiers(e)??(e.isComposing||e.altKey||e.ctrlKey||e.metaKey))||document.querySelector('dialog[open]')||e.target.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target.tagName)||e.target.closest?.('[contenteditable="true"], [role="textbox"]'))return;const key=window.edenControls?window.edenControls.key(e):e.key.toLowerCase();if(key==='e'){e.preventDefault();collect();}else if(key==='f'){e.preventDefault();$('night-flash').click();}else if(key==='g'){e.preventDefault();fireFlare();}else if(key==='r'){e.preventDefault();roomAction('reload');}else if(key==='j'){e.preventDefault();$('night-journal-open').click();}else if(key==='chat'){e.preventDefault();$('night-chat-open').click();}},{signal:eventAbort.signal});
  window.addEventListener('pagehide',()=>{if(disposed)return;suspended=true;if(browserSolo)leave();else{controller?.abort();clearInterval(poseTimer);remember(token);}},{signal:eventAbort.signal});
  window.addEventListener('pageshow',event=>{if(disposed)return;suspended=false;if(event.persisted&&token&&!browserSolo){clearInterval(poseTimer);poseTimer=setInterval(sendPose,120);stream();roomAction('sync');requestDraw();}},{signal:eventAbort.signal});
  let probeAttempts=0,probeTimer=null;
@@ -158,13 +160,13 @@ window.createExpedition=function({T,scene,camera,garden,getPose,place,stopMoving
     flareButton.hidden=!live();
     const cooldown=Math.max(0,Math.ceil((self?.flareReadyAt||0)-now));
     flareButton.disabled=!live()||exploring()||busy||!(self?.magazine??self?.flares)||cooldown>0||!!self?.reloadUntil;
-    flareButton.textContent='G · '+(self?.magazine??self?.flares??0)+' loaded · '+(self?.reserve??0)+' reserve'+(self?.reloadUntil?' · reloading':cooldown?' · '+cooldown+'s':'');
+    flareButton.textContent=(window.edenControls?.hint('flare')||'G')+' · '+(self?.magazine??self?.flares??0)+' loaded · '+(self?.reserve??0)+' reserve'+(self?.reloadUntil?' · reloading':cooldown?' · '+cooldown+'s':'');
     flareButton.setAttribute('aria-label','Fire nonlethal flare. '+(self?.flares??0)+' remaining'+(cooldown?', ready in '+cooldown+' seconds':''));
    }
-   const viewButton=$('night-view');if(viewButton)viewButton.hidden=!live();
-   const bail=$('night-bail');if(bail){bail.hidden=!live();const key=(preferences()?.bailKey||'b').toUpperCase();bail.textContent=key+(getPose()?.mode==='ragdoll'?' · Get up':' · Bail');bail.title='Manual bail / recover ('+key+')';}
+   const viewButton=$('night-view');if(viewButton){viewButton.hidden=!live();viewButton.title='First / third person ('+(window.edenControls?.hint('view')||'K')+')';}
+   const bail=$('night-bail');if(bail){bail.hidden=!live();const key=window.edenControls?.hint('bail')||(preferences()?.bailKey||'b').toUpperCase();bail.textContent=key+(getPose()?.mode==='ragdoll'?' · Get up':' · Bail');bail.title='Manual bail / recover ('+key+')';}
    const reset=$('night-reset');if(reset){reset.hidden=!state.solo||!exploring();reset.disabled=busy||!!state.countdownUntil;}
-   const reload=$('night-reload');if(reload){reload.hidden=!live();reload.disabled=busy||exploring()||!!self?.reloadUntil||!(self?.reserve>0)||self?.magazine>=2;}
+   const reload=$('night-reload');if(reload){reload.textContent=(window.edenControls?.hint('reload')||'R')+' · Reload';reload.hidden=!live();reload.disabled=busy||exploring()||!!self?.reloadUntil||!(self?.reserve>0)||self?.magazine>=2;}
    const pose=getPose()||camera.position;
    nearest=live()&&!exploring()?state.pages.filter(p=>!state.collected.includes(p.id)).find(p=>Math.hypot(p.x-pose.x,(p.y||0)-(pose.y||0),p.z-pose.z)<2.4):null;
    const bell=nearBell();

@@ -63,7 +63,7 @@
    return best;
   }
   function onKey(event){
-   if(event.repeat||event.ctrlKey||event.metaKey||event.altKey||event.key.toLowerCase()!=='f'||!model?.root.visible||!enabled()||!canPunch()||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName)||event.target.isContentEditable)return;
+   if(event.repeat||(window.edenControls?.blockedModifiers(event)??(event.ctrlKey||event.metaKey||event.altKey||event.isComposing))||(root.edenControls?.key(event)??event.key.toLowerCase())!=='f'||root.edenControls&&root.edenControls.context()!=='walk'||!model?.root.visible||!enabled()||!canPunch()||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(event.target?.tagName)||event.target?.isContentEditable||document.querySelector('dialog[open], [aria-modal="true"]'))return;
    event.preventDefault();api.punch();
   }
   document.addEventListener('keydown',onKey);

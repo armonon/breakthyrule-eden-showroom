@@ -19,7 +19,27 @@
   const controls={};
   function listen(node,event,handler){node.addEventListener(event,handler);listeners.push(()=>node.removeEventListener(event,handler));}
   function row(text,input){const label=doc.createElement('label');label.style.display='flex';label.style.alignItems='center';label.style.gap='10px';label.style.margin='12px 0';const caption=doc.createElement('span');caption.textContent=text;label.append(caption,input);fieldset.append(label);return label;}
-  controls.bailKey=doc.createElement('select');controls.bailKey.setAttribute('aria-label','Bail / get up key');for(const key of KEYS){const option=doc.createElement('option');option.value=key;option.textContent=key.toUpperCase();controls.bailKey.append(option);}row('Bail / get up key',controls.bailKey);
+  const bindings=root.edenControls,remapButtons=new Map();let capture=null;
+  const bindingStatus=doc.createElement('p');bindingStatus.setAttribute('role','status');bindingStatus.setAttribute('aria-live','polite');
+  function stopCapture(message='Binding cancelled.'){capture=null;bindingStatus.textContent=message;renderBindings();}
+  function renderBindings(){if(!bindings)return;const map=bindings.get();for(const [id,buttons] of remapButtons){buttons.forEach((button,slot)=>{button.textContent=capture?.id===id&&capture.slot===slot?'Press a key or mouse button…':map[id][slot]?bindings.label(map[id][slot]):'Add alternate';button.setAttribute('aria-pressed',String(capture?.id===id&&capture.slot===slot));});}}
+  if(bindings){
+   const section=doc.createElement('details'),heading=doc.createElement('summary');heading.textContent='Remap keyboard and mouse';section.append(heading);fieldset.append(section);
+   const instructions=doc.createElement('p');instructions.textContent='Choose a binding, then press a key or mouse button. Escape cancels. Conflicts are rejected within the same game mode. Touch controls keep their own actions. Escape always releases the cursor; Tab keeps menu navigation.';section.append(instructions);
+   const group=doc.createElement('select');group.setAttribute('aria-label','Control group');for(const [id,text] of [['all','All game controls'],['expedition','Beyond Eden'],['walk','Garden'],['combat','Weapons'],['battle','Open match'],['arena','Online arena'],['fists','Fist fight']]){const option=doc.createElement('option');option.value=id;option.textContent=text;group.append(option);}group.value='expedition';section.append(group);
+   const rows=[];
+   for(const action of bindings.actions){const line=doc.createElement('div');line.style.cssText='display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0';const caption=doc.createElement('span');caption.textContent=action.label;caption.style.cssText='flex:1 1 160px';line.append(caption);const buttons=[];
+    for(let slot=0;slot<2;slot++){const button=doc.createElement('button');button.type='button';button.style.cssText='min-height:44px;max-width:100%;white-space:normal';button.setAttribute('aria-label',action.label+(slot?' alternate':' primary')+' binding');listen(button,'click',()=>{capture={id:action.id,slot};bindingStatus.textContent='Press a key or mouse button for '+action.label+'. Escape cancels.';renderBindings();});buttons.push(button);line.append(button);}
+    const clear=doc.createElement('button');clear.type='button';clear.textContent='Clear alternate';clear.style.minHeight='44px';clear.setAttribute('aria-label','Clear alternate for '+action.label);listen(clear,'click',()=>{capture=null;bindings.set(action.id,1,null);renderBindings();});line.append(clear);remapButtons.set(action.id,buttons);rows.push({line,action});section.append(line);
+   }
+   function showGroup(){stopCapture('');for(const {line,action} of rows){line.hidden=group.value!=='all'&&!action.contexts.includes(group.value);line.style.display=line.hidden?'none':'flex';}}
+   listen(group,'change',showGroup);showGroup();
+   const resetBindings=doc.createElement('button');resetBindings.type='button';resetBindings.textContent='Reset all key and mouse bindings';listen(resetBindings,'click',()=>{capture=null;bindings.reset();bindingStatus.textContent='Default bindings restored.';});section.append(resetBindings,bindingStatus);
+   const accept=event=>{if(!capture)return;event.preventDefault();event.stopImmediatePropagation?.();if(event.type==='keydown'&&(event.key==='Escape'||event.key==='Tab')){stopCapture();return;}if(event.repeat||event.isComposing)return;if(event.metaKey||(event.ctrlKey&&!bindings.code(event).startsWith('Control'))||(event.altKey&&!bindings.code(event).startsWith('Alt'))){bindingStatus.textContent='Browser shortcut modifiers cannot be assigned.';return;}const input=event.type==='mousedown'?'Mouse'+event.button:bindings.code(event),result=bindings.set(capture.id,capture.slot,input);if(result.ok)stopCapture(result.saved?'Binding saved.':'Binding applies for this visit; browser storage is unavailable.');else bindingStatus.textContent=result.message;};
+   for(const type of ['keydown','mousedown']){doc.addEventListener?.(type,accept,true);listeners.push(()=>doc.removeEventListener?.(type,accept,true));}
+   const cancel=()=>{if(capture)stopCapture();};listen(dialog,'close',cancel);listen(section,'toggle',()=>{if(!section.open)cancel();});listen(panel,'toggle',()=>{if(!panel.open)cancel();});root.addEventListener?.('blur',cancel);listeners.push(()=>root.removeEventListener?.('blur',cancel));
+   listeners.push(bindings.onChange(()=>{renderBindings();onChange({...value});}));renderBindings();
+  }else{controls.bailKey=doc.createElement('select');controls.bailKey.setAttribute('aria-label','Bail / get up key');for(const key of KEYS){const option=doc.createElement('option');option.value=key;option.textContent=key.toUpperCase();controls.bailKey.append(option);}row('Bail / get up key',controls.bailKey);}
   for(const [key,text] of [['cameraEffects','Enable camera effects'],['bob','Head bob'],['roll','Camera roll'],['sway','Camera sway'],['shake','Camera shake'],['speedFov','Speed FOV change'],['aimAssist','Flare aim assist (optional)']]){const input=doc.createElement('input');input.type='checkbox';controls[key]=input;row(text,input);}
   const outputs={};
   for(const [key,text] of [['firstSensitivity','First-person look sensitivity'],['thirdSensitivity','Third-person look sensitivity'],['firstFov','First-person field of view'],['thirdFov','Third-person field of view']]){
@@ -34,15 +54,15 @@
   function render(){for(const [key,input] of Object.entries(controls)){if(typeof value[key]==='boolean')input.checked=value[key];else input.value=String(value[key]);if(outputs[key])outputs[key].textContent=String(value[key]);}}
   function save(next){if(disposed)return;value=validate(next);render();try{root.localStorage.setItem(STORAGE,JSON.stringify(value));status.textContent='Preferences saved.';}catch{status.textContent='Preferences apply for this visit. This browser could not save them.';}onChange({...value});}
   for(const key of Object.keys(controls))listen(controls[key],'change',()=>save({...value,[key]:RANGES[key]?Number(controls[key].value):typeof value[key]==='boolean'?controls[key].checked:controls[key].value}));
-  listen(reset,'click',()=>save(defaults()));render();dialog?.append(panel);
+  listen(reset,'click',()=>{bindings?.reset();save(defaults());});render();dialog?.append(panel);
   return {
-   get:()=>({...value}),
-   reset:()=>save(defaults()),
+   get:()=>({...value,...(bindings?{bailKey:bindings.hint('bail')}: {})}),
+   reset:()=>{bindings?.reset();save(defaults());},
    isBailKey(event){
-    if(disposed||event.defaultPrevented||event.repeat||event.isComposing||event.ctrlKey||event.metaKey||event.altKey)return false;
+    if(disposed||event.defaultPrevented||event.repeat||(bindings?.blockedModifiers(event)??(event.isComposing||event.ctrlKey||event.metaKey||event.altKey)))return false;
     const editable=node=>node&&(node.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(node.tagName)||node.closest?.('[contenteditable="true"], [role="textbox"], [role="combobox"]'));
     if(editable(event.target)||editable(doc.activeElement)||doc.querySelector('dialog[open], [aria-modal="true"]'))return false;
-    return typeof event.key==='string'&&event.key.toLowerCase()===value.bailKey;
+    return bindings?bindings.action(event)==='bail':typeof event.key==='string'&&event.key.toLowerCase()===value.bailKey;
    },
    destroy(){if(disposed)return;disposed=true;for(const remove of listeners)remove();panel.remove();}
   };

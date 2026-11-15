@@ -75,8 +75,10 @@ window.createPlayMenu=function({nav,after,stage,items,graphics=null,context=()=>
  const grid=card.querySelector('.controls-grid');
  grid.append(...SECTIONS.map(([id,title,rows])=>{const s=document.createElement('section');s.dataset.context=id;const h=document.createElement('h3');h.textContent=title;const dl=document.createElement('dl');
   for(const [k,v] of rows){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=k;dd.textContent=v;dl.append(dt,dd);}s.append(h,dl);return s;}));
+ function refreshBindings(){if(!window.edenControls)return;const groups=[['walk','Getting around'],['combat','Weapons'],['expedition','Beyond Eden'],['fists','Fist fight'],['battle','Open match'],['arena','Online arena']];grid.replaceChildren(...groups.map(([id,title])=>{const section=document.createElement('section');section.dataset.context=id;const h=document.createElement('h3');h.textContent=title;const dl=document.createElement('dl');for(const action of window.edenControls.actions.filter(a=>a.contexts.includes(id))){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=window.edenControls.hint(action.id);dd.textContent=action.label;dl.append(dt,dd);}section.append(h,dl);return section;}));}
+ const remap=document.createElement('button');remap.type='button';remap.textContent='Remap keyboard and mouse';remap.onclick=()=>{card.close();const panel=document.querySelector('.expedition-preferences'),target=document.getElementById('night-dialog');if(panel&&target){panel.open=true;const nested=panel.querySelector('details');if(nested)nested.open=true;onOpen();if(!target.open)target.showModal();panel.querySelector('summary')?.focus();}};card.querySelector('footer').append(remap);
  function openControls(){
-  const now=context();for(const s of grid.children)s.classList.toggle('current',s.dataset.context===now);
+  refreshBindings();const now=window.edenControls?.context()||context();for(const s of grid.children)s.classList.toggle('current',s.dataset.context===now);
   const current=grid.querySelector('.current');if(current)grid.prepend(current);
   if(menu.open)menu.close();if(!card.open){onOpen();card.showModal();}
  }
@@ -85,7 +87,7 @@ window.createPlayMenu=function({nav,after,stage,items,graphics=null,context=()=>
  menu.querySelector('.play-controls').onclick=openControls;
  // "?" from anywhere except text fields; the help chip on the stage does the same for touch and mouse.
  document.addEventListener('keydown',event=>{
-  if(event.key!=='?'||event.ctrlKey||event.metaKey||event.altKey||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;
+  if(event.defaultPrevented||event.repeat||(window.edenControls?.blockedModifiers(event)??(event.isComposing||event.ctrlKey||event.metaKey||event.altKey))||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT','BUTTON','A'].includes(event.target.tagName))return;const key=window.edenControls?window.edenControls.key(event):event.key;if(key==='menu'&&!document.querySelector('dialog[open]')){event.preventDefault();if(document.pointerLockElement)document.exitPointerLock();open();return;}if(key!=='?')return;
   if(document.querySelector('dialog[open]:not(#controls-card):not(#play-menu)'))return;
   event.preventDefault();if(card.open)card.close();else{if(document.pointerLockElement)document.exitPointerLock();openControls();}
  });
