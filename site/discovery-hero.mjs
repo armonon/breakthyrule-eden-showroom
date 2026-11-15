@@ -30,8 +30,7 @@ function draw(garment) {
   return result;
 }
 function labLink(piece) { const { size, ...design } = piece.raw; return '/lab?design=' + encode(design) + '#build'; }
-function generated({ sequence = 1, random = Math.random } = {}) {
-  const garment = ['tee', 'tee', 'hoodie', 'crewneck'][Math.floor(random() * 4)];
+function generated({ sequence = 1, random = Math.random, garment = ['tee', 'tee', 'hoodie', 'crewneck'][Math.floor(random() * 4)] } = {}) {
   const piece = draw(garment), priceCents = priceItem(piece.item).totalCents;
   return {
     id: 'lab-random-' + sequence + '-' + piece.raw.seed, origin: 'generated', category: 'generated', renderKind: 'generated',
@@ -78,7 +77,10 @@ function retryFirstPiece() {
 }
 let mysteryOpen = false, selectedPackage = 'one-tee', detailsHovered = false, boxPaused = reduced.matches;
 let smoke = null, turnPending = false, switchTimer = 0;
-function controls() { stage?.setAuto(!paused && !mysteryOpen); }
+function controls() {
+  stage?.setAuto(!paused && !mysteryOpen);
+  $('discovery-random-shirt').disabled = !scheduler || busy || artBusy || disposed;
+}
 
 function labels(item, manual) {
   section.dataset.discoveryId = item.id;
@@ -140,6 +142,17 @@ async function advance(manual = false) {
   if (!ok) elapsed = lastArt = 0;
   prepareNext();
   if (!ok && !current) { $('discovery-link').textContent = 'Explore the collection ↗'; retryFirstPiece(); }
+}
+async function randomShirt() {
+  if (!scheduler || !stage || busy || artBusy || disposed) return;
+  selectTab('chance');
+  try {
+    await show(generated({ sequence: sequence + 1, garment: 'tee' }), { manual: true });
+    prepareNext();
+  } catch (error) {
+    console.warn('Could not prepare a random shirt:', error);
+    $('discovery-status').textContent = 'Could not prepare a random shirt. Please try again.';
+  }
 }
 function selectPackage(id) {
   const offer = MYSTERY_PACKAGES[id]; if (!offer) return;
@@ -239,6 +252,7 @@ if (section && mount) {
   selectPackage(selectedPackage);
   document.querySelectorAll('[data-discovery-open="mystery"]').forEach(link => link.addEventListener('click', () => selectTab('mystery')));
   $('box-spin').addEventListener('click', () => { boxPaused = !boxPaused; updateBoxMotion(); });
+  $('discovery-random-shirt').addEventListener('click', randomShirt);
   for (const kind of ['chance', 'mystery']) {
     const tab = $('discovery-tab-' + kind);
     tab.addEventListener('click', () => selectTab(kind));
