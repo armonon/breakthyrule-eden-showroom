@@ -83,6 +83,11 @@
   async function chapter(id){const m=(await chapters())[id];if(!m)return {id,status:'sealed'};
    if(m.script&&m.status!=='sealed'){if(!loadedScripts.has(m.script))loadedScripts.set(m.script,new Promise((res,rej)=>{const s=document.createElement('script');s.src=m.script;s.onload=res;s.onerror=rej;document.head.append(s);}));try{await loadedScripts.get(m.script);}catch{return {id,...m,status:'sealed'};}}
    return {id,...m};}
-  return {enter,veil,card,chapter,chapters,world:()=>world,loading:()=>busy,apply,inspect:()=>({world,busy,...stats,film:film.inspect()})};
+  // Compile the scene's shaders exactly as they will be in another world (same visible lights, so the same program
+  // variants), then switch straight back: all synchronous, inside one call, so nothing is drawn in between.
+  // prewarm.js uses this so the first frames after crossing the door do not compile ~100 programs.
+  function compileFor(name){if(busy||name===world)return null;const was=world;world=name;apply();let job=null;
+   try{job=renderer.compileAsync?renderer.compileAsync(scene,camera):renderer.compile(scene,camera);job?.catch?.(()=>{});}catch(e){console.warn('Prewarm compile failed',e);}finally{world=was;apply();}return job;}
+  return {enter,veil,card,chapter,chapters,world:()=>world,loading:()=>busy,apply,compileFor,inspect:()=>({world,busy,...stats,film:film.inspect()})};
  };
 })(window);
