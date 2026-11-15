@@ -546,7 +546,7 @@ function updateFeel(dt){
 }
 function setMovement(key,pressed){
  if(pressed&&(!state.ready||modalOpen()||expedition&&!expedition.canMove()))return;
- if(key==='space'){if(pressed)movement.jump();return;}
+ if(key==='space'){if(pressed){if(!keys.has(key)){keys.add(key);movement.jump();}}else keys.delete(key);if(state.ready)requestDraw();return;}
  if(!moveKeys.has(key)&&key!=='shift')return;
  if(pressed&&moveKeys.has(key))renderer.domElement.focus({preventScroll:true});
  if(key==='shift'&&expeditionPrefs()?.sprintMode==='toggle'){if(pressed){if(keys.has(key))keys.delete(key);else keys.add(key);}requestDraw();return;}
@@ -554,7 +554,7 @@ function setMovement(key,pressed){
  if(state.ready)requestDraw();
 }
 document.addEventListener('keydown',event=>{if(modalOpen()||event.ctrlKey||event.metaKey||event.altKey||event.isComposing||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;const key=event.code==='Space'?'space':event.key.toLowerCase();if(['f','g','q'].includes(key)&&fistsEngaged()){event.preventDefault();event.stopImmediatePropagation();fists.key(key,true,event.repeat);requestDraw();return;}if((key==='a'||key==='d')&&state.ready&&!event.repeat&&!arena?.active())movement.tapDodge(key);if(key==='t'&&!event.repeat&&!combat?.armed()){event.preventDefault();playEmote();return;}if(key==='v'&&thirdOn&&!event.repeat){event.preventDefault();thirdSide*=-1;requestDraw();return;}if(key==='c'&&!event.repeat)parkour?.crouchPressed();if(key==='c'&&state.ready&&!arena?.active()&&(!expedition?.active()||expedition.canMove())&&!playerBail?.active){event.preventDefault();if(!event.repeat){movement.crouchHeld=expeditionPrefs()?.crouchMode==='toggle'?!movement.crouchHeld:true;if(movement.crouchHeld)movement.startSlide();}return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&garden.skybox.distance(targetPosition)<3.8){event.preventDefault();toggleDoor();return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&!battle?.active()&&secrets?.interact()){event.preventDefault();return;}if(state.ready&&key==='m'&&!event.repeat&&ambience){ambience.setMuted(!ambience.muted);secrets?.notify(ambience.muted?'Garden ambience muted (M)':'Garden ambience on (M)');return;}if((moveKeys.has(key)||key==='shift'||key==='space')&&state.ready){if(key==='space'&&['BUTTON','A'].includes(event.target.tagName))return;event.preventDefault();if(!event.repeat)setMovement(key,true);}});
-document.addEventListener('keyup',event=>{const key=event.key.toLowerCase();if(key==='c'&&expeditionPrefs()?.crouchMode!=='toggle')movement.crouchHeld=false;if(fists&&['f','g','q'].includes(key))fists.key(key,false);setMovement(key,false);});
+document.addEventListener('keyup',event=>{const key=event.code==='Space'?'space':event.key.toLowerCase();if(key==='c'&&expeditionPrefs()?.crouchMode!=='toggle')movement.crouchHeld=false;if(fists&&['f','g','q'].includes(key))fists.key(key,false);setMovement(key,false);});
 for(const button of $('social-move').querySelectorAll('button')){button.onpointerdown=event=>{if(event.button!==0)return;event.preventDefault();button.setPointerCapture(event.pointerId);setMovement(button.dataset.key,true);};button.onpointerup=button.onpointercancel=button.onlostpointercapture=()=>setMovement(button.dataset.key,false);}
 document.addEventListener('focusin',event=>{if(modalOpen()||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName)){keys.clear();if(state.ready)requestDraw();}});
 window.addEventListener('blur',()=>{keys.clear();drag=null;movement.crouchHeld=false;fists?.key('q',false);if(state.ready)requestDraw();});
@@ -733,7 +733,7 @@ const touch=window.createTouchControls?.({host:stage.parentElement,combat:()=>co
 const edenMobile=window.createEdenMobile?.({host:stage.parentElement,ready:()=>state.ready,
  active:()=>(worlds?.world()??'eden')==='eden'&&!expedition?.active()&&!battle?.active()&&!combat?.armed()&&!arena?.active(),
  blocked:()=>modalOpen()||worlds?.loading()||!$('social-panel').hidden,
- move:(key,pressed)=>setMovement(key,pressed),jump(){freeView();movement.jump();requestDraw();},
+ move:(key,pressed)=>setMovement(key,pressed),jump(pressed=true){if(pressed)freeView();setMovement('space',pressed);},
  crouch(held){if(held){parkour?.crouchPressed();freeView();movement.crouchHeld=true;movement.startSlide();}else movement.crouchHeld=false;if(state.ready)requestDraw();},
  view(){freeView();lastThirdToggle=0;setThird(!thirdOn);},isThird:()=>thirdOn,tap:event=>horror?.interact?.()||interactWithScene(event),
  stop(){keys.clear();walkVelocity.set(0,0,0);movement.crouchHeld=false;drag=null;if(state.ready)requestDraw();},

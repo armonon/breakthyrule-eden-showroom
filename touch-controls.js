@@ -45,7 +45,7 @@
   const heldKey=k=>{key(k,true);return()=>key(k,false);};
   hold('.tc-fire',()=>{const c=combat();if(expedition())return heldKey('g');if(c?.armed()){c.touchFire(true);return()=>c.touchFire(false);}return heldKey('f');},{dragLook:true});
   hold('.tc-aim',()=>{combat()?.toggleZoom?.();});
-  hold('.tc-jump',()=>{if(jump){jump();return;}return heldKey(' ');});
+  hold('.tc-jump',()=>{if(jump){jump(true);return()=>jump(false);}return heldKey(' ');});
   hold('.tc-slide',()=>{if(crouch){crouch(true);return()=>crouch(false);}return heldKey('c');});
   hold('.tc-use',()=>heldKey(expedition()?'e':'f'));
   hold('.tc-reload',()=>heldKey('r'));
