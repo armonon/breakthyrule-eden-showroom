@@ -534,7 +534,9 @@ function updateFeel(dt){
 }
 function setMovement(key,pressed){
  if(pressed&&(!state.ready||modalOpen()||expedition&&!expedition.canMove()))return;
- if(key==='space'){if(pressed)movement.jump();return;}
+ if(key===' ')key='space';
+ // Space stays held while pressed (player-movement.js: the longer it is held, the higher the jump).
+ if(key==='space'){if(pressed){keys.add('space');movement.jump();}else keys.delete('space');return;}
  if(!moveKeys.has(key)&&key!=='shift')return;
  if(pressed&&moveKeys.has(key))renderer.domElement.focus({preventScroll:true});
  if(key==='shift'&&expeditionPrefs()?.sprintMode==='toggle'){if(pressed){if(keys.has(key))keys.delete(key);else keys.add(key);}requestDraw();return;}
@@ -721,7 +723,7 @@ const touch=window.createTouchControls?.({host:stage.parentElement,combat:()=>co
 const edenMobile=window.createEdenMobile?.({host:stage.parentElement,ready:()=>state.ready,
  active:()=>(worlds?.world()??'eden')==='eden'&&!expedition?.active()&&!battle?.active()&&!combat?.armed()&&!arena?.active(),
  blocked:()=>modalOpen()||worlds?.loading()||!$('social-panel').hidden,
- move:(key,pressed)=>setMovement(key,pressed),jump(){freeView();movement.jump();requestDraw();},
+ move:(key,pressed)=>setMovement(key,pressed),jump(){freeView();keys.add('space');movement.jump();requestDraw();},jumpUp(){keys.delete('space');},
  crouch(held){if(held){parkour?.crouchPressed();freeView();movement.crouchHeld=true;movement.startSlide();}else movement.crouchHeld=false;if(state.ready)requestDraw();},
  view(){freeView();lastThirdToggle=0;setThird(!thirdOn);},isThird:()=>thirdOn,tap:interactWithScene,
  stop(){keys.clear();walkVelocity.set(0,0,0);movement.crouchHeld=false;drag=null;if(state.ready)requestDraw();},
