@@ -114,7 +114,7 @@
     for(const s of sides)for(const f of s.fingers)f.chain.forEach((b,j)=>b.quaternion.setFromAxisAngle(f.axis,.5*(f.thumb?.4:1)));
    }
    return {
-    get active(){return active;},get recovering(){return recover>0;},start,
+    get active(){return active;},get recovering(){return recover>0;},start,reset(){active=false;recover=0;clock=0;acc=0;stayDown=false;snapshot=null;},
     update(dt){if(stayDown&&clock>6)return; // a settled corpse keeps its last pose
      step(dt);pose();
      // Lie still for a moment, then get up: the procedural pose takes over from the ragdoll over about a second.
@@ -136,13 +136,18 @@
   const codec=()=>root.createMovementStateCodec({T});
   if(root.GardenAnim&&!root.GardenAnim.ready())setTimeout(()=>root.GardenAnim.load(),3000);
   const toLocal=p=>group.worldToLocal(v3.copy(p)).clone(),toWorld=p=>group.localToWorld(p.clone());
+  const frameV=Array.from({length:160},()=>new T.Vector3()),frameQ=Array.from({length:32},()=>new T.Quaternion());let vi=0,qi=0;
+  const tempV=(x=0,y=0,z=0)=>frameV[vi++].set(x,y,z),copyV=v=>frameV[vi++].copy(v),tempQ=()=>frameQ[qi++].identity();
+  const localTemp=p=>group.worldToLocal(copyV(p)),worldTemp=p=>group.localToWorld(copyV(p));
+  const gaitOffsets=[0,0],animList=[],animEntries=Array.from({length:80},()=>({})),locoEntries=Array.from({length:8},()=>({}));let animCount=0,locoCount=0;
+  const addAnim=(id,t,weight,mask,loop)=>{const e=animEntries[animCount++];e.id=id;e.t=t;e.weight=weight;e.mask=mask;e.loop=loop;animList.push(e);};
   const api={
    tune:{guardLift:0,wadeLift:0},
    // Local-player-only view presentation. It never changes the root or the aim.
    presentation({firstPerson=0,sprint=0,lookYawRate=0,lookPitchRate=0,effects=null}={}){if(canonical)return;view.firstTarget=clamp(firstPerson,0,1);view.sprintTarget=clamp(sprint,0,1);view.yawTarget=clamp(lookYawRate,-6,6);view.pitchTarget=clamp(lookPitchRate,-6,6);view.enabled=effects?!!effects.cameraEffects:!reduced;view.bob=effects?.bob!==false;view.sway=effects?.sway!==false;},
    // A layer asks for a hand on a world point; weight 0 lets the hand go back to swinging.
-   touch(side,point,normal=null,weight=1,kind='press'){const s=sides[side==='L'?0:1];s.touch=weight>0&&point?{point:point.clone(),normal:normal?.clone()||null,kind}:s.touch;s.touchTarget=weight;},
-   lookAt(point){state.look=point?point.clone():null;},
+   touch(side,point,normal=null,weight=1,kind='press'){const s=sides[side==='L'?0:1];if(weight>0&&point){s.touch??={point:new T.Vector3(),normal:null,kind};s.touch.point.copy(point);s.touch.normal=normal?(s.touch.normal||new T.Vector3()).copy(normal):null;s.touch.kind=kind;}s.touchTarget=weight;},
+   lookAt(point){state.look=point?(state.look||new T.Vector3()).copy(point):null;},
    guard(weight){state.guardTarget=clamp(weight,0,1);},
    airborne(value){state.airborne=!!value;},
    // 0 standing .. 1 full crouch: the pelvis drops and the torso leans in; the leg IK bends the knees.
@@ -152,7 +157,7 @@
    hold(mesh,kind=null){if(state.held?.mesh&&state.held.mesh!==mesh)state.held.mesh.parent?.remove(state.held.mesh);state.held=mesh?{mesh,kind}:null;if(mesh){mesh.traverse(n=>{n.userData.noHit=true;n.raycast=()=>{};});mesh.visible=false;}},
    holdKind(kind=null){if(!canonical)throw Error('Mesh-free held items require a canonical pose.');if(kind!==null&&typeof kind!=='string')throw Error('Invalid held item.');state.held=kind?{mesh:null,kind}:null;},
    held:()=>state.held,
-   aimAt(point){state.aimPoint=point?point.clone():null;},
+   aimAt(point){state.aimPoint=point?(state.aimPoint||new T.Vector3()).copy(point):null;},
    // Authored clips (character-anim.js) layered over the procedural pose. mask: 'full' | 'upper' | 'torso' | 'arms';
    // arms: true lets the clip move the arms even while they hold a gun or grip something; hold: stay on the last frame.
    play(id,{fade=.15,speed=1,loop=null,mask='full',weight=1,arms=false,hold=false,start=0}={}){
@@ -163,9 +168,9 @@
    animTune:{loco:true},
    // Jab with the hand furthest back; returns the seconds until the fist lands.
    punch(target){const s=sides[state.punches++%2];s.punch={t:0,target:target?toLocal(target):s.shoulder.clone().add(new T.Vector3(-s.sign*.08,.02,.62))};return .12;},
-   hit(direction,strength=1){const d=direction.clone().applyQuaternion(group.getWorldQuaternion(new T.Quaternion()).invert());d.y=0;if(d.lengthSq()>1e-6)d.normalize();
+   hit(direction,strength=1,{zone='chest'}={}){const d=direction.clone().applyQuaternion(group.getWorldQuaternion(new T.Quaternion()).invert());d.y=0;if(d.lengthSq()>1e-6)d.normalize();
     state.hits=(state.hits||[]).filter(t=>state.time-t<1.3);state.hits.push(state.time);if(!canonical&&!ragdoll.active&&!root.GardenCharacterMotion.serverDecides&&(strength>=1.8||state.hits.length>=3)){state.hits=[];api.knockdown(direction,Math.max(strength,1.4));return 'down';}
-    state.flinch=state.time+2.5;state.hitPitch.v+=d.z*7*strength;state.hitRoll.v-=d.x*7*strength;state.headPitch.v+=d.z*11*strength;state.stumble.v.addScaledVector(d,.9*strength);return 'hit';},
+    state.flinch=state.time+2.5;state.hitPitch.v+=d.z*7*strength;state.hitRoll.v-=d.x*7*strength;state.headPitch.v+=d.z*(zone==='head'?20:7)*strength;if(zone==='leg'){state.crouch??={x:0,v:0};state.crouch.v+=4*strength;}if(zone==='arm')state.hitRoll.v+=4*strength;state.stumble.v.addScaledVector(d,.9*strength);return 'hit';},
    // Knocked down: an explicit call, a hard hit, or the third hit in quick succession.
    // 1 while knocked down, falling to 0 as the character gets up; 0 when standing.
    downAmount:()=>ragdoll.active?1:ragdoll.recovering?ragdoll.recoverLeft:0,
@@ -177,6 +182,7 @@
     if(ragdoll.recovering)ragdoll.blend(dt);
    },
    procedural(dt,{velocity=null,treadmill=0,wave=false,wade=0}={}){
+    vi=qi=0;
 const scale=group.scale.x||1;group.updateMatrixWorld(true);
     // Measured motion in the character's own frame, so network smoothing or player input both drive the gait.
     const worldPos=group.getWorldPosition(worldPosition);
@@ -192,7 +198,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     const heading=headingLocal.copy(moving);if(speed>.05)heading.normalize();else heading.set(0,0,0);
     const stance=T.MathUtils.lerp(.62,.42,smooth(3,6,gait)),cycle=Math.min(1.15+.22*gait,.85/stance),stride=stance*cycle;
     if(!reduced)state.phase=(state.phase+gait*dt/cycle)%1;
-    const run=smooth(3.5,5.5,gait),offsets=[];
+    const run=smooth(3.5,5.5,gait),offsets=gaitOffsets;
     const shotLayer=state.layers.find(L=>L.id==='pistolShoot'&&!L.out),reloadLayer=state.layers.find(L=>L.id==='pistolReload'&&!L.out),reachLayer=state.layers.find(L=>(L.id==='pickup'||L.id==='interact')&&!L.out);
     const shot=shotLayer&&shotLayer.t<.22?Math.sin(shotLayer.t/.22*Math.PI)*shotLayer.w:0,reload=reloadLayer?Math.sin(clamp(reloadLayer.t/reloadLayer.dur,0,1)*Math.PI)*reloadLayer.w:0,reach=reachLayer?Math.sin(clamp(reachLayer.t/reachLayer.dur,0,1)*Math.PI)*reachLayer.w:0;
     const viewEase=1-Math.exp(-10*dt);view.first+=(view.firstTarget-view.first)*viewEase;view.sprint+=(view.sprintTarget-view.sprint)*viewEase;view.yaw+=(view.yawTarget-view.yaw)*viewEase;view.pitch+=(view.pitchTarget-view.pitch)*viewEase;
@@ -207,14 +213,14 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     pelvis.position.add(v3.set(sway+state.stumble.x.x,bob+breath+(state.airborne?.06:0)-pelvisRest.y*.34*crouch,state.stumble.x.z+pelvisRest.y*.06*crouch));
     pelvis.rotation.set(0,.13*w*Math.sin(ph)*(1-.4*run),0);
     // Reaching for something beyond arm's length bends the whole torso towards it.
-    let reachLean=0;for(const s of sides)if(s.touch&&s.touchWeight.x>.01){const t=toLocal(s.touch.point);reachLean=Math.max(reachLean,clamp((t.distanceTo(s.shoulder)-s.reach*.92)*1.6,0,.45)*clamp(s.touchWeight.x,0,1)*smooth(0,.2,t.z-s.shoulder.z));}
+    let reachLean=0;for(const s of sides)if(s.touch&&s.touchWeight.x>.01){const t=localTemp(s.touch.point);reachLean=Math.max(reachLean,clamp((t.distanceTo(s.shoulder)-s.reach*.92)*1.6,0,.45)*clamp(s.touchWeight.x,0,1)*smooth(0,.2,t.z-s.shoulder.z));}
     scalar(state.lean,clamp(moving.z*.035+run*.08,-.12,.22)+reachLean,dt,2.5,.7);
     scalar(state.bank,clamp(-state.yawRate*.05*w,-.12,.12),dt,2,.8);
     scalar(state.hitPitch,0,dt,2.4,.32);scalar(state.hitRoll,0,dt,2.4,.32);scalar(state.headPitch,0,dt,3.2,.3);
     scalar(state.guard,Math.max(state.guardTarget,state.time<(state.flinch||0)?1:0),dt,4,.9);
     scalar(state.wave,wave?1:0,dt,3,.9);scalar(state.hold,state.held&&state.held.kind!=='axe'&&state.held.kind!=='c4'?1:0,dt,4,.9);
     // Holding a gun: the chest and head follow the aim.
-    const aimLocal=state.aimPoint&&state.hold.x>.01?toLocal(state.aimPoint):null;scalar(state.wade,clamp(wade,0,1),dt,2.2,.8);
+    const aimLocal=state.aimPoint&&state.hold.x>.01?localTemp(state.aimPoint):null;scalar(state.wade,clamp(wade,0,1),dt,2.2,.8);
     let twist=0;
     for(const s of sides)if(s.punch){const t=s.punch.t;twist+=-s.sign*.42*(t<.06?-t/.06*.3:t<.2?Math.sin((t-.06)/.14*Math.PI/2):Math.max(0,1-(t-.2)/.18));}
     spineLow.rotation.set(state.lean.x+state.hitPitch.x*.6+.38*clamp(state.crouch.x,0,1),-pelvis.rotation.y*1.6+twist*.4,state.bank.x+state.hitRoll.x*.6);
@@ -222,8 +228,8 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     let lookYaw=0,lookPitch=0;
     // Without a set target, glance at the local player when they come close and stand in front.
     let focus=aimLocal?state.aimPoint:state.look;const near=canonical?null:root.GardenCharacterMotion.attention;
-    if(!focus&&near){const d=toLocal(near).sub(headRest);const r=Math.hypot(d.x,d.z)*scale;if(r>.6&&r<4.5&&d.z>0)focus=near;}
-    if(focus){const t=toLocal(focus).sub(headRest);lookYaw=clamp(Math.atan2(t.x,t.z),-1.1,1.1);lookPitch=clamp(-Math.atan2(t.y,Math.hypot(t.x,t.z)),-.6,.6);if(Math.abs(Math.atan2(t.x,t.z))>1.9)lookYaw=lookPitch=0;}
+    if(!focus&&near){const d=localTemp(near).sub(headRest);const r=Math.hypot(d.x,d.z)*scale;if(r>.6&&r<4.5&&d.z>0)focus=near;}
+    if(focus){const t=localTemp(focus).sub(headRest);lookYaw=clamp(Math.atan2(t.x,t.z),-1.1,1.1);lookPitch=clamp(-Math.atan2(t.y,Math.hypot(t.x,t.z)),-.6,.6);if(Math.abs(Math.atan2(t.x,t.z))>1.9)lookYaw=lookPitch=0;}
     scalar(state.lookYaw,lookYaw,dt,1.6,.85);scalar(state.lookPitch,lookPitch,dt,1.6,.85);
     spineHigh.rotation.set(state.lookPitch.x*(.2+.25*state.hold.x)+state.hitPitch.x*.4+breath*2,state.lookYaw.x*(.25+.35*state.hold.x)+twist*.6,state.hitRoll.x*.4);
     neck.rotation.set(state.lookPitch.x*.35,state.lookYaw.x*.3,0);
@@ -234,30 +240,30 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
      const p=(state.phase+i*.5)%1;let offset,lift;
      if(p<stance){offset=stride*(.5-p/stance);lift=0;}else{const t=(p-stance)/(1-stance);offset=stride*(smooth(0,1,t)-.5);lift=Math.sin(t*Math.PI)*(.07+.05*run);}
      offsets[i]=offset*w;
-     const target=s.ankle.clone().addScaledVector(heading,offset*w).add(v3.set(0,lift*w,0));
+     const target=copyV(s.ankle).addScaledVector(heading,offset*w).add(v3.set(0,lift*w,0));
      if(state.airborne)target.add(v3.set(0,.16,.05+i*.06));
      spring(s.foot,target,dt,14,.9);
-     s.footTarget.copy(toWorld(s.foot.x));s.footPole.copy(group.localToWorld(v3.set(s.sign*.15,0,1).add(s.hip)).sub(group.localToWorld(s.hip.clone())));
+     s.footTarget.copy(worldTemp(s.foot.x));s.footPole.copy(group.localToWorld(v3.set(s.sign*.15,0,1).add(s.hip)).sub(group.localToWorld(copyV(s.hip))));
      solve(s.leg,s.footTarget,s.footPole);
      e.set(-Math.sin(p<stance?0:((p-stance)/(1-stance))*Math.PI)*.35*w,0,0);
-     s.footRotation.copy(group.getWorldQuaternion(new T.Quaternion()).multiply(new T.Quaternion().setFromEuler(e)));orient(s.leg.end,s.footRotation);
+     s.footRotation.copy(group.getWorldQuaternion(tempQ()).multiply(tempQ().setFromEuler(e)));orient(s.leg.end,s.footRotation);
     }
     // Arms: swing opposite the legs, then blend towards guard, wave, touch and punch targets.
     for(const [i,s] of sides.entries()){
      const swing=-offsets[i]*.55*(1+run*.4);
-     const target=s.handRest.clone().add(v3.set(-s.sign*.03*run,.12*run+.18*Math.max(0,swing),swing+.05*run));
+     const target=copyV(s.handRest).add(v3.set(-s.sign*.03*run,.12*run+.18*Math.max(0,swing),swing+.05*run));
      if(state.airborne)target.add(v3.set(s.sign*.12,.2,0));
-     const lift=api.tune.guardLift;target.lerp(s.shoulder.clone().add(v3.set(-s.sign*.08,.02+lift+(i?0:.03),.3+lift*.6)),state.guard.x);
+     const lift=api.tune.guardLift;target.lerp(copyV(s.shoulder).add(v3.set(-s.sign*.08,.02+lift+(i?0:.03),.3+lift*.6)),state.guard.x);
      // Wading through brush: hands rise to the chest and sweep outwards in time with the stride, parting the leaves.
-     if(state.wade.x>.001){const sweep=Math.sin((state.phase+i*.5)*Math.PI*2);const lift=api.tune.wadeLift;target.lerp(s.shoulder.clone().add(v3.set(s.sign*(.27+.1*sweep)*(1-lift*1.5),-.03+lift+.05*Math.max(0,-sweep),.17+lift*1.4+.07*sweep)),state.wade.x*.85);}
-     if(s.sign<0&&state.wave.x>.001)target.lerp(s.shoulder.clone().add(v3.set(-.34,.42+.04*Math.sin(state.time*9),.08+.07*Math.sin(state.time*7))),state.wave.x);
+     if(state.wade.x>.001){const sweep=Math.sin((state.phase+i*.5)*Math.PI*2);const lift=api.tune.wadeLift;target.lerp(copyV(s.shoulder).add(v3.set(s.sign*(.27+.1*sweep)*(1-lift*1.5),-.03+lift+.05*Math.max(0,-sweep),.17+lift*1.4+.07*sweep)),state.wade.x*.85);}
+     if(s.sign<0&&state.wave.x>.001)target.lerp(copyV(s.shoulder).add(v3.set(-.34,.42+.04*Math.sin(state.time*9),.08+.07*Math.sin(state.time*7))),state.wave.x);
      scalar(s.touchWeight,s.touchTarget||0,dt,3.2,.85);
      let pose=null,hz=6,zeta=.72;
      // Gun grip: right hand on the grip under the right shoulder, left hand forward on the barrel (a pistol is held out
      // in both hands), both turned up or down to the aim's pitch.
      if(state.hold.x>.01){const R=sides[1],pistol=state.held?.kind==='pistol',sh=R.shoulder;
       const off=pistol?(s===R?v3.set(.06,-.1,.44):v3.set(.1,-.12,.4)):(s===R?v3.set(.04,-.16,.26):v3.set(.2,-.15,.56));
-      let pitch=0;if(aimLocal){const d=aimLocal.clone().sub(sh);pitch=clamp(Math.atan2(d.y,Math.hypot(d.x,d.z)),-.9,.9);}
+      let pitch=0;if(aimLocal){const d=copyV(aimLocal).sub(sh);pitch=clamp(Math.atan2(d.y,Math.hypot(d.x,d.z)),-.9,.9);}
       const y=off.y*Math.cos(pitch)+off.z*Math.sin(pitch),z=off.z*Math.cos(pitch)-off.y*Math.sin(pitch);
       target.lerp(bend.set(sh.x+off.x,sh.y+y,sh.z+z),state.hold.x);
       // Lower and tuck the launcher on a sprint, then settle back to the aimed grip.
@@ -271,12 +277,12 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
      // punch and authored action layers still win, so contact and reloads remain intact.
      if(view.first>.001){
       if(s.sign<0){target.z+=reach*.12*view.first;target.y+=reach*.06*view.first;}
-      if(state.hold.x<.95)target.lerp(s.shoulder.clone().add(v3.set(-s.sign*.025,-.28+swing*.22,.23+swing*.45)),view.first*(.32+.3*run)*(1-state.hold.x));
+      if(state.hold.x<.95)target.lerp(copyV(s.shoulder).add(v3.set(-s.sign*.025,-.28+swing*.22,.23+swing*.45)),view.first*(.32+.3*run)*(1-state.hold.x));
       if(view.enabled){target.x+=(view.sway?(Math.sin(ph)*.012*w-view.yaw*.009)*view.first:0);target.y+=(view.bob?(Math.cos(ph*2)*.009*w-view.pitch*.012)*view.first:0);}
      }
-     if(s.touch&&s.touchWeight.x>.001){const t=toLocal(s.touch.point);target.lerp(t,clamp(s.touchWeight.x,0,1));pose=s.touch;hz=8;}
+     if(s.touch&&s.touchWeight.x>.001){const t=localTemp(s.touch.point);target.lerp(t,clamp(s.touchWeight.x,0,1));pose=s.touch;hz=8;}
      if(s.punch){
-      const t=s.punch.t,guardPos=s.shoulder.clone().add(v3.set(-s.sign*.07,.1+api.tune.guardLift,.24+api.tune.guardLift*.6));
+      const t=s.punch.t,guardPos=copyV(s.shoulder).add(v3.set(-s.sign*.07,.1+api.tune.guardLift,.24+api.tune.guardLift*.6));
       const out=t<.06?0:t<.2?smooth(0,1,(t-.06)/.14):1-smooth(.2,.38,t);
       target.copy(guardPos).lerp(s.punch.target,out);hz=t<.2?16:9;zeta=t<.2?.55:.8;pose={kind:'punch'};
       s.punch.t+=dt;if(s.punch.t>.4)s.punch=null;
@@ -285,18 +291,18 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
      // Elbows trail behind in a swing but drop under the hands when they come up to guard, punch or touch.
      const up=Math.max(state.guard.x,s.punch?1:0,clamp(s.touchWeight.x,0,1)*.7,state.hold.x);
      const pole=v2.set(s.sign*.5,-.2,-1).lerp(bend.set(s.sign*.45,-1,-.1),up).lerp(bend.set(s.sign,-.3,-.3),state.wade.x*(1-up));
-     s.contactTarget.copy(toWorld(s.hand.x));s.contactPole.copy(group.localToWorld(v3.copy(pole).add(s.shoulder)).sub(group.localToWorld(s.shoulder.clone())));
+     s.contactTarget.copy(worldTemp(s.hand.x));s.contactPole.copy(group.localToWorld(v3.copy(pole).add(s.shoulder)).sub(group.localToWorld(copyV(s.shoulder))));
      solve(s.arm,s.contactTarget,s.contactPole);
      // Turn the palm to suit the contact: flat on a wall, reaching into a grab, knuckles forward in a punch.
      if(!pose&&state.guard.x>.05)pose={kind:'guard'};
      if(pose){
-      const rootQ=group.getWorldQuaternion(new T.Quaternion());let finger,palm;
-      if(pose.kind==='press'&&pose.normal){const n=pose.normal.clone().normalize();finger=new T.Vector3(0,1,0).addScaledVector(n,-n.y);if(finger.lengthSq()<1e-4)finger.set(0,0,1);finger.normalize().applyAxisAngle(n,s.sign*.35);palm=n.clone().negate();}
-      else if(pose.kind==='guard'){finger=new T.Vector3(0,.8,.6).applyQuaternion(rootQ);palm=new T.Vector3(-s.sign,0,-.25).applyQuaternion(rootQ);}
-      else{const from=toWorld(s.shoulder),to=toWorld(s.hand.x);finger=to.sub(from).normalize();palm=new T.Vector3(0,-1,0).applyQuaternion(rootQ);if(pose.kind!=='punch')palm.lerp(new T.Vector3(-s.sign,0,0).applyQuaternion(rootQ),.6);}
+      const rootQ=group.getWorldQuaternion(tempQ());let finger,palm;
+      if(pose.kind==='press'&&pose.normal){const n=copyV(pose.normal).normalize();finger=tempV(0,1,0).addScaledVector(n,-n.y);if(finger.lengthSq()<1e-4)finger.set(0,0,1);finger.normalize().applyAxisAngle(n,s.sign*.35);palm=copyV(n).negate();}
+      else if(pose.kind==='guard'){finger=tempV(0,.8,.6).applyQuaternion(rootQ);palm=tempV(-s.sign,0,-.25).applyQuaternion(rootQ);}
+      else{const from=worldTemp(s.shoulder),to=worldTemp(s.hand.x);finger=to.sub(from).normalize();palm=tempV(0,-1,0).applyQuaternion(rootQ);if(pose.kind!=='punch')palm.lerp(tempV(-s.sign,0,0).applyQuaternion(rootQ),.6);}
       const wq=basis(finger,palm.addScaledVector(finger,-palm.dot(finger)).normalize()).multiply(s.bindHand);
       const weight=pose.kind==='punch'?1:pose.kind==='guard'?clamp(state.guard.x,0,1):clamp(s.touchWeight.x,0,1);
-      orient(s.arm.end,s.arm.end.getWorldQuaternion(new T.Quaternion()).slerp(wq,weight));
+      orient(s.arm.end,s.arm.end.getWorldQuaternion(tempQ()).slerp(wq,weight));
      }
      s.arm.end.getWorldQuaternion(s.contactRotation);
      // Fists for guard and punches, a half grip when reaching to grab, flat palms on walls, relaxed otherwise.
@@ -316,13 +322,13 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
      const busy=state.hold.x>.05||sides.some(s=>s.touchWeight.x>.05||s.punch)||state.guard.x>.08;
      let full=0;for(const L of state.layers){L.t+=dt*L.speed;if(!L.loop&&L.t>=L.dur){if(L.hold)L.t=L.dur;else L.out=true;}
       const target=L.out?0:1,rate=dt/Math.max(.01,L.fade);L.w=target>L.w?Math.min(1,L.w+rate):Math.max(0,L.w-rate);if(L.mask==='full')full=Math.max(full,L.w*L.weight);}
-     state.layers=state.layers.filter(L=>!(L.out&&L.w<=0));
-     const M=A.masks(),noArms=k=>{const key=k+'-noarms';M[key]??=M[k].map((v,i)=>M.arms[i]?0:v);return M[key];},list=[];
+     let layerCount=0;for(const L of state.layers)if(!(L.out&&L.w<=0))state.layers[layerCount++]=L;state.layers.length=layerCount;
+     const M=A.masks(),noArms=k=>{const key=k+'-noarms';M[key]??=M[k].map((v,i)=>M.arms[i]?0:v);return M[key];},list=animList;list.length=0;animCount=locoCount=0;
      loco.length=0;
      if(api.animTune.loco){const gait=state.weight,jog=smooth(2.7,4.3,state.speed),sprint=smooth(4.5,6.3,state.speed),grounded=state.airborne?0:1;
       state.locoK+=(gait*grounded-state.locoK)*(1-Math.exp(-9*dt));state.idleK+=((1-gait)*grounded-state.idleK)*(1-Math.exp(-6*dt));
       const mask=busy?noArms('upper'):M.upper;
-      const add=(id,weight,walking=false)=>{weight*=1-full;if(weight<=.005||!A.has(id))return;loco.push({id,weight:+weight.toFixed(3)});list.push({id,t:walking?((state.phase+A.phase0(id))%1)*A.duration(id):(state.time||0)%A.duration(id),weight,mask});};
+      const add=(id,weight,walking=false)=>{weight*=1-full;if(weight<=.005||!A.has(id))return;const entry=locoEntries[locoCount++];entry.id=id;entry.weight=Math.round(weight*1000)/1000;loco.push(entry);addAnim(id,walking?((state.phase+A.phase0(id))%1)*A.duration(id):(state.time||0)%A.duration(id),weight,mask);};
       // Adjacent gaits crossfade at one shared footfall phase instead of popping.
       add('walk',.85*state.locoK*(1-crouch)*(1-jog),true);add('jog',.85*state.locoK*(1-crouch)*jog*(1-sprint),true);add('sprint',.85*state.locoK*(1-crouch)*sprint,true);
       add('crouchWalk',.7*state.locoK*crouch,true);add('idle',.55*state.idleK*(1-crouch));add('crouchIdle',.65*state.idleK*crouch);
@@ -331,7 +337,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
       // Preserve visible camera-space grips for local actions; the same authored
       // action still drives the torso, and progressively regains arms in third person.
       if(view.first>.001&&['pistolShoot','pistolReload','pickup','interact'].includes(L.id)){L.viewMask??=mask.slice();for(let i=0;i<mask.length;i++)L.viewMask[i]=mask[i]*(M.arms[i]?1-view.first:1);mask=L.viewMask;}
-      list.push({id:L.id,t:L.t,weight:L.w*L.weight,mask,loop:L.loop});}
+      addAnim(L.id,L.t,L.w*L.weight,mask,L.loop);}
      A.apply(T,model,list);
      // Cosmetic torso/clip layers must not detach solved world contacts. Reuse
      // this frame's targets; do not advance gait, springs or action time twice.
@@ -343,10 +349,10 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     }
     // The held weapon follows the right hand: a gun points from the grip at the aim, the axe hangs from the hand.
     if(state.held?.mesh){const m=state.held.mesh,par=group.parent;if(par){if(m.parent!==par)par.add(m);m.visible=true;group.updateMatrixWorld(true);
-     const hand=sides[1].arm.end.getWorldPosition(new T.Vector3()),fwd=new T.Vector3(0,0,1).applyQuaternion(group.getWorldQuaternion(new T.Quaternion()));
-     m.position.copy(par.worldToLocal(hand.clone()));
-     if(state.hold.x>.01){const aim=state.aimPoint&&state.aimPoint.distanceTo(hand)>1.2?state.aimPoint:hand.clone().addScaledVector(fwd,10);m.lookAt(aim);m.rotateY(Math.PI);if(view.first>.001){m.rotateX(-shot*.12*view.first);m.rotateZ(reload*.3*view.first);}}
-     else{m.quaternion.copy(group.getWorldQuaternion(new T.Quaternion()));if(par.parent)m.quaternion.premultiply(par.getWorldQuaternion(new T.Quaternion()).invert());m.rotateX(-1.2);m.position.y-=.05;}}}
+     const hand=sides[1].arm.end.getWorldPosition(tempV()),fwd=tempV(0,0,1).applyQuaternion(group.getWorldQuaternion(tempQ()));
+     m.position.copy(par.worldToLocal(copyV(hand)));
+     if(state.hold.x>.01){const aim=state.aimPoint&&state.aimPoint.distanceTo(hand)>1.2?state.aimPoint:copyV(hand).addScaledVector(fwd,10);m.lookAt(aim);m.rotateY(Math.PI);if(view.first>.001){m.rotateX(-shot*.12*view.first);m.rotateZ(reload*.3*view.first);}}
+     else{m.quaternion.copy(group.getWorldQuaternion(tempQ()));if(par.parent)m.quaternion.premultiply(par.getWorldQuaternion(tempQ()).invert());m.rotateX(-1.2);m.position.y-=.05;}}}
    },
    // The old animate(t, stride, waving) signature: callers that only know "walking or not" still get a full gait.
    animate(t,stride=0,waving=false){
@@ -383,6 +389,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     if(canonical&&value.bones.some(b=>b.scale.some(n=>n!==1)))fail();
     return {next,limbs,snapshot:value};
    },
+   revive(value=restPose){if(canonical)throw Error('Canonical recovery belongs to authoritative physics.');ragdoll.reset();api.restoreState(value);},
    restoreState(value){
     if(ragdoll.active||ragdoll.recovering)throw Error('Cannot replace active legacy knockdown.');
     const {next,limbs,snapshot}=api.validateState(value),mesh=state.held?.mesh||null;value=snapshot;
@@ -393,6 +400,8 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
    },
    inspect:()=>({locomotion:loco.map(L=>({...L})),actions:state.layers.filter(L=>!L.out).map(L=>L.id),presentation:{firstPerson:+view.first.toFixed(3),sprint:+view.sprint.toFixed(3),lookLag:view.enabled&&view.sway},phase:+state.phase.toFixed(3),speed:+state.speed.toFixed(2),weight:+state.weight.toFixed(2),guard:+state.guard.x.toFixed(2),ragdoll:ragdoll.inspect(),wade:+state.wade.x.toFixed(2),hit:+state.hitPitch.x.toFixed(2),touch:sides.map(s=>+s.touchWeight.x.toFixed(2)),punching:sides.some(s=>s.punch)})
   };
+  // Each asynchronous replacement rig owns its own compatible spawn pose.
+  const restPose=canonical?null:api.captureState();
   return api;
  }
  // bodies: every rigged character alive, so interactions can find who is within reach.

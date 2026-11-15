@@ -84,7 +84,7 @@
    if(g.type==='bar'){rod(g.a,g.b,.034,brass);for(const e of [g.a,g.b])add(ball,brass,e[0],e[1],e[2],.055,.055,.055);}
    else if(g.type==='pipe'){const out=[g.n[0],g.n[1]];rod([g.x,g.y0-.25,g.z],[g.x,g.y1+.08,g.z],.055,copper);add(ball,copper,g.x,g.y1+.1,g.z,.07,.05,.07);
     for(let y=g.y0+.5;y<g.y1;y+=1.1){add(round,brass,g.x,y,g.z,.075,.07,.075);add(cube,charcoal,g.x-out[0]*.13,y,g.z-out[1]*.13,Math.abs(out[1])>.5?.05:.2,.05,Math.abs(out[0])>.5?.05:.2);}}
-   else if(g.type==='rope'){const holder=new T.Group();holder.position.set(g.x,g.top,g.z);group.add(holder);
+   else if(g.type==='rope'){const holder=new T.Group();holder.userData.dynamicShadow=true;holder.position.set(g.x,g.top,g.z);group.add(holder);
     const ringM=add(ring,brass,g.x,g.top+.02,g.z,.08,.08,.08);ringM.rotation.x=Math.PI/2;
     add(round,hemp,0,-g.len/2,0,.032,g.len,.032,holder);for(let y=.9;y<g.len-.3;y+=1.1)add(ring,hemp,0,-y,0,.045,.045,.045,holder).rotation.x=Math.PI/2;
     add(ball,hemp,0,-g.len,0,.08,.09,.08,holder);ropes.push({g,m:holder});}

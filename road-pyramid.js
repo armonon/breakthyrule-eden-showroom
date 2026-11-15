@@ -41,6 +41,7 @@ window.createRoadPyramid=function(T,scene,{roadX,roadEnd,stone,onChange,reduced}
 
  let unlocked=false;const collision=window.createPyramidCollision({roadX,roadEnd,unlocked:()=>unlocked});
  const gate=box(3.35,4.1,.4,0,2.05,24.25,metal);
+ gate.userData.dynamicShadow=true;gate.castShadow=true;
  const seals=[];for(let i=0;i<8;i++)seals.push(box(.20,.22,.045,(i-3.5)*.35,2.15,24.48,lampMaterial.clone()));
  return {
   setPages(count){unlocked=count===8;gate.visible=!unlocked;seals.forEach((s,i)=>{s.visible=!unlocked;s.material.emissiveIntensity=i<count?2.2:.05;});},

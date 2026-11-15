@@ -108,16 +108,18 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
   for(const [x,y,z] of model.glow||[])lamps.push(new T.Vector3(s.x+x,y,s.z+z));
   modelState[s.id]='waiting';pendingModels.push({s,model,shell});
  }
- // Streaming: the nearest building within 75 m loads first, one at a time (several GLBs decoding and uploading at once
- // stalled the frame for seconds where many sites are in range); buildings over 110 m away are released again and
- // their light procedural shell restored, so GPU memory stays bounded however far the viewer walks.
- const loadedModels=new Map(),priorityModels=new Set();let modelInFlight=false,disposed=false;
- function releaseModel(scene){scene.traverse(o=>{if(!o.isMesh)return;o.geometry.dispose();for(const m of [].concat(o.material)){for(const v of Object.values(m))if(v?.isTexture)v.dispose();m.dispose();}});}
+ // Stream one GLB at a time. A prepared district retains its bounded model set;
+ // distant landmarks use the original architectural shells instead of being
+ // decoded again on every return. Unprepared streams can still release at 130 m.
+ const loadedModels=new Map(),priorityModels=new Set();let modelInFlight=false,disposed=false,lodEnabled=true,retainPrepared=false;
+ const renderer=window.breakThyRuleShowroom?.renderer?.(),camera=window.edenCamera;const warmup=!prepareModel&&renderer&&camera&&window.createRenderWarmup?.(renderer,camera,scene);
+ function releaseModel(scene){window.edenBaked?.unregisterStatic(scene);scene.traverse(o=>{if(!o.isMesh)return;o.geometry.dispose();for(const m of [].concat(o.material)){for(const v of Object.values(m))if(v?.isTexture)v.dispose();m.dispose();}});}
  function streamModels(viewer){
   if(disposed)return;
   const distance=s=>Math.hypot(viewer.position.x-s.x,viewer.position.z-s.z);
-  for(const [id,entry] of loadedModels)if(distance(entry.s)>110){
-   root.remove(entry.scene);releaseModel(entry.scene);root.add(entry.shell);loadedModels.delete(id);modelState[id]='waiting';pendingModels.push(entry);}
+  for(const [id,entry] of loadedModels)if(!retainPrepared&&distance(entry.s)>130){
+   root.remove(entry.scene);releaseModel(entry.scene);entry.shell.visible=true;root.add(entry.shell);loadedModels.delete(id);modelState[id]='waiting';pendingModels.push(entry);}
+  for(const entry of loadedModels.values()){const d=distance(entry.s),high=!lodEnabled||d<(entry.scene.visible?82:72);entry.scene.visible=high;entry.shell.visible=!high;}
   if(modelInFlight)return;
   let next=pendingModels.findIndex(p=>priorityModels.has(p.s.id)),nearest=75;
   if(next<0)pendingModels.forEach((p,i)=>{const d=distance(p.s);if(d<nearest){nearest=d;next=i;}});
@@ -130,8 +132,8 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
    if(disposed){releaseModel(gltf.scene);return;}
    const scene=gltf.scene;scene.name=s.name+' (modelled)';scene.userData.landmarkModel=true;scene.position.set(s.x,0,s.z);
    scene.traverse(o=>{if(!o.isMesh)return;o.receiveShadow=true;o.castShadow=!/bulb|sign|relief|glass/.test(o.name+o.material?.name);});
-   if(prepareModel)await prepareModel(scene);if(disposed){releaseModel(scene);return;}
-   root.remove(shell);root.add(scene);modelState[s.id]='model';loadedModels.set(s.id,{s,model,shell,scene});
+   window.edenBaked?.registerStatic(scene);if(prepareModel)await prepareModel(scene);else if(warmup)await warmup.prepare(scene);if(disposed){releaseModel(scene);return;}
+   shell.visible=false;root.add(scene);modelState[s.id]='model';loadedModels.set(s.id,{s,model,shell,scene});
   }).catch(error=>{if(disposed)return;modelState[s.id]='fallback';console.warn(s.name+' model unavailable; keeping the procedural building',error);})
    .finally(()=>{modelInFlight=false;});
  }
@@ -168,7 +170,8 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
  // Collapse repeated architecture to instanced batches, preserving real geometry at low draw cost.
  staticRoot.updateMatrixWorld(true);const batches=new Map();staticRoot.traverse(o=>{if(!o.isMesh)return;const key=o.geometry.uuid+o.material.uuid;if(!batches.has(key))batches.set(key,{geometry:o.geometry,material:o.material,matrices:[]});batches.get(key).matrices.push(o.matrixWorld.clone());});
  root.remove(staticRoot);for(const batch of batches.values()){const m=new T.InstancedMesh(batch.geometry,batch.material,batch.matrices.length);batch.matrices.forEach((matrix,i)=>m.setMatrixAt(i,matrix));m.receiveShadow=true;m.computeBoundingSphere?.();root.add(m);}
- const lightPool=[0,1,2].map(()=>{const l=new T.PointLight(0xffc68c,0,13,1.7);root.add(l);return l;});
+ const nearest=[null,null,null],distances=[Infinity,Infinity,Infinity],watcherTarget=new T.Vector3();
+ const lightPool=[0,1,2].map(()=>{const l=new T.PointLight(0xffc68c,0,13,1.7);l.name='District lamp';scene.add(l);return l;});
  const pageRoot=new T.Group();root.add(pageRoot);const pages=new Map();
  const paper=document.createElement('canvas');paper.width=256;paper.height=384;const ctx=paper.getContext('2d');ctx.fillStyle='#dfd5b5';ctx.fillRect(0,0,256,384);ctx.strokeStyle='#85764f';ctx.lineWidth=2;ctx.strokeRect(15,15,226,354);ctx.beginPath();ctx.arc(128,98,37,0,Math.PI*2);ctx.moveTo(89,124);ctx.lineTo(128,51);ctx.lineTo(167,124);ctx.closePath();ctx.stroke();for(let y=169;y<325;y+=15){ctx.fillStyle=y%3?'#746851':'#afa083';ctx.fillRect(36,y,184-((y*7)%50),2);}const pageMap=new T.CanvasTexture(paper);pageMap.colorSpace=T.SRGBColorSpace;
  const pageMat=new T.MeshStandardMaterial({map:pageMap,roughness:1,side:T.DoubleSide,emissive:0xffd295,emissiveIntensity:.22});
@@ -180,12 +183,13 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
  const arms=[];for(const side of [-1,1]){const arm=new T.Group();arm.position.set(side*.31,2.74,0);mesh(arm,shaft,robe,side*.08,-.75,0,.065,1.6,.065);mesh(arm,orb,mask,side*.08,-1.6,0,.055,.18,.055);arm.rotation.z=side*.10;watcher.add(arm);arms.push(arm);}
  box(watcher,brass,0,2.3,.245,.04,.75,.035);const sigil=mesh(watcher,new T.TorusGeometry(.12,.018,6,24),brass,0,2.61,.24);
  let snapshot=null;
- return {root,watcher,walls,lamps,routes:authority?.routes||[],setPages,prepare(ids){if(disposed)return;for(const id of ids)if(modelState[id]==='waiting')priorityModels.add(id);},dispose(){disposed=true;snapshot=null;pendingModels.length=0;priorityModels.clear();loadedModels.clear();},setState(value){if(disposed)return;if(value&&value.code!==snapshot?.code)watcher.position.set(value.watcher.x,value.watcher.y||0,value.watcher.z);snapshot=value;watcher.visible=!!value&&value.phase==='playing'&&value.huntStarted!==false;if(value)setPages(value.pages,value.collected);else pageRoot.visible=false;},
+ // The host registers the static root after its geometry-merging pass.
+ return {root,watcher,walls,lamps,routes:authority?.routes||[],setPages,setLOD(on){lodEnabled=!!on;},prepare(ids){if(disposed)return;if(ids.length>=layout.landmarks.length)retainPrepared=true;for(const id of ids)if(modelState[id]==='waiting')priorityModels.add(id);},dispose(){disposed=true;snapshot=null;pendingModels.length=0;priorityModels.clear();for(const entry of loadedModels.values())releaseModel(entry.scene);loadedModels.clear();window.edenBaked?.unregisterStatic(root);for(const light of lightPool)scene.remove(light);},setState(value){if(disposed)return;if(value&&value.code!==snapshot?.code)watcher.position.set(value.watcher.x,value.watcher.y||0,value.watcher.z);snapshot=value;watcher.visible=!!value&&value.phase==='playing'&&value.huntStarted!==false;if(value)setPages(value.pages,value.collected);else pageRoot.visible=false;},
   // feet: the height of the player's feet, when known: walls lower than a step up from there do not block.
   // Same answer as testing every wall, through a 4 m grid of them (rebuilt when walls are added): called for every step.
   blocks(p,feet=null){const g=wallGrid();const list=g.cells.get(Math.floor(p.x/4)+','+Math.floor(p.z/4));if(!list)return false;for(let i=0;i<list.length;i++){const W=list[i],h=W[4]??99;if(Math.abs(p.x-W[0])<W[2]/2+.3&&Math.abs(p.z-W[1])<W[3]/2+.3&&(feet==null||h>feet+.45))return true;}return false;},surfaces,climbs,
   clearGround(x,z){if(layout.arena&&Math.hypot(x-layout.arena.x,z-layout.arena.z)<layout.arena.r)return true;return layout.landmarks.some(s=>Math.abs(x-s.x)<s.w/2+3&&z-s.z>-s.d/2-4&&z-s.z<s.d/2+9)||layout.landmarks.some(s=>Math.abs(z-(s.z+s.d/2+3))<1.8&&x>Math.min(s.x,11.7)-1&&x<Math.max(s.x,11.7)+1);},
-  update(time,viewer,night){if(disposed)return;root.visible=viewer.position.z<0;if(root.visible)streamModels(viewer);pageRoot.visible=!!snapshot;const nearest=lamps.map(p=>({p,d:p.distanceToSquared(viewer.position)})).sort((a,b)=>a.d-b.d);lightPool.forEach((l,i)=>{l.position.copy(nearest[i].p);l.intensity=night*10;});if(snapshot){const w=snapshot.watcher;watcher.position.lerp(new T.Vector3(w.x,w.y||0,w.z),.3);watcher.rotation.y=w.yaw;arms.forEach((a,i)=>{a.rotation.x=reduced?0:Math.sin(time*2+i*Math.PI)*.06;});sigil.material.emissive.set(0x503c22);sigil.material.emissiveIntensity=.2;}},
-  inspect:()=>({routes:(authority?.routes||[]).map(r=>({id:r.id,difficulty:r.difficulty,points:r.points.length})),routeDecks:authority?.routeSurfaces.length||0,landmarks:layout.landmarks.map(s=>({name:s.name,x:s.x,z:s.z})),batches:batches.size,theatre:modelState.playhouse==='model'?'model':'fallback',models:{...modelState},pages:pages.size,watcher:watcher.position.toArray()})
+  update(time,viewer,night){if(disposed)return;root.visible=viewer.position.z<0;if(root.visible)streamModels(viewer);pageRoot.visible=!!snapshot;distances.fill(Infinity);nearest.fill(null);for(const p of lamps){const d=p.distanceToSquared(viewer.position);for(let i=0;i<3;i++)if(d<distances[i]){for(let j=2;j>i;j--){distances[j]=distances[j-1];nearest[j]=nearest[j-1];}distances[i]=d;nearest[i]=p;break;}}lightPool.forEach((l,i)=>{if(nearest[i])l.position.copy(nearest[i]);l.intensity=root.visible?night*10*(1-(window.edenBaked?.nightStrength()||0)):0;});if(snapshot){const w=snapshot.watcher;watcher.position.lerp(watcherTarget.set(w.x,w.y||0,w.z),.3);watcher.rotation.y=w.yaw;arms.forEach((a,i)=>{a.rotation.x=reduced?0:Math.sin(time*2+i*Math.PI)*.06;});sigil.material.emissive.set(0x503c22);sigil.material.emissiveIntensity=.2;}},
+  inspect:()=>({lod:{enabled:lodEnabled,high:[...loadedModels.values()].filter(e=>e.scene.visible).length,low:[...loadedModels.values()].filter(e=>e.shell.visible).length},routes:(authority?.routes||[]).map(r=>({id:r.id,difficulty:r.difficulty,points:r.points.length})),routeDecks:authority?.routeSurfaces.length||0,landmarks:layout.landmarks.map(s=>({name:s.name,x:s.x,z:s.z})),batches:batches.size,theatre:modelState.playhouse==='model'?'model':'fallback',models:{...modelState},pages:pages.size,watcher:watcher.position.toArray()})
  };
 };

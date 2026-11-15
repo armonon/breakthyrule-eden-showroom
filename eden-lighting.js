@@ -9,7 +9,7 @@ window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=fals
 // camera turns crossed that), over a slightly larger area so coverage near the player is unchanged, and never more
 // often than every 120 ms. That is about a fifth of the shadow passes.
 const SHADOW_STEP=2.5,SHADOW_GAP=120;let shadowAt=-1e9,shadowPending=false;
-const maxSize=Math.min(4096,renderer.capabilities.maxTextureSize),half=mobile?20:25;let size=mobile?2048:maxSize,texel=2*half/size,step=texel*Math.max(1,Math.round(SHADOW_STEP/texel));
+const maxSize=Math.min(4096,renderer.capabilities.maxTextureSize),dayHalf=mobile?20:25;let half=dayHalf,size=mobile?2048:maxSize,texel=2*half/size,step=texel*Math.max(1,Math.round(SHADOW_STEP/texel));
  const offset=original.position.clone(),look=new T.Matrix4().lookAt(offset,new T.Vector3(),new T.Vector3(0,1,0)),toLight=look.clone().invert();
  const forward=new T.Vector3(),centre=new T.Vector3();
  scene.add(sun.target);
@@ -90,12 +90,14 @@ const maxSize=Math.min(4096,renderer.capabilities.maxTextureSize),half=mobile?20
    if(disposed)return;
    const night=nightAmount();ensureSky();
    window.edenBaked?.setNight(night);
+   const nextHalf=window.edenBaked?.dynamicShadowOnly()?8:dayHalf;
+   if(settings.followShadow&&half!==nextHalf){half=nextHalf;texel=2*half/size;step=texel*Math.max(1,Math.round(SHADOW_STEP/texel));Object.assign(sun.shadow.camera,{left:-half,right:half,top:half,bottom:-half});sun.shadow.camera.updateProjectionMatrix();shadowPending=true;}
    if(settings.environment&&levelOf(night)!==bakedNight){uniforms.night.value=night;bakeEnvironment();}
    if(!settings.followShadow)return;
    // Centre the frustum a little ahead of the viewer, snapped to a whole-texel grid in light space so shadow
    // edges do not shimmer, and in ~0.5 m steps so the shadow map re-renders only when the viewer has moved.
    camera.getWorldDirection(forward);forward.y=0;forward.normalize();
-   centre.copy(camera.position).addScaledVector(forward,half*.4).setY(0).applyMatrix4(toLight);
+   centre.copy(camera.position).addScaledVector(forward,half*.4).setY(half===8?Math.max(0,camera.position.y-1.75):0).applyMatrix4(toLight);
    centre.x=Math.round(centre.x/step)*step;centre.y=Math.round(centre.y/step)*step;centre.applyMatrix4(look);
    if(centre.distanceToSquared(sun.target.position)>1e-6)shadowPending=true;
    if(shadowPending&&performance.now()-shadowAt>=SHADOW_GAP){shadowPending=false;shadowAt=performance.now();sun.target.position.copy(centre);sun.target.updateMatrixWorld();sun.position.copy(centre).add(offset);renderer.shadowMap.needsUpdate=true;}

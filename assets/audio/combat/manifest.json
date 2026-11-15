@@ -1,0 +1,1172 @@
+{
+  "version": 1,
+  "groups": {
+    "pistol-shot": [
+      "pistol-shot-0.m4a",
+      "pistol-shot-1.m4a",
+      "pistol-shot-2.m4a"
+    ],
+    "pistol-distant": [
+      "pistol-distant-0.m4a",
+      "pistol-distant-1.m4a"
+    ],
+    "pistol-tail": [
+      "pistol-tail-0.m4a",
+      "pistol-tail-1.m4a"
+    ],
+    "pistol-mechanical": [
+      "pistol-mechanical-0.m4a",
+      "pistol-mechanical-1.m4a"
+    ],
+    "pistol-dry": [
+      "pistol-dry-0.m4a",
+      "pistol-dry-1.m4a"
+    ],
+    "smg-shot": [
+      "smg-shot-0.m4a",
+      "smg-shot-1.m4a",
+      "smg-shot-2.m4a"
+    ],
+    "smg-distant": [
+      "smg-distant-0.m4a",
+      "smg-distant-1.m4a",
+      "smg-distant-2.m4a"
+    ],
+    "smg-tail": [
+      "smg-tail-0.m4a",
+      "smg-tail-1.m4a"
+    ],
+    "smg-mechanical": [
+      "smg-mechanical-0.m4a",
+      "smg-mechanical-1.m4a"
+    ],
+    "smg-dry": [
+      "smg-dry-0.m4a",
+      "smg-dry-1.m4a"
+    ],
+    "rifle-shot": [
+      "rifle-shot-0.m4a",
+      "rifle-shot-1.m4a",
+      "rifle-shot-2.m4a",
+      "rifle-shot-3.m4a"
+    ],
+    "rifle-distant": [
+      "rifle-distant-0.m4a",
+      "rifle-distant-1.m4a"
+    ],
+    "rifle-tail": [
+      "rifle-tail-0.m4a",
+      "rifle-tail-1.m4a"
+    ],
+    "rifle-mechanical": [
+      "rifle-mechanical-0.m4a",
+      "rifle-mechanical-1.m4a"
+    ],
+    "rifle-dry": [
+      "rifle-dry-0.m4a",
+      "rifle-dry-1.m4a"
+    ],
+    "pump-shot": [
+      "pump-shot-0.m4a",
+      "pump-shot-1.m4a",
+      "pump-shot-2.m4a"
+    ],
+    "pump-distant": [
+      "pump-distant-0.m4a",
+      "pump-distant-1.m4a",
+      "pump-distant-2.m4a"
+    ],
+    "pump-tail": [
+      "pump-tail-0.m4a",
+      "pump-tail-1.m4a"
+    ],
+    "pump-mechanical": [
+      "pump-mechanical-0.m4a",
+      "pump-mechanical-1.m4a"
+    ],
+    "pump-dry": [
+      "pump-dry-0.m4a",
+      "pump-dry-1.m4a"
+    ],
+    "sniper-shot": [
+      "sniper-shot-0.m4a",
+      "sniper-shot-1.m4a",
+      "sniper-shot-2.m4a"
+    ],
+    "sniper-distant": [
+      "sniper-distant-0.m4a",
+      "sniper-distant-1.m4a"
+    ],
+    "sniper-tail": [
+      "sniper-tail-0.m4a",
+      "sniper-tail-1.m4a"
+    ],
+    "sniper-mechanical": [
+      "sniper-mechanical-0.m4a",
+      "sniper-mechanical-1.m4a"
+    ],
+    "sniper-dry": [
+      "sniper-dry-0.m4a",
+      "sniper-dry-1.m4a"
+    ],
+    "body": [
+      "body-0.m4a",
+      "body-1.m4a",
+      "body-2.m4a"
+    ],
+    "head": [
+      "head-0.m4a",
+      "head-1.m4a",
+      "head-2.m4a"
+    ],
+    "kill": [
+      "kill-0.m4a",
+      "kill-1.m4a",
+      "kill-2.m4a"
+    ],
+    "metal": [
+      "metal-0.m4a",
+      "metal-1.m4a",
+      "metal-2.m4a"
+    ],
+    "stone": [
+      "stone-0.m4a",
+      "stone-1.m4a",
+      "stone-2.m4a"
+    ],
+    "wood": [
+      "wood-0.m4a",
+      "wood-1.m4a",
+      "wood-2.m4a"
+    ],
+    "dirt": [
+      "dirt-0.m4a",
+      "dirt-1.m4a",
+      "dirt-2.m4a"
+    ],
+    "casing": [
+      "casing-0.m4a",
+      "casing-1.m4a",
+      "casing-2.m4a"
+    ],
+    "voice-a-pain": [
+      "voice-a-pain-0.m4a",
+      "voice-a-pain-1.m4a",
+      "voice-a-pain-2.m4a",
+      "voice-a-pain-3.m4a"
+    ],
+    "voice-a-death": [
+      "voice-a-death-0.m4a",
+      "voice-a-death-1.m4a"
+    ],
+    "voice-b-death": [
+      "voice-b-death-0.m4a",
+      "voice-b-death-1.m4a",
+      "voice-b-death-2.m4a",
+      "voice-b-death-3.m4a"
+    ],
+    "voice-b-pain": [
+      "voice-b-pain-0.m4a",
+      "voice-b-pain-1.m4a",
+      "voice-b-pain-2.m4a",
+      "voice-b-pain-3.m4a"
+    ],
+    "near-miss": [
+      "near-miss-0.m4a",
+      "near-miss-1.m4a",
+      "near-miss-2.m4a"
+    ]
+  },
+  "assets": {
+    "pistol-shot-0.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Walther%20PPQ/X_39P.wav",
+      "sourceFile": "X_39P.wav",
+      "sha256": "d679a3cd87eae2898d984159f83544392932e6b77526045b672e3aaa9c2dda9f",
+      "start": 1.385,
+      "duration": 0.48,
+      "gain": 1.0186376795884138,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "pistol-shot-1.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Walther%20PPQ/X_39P.wav",
+      "sourceFile": "X_39P.wav",
+      "sha256": "d679a3cd87eae2898d984159f83544392932e6b77526045b672e3aaa9c2dda9f",
+      "start": 6.425,
+      "duration": 0.48,
+      "gain": 0.9003481558275175,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "pistol-shot-2.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Walther%20PPQ/X_39P.wav",
+      "sourceFile": "X_39P.wav",
+      "sha256": "d679a3cd87eae2898d984159f83544392932e6b77526045b672e3aaa9c2dda9f",
+      "start": 10.645,
+      "duration": 0.48,
+      "gain": 0.7931734300578644,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "pistol-distant-0.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Walther%20PPQ/X_31P.wav",
+      "sourceFile": "X_31P.wav",
+      "sha256": "b6439228ca46b37c00463265028094559ae5c9896c796b5d40ea4f33247f149c",
+      "start": 1.065,
+      "duration": 1.2,
+      "gain": 0.5736824048652417,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "pistol-distant-1.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Walther%20PPQ/X_31P.wav",
+      "sourceFile": "X_31P.wav",
+      "sha256": "b6439228ca46b37c00463265028094559ae5c9896c796b5d40ea4f33247f149c",
+      "start": 5.225,
+      "duration": 1.2,
+      "gain": 0.5772116181792671,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "pistol-tail-0.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Walther%20PPQ/X_39P.wav",
+      "sourceFile": "X_39P.wav",
+      "sha256": "d679a3cd87eae2898d984159f83544392932e6b77526045b672e3aaa9c2dda9f",
+      "start": 1.55,
+      "duration": 0.48,
+      "gain": 8,
+      "filters": "lowpass=f=4000",
+      "license": "CC0-1.0"
+    },
+    "pistol-tail-1.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Walther%20PPQ/X_39P.wav",
+      "sourceFile": "X_39P.wav",
+      "sha256": "d679a3cd87eae2898d984159f83544392932e6b77526045b672e3aaa9c2dda9f",
+      "start": 6.59,
+      "duration": 0.48,
+      "gain": 8,
+      "filters": "lowpass=f=4000",
+      "license": "CC0-1.0"
+    },
+    "pistol-mechanical-0.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload1.wav",
+      "sourceFile": "clipload1.wav",
+      "sha256": "1cdc10c50a26834ce7562a5f2925b9aa1118e3bb58a86fea80f34558bf2c5101",
+      "start": 0,
+      "duration": 0.2554,
+      "gain": 0.8015335768233317,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "pistol-mechanical-1.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload2.wav",
+      "sourceFile": "clipload2.wav",
+      "sha256": "a5441641e7e9ede24f3ac311642e06265c6f480e3b1ba4b92c19c81c3a5e4d86",
+      "start": 0,
+      "duration": 0.209,
+      "gain": 0.8335035070319368,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "pistol-dry-0.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload1.wav",
+      "sourceFile": "clipload1.wav",
+      "sha256": "1cdc10c50a26834ce7562a5f2925b9aa1118e3bb58a86fea80f34558bf2c5101",
+      "start": 0,
+      "duration": 0.08,
+      "gain": 5.701053862569727,
+      "filters": "highpass=f=1200",
+      "license": "CC0-1.0"
+    },
+    "pistol-dry-1.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload2.wav",
+      "sourceFile": "clipload2.wav",
+      "sha256": "a5441641e7e9ede24f3ac311642e06265c6f480e3b1ba4b92c19c81c3a5e4d86",
+      "start": 0,
+      "duration": 0.08,
+      "gain": 1.0529520913632442,
+      "filters": "highpass=f=1200",
+      "license": "CC0-1.0"
+    },
+    "smg-shot-0.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Carl%20Gustav%20M45/G_31P.wav",
+      "sourceFile": "G_31P.wav",
+      "sha256": "5982c6c2fa44545b750ba6217ed57797a6a15c02f5c9943ac0e99e5f3ab2b158",
+      "start": 0.295,
+      "duration": 0.3,
+      "gain": 0.7693602651499857,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "smg-shot-1.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Carl%20Gustav%20M45/G_31P.wav",
+      "sourceFile": "G_31P.wav",
+      "sha256": "5982c6c2fa44545b750ba6217ed57797a6a15c02f5c9943ac0e99e5f3ab2b158",
+      "start": 3.485,
+      "duration": 0.3,
+      "gain": 0.7811353722898372,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "smg-shot-2.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Carl%20Gustav%20M45/G_31P.wav",
+      "sourceFile": "G_31P.wav",
+      "sha256": "5982c6c2fa44545b750ba6217ed57797a6a15c02f5c9943ac0e99e5f3ab2b158",
+      "start": 6.705,
+      "duration": 0.3,
+      "gain": 0.8039805922378301,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "smg-distant-0.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Carl%20Gustav%20M45/G_20P.wav",
+      "sourceFile": "G_20P.wav",
+      "sha256": "137630298417203c83f885402f1b5d10913c1b96ca0ad31fde50d30314bf3223",
+      "start": 0.325,
+      "duration": 1.2,
+      "gain": 0.5546040435294273,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "smg-distant-1.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Carl%20Gustav%20M45/G_20P.wav",
+      "sourceFile": "G_20P.wav",
+      "sha256": "137630298417203c83f885402f1b5d10913c1b96ca0ad31fde50d30314bf3223",
+      "start": 2.235,
+      "duration": 1.2,
+      "gain": 0.5799156091962201,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "smg-distant-2.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Carl%20Gustav%20M45/G_20P.wav",
+      "sourceFile": "G_20P.wav",
+      "sha256": "137630298417203c83f885402f1b5d10913c1b96ca0ad31fde50d30314bf3223",
+      "start": 5.245,
+      "duration": 1.2,
+      "gain": 0.5759195859469315,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "smg-tail-0.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Carl%20Gustav%20M45/G_31P.wav",
+      "sourceFile": "G_31P.wav",
+      "sha256": "5982c6c2fa44545b750ba6217ed57797a6a15c02f5c9943ac0e99e5f3ab2b158",
+      "start": 0.46,
+      "duration": 0.3,
+      "gain": 8,
+      "filters": "lowpass=f=4000",
+      "license": "CC0-1.0"
+    },
+    "smg-tail-1.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Carl%20Gustav%20M45/G_31P.wav",
+      "sourceFile": "G_31P.wav",
+      "sha256": "5982c6c2fa44545b750ba6217ed57797a6a15c02f5c9943ac0e99e5f3ab2b158",
+      "start": 3.65,
+      "duration": 0.3,
+      "gain": 8,
+      "filters": "lowpass=f=4000",
+      "license": "CC0-1.0"
+    },
+    "smg-mechanical-0.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload1.wav",
+      "sourceFile": "clipload1.wav",
+      "sha256": "1cdc10c50a26834ce7562a5f2925b9aa1118e3bb58a86fea80f34558bf2c5101",
+      "start": 0,
+      "duration": 0.2554,
+      "gain": 0.8015335768233317,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "smg-mechanical-1.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload2.wav",
+      "sourceFile": "clipload2.wav",
+      "sha256": "a5441641e7e9ede24f3ac311642e06265c6f480e3b1ba4b92c19c81c3a5e4d86",
+      "start": 0,
+      "duration": 0.209,
+      "gain": 0.8335035070319368,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "smg-dry-0.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload1.wav",
+      "sourceFile": "clipload1.wav",
+      "sha256": "1cdc10c50a26834ce7562a5f2925b9aa1118e3bb58a86fea80f34558bf2c5101",
+      "start": 0,
+      "duration": 0.08,
+      "gain": 5.701053862569727,
+      "filters": "highpass=f=1200",
+      "license": "CC0-1.0"
+    },
+    "smg-dry-1.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload2.wav",
+      "sourceFile": "clipload2.wav",
+      "sha256": "a5441641e7e9ede24f3ac311642e06265c6f480e3b1ba4b92c19c81c3a5e4d86",
+      "start": 0,
+      "duration": 0.08,
+      "gain": 1.0529520913632442,
+      "filters": "highpass=f=1200",
+      "license": "CC0-1.0"
+    },
+    "rifle-shot-0.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/AK-47/C_28P.wav",
+      "sourceFile": "C_28P.wav",
+      "sha256": "e0934c1d79192d2216db62fdf6ab57bf9d5d585267af367a1cfb21f0972a537d",
+      "start": 0.595,
+      "duration": 0.55,
+      "gain": 0.795196924762244,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "rifle-shot-1.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/AK-47/C_28P.wav",
+      "sourceFile": "C_28P.wav",
+      "sha256": "e0934c1d79192d2216db62fdf6ab57bf9d5d585267af367a1cfb21f0972a537d",
+      "start": 3.235,
+      "duration": 0.55,
+      "gain": 0.6545910301636891,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "rifle-shot-2.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/AK-47/C_28P.wav",
+      "sourceFile": "C_28P.wav",
+      "sha256": "e0934c1d79192d2216db62fdf6ab57bf9d5d585267af367a1cfb21f0972a537d",
+      "start": 6.005,
+      "duration": 0.55,
+      "gain": 0.7027049466284475,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "rifle-shot-3.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/AK-47/C_28P.wav",
+      "sourceFile": "C_28P.wav",
+      "sha256": "e0934c1d79192d2216db62fdf6ab57bf9d5d585267af367a1cfb21f0972a537d",
+      "start": 9.135,
+      "duration": 0.55,
+      "gain": 0.7606403496443257,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "rifle-distant-0.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/AK-47/C_31P.wav",
+      "sourceFile": "C_31P.wav",
+      "sha256": "5c3261c3bdd7657fd07c141f1f683bef06c2e03da475f43f3943f755360a4994",
+      "start": 0.315,
+      "duration": 1.2,
+      "gain": 0.5723304281899748,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "rifle-distant-1.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/AK-47/C_31P.wav",
+      "sourceFile": "C_31P.wav",
+      "sha256": "5c3261c3bdd7657fd07c141f1f683bef06c2e03da475f43f3943f755360a4994",
+      "start": 4.395,
+      "duration": 1.2,
+      "gain": 0.5702734231600701,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "rifle-tail-0.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/AK-47/C_28P.wav",
+      "sourceFile": "C_28P.wav",
+      "sha256": "e0934c1d79192d2216db62fdf6ab57bf9d5d585267af367a1cfb21f0972a537d",
+      "start": 0.76,
+      "duration": 0.55,
+      "gain": 8,
+      "filters": "lowpass=f=4000",
+      "license": "CC0-1.0"
+    },
+    "rifle-tail-1.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/AK-47/C_28P.wav",
+      "sourceFile": "C_28P.wav",
+      "sha256": "e0934c1d79192d2216db62fdf6ab57bf9d5d585267af367a1cfb21f0972a537d",
+      "start": 3.4,
+      "duration": 0.55,
+      "gain": 8,
+      "filters": "lowpass=f=4000",
+      "license": "CC0-1.0"
+    },
+    "rifle-mechanical-0.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload1.wav",
+      "sourceFile": "clipload1.wav",
+      "sha256": "1cdc10c50a26834ce7562a5f2925b9aa1118e3bb58a86fea80f34558bf2c5101",
+      "start": 0,
+      "duration": 0.2554,
+      "gain": 0.8015335768233317,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "rifle-mechanical-1.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload2.wav",
+      "sourceFile": "clipload2.wav",
+      "sha256": "a5441641e7e9ede24f3ac311642e06265c6f480e3b1ba4b92c19c81c3a5e4d86",
+      "start": 0,
+      "duration": 0.209,
+      "gain": 0.8335035070319368,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "rifle-dry-0.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload1.wav",
+      "sourceFile": "clipload1.wav",
+      "sha256": "1cdc10c50a26834ce7562a5f2925b9aa1118e3bb58a86fea80f34558bf2c5101",
+      "start": 0,
+      "duration": 0.08,
+      "gain": 5.701053862569727,
+      "filters": "highpass=f=1200",
+      "license": "CC0-1.0"
+    },
+    "rifle-dry-1.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload2.wav",
+      "sourceFile": "clipload2.wav",
+      "sha256": "a5441641e7e9ede24f3ac311642e06265c6f480e3b1ba4b92c19c81c3a5e4d86",
+      "start": 0,
+      "duration": 0.08,
+      "gain": 1.0529520913632442,
+      "filters": "highpass=f=1200",
+      "license": "CC0-1.0"
+    },
+    "pump-shot-0.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Mossberg/N_30P.wav",
+      "sourceFile": "N_30P.wav",
+      "sha256": "b5a28243e16f8cb10adfc5225d96e90f108d24393fcfffcaa6dcf203af03634a",
+      "start": 1.675,
+      "duration": 0.65,
+      "gain": 0.5761825487848721,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "pump-shot-1.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Mossberg/N_30P.wav",
+      "sourceFile": "N_30P.wav",
+      "sha256": "b5a28243e16f8cb10adfc5225d96e90f108d24393fcfffcaa6dcf203af03634a",
+      "start": 4.945,
+      "duration": 0.65,
+      "gain": 0.5678362351323576,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "pump-shot-2.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Nova/O_21P.wav",
+      "sourceFile": "O_21P.wav",
+      "sha256": "5661d0625e4634f19e6e316c13693b80c8e28cd9f716cf9c75c465153ae40815",
+      "start": 0.415,
+      "duration": 0.65,
+      "gain": 0.6191066906353282,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "pump-distant-0.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Mossberg/N_26P.wav",
+      "sourceFile": "N_26P.wav",
+      "sha256": "311a5b016bebc21e7d812ef0756174fbdc77454229512bd5a64101ec055e8807",
+      "start": 0.765,
+      "duration": 1.2,
+      "gain": 0.5535444707223691,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "pump-distant-1.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Mossberg/N_26P.wav",
+      "sourceFile": "N_26P.wav",
+      "sha256": "311a5b016bebc21e7d812ef0756174fbdc77454229512bd5a64101ec055e8807",
+      "start": 4.555,
+      "duration": 1.2,
+      "gain": 0.535869186895973,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "pump-distant-2.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Mossberg/N_26P.wav",
+      "sourceFile": "N_26P.wav",
+      "sha256": "311a5b016bebc21e7d812ef0756174fbdc77454229512bd5a64101ec055e8807",
+      "start": 7.925,
+      "duration": 1.2,
+      "gain": 0.5740675308512978,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "pump-tail-0.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Mossberg/N_30P.wav",
+      "sourceFile": "N_30P.wav",
+      "sha256": "b5a28243e16f8cb10adfc5225d96e90f108d24393fcfffcaa6dcf203af03634a",
+      "start": 1.84,
+      "duration": 0.65,
+      "gain": 8,
+      "filters": "lowpass=f=4000",
+      "license": "CC0-1.0"
+    },
+    "pump-tail-1.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Mossberg/N_30P.wav",
+      "sourceFile": "N_30P.wav",
+      "sha256": "b5a28243e16f8cb10adfc5225d96e90f108d24393fcfffcaa6dcf203af03634a",
+      "start": 5.11,
+      "duration": 0.65,
+      "gain": 8,
+      "filters": "lowpass=f=4000",
+      "license": "CC0-1.0"
+    },
+    "pump-mechanical-0.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload1.wav",
+      "sourceFile": "clipload1.wav",
+      "sha256": "1cdc10c50a26834ce7562a5f2925b9aa1118e3bb58a86fea80f34558bf2c5101",
+      "start": 0,
+      "duration": 0.2554,
+      "gain": 0.8015335768233317,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "pump-mechanical-1.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload2.wav",
+      "sourceFile": "clipload2.wav",
+      "sha256": "a5441641e7e9ede24f3ac311642e06265c6f480e3b1ba4b92c19c81c3a5e4d86",
+      "start": 0,
+      "duration": 0.209,
+      "gain": 0.8335035070319368,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "pump-dry-0.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload1.wav",
+      "sourceFile": "clipload1.wav",
+      "sha256": "1cdc10c50a26834ce7562a5f2925b9aa1118e3bb58a86fea80f34558bf2c5101",
+      "start": 0,
+      "duration": 0.08,
+      "gain": 5.701053862569727,
+      "filters": "highpass=f=1200",
+      "license": "CC0-1.0"
+    },
+    "pump-dry-1.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload2.wav",
+      "sourceFile": "clipload2.wav",
+      "sha256": "a5441641e7e9ede24f3ac311642e06265c6f480e3b1ba4b92c19c81c3a5e4d86",
+      "start": 0,
+      "duration": 0.08,
+      "gain": 1.0529520913632442,
+      "filters": "highpass=f=1200",
+      "license": "CC0-1.0"
+    },
+    "sniper-shot-0.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Tikka/W_29P.wav",
+      "sourceFile": "W_29P.wav",
+      "sha256": "b1ffe3c104391bf8ceb8337aa4d5a2ca47938fb88ccbd051cdd2b2e205d9e72b",
+      "start": 0.555,
+      "duration": 0.85,
+      "gain": 0.7753295409920472,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "sniper-shot-1.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Tikka/W_29P.wav",
+      "sourceFile": "W_29P.wav",
+      "sha256": "b1ffe3c104391bf8ceb8337aa4d5a2ca47938fb88ccbd051cdd2b2e205d9e72b",
+      "start": 5.645,
+      "duration": 0.85,
+      "gain": 0.7998345321950833,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "sniper-shot-2.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/1917/B_24P.wav",
+      "sourceFile": "B_24P.wav",
+      "sha256": "6e0ec58bc70c39d68afdc7dc9e6d100ef6394eb7f4ab9671385d468b3b14b931",
+      "start": 1.285,
+      "duration": 0.85,
+      "gain": 0.8212317093313876,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "sniper-distant-0.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Tikka/W_24P.wav",
+      "sourceFile": "W_24P.wav",
+      "sha256": "dceb44954c7308e86b15f5f52608643ca66adb977937794a860a6037de303bb4",
+      "start": 0.735,
+      "duration": 1.2,
+      "gain": 0.5767476858936058,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "sniper-distant-1.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Tikka/W_24P.wav",
+      "sourceFile": "W_24P.wav",
+      "sha256": "dceb44954c7308e86b15f5f52608643ca66adb977937794a860a6037de303bb4",
+      "start": 5.355,
+      "duration": 1.2,
+      "gain": 0.5594561286219242,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "sniper-tail-0.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Tikka/W_29P.wav",
+      "sourceFile": "W_29P.wav",
+      "sha256": "b1ffe3c104391bf8ceb8337aa4d5a2ca47938fb88ccbd051cdd2b2e205d9e72b",
+      "start": 0.72,
+      "duration": 0.8,
+      "gain": 3.1296176253672217,
+      "filters": "lowpass=f=4000",
+      "license": "CC0-1.0"
+    },
+    "sniper-tail-1.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/Tikka/W_29P.wav",
+      "sourceFile": "W_29P.wav",
+      "sha256": "b1ffe3c104391bf8ceb8337aa4d5a2ca47938fb88ccbd051cdd2b2e205d9e72b",
+      "start": 5.81,
+      "duration": 0.8,
+      "gain": 3.2541733260920163,
+      "filters": "lowpass=f=4000",
+      "license": "CC0-1.0"
+    },
+    "sniper-mechanical-0.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload1.wav",
+      "sourceFile": "clipload1.wav",
+      "sha256": "1cdc10c50a26834ce7562a5f2925b9aa1118e3bb58a86fea80f34558bf2c5101",
+      "start": 0,
+      "duration": 0.2554,
+      "gain": 0.8015335768233317,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "sniper-mechanical-1.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload2.wav",
+      "sourceFile": "clipload2.wav",
+      "sha256": "a5441641e7e9ede24f3ac311642e06265c6f480e3b1ba4b92c19c81c3a5e4d86",
+      "start": 0,
+      "duration": 0.209,
+      "gain": 0.8335035070319368,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "sniper-dry-0.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload1.wav",
+      "sourceFile": "clipload1.wav",
+      "sha256": "1cdc10c50a26834ce7562a5f2925b9aa1118e3bb58a86fea80f34558bf2c5101",
+      "start": 0,
+      "duration": 0.08,
+      "gain": 5.701053862569727,
+      "filters": "highpass=f=1200",
+      "license": "CC0-1.0"
+    },
+    "sniper-dry-1.m4a": {
+      "source": "https://opengameart.org/sites/default/files/clipload2.wav",
+      "sourceFile": "clipload2.wav",
+      "sha256": "a5441641e7e9ede24f3ac311642e06265c6f480e3b1ba4b92c19c81c3a5e4d86",
+      "start": 0,
+      "duration": 0.08,
+      "gain": 1.0529520913632442,
+      "filters": "highpass=f=1200",
+      "license": "CC0-1.0"
+    },
+    "body-0.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactPunch_heavy_000.ogg",
+      "sourceFile": "impactPunch_heavy_000.ogg",
+      "sha256": "b33a8f14068aec24ec69ba85e5e87fdc41228975f6a1a3e44a6e7d6fc3d9f8d8",
+      "start": 0,
+      "duration": 0.649,
+      "gain": 0.6483803364072366,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "body-1.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactPunch_heavy_001.ogg",
+      "sourceFile": "impactPunch_heavy_001.ogg",
+      "sha256": "f92f5cb6ba4ff2766497292ffd90865654317eeca976f5652e0708dbdcdc0dd9",
+      "start": 0,
+      "duration": 0.536,
+      "gain": 0.6642086052645707,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "body-2.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactPunch_heavy_002.ogg",
+      "sourceFile": "impactPunch_heavy_002.ogg",
+      "sha256": "7993dd4c156b9979ad69f17be5ebe31850b16039a3857f8477141be54dfee1b3",
+      "start": 0,
+      "duration": 0.4575,
+      "gain": 0.648648074497426,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "head-0.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactPunch_heavy_000.ogg",
+      "sourceFile": "impactPunch_heavy_000.ogg",
+      "sha256": "b33a8f14068aec24ec69ba85e5e87fdc41228975f6a1a3e44a6e7d6fc3d9f8d8",
+      "start": 0,
+      "duration": 0.649,
+      "gain": 0.6483803364072366,
+      "filters": "highpass=f=1200",
+      "license": "CC0-1.0"
+    },
+    "head-1.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactPunch_heavy_001.ogg",
+      "sourceFile": "impactPunch_heavy_001.ogg",
+      "sha256": "f92f5cb6ba4ff2766497292ffd90865654317eeca976f5652e0708dbdcdc0dd9",
+      "start": 0,
+      "duration": 0.536,
+      "gain": 0.6642086052645707,
+      "filters": "highpass=f=1200",
+      "license": "CC0-1.0"
+    },
+    "head-2.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactPunch_heavy_002.ogg",
+      "sourceFile": "impactPunch_heavy_002.ogg",
+      "sha256": "7993dd4c156b9979ad69f17be5ebe31850b16039a3857f8477141be54dfee1b3",
+      "start": 0,
+      "duration": 0.4575,
+      "gain": 0.648648074497426,
+      "filters": "highpass=f=1200",
+      "license": "CC0-1.0"
+    },
+    "kill-0.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactPunch_heavy_000.ogg",
+      "sourceFile": "impactPunch_heavy_000.ogg",
+      "sha256": "b33a8f14068aec24ec69ba85e5e87fdc41228975f6a1a3e44a6e7d6fc3d9f8d8",
+      "start": 0,
+      "duration": 0.649,
+      "gain": 0.6483803364072366,
+      "filters": "lowpass=f=800",
+      "license": "CC0-1.0"
+    },
+    "kill-1.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactPunch_heavy_001.ogg",
+      "sourceFile": "impactPunch_heavy_001.ogg",
+      "sha256": "f92f5cb6ba4ff2766497292ffd90865654317eeca976f5652e0708dbdcdc0dd9",
+      "start": 0,
+      "duration": 0.536,
+      "gain": 0.6642086052645707,
+      "filters": "lowpass=f=800",
+      "license": "CC0-1.0"
+    },
+    "kill-2.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactPunch_heavy_002.ogg",
+      "sourceFile": "impactPunch_heavy_002.ogg",
+      "sha256": "7993dd4c156b9979ad69f17be5ebe31850b16039a3857f8477141be54dfee1b3",
+      "start": 0,
+      "duration": 0.4575,
+      "gain": 0.648648074497426,
+      "filters": "lowpass=f=800",
+      "license": "CC0-1.0"
+    },
+    "metal-0.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactMetal_medium_000.ogg",
+      "sourceFile": "impactMetal_medium_000.ogg",
+      "sha256": "a96f879fec0864a8938e0c745b6996a6c5679c16a234ce31a01cc995e8401003",
+      "start": 0,
+      "duration": 0.2688,
+      "gain": 0.6648248226731691,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "metal-1.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactMetal_medium_001.ogg",
+      "sourceFile": "impactMetal_medium_001.ogg",
+      "sha256": "e8a9eaba7c4d27422e4eeb3e6c7100d5d7dc0f83e005efc98c960adcc5265337",
+      "start": 0,
+      "duration": 0.1406,
+      "gain": 0.6742232188557415,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "metal-2.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactMetal_medium_002.ogg",
+      "sourceFile": "impactMetal_medium_002.ogg",
+      "sha256": "7e89ce2ca0dbda95ea2b78d4b50791cab35c10d20e9f5ccd45dd0b00e99ff548",
+      "start": 0,
+      "duration": 0.1163,
+      "gain": 0.6597063561580301,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "stone-0.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactMining_000.ogg",
+      "sourceFile": "impactMining_000.ogg",
+      "sha256": "36b4ea107222d073c67ca64dde26944975609202d5090b2f2021213c1a7e35cd",
+      "start": 0,
+      "duration": 0.9375,
+      "gain": 0.6544801681428644,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "stone-1.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactMining_001.ogg",
+      "sourceFile": "impactMining_001.ogg",
+      "sha256": "61235a18de3f3d92118235398222dbf51d448f1be70b1c8bc962b10b86f2d9c6",
+      "start": 0,
+      "duration": 0.8694,
+      "gain": 0.651365052033195,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "stone-2.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactMining_002.ogg",
+      "sourceFile": "impactMining_002.ogg",
+      "sha256": "059558ec751115ca6b1441e00f0adc837c1a3eeb0a066b109e0fd879fc5d0b0c",
+      "start": 0,
+      "duration": 0.8047,
+      "gain": 0.6615321784204012,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "wood-0.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactPlank_medium_000.ogg",
+      "sourceFile": "impactPlank_medium_000.ogg",
+      "sha256": "8403cd7a043f0391574c88c55dd205743725b5363d2407f6de145f201690b68f",
+      "start": 0,
+      "duration": 0.779,
+      "gain": 0.6666738929601402,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "wood-1.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactPlank_medium_001.ogg",
+      "sourceFile": "impactPlank_medium_001.ogg",
+      "sha256": "d7c304319f8beac616231b62041fa8da74045b62d7155965516efb9b19303df4",
+      "start": 0,
+      "duration": 0.779,
+      "gain": 0.6509377043744446,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "wood-2.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactPlank_medium_002.ogg",
+      "sourceFile": "impactPlank_medium_002.ogg",
+      "sha256": "f6a14da45994229676b4f29e6a35f504b5c2ec2b8166fb1a3b1aa004bc6911ef",
+      "start": 0,
+      "duration": 0.779,
+      "gain": 0.6476857019509216,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "dirt-0.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactSoft_medium_000.ogg",
+      "sourceFile": "impactSoft_medium_000.ogg",
+      "sha256": "7d3ba0bb5e60a11b5d3e558c141303dcf494256675fbf753c0d252d2cf0481e3",
+      "start": 0,
+      "duration": 0.1151,
+      "gain": 0.6476191738684414,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "dirt-1.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactSoft_medium_001.ogg",
+      "sourceFile": "impactSoft_medium_001.ogg",
+      "sha256": "7642a4fd43e547afe4f7adfadb3dabb681c0ff512f52c1674bae30a726841faf",
+      "start": 0,
+      "duration": 0.1804,
+      "gain": 0.6451070631710175,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "dirt-2.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactSoft_medium_002.ogg",
+      "sourceFile": "impactSoft_medium_002.ogg",
+      "sha256": "5069e3571a77d7f7aae9ef71d0364aa245fb7d64a7c8cc9956f221d03088c089",
+      "start": 0,
+      "duration": 0.1323,
+      "gain": 0.6501167612465433,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "casing-0.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactTin_medium_000.ogg",
+      "sourceFile": "impactTin_medium_000.ogg",
+      "sha256": "f4bbee66ca191ec744b84fc07ac9ed2a6fda955d51cfed8360f12b62815d3cbd",
+      "start": 0,
+      "duration": 0.1558,
+      "gain": 0.6531334595734567,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "casing-1.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactTin_medium_001.ogg",
+      "sourceFile": "impactTin_medium_001.ogg",
+      "sha256": "84253095543c094d83cd749f42ecfbc96e356b60385f18a192c18eafb25b3cc6",
+      "start": 0,
+      "duration": 0.1714,
+      "gain": 0.6831611980932113,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "casing-2.m4a": {
+      "source": "https://raw.githubusercontent.com/GeorgeQLe/assets-sfx-combat/main/assets/kenney/impact-sounds/Audio/impactTin_medium_002.ogg",
+      "sourceFile": "impactTin_medium_002.ogg",
+      "sha256": "c1d2c4f9910d4529581ae56a9a9a01454c4619fbb7d6da7616221d8ec58cc0c4",
+      "start": 0,
+      "duration": 0.1309,
+      "gain": 0.660943511747295,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "voice-a-pain-0.m4a": {
+      "source": "https://opengameart.org/content/voice-clip-pack-male-adventurer-rpg",
+      "sourceFile": "voice-a/RPG Male Adventurer/hurt0.wav",
+      "sha256": "fe052f0d77fa42426a2218daa7085b614c19ede12cb2e60b3bcd6db9763a0621",
+      "start": 0,
+      "duration": 0.554,
+      "gain": 0.5836283700399414,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "voice-a-pain-1.m4a": {
+      "source": "https://opengameart.org/content/voice-clip-pack-male-adventurer-rpg",
+      "sourceFile": "voice-a/RPG Male Adventurer/hurt1.wav",
+      "sha256": "53b3b3a7be3399f90915c813ef356a624bf3033382aea0a24eaf02c200225e75",
+      "start": 0,
+      "duration": 0.9694,
+      "gain": 0.5891510621818616,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "voice-a-pain-2.m4a": {
+      "source": "https://opengameart.org/content/voice-clip-pack-male-adventurer-rpg",
+      "sourceFile": "voice-a/RPG Male Adventurer/hurt2.wav",
+      "sha256": "8f65c53268ed217346b0c403b0e4a2b3649af055c645f0f2d747248f58c5a162",
+      "start": 0,
+      "duration": 0.8427,
+      "gain": 0.5799174181560509,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "voice-a-pain-3.m4a": {
+      "source": "https://opengameart.org/content/voice-clip-pack-male-adventurer-rpg",
+      "sourceFile": "voice-a/RPG Male Adventurer/hurt3.wav",
+      "sha256": "251f58f2e2d8ae8b5d2876fd3dea26848725b3b1fed18c196f1fceb5ed71993c",
+      "start": 0,
+      "duration": 0.3215,
+      "gain": 0.6560260264231674,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "voice-a-death-0.m4a": {
+      "source": "https://opengameart.org/content/voice-clip-pack-male-adventurer-rpg",
+      "sourceFile": "voice-a/RPG Male Adventurer/death0.wav",
+      "sha256": "a075132b2ad2b7f497fca18fb1bb1fb9a5bd6f75825826abeb3ff6a56d3daf52",
+      "start": 0,
+      "duration": 2.4,
+      "gain": 0.5783472941478757,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "voice-a-death-1.m4a": {
+      "source": "https://opengameart.org/content/voice-clip-pack-male-adventurer-rpg",
+      "sourceFile": "voice-a/RPG Male Adventurer/death1.wav",
+      "sha256": "2cd674ab93573b83d3dd984505137064c6407f63b21801d2f351466ab968c04b",
+      "start": 0,
+      "duration": 1.7038,
+      "gain": 0.5816558472801525,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "voice-b-death-0.m4a": {
+      "source": "https://opengameart.org/content/death-sounds-0",
+      "sourceFile": "death/exewinDeathSoundsPack/1.ogg",
+      "sha256": "8d772bc252baf058887877cddf99090fb8149aaa41672e5178cbd2d8874f73be",
+      "start": 0,
+      "duration": 0.7663,
+      "gain": 4.002944052821233,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "voice-b-death-1.m4a": {
+      "source": "https://opengameart.org/content/death-sounds-0",
+      "sourceFile": "death/exewinDeathSoundsPack/2.ogg",
+      "sha256": "283b8f19a2de2808f1a27be4fd6551644ab8b418bfa7c35a3cc42cbd8bf94783",
+      "start": 0,
+      "duration": 0.7372,
+      "gain": 3.12663029431965,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "voice-b-death-2.m4a": {
+      "source": "https://opengameart.org/content/death-sounds-0",
+      "sourceFile": "death/exewinDeathSoundsPack/3.ogg",
+      "sha256": "0a841804764f30887861224d7f3a1b8e1922f7574e42c16f221d29ecfd348e0f",
+      "start": 0,
+      "duration": 0.4151,
+      "gain": 6.886539343461173,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "voice-b-death-3.m4a": {
+      "source": "https://opengameart.org/content/death-sounds-0",
+      "sourceFile": "death/exewinDeathSoundsPack/4.ogg",
+      "sha256": "dfc67cd0aa6a1d71cd9ec8eea07f64dbbf301e23817331687c66cb42e409b503",
+      "start": 0,
+      "duration": 0.8214,
+      "gain": 3.6623382094169195,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "voice-b-pain-0.m4a": {
+      "source": "https://opengameart.org/content/death-sounds-0",
+      "sourceFile": "death/exewinDeathSoundsPack/5.ogg",
+      "sha256": "636c72b692d5103e93f92d1f4e05e4029be74f03c8334c8ce0185fd747afe857",
+      "start": 0,
+      "duration": 0.55,
+      "gain": 5.146017112160444,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "voice-b-pain-1.m4a": {
+      "source": "https://opengameart.org/content/death-sounds-0",
+      "sourceFile": "death/exewinDeathSoundsPack/6.ogg",
+      "sha256": "4c8693c3c68a7a44ad27566bb1f5be9c7e411a89e4904ca177cb3989431c5647",
+      "start": 0,
+      "duration": 0.55,
+      "gain": 3.1463692645894445,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "voice-b-pain-2.m4a": {
+      "source": "https://opengameart.org/content/death-sounds-0",
+      "sourceFile": "death/exewinDeathSoundsPack/7.ogg",
+      "sha256": "70c60da09a7b0b5252cc067f08d46f286504e0cf2945fddf3f71989623d55c5e",
+      "start": 0,
+      "duration": 0.4731,
+      "gain": 8,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "voice-b-pain-3.m4a": {
+      "source": "https://opengameart.org/content/death-sounds-0",
+      "sourceFile": "death/exewinDeathSoundsPack/8.ogg",
+      "sha256": "6a26b40b153682581ec18dfcf1a61d3e623396b718a19c5dbeafa0a1d1f063b7",
+      "start": 0,
+      "duration": 0.55,
+      "gain": 2.305782621014553,
+      "filters": "",
+      "license": "CC0-1.0"
+    },
+    "near-miss-0.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/AK-47/C_28P.wav",
+      "sourceFile": "C_28P.wav",
+      "sha256": "e0934c1d79192d2216db62fdf6ab57bf9d5d585267af367a1cfb21f0972a537d",
+      "start": 0.605,
+      "duration": 0.08,
+      "gain": 0.795196924762244,
+      "filters": "highpass=f=3000",
+      "license": "CC0-1.0"
+    },
+    "near-miss-1.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/AK-47/C_28P.wav",
+      "sourceFile": "C_28P.wav",
+      "sha256": "e0934c1d79192d2216db62fdf6ab57bf9d5d585267af367a1cfb21f0972a537d",
+      "start": 3.245,
+      "duration": 0.08,
+      "gain": 0.6545910301636891,
+      "filters": "highpass=f=3000",
+      "license": "CC0-1.0"
+    },
+    "near-miss-2.m4a": {
+      "source": "https://raw.githubusercontent.com/buddingmonkey/FreeFirearmsSFXLibrary/main/Prepared%20SFX/AK-47/C_28P.wav",
+      "sourceFile": "C_28P.wav",
+      "sha256": "e0934c1d79192d2216db62fdf6ab57bf9d5d585267af367a1cfb21f0972a537d",
+      "start": 6.015,
+      "duration": 0.08,
+      "gain": 0.7027049466284475,
+      "filters": "highpass=f=3000",
+      "license": "CC0-1.0"
+    }
+  }
+}

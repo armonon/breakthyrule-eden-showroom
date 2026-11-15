@@ -86,7 +86,7 @@
    const nextFov=T.MathUtils.lerp(p.firstFov,p.thirdFov,thirdBlend)+effectFov;if(Math.abs(camera.fov-nextFov)>.01){camera.fov=nextFov;camera.updateProjectionMatrix();}
    // Flashlight follows the final camera; network poses always use player feet.
    garden.update(time/1000,camera);expedition?.update(time/1000,dt);
-   gripsView??=window.parkourGrips?.mount(T,scene,{getPose:()=>parkour?.ropePose?.()})||null;gripsView?.update();
+   gripsView??=window.parkourGrips?.mount(T,scene,{getPose:()=>parkour?.ropePose?.()})||null;gripsView?.update();for(const c of scene.children)if((c.name==='Parkour grips'||c.name==='Pyramid at the end of the road')&&!c.userData.bakeRegistered){window.edenBaked?.registerStatic(c);c.userData.bakeRegistered=true;}
    momentumHud??=window.createMomentumHud?.({host:document.body})||null;momentumHud?.update({momentum:movement.momentum?.()||0,chain:parkour?.chain?.()||0,mode:movement.state()});lighting.update();
    if(ready&&time-lastLandmarkCheck>2000){lastLandmarkCheck=time;const missing=Object.entries(garden.district.inspect().models).filter(([,value])=>value==='fallback');if(missing.length)$('entry-hint').textContent='Some distant landmark artwork is unavailable. Return to Eden and enter again to retry.';}
    for(const dust of puffs)if(dust.alive){dust.t+=dt;dust.alive=dust.t<.8;dust.sprite.visible=dust.alive;dust.sprite.material.opacity=Math.max(0,1-dust.t/.8)*.4;dust.sprite.scale.setScalar(.15+dust.t*.7);dust.sprite.position.y+=dt*.12;}
@@ -98,6 +98,7 @@
   status.textContent='Loading the shared night district…';
   const response=await fetch('/night-layout.json?v=3',{signal:lifetime.signal});if(!response.ok)throw new Error('The district map is unavailable.');const layout=await response.json();window.nightLayout=layout;
   renderer=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setSize(stage.clientWidth,stage.clientHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.25));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.AgXToneMapping;renderer.toneMappingExposure=1.5;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;renderer.shadowMap.autoUpdate=false;stage.append(renderer.domElement);renderer.domElement.tabIndex=0;renderer.domElement.setAttribute('aria-label','Beyond Eden. Click to look around; WASD to move.');window.showroomEnableKTX2(renderer);
+  window.edenBaked=window.createEdenBakedLight?.(T,{onShadowChange:()=>{renderer.shadowMap.needsUpdate=true;}});window.edenBaked?.setWorld('beyond');
   scene=new T.Scene();camera=new T.PerspectiveCamera(60,stage.clientWidth/stage.clientHeight,.05,220);camera.position.copy(targetPosition);camera.lookAt(targetAim);
   const hemi=new T.HemisphereLight(0xdceffc,0x5a6538,1.35),sun=new T.DirectionalLight(0xffe4ad,3.2);sun.position.set(-23,19,-48);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.normalBias=.035;sun.shadow.bias=-.00015;scene.add(hemi,sun);const fill=new T.DirectionalLight(0xe4edff,.35);fill.position.set(10,9,18);scene.add(fill);
   warmup=window.createRenderWarmup(renderer,camera,scene,{signal:lifetime.signal});
@@ -147,6 +148,8 @@
   // authored landmarks and the actual player model must all finish successfully.
   await new Promise((resolve,reject)=>{const began=performance.now();function check(){if(disposed){resolve();return;}const models=garden.district.inspect().models,failed=garden.requiredLandmarks.filter(id=>models[id]==='fallback');if(failed.length){reject(new Error('Required landmark artwork could not load: '+failed.join(', ')+'.'));return;}const loaded=garden.requiredLandmarks.filter(id=>models[id]==='model').length,prepared=garden.warmupLandmarks.filter(id=>models[id]==='model'||models[id]==='fallback').length,elapsed=performance.now()-began;status.textContent='Preparing district artwork and shaders '+prepared+' / '+garden.warmupLandmarks.length+(body.inspect().ready?' · Character ready':' · Preparing your character');if(loaded===garden.requiredLandmarks.length&&body.inspect().ready&&(prepared===garden.warmupLandmarks.length||elapsed>75000)){resolve();return;}if(elapsed>45000&&(loaded!==garden.requiredLandmarks.length||!body.inspect().ready)){reject(new Error('The landmark or character artwork is unavailable.'));return;}setTimeout(check,100);}check();});
   if(disposed)return;status.textContent='Preparing character textures, tools and movement effects…';preparingAvatar=true;
+  await window.edenBaked?.beyondReady;
+  for(const c of scene.children)if(['Garden of Eden','Beyond Eden / the old civilization','Parkour grips','Pyramid at the end of the road'].includes(c.name))window.edenBaked?.registerStatic(c);
   await warmup.prepare(body.getModel().root,{waitForImages:true});
   await warmup.prepare(flareModel());
   if(!reduced){puff(targetPosition,1);await warmup.prepare(puffs[0].sprite,{waitForImages:true});for(const p of puffs){p.alive=false;p.sprite.visible=false;}}

@@ -1,0 +1,15 @@
+Recorded combat audio — all source recordings CC0-1.0 (public domain dedication).
+Firearms: Ben Jaszczak, Brian Nelson, Kevin Heras, Matthew Nanney — Free Firearm Sound Library.
+https://opengameart.org/content/the-free-firearm-sound-library
+Mirror: https://github.com/buddingmonkey/FreeFirearmsSFXLibrary
+Impacts/casings: Kenney — Impact Sounds. https://kenney.nl/assets/impact-sounds
+Mirror: https://github.com/GeorgeQLe/assets-sfx-combat
+Mechanical/reload/dry clicks: Brian MacIntosh (BMacZero).
+https://opengameart.org/content/gun-reload-sound-effects
+Voice A: Brandon Song (wolfwoot), Male Adventurer RPG.
+https://opengameart.org/content/voice-clip-pack-male-adventurer-rpg
+Voice B: Exewin, Death Sounds. Short edits are used for pain; full clips for deaths.
+https://opengameart.org/content/death-sounds-0
+Edits by Break Thy Rule: trimming, mono 32 kHz AAC, normalization, fades and indicated filters.
+Head/kill accents derive from Kenney body impacts. Near-miss cracks are edited rifle transients.
+manifest.json records source URLs, source-file hashes and every edit. No AI voice synthesis.

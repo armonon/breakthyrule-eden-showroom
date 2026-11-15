@@ -10,9 +10,10 @@ export async function openPage({ width = 1280, height = 800, deviceScaleFactor =
   const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, `--window-size=${width},${height}`, '--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=metal', '--no-first-run', '--no-default-browser-check', '--mute-audio', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows', 'about:blank'], { stdio: 'ignore' });
   let page; for (let i = 0; i < 150 && !page; i++) { try { page = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(t => t.type === 'page'); } catch {} await sleep(200); }
   const ws = new WebSocket(page.webSocketDebuggerUrl); await new Promise(r => ws.addEventListener('open', r, { once: true }));
-  let nextId = 1; const pending = new Map(), problems = [];
+  let nextId = 1; const pending = new Map(), problems = [], listeners=new Map();
   ws.addEventListener('message', e => { const m = JSON.parse(e.data); const p = pending.get(m.id);
     if (p) { pending.delete(m.id); m.error ? p.reject(new Error(m.error.message)) : p.resolve(m.result); return; }
+    for(const fn of listeners.get(m.method)||[])fn(m.params);
     if (m.method === 'Runtime.exceptionThrown') problems.push('EXC ' + (m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text).slice(0, 500));
     if (m.method === 'Runtime.consoleAPICalled' && ['error', 'warning'].includes(m.params.type)) problems.push(m.params.type + ' ' + m.params.args.map(a => a.value ?? a.description ?? '').join(' ').slice(0, 500));
   });
@@ -23,5 +24,5 @@ export async function openPage({ width = 1280, height = 800, deviceScaleFactor =
   const shot = async file => { const r = await Promise.race([send('Page.captureScreenshot', { format: 'jpeg', quality: 88, fromSurface: true }), sleep(20000).then(() => null)]); if (r) fs.writeFileSync(file, Buffer.from(r.data, 'base64')); return !!r; };
   const ready = () => evaluate(`new Promise((res,rej)=>{const t=performance.now();(function w(){const s=window.breakThyRuleShowroom?.getState?.();if(s?.ready)res(true);else if(performance.now()-t>180000)rej(Error('never ready'));else setTimeout(w,250);})();})`);
   const close = async () => { chrome.kill('SIGTERM'); await sleep(1500); fs.rmSync(profile, { recursive: true, force: true, maxRetries: 8, retryDelay: 400 }); };
-  return { send, evaluate, shot, ready, close, problems, goto: url => send('Page.navigate', { url }) };
+  return { on(method,fn){if(!listeners.has(method))listeners.set(method,[]);listeners.get(method).push(fn);},send, evaluate, shot, ready, close, problems, goto: url => send('Page.navigate', { url }) };
 }

@@ -13,14 +13,27 @@
  root.createWorlds=function({T,scene,renderer,camera,requestDraw}){
   // Scene roots that belong to Beyond Eden (managed by their own code too) and roots shared by both worlds.
   const BEYOND=new Set(['Arena','Pyramid at the end of the road','Beyond Eden / the old civilization','The Attendant','Eden combat range','Parkour grips']);
-  const SHARED=new Set(['Garden of Eden','Eden sky box','Player body','Combat effects','Prewarm stand-ins']);
+  const SHARED=new Set(['Garden of Eden','Eden sky box','Player body','Combat effects','Prewarm stand-ins','Pyramid lighting']);
   const classify=c=>c.isLight||c.isCamera||c.isSprite||(c.type==='Object3D'&&!c.children.length)||SHARED.has(c.name)?'shared':BEYOND.has(c.name)?'beyond':'eden';
   let world='eden',busy=false,hidden=new Set(),manifest=null,loadedScripts=new Map(),stats={switches:0,hiddenLast:0};
+  // Hidden mesh groups must not change the renderer's light-count defines. Keep
+  // a stable light proxy in the scene; its source continues to own animation and
+  // local coordinates, and hidden ancestors simply give the proxy zero intensity.
+  const stableLights=new Map(),lightPosition=new T.Vector3();
+  function syncLights(discover=false){
+   if(discover){const found=[];scene.traverse(o=>{if(o.isLight&&!o.castShadow&&o.parent!==scene&&!stableLights.has(o)&&!o.userData.stableProxy)found.push(o);});
+    for(const source of found){const mirror=source.clone();mirror.name='Stable light · '+(source.parent.name||source.type);mirror.userData.stableProxy=true;const mask=source.layers.mask;source.layers.disableAll();mirror.layers.mask=mask;scene.add(mirror);stableLights.set(source,{mirror,mask});}}
+   for(const [source,{mirror}] of stableLights){let shown=true,p=source;while(p&&p!==scene){shown=shown&&p.visible;p=p.parent;}shown=shown&&p===scene;
+    mirror.intensity=shown?source.intensity:0;mirror.color.copy(source.color);mirror.position.copy(source.getWorldPosition(lightPosition));
+    if(source.groundColor)mirror.groundColor.copy(source.groundColor);for(const key of ['distance','decay','angle','penumbra'])if(key in source)mirror[key]=source[key];}
+  }
+
   // Hide the other world's roots (only those we hid get shown again, so code that hides its own objects is respected).
   function apply(){
+   window.edenBaked?.setWorld(world);
    for(const c of hidden)if(c.parent===scene)c.visible=true;hidden.clear();
-   for(const c of scene.children){const k=classify(c);if(k==='shared'||k===world)continue;if(c.visible){c.visible=false;hidden.add(c);}}
-   stats.hiddenLast=hidden.size;
+   for(const c of scene.children){const k=classify(c);if(['Garden of Eden','Beyond Eden / the old civilization','Parkour grips','Pyramid at the end of the road'].includes(c.name))window.edenBaked?.registerStatic(c);if(k==='shared'||k===world)continue;if(c.visible){c.visible=false;hidden.add(c);}}
+   syncLights(true);stats.hiddenLast=hidden.size;
   }
   // Loading screen.
   const el=document.createElement('div');el.id='world-loading';el.hidden=true;el.setAttribute('role','status');el.setAttribute('aria-live','polite');
@@ -62,7 +75,17 @@
   function hide(){film.stop();el.classList.remove('in');el.classList.add('out');setTimeout(()=>{if(el.classList.contains('out'))el.hidden=true;},620);}
   const frame=()=>new Promise(r=>requestAnimationFrame(()=>r()));
   // Compile shaders up front, but never hold a loading screen longer than `cap` ms: the rest finishes behind it.
-  async function compile(cap=4000){const job=(async()=>{try{if(renderer.compileAsync)await renderer.compileAsync(scene,camera);else renderer.compile(scene,camera);}catch(e){console.warn('Precompile skipped',e);}})();await Promise.race([job,new Promise(r=>setTimeout(r,cap))]);}
+  let primed=false;
+  async function compile(cap=12000){
+   const changed=[];for(const c of scene.children)if(c.visible&&!c.isLight)c.traverse(o=>{if(o.isMesh||o.isSprite||o.isGroup){changed.push([o,o.visible,o.frustumCulled,o.castShadow]);o.visible=true;o.frustumCulled=false;if(o.isMesh)o.castShadow=true;}});
+   const target=renderer.getRenderTarget();
+   try{const job=renderer.compileAsync?renderer.compileAsync(scene,camera):Promise.resolve(renderer.compile(scene,camera));await Promise.race([job,new Promise(r=>setTimeout(r,cap))]);
+    // Force initial geometry, depth shaders and textures with the final display color space
+    // while the opaque loading card covers the world. Live frames reuse the GPU resources.
+    renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);root.breakThyRuleShowroom?.combat()?.primeView?.();renderer.getContext().finish();primed=true;
+   }catch(e){console.warn('World warm-up failed; live rendering will retry.',e);}finally{renderer.setRenderTarget(target);for(const [o,v,f,cast]of changed){o.visible=v;o.frustumCulled=f;o.castShadow=cast;}window.edenBaked?.refreshShadows();root.breakThyRuleShowroom?.battle()?.refreshShadows?.();renderer.shadowMap.needsUpdate=true;}
+  }
+
   // Switch world behind a loading screen. steps: async work to do while it shows (build, start the match...).
   async function enter(next,{title,sub,kicker,steps=[],min=900}={}){
    if(busy||next===world)return;busy=true;const t0=performance.now();
@@ -91,6 +114,6 @@
   function compileFor(name){if(busy||name===world)return null;const was=world;world=name;apply();let job=null;const self=[];
    for(const c of scene.children)if(classify(c)===name&&!c.visible){self.push(c);c.visible=true;}
    try{job=renderer.compileAsync?renderer.compileAsync(scene,camera):renderer.compile(scene,camera);job?.catch?.(()=>{});}catch(e){console.warn('Prewarm compile failed',e);}finally{for(const c of self)c.visible=false;world=was;apply();}return job;}
-  return {enter,veil,card,chapter,chapters,world:()=>world,loading:()=>busy,apply,compileFor,inspect:()=>({world,busy,...stats,film:film.inspect()})};
+  return {enter,veil,card,chapter,chapters,world:()=>world,loading:()=>busy,apply,syncLights,compileFor,inspect:()=>({world,busy,primed,stableLights:stableLights.size,...stats,film:film.inspect()})};
  };
 })(window);

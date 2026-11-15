@@ -8,20 +8,27 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { openPage, sleep } from './headless-chrome.mjs';
 const args = Object.fromEntries(process.argv.slice(2).map((a, i, all) => a.startsWith('--') ? [a.slice(2), all[i + 1]] : null).filter(Boolean));
+const world=args.world||'eden';if(!['eden','beyond'].includes(world))throw Error('Use --world eden|beyond');
 const out = args.out; fs.mkdirSync(out, { recursive: true });
 const page = await openPage(); await page.goto(args.url || 'http://127.0.0.1:8790/showroom.html'); await page.ready(); await sleep(args.settle ? Number(args.settle) * 1000 : 25000);
 await page.evaluate(`document.querySelectorAll('dialog[open]').forEach(d=>d.close())`);
+if(world==='beyond'){
+ await page.evaluate(`(async()=>{const S=breakThyRuleShowroom,g=S.garden();while(!g.warmNight())await new Promise(r=>setTimeout(r,60));S.teleport(10,-65);await new Promise(r=>setTimeout(r,1500));while(S.worlds().loading())await new Promise(r=>setTimeout(r,100));S.battle()?.suspend();g.nightRoad.setOverride(1);g.district.setLOD?.(false);g.district.prepare(nightLayout.landmarks.map(s=>s.id));const start=performance.now();while(Object.values(g.district.inspect().models).some(v=>v==='waiting'||v==='loading')){if(performance.now()-start>180000)throw Error('Landmark loading timed out');await new Promise(r=>setTimeout(r,250));}g.nightRoad.setOverride(1);g.nightRoad.update(performance.now()/1000,edenCamera);if(Object.values(g.district.inspect().models).includes('fallback'))throw Error('Incomplete bake: a landmark failed to load');})();`);
+}
+const lighting=await page.evaluate(`(()=>{const S=breakThyRuleShowroom,s=S.scene(),g=S.garden();if(${JSON.stringify(world)}==='beyond'){g.nightRoad.setOverride(1);g.nightRoad.update(performance.now()/1000,edenCamera);}const sun=s.children.find(o=>o.isDirectionalLight&&o.castShadow),d=new THREE.Vector3().subVectors(sun.position,sun.target.position).normalize();return {world:${JSON.stringify(world)},bounds:window.nightLayout?[nightLayout.bounds[0],nightLayout.bounds[1],-190,nightLayout.bounds[3]]:null,lamps:g.nightBuilt()?g.district.lamps.map(p=>p.toArray()):[],moon:{direction:d.toArray(),color:sun.color.toArray(),intensity:sun.intensity},lamp:{color:new THREE.Color(0xffc68c).toArray(),intensity:10,decay:1.7,distance:13},sky:{horizon:[.012,.02,.016],zenith:[.002,.004,.005],strength:.7},models:g.nightBuilt()?g.district.inspect().models:{},unit:'game meters, Y up'};})()`);
+fs.writeFileSync(path.join(out,'lighting.json'),JSON.stringify(lighting,null,2));
 const names = await page.evaluate(`edenScene.children.map(o=>o.name||o.type)`); console.log('scene:', names.join(' | '));
 const census = await page.evaluate(`(()=>{const rows=[];edenScene.traverse(o=>{if(o.isMesh&&o.visible&&o.geometry?.attributes?.position){const g=o.geometry,t=(g.index?g.index.count:g.attributes.position.count)/3*(o.isInstancedMesh?o.count:1);rows.push([o.name||o.parent?.name||'mesh',Math.round(t),o.isInstancedMesh?o.count:1]);}});rows.sort((a,b)=>b[1]-a[1]);return {meshes:rows.length,total:rows.reduce((s,r)=>s+r[1],0),top:rows.slice(0,8)};})()`);
 console.log('census', JSON.stringify(census));
 await page.evaluate(`(()=>{
+ const beyond=${world==='beyond'},allowed=new Set(['Garden of Eden','Beyond Eden / the old civilization','Pyramid at the end of the road','Parkour grips']);
  const T=THREE,buckets=new Map(),m=new T.Matrix4(),im=new T.Matrix4(),v=new T.Vector3(),skip=/resident|jester|character|avatar|snake|multiplayer|visitor|player|violet|bird|eden grass|sky box|backstage of the sky/i;
  const canvas=document.createElement('canvas');canvas.width=canvas.height=8;const ctx=canvas.getContext('2d',{willReadFrequently:true});
  function albedo(mat){const c=mat.color?mat.color.clone():new T.Color(.5,.5,.5);const img=mat.map?.image;let a=null;
   if(img&&!mat.map.isCompressedTexture){try{ctx.clearRect(0,0,8,8);ctx.drawImage(img,0,0,8,8);const d=ctx.getImageData(0,0,8,8).data;let r=0,g=0,b=0,n=0;for(let i=0;i<d.length;i+=4){if(d[i+3]<128)continue;r+=d[i];g+=d[i+1];b+=d[i+2];n++;}if(n)a=new T.Color().setRGB(r/n/255,g/n/255,b/n/255,T.SRGBColorSpace);}catch{}}
   if(a)c.multiply(a);else if(mat.map)c.multiplyScalar(.45);return c.toArray();}
  edenScene.updateMatrixWorld(true);
- (function visit(o){if(!o.visible||skip.test(o.name))return;if(o.isSkinnedMesh)return;
+ (function visit(o){if(!o.visible||o.userData.dynamicShadow||skip.test(o.name)||/Lost page|hunt bell|combat|loot|effect|Attendant/i.test(o.name))return;if(beyond&&o.parent===edenScene&&!allowed.has(o.name))return;if(o.isSkinnedMesh)return;
   if(o.isMesh&&o.geometry?.attributes?.position){
    const mat=Array.isArray(o.material)?o.material[0]:o.material;const custom=mat.isShaderMaterial;
    const isTerrain=o.geometry.parameters?.width===240;const sky=custom&&mat.side===T.BackSide;
@@ -31,12 +38,12 @@ await page.evaluate(`(()=>{
     const b=buckets.get(key),g=o.geometry,p=g.attributes.position,ix=g.index?.array,tri=ix?ix.length:p.count,count=o.isInstancedMesh?o.count:1,a=new Float32Array(tri*3*count);let w=0;
     for(let k=0;k<count;k++){if(o.isInstancedMesh){o.getMatrixAt(k,im);m.multiplyMatrices(o.matrixWorld,im);}else m.copy(o.matrixWorld);
      for(let t=0;t<tri;t++){v.fromBufferAttribute(p,ix?ix[t]:t).applyMatrix4(m);a[w++]=v.x;a[w++]=v.y;a[w++]=v.z;}}
-    b.chunks.push(a);b.n+=a.length;
+    if(beyond){const bounds=[nightLayout.bounds[0],nightLayout.bounds[1],-190,nightLayout.bounds[3]],pad=12;let kept=0;for(let t=0;t<a.length;t+=9){let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;for(let j=0;j<9;j+=3){minX=Math.min(minX,a[t+j]);maxX=Math.max(maxX,a[t+j]);minZ=Math.min(minZ,a[t+j+2]);maxZ=Math.max(maxZ,a[t+j+2]);}if(maxX<bounds[0]-pad||minX>bounds[1]+pad||maxZ<bounds[2]-pad||minZ>bounds[3]+pad)continue;for(let j=0;j<9;j++)a[kept++]=a[t+j];}const keep=a.subarray(0,kept);b.chunks.push(keep);b.n+=kept;}else{b.chunks.push(a);b.n+=a.length;}
    }
   }
   for(const c of o.children)visit(c);
  })(edenScene);
- const list=[...buckets.values()],total=list.reduce((s,b)=>s+b.n,0),all=new Float32Array(total);let w=0;
+ const list=[...buckets.values()].filter(b=>b.n>0),total=list.reduce((s,b)=>s+b.n,0),all=new Float32Array(total);let w=0;
  for(const b of list){b.offset=w;for(const c of b.chunks){all.set(c,w);w+=c.length;}delete b.chunks;}
  window.__bakeBytes=new Uint8Array(all.buffer);window.__bakeMeta=list;
  return true;})()`);
