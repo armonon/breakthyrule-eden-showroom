@@ -5,9 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 const CHROME = process.env.CHROME_BIN || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
-export async function openPage({ width = 1280, height = 800, deviceScaleFactor = 1, mobile = false } = {}) {
+export async function openPage({ width = 1280, height = 800, deviceScaleFactor = 1, mobile = false, headless = true } = {}) {
   const port = 11000 + Math.floor(Math.random() * 4000), profile = fs.mkdtempSync(path.join(os.tmpdir(), 'eden-cdp-'));
-  const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, `--window-size=${width},${height}`, '--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=metal', '--no-first-run', '--no-default-browser-check', '--mute-audio', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows', 'about:blank'], { stdio: 'ignore' });
+  const chrome = spawn(CHROME, [...(headless?['--headless=new']:[]), `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, `--window-size=${width},${height}`, '--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=metal', '--no-first-run', '--no-default-browser-check', '--mute-audio', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows', 'about:blank'], { stdio: 'ignore' });
   let page; for (let i = 0; i < 150 && !page; i++) { try { page = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(t => t.type === 'page'); } catch {} await sleep(200); }
   const ws = new WebSocket(page.webSocketDebuggerUrl); await new Promise(r => ws.addEventListener('open', r, { once: true }));
   let nextId = 1; const pending = new Map(), problems = [], listeners=new Map();

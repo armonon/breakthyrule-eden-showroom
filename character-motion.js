@@ -166,6 +166,23 @@
    stop(id=null,fade=.2){for(const L of state.layers)if(!id||L.id===id){L.out=true;L.fade=fade;}},
    playing:id=>state.layers.some(L=>L.id===id&&!L.out),
    animTune:{loco:true},
+   // Traversal is driven by the movement clock, not by a one-frame input edge.
+   // Late-loaded/replaced rigs therefore join the move already in progress.
+   // Active layers already live in the canonical snapshot; no second clock.
+   traversal(move){
+    const A=root.GardenAnim;if(!A?.ready())return;
+    const kind=move?.kind,t=move?.time||0,duration=move?.duration||0;
+    let id=null,loop=false,speed=1,start=0;
+    if(kind==='slide'){id=t<.12?'slideStart':'slideLoop';loop=id==='slideLoop';speed=id==='slideStart'?A.duration(id)/.12:1;}
+    else if(kind==='dive'||kind==='dash'){id='dash';speed=1.3;}
+    else if(['climb','vault','warp','scramble','pipe'].includes(kind)){id='climbUp';loop=kind==='scramble'||kind==='pipe';speed=duration?A.duration(id)/duration:1;start=Math.min(t*speed,A.duration(id));}
+    else if(kind==='wallrun'){id='sprint';loop=true;speed=1.15;}
+    const managed=['slideStart','slideLoop','climbUp','dash','sprint'];
+    const sliding=api.playing('slideStart')||api.playing('slideLoop');
+    for(const clip of managed)if(clip!==id)api.stop(clip,.12);
+    if(id){api.stop('slideExit',.08);api.stop('jumpStart',.08);if(!api.playing(id))api.play(id,{fade:.08,mask:'full',weight:1,loop,speed,start,hold:!loop});}
+    else if(sliding&&!state.airborne)api.play('slideExit',{fade:.08,speed:1.8,mask:'full'});
+   },
    // Jab with the hand furthest back; returns the seconds until the fist lands.
    punch(target){const s=sides[state.punches++%2];s.punch={t:0,target:target?toLocal(target):s.shoulder.clone().add(new T.Vector3(-s.sign*.08,.02,.62))};return .12;},
    hit(direction,strength=1,{zone='chest'}={}){const d=direction.clone().applyQuaternion(group.getWorldQuaternion(new T.Quaternion()).invert());d.y=0;if(d.lengthSq()>1e-6)d.normalize();
@@ -202,8 +219,8 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     const shotLayer=state.layers.find(L=>L.id==='pistolShoot'&&!L.out),reloadLayer=state.layers.find(L=>L.id==='pistolReload'&&!L.out),reachLayer=state.layers.find(L=>(L.id==='pickup'||L.id==='interact')&&!L.out);
     const shot=shotLayer&&shotLayer.t<.22?Math.sin(shotLayer.t/.22*Math.PI)*shotLayer.w:0,reload=reloadLayer?Math.sin(clamp(reloadLayer.t/reloadLayer.dur,0,1)*Math.PI)*reloadLayer.w:0,reach=reachLayer?Math.sin(clamp(reachLayer.t/reachLayer.dur,0,1)*Math.PI)*reachLayer.w:0;
     const viewEase=1-Math.exp(-10*dt);view.first+=(view.firstTarget-view.first)*viewEase;view.sprint+=(view.sprintTarget-view.sprint)*viewEase;view.yaw+=(view.yawTarget-view.yaw)*viewEase;view.pitch+=(view.pitchTarget-view.pitch)*viewEase;
-    // Jump transitions are cosmetic upper-body clips; procedural feet retain contact.
-    if(state.airborne!==wasFlying){api.stop(state.airborne?'jumpLand':'jumpStart',.1);if(state.airborne||!api.playing('jumpLand')&&!api.playing('roll'))api.play(state.airborne?'jumpStart':'jumpLand',{fade:.08,speed:3.2,mask:'upper',weight:.55});wasFlying=state.airborne;}
+    // Airborne legs can use the authored tuck; grounded contact is restored below.
+    if(state.airborne!==wasFlying){api.stop(state.airborne?'jumpLand':'jumpStart',.1);if(state.airborne||!api.playing('jumpLand')&&!api.playing('roll'))api.play(state.airborne?'jumpStart':'jumpLand',{fade:.08,speed:2.2,mask:'full',weight:.85});wasFlying=state.airborne;}
     pelvis.position.copy(pelvisRest);for(const b of model.skeleton.bones)b.quaternion.identity();
     // Pelvis: drop on each footfall, shift over the planted foot, twist with the stride. Springs keep it heavy.
     const ph=state.phase*Math.PI*2,bob=-(.018+.03*run)*w*(.5+.5*Math.cos(2*ph)),sway=.02*w*(1-run)*Math.sin(ph);
@@ -327,12 +344,12 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
      loco.length=0;
      if(api.animTune.loco){const gait=state.weight,jog=smooth(2.7,4.3,state.speed),sprint=smooth(4.5,6.3,state.speed),grounded=state.airborne?0:1;
       state.locoK+=(gait*grounded-state.locoK)*(1-Math.exp(-9*dt));state.idleK+=((1-gait)*grounded-state.idleK)*(1-Math.exp(-6*dt));
-      const mask=busy?noArms('upper'):M.upper;
+      const mask=busy?noArms('full'):M.full;
       const add=(id,weight,walking=false)=>{weight*=1-full;if(weight<=.005||!A.has(id))return;const entry=locoEntries[locoCount++];entry.id=id;entry.weight=Math.round(weight*1000)/1000;loco.push(entry);addAnim(id,walking?((state.phase+A.phase0(id))%1)*A.duration(id):(state.time||0)%A.duration(id),weight,mask);};
       // Adjacent gaits crossfade at one shared footfall phase instead of popping.
       add('walk',.85*state.locoK*(1-crouch)*(1-jog),true);add('jog',.85*state.locoK*(1-crouch)*jog*(1-sprint),true);add('sprint',.85*state.locoK*(1-crouch)*sprint,true);
       add('crouchWalk',.7*state.locoK*crouch,true);add('idle',.55*state.idleK*(1-crouch));add('crouchIdle',.65*state.idleK*crouch);
-      if(state.airborne)add('jumpLoop',.35);}
+      if(state.airborne)add('jumpLoop',.85);}
      for(const L of state.layers){let mask=busy&&!L.arms?noArms(L.mask):M[L.mask];
       // Preserve visible camera-space grips for local actions; the same authored
       // action still drives the torso, and progressively regains arms in third person.
@@ -342,8 +359,17 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
      // Cosmetic torso/clip layers must not detach solved world contacts. Reuse
      // this frame's targets; do not advance gait, springs or action time twice.
      group.updateMatrixWorld(true);
-     for(const s of sides){
-      if(!state.airborne&&!api.playing('roll')&&!api.playing('getUp')){solve(s.leg,s.footTarget,s.footPole);orient(s.leg.end,s.footRotation);}
+     const freeLegs=state.layers.some(L=>L.mask==='full'&&L.w>.01&&['roll','getUp','slideStart','slideLoop','slideExit','climbUp','dash','sprint'].includes(L.id));
+     for(const [i,s] of sides.entries()){
+      if(!state.airborne&&!freeLegs){
+       // Keep planted feet fixed, but retain the clip's knee lift on the swing.
+       // Previously solving both legs at weight 1 erased every new leg animation.
+       const phase=(state.phase+i*.5)%1,contact=phase<stance?1:1-smooth(0,.15,(phase-stance)/(1-stance))*smooth(1,.85,(phase-stance)/(1-stance));
+       const blend=state.weight*contact+1-state.weight;
+       const a=copyV(s.leg.end.getWorldPosition(v3)),q=tempQ().copy(s.leg.end.getWorldQuaternion(tempQ()));
+       a.lerp(s.footTarget,blend);q.slerp(s.footRotation,blend);
+       solve(s.leg,a,s.footPole);orient(s.leg.end,q);
+      }
       if(s.touchWeight.x>.05||state.hold.x>.05){solve(s.arm,s.contactTarget,s.contactPole);orient(s.arm.end,s.contactRotation);}
      }
     }
@@ -420,6 +446,9 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
   const shoulderUp=at?-at[13]*model.root.scale.y:1.4,riseTo=hands?Math.max(0,Math.min(.7,hands[0].y-.33-(model.root.position.y+shoulderUp))):0;
   handRise+=(riseTo-handRise)*(1-Math.exp(-14*dt));model.root.position.y+=handRise;
   if(hands){const swap=shoulder?.getWorldPosition(probe).distanceToSquared(hands[0])>probe.distanceToSquared(hands[1]);model.motion.touch('L',hands[swap?1:0],null,1,'grab');model.motion.touch('R',hands[swap?0:1],null,1,'grab');handsOn=true;}else if(handsOn){model.motion.touch('L',null,null,0);model.motion.touch('R',null,null,0);handsOn=false;}
+  model.motion.traversal?.(pose?.traversal);
+  const bank=pose?.traversal?.kind==='wallrun'?-(pose.traversal.side||1)*.28:0;
+  model.root.rotation.z+=(bank-model.root.rotation.z)*(1-Math.exp(-12*dt));
   model.root.rotation.order='YXZ';const pitchTo=pose?(pose.dive||0)*1.25-(pose.slide||0)*.32:0;model.root.rotation.x+=(pitchTo-model.root.rotation.x)*(1-Math.exp(-10*dt));if(pose?.dive)model.root.position.y+=.35*pose.dive;
   return {handRise,handsOn};
  }

@@ -1071,7 +1071,7 @@
   function onMouseMove(e){if(!locked||!armed||!o.canAct())return;const z=ZOOM[current?.id]||1,sens=.0021*lerp(1,Math.min(.7,1.35/z),adsBlend)*lookScale()*assist.friction;yaw+=e.movementX*sens;pitch=clamp(pitch-e.movementY*sens*ySign(),-1.35,1.35);const heavy=1+(WEIGHT[current?.id]||0)*1.6;anim.swayX.kick(-e.movementX*.012*heavy*(1-adsBlend*.6));anim.swayY.kick(e.movementY*.012*heavy*(1-adsBlend*.6));requestFrame();}
   function inputKey(e){return root.edenControls?.key(e)??e.key?.toLowerCase()??'';}
   function controlHint(action,fallback){return root.edenControls?.hint(action)||fallback;}
-  function inputBlocked(e){return (window.edenControls?.blockedModifiers(e)??(e.ctrlKey||e.metaKey||e.altKey||e.isComposing))||e.target?.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target?.tagName)||!!document.querySelector('dialog[open], [aria-modal="true"]');}
+  function inputBlocked(e){return (window.edenControls?.blockedModifiers(e)??(e.ctrlKey||e.metaKey||e.altKey||e.isComposing))||e.target?.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target?.tagName)||(window.edenControls?.modalOpen?.()??!!document.querySelector('dialog[open]'));}
   function pressButton(key){
    if(!armed||!(locked||touchMode)||!o.canAct())return;
    if(key==='fire'){buttons.left=true;pendingFire=true;}
@@ -1119,8 +1119,10 @@
    for(const n in FLIP_SRC)flipBook(n);warmEffectPools();
    if(window.createCombatArms&&window.showroomAssets){armsRig=window.createCombatArms(T,{env});armsRig.ready.then(()=>{upgradeModels();requestFrame();}).catch(e=>console.warn('Realistic combat models unavailable; using procedural fallback.',e));}
    document.addEventListener('pointerlockchange',onLockChange);
+   onLockChange(); // Prewarming can build weapons after the world already owns pointer lock.
    document.addEventListener('mousemove',onMouseMove);
    document.addEventListener('mousedown',onMouseDown);
+   renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===0&&armed&&!locked&&!inputBlocked(e))requestLock();});
    document.addEventListener('mouseup',onMouseUp);
    renderer.domElement.addEventListener('contextmenu',e=>{if(armed)e.preventDefault();});
   }

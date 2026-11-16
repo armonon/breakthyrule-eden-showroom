@@ -10,8 +10,8 @@ function camera(){const c=new T.PerspectiveCamera(60,1,.05,100);c.position.set(0
 const aim=new T.Vector3(0,1.75,-5),all={cameraEffects:true,bob:true,sway:true,shake:true,roll:true};
 function sway(){const s={};s.window=s;vm.runInNewContext(source('camera-sway.js'),s);return s.createCameraSway(T);}
 async function rig(){
- const scope={console,atob,AbortController,setTimeout,clearTimeout,fetch:async()=>({ok:true,status:200,json:async()=>JSON.parse(readFileSync(root+'assets/anim/clips.json','utf8'))})};scope.window=scope;
- for(const file of ['assets/character-human-base.js','character-anim.js'])vm.runInNewContext(readFileSync(root+file,'utf8'),scope);
+ const scope={console,atob,structuredClone,AbortController,setTimeout,clearTimeout,fetch:async()=>({ok:true,status:200,json:async()=>JSON.parse(readFileSync(root+'assets/anim/clips.json','utf8'))})};scope.window=scope;
+ for(const file of ['movement-state.js','assets/character-human-base.js','character-anim.js'])vm.runInNewContext(readFileSync(root+file,'utf8'),scope);
  await scope.GardenAnim.load();assert.ok(scope.GardenAnim.ready(),'shipped animation library loaded');vm.runInNewContext(source('character-motion.js'),scope);
  const data=scope.GardenHumanBase,group=new T.Group(),scale=1.75/16.6589;
  const points=data.bones.map(b=>new T.Vector3(b.position[0],b.position[1]+8.1676,b.position[2]).multiplyScalar(scale));
@@ -92,4 +92,21 @@ test('authored full-body gestures cannot detach an active reachable hand contact
  const {motion,model}=await rig(),point=new T.Vector3(.26,1.25,.3);motion.touch('L',point,null,1,'grab');for(let i=0;i<180;i++)motion.update(1/60);
  const wrist=model.skeleton.getBoneByName('wrist.L'),error=()=>wrist.getWorldPosition(new T.Vector3()).distanceTo(point);assert.ok(error()<.025,'contact is reachable before the gesture');
  motion.play('wave',{mask:'full',weight:1,arms:true,loop:true,fade:.05});let peak=0;for(let i=0;i<240;i++){motion.update(1/60);peak=Math.max(peak,error());}assert.ok(peak<.04,`wrist stayed on contact: ${peak}`);
+});
+
+test('movement clocks drive slide, vault and wall-run clips, including a late-loaded rig',async()=>{
+ const {motion,bones}=await rig();
+ const drive=(kind,time,duration=.75)=>{motion.traversal({kind,time,duration,side:1});motion.update(1/60,{velocity:new T.Vector3(0,0,6)});return motion.inspect().actions;};
+ assert.ok(drive('slide',0).includes('slideStart'));
+ assert.ok(drive('slide',.3).includes('slideLoop'));
+ assert.ok(drive(null,0).includes('slideExit'));
+ assert.ok(drive('vault',.3,.6).includes('climbUp'));
+ const layer=motion.captureState().state.layers.find(l=>l.id==='climbUp'&&!l.out);
+ assert.ok(layer.t>0,'a late-loaded model joins the vault in progress');
+ assert.ok(drive('wallrun',.3,1).includes('sprint'));
+ for(let i=0;i<300;i++)drive(i%50<25?'slide':'wallrun',(i%25)/60);
+ assert.ok(motion.captureState().state.layers.length<8,'transitions do not leak animation layers');
+ assert.ok(bones.every(b=>b.quaternion.toArray().concat(b.position.toArray()).every(Number.isFinite)));
+ drive(null,0);for(let i=0;i<120;i++)motion.update(1/60);
+ assert.equal(motion.inspect().actions.length,0,'finished moves release their clips');
 });

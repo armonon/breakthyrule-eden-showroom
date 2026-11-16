@@ -12,7 +12,7 @@ root.createExpeditionPose=function({T,model,tick=0}){
   const dive=m.dive?Math.min(1,m.dive.t*4):m.proneT>0?Math.min(1,m.proneT/.4):0,slide=m.slide?.kind==='slide'&&!m.slide.belly?1-m.slide.t/m.slide.dur:0;
   const drop=m.crouchAmount*.55+(m.dive?Math.min(1,m.dive.t*5)*.55:0)+(m.proneT>0?Math.min(1,m.proneT/.25)*.75:0);
   motion.airborne(airborne);motion.crouch(Math.min(drop,.55)/.55);motion.guard(0);
-  ({handRise,handsOn}=root.GardenCharacterMotion.traverseBody(T,model,{hands:controller.parkour.hands(),handRise,handsOn,pose:{dive,slide},dt,probe}));
+  ({handRise,handsOn}=root.GardenCharacterMotion.traverseBody(T,model,{hands:controller.parkour.hands(),handRise,handsOn,pose:{traversal:m.traversal(),dive,slide},dt,probe}));
   motion.holdKind(controller.parkour.handsFull()?null:'pistol');motion.aimAt(controller.aim);motion.lookAt(controller.aim);motion.update(dt,{velocity,wade:0});model.root.updateMatrixWorld(true);
  }
  function recoveryPose(dt){handRise=0;handsOn=false;motion.airborne(false);motion.crouch(0);motion.guard(0);motion.touch('L',null,null,0);motion.touch('R',null,null,0);motion.holdKind(null);motion.update(dt,{velocity:still,wade:0});}

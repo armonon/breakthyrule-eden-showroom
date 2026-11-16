@@ -55,13 +55,24 @@
   if(bindings[id].some((c,i)=>c===input&&i!==slot))return {ok:false,message:'That input is already assigned to this action.'};
   const next=[...bindings[id]];next[slot]=input;bindings[id]=next;return {ok:true,saved:publish()};
  }
- const api=root.edenControls={actions:actions.map(a=>({...a,inputs:[...a.inputs],contexts:[...a.contexts]})),get:()=>copy(bindings),set,blockedModifiers,reset(){bindings=defaults();publish();},key,action,code,label,
+ // A closed native dialog may retain aria-modal. Only a visible, open modal
+ // owns input; keeping the museum reader mounted must not disable combat.
+ function modalOpen(){
+  const doc=root.document;if(!doc)return false;
+  if(doc.querySelector?.('dialog[open]'))return true;
+  for(const el of doc.querySelectorAll?.('[aria-modal="true"]:not(dialog)')||[]){
+   if(el.closest?.('[hidden],[aria-hidden="true"]'))continue;
+   if(el.checkVisibility?el.checkVisibility({visibilityProperty:true}):el.getClientRects?.().length)return true;
+  }
+  return false;
+ }
+ const api=root.edenControls={actions:actions.map(a=>({...a,inputs:[...a.inputs],contexts:[...a.contexts]})),get:()=>copy(bindings),set,blockedModifiers,modalOpen,reset(){bindings=defaults();publish();},key,action,code,label,
   hint:id=>(bindings[id]||[]).map(label).join(' / '),setContext:fn=>{context=fn;pressed.clear();},context:()=>context(),onChange(fn){subscribers.add(fn);return()=>subscribers.delete(fn);},clear:()=>pressed.clear()};
  // Convert bound mouse buttons once, without manufacturing pointer-lock or trust.
  // Native mouse-look still receives its motion, and a first click still acquires focus.
  const doc=root.document,mousePointers=new Map(),buttonMasks=[1,4,2,8,16];
  function mouseEdge(e,button,up){const physical='Mouse'+button;
-  if(!up&&(blockedModifiers({code:physical,ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:e.altKey,isComposing:e.isComposing})||doc.querySelector?.('dialog[open], [aria-modal="true"]')||e.target?.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target?.tagName)))return;
+  if(!up&&(blockedModifiers({code:physical,ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:e.altKey,isComposing:e.isComposing})||modalOpen()||e.target?.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target?.tagName)))return;
   if(!up&&!doc.pointerLockElement&&!e.target?.closest?.('#scene canvas'))return;
   const id=actions.find(a=>a.contexts.includes(context())&&bindings[a.id].includes(physical))?.id,k=up?pressed.get(physical):byId.get(id)?.key;if(!k)return;
   if(!up&&!doc.pointerLockElement&&['fire','aim','g','use','f'].includes(k))return;

@@ -22,6 +22,19 @@ function combat(){
  return f;
 }
 
+test('closed museum reader does not block fire; open native and visible ARIA dialogs do',()=>{
+ const f=combat();f.set('fire','KeyZ');let opened=false,visible=false,hidden=false;
+ // This native reader stays mounted with aria-modal=true even after closing.
+ f.document.querySelector=selector=>selector==='dialog[open]'&&opened?{}:null;
+ f.document.querySelectorAll=selector=>selector.includes(':not(dialog)')?[{closest:()=>hidden?{}:null,checkVisibility:()=>visible}]:[{tagName:'DIALOG',open:false}];
+ f.s.onKey(f.event('z','KeyZ'));assert.equal(f.state().pendingFire,true);
+ for(const kind of ['native','aria']){
+  f.s.releaseInputs();opened=kind==='native';visible=kind==='aria';
+  f.s.onKey(f.event('z','KeyZ'));assert.equal(f.state().pendingFire,false,kind+' modal owns input');
+ }
+ opened=false;visible=true;hidden=true;f.s.onKey(f.event('z','KeyZ'));assert.equal(f.state().pendingFire,true,'hidden ancestors do not own input');
+});
+
 test('actual combat input handlers use rebound fire, aim, reload and slots; raw keys stop firing',()=>{
  const f=combat();f.set('fire','KeyZ');f.set('aim','KeyU');f.set('reload','KeyL');f.set('weapon1','KeyI');
  f.s.onKey(f.event('z','KeyZ'));assert.equal(f.state().buttons.left,true);assert.equal(f.state().pendingFire,true);

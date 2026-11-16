@@ -109,7 +109,7 @@ window.createArena=function({T,scene,camera,renderer,player,multiplayer,requestD
  document.addEventListener('mouseup',event=>{if(!window.edenControls&&event.button===2)blocking=false;});
  canvas.addEventListener('contextmenu',event=>{if(active)event.preventDefault();});
  document.addEventListener('keydown',event=>{
-  if(!active||event.repeat||(window.edenControls?.blockedModifiers(event)??(event.ctrlKey||event.metaKey||event.altKey||event.isComposing))||event.target?.isContentEditable||event.target.closest?.('input,textarea,select,button,a,[contenteditable]')||document.querySelector('dialog[open], [aria-modal="true"]'))return;
+  if(!active||event.repeat||(window.edenControls?.blockedModifiers(event)??(event.ctrlKey||event.metaKey||event.altKey||event.isComposing))||event.target?.isContentEditable||event.target.closest?.('input,textarea,select,button,a,[contenteditable]')||(window.edenControls?.modalOpen?.()??!!document.querySelector('dialog[open]')))return;
   const key=window.edenControls?.key(event)??event.key.toLowerCase();
   if(key==='fire'){event.preventDefault();if(locked)attack();return;}
   if(key==='aim'){event.preventDefault();if(locked&&!dead&&weapon==='sword')blocking=true;return;}

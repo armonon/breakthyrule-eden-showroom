@@ -273,6 +273,7 @@ function updateJump(dt){
  const api={captureState,restoreState,validateState,move,jump,updateJump,tryVault,cancelTraversal,bodyHeight,tryStep,startSlide,tapDodge,updateCrouch,updateAir,
   needsStep:()=>!!(keys.size||walkVelocity.lengthSq()||slide||vault||h.parkour()?.active()||momentum>0),
   momentum:()=>momentum,
+  traversal:()=>h.parkour()?.presentation?.()||(vault?{kind:'vault',time:vault.t,duration:vault.dur}:dive?{kind:'dive',time:dive.t}:slide?{kind:slide.kind,time:slide.t,duration:slide.dur}:null),
   get slide(){return slide;},set slide(v){slide=v;},get dive(){return dive;},set dive(v){dive=v;},get vault(){return vault;},set vault(v){if(v===null)cancelTraversal();},
   // Exactly one answer to "what is the player doing".
   state:()=>h.parkour()?.kind()||(vault?'vault':dive?'dive':slide?slide.kind:motion.inspect().airborne?'air':proneT>0?'prone':crouchAmount>.1?'crouch':'ground'),
