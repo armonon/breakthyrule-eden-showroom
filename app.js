@@ -515,11 +515,18 @@ function updateMatchGate(){
 }
 // Clips on your own character for what you are doing (seen in third person, and on your body in first person):
 // jumps, slides, dives, rolls, landings, climbs, tackles. T plays an emote (wave, cheer, clap, dance...).
+const bodyWeapons=new Map();let heldBodyWeapon=null;
 const bodyAnim={slide:false,dive:false,air:false,climb:false,prone:false,emote:null,emoteAt:0};
 const EMOTES=['wave','cheer','clap','danceCool','dance','nod'];let emoteIndex=0;
 function playEmote(){if(!playerBody?.anim||!state.ready)return;const id=EMOTES[emoteIndex++%EMOTES.length];if(bodyAnim.emote)playerBody.stopAnim(bodyAnim.emote,.2);bodyAnim.emote=playerBody.anim(id,{fade:.25,loop:id==='danceCool'||id==='dance'})?id:null;bodyAnim.emoteAt=performance.now();if(bodyAnim.emote&&!thirdOn){lastThirdToggle=0;setThird(true);}}
 function updateBodyAnim(){
- const B=playerBody;if(!B?.anim)return;const air=motion.inspect().airborne,sl=movement.slide?.kind==='slide',dv=!!movement.dive,cl=parkour?.kind?.()==='climb',pr=movement.proneT>0;
+ const B=playerBody;if(!B?.anim)return;
+ const weapon=combat?.weapon?.()||null;
+ if(weapon!==heldBodyWeapon||weapon&&!bodyWeapons.has(weapon)){
+  if(weapon&&!bodyWeapons.has(weapon)){const mesh=combat.weaponModel(weapon);if(mesh)bodyWeapons.set(weapon,mesh);}
+  B.hold(bodyWeapons.get(weapon)||null,weapon);heldBodyWeapon=weapon;
+ }
+ const air=motion.inspect().airborne,sl=movement.slide?.kind==='slide',dv=!!movement.dive,cl=parkour?.kind?.()==='climb',pr=movement.proneT>0;
  // Traversal clips are applied by the shared body driver on every frame.
  if(!pr&&bodyAnim.prone&&!dv)B.anim('getUp',{fade:.1,speed:2});
  // Moving cancels an emote.
@@ -542,7 +549,7 @@ function updateFeel(dt){
  if(prewarm&&scene.children.length!==rootCount){rootCount=scene.children.length;if(worlds&&!worlds.loading())worlds.apply();prewarm.rescan();}
  // Bars, pipes and ropes (parkour-grips.js) appear with the district; the momentum meter (momentum-hud.js).
  if(!gripsView&&garden.nightBuilt?.())gripsView=window.parkourGrips?.mount(T,scene,{getPose:()=>parkour?.ropePose?.()})||null;gripsView?.update();
- momentumHud??=window.createMomentumHud?.({host:document.body})||null;momentumHud?.update({momentum:movement.momentum?.()||0,chain:parkour?.chain?.()||0,mode:movement.state()});
+ momentumHud??=window.createMomentumHud?.({host:document.body})||null;momentumHud?.update({momentum:movement.momentum?.()||0,chain:parkour?.chain?.()||0,mode:movement.state(),armed:!!combat?.armed(),speed:Math.hypot(walkVelocity.x,walkVelocity.z),active:!modalOpen()&&!worlds?.loading()&&!battle?.dead?.()});
  {const pkt=pockets?.inside(camera.position)||null;if(pkt!==lastPocket){if(pkt?.name==='Black box')worlds?.veil({title:'THE BLACK CUBE',sub:'THE WHITE WORLD',kicker:'INSIDE THE BLACK BOX'});lastPocket=pkt;}}
  const fallen=battle?.dead?.()&&!battle.soul?.();
  deathDrop+=((fallen?1.25:0)-deathDrop)*(1-Math.exp(-(fallen?5:10)*dt));
@@ -726,6 +733,7 @@ try{
 function correctExpeditionPose(p){if(playerBail?.active){const current=playerBail.pose();if(!current||!['x','y','z'].every(k=>Number.isFinite(p[k])))return;const delta=new T.Vector3(p.x-current.x,p.y-current.y,p.z-current.z);if(delta.length()>7.9)delta.setLength(7.9);if(playerBail.correct?.({position:[current.x+delta.x,current.y+delta.y,current.z+delta.z]})){const shift=playerBail.cameraTarget.clone().sub(targetPosition);targetPosition.add(shift);targetAim.add(shift);}else $('night-event').textContent='Synchronizing physical position…';requestDraw();return;}playerBail?.cancel();movement.cancelTraversal();motion.reset();parkour?.reset();freeView();targetPosition.set(p.x,1.75+(p.y||0),p.z);targetAim.set(p.x+Math.sin(p.yaw)*5,1.75+(p.y||0),p.z+Math.cos(p.yaw)*5);requestDraw();}
 expedition=window.createExpedition({getCharacter:()=>playerBody?.getAppearance(),T,scene,camera,garden,entryUrl:'/expedition.html',correct:correctExpeditionPose,layout:window.nightLayout,preferences:()=>expeditionPreferences?.get(),getPose:()=>state.ready?{x:targetPosition.x,y:targetPosition.y-1.75,z:targetPosition.z,...(playerBail?.active?playerBail.pose():{}),yaw:Math.atan2(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z),pitch:Math.atan2(targetAim.y-targetPosition.y,Math.hypot(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z)),mode:playerBail?.active?'ragdoll':movement.state(),movement:playerBail?.active?'ragdoll':movement.state(),vy:playerBail?.active?playerBail.pose()?.vy:motion.inspect().velocity}:null,place(x,z,lx=x,lz=z-5,y=0){playerBail?.cancel();movement.cancelTraversal();motion.reset();parkour?.reset();freeView();targetPosition.set(x,1.75+y,z);targetAim.set(lx,1.75+y,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=60;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},stopMoving(){keys.clear();movement.crouchHeld=false;drag=null;},requestDraw,returnHome:()=>go('spawn',true),onAction(action){if(action==='flare')playerBody?.anim?.('pistolShoot',{fade:.04,mask:'upper',arms:true});else if(action==='reload')playerBody?.anim?.('pistolReload',{fade:.1,mask:'upper',arms:true,speed:(window.GardenAnim?.duration?.('pistolReload')||1.5)/1.5});else playerBody?.stopAnim?.('pistolReload',.08);}});
 combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,reduced,requestDraw,aimTargets:()=>battle?.aimTargets?.()||[],thirdPerson:()=>thirdK,setThird,
+ onAction(action,weapon,duration){const B=playerBody;if(!B)return;if(action==='holster'){B.stopAnim('pistolReload',.12);return;}const id=action==='shoot'?'pistolShoot':action==='reload'?'pistolReload':action==='swing'?'swingA':action==='throw'?'throw':null;if(id)B.anim(id,{fade:.12,mask:'upper',arms:true,weight:.8,speed:duration?(window.GardenAnim?.duration(id)||duration)/duration:1});},
  // Eden is a safe zone: weapons come out only beyond the hidden door (the open match and the firing range).
  canAct:()=>state.ready&&!modalOpen()&&!expedition?.active()&&!arena?.active()&&!pockets?.inside(camera.position)&&targetPosition.z<garden.road.door&&(battle?.canAct()??true),
  shotHook:(...a)=>horror?.shotHook?.(...a)||battle?.shotHook(...a),onExplosion:(...a)=>battle?.onExplosion(...a),
@@ -742,6 +750,8 @@ combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,
 {const openNight=$('night-launch').onclick;$('night-launch').onclick=event=>{if(battle?.active())battle.suspend();combat?.leaveRange?.();openNight?.(event);};}
 battle=window.createBattleArena?.({T,scene,camera,combat,garden,playerAnchor:()=>targetPosition,
  movement:()=>({airborne:motion.inspect().airborne,momentum:movement.momentum(),velocity:walkVelocity}),
+ onPlayerAction(id){playerBody?.anim?.(id,{fade:.16,mask:'upper',arms:true,weight:.65,speed:1.4});},
+ onRunTackle(){sway.bump(.7,0);hitStop(45);playerBody?.anim?.('push',{fade:.12,loop:false,speed:2.2,mask:'upper',weight:.7});walkVelocity.multiplyScalar(.7);requestDraw();},
  onMomentumLanding(){sway.bump(.85,0);hitStop(65);playerBody?.anim?.('jumpLand',{fade:.05,speed:2});footsteps?.land(surfaceAt(targetPosition),.9);requestDraw();},
  terrainY:(x,z)=>groundHeight(new T.Vector3(x,0,z)),layout:window.nightLayout,requestDraw,hudHost:stage.parentElement,
  placePlayer(x,z,lx,lz){followResident=null;stage.classList.remove('resident-view');motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75+groundHeight(new T.Vector3(x,0,z)),z);targetAim.set(lx,targetPosition.y,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=70;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},

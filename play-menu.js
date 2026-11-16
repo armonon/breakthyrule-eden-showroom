@@ -8,7 +8,7 @@
 //                                      onOpen, onClose})
 // Settings shared by app.js and combat.js (read live, saved on this device).
 window.edenSettings=(()=>{
- const DEFAULTS={sens:1,adsSens:1,fov:70,invertY:false,shoulder:'right',aim:'wheel',aimAssist:'medium'};let v={...DEFAULTS};
+ const DEFAULTS={sens:1,adsSens:1,fov:70,invertY:false,shoulder:'right',aim:'wheel',aimAssist:'high'};let v={...DEFAULTS};
  try{Object.assign(v,JSON.parse(localStorage.getItem('eden-settings')||'{}'));}catch{}
  const subs=new Set();
  return {DEFAULTS,get:k=>v[k],all:()=>({...v}),set(k,val){v[k]=val;try{localStorage.setItem('eden-settings',JSON.stringify(v));}catch{}subs.forEach(f=>f(k,val));},reset(){v={...DEFAULTS};try{localStorage.removeItem('eden-settings');}catch{}subs.forEach(f=>f());},on(f){subs.add(f);}};

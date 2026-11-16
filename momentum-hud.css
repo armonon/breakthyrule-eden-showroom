@@ -1,7 +1,8 @@
 /* Momentum meter (momentum-hud.js). */
-#momentum-hud{--m:0;position:fixed;left:50%;top:calc(50% + 34px);z-index:25;width:120px;height:46px;transform:translateX(-50%) translateY(6px);
+#momentum-hud{--m:0;position:fixed;left:50%;top:calc(50% + 34px);z-index:60;width:120px;height:46px;transform:translateX(-50%) translateY(6px);
  display:grid;justify-items:center;pointer-events:none;opacity:0;transition:opacity .35s ease,transform .35s cubic-bezier(.2,.8,.2,1)}
 #momentum-hud.on{opacity:1;transform:translateX(-50%)}
+#momentum-hud.armed{top:calc(50% + 58px)}
 #momentum-hud svg{width:120px;height:40px;overflow:visible}
 #momentum-hud path{fill:none;stroke-width:3;stroke-linecap:round}
 #momentum-hud .mh-track{stroke:rgba(255,255,255,.16)}
@@ -13,5 +14,5 @@
 #momentum-hud.bump .mh-chain{animation:mh-bump .45s cubic-bezier(.2,.8,.2,1)}
 @keyframes mh-pulse{50%{stroke-width:4.2}}
 @keyframes mh-bump{from{transform:scale(1.7);opacity:.2}}
-body.touch-play #momentum-hud{top:auto;bottom:calc(14px + env(safe-area-inset-bottom))}
+body.touch-play #momentum-hud,body.touch-play #momentum-hud.armed{top:auto;bottom:calc(24px + env(safe-area-inset-bottom))}
 @media (prefers-reduced-motion:reduce){#momentum-hud,#momentum-hud .mh-fill{transition:none}#momentum-hud.full .mh-fill,#momentum-hud.bump .mh-chain{animation:none}}

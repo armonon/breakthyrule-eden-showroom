@@ -41,7 +41,7 @@
 
  const GLOW=5; // render layer for bloom emitters
  const WEAPONS=[
-  {id:'pistol',slot:1,name:'WITNESS',kind:'9MM PISTOL',mag:12,interval:.11,focusTime:.42,window:.32,dmg:17,ammo:'pistol',range:60},
+  {id:'pistol',slot:1,name:'WITNESS',kind:'9MM PISTOL',mag:12,interval:.11,focusTime:.34,window:.32,dmg:30,botDmg:17,ammo:'pistol',range:60},
   {id:'pump',slot:2,name:'JUDGMENT',kind:'12GA PUMP',mag:6,interval:.2,focusTime:.6,window:.36,dmg:11,ammo:'shells',range:35},
   {id:'axe',slot:3,name:'CAIN',kind:'FELLING AXE',mag:0,interval:.1,focusTime:.55,window:.3,dmg:55},
   {id:'c4',slot:4,name:'REVELATION',kind:'C4 CHARGE',mag:3,interval:.2,focusTime:1,window:1,dmg:150,ammo:'c4'},
@@ -847,27 +847,31 @@
   function inWindow(){if(!current)return false;const s=state[current.id];return s.focus>=1&&speedSmoothed<(adsBlend>.6?3:2.2);}
   function currentSpread(){
    if(!current)return 0;const s=state[current.id],mv=movementInfo();
-   const W=current;let base=W.hip!=null?lerp(W.hip,W.aim,s.focus)+(s.heat||0)*(W.heat||0)*8:current.id==='pump'?lerp(.085,.045,s.focus):current.id==='pistol'?lerp(.032,.0035,s.focus):.02;
-   base+=mv.speed*(current.id==='pump'?.004:current.id==='sniper'?.012:.0045)*(1-adsBlend*.5)+(mv.airborne?.05:0);
+   const W=current;let base=W.hip!=null?lerp(W.hip,W.aim,s.focus)+(s.heat||0)*(W.heat||0)*8:current.id==='pump'?lerp(.085,.045,s.focus):current.id==='pistol'?lerp(.022,.0025,s.focus):.02;
+   base+=mv.speed*(current.id==='pistol'?.002:current.id==='pump'?.004:current.id==='sniper'?.012:.0045)*(1-adsBlend*.5)+(mv.airborne?(current.id==='pistol'?.025:.05):0);
    // Aiming down the sights tightens everything (the shotgun's pattern least).
    return base*lerp(1,current.id==='pump'?.7:.4,adsBlend);
   }
   function movementInfo(){const m=o.movement?.()||{};return {speed:speedSmoothed,sprinting:!!m.sprinting&&speedSmoothed>1,airborne:!!m.airborne};}
-  function startAction(name,duration,data={}){const s=state[current.id];s.action={name,t:0,duration,...data};}
+  function startAction(name,duration,data={}){const s=state[current.id];s.action={name,t:0,duration,...data};o.onAction?.(name,current.id,duration);}
   function canFire(){if(!current||!(locked||touchMode)||!o.canAct())return false;const s=state[current.id];if(equipBlend<.85)return false;if(s.action&&!(s.action.name==='reload'&&current.id==='pump'))return false;return lastTime-s.lastFire>=current.interval*(current.id==='pump'?lerp(1,.72,adsBlend):1);}
   function reserveOf(w){if(!w.ammo)return Infinity;if(!arsenal)return Infinity;return arsenal.reserve[w.ammo]||0;}
 
-  // Aim assist, medium: shots bend toward a target inside a small cone (smaller aiming down sights) when it is in clear
-  // view, the look slows over a target, and on touch screens the view drifts gently onto it.
-  const ASSIST_BASE={cone:.038,coneAds:.024,magnet:.6,frictionCone:.065,friction:.62,pull:1.1,range:90},ASSIST={...ASSIST_BASE};let assistStrength=1;
-  function configureAssist(){const selected=window.edenSettings?.get('aimAssist')||'medium';assistStrength=({off:0,low:.5,medium:1,high:1.35})[selected]??1;for(const k of ['cone','coneAds','frictionCone'])ASSIST[k]=ASSIST_BASE[k]*Math.sqrt(assistStrength);ASSIST.magnet=Math.min(.82,ASSIST_BASE.magnet*assistStrength);ASSIST.friction=1-(1-ASSIST_BASE.friction)*assistStrength;ASSIST.pull=ASSIST_BASE.pull*assistStrength;}
+  // Aim assist: a wider visible-target cone, stable target preference, slower
+  // look over targets, and bounded tracking while firing, aiming or moving.
+  const ASSIST_BASE={cone:.085,coneAds:.055,magnet:.9,frictionCone:.13,friction:.46,pull:3.2,range:90},ASSIST={...ASSIST_BASE};let assistStrength=1;
+  function configureAssist(){const selected=window.edenSettings?.get('aimAssist')||'high';assistStrength=({off:0,low:.5,medium:1,high:1.35})[selected]??1;for(const k of ['cone','coneAds','frictionCone'])ASSIST[k]=ASSIST_BASE[k]*Math.sqrt(assistStrength);ASSIST.magnet=Math.min(.97,ASSIST_BASE.magnet*assistStrength);ASSIST.friction=Math.max(.28,1-(1-ASSIST_BASE.friction)*assistStrength);ASSIST.pull=ASSIST_BASE.pull*assistStrength;}
   configureAssist();window.edenSettings?.on(k=>{if(!k||k==='aimAssist')configureAssist();});
   const assist={target:null,angle:Infinity,point:new T.Vector3(),head:false,dist:0,friction:1},asEye=new T.Vector3(),asFwd=new T.Vector3(),asTo=new T.Vector3();
   function assistScan(){
-   assist.target=null;assist.angle=Infinity;assist.friction=1;const list=armed&&assistStrength?o.aimTargets?.():null;if(!list?.length)return;
+   const previous=assist.target?.c;assist.target=null;assist.angle=Infinity;assist.friction=1;let best=Infinity;
+   const list=armed&&zoomable()&&assistStrength?o.aimTargets?.():null;if(!list?.length)return;
    camera.getWorldPosition(asEye);asFwd.set(0,0,-1).applyQuaternion(camera.quaternion);const far=Math.min(ASSIST.range,current?.range||160);
-   for(const t of list)for(let pointIndex=0;pointIndex<2;pointIndex++){const p=pointIndex?t.chest:t.head;if(!p)continue;asTo.copy(p).sub(asEye);const d=asTo.length();if(d<1||d>far)continue;asTo.divideScalar(d);const a=Math.acos(clamp(asTo.dot(asFwd),-1,1));if(a<assist.angle){assist.angle=a;assist.target=t;assist.point.copy(p);assist.head=p===t.head;assist.dist=d;}}
-   if(assist.target&&assist.angle<ASSIST.frictionCone){asTo.copy(assist.point).sub(asEye).normalize();const obstacle=worldHits(asEye,asTo,assist.dist);if(obstacle&&obstacle.distance<assist.dist-.6){assist.target=null;return;}}
+   for(const t of list)for(let pointIndex=0;pointIndex<2;pointIndex++){const p=pointIndex?t.head:t.chest;if(!p)continue;asTo.copy(p).sub(asEye);const d=asTo.length();if(d<.65||d>far)continue;asTo.divideScalar(d);const a=Math.acos(clamp(asTo.dot(asFwd),-1,1)),score=a*(previous&&previous===t.c? .8:1)*(pointIndex?1.12:1);
+    if(a>ASSIST.frictionCone||score>=best)continue;
+    const obstacle=worldHits(asEye,asTo,d);if(obstacle&&obstacle.distance<d-.25)continue;
+    best=score;assist.angle=a;assist.target=t;assist.point.copy(p);assist.head=!!pointIndex;assist.dist=d;
+   }
    if(assist.target&&assist.angle<ASSIST.frictionCone)assist.friction=lerp(ASSIST.friction,1,assist.angle/ASSIST.frictionCone);
   }
   // Each enemy keeps a voice: pitch and vowel colour from its id.
@@ -882,7 +886,7 @@
    if(models[w.id].pending){hud.toast('LOADING '+w.name+'…');return;}
    if(s.ammo<=0){sfx.dry();s.lastFire=lastTime;if(!w.auto||!s.dryWarned){hud.toast(reserveOf(w)>0?'EMPTY · PRESS R':'NO '+w.ammo.toUpperCase()+' AMMO');s.dryWarned=true;}return;}
    const isTrue=inWindow();
-   s.ammo--;s.lastFire=lastTime;stats.shots++;
+   s.ammo--;s.lastFire=lastTime;stats.shots++;o.onAction?.('shoot',w.id,.25);
    const origin=camera.getWorldPosition(new T.Vector3()),forward=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
    const right=new T.Vector3(1,0,0).applyQuaternion(camera.quaternion),up=new T.Vector3(0,1,0).applyQuaternion(camera.quaternion);
    const spread=isTrue?(w.id==='pump'?.022:0):currentSpread();if(w.heat)s.heat=Math.min(1,(s.heat||0)+.12);
@@ -1165,7 +1169,7 @@
    requestFrame();
   }
   function holster(){
-   if(!armed)return;armed=false;buttons.left=buttons.right=false;
+   if(!armed)return;armed=false;buttons.left=buttons.right=false;o.onAction?.('holster',current?.id,0);
    for(const k in models)models[k].holder.visible=false;if(models.c4)models.c4.parts.remote.visible=false;if(armsRig?.arms)armsRig.arms.group.visible=false;
    document.body.classList.remove('combat-armed');hud?.el.classList.remove('on');
    // On desktop the garden keeps mouse look after the weapon is put away (o.keepLock).
@@ -1184,7 +1188,7 @@
   function requestFrame(){o.requestDraw();}
 
   function update(time,dt){
-   if(armed){assistScan();if(touchMode&&assist.target&&assist.angle<ASSIST.frictionCone&&assist.angle>.004){asTo.copy(assist.point).sub(camera.getWorldPosition(asEye)).normalize();const ty=Math.atan2(asTo.x,-asTo.z),tp=Math.asin(clamp(asTo.y,-1,1));let dy=ty-yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));const k=Math.min(1,ASSIST.pull*dt)*.5;yaw+=dy*k;pitch=clamp(pitch+(tp-pitch)*k,-1.35,1.35);}}
+   if(armed){assistScan();if((locked||touchMode)&&o.canAct()&&(touchMode||adsBlend>.1||buttons.left||speedSmoothed>1.2)&&assist.target&&assist.angle>.004){asTo.copy(assist.point).sub(camera.getWorldPosition(asEye)).normalize();const ty=Math.atan2(asTo.x,-asTo.z),tp=Math.asin(clamp(asTo.y,-1,1));let dy=ty-yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));const k=1-Math.exp(-ASSIST.pull*dt*(touchMode?1:.55));yaw+=clamp(dy*k,-dt*.55,dt*.55);pitch=clamp(pitch+clamp((tp-pitch)*k,-dt*.4,dt*.4),-1.35,1.35);}}
    // Walking back into the garden or far off down the road ends the range.
    if(rangeOn&&(camera.position.z>-21||Math.hypot(camera.position.x-11.7,camera.position.z+40)>45))setRange(false);
    lastTime=time;
@@ -1442,11 +1446,12 @@
    weaponModel(id){build();if(id==='c4'){const g=buildC4Block();return g;}const w=armsRig?.weapons[id];if(!w)return null;const c=w.model.clone(true);c.traverse(x=>{x.visible=true;});return c;},
    setHudMode(mode){build();hud.el.dataset.mode=mode||'';},
    armed:()=>armed,
+   weapon:()=>current?.id||null,
    setHandsBusy(on){handsBusy=!!on;},handsBusy:()=>handsBusy,weaponShown:()=>armed&&!(handsBusy&&equipBlend<.04),
    capturing:()=>armed,
    busy:()=>armed||(built&&(glowActive()||embers.length||heat.length||flips.some(f=>f.alive)||particles.some(p=>p.alive)||shells.some(s=>s.mesh.visible&&s.bounces<4)||charges.some(c=>!c.done)||targets.some(t=>Math.abs(t.swing.v)>.001||Math.abs(t.swing.x)>.001||t.down)||debris.length||tracers.some(t=>t.alive)||(state.blast||0)>0)),
    blocks(p){for(const t of targets){const q=t.root.position;if(t.kind==='plate'?Math.abs(p.x-q.x)<.62&&Math.abs(p.z-q.z)<.25:Math.hypot(p.x-q.x,p.z-q.z)<t.radius)return true;}return false;},
-   inspect:()=>({audio:recorded?.inspect(),pools:{ready:poolsReady,particles:particles.length,tracers:tracers.length,shells:shells.length,decals:decals.length,flips:flips.length},aimAssist:window.edenSettings?.get('aimAssist')||'medium',wallPull,action:current?state[current.id]?.action?.name||null:null,built,armed,locked,weapon:current?.id||null,ammo:current?state[current.id].ammo:null,focus:current?state[current.id].focus:0,charges:charges.filter(c=>!c.done).length,stats:{...stats},targets:targets.length,particles:particles.filter(p=>p.alive).length}),
+   inspect:()=>({audio:recorded?.inspect(),pools:{ready:poolsReady,particles:particles.length,tracers:tracers.length,shells:shells.length,decals:decals.length,flips:flips.length},aimAssist:window.edenSettings?.get('aimAssist')||'high',wallPull,action:current?state[current.id]?.action?.name||null:null,built,armed,locked,weapon:current?.id||null,ammo:current?state[current.id].ammo:null,focus:current?state[current.id].focus:0,charges:charges.filter(c=>!c.done).length,stats:{...stats},targets:targets.length,particles:particles.filter(p=>p.alive).length}),
    _debug:{startAudioCapture:()=>recorded?.startCapture(),stopAudioCapture:()=>recorded?.stopCapture(),explodeAt:(x,z)=>{const g=new T.Group();g.position.set(x,groundAt(x,z)+.05,z);world.add(g);state.blastSeen=1;explode({group:g});},viewScene:()=>viewScene,fire:()=>{if(current)fire();},state,models,setButtons:b=>Object.assign(buttons,b),setLocked:v=>{locked=v;},detonate:()=>detonate(),reload:()=>{const l=locked;locked=true;reload();locked=l;}}
   };
  }

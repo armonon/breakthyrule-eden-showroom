@@ -134,6 +134,7 @@
     if(model.motion.held?.()?.mesh!==heldMesh)model.motion.hold?.(heldMesh,heldId);
     if(heldMesh)model.motion.aimAt?.(aim);
     model.motion.update(dt,{velocity,wade:brush});
+    if(heldMesh)heldMesh.visible=thirdView>.15&&!hands&&model.root.visible;
    },
    // Click on something within reach: the hand gets there first, then the caller opens it.
    getModel:()=>model,

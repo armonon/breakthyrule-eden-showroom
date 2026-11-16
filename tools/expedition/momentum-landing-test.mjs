@@ -7,10 +7,10 @@ const source=readFileSync(new URL('../../battle-arena.js',import.meta.url),'utf8
 function fixture({charge=1,speed=8,clear=true,alive=true}={}){
  const player={alive:true},hits=[],b={alive,name:'Test opponent',root:{position:new T.Vector3()},reaction:.2,fireT:0,model:{motion:{downAmount:()=>0,knockdown:(dir,strength)=>hits.push({dir:dir.toArray(),strength})}}};
  const movement={airborne:false,momentum:charge,velocity:new T.Vector3(speed,0,0)};
- const s={T,player,bots:[b],phase:'live',clock:10,o:{movement:()=>movement},los:()=>clear,damage:(target,amount)=>hits.push({amount}),disarm:()=>null,announce(){},chime(){}};
+ const position=new T.Vector3(),s={T,player,bots:[b],phase:'live',clock:10,clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),posOf:()=>position,o:{movement:()=>movement},los:()=>clear,damage:(target,amount)=>hits.push({amount}),disarm:()=>null,announce(){},chime(){}};
  vm.createContext(s);vm.runInContext(source.slice(source.indexOf('  function landingCrossing('),source.indexOf('  /* ---------------------------------------------------------------- lifecycle */')),s);
  const step=(x,y,z=0,air=true,dt=1/60)=>{movement.airborne=air;s.updateMomentumLanding(new T.Vector3(x,y,z),dt);};
- return {s,player,b,hits,movement,step,jump(z=0){step(-2,0,z,false);step(-1.6,.4,z);step(-.3,2,z);step(.1,1.3,z);}};
+ return {s,player,b,hits,movement,step,run(x,z=0,y=0,dt=1/60){position.set(x,y,z);s.updateRunTackle(dt);},jump(z=0){step(-2,0,z,false);step(-1.6,.4,z);step(-.3,2,z);step(.1,1.3,z);}};
 }
 test('charged descending jump knocks down one opponent once, with damage and forward impulse',()=>{
  const f=fixture();f.jump();assert.equal(f.player.stomps,1);assert.equal(f.hits[0].amount,24);assert.deepEqual(f.hits[1].dir,[1,0,0]);assert.equal(f.hits[1].strength,2.4);
@@ -28,4 +28,16 @@ test('swept feet hit the shoulder plane, but a teleport or stalled frame cannot 
  assert.ok(f.s.landingCrossing(from,to,new T.Vector3()));
  f.step(0,0,0,false);f.step(0,2);f.step(0,1,0,true,.3);assert.equal(f.hits.length,0);
  const teleport=fixture();teleport.step(0,0,0,false);teleport.step(0,5);teleport.step(0,1);assert.equal(teleport.hits.length,0);
+});
+
+test('full-speed grounded contact tackles without jumping, crouching or sliding',()=>{
+ const f=fixture();f.run(-1.5);f.run(-1);assert.equal(f.player.rams,1);assert.equal(f.hits[0].amount,28);assert.equal(f.hits[1].strength,2.6);
+ f.run(-.8);f.run(-.5);assert.equal(f.player.rams,1,'continuous overlap cannot repeat damage');
+});
+test('running tackle requires speed, charge, height overlap, forward contact and clear space',()=>{
+ for(const opts of [{charge:.6},{speed:6},{clear:false},{alive:false}]){const f=fixture(opts);f.run(-1.5);f.run(-1);assert.equal(f.hits.length,0);}
+ const air=fixture();air.movement.airborne=true;air.run(-1.5);air.run(-1);assert.equal(air.hits.length,0);
+ const behind=fixture();behind.run(.7);behind.run(.8);assert.equal(behind.hits.length,0);
+ const high=fixture();high.run(-1.5,0,2);high.run(-1,0,2);assert.equal(high.hits.length,0);
+ const teleport=fixture();teleport.run(-20);teleport.run(-.5);assert.equal(teleport.hits.length,0);
 });
