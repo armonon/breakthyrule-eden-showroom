@@ -81,7 +81,7 @@ export async function finishCollectionArtwork(gltf, sourceURL) {
   const path = new URL(sourceURL, location.href).pathname;
   if (!/^\/(graphic-models|core-collection)\/models\/.+\.glb$/.test(path) || /sacrificial-beanie/.test(path)) return gltf;
   const root = gltf.scene, T = window.THREE;
-  if (root.userData.collectionEye) return gltf;
+  if (root.userData.collectionPrintsFinished) return gltf;
   root.updateMatrixWorld(true);
   const existingBack = [], coreBack = [], torso = [], prints = new Set();
   root.traverse(object => {
@@ -102,44 +102,45 @@ export async function finishCollectionArtwork(gltf, sourceURL) {
       if (indices.size) torso.push({mesh:object,indices,backOnly:body.name.replaceAll('_',' ')==='back cotton'});
     }
   });
-  if (!coreBack.length && !torso.length) return gltf;
+  // The eye is an addition for blank backs only. Keep every authored back
+  // graphic (including the Core collection's original eye) and its texture.
+  if (existingBack.length || coreBack.length) {
+    prints.forEach(finishPrint);
+    root.userData.collectionPrintsFinished = true;
+    return gltf;
+  }
+  if (!torso.length) return gltf;
   const image = await loadEye();
   const map = new T.Texture(image); map.colorSpace = T.SRGBColorSpace; map.anisotropy = 8; map.needsUpdate = true;
-  // Core already has a fitted eye surface. Retain it, its UV orientation and hue controls.
-  if (coreBack.length) {
-    map.flipY = coreBack[0].map?.flipY ?? false;
-    for (const material of coreBack) { material.map?.dispose(); material.map = map; }
-  } else {
-    const bounds = new T.Box3();
-    for (const {mesh} of torso) bounds.expandByObject(mesh);
-    bounds.applyMatrix4(root.matrixWorld.clone().invert());
-    const size = bounds.getSize(new T.Vector3()), center = bounds.getCenter(new T.Vector3());
-    const hoodie = /hoodie/.test(path), tank = /tank/.test(path);
-    // Fit the artwork below the neckline/hood and inside the side seams.
-    const top = bounds.max.y - (hoodie ? .24 : tank ? .11 : .09);
-    const available = Math.max(.12, top - bounds.min.y - .055);
-    const width = Math.min(.4064, size.x * (tank ? .71 : .48), available * EYE_ASPECT);
-    const rect = {left:center.x-width/2,right:center.x+width/2,top,bottom:top-width/EYE_ASPECT,surfaceZ:center.z};
-    const material = new T.MeshStandardMaterial({name:'Archive print / back / eye',map,roughness:.93,metalness:0,transparent:true,depthWrite:false});
-    material.userData.BTR_sourceKind = 'original-user-artwork';
-    material.userData.BTR_sourceName = 'eye.png';
-    material.onBeforeCompile = shader => {
-      shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>',
-        '#include <map_fragment>\nif(vMapUv.x<0.0||vMapUv.x>1.0||vMapUv.y<0.0||vMapUv.y>1.0) discard;');
-    };
-    material.customProgramCacheKey = () => 'collection-eye-bounds-1';
-    let added = 0;
-    for (const {mesh,indices,backOnly} of torso) {
-      const geometry = backGeometry(T,mesh,root,rect,indices,backOnly);
-      if (!geometry) continue;
-      const print = new T.Mesh(geometry,material); print.name = 'Collection_Eye_Back'; print.renderOrder = 2;
-      root.add(print); added++;
-    }
-    if (!added) { material.dispose(); map.dispose(); throw new Error('The back artwork could not fit this garment.'); }
-    for (const object of existingBack) object.visible = false;
-    prints.add(material);
+  const bounds = new T.Box3();
+  for (const {mesh} of torso) bounds.expandByObject(mesh);
+  bounds.applyMatrix4(root.matrixWorld.clone().invert());
+  const size = bounds.getSize(new T.Vector3()), center = bounds.getCenter(new T.Vector3());
+  const hoodie = /hoodie/.test(path), tank = /tank/.test(path);
+  // Fit the artwork below the neckline/hood and inside the side seams.
+  const top = bounds.max.y - (hoodie ? .24 : tank ? .11 : .09);
+  const available = Math.max(.12, top - bounds.min.y - .055);
+  const width = Math.min(.4064, size.x * (tank ? .71 : .48), available * EYE_ASPECT);
+  const rect = {left:center.x-width/2,right:center.x+width/2,top,bottom:top-width/EYE_ASPECT,surfaceZ:center.z};
+  const material = new T.MeshStandardMaterial({name:'Archive print / back / eye',map,roughness:.93,metalness:0,transparent:true,depthWrite:false});
+  material.userData.BTR_sourceKind = 'original-user-artwork';
+  material.userData.BTR_sourceName = 'eye.png';
+  material.onBeforeCompile = shader => {
+    shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>',
+      '#include <map_fragment>\nif(vMapUv.x<0.0||vMapUv.x>1.0||vMapUv.y<0.0||vMapUv.y>1.0) discard;');
+  };
+  material.customProgramCacheKey = () => 'collection-eye-bounds-1';
+  let added = 0;
+  for (const {mesh,indices,backOnly} of torso) {
+    const geometry = backGeometry(T,mesh,root,rect,indices,backOnly);
+    if (!geometry) continue;
+    const print = new T.Mesh(geometry,material); print.name = 'Collection_Eye_Back'; print.renderOrder = 2;
+    root.add(print); added++;
   }
+  if (!added) { material.dispose(); map.dispose(); throw new Error('The back artwork could not fit this garment.'); }
+  prints.add(material);
   prints.forEach(finishPrint);
   root.userData.collectionEye = 'eye-back-v1';
+  root.userData.collectionPrintsFinished = true;
   return gltf;
 }

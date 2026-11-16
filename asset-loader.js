@@ -52,7 +52,7 @@ window.finishArchivePrints=function(gltf){
    const model=window.finishArchivePrints(await new window.ShowroomGLTFLoader().parseAsync(data.slice(0),new URL('.',resolved).href));
    const path=new URL(url,location.href).pathname;
    if(/^\/(graphic-models|core-collection)\/models\/.+\.glb$/.test(path)&&!path.includes('sacrificial-beanie')){
-    const {finishCollectionArtwork}=await import('/site/collection-artwork.mjs?v=eye-back-1');
+    const {finishCollectionArtwork}=await import('/site/collection-artwork.mjs?v=blank-backs-2');
     return finishCollectionArtwork(model,url);
    }
    return model;
