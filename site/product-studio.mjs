@@ -1,7 +1,7 @@
 import { createGarmentGraphicsEditor } from '/site/garment-graphics-editor.mjs?v=2';
 import { graphicBaseURL, prepareGraphicBase } from '/site/graphic-base.mjs?v=1';
 import { offeringFor, SIZES, FITS, COLORS, formatCents } from '/labkit/catalog.mjs';
-import { PRODUCT_DESIGNS, STUDIO_PRODUCTS, GRAPHIC_COLORS } from '/labkit/product-options.mjs';
+import { PRODUCT_DESIGNS, STUDIO_PRODUCTS, GRAPHIC_COLORS, productDesignDefaultColor } from '/labkit/product-options.mjs';
 import { normalizeItem, priceItem } from '/labkit/pricing.mjs';
 import { cart, POOL, labStatus } from '/site/cart-store.mjs?v=site-audit-1';
 import { tintProductDesign } from '/site/product-preview.mjs?v=1';
@@ -21,8 +21,8 @@ if($('product-process')){$('product-process').hidden=!design;$('product-process'
 if(design||product)mountOptions();
 function mountOptions(){
  let edit=params.get('edit'),saved=edit&&cart.get(edit)?.config;
- const garment=design?.garment,construction=garment==='longsleeve'?'cut-sew':'canvas';
- let state=design?{product:'garment',construction,labMode:construction==='cut-sew'?'cut-sew':'blank',garment,size:null,fit:construction==='cut-sew'?'regular':'blank',color:params.get('color')==='white'?'white':'black',customColor:'#87665c',artwork:'product-design',productDesign:{id,graphic:'Red'},sourceDesign:id,graphicLayout:null,uploads:[],quantity:1,picks:{front:[],back:[]},backSize:'full'}:{product:'studio-product',productId:id,quantity:1,notes:'',options:defaultOptions(product)};
+ const garment=design?.garment,construction=garment==='longsleeve'?'cut-sew':'canvas',defaultColor=productDesignDefaultColor(design,params.get('color'));
+ let state=design?{product:'garment',construction,labMode:construction==='cut-sew'?'cut-sew':'blank',garment,size:null,fit:construction==='cut-sew'?'regular':'blank',color:defaultColor,customColor:'#87665c',artwork:'product-design',productDesign:{id,graphic:'Red'},sourceDesign:id,graphicLayout:null,uploads:[],quantity:1,picks:{front:[],back:[]},backSize:'full'}:{product:'studio-product',productId:id,quantity:1,notes:'',options:defaultOptions(product)};
  if(saved){const n=normalizeItem(saved,{artworkPool:POOL});if(n.ok&&((design&&n.item.garment===design.garment&&(n.item.productDesign?.id===id||n.item.sourceDesign===id))||(product&&n.item.productId===id)))state={...state,...n.item};else edit=null;}
  if(design){state.picks ||= {front:[],back:[]};state.productDesign ||= {id,graphic:'Red'};state.customColor ||= '#87665c';}
  let status=null,previewToken=0,printer=null,currentURL=design?.model,graphicsEditor=null,previewFrame=0,modelLoading=null,printingBusy=false,previewFailed=false;
@@ -115,7 +115,7 @@ function mountOptions(){
  }
  form.addEventListener('change',e=>{
   const {name,value}=e.target;
-  if(name==='labMode'){state.labMode=value;state.construction=value==='cut-sew'?'cut-sew':'canvas';state.fit=state.construction==='cut-sew'?'regular':'blank';state.quantity=state.construction==='cut-sew'?1:state.quantity;state.color=value==='random'?'random':state.color==='random'?'black':state.color;}
+  if(name==='labMode'){state.labMode=value;state.construction=value==='cut-sew'?'cut-sew':'canvas';state.fit=state.construction==='cut-sew'?'regular':'blank';state.quantity=state.construction==='cut-sew'?1:state.quantity;state.color=value==='random'?'random':state.color==='random'?defaultColor:state.color;}
   else if(['color','size','fit','artwork'].includes(name))state[name]=value;
   else if(name==='graphic')state.productDesign={id,graphic:value};
   else if(name==='quantity')state.quantity=Number(value);

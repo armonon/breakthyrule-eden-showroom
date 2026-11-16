@@ -22,8 +22,10 @@ vec3 btrCoreShift(vec3 c){
    else if(c.name.startsWith('Core logo / contrast'))contrast.push(c);
    else if(c.name.startsWith('Core logo / red thread'))thread.push(c);
    else if(c.name.startsWith('Core eye artwork /')){
-    c.onBeforeCompile=s=>{s.uniforms.btrCoreHue=hue;s.fragmentShader=shader+s.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\ndiffuseColor.rgb=btrCoreShift(diffuseColor.rgb);');};
-    c.customProgramCacheKey=()=> 'btr-core-hue-1';c.needsUpdate=true;
+    c.onBeforeCompile=s=>{s.uniforms.btrCoreHue=hue;s.fragmentShader=shader+s.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\ndiffuseColor.rgb=btrCoreShift(diffuseColor.rgb);');
+     if(c.userData.collectionPigment)s.fragmentShader=s.fragmentShader.replace('#include <opaque_fragment>','outgoingLight = mix(outgoingLight, diffuseColor.rgb, 0.65);\n#include <opaque_fragment>');
+    };
+    c.customProgramCacheKey=()=> 'btr-core-hue-2-'+Number(!!c.userData.collectionPigment);c.needsUpdate=true;
    }
    return c;
   }

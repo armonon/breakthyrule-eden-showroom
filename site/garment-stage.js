@@ -10,11 +10,11 @@
   const key=new T.DirectionalLight(0xffffff,2.6);key.position.set(-3,5,5);scene.add(key);
   const fill=new T.DirectionalLight(0xe6e9ff,1.2);fill.position.set(4,1,-4);scene.add(fill);
  }
- function centre(gltfScene){
+ function centre(gltfScene,card=false){
   const box=new T.Box3().setFromObject(gltfScene),size=box.getSize(new T.Vector3());
   gltfScene.position.sub(box.getCenter(new T.Vector3()));
   const root=new T.Group();root.add(gltfScene);// Fit height and turning width, so wide pieces (hats, gloves) stay inside a portrait frame.
-  root.scale.setScalar(Math.min(1.75/size.y,1.4/Math.max(size.x,size.z)));return root;
+  root.scale.setScalar(Math.min((card?2.16:1.75)/size.y,(card?1.76:1.4)/Math.max(size.x,size.z)));return root;
  }
  function makeRenderer(canvas){
   const renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:true});
@@ -35,7 +35,7 @@
   const visible=new Set(),queue=[],loading=new Set();let frame=0,last=0;
   const state=cards.map((card,i)=>({...card,i,model:null,failed:false,angle:card.angle??(.6+i*.37),speed:.5,lastSeen:0,ctx:card.canvas.getContext('2d')}));
   for(const s of state){s.canvas.width=W;s.canvas.height=H;
-   s.canvas.parentElement.addEventListener('pointerenter',()=>s.speed=1.6);
+   s.canvas.parentElement.addEventListener('pointerenter',()=>s.speed=.12);
    s.canvas.parentElement.addEventListener('pointerleave',()=>s.speed=.5);}
   function disposeCard(s){if(!s.model)return;const geometries=new Set(),materials=new Set(),textures=new Set();s.model.traverse(o=>{if(o.geometry)geometries.add(o.geometry);for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m){materials.add(m);for(const t of Object.values(m))if(t?.isTexture)textures.add(t);}});textures.forEach(t=>t.dispose());materials.forEach(m=>m.dispose());geometries.forEach(g=>g.dispose());s.model=null;}
   function trimCards(){const loaded=state.filter(s=>s.model),stale=loaded.filter(s=>!visible.has(s)).sort((a,b)=>a.lastSeen-b.lastSeen);let count=loaded.length;while(count>Math.max(8,visible.size)&&stale.length){disposeCard(stale.shift());count--;}}
@@ -43,7 +43,7 @@
    if(pageActive()&&queue.length&&!ensureRenderer())return;
    while(pageActive()&&loading.size<3&&queue.length){
     const s=queue.shift();if(s.model||s.failed||loading.has(s)||!visible.has(s))continue;loading.add(s);
-    showroomAssets.model(s.url,{priority:'low'}).then(gltf=>{s.model=centre(gltf.scene);s.canvas.classList.add('live');s.onReady?.();trimCards();request();})
+    showroomAssets.model(s.url,{priority:'low'}).then(gltf=>{s.model=centre(gltf.scene,true);s.canvas.classList.add('live');s.onReady?.();trimCards();request();})
      .catch(()=>{s.failed=true;}).finally(()=>{loading.delete(s);pump();});
    }
   }
@@ -55,7 +55,7 @@
    frame=0;if(!pageActive()||!visible.size){last=0;return;}if(time-last<30){request();return;}// ~30 fps is plenty for a slow turn
    const dt=Math.min((time-(last||time))/1000,.05);last=time;let any=false;
    for(const s of visible){if(!s.model)continue;any=true;
-    if(!reduced)s.angle+=dt*s.speed;s.model.rotation.y=s.angle;
+    if(!reduced)s.angle+=dt*s.speed;s.model.rotation.y=s.angle-.28*Math.sin(2*s.angle);
     scene.add(s.model);renderer.render(scene,camera);scene.remove(s.model);
     s.ctx.clearRect(0,0,W,H);s.ctx.drawImage(renderer.domElement,0,0);}
    if(any&&!reduced)request();else last=0;

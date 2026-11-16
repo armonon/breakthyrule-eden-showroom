@@ -357,6 +357,7 @@
     "site/snapshot-drag.mjs",
     "site/snapshot-motion.mjs",
     "site/sticker-wall-motion.mjs",
-    "site/witness-edge.svg"
+    "site/witness-edge.svg",
+    "site/artwork/eye-back.webp"
   ]
 }

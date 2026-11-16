@@ -48,7 +48,15 @@ window.finishArchivePrints=function(gltf){
  window.showroomLoadProductModel=async function(url,options={}){
   const resolved=resolve(url),priority=options.priority||(document.body?.dataset.page==='product'?'high':'auto');
   const data=await bytes(resolved,priority);
-  return scheduleDecode(async()=>{const model=await new window.ShowroomGLTFLoader().parseAsync(data.slice(0),new URL('.',resolved).href);return window.finishArchivePrints(model);});
+  return scheduleDecode(async()=>{
+   const model=window.finishArchivePrints(await new window.ShowroomGLTFLoader().parseAsync(data.slice(0),new URL('.',resolved).href));
+   const path=new URL(url,location.href).pathname;
+   if(/^\/(graphic-models|core-collection)\/models\/.+\.glb$/.test(path)&&!path.includes('sacrificial-beanie')){
+    const {finishCollectionArtwork}=await import('/site/collection-artwork.mjs?v=eye-back-1');
+    return finishCollectionArtwork(model,url);
+   }
+   return model;
+  });
  };
  window.showroomResolveModel=resolve;
  // Soft frontal fill reveals black fabric; two rear lights separate its edges from the same backdrop.
