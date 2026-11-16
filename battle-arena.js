@@ -386,7 +386,7 @@
   function tintBot(b){/* garments read as a colour band on the torso */const col=new T.Color().setHSL(Math.random(),.35,.5);b.model.root.traverse(n=>{if(n.isMesh&&n.material?.name==='shirt'){n.material=n.material.clone();n.material.color.copy(col);}});}
 
   function openChest(c,by){
-   if(c.open||c.dropping)return;c.open=true;c.openT=clock;
+   if(c.open||c.dropping)return;if(by===player)o.onPlayerAction?.('chestOpen');c.open=true;c.openT=clock;
    const n=1+(Math.random()<.55?1:0);let any=false;
    if(c.supply){for(const spec of [weighted(SUPPLY_TABLE),'medkit','armor',{ammo:'rifle'}]){const it=rollItem(spec);if(!it)continue;const a=rand(0,TAU);const l=dropItem(it,c.pos.x+Math.cos(a)*.2,c.pos.z+Math.sin(a)*.2,new T.Vector3(Math.cos(a)*rand(1.4,2.4),3.6,Math.sin(a)*rand(1.4,2.4)));l.y=c.pos.y+.5;l.group.position.y=l.y;}c.glow.visible=false;c.restockAt=Infinity;if(event?.kind==='supply'&&event.chest===c)endEvent(`${nameOf(by)} TOOK THE SUPPLY DROP`);return;}
    c.restockAt=clock+CHEST_RESTOCK;
@@ -507,13 +507,14 @@
    if(!hit){const off=new T.Vector3(rand(-1,1),rand(-.5,1),rand(-1,1)).multiplyScalar(dist*.04+.3);dir.copy(aim.clone().add(off).sub(from).normalize());}
    const far=from.clone().addScaledVector(dir,w.range||120),wt=segBlocked(from,far),wallD=wt===null?999:wt*(w.range||120);
    const th=hit?hitTest(from,dir,wallD,b):null;
-   if(th){const head=Math.random()<.12;const dmg=w.dmg*(w.id==='pump'?clamp(1.3-dist/20,.3,1.2)*5:1)*(head?1.8:1);
+   if(th){const head=Math.random()<.12;const dmg=(w.botDmg??w.dmg)*(w.id==='pump'?clamp(1.3-dist/20,.3,1.2)*5:1)*(head?1.8:1);
     combat.remoteShot({from,to:th.point,weapon:w.id});damage(th.c,dmg,b,{weapon:w.id,head,dir});}
    else{const end=wt===null?from.clone().addScaledVector(dir,Math.min(60,dist+20)):from.clone().addScaledVector(dir,wallD);combat.remoteShot({from,to:end,weapon:w.id});}
   }
 
   /* ---------------------------------------------------------------- player */
   function playerTake(l){
+   if(l.item.type!=='page')o.onPlayerAction?.('pickup');
    const it=l.item;const ars=combat.arsenal;
    if(it.type==='page'){takePage(player,l);const n=pagesOf(player);toast(`${it.label} · ${n} CARRIED · ${nightLevel()>.5?'THE TEMPLE IS OPEN':'THE TEMPLE OPENS AT NIGHT'}`);hud.update();return;}
    if(it.type==='weapon'){
@@ -664,7 +665,7 @@
   function respawnPlayer(){
    const soul=player.soul,spot=soul?GATE_SPAWN():DOOR_SPAWN();
    if(soul)o.onSoul?.(false);
-   Object.assign(player,{impactPoint:null,impactAir:false,impactCharge:false,impactUsed:false,soul:false,alive:true,hp:100,shield:SHIELD_PLAYER,shieldMax:SHIELD_PLAYER,armor:0,armorMax:0,garment:null,lastHurt:-9,healing:null,respawnAt:null,protectUntil:clock+SPAWN_PROTECT});
+   Object.assign(player,{runPoint:null,ramUntil:0,impactPoint:null,impactAir:false,impactCharge:false,impactUsed:false,soul:false,alive:true,hp:100,shield:SHIELD_PLAYER,shieldMax:SHIELD_PLAYER,armor:0,armorMax:0,garment:null,lastHurt:-9,healing:null,respawnAt:null,protectUntil:clock+SPAWN_PROTECT});
    o.placePlayer(spot.x,spot.z,spot.x,soul?spot.z+6:spot.z-6);combat.syncLook();kitPlayer();hud.count(0);hud.update();announce(soul?'YOUR SOUL RETURNS · THE PYRAMID GATE':'BACK IN · '+SPAWN_PROTECT+'s PROTECTED');
   }
   function leader(){return [player,...bots].filter(c=>c&&(c.score||0)>0).sort((a,b)=>(b.score||0)-(a.score||0))[0]||null;}
@@ -920,6 +921,29 @@
    (player.impactPoint??=new T.Vector3()).copy(p);
   }
 
+  // A sprinting shoulder charge: no jump or crouch press needed. Sweep actual
+  // feet before bot separation can push the victim out of the contact radius.
+  function updateRunTackle(dt){
+   const m=o.movement?.();if(!player?.alive||phase!=='live'||!m)return;
+   const p=posOf(player),last=player.runPoint,speed=Math.hypot(m.velocity.x,m.velocity.z);
+   const valid=last&&dt>0&&dt<=.1&&last.distanceTo(p)<2.5&&!m.airborne&&m.momentum>=.75&&speed>=6.8&&clock>=(player.ramUntil||0);
+   if(valid){
+    const dx=p.x-last.x,dz=p.z-last.z,len2=dx*dx+dz*dz,dir=m.velocity.clone().setY(0).normalize();
+    for(const b of bots){
+     if(!b.alive||clock<(b.tackledUntil||0)||b.model.motion?.downAmount?.()>0)continue;
+     const q=b.root.position;if(Math.abs(q.y-p.y)>1)continue;
+     const t=len2>1e-8?clamp(((q.x-last.x)*dx+(q.z-last.z)*dz)/len2,0,1):1;
+     if(Math.hypot(q.x-last.x-dx*t,q.z-last.z-dz*t)>1.15||(q.x-p.x)*dir.x+(q.z-p.z)*dir.z<-.3)continue;
+     if(!los(p.clone().add(new T.Vector3(0,1.1,0)),q.clone().add(new T.Vector3(0,1.1,0))))continue;
+     player.ramUntil=clock+1.1;player.rams=(player.rams||0)+1;b.tackledUntil=clock+2.5;
+     damage(b,28,player,{weapon:'ram',dir:dir.clone()});if(b.alive)b.model.motion?.knockdown?.(dir,2.6);
+     const lost=disarm(b,dir);b.aimT=b.reaction+1.2;b.fireT=Math.max(b.fireT,1.6);
+     o.onRunTackle?.();announce('SPRINT TACKLE · '+b.name+(lost?' · WEAPON DROPPED':''));chime([160,85],.12,.07);break;
+    }
+   }
+   (player.runPoint??=new T.Vector3()).copy(p);
+  }
+
   /* ---------------------------------------------------------------- lifecycle */
   async function build(){
    if(built)return;built=true;
@@ -962,7 +986,7 @@
    }finally{entering=false;}
   }
   function suspend(){
-   if(!active)return;if(player){player.impactPoint=null;player.impactAir=false;player.impactCharge=false;}active=false;suspended=true;savedArsenal=combat.arsenal.inspect();
+   if(!active)return;if(player){player.runPoint=null;player.ramUntil=0;player.impactPoint=null;player.impactAir=false;player.impactCharge=false;}active=false;suspended=true;savedArsenal=combat.arsenal.inspect();
    document.body.classList.remove('battle-on');hud?.el.classList.remove('on');o.setNight(null);combat.holster();if(garden.district?.watcher)garden.district.watcher.visible=false;combat.arsenal.set(null);combat.setHudMode('');
   }
   function resume(){
@@ -983,6 +1007,7 @@
    updateZone(dt);updateNight(dt);updatePages(dt);updateEvent(dt);updateDoors(dt);bloodHit=Math.max(0,bloodHit-dt*.9);
    if(Math.floor(clock)!==Math.floor(clock-dt))restock();
    if(player&&!player.alive&&player.respawnAt!=null){const left=player.respawnAt-clock;if(left<=0)respawnPlayer();else hud.count(Math.ceil(left));}
+   updateRunTackle(dt);
    for(const b of bots)updateBot(b,dt);
    if(player)updatePlayer(dt);
    // Loot physics + idle motion
@@ -1027,7 +1052,7 @@
     for(const l of loot){if(l.item.type==='page')continue;const d=l.group.position.distanceTo(p);if(d<radius*1.3){const out=l.group.position.clone().sub(p).setY(0);if(out.lengthSq()<1e-4)out.set(rand(-1,1),0,rand(-1,1));out.normalize().multiplyScalar(6*(1-d/(radius*1.3))+1);l.vel=out.add(new T.Vector3(0,4+rand(0,2),0));l.y+=.05;}}
     for(const c of chests){const d=c.pos.distanceTo(p);if(d<radius){c.jolt=.5*(1-d/radius)+.15;}}
     for(const dr of doors){const dd=Math.hypot(dr.x-p.x,dr.z-p.z);if(dd<radius+1)smashDoor(dr,new T.Vector3(dr.x-p.x,0,dr.z-p.z),9*(1-dd/(radius+1))+3);}if(attendant&&attendant.pos.distanceTo(p)<radius)hurtAttendant(dmg);for(const c of combatants()){const d=posOf(c).distanceTo(p);if(d<radius&&los(p.clone().add(new T.Vector3(0,.4,0)),eyeOf(c)))damage(c,dmg*Math.pow(1-d/radius,1.2),player,{weapon:'c4',blast:true,dir:posOf(c).clone().sub(p).setY(0).normalize()});}},
-   inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,event:event&&{kind:event.kind,label:event.label},night:+nightLevel().toFixed(2),attendant:attendant&&{x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1),stunned:clock<attendant.stunUntil},pages:player?pagesOf(player):0,power:player?.power||0,pageState:pages.map(pg=>pg.state),delivered:pages.filter(pg=>pg.state==='delivered').length,pinged:pinged?nameOf(pinged):null,watcher:attendant&&{mode:attendant.mode,page:attendant.page?attendant.page.i:null,x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1)},templeOpen:templeOpen(),soul:!!player?.soul,nextEvent:+(nextEventAt-clock).toFixed(1),pads:pads.length,player:player&&{alive:player.alive,stomps:player.stomps||0,score:player.score||0,deaths:player.deaths||0,hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
+   inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,event:event&&{kind:event.kind,label:event.label},night:+nightLevel().toFixed(2),attendant:attendant&&{x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1),stunned:clock<attendant.stunUntil},pages:player?pagesOf(player):0,power:player?.power||0,pageState:pages.map(pg=>pg.state),delivered:pages.filter(pg=>pg.state==='delivered').length,pinged:pinged?nameOf(pinged):null,watcher:attendant&&{mode:attendant.mode,page:attendant.page?attendant.page.i:null,x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1)},templeOpen:templeOpen(),soul:!!player?.soul,nextEvent:+(nextEventAt-clock).toFixed(1),pads:pads.length,player:player&&{alive:player.alive,stomps:player.stomps||0,rams:player.rams||0,score:player.score||0,deaths:player.deaths||0,hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
     bots:bots.map(b=>({name:b.name,score:b.score||0,kills:b.kills||0,alive:b.alive,hp:Math.round(b.hp),shield:Math.round(b.shield),down:+(b.model.motion?.downAmount?.()||0).toFixed(2),state:b.state,weapon:b.weapon,armor:b.armor,x:+b.root.position.x.toFixed(1),z:+b.root.position.z.toFixed(1)})),
     zone:zone&&{phase:zone.phase,state:zone.state,r:+zone.r.toFixed(1),x:+zone.center.x.toFixed(1),z:+zone.center.z.toFixed(1)},chests:chests.filter(c=>c.open).length+'/'+chests.length,loot:loot.length,arsenal:combat.arsenal.inspect()}),
    _debug:{get bots(){return bots;},get player(){return player;},get loot(){return loot;},get chests(){return chests;},interact,damage,god(v=true){godMode=v;},place:(x,z,lx,lz,dp=0)=>{o.placePlayer(x,z,lx,lz);combat.syncLook(dp);},skip(t){countdown=0;clock+=t||0;},setZone(r){if(zone){zone.r=r;}},get pages(){return pages;},get watcher(){return attendant;},dropPages,deliver,placePage,setPower,night(){const total=CYCLE.day+CYCLE.dusk+CYCLE.night+CYCLE.dawn;worldOffset+=CYCLE.day+CYCLE.dusk+1-worldClock()%total;},blood(v){bloodHit=v;}}

@@ -139,7 +139,7 @@
   const frameV=Array.from({length:160},()=>new T.Vector3()),frameQ=Array.from({length:32},()=>new T.Quaternion());let vi=0,qi=0;
   const tempV=(x=0,y=0,z=0)=>frameV[vi++].set(x,y,z),copyV=v=>frameV[vi++].copy(v),tempQ=()=>frameQ[qi++].identity();
   const localTemp=p=>group.worldToLocal(copyV(p)),worldTemp=p=>group.localToWorld(copyV(p));
-  const gaitOffsets=[0,0],animList=[],animEntries=Array.from({length:80},()=>({})),locoEntries=Array.from({length:8},()=>({}));let animCount=0,locoCount=0;
+  const gaitOffsets=[0,0],animList=[],animEntries=Array.from({length:80},()=>({})),locoEntries=Array.from({length:8},()=>({}));let animCount=0,locoCount=0,travelMask=null;
   const addAnim=(id,t,weight,mask,loop)=>{const e=animEntries[animCount++];e.id=id;e.t=t;e.weight=weight;e.mask=mask;e.loop=loop;animList.push(e);};
   const api={
    tune:{guardLift:0,wadeLift:0},
@@ -180,8 +180,8 @@
     const managed=['slideStart','slideLoop','climbUp','dash','sprint'];
     const sliding=api.playing('slideStart')||api.playing('slideLoop');
     for(const clip of managed)if(clip!==id)api.stop(clip,.12);
-    if(id){api.stop('slideExit',.08);api.stop('jumpStart',.08);if(!api.playing(id))api.play(id,{fade:.08,mask:'full',weight:1,loop,speed,start,hold:!loop});}
-    else if(sliding&&!state.airborne)api.play('slideExit',{fade:.08,speed:1.8,mask:'full'});
+    if(id){api.stop('slideExit',.14);api.stop('jumpStart',.14);if(!api.playing(id))api.play(id,{fade:.16,mask:'full',weight:.85,loop,speed,start,hold:!loop});}
+    else if(sliding&&!state.airborne)api.play('slideExit',{fade:.16,speed:1.5,mask:'full',weight:.8});
    },
    // Jab with the hand furthest back; returns the seconds until the fist lands.
    punch(target){const s=sides[state.punches++%2];s.punch={t:0,target:target?toLocal(target):s.shoulder.clone().add(new T.Vector3(-s.sign*.08,.02,.62))};return .12;},
@@ -216,7 +216,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     const stance=T.MathUtils.lerp(.62,.42,smooth(3,6,gait)),cycle=Math.min(1.15+.22*gait,.85/stance),stride=stance*cycle;
     if(!reduced)state.phase=(state.phase+gait*dt/cycle)%1;
     const run=smooth(3.5,5.5,gait),offsets=gaitOffsets;
-    const shotLayer=state.layers.find(L=>L.id==='pistolShoot'&&!L.out),reloadLayer=state.layers.find(L=>L.id==='pistolReload'&&!L.out),reachLayer=state.layers.find(L=>(L.id==='pickup'||L.id==='interact')&&!L.out);
+    const shotLayer=state.layers.find(L=>L.id==='pistolShoot'&&!L.out),reloadLayer=state.layers.find(L=>L.id==='pistolReload'&&!L.out),reachLayer=state.layers.find(L=>(['pickup','interact','chestOpen'].includes(L.id))&&!L.out);
     const shot=shotLayer&&shotLayer.t<.22?Math.sin(shotLayer.t/.22*Math.PI)*shotLayer.w:0,reload=reloadLayer?Math.sin(clamp(reloadLayer.t/reloadLayer.dur,0,1)*Math.PI)*reloadLayer.w:0,reach=reachLayer?Math.sin(clamp(reachLayer.t/reachLayer.dur,0,1)*Math.PI)*reachLayer.w:0;
     const viewEase=1-Math.exp(-10*dt);view.first+=(view.firstTarget-view.first)*viewEase;view.sprint+=(view.sprintTarget-view.sprint)*viewEase;view.yaw+=(view.yawTarget-view.yaw)*viewEase;view.pitch+=(view.pitchTarget-view.pitch)*viewEase;
     // Airborne legs can use the authored tuck; grounded contact is restored below.
@@ -287,8 +287,9 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
       // The world rig's normal grip sits below a level first-person view. Raise
       // and extend it only for that view, with a smaller sprint tuck to keep hands visible.
       target.y+=view.first*.22-view.sprint*(.13-.055*view.first);target.z+=view.first*.16-view.sprint*(.09-.04*view.first);target.x-=view.sprint*.035;
-      target.y+=view.first*(shot*.055-reload*.035);target.z-=view.first*(shot*.085+reload*.05);
-      if(s!==R){target.x+=view.first*reload*.12;target.y+=view.first*reload*.065;target.z-=view.first*reload*.06;}
+      target.y+=(shot*.055-reload*.035);target.z-=(shot*.085+reload*.05);
+      if(s!==R){target.x+=reload*.12;target.y+=reload*.065;target.z-=reload*.16;}
+      if(s===R){target.z+=reach*.16;target.y-=reach*.12;}
       hz=10;zeta=.8;}
      // Visible first-person hands have their own small stride / look lag. Touch,
      // punch and authored action layers still win, so contact and reloads remain intact.
@@ -332,8 +333,8 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
       if(j===0&&close>0){b.quaternion.premultiply(q1.setFromAxisAngle(f.across,f.spread*.9*close));if(f.thumb)b.quaternion.premultiply(q1.setFromAxisAngle(f.long,f.wrapSign*.85*close));}});
      if(s.touchWeight.x<.002&&!s.touchTarget)s.touch=null;
     }
-    // Authored clips over the procedural pose: queued clips, and an upper-body walk / run (timed to our own footfalls)
-    // and idle, which give the arms, shoulders and spine their swing while the feet stay planted procedurally.
+    // Blend authored movement with directional footwork. A forward sprint clip
+    // cannot drive sideways/backward feet: that made strafing twist and skate.
     const A=root.GardenAnim;
     if(A?.ready()){
      const busy=state.hold.x>.05||sides.some(s=>s.touchWeight.x>.05||s.punch)||state.guard.x>.08;
@@ -344,7 +345,10 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
      loco.length=0;
      if(api.animTune.loco){const gait=state.weight,jog=smooth(2.7,4.3,state.speed),sprint=smooth(4.5,6.3,state.speed),grounded=state.airborne?0:1;
       state.locoK+=(gait*grounded-state.locoK)*(1-Math.exp(-9*dt));state.idleK+=((1-gait)*grounded-state.idleK)*(1-Math.exp(-6*dt));
-      const mask=busy?noArms('full'):M.full;
+      travelMask??=M.full.slice();
+      const forwardBlend=smooth(.2,.85,heading.z),baseMask=busy?noArms('full'):M.full;
+      for(let i=0;i<travelMask.length;i++)travelMask[i]=baseMask[i]*(state.airborne?1:i===0?.2:!M.upper[i]?.35*forwardBlend:1);
+      const mask=travelMask;
       const add=(id,weight,walking=false)=>{weight*=1-full;if(weight<=.005||!A.has(id))return;const entry=locoEntries[locoCount++];entry.id=id;entry.weight=Math.round(weight*1000)/1000;loco.push(entry);addAnim(id,walking?((state.phase+A.phase0(id))%1)*A.duration(id):(state.time||0)%A.duration(id),weight,mask);};
       // Adjacent gaits crossfade at one shared footfall phase instead of popping.
       add('walk',.85*state.locoK*(1-crouch)*(1-jog),true);add('jog',.85*state.locoK*(1-crouch)*jog*(1-sprint),true);add('sprint',.85*state.locoK*(1-crouch)*sprint,true);
@@ -365,7 +369,9 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
        // Keep planted feet fixed, but retain the clip's knee lift on the swing.
        // Previously solving both legs at weight 1 erased every new leg animation.
        const phase=(state.phase+i*.5)%1,contact=phase<stance?1:1-smooth(0,.15,(phase-stance)/(1-stance))*smooth(1,.85,(phase-stance)/(1-stance));
-       const blend=state.weight*contact+1-state.weight;
+       // Keep most of the continuous IK trajectory during the swing as well;
+       // releasing it fully let retargeted ankles jump at the contact boundary.
+       const blend=1-state.weight*(1-contact)*.35*smooth(.2,.85,heading.z);
        const a=copyV(s.leg.end.getWorldPosition(v3)),q=tempQ().copy(s.leg.end.getWorldQuaternion(tempQ()));
        a.lerp(s.footTarget,blend);q.slerp(s.footRotation,blend);
        solve(s.leg,a,s.footPole);orient(s.leg.end,q);
