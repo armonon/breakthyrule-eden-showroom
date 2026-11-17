@@ -87,13 +87,13 @@
   const mount=$('circle-feed');
   mount.setAttribute('aria-busy','true');
   mount.replaceChildren(el('p',{role:'status',textContent:'Loading public conversations…'}));
-  communityFeedModule=import('/site/community-feed.mjs?v=1').then(({mountCommunityFeed})=>{
+  communityFeedModule=import('/site/community-feed.mjs?v=onsite-1').then(({mountCommunityFeed})=>{
    communityFeed=mountCommunityFeed(mount);
    return communityFeed.load();
   }).catch(()=>{
    communityFeedModule=null;mount.setAttribute('aria-busy','false');
    const retry=el('button',{type:'button',className:'community-feed-refresh',textContent:'Try again'});retry.onclick=loadCommunityFeed;
-   mount.replaceChildren(el('p',{role:'status',textContent:'The community feed could not be loaded. Try again, or open The Circle above.'}),retry);
+   mount.replaceChildren(el('p',{role:'status',textContent:'The conversation space could not be loaded. Please try again.'}),retry);
   });
  }
  const topicSections=[],openGroups=new Set();

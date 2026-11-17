@@ -41,18 +41,15 @@
   mount.classList.add('discussion');
   const root=mount;
   if(circle.community){
-   // Circle/Now owns its member session. Never imply that a link signs the shop in.
-   const compose=new URL(circle.community),discover=new URL(circle.community);compose.searchParams.set('view','Create');discover.searchParams.set('view','Discover');
    const local=el('details',{className:'community-local-notes'},el('summary',{textContent:'Earlier notes on this device'}));
    mount=el('div');local.append(mount);
    root.replaceChildren(
     el('section',{className:'community-handoff'},
-     el('p',{className:'kicker',textContent:'The Circle / thecreatingco'}),
+     el('p',{className:'kicker',textContent:'The Break Thy Rule forum'}),
      el('h3',{textContent:'Share it with the community.'}),
-     el('p',{textContent:'Read public conversations in The Circle, or join in as a guest. No account is needed for text posts and replies.'}),
+     el('p',{textContent:'Read, post, and reply in the forum right here on Break Thy Rule. No account is needed to join as a guest.'}),
      el('div',{className:'community-actions'},
-      el('a',{href:compose.href,className:'solid',textContent:'Write as a guest ↗',target:'_blank',rel:'noopener',ariaLabel:'Write as a guest in The Circle (opens in a new tab)'}),
-      el('a',{href:discover.href,className:'ghost',textContent:'Read The Circle ↗',target:'_blank',rel:'noopener'}),
+      el('a',{href:'/archive#forum',className:'solid',textContent:'Join the conversation →'}),
       el('a',{href:'/account',textContent:'Your account'}))),local);
   }
   const storeKey='btr-board:'+key;
