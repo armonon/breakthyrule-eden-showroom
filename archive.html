@@ -5,7 +5,8 @@
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
  <meta name="theme-color" content="#ffffff">
  <script>
-  // Restore the archive preference before styles and content paint.
+  // Restore reading-room preferences before paint.
+  try{document.documentElement.dataset.forumTheme=localStorage.getItem("btr-forum-theme")==="night"?"night":"day";}catch{}
   (()=>{let theme='day';try{if(localStorage.getItem('btr-archive-theme')==='night')theme='night';}catch{}document.documentElement.dataset.archiveTheme=theme;document.documentElement.style.colorScheme=theme==='night'?'dark':'light';document.querySelector('meta[name="theme-color"]').content=theme==='night'?'#141912':'#ffffff';})();
  </script>
  <title>Break Thy Rule — Library</title>
@@ -30,6 +31,8 @@
  <script defer src="/site/shared-header.js?v=header-no-account-1"></script>
 <link rel="stylesheet" href="/site/brand-logo.css?v=night-2">
 <link rel="stylesheet" href="/site/forum-page.css?v=1">
+<link rel="stylesheet" href="/site/forum-night.css?v=1">
+<script defer src="/site/forum-theme.js?v=1"></script>
 </head>
 <body id="archive-market" data-page="archive">
  <a class="market-skip" href="#archive-main">Skip to reading room</a>
@@ -92,8 +95,8 @@
   </section>
   <section id="panel-forum" class="reading-panel" role="tabpanel" aria-labelledby="tab-forum" tabindex="0" hidden>
    <header class="forum-masthead">
-    <div class="forum-masthead-copy"><p class="forum-eyebrow">Break Thy Rule » Community</p><h1>Break Thy Rule Forum</h1><p class="forum-masthead-intro">Clothing, art, music, and everything in between.</p></div>
-    <div class="forum-access"><strong>Guest access is open</strong>Read &amp; reply without an account</div>
+    <div class="forum-masthead-copy"><p class="forum-eyebrow">Break Thy Rule » Community</p></div>
+    <div class="forum-access"><button id="forum-theme-toggle" type="button" aria-pressed="false">Night mode</button></div>
    </header>
    <p class="forum-notice">Welcome to the forum. Choose a board, start a topic, or join a conversation as a guest.</p>
    <div id="circle-feed" class="btr-forum-workspace" aria-label="Public conversations"><p role="status">Loading the conversation space…</p></div>
