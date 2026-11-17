@@ -163,7 +163,9 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
   ()=>{nightRoad=window.createNightRoad(T,scene,{sections:roadSections,roadX,roadStart,nightStart:skybox.door.z,roadLength,clearingStart:-120,district,sky,bark,forest:flora.forest,stone,roadMaterial,vergeMaterial,clouds:garden.children.filter(node=>node.isSprite),reduced,mobile});roadFirst=-1;if(lastViewer)updateRoad(lastViewer.position);onChange();}
  ];
  // Back in the garden the night section is hidden again, exactly as before it was first built.
- const nightNear=p=>p.z< -12||Math.hypot(p.x-9,p.z+8.5)<10;
+ // The library is still Eden. Only approaching the actual doorway should
+ // construct the district, its forest and pyramid.
+ const nightNear=p=>p.z<doorZ+6;
  function buildNight(all=false){nightSteps??=[...nightBuilders];while(nightSteps.length){nightSteps.shift()();if(!all)break;}}
  const nightBuilt=()=>!!nightRoad;
  return {snake,skybox,get nightRoad(){return nightRoad;},get pyramid(){buildNight(true);return pyramid;},get district(){buildNight(true);return district;},nightBuilt,

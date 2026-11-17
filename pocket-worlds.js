@@ -83,7 +83,7 @@ window.createPocketWorlds=function createPocketWorlds(T,scene,renderer,camera){
  }
  const rect=(x0,x1,z0,z1)=>[x0,x1,z0,z1],within=(p,r)=>p.x>r[0]&&p.x<r[1]&&p.z>r[2]&&p.z<r[3];
 
- const places=[];
+ const places=[],compact=matchMedia('(max-width:700px), (pointer:coarse)').matches;
  // position/rotation: the doorway in the garden. offset: where its world is built (its floor ends up at y = 0).
  // width/height: the opening. beyond/behind: how far the real and far tunnels run past the threshold.
  // walk: floor plan of the world (rects [x0,x1,z0,z1] in the doorway frame); solid: obstacles in it.
@@ -94,7 +94,9 @@ window.createPocketWorlds=function createPocketWorlds(T,scene,renderer,camera){
   real.position.copy(position);real.rotation.y=rotation;far.position.copy(position).add(offset);far.rotation.y=rotation;
   scene.add(real,far);real.updateMatrixWorld();far.updateMatrixWorld();
   const toReal=real.matrixWorld.clone().invert(),toFar=far.matrixWorld.clone().invert(),back=offset.clone().negate();
-  const target=new T.WebGLRenderTarget(1,1,{type:T.HalfFloatType,samples:4});
+  // The portal already contains display-referred colour. An 8-bit target is
+  // sufficient; resolution follows the doorway's screen coverage.
+  const target=new T.WebGLRenderTarget(1,1,{type:T.UnsignedByteType,samples:compact?0:2});
   target.texture.colorSpace=T.SRGBColorSpace;target.isXRRenderTarget=true; // tone-mapped and encoded exactly like the canvas
   const material=new T.ShaderMaterial({toneMapped:false,fog:false,uniforms:{map:{value:target.texture},resolution:{value:size}},
    vertexShader:'void main(){gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:view});
@@ -107,6 +109,7 @@ window.createPocketWorlds=function createPocketWorlds(T,scene,renderer,camera){
   // Each view keeps only what lies beyond its doorway, so nothing between the camera and the doorway can block it.
   const inward=new T.Vector3(1,0,0).applyAxisAngle(new T.Vector3(0,1,0),rotation);
   const keepFar=new T.Plane().setFromNormalAndCoplanarPoint(inward,far.position),keepReal=new T.Plane().setFromNormalAndCoplanarPoint(inward.clone().negate(),real.position);
+  let renderedAt=-Infinity,resizedAt=-Infinity,targetScale=0,renders=0;const lastPosition=new T.Vector3(Infinity,0,0),lastRotation=new T.Quaternion(),lastProjection=new T.Matrix4();
   const p={name,real,far,caption,white:white(name+' white world',far),
    toReal:point=>local.copy(point).applyMatrix4(toReal),toFar:point=>local.copy(point).applyMatrix4(toFar),
    inside:point=>Math.hypot(point.x-far.position.x,point.z-far.position.z)<450,
@@ -121,18 +124,32 @@ window.createPocketWorlds=function createPocketWorlds(T,scene,renderer,camera){
    render(){
     const camPos=camera.position,inside=p.inside(camPos);
     update(camPos,inside);
+    // Inactive interiors must not submit unculled clothing/characters or cast
+    // shadows into the garden. Temporarily expose one only for its portal pass.
+    far.visible=inside;
+    if(!real.visible&&!inside)return;
     const l=inside?p.toFar(camPos):p.toReal(camPos);
     if(inside?!(l.x>0&&l.length()<140):!(l.x<0&&l.length()<viewDistance&&seen(l)))return;
     camera.updateMatrixWorld();matrix.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);frustum.setFromProjectionMatrix(matrix);
     if(!frustum.intersectsBox(inside?farBox:realBox))return;
-    renderer.getDrawingBufferSize(size);if(target.width!==size.x||target.height!==size.y)target.setSize(size.x,size.y);
+    renderer.getDrawingBufferSize(size);
+    const now=performance.now(),desired=Math.min(1,Math.ceil(Math.max(compact?.35:.5,4/Math.max(1,l.length()))*4)/4);
+    // Discrete sizes with a cooldown: camera bob must never reallocate a render
+    // target every frame while approaching a doorway.
+    if(!targetScale||desired!==targetScale&&now-resizedAt>1000){targetScale=desired;resizedAt=now;}
+    const w=Math.max(1,Math.round(size.x*targetScale)),h=Math.max(1,Math.round(size.y*targetScale));
+    const resized=target.width!==w||target.height!==h;if(resized)target.setSize(w,h);
+    const changed=resized||lastPosition.distanceToSquared(camPos)>.0004||lastRotation.angleTo(camera.quaternion)>.0005||!lastProjection.equals(camera.projectionMatrix);
+    if(!changed&&now-renderedAt<1000/30)return;
     portalCamera.projectionMatrix.copy(camera.projectionMatrix);
     portalCamera.position.copy(camPos).add(inside?back:offset);portalCamera.quaternion.copy(camera.quaternion);portalCamera.updateMatrixWorld();
     obliqueNear(portalCamera,inside?keepReal:keepFar);
     const shadows=renderer.shadowMap.needsUpdate,previous=renderer.getRenderTarget();renderer.shadowMap.needsUpdate=false;
-    renderer.setRenderTarget(target);renderer.render(scene,portalCamera);renderer.setRenderTarget(previous);
-    renderer.shadowMap.needsUpdate=shadows;
-   }
+    const shown=far.visible;far.visible=!inside;
+    try{renderer.setRenderTarget(target);renderer.render(scene,portalCamera);renders++;renderedAt=now;lastPosition.copy(camPos);lastRotation.copy(camera.quaternion);lastProjection.copy(camera.projectionMatrix);}
+    finally{far.visible=shown;renderer.setRenderTarget(previous);renderer.shadowMap.needsUpdate=shadows;}
+   },
+   performance:()=>({renders,width:target.width,height:target.height,inside:far.visible})
   };
   places.push(p);return p;
  }
@@ -142,6 +159,7 @@ window.createPocketWorlds=function createPocketWorlds(T,scene,renderer,camera){
   blocks:point=>{const p=places.find(p=>p.inside(point));return p?p.blocks(point):places.some(p=>p.blocksOutside(point));},
   enclosed:point=>places.some(p=>p.enclosed(point)),
   cross:point=>{for(const p of places){const jump=p.cross(point);if(jump)return jump;}return null;},
-  render(){for(const p of places)p.render();}
+  render(){for(const p of places)p.far.visible=p.inside(camera.position);for(const p of places)p.render();},
+  inspect:()=>places.map(p=>({name:p.name,...p.performance()}))
  };
 };
