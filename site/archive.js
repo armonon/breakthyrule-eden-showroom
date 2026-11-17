@@ -87,7 +87,7 @@
   const mount=$('circle-feed');
   mount.setAttribute('aria-busy','true');
   mount.replaceChildren(el('p',{role:'status',textContent:'Loading public conversations…'}));
-  communityFeedModule=import('/site/community-feed.mjs?v=onsite-1').then(({mountCommunityFeed})=>{
+  communityFeedModule=import('/site/community-feed.mjs?v=market-forum-1').then(({mountCommunityFeed})=>{
    communityFeed=mountCommunityFeed(mount);
    return communityFeed.load();
   }).catch(()=>{

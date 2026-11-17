@@ -107,8 +107,9 @@ export function mountCommunityFeed(mount, { fetchFeed = globalThis.fetch.bind(gl
   const heading = node('h2', { id: 'forum-feed-heading', tabIndex: -1, textContent: 'All conversations' });
   const feedStatus = node('p', { className: 'forum-status', role: 'status', ariaLive: 'polite' });
   const refresh = action('Refresh', 'forum-button forum-button-quiet');
-  const start = action('+ Start a conversation', 'forum-button forum-button-primary');
+  const start = action('New topic', 'forum-button forum-button-primary');
   const feedList = node('ol', { className: 'forum-posts', id: 'forum-conversations', ariaLabel: 'Public conversations' });
+  const listHeading = node('div', { className: 'forum-list-heading', ariaHidden: 'true' }, node('span', { textContent: 'Discussion' }), node('span', { textContent: 'Started by' }), node('span', { textContent: 'Replies' }));
   const more = action('Load more conversations', 'forum-button forum-button-more'); more.hidden = true;
   const feedView = node('section', { className: 'forum-feed-view', ariaLabel: 'Conversation list' });
   const threadTitle = node('h2', { tabIndex: -1, textContent: 'Conversation' });
@@ -125,7 +126,7 @@ export function mountCommunityFeed(mount, { fetchFeed = globalThis.fetch.bind(gl
   closeComposer.addEventListener('click', () => { composer.form.hidden = true; start.setAttribute('aria-expanded', 'false'); start.focus(); });
   composer.tools.prepend(closeComposer);
   const toolbar = node('div', { className: 'forum-toolbar' }, node('div', {}, node('p', { className: 'forum-eyebrow', textContent: 'THE CONVERSATIONS' }), heading), node('div', { className: 'forum-toolbar-actions' }, refresh, start));
-  feedView.append(toolbar, composer.form, feedStatus, feedList, more);
+  feedView.append(toolbar, composer.form, feedStatus, listHeading, feedList, more);
   const main = node('div', { className: 'forum-main' }, feedView, threadView);
   for (const item of COMMUNITY_CATEGORIES) {
     const button = node('button', { type: 'button', className: 'forum-category' }, node('span', { className: 'forum-category-icon', textContent: item.icon, ariaHidden: 'true' }), node('span', { textContent: item.label }));
@@ -133,7 +134,7 @@ export function mountCommunityFeed(mount, { fetchFeed = globalThis.fetch.bind(gl
     button.addEventListener('click', () => { category = item.id; closeThread(false); renderFeed(); });
     categoryButtons.set(item.id, button); categories.append(button);
   }
-  sidebar.append(node('p', { className: 'forum-eyebrow', textContent: 'FIND YOUR CORNER' }), categories,
+  sidebar.append(node('p', { className: 'forum-eyebrow', textContent: 'Boards' }), categories,
     node('div', { className: 'forum-sidebar-note' }, node('span', { className: 'forum-sidebar-mark', textContent: '✳', ariaHidden: 'true' }), node('p', { textContent: 'A place for the things you make, find, wear, and wonder about.' }), node('small', { textContent: 'Public conversations, connected to The Circle / CreatingCo.' })));
   mount.className = 'btr-forum-workspace';
   mount.replaceChildren(sidebar, main);
@@ -165,7 +166,7 @@ export function mountCommunityFeed(mount, { fetchFeed = globalThis.fetch.bind(gl
     const submit = node('button', { type: 'submit', className: 'forum-button forum-button-primary', textContent: kind === 'post' ? 'Publish conversation' : 'Publish reply' });
     const tools = node('div', { className: 'forum-compose-tools' }, count, submit);
     const form = node('form', { className: 'forum-composer', id, noValidate: true },
-      node('div', { className: 'forum-compose-heading' }, node('h3', { textContent: kind === 'post' ? 'Put a thought on the table.' : 'Keep it going.' }), identity),
+      node('div', { className: 'forum-compose-heading' }, node('h3', { textContent: kind === 'post' ? 'New conversation' : 'Reply' }), identity),
       kind === 'post' ? node('label', { className: 'forum-compose-category' }, node('span', { textContent: 'Choose a corner' }), select) : null,
       node('label', { className: 'forum-compose-body' }, node('span', { textContent: kind === 'post' ? 'Your conversation' : 'Your reply' }), textarea), help, status, tools);
     const persist = () => {
@@ -215,15 +216,22 @@ export function mountCommunityFeed(mount, { fetchFeed = globalThis.fetch.bind(gl
   function card(post, full = false) {
     const itemCategory = categoryFor(post.category);
     const body = post.body.trim() ? post.body : 'This post has no text.';
-    const article = node('article', { className: 'forum-post' }, node('div', { className: 'forum-post-header' }, postMeta(post), node('span', { className: 'forum-category-tag', textContent: itemCategory.label })), postBody(!full && body.length > 520 ? body.slice(0, 520) + '…' : body));
-    if (!full) {
-      const count = Number.isSafeInteger(post.comments) && post.comments > 0 ? `${post.comments} ${post.comments === 1 ? 'reply' : 'replies'}` : 'Be the first to reply';
-      const open = action('Open conversation →', 'forum-button forum-thread-open');
-      open.setAttribute('aria-label', 'Open the conversation by ' + memberName(post));
-      open.addEventListener('click', () => openThread(post.id, open));
-      article.append(node('div', { className: 'forum-post-footer' }, node('span', { textContent: count }), open));
-    }
-    return article;
+    if (full) return node('article', { className: 'forum-post' }, node('div', { className: 'forum-post-header' }, postMeta(post), node('span', { className: 'forum-category-tag', textContent: itemCategory.label })), postBody(body));
+    const lines = body.split(/\r\n?|\n/).map(line => line.trim()).filter(Boolean);
+    const firstLine = Array.from(lines[0] || 'Untitled conversation');
+    const title = firstLine.length > 95 ? firstLine.slice(0, 94).join('').trimEnd() + '…' : firstLine.join('');
+    const rest = [...(firstLine.length > 95 ? [firstLine.slice(94).join('')] : []), ...lines.slice(1)].join(' ').replace(/\s+/g, ' ').trim();
+    const remaining = Array.from(rest), excerpt = remaining.length > 160 ? remaining.slice(0, 159).join('').trimEnd() + '…' : rest;
+    const open = action(title, 'forum-topic-title forum-thread-open');
+    open.setAttribute('aria-label', 'Open the conversation by ' + memberName(post));
+    open.addEventListener('click', () => openThread(post.id, open));
+    const discussion = node('div', { className: 'forum-topic-main' }, open, node('span', { className: 'forum-category-tag', textContent: itemCategory.label }), excerpt ? node('p', { className: 'forum-topic-excerpt', textContent: excerpt }) : null);
+    const author = node('div', { className: 'forum-topic-author' }, node('strong', { textContent: memberName(post) }));
+    const date = post.createdAt ? new Date(post.createdAt) : null;
+    if (date && Number.isFinite(date.getTime())) author.append(node('time', { dateTime: date.toISOString(), textContent: date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) }));
+    const count = Number.isSafeInteger(post.comments) && post.comments >= 0 ? post.comments : null;
+    const replyCount = node('div', { className: 'forum-topic-replies' }, node('strong', { textContent: count === null ? '—' : String(count) }), node('small', { textContent: count === 1 ? ' reply' : ' replies' }));
+    return node('article', { className: 'forum-topic-row' }, discussion, author, replyCount);
   }
   function renderFeed() {
     for (const [id, button] of categoryButtons) button.setAttribute('aria-pressed', String(id === category));

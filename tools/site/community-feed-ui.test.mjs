@@ -38,10 +38,11 @@ const openButtons = mount => elements(mount).filter(element => element.className
 
 test('feed is lazy and credential-free; untrusted content becomes text and safe links only', async () => {
   let calls = 0;
+  const unsafePost = { ...post, name: '<img src=x onerror=alert(1)>', body: '<script>alert(1)</script> https://example.test/story. javascript:alert(1) https://user:secret@example.test/\n' + 'A longer plaintext excerpt. '.repeat(12) };
   const f = fixture(async (url, options) => {
     calls++;
-    assert.equal(url, '/api/community/feed'); assert.equal(options.credentials, 'omit');
-    return response({ posts: [{ ...post, name: '<img src=x onerror=alert(1)>', body: '<script>alert(1)</script> https://example.test/story. javascript:alert(1) https://user:secret@example.test/' }] });
+    assert.equal(options.credentials, 'omit');
+    return response(url.includes('?post=') ? { post: unsafePost, comments: [] } : { posts: [unsafePost] });
   });
   try {
     assert.equal(calls, 0);
@@ -49,12 +50,17 @@ test('feed is lazy and credential-free; untrusted content becomes text and safe 
     assert.equal(calls, 1);
     assert.match(text(f.mount), /<script>alert\(1\)<\/script>/);
     assert.match(text(f.mount), /<img src=x onerror=alert\(1\)>/);
+    assert.ok(Array.from(byClass(f.mount, 'forum-topic-title').textContent).length <= 95);
+    assert.ok(Array.from(byClass(f.mount, 'forum-topic-excerpt').textContent).length <= 160);
+    assert.equal(elements(byClass(f.mount, 'forum-posts')).filter(element => element.tag === 'a').length, 0);
+    assert.equal(byClass(byClass(f.mount, 'forum-posts'), 'forum-avatar'), undefined);
+    assert.equal(byClass(f.mount, 'forum-posts').attributes['aria-busy'], 'false');
+    assert.equal(openButtons(f.mount)[0].tag, 'button');
+    await click(openButtons(f.mount)[0]);
     const links = elements(f.mount).filter(element => element.tag === 'a');
     assert.deepEqual(links.map(link => link.href), ['https://example.test/story']);
     assert.ok(links.every(link => link.target === '_blank' && link.rel.includes('noopener')));
     assert.equal(find(f.mount, element => element.tag === 'time').dateTime, post.createdAt);
-    assert.equal(byClass(f.mount, 'forum-posts').attributes['aria-busy'], 'false');
-    assert.equal(openButtons(f.mount)[0].tag, 'button');
   } finally { f.restore(); }
 });
 
