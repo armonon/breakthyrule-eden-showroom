@@ -7,9 +7,9 @@ const node = (tag, props = {}, ...children) => {
   return element;
 };
 
-// Feature twelve original tee photographs; keep the rest of the collection expandable.
+// Feature original tee photographs; keep the rest of the collection expandable.
 const garments = window.siteGarments?.() || [];
-const featuredSlugs = ["war-witnesses-tee", "god-loves-you-tee", "dance-to-your-vibration-tee", "cross-tee", "jesus-star-tee", "blackmarket-baby-tee", "sacred-masters-tee", "project-star-gate-tee", "cave-painting-tee", "wanted-jesus-tee", "divine-mother-tee", "oh-allah-tee"];
+const featuredSlugs = ["war-witnesses-tee", "dance-to-your-vibration-tee", "cross-tee", "jesus-star-tee", "sacred-masters-tee", "project-star-gate-tee", "wanted-jesus-tee", "divine-mother-tee", "oh-allah-tee"];
 const featuredCount = featuredSlugs.length;
 const ordered = [...featuredSlugs.map(slug => garments.find(g => g.slug === slug)).filter(Boolean), ...garments.filter(g => !featuredSlugs.includes(g.slug))];
 const accessoryModels = [];

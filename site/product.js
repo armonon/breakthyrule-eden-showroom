@@ -32,6 +32,8 @@
   document.title='BREAKTHYRULE — Product not found';
   $('name').textContent='Product not found';$('description').textContent='This piece is no longer available at this address. Explore the collection to find another.';
   $('viewer').hidden=true;$('thumbs').hidden=true;$('showcase')?.closest('section')?.remove();
+  const unavailable=el('div',{className:'studio-unavailable'},el('p',{className:'studio-small',textContent:'This piece is no longer available. Explore the collection to find another.'}),el('a',{className:'ghost',href:'/?nocover=1',textContent:'Back to the collection ↗'}));
+  $('name').after(unavailable);
   const buy=$('buy');buy.textContent='Back to the collection ↗';buy.href='/?nocover=1#products';buy.removeAttribute('target');buy.removeAttribute('rel');
   buy.parentElement.querySelector('a[href="/showroom"]')?.remove();
   return;

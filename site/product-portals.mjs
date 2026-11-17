@@ -1,6 +1,6 @@
 // Four decorative destinations share one WebGL context. The links remain native links.
 const APPLE_URL = 'https://apple-cover-assets--breakthyrule-eden-showroom.netlify.app/closed-back-apple-back-reveal.glb';
-const GARMENT_SLUGS = ['war-witnesses-tee', 'god-loves-you-tee', 'illuminati-crewneck', 'eternal-thermal', 'kiss-rosary-tee', 'jesus-health-insurance-hoodie'];
+const GARMENT_SLUGS = ['war-witnesses-tee', 'dance-to-your-vibration-tee', 'illuminati-crewneck', 'eternal-thermal', 'kiss-rosary-tee', 'jesus-health-insurance-hoodie'];
 const mounted = new WeakMap();
 
 export function setupProductPortals(section = document.getElementById('product-portals')) {

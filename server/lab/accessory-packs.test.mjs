@@ -53,7 +53,7 @@ test('skullies and the legacy skully link are single pieces at $50 or $55 heavy'
 
 test('truckers remain $45 each and glove prices remain $35 per existing product', () => {
   const hat = {style:'trucker',colors:{front:'#ffffff',brim:'#123456',mesh:'#ffffff'},picks:[]};
-  for (const product of Object.values(STUDIO_PRODUCTS).filter(p=>['trucker','gloves'].includes(p.family))) {
+  for (const product of Object.values(STUDIO_PRODUCTS).filter(p=>p.available!==false&&['trucker','gloves'].includes(p.family))) {
     const n=normalizeItem(selected(product.id,2,product.family==='trucker'?hat:{color:'white'}));
     assert.equal(n.ok,true);
     assert.equal(priceCart([n.item]).subtotalCents,product.family==='trucker'?9000:7000);
@@ -84,18 +84,18 @@ test('actual Netlify checkout charges single headwear and Daily Apple packs corr
     'studio:accessory-headband-black':{limit:10,used:0,reserved:0,open:true},
     'studio:accessory-skully-white':{limit:10,used:0,reserved:0,open:true},
     'studio:daily-apple-3-pack':{limit:10,used:0,reserved:0,open:true},
-    'studio:accessory-trucker-cobalt':{limit:10,used:0,reserved:0,open:true}
+    'studio:accessory-trucker-cherry':{limit:10,used:0,reserved:0,open:true}
   }});
   const env={CONTEXT:'deploy-preview',LAB_PREVIEW:'true',LAB_SESSION_SECRET:'accessory-pack-test-'.repeat(3),LAB_PAYMENT_PROVIDER:'test-gateway',LAB_ALLOW_TEST_GATEWAY:'true'};
   const lab=createLab({store,env,artworkPool:[]});
-  const items=[selected('accessory-headband-black',2,{color:'black',weight:'heavy'}),selected('accessory-skully-white',1,{color:'white',weight:'heavy'}),selected('daily-apple-3-pack',1,{size:'L',color:'white'}),selected('accessory-trucker-cobalt',1,{style:'trucker',colors:{front:'#ffffff',brim:'#123456',mesh:'#ffffff'},picks:[]})];
+  const items=[selected('accessory-headband-black',2,{color:'black',weight:'heavy'}),selected('accessory-skully-white',1,{color:'white',weight:'heavy'}),selected('daily-apple-3-pack',1,{size:'L',color:'white'}),selected('accessory-trucker-cherry',1,{style:'trucker',colors:{front:'#ffffff',brim:'#123456',mesh:'#ffffff'},picks:[]})];
   const result=await lab.checkout({items:items.map(item=>({...item,unitCents:1,packSize:99})),idempotencyKey:'accessory_pack_quote_20261116',origin:'https://fixture.invalid'});
   const {value:order}=await store.get('orders/'+result.orderId);
   assert.equal(order.subtotalCents,27500);
   assert.deepEqual(order.items.map(item=>({price:item.unitCents,quantity:item.quantity,units:item.units})),[
     {price:6500,quantity:2,units:2},{price:5500,quantity:1,units:1},{price:4500,quantity:1,units:3},{price:4500,quantity:1,units:1}
   ]);
-  assert.deepEqual(order.reservation.needs.slots,{'studio:accessory-headband-black':2,'studio:accessory-skully-white':1,'studio:daily-apple-3-pack':1,'studio:accessory-trucker-cobalt':1});
+  assert.deepEqual(order.reservation.needs.slots,{'studio:accessory-headband-black':2,'studio:accessory-skully-white':1,'studio:daily-apple-3-pack':1,'studio:accessory-trucker-cherry':1});
   assert.equal(order.payment.status,'pending');
 });
 
