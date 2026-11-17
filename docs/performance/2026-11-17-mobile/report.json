@@ -1,0 +1,103 @@
+{
+  "scope": [
+    "Fix ledge departure/coyote jump using the same body-footprint support as movement",
+    "Move Eden touch Fight toggle to lower action controls",
+    "Add direct mobile Beyond Eden Open Match entry, combat HUD and return to Eden",
+    "Enable charged momentum and its HUD only in arenas",
+    "Apply phone graphics settings in landscape as well as portrait"
+  ],
+  "checks": {
+    "controller_touch_input_adaptive_resolution_and_server_tests": 70,
+    "browser_movement_checks": 9,
+    "touch_orientations": [
+      "390x844 portrait",
+      "844x390 landscape"
+    ],
+    "touch_dpr": 3,
+    "physical_phone_tested": false
+  },
+  "measurement": {
+    "device": "macOS Chrome / Metal GPU",
+    "emulation": "844x390, DPR 3, coarse pointer, five touch points, renderer CPU throttled 4x",
+    "interpretation": "These are diagnostic desktop emulation samples, not physical phone FPS. Dynamic residents, streamed asset completion and camera transitions change the workload between runs, so these runs do not establish a percentage speedup. The final run still has slow frames under CPU throttling; this is not a no-hitch guarantee.",
+    "before": [
+      {
+        "area": "garden",
+        "median_ms": 16.7,
+        "p95_ms": 16.8,
+        "triangles": 709026,
+        "draw_calls": 275,
+        "pixel_ratio": 1
+      },
+      {
+        "area": "library",
+        "median_ms": 16.7,
+        "p95_ms": 16.7,
+        "triangles": 616607,
+        "draw_calls": 269,
+        "pixel_ratio": 1
+      },
+      {
+        "area": "museum",
+        "median_ms": 16.7,
+        "p95_ms": 33.3,
+        "triangles": 928638,
+        "draw_calls": 131,
+        "pixel_ratio": 0.75
+      },
+      {
+        "area": "return",
+        "median_ms": 16.7,
+        "p95_ms": 16.7,
+        "triangles": 711998,
+        "draw_calls": 301,
+        "pixel_ratio": 0.75
+      }
+    ],
+    "after": [
+      {
+        "area": "garden",
+        "median_ms": 16.7,
+        "p95_ms": 49.9,
+        "triangles": 735806,
+        "draw_calls": 363,
+        "pixel_ratio": 0.5
+      },
+      {
+        "area": "library",
+        "median_ms": 16.7,
+        "p95_ms": 33.4,
+        "triangles": 543218,
+        "draw_calls": 269,
+        "pixel_ratio": 0.5
+      },
+      {
+        "area": "museum",
+        "median_ms": 16.7,
+        "p95_ms": 33.4,
+        "triangles": 304113,
+        "draw_calls": 91,
+        "pixel_ratio": 0.5
+      },
+      {
+        "area": "return",
+        "median_ms": 16.7,
+        "p95_ms": 50,
+        "triangles": 699234,
+        "draw_calls": 390,
+        "pixel_ratio": 0.5
+      }
+    ]
+  },
+  "changes_in_render_budget": {
+    "phone_antialias": false,
+    "default_phone_max_pixel_ratio": 1,
+    "phone_min_pixel_ratio": 0.5,
+    "target_fps": 60,
+    "response": "Only sustained pressure lowers resolution; isolated loading hitches do not permanently blur the scene."
+  },
+  "known_limits": [
+    "Real Safari/iPhone and Android hardware still need a play session.",
+    "Beyond Eden Open Match remains its existing pistol/bot/page mode; this change does not introduce a new internet PvP backend."
+  ]
+}

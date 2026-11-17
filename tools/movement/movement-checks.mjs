@@ -5,8 +5,11 @@ const beside = `const near=(minTop)=>{const c=S.climbs().find(c=>c.top>=minTop&&
   const key=(k,down)=>document.dispatchEvent(new KeyboardEvent(down?'keydown':'keyup',{key:k,bubbles:true}));const run=down=>{key('w',down);key('Shift',down);};
   const m=()=>S.getState().movement,speed=()=>Math.hypot(m().velocity[0],m().velocity[2]);`;
 const list = {
-  'A jump just after walking off an edge still works': `const s=spot();at(s);S.sim(12,1/60,['w','shift']);S.sim(90,1/60,['w','shift'],true);S.sim(30,1/60,[]);S.face(Math.atan2(s.x-s.ax,-(s.z-s.az)));
-    let left=false;for(let i=0;i<240&&!left;i++){S.sim(1,1/60,['w']);left=m().airborne;}S.sim(3,1/60,['w']);S.sim(1,1/60,['w'],true);return {ok:left&&m().vy>3,left,upSpeed:+m().vy.toFixed(2)};`,
+  // Start on the measured platform. The old timed sprint/climb crossed its far
+  // edge before this test began, then walked into the crate from ground level.
+  'A jump just after walking off an edge still works': `const s=spot();at(s);S.dropAt(s.ax,s.az,0,s.x,s.z);S.sim(1,1/60,[]);const perched=feetNow();
+    if(Math.abs(perched-s.top)>.05||m().airborne)return {ok:false,stage:'platform setup',perched,top:s.top};
+    let left=false;for(let i=0;i<120&&!left;i++){S.sim(1,1/60,['w']);left=m().airborne;}const departed=feetNow();S.sim(3,1/60,['w']);S.sim(1,1/60,['w'],true);return {ok:left&&departed>s.top-.15&&m().vy>3,left,perched,departed,upSpeed:+m().vy.toFixed(2)};`,
   'A jump pressed just before landing fires on landing': `const s=spot();at(s);S.sim(1,1/60,[],true);let n=0;while(m().vy>-4.6&&n++<120)S.sim(1,1/60,[]);S.sim(1,1/60,[],true);let landed=false,again=false;for(let i=0;i<30;i++){S.sim(1,1/60,[]);if(!m().airborne)landed=true;if(m().vy>3)again=true;}return {ok:again,again,landed};`,
   'Catching a ledge mid-fall is not a landing': `const n=near(5),P=S.parkour(),before=P.inspect().stats.hard;S.dropAt(n.c.x+n.dx*1.45,n.c.z+n.dz*1.45,n.c.top+2,n.c.x,n.c.z);let k=0;while(feetNow()>n.c.top-.5&&k++<90)S.sim(1,1/60,[]);let caught=false;for(let i=0;i<30;i++){S.sim(1,1/60,['w']);if(P.inspect().state)caught=true;}S.sim(60,1/60,[]);const hard=P.inspect().stats.hard-before;return {ok:caught&&hard===0,caught,hard};`,
   'Falling from a hang counts from where you let go': `const n=near(5),P=S.parkour(),hung=hangOn(n);const from=feetNow(),hard=P.inspect().stats.hard;S.sim(30,1/60,['s']);S.sim(90,1/60,[]);const fell=P.inspect().stats.hard>hard,fall=fell?P.inspect().stats.lastFall:0;return {ok:hung&&fall<=from+.2,hung,letGoAt:from,top:n.c.top,measuredFall:fall};`,

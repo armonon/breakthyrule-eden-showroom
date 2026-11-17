@@ -55,3 +55,49 @@ body.touch-play .ar-feed{top:150px}
 #touch-controls .tc-stick.running{border-color:#e7efb9;box-shadow:0 0 0 4px #e7efb926,inset 0 1px 0 #ffffff40}
 #touch-controls .tc-stick.running .tc-stick-label{color:#f6ffd0;font-weight:700}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){#touch-controls button,#touch-controls.tc-expedition button,#touch-controls.tc-expedition .tc-jump{background-color:#132b246b}}
+
+/* Beyond Eden Open Match: separate thumb areas, reachable combat actions,
+   and a direct way back to Eden in portrait and landscape. */
+body.touch-arena{overflow:hidden;overscroll-behavior:none;--btr-header-height:0px!important}
+body.touch-arena #world{height:100svh!important;height:100dvh!important;min-height:0!important}
+body.touch-arena :is(#btr-site-header,.btr-world-tools,.site-header,.world-footer,.world-topline,.world-caption,#social-launcher,#character-launcher,#social-move,#controls-help,#garden-effects,#shelf-actions,#lost-eden-tools){display:none!important}
+html body.touch-arena header#btr-site-header.btr-about-header[data-shared-header="about"]{display:none!important}
+#touch-controls.tc-arena .tc-stick{left:calc(18px + env(safe-area-inset-left));bottom:calc(26px + env(safe-area-inset-bottom));width:112px;height:112px}
+#touch-controls.tc-arena .tc-stick i{width:44px;height:44px;margin:-22px}
+#touch-controls.tc-arena button{min-width:44px;min-height:44px;font-size:10px;letter-spacing:.03em}
+#touch-controls.tc-arena .tc-jump{right:calc(18px + env(safe-area-inset-right));bottom:calc(20px + env(safe-area-inset-bottom));width:60px;height:60px}
+#touch-controls.tc-arena .tc-slide{right:calc(94px + env(safe-area-inset-right));bottom:calc(22px + env(safe-area-inset-bottom));width:54px;height:54px}
+#touch-controls.tc-arena .tc-fire{right:calc(18px + env(safe-area-inset-right));bottom:calc(100px + env(safe-area-inset-bottom));width:72px!important;height:72px!important}
+#touch-controls.tc-arena .tc-aim{right:calc(104px + env(safe-area-inset-right));bottom:calc(110px + env(safe-area-inset-bottom));width:56px;height:56px}
+#touch-controls.tc-arena .tc-use{right:calc(182px + env(safe-area-inset-right));bottom:calc(28px + env(safe-area-inset-bottom));width:50px;height:50px}
+#touch-controls.tc-arena .tc-reload{right:calc(104px + env(safe-area-inset-right));bottom:calc(186px + env(safe-area-inset-bottom));width:50px!important;height:50px!important}
+#touch-controls.tc-arena .tc-melee{right:calc(22px + env(safe-area-inset-right));bottom:calc(190px + env(safe-area-inset-bottom));width:50px!important;height:50px!important}
+#touch-controls.tc-arena .tc-swap{left:calc(18px + env(safe-area-inset-left));bottom:calc(170px + env(safe-area-inset-bottom));width:52px;height:52px}
+#touch-controls.tc-arena .tc-third{left:calc(82px + env(safe-area-inset-left));right:auto;bottom:calc(170px + env(safe-area-inset-bottom));width:48px;height:48px}
+#touch-controls.tc-arena .tc-leave{left:50%;top:calc(18px + env(safe-area-inset-top));transform:translateX(-50%);width:62px;height:44px;border-radius:14px}
+body.touch-arena .ch-slots,body.touch-arena .ar-exit{display:none}
+body.touch-arena .ar-top{top:calc(22px + env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left));max-width:130px;gap:4px;flex-wrap:wrap;font-size:9px;letter-spacing:.08em}
+body.touch-arena .ar-top b{font-size:24px}
+body.touch-arena .ar-zone{margin-left:0;font-size:8px}
+body.touch-arena .ar-map{top:calc(16px + env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));width:112px;height:100px;transform:none}
+body.touch-arena .ar-vitals{top:calc(100px + env(safe-area-inset-top));bottom:auto;left:max(16px,env(safe-area-inset-left));width:162px;padding:6px 8px;gap:3px;transform:none}
+body.touch-arena .ch-ammo{top:calc(182px + env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left));right:auto;scale:.7;transform-origin:top left}
+body.touch-arena .ar-feed{top:calc(128px + env(safe-area-inset-top));right:14px;width:44%;max-height:72px;overflow:hidden;font-size:8px}
+body.touch-arena .ar-announce{font-size:17px;letter-spacing:.06em;max-width:90%;white-space:normal;text-align:center}
+body.touch-arena .ar-prompt{max-width:80%;font-size:10px;white-space:normal}
+body.touch-arena .ar-pages{top:calc(76px + env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left));max-width:calc(100% - 155px);gap:3px;font-size:8px;letter-spacing:.03em;flex-wrap:wrap}
+body.touch-arena .ar-pages .pg{width:7px;height:10px}
+body.touch-arena .ar-pages span{margin-left:3px;font-size:8px}
+body.touch-arena .ar-pages b{font-size:9px}
+body.touch-arena .ar-heals{font-size:8px;letter-spacing:.03em}
+body.touch-arena #battle-hud .ar-heals kbd{display:none}
+@media(max-width:360px){#touch-controls.tc-arena .tc-stick{left:12px;width:100px;height:100px}#touch-controls.tc-arena .tc-use{right:170px}}
+@media(max-height:500px) and (orientation:landscape){
+ body.touch-arena .ar-zone{white-space:nowrap;font-size:7px}
+ body.touch-arena .ar-vitals{top:68px;width:150px;scale:.8;transform-origin:top left}
+ body.touch-arena .ar-pages{top:44px;left:180px;max-width:180px}
+ body.touch-arena .ch-ammo{top:130px;left:18px;scale:.6}
+ body.touch-arena .ar-feed{display:none}
+ body.touch-arena .ar-announce{top:22%;max-width:45%}
+ #touch-controls.tc-arena .tc-swap,#touch-controls.tc-arena .tc-third{bottom:146px}
+}

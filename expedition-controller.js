@@ -3,7 +3,7 @@
 // One fixed-step adapter around the game's actual locomotion and parkour.
 // Character dimensions and collision data are supplied by the trusted host.
 const DT=1/60, MASK=127, EDGES=3;
-root.createExpeditionController=function({T,world,layout,character,worldRevision,unlocked=()=>false,effect=()=>{},canMove=()=>true,position=null,lookAt=null,velocity=null}){
+root.createExpeditionController=function({T,world,layout,character,worldRevision,unlocked=()=>false,effect=()=>{},canMove=()=>true,momentumEnabled=false,position=null,lookAt=null,velocity=null}){
  if(!T||!world||!layout||typeof worldRevision!=='string'||!worldRevision)throw Error('Controller requires a pinned world.');
  const profile=Object.freeze({...root.playerBodyProfile(character)}),bodyKey=JSON.stringify(profile);
  const pos=position||new T.Vector3(layout.spawn[0],1.75,layout.spawn[1]),aim=lookAt||pos.clone().add(new T.Vector3(0,0,-5)),vel=velocity||new T.Vector3(),keys=new Set(),motion=root.createPlayerMotion();
@@ -14,7 +14,7 @@ root.createExpeditionController=function({T,world,layout,character,worldRevision
  const parkour=root.createParkour({T,walls:()=>world.walls,surfaces:()=>world.surfaces,ground:()=>0,revision:()=>worldRevision,player:{pos,aim,vel,motion,keys,bodyDimensions:()=>profile,crouchHeld:()=>movement.crouchHeld,sway,footsteps,surface,requestDraw:noop,onFall:noop}});
  const constrain=root.createExpeditionConstraints({layout,unlocked});
  const shiftHeight=d=>{pos.y+=d;aim.y+=d;};
- movement=root.createPlayerMovement({T,targetPosition:pos,targetAim:aim,walkVelocity:vel,motion,keys,bodyDimensions:()=>profile,sway,footsteps,surfaceAt:surface,puff:(...args)=>emit('puff',...args),hitStop:ms=>emit('hitStop',ms),kick:n=>emit('kick',n),requestDraw:noop,obstacle:()=>false,groundHeight:()=>0,
+ movement=root.createPlayerMovement({momentumEnabled:()=>momentumEnabled,T,targetPosition:pos,targetAim:aim,walkVelocity:vel,motion,keys,bodyDimensions:()=>profile,sway,footsteps,surfaceAt:surface,puff:(...args)=>emit('puff',...args),hitStop:ms=>emit('hitStop',ms),kick:n=>emit('kick',n),requestDraw:noop,obstacle:()=>false,groundHeight:()=>0,
   prepareWalking(){const h=motion.inspect().height,floor=parkour.supportAt(pos.x,pos.z,pos.y-1.75-h+.45,profile.radius);shiftHeight(1.75+floor+h-pos.y);},shiftHeight,state:{ready:true},modalOpen:()=>false,fistsEngaged:()=>false,parkour:()=>parkour,pk:()=>parkour,parkourOn:()=>true,garden:{constrain},expedition:{canMove,constrain:noop},now:()=>tick*1000/60,playerBody:{downed:()=>false,anim:(...args)=>emit('animation',...args)}});
  function validateInput(f){if(!f||typeof f!=='object'||Array.isArray(f)||!Number.isInteger(f.heldMask)||f.heldMask<0||(f.heldMask&~MASK)||!Number.isInteger(f.edges)||f.edges<0||(f.edges&~EDGES)||!Number.isFinite(f.yaw)||Math.abs(f.yaw)>Math.PI*2||!Number.isFinite(f.pitch)||Math.abs(f.pitch)>1.35)throw Error('Invalid movement input.');}
  function setHeld(mask){keys.clear();for(const [bit,key] of [[1,'w'],[2,'s'],[4,'a'],[8,'d'],[16,'shift'],[32,'space']])if(mask&bit)keys.add(key);movement.crouchHeld=!!(mask&64);heldMask=mask;}

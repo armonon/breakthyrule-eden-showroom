@@ -21,6 +21,7 @@ export async function openPage({ width = 1280, height = 800, deviceScaleFactor =
   const evaluate = async expression => { const r = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) throw new Error((r.exceptionDetails.exception?.description || JSON.stringify(r.exceptionDetails)).slice(0, 800)); return r.result.value; };
   await send('Page.enable'); await send('Runtime.enable');
   await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor, mobile });
+  if(mobile)await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:5});
   const shot = async file => { const r = await Promise.race([send('Page.captureScreenshot', { format: 'jpeg', quality: 88, fromSurface: true }), sleep(20000).then(() => null)]); if (r) fs.writeFileSync(file, Buffer.from(r.data, 'base64')); return !!r; };
   const ready = () => evaluate(`new Promise((res,rej)=>{const t=performance.now();(function w(){const s=window.breakThyRuleShowroom?.getState?.();if(s?.ready)res(true);else if(performance.now()-t>180000)rej(Error('never ready'));else setTimeout(w,250);})();})`);
   const close = async () => { chrome.kill('SIGTERM'); await sleep(1500); fs.rmSync(profile, { recursive: true, force: true, maxRetries: 8, retryDelay: 400 }); };

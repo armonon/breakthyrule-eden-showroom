@@ -4,12 +4,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {openPage,sleep} from './headless-chrome.mjs';
 const [url='http://127.0.0.1:8794/showroom.html',out='/private/tmp/eden-profile.json',preset='medium',device='desktop']=process.argv.slice(2);
-const mobile=device==='mobile',p=await openPage({width:mobile?390:1280,height:mobile?844:800,deviceScaleFactor:1,mobile});
-const result={url,preset,device,phases:[]};
+fs.mkdirSync(path.dirname(out),{recursive:true});
+const mobile=device.startsWith('mobile'),landscape=device.includes('landscape'),deviceScaleFactor=Number(process.env.EDEN_PROFILE_DPR)||1,cpuRate=Number(process.env.EDEN_PROFILE_CPU)||1;
+const viewport={width:mobile?(landscape?844:390):1280,height:mobile?(landscape?390:844):800,deviceScaleFactor,mobile},p=await openPage(viewport);
+const result={url,preset,device,viewport,cpuRate,phases:[]};
 try{
+ if(cpuRate>1)await p.send('Emulation.setCPUThrottlingRate',{rate:cpuRate});
  await p.send('Page.addScriptToEvaluateOnNewDocument',{source:`performance.setResourceTimingBufferSize(3000);localStorage.setItem('eden-graphics',${JSON.stringify(preset)});window.__long=[];new PerformanceObserver(list=>{for(const e of list.getEntries())__long.push({start:e.startTime,ms:e.duration});}).observe({type:'longtask',buffered:true});`});
  await p.goto(url);await p.ready();
  result.readyMs=await p.evaluate('performance.now()');
+ result.device=await p.evaluate(`({mode:${JSON.stringify(device)},coarse:matchMedia('(pointer:coarse)').matches,touchPoints:navigator.maxTouchPoints,antialias:breakThyRuleShowroom.renderer().getContext().getContextAttributes().antialias})`);
  await p.evaluate(`(()=>{const r=breakThyRuleShowroom.renderer(),render=r.render.bind(r);window.__measure={frames:[],renders:0,calls:0,tris:0,submit:0};r.render=(...args)=>{const t=performance.now(),c=r.info.autoReset?0:r.info.render.calls,tri=r.info.autoReset?0:r.info.render.triangles;render(...args);const m=__measure;m.submit+=performance.now()-t;m.renders++;m.calls+=r.info.render.calls-c;m.tris+=r.info.render.triangles-tri;};let last=0;function frame(t){const m=__measure;if(last)m.frames.push({ms:t-last,renders:m.renders,calls:m.calls,tris:m.tris,submit:m.submit});last=t;m.renders=m.calls=m.tris=m.submit=0;requestAnimationFrame(frame);}requestAnimationFrame(frame);})()`);
  await sleep(15000);
  const phases=[['garden',null],['library',[6.8,0,7,-6]],['museum',[-1011,-1,-1018,-1]],['return',[0,10,0,0]]];

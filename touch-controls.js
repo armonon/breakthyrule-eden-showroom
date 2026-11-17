@@ -1,7 +1,7 @@
 'use strict';
 // One owner per finger; every held action has a matching release, including interruption.
 (function(root){
- root.createTouchControls=function({host=null,look,combat,third,visible,armed,expedition=()=>false,actions=()=>({}),move,jump,jumpUp=null,crouch,onReset}){
+ root.createTouchControls=function({host=null,look,combat,third,visible,armed,expedition=()=>false,arena=()=>false,leave=null,actions=()=>({}),move,jump,jumpUp=null,crouch,onReset}){
   const media=matchMedia('(pointer:coarse), (any-pointer:coarse)');
   if(!media.matches&&!('ontouchstart'in root))return null;
   const abort=new AbortController(),listen=(node,type,fn,options={})=>node.addEventListener(type,fn,{...options,signal:abort.signal});
@@ -15,7 +15,7 @@
    <button type="button" class="tc-jump" aria-label="Jump">JUMP</button><button type="button" class="tc-slide" aria-label="Hold to crouch or slide while running">CROUCH</button>
    <button type="button" class="tc-use" aria-label="Interact">USE</button><button type="button" class="tc-reload" aria-label="Reload">RELOAD</button>
    <button type="button" class="tc-swap" aria-label="Next weapon">SWAP</button><button type="button" class="tc-melee" aria-label="Melee">HIT</button>
-   <button type="button" class="tc-third" aria-label="Switch camera view">VIEW</button>`;
+   <button type="button" class="tc-third" aria-label="Switch camera view">VIEW</button><button type="button" class="tc-leave" aria-label="Leave arena and return to Eden" hidden>EDEN</button>`;
   (host||document.body).append(el);const q=s=>el.querySelector(s),stick=q('.tc-stick'),nub=stick.querySelector('i'),pad=q('.tc-look');
   let disposed=false,shown=false,sid=null,lid=null,origin=null,lastLook=null,held=new Set(),slot=0,lastMode=null;
   const releases=new Map(),blocked=()=>!!document.querySelector('dialog[open],#night-chat:not([hidden]),#social-panel:not([hidden])');
@@ -52,12 +52,14 @@
   hold('.tc-reload',()=>heldKey('r'));
   hold('.tc-melee',()=>{combat()?.touchMelee?.();});
   hold('.tc-third',()=>{third();});
+  hold('.tc-leave',()=>{reset();leave?.();});
   hold('.tc-swap',()=>{const c=combat(),ids=c?.arsenal?.inspect?.()?.owned||['axe','pistol'],guns=ids.length?ids:['pistol'];slot=(slot+1)%(guns.length+1);if(slot===guns.length){if(c?.armed())heldKey('x')();}else heldKey(String(slot+1))();});
   function sync(){if(disposed)return;const on=!!canInput(),isExpedition=!!expedition(),mode=isExpedition?'expedition':armed()?'armed':'unarmed';
    if(lastMode!==mode){reset();lastMode=mode;}
    if(on!==shown){shown=on;el.hidden=!on;document.body.classList.toggle('touch-play',on);if(!on)reset();}
-   el.classList.toggle('armed',mode!=='unarmed');el.classList.toggle('tc-expedition',isExpedition);
+   el.classList.toggle('armed',mode!=='unarmed');el.classList.toggle('tc-expedition',isExpedition);el.classList.toggle('tc-arena',arena());document.body.classList.toggle('touch-arena',on&&arena());
    const hide=(selector,hidden)=>{const button=q(selector);if(hidden)releases.get(button)?.();button.hidden=hidden;};
+   hide('.tc-leave',!arena()||!leave);
    for(const selector of ['.tc-aim','.tc-melee'])hide(selector,mode!=='armed');hide('.tc-swap',isExpedition);
    const available=actions();hide('.tc-fire',isExpedition&&available.fire===false);hide('.tc-reload',mode==='unarmed'||isExpedition&&available.reload===false);
    q('.tc-fire').textContent=isExpedition?'FLARE':mode==='armed'?'FIRE':'PUNCH';q('.tc-fire').setAttribute('aria-label',isExpedition?'Fire nonlethal flare':mode==='armed'?'Fire':'Punch');
@@ -70,6 +72,6 @@
   if(root.visualViewport)listen(root.visualViewport,'resize',reset);
   listen(document,'visibilitychange',()=>{reset();sync();});listen(document,'btr:page-visibility',()=>{reset();sync();});
   if(document.body.classList.contains('expedition-entry'))document.body.classList.add('entry-touch');sync();
-  return {element:el,reset,dispose(){if(disposed)return;disposed=true;clearInterval(timer);observer.disconnect();abort.abort();reset();combat()?.setTouch?.(false);document.body.classList.remove('touch-play','entry-touch');el.remove();},inspect:()=>({shown,keys:[...held],stick:sid!==null,look:lid!==null,actions:releases.size,mode:lastMode})};
+  return {element:el,reset,dispose(){if(disposed)return;disposed=true;clearInterval(timer);observer.disconnect();abort.abort();reset();combat()?.setTouch?.(false);document.body.classList.remove('touch-play','touch-arena','entry-touch');el.remove();},inspect:()=>({shown,keys:[...held],stick:sid!==null,look:lid!==null,actions:releases.size,mode:lastMode})};
  };
 })(window);

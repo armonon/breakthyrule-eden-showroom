@@ -12,6 +12,21 @@ function make({height=175,shoulders=1,custom,unlocked=()=>false,effect=()=>{}}={
  if(custom){world.walls.push(...(custom.walls||[]));world.surfaces.push(...(custom.surfaces||[]));}
  return c.createExpeditionController({T:c.THREE,world,layout:map,character:{height,shoulders},worldRevision:'test-pinned-world-1',unlocked,effect});
 }
+test('ledge grace jumps work across body sizes and roof fields, replay exactly, and cannot double-jump',()=>{
+ const field={minX:-4,minZ:-4,cell:1,cols:8,rows:4,h:Array(32).fill(4)};
+ for(const height of [145,175,210])for(const shoulders of [.9,1.3])for(const custom of [{walls:[[0,-2,8,4,4]]},{surfaces:[{field}]}]){
+  const a=make({height,shoulders,custom}),b=make({height,shoulders,custom});a.reset({x:0,y:4,z:-2,yaw:0});
+  assert.equal(a.captureState().motion.height,0,'starts supported on the roof');
+  let left=false;for(let i=0;i<120;i++){a.step(input(1,0,0));if(a.captureState().motion.height>0){left=true;break;}}
+  assert.ok(left,'walks off the actual support edge');assert.ok(a.readPose().y>3.9,'departure is from the roof, not ground level');
+  for(let i=0;i<3;i++)a.step(input(1,0,0));const edge=clone(a.captureState());assert.ok(edge.movement.coyote>0);
+  b.restoreState(edge);a.step(input(33,1,0));b.step(input(33,1,0));equal(a.captureState(),b.captureState());
+  assert.ok(a.readPose().vy>5,'press within the grace period launches upward');assert.equal(a.captureState().movement.coyote,0);
+  const launch=a.readPose().vy;a.step(input(1,1,0));assert.ok(a.readPose().vy<launch,'another press cannot buy a second jump');
+  b.restoreState(edge);for(let i=0;i<8;i++)b.step(input(1,0,0));b.step(input(1,1,0));
+  assert.ok(b.readPose().vy<0,'an expired grace window cannot launch a mid-air jump');
+ }
+});
 test('actual controller replays walking, sprint, jump, crouch and dive identically after complete restoration',()=>{
  for(const height of [145,175,210]){
   const a=make({height}),b=make({height});let edges=0;
@@ -22,6 +37,12 @@ test('actual controller replays walking, sprint, jump, crouch and dive identical
    equal(a.captureState(),b.captureState());
   }
  }
+});
+test('non-arena expedition movement does not charge or retain momentum boosts',()=>{
+ const a=make({custom:{}});for(let i=0;i<240;i++)a.step(input(17));
+ assert.equal(a.movement.momentum(),0);assert.ok(Math.hypot(a.readPose().vx,a.readPose().vz)<=6.01);
+ const carried=clone(a.captureState());carried.movement.momentum=1;carried.parkour.mom=1;a.restoreState(carried);
+ a.step(input(17,1));assert.equal(a.movement.momentum(),0);assert.equal(a.captureState().parkour.mom,0);assert.ok(a.readPose().vy<=5.4,'leaving an arena cannot retain the boosted jump');
 });
 test('fixed input replay preserves a live vault and climb without serializing geometry',()=>{
  for(const top of [.8,2.55]){

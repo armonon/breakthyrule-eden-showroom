@@ -9,7 +9,7 @@ const clone=s=>JSON.parse(JSON.stringify(s)),equal=(a,b)=>assert.deepEqual(clone
 const input=(heldMask=0,edges=0)=>({heldMask,edges,yaw:Math.PI,pitch:0});
 function make(walls=[]){
  const layout={bounds:[-100,100,-250,100],spawn:[0,0],landmarks:[]},world=scope.createExpeditionWorld({layout,roofs:{}});world.walls.push(...walls);
- return scope.createExpeditionController({T:scope.THREE,world,layout,character:{height:175,shoulders:1},worldRevision:'momentum-test-world'});
+ return scope.createExpeditionController({T:scope.THREE,world,layout,character:{height:175,shoulders:1},worldRevision:'momentum-test-world',momentumEnabled:true});
 }
 
 test('sprinting builds actual speed and momentum, and stopping dissipates it',()=>{

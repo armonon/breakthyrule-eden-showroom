@@ -15,4 +15,5 @@
 @keyframes mh-pulse{50%{stroke-width:4.2}}
 @keyframes mh-bump{from{transform:scale(1.7);opacity:.2}}
 body.touch-play #momentum-hud,body.touch-play #momentum-hud.armed{top:auto;bottom:calc(24px + env(safe-area-inset-bottom))}
+body.touch-arena #momentum-hud,body.touch-arena #momentum-hud.armed{top:calc(50% + 44px);bottom:auto}
 @media (prefers-reduced-motion:reduce){#momentum-hud,#momentum-hud .mh-fill{transition:none}#momentum-hud.full .mh-fill,#momentum-hud.bump .mh-chain{animation:none}}

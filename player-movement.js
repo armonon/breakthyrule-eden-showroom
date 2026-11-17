@@ -33,6 +33,9 @@
   slide=null;return true;
  }
  function updateMomentum(dt){
+  // Hosts opt out outside an arena. Clear carried charge and parkour bonuses
+  // together, so returning to Eden cannot keep a boosted sprint or jump.
+  if(h.momentumEnabled?.()===false){momentum=0;h.parkour?.()?.setMomentum?.(0);h.parkour?.()?.takeMomentumBonus?.();return;}
   const P=h.parkour?.(),kind=P?.active?.()?P.kind?.():null,air=motion.inspect().airborne,sp=Math.hypot(walkVelocity.x,walkVelocity.z);
   const bonus=P?.takeMomentumBonus?.()||0;if(bonus)momentum=Math.min(1,momentum+bonus);
   if(kind==='hang')momentum=Math.max(0,momentum-dt*.25);
@@ -214,6 +217,7 @@ function wallHit(into){
  h.kick(-(4*k));if(impact>5.5)hitStop(40+impact*4);{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,Math.round(3+4*k),.6);}requestDraw();
 }
 function jump(){if(!h.state.ready||h.modalOpen()||h.expedition&&!h.expedition.canMove()||h.fists&&!h.fists.canMove())return;
+ if(h.momentumEnabled?.()===false)updateMomentum(0);
  const P=h.pk(),m=motion.inspect(),late=coyote>0&&m.airborne&&m.velocity<=0;
  if(P?.busy()||vault){jumpBuffer=JUMP_BUFFER;return;}
  if(!P?.active?.()&&!m.airborne&&tryVault(walkVelocity.lengthSq()>.1?walkVelocity:targetAim.clone().sub(targetPosition))){jumpBuffer=0;coyote=0;return;}
@@ -272,7 +276,7 @@ function updateJump(dt){
  }
  const api={captureState,restoreState,validateState,move,jump,updateJump,tryVault,cancelTraversal,bodyHeight,tryStep,startSlide,tapDodge,updateCrouch,updateAir,
   needsStep:()=>!!(keys.size||walkVelocity.lengthSq()||slide||vault||h.parkour()?.active()||momentum>0),
-  momentum:()=>momentum,
+  momentum:()=>h.momentumEnabled?.()===false?0:momentum,
   traversal:()=>h.parkour()?.presentation?.()||(vault?{kind:'vault',time:vault.t,duration:vault.dur}:dive?{kind:'dive',time:dive.t}:slide?{kind:slide.kind,time:slide.t,duration:slide.dur}:null),
   get slide(){return slide;},set slide(v){slide=v;},get dive(){return dive;},set dive(v){dive=v;},get vault(){return vault;},set vault(v){if(v===null)cancelTraversal();},
   // Exactly one answer to "what is the player doing".

@@ -229,11 +229,12 @@ dialog.addEventListener('keydown',event=>{if(!['INPUT','SELECT','BUTTON'].includ
 function fallback(){instagramSlideshow?.destroy();instagramSlideshow=null;wallFilm?.destroy();wallFilm=null;$('film-link').hidden=false;state.ready=false;$('loading').hidden=true;$('fallback').hidden=false;$('scene').hidden=true;$('spawn').disabled=true;$('approach').disabled=true;$('wall-view').disabled=true;$('film-view').disabled=true;$('movement-hint').textContent='EXPLORE THE PRODUCT PHOTOS';$('world-hint').textContent='Select the vault to inspect product photography.';}
 if(!window.THREE){fallback();return;}
 const T=THREE,stage=$('scene');let renderer;
+const renderProfile=edenRenderProfile({width:stage.clientWidth}),mobileDevice=renderProfile.mobile;
 // Layout reads belong to resize observers, not to every projected HUD label.
 const viewport={width:stage.clientWidth,height:stage.clientHeight};let shelfWidth=160;
 new ResizeObserver(entries=>{const entry=entries[0];if(entry.contentRect.width>0)shelfWidth=entry.contentRect.width;}).observe($('shelf-actions'));
-try{renderer=new T.WebGLRenderer({alpha:true,antialias:true,powerPreference:'high-performance'});}catch{fallback();return;}
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(stage.clientWidth,stage.clientHeight);renderer.setClearColor(0xc7d9b8,0);renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.AgXToneMapping;renderer.toneMappingExposure=1.5;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;stage.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Garden of Eden with a sunlit fruit tree, wildflowers, a reflective pond, stone paths and the Break Thy Rule collection in an open garden pavilion.');renderer.domElement.setAttribute('role','img');
+try{renderer=new T.WebGLRenderer({alpha:true,antialias:renderProfile.antialias,powerPreference:'high-performance'});}catch{fallback();return;}
+renderer.setPixelRatio(renderProfile.max);renderer.setSize(stage.clientWidth,stage.clientHeight);renderer.setClearColor(0xc7d9b8,0);renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.AgXToneMapping;renderer.toneMappingExposure=1.5;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;stage.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Garden of Eden with a sunlit fruit tree, wildflowers, a reflective pond, stone paths and the Break Thy Rule collection in an open garden pavilion.');renderer.domElement.setAttribute('role','img');
 window.showroomEnableKTX2(renderer);
 window.edenBaked=window.createEdenBakedLight(T,{onShadowChange:()=>{renderer.shadowMap.needsUpdate=true;}}); // before any material compiles
 const scene=new T.Scene();scene.background=null;
@@ -243,12 +244,12 @@ const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const hemi=new T.HemisphereLight(0xdceffc,0x5a6538,1.35);scene.add(hemi);
 const light=new T.DirectionalLight(0xffe4ad,3.2);light.position.set(-23,19,-48);light.castShadow=true;light.shadow.mapSize.set(2048,2048);Object.assign(light.shadow.camera,{left:-28,right:28,top:28,bottom:-28,near:1,far:110});light.shadow.normalBias=.035;light.shadow.bias=-.00015;light.shadow.radius=3;scene.add(light);
 const fill=new T.DirectionalLight(0xe4edff,.35);fill.position.set(10,9,18);scene.add(fill);
-const lighting=createEdenLighting(T,renderer,scene,{sun:light,hemi,camera,mobile:stage.clientWidth<700});window.edenLighting=lighting;window.edenScene=scene;window.edenCamera=camera;
-const post=createEdenPost(T,renderer,scene,camera,{enabled:stage.clientWidth>=700});window.edenPost=post;
+const lighting=createEdenLighting(T,renderer,scene,{sun:light,hemi,camera,mobile:mobileDevice});window.edenLighting=lighting;window.edenScene=scene;window.edenCamera=camera;
+const post=createEdenPost(T,renderer,scene,camera,{enabled:!mobileDevice});window.edenPost=post;
 // Slow frames lower the pixel ratio first; still slow at the floor, the post effects step down: ambient occlusion,
 // then light shafts and lens flare, then bloom.
 const postSteps=[{ao:0},{rays:0,flare:0,glare:0},{bloom:0}];let postStep=0;
-const quality=createAdaptiveResolution(renderer,{max:Math.min(devicePixelRatio,1.5),onFloor(){if(postStep<postSteps.length){post.set(postSteps[postStep++]);requestDraw();}}});window.edenQuality=quality;
+const quality=createAdaptiveResolution(renderer,{...renderProfile,onFloor(){if(postStep<postSteps.length){post.set(postSteps[postStep++]);requestDraw();}}});window.edenQuality=quality;
 // Graphics setting (PLAY menu): Low keeps laptops and phones smooth, High turns everything on. The first visit picks
 // one from the device (phones and small or low-memory machines: Low; integrated GPUs: Medium; otherwise High).
 const GRAPHICS={
@@ -259,7 +260,7 @@ const GRAPHICS={
  photo:{label:'PHOTOREAL',post:true,samples:4,ratio:1.5,shadow:4096,ao:.8,bloom:.16,rays:.35,flare:.25,glare:.9,photo:true}
 };
 function autoGraphics(){
- if(stage.clientWidth<700||matchMedia('(pointer: coarse)').matches||(navigator.deviceMemory&&navigator.deviceMemory<=4))return 'low';
+ if(mobileDevice||(navigator.deviceMemory&&navigator.deviceMemory<=4))return 'low';
  try{const gl=renderer.getContext(),info=gl.getExtension('WEBGL_debug_renderer_info'),name=info?gl.getParameter(info.UNMASKED_RENDERER_WEBGL):'';if(/intel|uhd|iris|mali|adreno|powervr|swiftshader|llvmpipe/i.test(name))return 'medium';}catch{}
  return 'high';
 }
@@ -272,7 +273,7 @@ function setGraphics(level,{save=true}={}){
 }
 {let saved=null;try{saved=localStorage.getItem('eden-graphics');}catch{}setGraphics(GRAPHICS[saved]?saved:autoGraphics(),{save:false});}
 try{const response=await fetch('/night-layout.json?v=3');if(!response.ok)throw new Error('Night district unavailable');window.nightLayout=await response.json();}catch(error){fallback();return;}
-const garden=createEdenGarden(T,scene,{reduced,mobile:stage.clientWidth<700,onChange:requestDraw});
+const garden=createEdenGarden(T,scene,{reduced,mobile:mobileDevice,onChange:requestDraw});
 photoreal=window.edenPhotorealGarden=createEdenPhotoreal(T,{renderer,scene,camera,garden,lighting,post,requestDraw});
 // Lens flare and god rays from the sky's sun; glare from the night district's lanterns while it is on screen.
 post.setLights({sky:garden.sky,lamps:()=>garden.nightBuilt()&&garden.district.root.visible?garden.district.lamps:null});
@@ -383,13 +384,15 @@ function loadNearbyAssets(){
  if(collectionRack&&camera.position.distanceTo(collectionRack.rack.getWorldPosition(new T.Vector3()))<12&&!rackLoading&&rackModels.size<collection.length&&!rackFailures.size)loadRackModels();
 }
 function markView(){const libraryView=state.view==='library'||state.view==='librarian',musicView=state.view==='amphitheater';stage.classList.toggle('watching-film',state.view==='film');wallFilm?.setInteractive(state.view==='film');$('browse-library').hidden=!libraryView;$('talk-librarian').hidden=!libraryView;$('inspect-jacket').hidden=libraryView||musicView;$('open-music').hidden=!musicView;for(const [id,view]of[['spawn','spawn'],['library-view','library'],['approach','approach'],['wall-view','wall'],['film-view','film'],['amphitheater-view','amphitheater']]){const selected=state.view===view||(view==='wall'&&state.view==='lookbook')||(view==='library'&&state.view==='librarian');$(id).classList.toggle('selected',selected);$(id).setAttribute('aria-pressed',String(selected));}}
-let edenNavigation=0;
+let edenNavigation=0,returningToEden=false;
 function go(view,instant=false){
  // Returning to a garden destination must restore Eden before moving the camera.
  // Otherwise a Museum pocket can stay hidden after a visit to Beyond Eden.
  const navigation=++edenNavigation;
  if(worlds&&(worlds.loading()||worlds.world()!=='eden')){
+  returningToEden=true;
   return (async()=>{
+   try{
    while(worlds.loading()){
     await new Promise(resolve=>requestAnimationFrame(resolve));
     if(navigation!==edenNavigation)return;
@@ -397,8 +400,10 @@ function go(view,instant=false){
    if(navigation!==edenNavigation)return;
    if(worlds.world()!=='eden')await worlds.enter('eden',{title:'GARDEN OF EDEN',sub:view==='wall'?'THE LOST EDEN ARCHIVE':'BACK TO THE GARDEN',kicker:'RETURNING FROM BEYOND EDEN',min:400});
    if(navigation===edenNavigation)return go(view,instant);
+   }finally{if(navigation===edenNavigation)returningToEden=false;}
   })();
  }
+ returningToEden=false;
  if(view==='film'||view==='lookbook')view='wall';
  if(expedition?.active())expedition.leave();
  if(battle?.active())battle.suspend();
@@ -452,8 +457,9 @@ function groundHeight(p){return amphitheater.groundHeight(p)+window.edenValley.h
 function shiftHeight(delta){targetPosition.y+=delta;targetAim.y+=delta;}
 function prepareWalking(){
  if(state.view==='amphitheater'){const origin=amphitheater.root.position;targetPosition.set(origin.x,1.75,origin.z+9.4);targetAim.set(origin.x,1.55,origin.z);camera.position.copy(targetPosition);aim.copy(targetAim);}
- // Re-seat on the floor under you: the terrain, or a roof, crate or wall top when parkour is on.
- const P=pk(),h=motion.inspect().height,floor=P?P.floorAt(targetPosition.x,targetPosition.z,targetPosition.y-1.75-h+.45):groundHeight(targetPosition);
+ // Match the movement solver's body-footprint support. A center-point query
+ // drops the player before their feet leave an edge, bypassing the fall/grace jump.
+ const P=pk(),h=motion.inspect().height,floor=P?P.supportAt(targetPosition.x,targetPosition.z,targetPosition.y-1.75-h+.45):groundHeight(targetPosition);
  freeView();shiftHeight(1.75+floor+h-targetPosition.y);
 }
 // Feel: crouch / slide eye drop, sprint widening, landing thuds and footsteps by surface (footsteps.js).
@@ -469,7 +475,7 @@ function makeParkour(){if(parkour||!window.createParkour)return parkour;parkour=
 const pk=()=>parkourOn()?makeParkour():null;
 const footsteps=window.createFootsteps?.();
 let fovKick=0;
-const movement=window.createPlayerMovement({bodyDimensions:()=>playerBody?.bodyDimensions()||window.playerBodyProfile(),T,targetPosition,targetAim,walkVelocity,motion,keys,sway,footsteps,surfaceAt,puff,hitStop,requestDraw,obstacle,groundHeight,prepareWalking,shiftHeight,kick:n=>{fovKick+=n;},state,modalOpen,fistsEngaged,parkour:()=>parkour,pk,parkourOn,
+const movement=window.createPlayerMovement({momentumEnabled:()=>!!battle?.active()||!!arena?.active(),bodyDimensions:()=>playerBody?.bodyDimensions()||window.playerBodyProfile(),T,targetPosition,targetAim,walkVelocity,motion,keys,sway,footsteps,surfaceAt,puff,hitStop,requestDraw,obstacle,groundHeight,prepareWalking,shiftHeight,kick:n=>{fovKick+=n;},state,modalOpen,fistsEngaged,parkour:()=>parkour,pk,parkourOn,
  get garden(){return garden;},get combat(){return combat;},get battle(){return battle;},get fists(){return fists;},get expedition(){return expedition;},get arena(){return arena;},get pockets(){return pockets;},get playerBody(){return playerBody;}});
 // What is underfoot: the brick road beyond the door, stone paths, the library deck and the amphitheatre, else grass.
 const segmentDistance=(p,ax,az,bx,bz)=>{const dx=bx-ax,dz=bz-az,t=T.MathUtils.clamp(((p.x-ax)*dx+(p.z-az)*dz)/(dx*dx+dz*dz),0,1);return Math.hypot(p.x-ax-dx*t,p.z-az-dz*t);};
@@ -504,7 +510,7 @@ function updateDust(dt){
 // The open match lives beyond the hidden door: stepping through starts or resumes it, stepping back into the garden
 // (or starting an expedition, the range, the online arena or a pocket world) pauses it.
 function updateMatchGate(){
- if(!battle||!state.ready)return;
+ if(!battle||!state.ready||returningToEden)return;
  const elsewhere=expedition?.active()||combat?.inRange()||arena?.active()||pockets?.inside(camera.position);
  // Eden and Beyond Eden are separate worlds: crossing the door loads Beyond Eden behind a loading screen (building
  // it, starting the match and compiling its shaders up front); stepping back brings the garden back.
@@ -549,7 +555,7 @@ function updateFeel(dt){
  if(prewarm&&scene.children.length!==rootCount){rootCount=scene.children.length;if(worlds&&!worlds.loading())worlds.apply();prewarm.rescan();}
  // Bars, pipes and ropes (parkour-grips.js) appear with the district; the momentum meter (momentum-hud.js).
  if(!gripsView&&garden.nightBuilt?.())gripsView=window.parkourGrips?.mount(T,scene,{getPose:()=>parkour?.ropePose?.()})||null;gripsView?.update();
- momentumHud??=window.createMomentumHud?.({host:document.body})||null;momentumHud?.update({momentum:movement.momentum?.()||0,chain:parkour?.chain?.()||0,mode:movement.state(),armed:!!combat?.armed(),speed:Math.hypot(walkVelocity.x,walkVelocity.z),active:!modalOpen()&&!worlds?.loading()&&!battle?.dead?.()});
+ momentumHud??=window.createMomentumHud?.({host:document.body})||null;momentumHud?.update({momentum:movement.momentum?.()||0,chain:parkour?.chain?.()||0,mode:movement.state(),armed:!!combat?.armed(),speed:Math.hypot(walkVelocity.x,walkVelocity.z),active:(!!battle?.active()||!!arena?.active())&&!modalOpen()&&!worlds?.loading()&&!battle?.dead?.()});
  {const pkt=pockets?.inside(camera.position)||null;if(pkt!==lastPocket){if(pkt?.name==='Black box')worlds?.veil({title:'THE BLACK CUBE',sub:'THE WHITE WORLD',kicker:'INSIDE THE BLACK BOX'});lastPocket=pkt;}}
  const fallen=battle?.dead?.()&&!battle.soul?.();
  deathDrop+=((fallen?1.25:0)-deathDrop)*(1-Math.exp(-(fallen?5:10)*dt));
@@ -769,7 +775,8 @@ battle=window.createBattleArena?.({T,scene,camera,combat,garden,playerAnchor:()=
 // The horror chapter after the eight pages (horror-chapter.js): the office, the showdown, keys, the cube's lab.
 const horror=window.createHorrorChapter?.({T,scene,camera,garden,pockets,worlds:()=>worlds,battle:()=>battle,playerBody,requestDraw,thirdPerson:on=>{lastThirdToggle=0;setThird(!!on);}});
 const touch=window.createTouchControls?.({host:stage.parentElement,combat:()=>combat,third:()=>{lastThirdToggle=0;setThird(!thirdOn);},armed:()=>!!combat?.armed(),expedition:()=>!!expedition?.active(),
- visible:()=>state.ready&&state.view==='free'&&!modalOpen()&&!arena?.active()&&(!!expedition?.active()||!!battle?.active()||!!combat?.armed()),
+ arena:()=>!!battle?.active(),leave:()=>battle?.exit(),
+ visible:()=>state.ready&&state.view==='free'&&!modalOpen()&&!worlds?.loading()&&!arena?.active()&&(!!expedition?.active()||!!battle?.active()||!!combat?.armed()),
  look(dx,dy){if(combat?.armed()){combat.touchLook(dx,dy);return;}const d=targetAim.clone().sub(targetPosition).normalize(),sens=.0042*(expeditionPrefs()?.[thirdOn?'thirdSensitivity':'firstSensitivity']??window.edenSettings?.get('sens')??1),yaw=Math.atan2(d.x,-d.z)+dx*sens,pitch=T.MathUtils.clamp(Math.asin(T.MathUtils.clamp(d.y,-1,1))-dy*sens*(window.edenSettings?.get('invertY')?-1:1),-1.35,1.35);freeView();targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));requestDraw();}});
 const edenMobile=window.createEdenMobile?.({host:stage.parentElement,ready:()=>state.ready,
  active:()=>(worlds?.world()??'eden')==='eden'&&!expedition?.active()&&!battle?.active()&&!combat?.armed()&&!arena?.active(),
@@ -795,7 +802,7 @@ const play=window.createPlayMenu?.({nav:document.querySelector('.view-nav'),afte
  onOpen(){keys.clear();walkVelocity.set(0,0,0);if(document.pointerLockElement)document.exitPointerLock();},onClose:requestDraw,
  context:()=>battle?.active()?'battle':arena?.active()?'arena':expedition?.active()?'expedition':combat?.armed()||combat?.inRange()?'armed':fistsEngaged()?'fists':'walk',
  items:[
-  {id:'battle',title:'BEYOND EDEN · STORY',text:'Enter the hidden door. Recover eight pages, enter the office, face the masked crowd and discover the black cube’s garment lab.',keys:'F INTERACT · EIGHT PAGES · THE BLACK CUBE',
+  {id:'battle',title:'BEYOND EDEN · ARENA',text:'Open Match: pistols, bots and rooftop parkour. Find eight pages and discover what waits beyond the pyramid.',keys:mobileDevice?'TOUCH TO AIM & FIRE · DRAG OUTSIDE THE STICK TO SPRINT':'F INTERACT · EIGHT PAGES · OPEN MATCH',
    run(){battleLaunch.click();play?.hint('battle','RECOVER EIGHT PAGES · FOLLOW THE ROAD TO THE OFFICE · WALK BACK THROUGH THE DOOR TO RETURN TO EDEN');}},
   {id:'jester',title:'FIGHT THE JESTER',text:'The Violet Trickster dances by the museum. Punch him and he fights back: uppercuts, tackles and taunts.',keys:'F JAB · G HAYMAKER · Q BLOCK',run:goToJester},
   {id:'range',title:'FIRING RANGE',text:'Steel targets and posts on the brick road, beyond the hidden door. Try every weapon.',keys:'1–7 DRAW · CLICK FIRE · X PUT AWAY',available:finePointerOnly,note:'Needs a mouse and keyboard.',
