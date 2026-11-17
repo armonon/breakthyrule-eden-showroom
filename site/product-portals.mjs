@@ -21,7 +21,8 @@ export function setupProductPortals(section = document.getElementById('product-p
   const garments = GARMENT_SLUGS.map(slug => (window.showroomCollection || []).find(item => item.slug === slug && item.rackModel)).filter(Boolean);
   let bag = [];
   const visible = () => cards.some(card => card.visible);
-  const running = () => playing && !document.hidden && visible() && !destroyed && !failed;
+  const pageActive = () => window.showroomPageActive?.() ?? !document.hidden;
+  const running = () => playing && pageActive() && visible() && !destroyed && !failed;
 
   function updateControl() {
     section.dataset.motion = playing ? 'playing' : 'paused';
@@ -205,14 +206,14 @@ export function setupProductPortals(section = document.getElementById('product-p
     }
   }
   function request() {
-    if (destroyed || failed || document.hidden || !visible()) return;
+    if (destroyed || failed || !pageActive() || !visible()) return;
     if (!ensureRenderer()) return;
     for (const card of cards) if (card.visible) initializeCard(card);
     if (!frame) frame = requestAnimationFrame(draw);
   }
   function draw(time) {
     frame = 0;
-    if (destroyed || failed || document.hidden || !visible()) { last = 0; return; }
+    if (destroyed || failed || !pageActive() || !visible()) { last = 0; return; }
     if (last && time - last < 1000 / 30) { frame = requestAnimationFrame(draw); return; }
     const dt = last ? Math.min((time - last) / 1000, .08) : 0; last = time;
     for (const card of cards) {
@@ -261,6 +262,7 @@ export function setupProductPortals(section = document.getElementById('product-p
   cards.forEach(card => { io.observe(card.stage); ro.observe(card.stage); });
   toggle?.addEventListener('click', clickToggle);
   document.addEventListener('visibilitychange', sync);
+  document.addEventListener('btr:page-visibility', sync);
   media.addEventListener('change', reducedChanged);
   updateControl();
   const api = {
@@ -268,6 +270,7 @@ export function setupProductPortals(section = document.getElementById('product-p
       if (destroyed) return; destroyed = true; cancelAnimationFrame(frame);
       io.disconnect(); ro.disconnect(); toggle?.removeEventListener('click', clickToggle);
       document.removeEventListener('visibilitychange', sync); media.removeEventListener('change', reducedChanged);
+      document.removeEventListener('btr:page-visibility', sync);
       renderer?.domElement.removeEventListener('webglcontextlost', contextLost);
       loadedRoots.forEach(disposeObject); loadedRoots.clear(); roots.clear();
       renderer?.dispose(); renderer?.forceContextLoss();

@@ -1,5 +1,6 @@
 // One bounded, visibility-aware WebGL scene for the discovery hero.
 const TAU = Math.PI * 2;
+export const DISCOVERY_TURN_SECONDS = 6.5;
 const eachMaterial = (root, fn) => { const seen = new Set(); root?.traverse(o => { if (!o.material) return; for (const m of [].concat(o.material || [])) if (m && !seen.has(m)) { seen.add(m); fn(m, o); } }); };
 
 export function disposeDiscoveryModel(root) {
@@ -77,6 +78,7 @@ export function createDiscoveryStage(mount, { onTurn, onFrame, onInteraction, on
   const T = window.THREE;
   if (!T || !window.showroomAssets?.model) throw new Error('The 3D renderer is not ready.');
   const canvas = document.createElement('canvas'); canvas.setAttribute('aria-hidden', 'true'); canvas.className = 'discovery-canvas'; mount.append(canvas);
+  mount.dataset.turnSeconds = String(DISCOVERY_TURN_SECONDS);
   let renderer;
   try { renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); }
   catch (error) { canvas.remove(); throw error; }
@@ -193,7 +195,7 @@ export function createDiscoveryStage(mount, { onTurn, onFrame, onInteraction, on
     const dt = Math.min((time - (last || time)) / 1000, .15); last = time;
     const motion = moving();
     if (motion) {
-      elapsed += dt; const delta = dt * TAU / 8; yaw += delta; progress += delta;
+      elapsed += dt; const delta = dt * TAU / DISCOVERY_TURN_SECONDS; yaw += delta; progress += delta;
       pitch *= Math.exp(-dt * 3.8);
       if (active && progress >= TAU) { progress %= TAU; turn++; mount.dataset.completedTurns = String(turn); onTurn?.(turn); }
     }
@@ -246,6 +248,7 @@ export function createDiscoveryStage(mount, { onTurn, onFrame, onInteraction, on
         active = root; preparing = null; activeDescriptor = descriptor; active.rotation.set(0, 0, 0); active.position.set(0, 0, 0); active.updateMatrixWorld(true);
         const size = new T.Box3().setFromObject(active).getSize(new T.Vector3()); dimensions = { radius: Math.hypot(size.x, size.z) / 2, halfHeight: size.y / 2 };
         elevation = (descriptor.cameraElevationDegrees ?? (descriptor.renderKind === 'belt' ? 18 : descriptor.renderKind === 'hat' ? 18 : descriptor.renderKind === 'mystery' ? 10 : 0)) * Math.PI / 180;
+        renderer.toneMappingExposure = descriptor.sourceItem?.family === 'daily-apple' ? .72 : 1.05;
         yaw = .12; pitch = progress = 0; resumeAt = 0; scene.add(active); pendingKey = null;
         api.setMystery(!!descriptor.mystery?.questionMarks); if (descriptor.rainbow) api.setRainbow(true);
         trim(); resize(); fit(); request(); return true;
@@ -266,7 +269,10 @@ export function createDiscoveryStage(mount, { onTurn, onFrame, onInteraction, on
     view(side) { yaw = side === 'back' ? Math.PI : 0; pitch = 0; resumeAt = now() + 2400; progress = 0; request(); },
     yaw: () => yaw,
     setRainbow(value) {
-      rainbow = !!value; rainbowUniforms.discoveryRainbow.value = rainbow ? 1 : 0;
+      // Color animation belongs to generated garments; never dye catalog
+      // accessories, especially the white gloves and their original red/blue ink.
+      rainbow = !!value && activeDescriptor?.renderKind === 'generated' && ['tee','hoodie','crewneck'].includes(activeDescriptor.garment) && activeDescriptor.sourceItem?.family !== 'gloves';
+      rainbowUniforms.discoveryRainbow.value = rainbow ? 1 : 0;
       if (rainbow && active) installRainbow(active);
       else eachMaterial(active, m => { if (originals.has(m)) m.color.copy(originals.get(m)); });
       request();

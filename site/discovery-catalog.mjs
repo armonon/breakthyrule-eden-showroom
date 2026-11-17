@@ -1,8 +1,11 @@
 // The discovery hero reads the same catalog and price sources as the product pages.
 // Existing products keep their artwork. Unpriced concepts stay unpriced.
+export { DISCOVERY_GRAPHICS, curatedDiscoveryPicks } from '../labkit/showcase-artwork.mjs';
+
 const MONEY = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const BLANKS = { tee: '/models/blanks/tee.glb', hoodie: '/models/blanks/hoodie.glb', crewneck: '/models/blanks/crewneck.glb' };
-export const DISCOVERY_WEIGHTS = Object.freeze({ garments: 10, mystery: 4, accessories: 3, metals: 3 });
+export const DISCOVERY_WEIGHTS = Object.freeze({ garments: 9, mystery: 4, accessories: 4, metals: 3 });
+const CORE_NAMES = { 'core-tee': 'FW27 Crew Tee', 'core-hoodie': 'FW27 Crew Hoodie', 'core-crewneck': 'FW27 Crewneck' };
 const currency = 'USD';
 const money = cents => Number.isFinite(cents) ? MONEY.format(cents / 100) : 'Design preview';
 const cents = price => typeof price === 'number' && Number.isFinite(price) ? Math.round(price * 100) : typeof price === 'string' && /^\$\d+(?:\.\d{1,2})?$/.test(price.trim()) ? Math.round(Number(price.trim().slice(1)) * 100) : null;
@@ -63,9 +66,12 @@ export async function buildDiscoveryCatalog({
   }
   for (const item of scope.BTR_CORE || []) for (const fabric of item.colors || Object.keys(item.models || {})) {
     if (!item.models?.[fabric]) continue;
+    const garment = item.id.replace(/^core-/, ''), low = labCatalog?.RANDOM_OFFERINGS?.[garment]?.priceCents, high = labCatalog?.OFFERINGS?.['cut-sew']?.[garment]?.priceCents;
+    const priceRangeCents = Number.isFinite(low) && Number.isFinite(high) ? [low, high] : null;
     items.push(base(item, 'core', 'core', {
-      id: item.id + ':' + fabric, name: item.name + ' · ' + fabric,
+      id: item.id + ':' + fabric, name: (CORE_NAMES[item.id] || item.name) + ' · ' + fabric,
       description: 'Complete logo chest embroidery · eye artwork across the back.',
+      priceRangeCents, priceText: priceRangeCents ? money(low) + '–' + money(high) : 'Design preview',
       href: '/product?item=' + encodeURIComponent(item.id) + '&color=' + encodeURIComponent(fabric),
       model: item.models[fabric], poster: item.posters?.[fabric]?.front || null,
       colorway: { ...publishedColor(fabric === 'black' ? 'Black' : 'White', fabric === 'black' ? '#141414' : '#f4f1ea'), fabric, graphicIndex: item.colorOffset || 0 }
@@ -150,6 +156,24 @@ export function createDiscoveryScheduler(items, { random = Math.random, makeGene
   let slots = [], categories = [], lastId = null, generated = 0, catalog = 0, batch = 0;
   const seen = new Set(), groupCounts = {}, packageCounts = {};
   const refill = group => {
+    if (group === 'accessories') {
+      // Show one of each shape before repeating colorways: six trucker colors
+      // should not hide the Daily Apple pack, gloves, skully or headband.
+      const families = new Map();
+      for (const item of groups.get(group)) {
+        const family = item.sourceItem?.family || item.renderKind;
+        if (!families.has(family)) families.set(family, []);
+        families.get(family).push(item);
+      }
+      for (const [family, members] of families) families.set(family, shuffled(members, random));
+      const order = [];
+      while (families.size) for (const family of shuffled([...families.keys()], random)) {
+        const bag = families.get(family); order.push(bag.pop());
+        if (!bag.length) families.delete(family);
+      }
+      if (order.length > 1 && order[0].id === lastByGroup.get(group)) [order[0], order[1]] = [order[1], order[0]];
+      return order.reverse();
+    }
     const members = groups.get(group).flatMap(item => Array(group === 'mystery' ? item.mystery?.packageId === 'one-tee' ? 3 : item.mystery?.packageId === 'outerwear' ? 2 : 1 : 1).fill(item));
     // Weighted bags must also avoid runs at their tail and across bag boundaries.
     for (let attempt = 0; attempt < 128; attempt++) {

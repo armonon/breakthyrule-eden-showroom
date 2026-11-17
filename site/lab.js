@@ -14,7 +14,7 @@ import { isUploadId, uploadForId, uploadedArtworkUrl } from '/labkit/custom-artw
 import { uploadArtworkFile } from '/site/artwork-upload.mjs';
 import { quoteGarment, modeSelection, garmentSelection } from '/site/lab-price.mjs?v=price-square-1';
 import { createLabFlow } from '/site/lab-flow.mjs?v=3';
-import { productRoute, randomProductDesign } from '/site/lab-product-route.mjs?v=1';
+import { productRoute, randomProductDesign } from '/site/lab-product-route.mjs?v=curated-2';
 
 const $ = id => document.getElementById(id);
 const h = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); for (const k of kids.flat()) if (k != null) n.append(k); return n; };
@@ -830,7 +830,7 @@ flow = createLabFlow({
     try {
       const design = randomProductDesign(params, { artworkPool: POOL });
       applyDesign(design);
-      const url = new URL(location.href); url.searchParams.set('g', design.garment); url.searchParams.set('seed', design.seed); url.hash = '';
+      const url = new URL(location.href); url.searchParams.set('g', design.garment); url.searchParams.set('seed', design.seed); if(design.artwork==='pick')url.searchParams.set('art','curated-1'); url.hash = '';
       history.replaceState(history.state, '', url);
     } catch { designIssue = 'This generated design could not load. Please choose your artwork again.'; }
   } else preselect(params.get('c'), params.get('g'));

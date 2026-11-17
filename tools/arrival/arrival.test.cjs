@@ -8,7 +8,7 @@ const source = readFileSync(resolve(__dirname, '../../site/arrival.js'), 'utf8')
 const flush = async () => { for (let i = 0; i < 8; i++) await Promise.resolve(); };
 
 // A small controllable browser surface: requests, clocks, and paint frames remain independent.
-function browser({ search = '', reduced = false, hidden = false } = {}) {
+function browser({ search = '', reduced = false, hidden = false, navigationType = 'navigate' } = {}) {
   class Target {
     constructor() { this.events = new Map(); }
     addEventListener(type, callback, options = {}) {
@@ -26,6 +26,7 @@ function browser({ search = '', reduced = false, hidden = false } = {}) {
     }
   }
   const document = new Target(), window = new Target(), observers = [];
+  window.performance = { getEntriesByType: type => type === 'navigation' ? [{ type: navigationType }] : [] };
   class Element extends Target {
     constructor(tag) {
       super(); this.tagName = tag.toUpperCase(); this.children = []; this.dataset = {};
@@ -189,6 +190,23 @@ test('explicit Codex and About entries opt out; normal and nocover entries get a
   for (const search of ['', '?nocover=1']) assert.equal(browser({ search }).arrival.active, true);
 });
 
+test('Back and Forward reloads keep the collection usable without an arrival overlay', async () => {
+  for (const search of ['', '?nocover=1']) {
+    const page = browser({ search, navigationType: 'back_forward' });
+    assert.equal(page.arrival.active, false);
+    // Callers can still mount/settle catalog readiness without reopening any cover.
+    page.arrival.mount(); page.arrival.hold('necklace catalog')();
+    await page.domReady(); await page.finishPaints(); await page.tick(20000);
+    assert.equal(page.overlay, null);
+    assert.equal(page.main.inert, false);
+    assert.equal(page.document.activeElement, page.document.body);
+    assert.equal(page.document.documentElement.classList.contains('btr-arriving'), false);
+    assert.equal(page.document.documentElement.dataset.arrivalState, 'history');
+  }
+  assert.equal(browser({ navigationType: 'reload' }).arrival.active, true);
+  assert.equal(browser({ search: '?cover', navigationType: 'back_forward' }).arrival, undefined);
+});
+
 test('hidden tabs wait to reveal and pagehide restores a usable BFCache page', async () => {
   const page = browser({ hidden: true });
   await page.domReady(); await page.finishPaints();
@@ -201,7 +219,7 @@ test('hidden tabs wait to reveal and pagehide restores a usable BFCache page', a
   cached.window.dispatchEvent(new Event('pagehide'));
   assert.equal(cached.arrival.active, false); assert.equal(cached.main.inert, false);
   assert.equal(cached.document.documentElement.classList.contains('btr-arriving'), false);
-  cached.window.dispatchEvent(new Event('pageshow'));
+  cached.window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
   assert.equal(cached.arrival.active, false);
-  await cached.tick(340); assert.equal(cached.overlay, null);
+  assert.equal(cached.overlay, null, 'A cached return removes the leaving overlay without waiting for its old timer');
 });

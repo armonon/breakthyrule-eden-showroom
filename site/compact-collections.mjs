@@ -1,3 +1,5 @@
+import { preserveCollectionReturn } from './collection-return.mjs?v=1';
+
 const home = document.body.dataset.page === 'home';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 const sections = new Map();
@@ -152,6 +154,11 @@ function mount(definition) {
       for (const card of grid.children) card.hidden = false;
     }
     panel.hidden = !expanded; preview.hidden = expanded;
+    // Stop video decoders and WebGL contexts as soon as a collection closes,
+    // without waiting for the browser's next intersection-observer delivery.
+    for (const player of grid.querySelectorAll('transparent-spin')) {
+      if (expanded) player.resume?.(); else player.suspend?.();
+    }
     section.dataset.collectionExpanded = String(expanded);
     toggle.textContent = expanded ? '−' : '+';
     toggle.setAttribute('aria-label', (expanded ? 'Collapse ' : 'Expand ') + definition.title.toLowerCase());
@@ -174,6 +181,7 @@ function mount(definition) {
 }
 
 if (home) {
+  preserveCollectionReturn(sections, () => definitions.every(definition => sections.has(definition.id)));
   const scan = () => definitions.forEach(mount);
   const start = () => {
     scan();
