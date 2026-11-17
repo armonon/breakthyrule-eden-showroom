@@ -12,19 +12,17 @@ const garments = window.siteGarments?.() || [];
 const featuredSlugs = ["war-witnesses-tee", "god-loves-you-tee", "dance-to-your-vibration-tee", "cross-tee", "jesus-star-tee", "blackmarket-baby-tee", "sacred-masters-tee", "project-star-gate-tee", "cave-painting-tee", "wanted-jesus-tee", "divine-mother-tee", "oh-allah-tee"];
 const featuredCount = featuredSlugs.length;
 const ordered = [...featuredSlugs.map(slug => garments.find(g => g.slug === slug)).filter(Boolean), ...garments.filter(g => !featuredSlugs.includes(g.slug))];
-const models = [], accessoryModels = [];
+const accessoryModels = [];
 for (const [index, garment] of ordered.entries()) {
   const accessory = garment.accessoryPreview;
   const image = node('img', {src: garment.photo, alt: garment.imageAlt || garment.name, loading: 'lazy', decoding: 'async'});
-  const canvas = node('canvas'); canvas.setAttribute('aria-hidden', 'true');
-  const media = node('div', {className: 'card-media'}, node('div', {className: 'halo lit'}), node('span', {className: 'card-badge', textContent: 'Plate ' + garment.id}), node('span', {className: 'card-numeral', textContent: garment.chapter}), ...(accessory?[]:[canvas]), image);
+  // The three featured garment previews own the live rotation; the collection keeps its original photography.
+  const media = node('div', {className: 'card-media'}, node('div', {className: 'halo lit'}), node('span', {className: 'card-badge', textContent: 'Plate ' + garment.id}), node('span', {className: 'card-numeral', textContent: garment.chapter}), image);
   const card = node('a', {className: 'product-card', href: '/product?item=' + encodeURIComponent(garment.slug), hidden: index >= featuredCount}, media,
     node('div', {className: 'card-body'}, node('h3', {textContent: garment.name}), node('span', {className: 'price', textContent: garment.price})));
   if(garment.model?.startsWith('/graphic-models/'))card.dataset.archiveHq='true';
   if(accessory){card.dataset.accessoryReplacement='true';accessoryModels.push({canvas:node('canvas'),url:accessory.model,family:accessory.family,item:accessory});media.append(accessoryModels.at(-1).canvas);}
   $('product-grid').append(card);
-  // Load each preview only when its card enters view.
-  if (!accessory && (garment.rackModel || garment.model)) models.push({canvas, url: garment.rackModel || garment.model,angle:garment.defaultView==='back'?Math.PI+.35:.35});
   const haloObserver = new IntersectionObserver(([entry], observer) => {
     if (!entry.isIntersecting) return;
     observer.disconnect();
@@ -32,7 +30,6 @@ for (const [index, garment] of ordered.entries()) {
   }, {rootMargin: '150px'});
   haloObserver.observe(card);
 }
-window.createGarmentCarousel?.(models);
 const mountReplacementHats=()=>window.createAccessoryCarousel?.(accessoryModels);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mountReplacementHats,{once:true});else mountReplacementHats();
 

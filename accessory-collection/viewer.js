@@ -31,18 +31,40 @@
  function bounds(model){const s=new T.Box3().setFromObject(model).getSize(new T.Vector3());return {radius:Math.hypot(s.x,s.z)/2,halfHeight:s.y/2};}
  function fit(camera,b,elevation,zoom=1){const v=camera.fov*Math.PI/360,h=Math.atan(Math.tan(v)*camera.aspect),c=Math.cos(elevation),s=Math.sin(elevation);const horizontal=b.radius*Math.sqrt(1/Math.tan(h)**2+c*c)+b.halfHeight*s,vertical=(b.radius*s+b.halfHeight*c)/Math.tan(v)+b.radius*c+b.halfHeight*s;const d=Math.max(horizontal,vertical)*1.10/zoom;camera.position.set(0,d*s,d*c);camera.lookAt(0,0,0);camera.updateProjectionMatrix();}
  function dispose(model){if(!model)return;const gs=new Set(),ms=new Set(),ts=new Set();model.traverse(o=>{if(o.geometry)gs.add(o.geometry);for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m){if(m.userData.hatInk?.texture)ts.add(m.userData.hatInk.texture);ms.add(m);for(const t of Object.values(m))if(t?.isTexture)ts.add(t);}});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());ts.forEach(t=>t.dispose());}
+ // Homepage inspiration only: dye the cloth, leaving authored embroidery and
+ // apple/hat artwork untouched. Product configurators never call this helper.
+ function previewColors(root,family,offset){
+  const palette=['#eeeae0','#c73d52','#9470c7','#397dc4','#4c9172','#d9b654','#151619'].map(hex=>new T.Color(hex)),parts=[],seen=new Set();
+  root.traverse(object=>{for(const material of [].concat(object.material||[])){
+   if(!material?.color||seen.has(material))continue;seen.add(material);
+   const name=material.name||'';
+   if(!/^(Headband body|Skully body|Folded rib cuff|White cotton|Rib-knit wrist|Front panel|Brim|Open mesh|Snapback|Topstitch) \/ color|^(Tone-on-tone stitching|Crown seam thread|Cotton seam thread|Crown seams)$/.test(name))continue;
+   const dark=/^(Brim|Topstitch|Snapback)/.test(name),seam=/stitching|seam thread|Crown seams/.test(name);
+   parts.push({material,initial:material.color.clone(),offset:(offset+(family==='trucker'&&/^(Open mesh|Snapback)/.test(name)?2:0))%palette.length,shade:seam?.82:dark?.68:1});
+  }});
+  const from=new T.Color(),to=new T.Color();
+  return turns=>{
+   const pass=Math.floor(turns),fraction=turns-pass,mix=fraction*fraction*(3-2*fraction);
+   for(const part of parts){
+    if(pass===0)from.copy(part.initial);else from.copy(palette[(pass-1+part.offset)%palette.length]).multiplyScalar(part.shade);
+    to.copy(palette[(pass+part.offset)%palette.length]).multiplyScalar(part.shade);
+    part.material.color.lerpColors(from,to,mix);
+   }
+   return parts.length?'#'+parts[0].material.color.getHexString():'';
+  };
+ }
  window.createAccessoryCarousel=function(cards){
   if(!T||!window.ShowroomGLTFLoader||!cards.length)return null;
   let r=null;const previewWidth=innerWidth<=700?480:640,previewHeight=previewWidth*.75;
   function ensureRenderer(){if(r)return true;try{r=renderer(document.createElement('canvas'));r.setPixelRatio(1);r.setSize(previewWidth,previewHeight,false);return true;}catch{return false;}}
   const scene=new T.Scene();lighting(scene);const camera=new T.PerspectiveCamera(30,4/3,.01,30);
   let frame=0,last=0,auto=!reduced.matches,dead=false;const visible=new Set(),queue=[],loading=new Set();
-  const states=cards.map((c,i)=>({...c,index:i,root:null,angle:.25,ctx:c.canvas.getContext('2d'),failed:false}));
-  function pump(){if(!dead&&pageActive()&&queue.length&&!ensureRenderer())return;while(!dead&&pageActive()&&loading.size<2&&queue.length){const s=queue.shift();if(s.root||s.failed||loading.has(s)||!visible.has(s))continue;loading.add(s);showroomAssets.model(hatStyle(s.item)?.model||s.url,{priority:'low'}).then(async g=>{prepareMaterials(g.scene,r);s.root=center(g.scene);setInkArea(s.root,hatStyle(s.item));setColors(s.root,{front:s.item.frontColor,brim:s.item.brimColor,mesh:s.item.meshColor});await window.decorateAccessoryModel?.(s.root,s.item);s.bounds=bounds(s.root);if(dead){dispose(s.root);return;}s.canvas.parentElement.classList.add('has-live-accessory');s.canvas.dataset.modelReady='true';request();}).catch(()=>s.failed=true).finally(()=>{loading.delete(s);pump();});}}
+  const states=cards.map((c,i)=>({...c,index:i,root:null,angle:.25,colorTurns:0,colorPublish:0,ctx:c.canvas.getContext('2d'),failed:false}));
+  function pump(){if(!dead&&pageActive()&&queue.length&&!ensureRenderer())return;while(!dead&&pageActive()&&loading.size<2&&queue.length){const s=queue.shift();if(s.root||s.failed||loading.has(s)||!visible.has(s))continue;loading.add(s);showroomAssets.model(hatStyle(s.item)?.model||s.url,{priority:'low'}).then(async g=>{prepareMaterials(g.scene,r);s.root=center(g.scene);setInkArea(s.root,hatStyle(s.item));setColors(s.root,{front:s.item.frontColor,brim:s.item.brimColor,mesh:s.item.meshColor});await window.decorateAccessoryModel?.(s.root,s.item);s.bounds=bounds(s.root);if(s.colorCycle){s.dye=previewColors(s.root,s.family,s.index);s.canvas.dataset.colorCycle='true';s.canvas.dataset.previewColor=s.dye(0);}if(dead){dispose(s.root);return;}s.canvas.parentElement.classList.add('has-live-accessory');s.canvas.dataset.modelReady='true';request();}).catch(()=>s.failed=true).finally(()=>{loading.delete(s);pump();});}}
   const observer=new IntersectionObserver(entries=>{for(const e of entries){const s=states[Number(e.target.dataset.accessoryIndex)];if(e.isIntersecting){visible.add(s);if(!s.root&&!s.failed&&!loading.has(s)&&!queue.includes(s))queue.push(s);}else visible.delete(s);}pump();last=0;request();},{rootMargin:'100px'});
   for(const s of states){s.canvas.width=previewWidth;s.canvas.height=previewHeight;s.canvas.dataset.accessoryIndex=s.index;observer.observe(s.canvas);}
   function request(){if(!dead&&!frame&&visible.size&&pageActive())frame=requestAnimationFrame(draw);}
-  function draw(t){frame=0;if(!pageActive()||!visible.size){last=0;return;}if(last&&t-last<40){request();return;}const dt=Math.min((t-(last||t))/1000,.1);last=t;let active=false;for(const s of visible){if(!s.root||!s.bounds)continue;active=true;if(auto&&!reduced.matches)s.angle+=dt*.42;s.root.rotation.y=s.angle;fit(camera,s.bounds,(s.family==='gloves'?8:23)*Math.PI/180);scene.add(s.root);r.render(scene,camera);scene.remove(s.root);s.ctx.clearRect(0,0,previewWidth,previewHeight);s.ctx.drawImage(r.domElement,0,0);}if(active&&auto&&!reduced.matches)request();else last=0;}
+  function draw(t){frame=0;if(!pageActive()||!visible.size){last=0;return;}if(last&&t-last<40){request();return;}const dt=Math.min((t-(last||t))/1000,.1);last=t;let active=false;for(const s of visible){if(!s.root||!s.bounds)continue;active=true;if(auto&&!reduced.matches){s.angle+=dt*(s.colorCycle?Math.PI/3:.42);if(s.dye){s.colorTurns+=dt/6;const color=s.dye(s.colorTurns);s.colorPublish+=dt;if(s.colorPublish>=.25){s.colorPublish=0;s.canvas.dataset.previewColor=color;s.canvas.dataset.previewPass=String(Math.floor(s.colorTurns));}}}s.root.rotation.y=s.angle;fit(camera,s.bounds,(s.family==='gloves'?8:23)*Math.PI/180);scene.add(s.root);r.render(scene,camera);scene.remove(s.root);s.ctx.clearRect(0,0,previewWidth,previewHeight);s.ctx.drawImage(r.domElement,0,0);}if(active&&auto&&!reduced.matches)request();else last=0;}
   const visibility=()=>{last=0;if(!pageActive()){cancelAnimationFrame(frame);frame=0;}else{pump();request();}};document.addEventListener('visibilitychange',visibility);document.addEventListener('btr:page-visibility',visibility);reduced.addEventListener('change',visibility);
   return {setAuto(v){auto=!!v;last=0;request();return auto;},destroy(){dead=true;cancelAnimationFrame(frame);observer.disconnect();document.removeEventListener('visibilitychange',visibility);document.removeEventListener('btr:page-visibility',visibility);reduced.removeEventListener('change',visibility);states.forEach(s=>dispose(s.root));r?.dispose();}};
  };

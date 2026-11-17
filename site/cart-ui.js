@@ -51,8 +51,9 @@ function render(view = cart.view()) {
   list.replaceChildren(...view.lines.map(l => {
     const art = h('div', { className: 'cart-art' }); if(l.item.product==='studio-product'||l.item.productDesign){const p=l.item.product==='studio-product'?STUDIO_PRODUCTS[l.item.productId]:PRODUCT_DESIGNS[l.item.productDesign.id];art.append(h('img',{src:p.poster,alt:l.describe.title,loading:'lazy',style:'width:100%;height:100%;object-fit:contain'}));}else art.innerHTML = itemSketch(l.item, l.describe, 'cart-' + l.id);
     const single = l.item.product === 'garment' && l.item.construction === 'cut-sew';
-    const minus = h('button', { type: 'button', textContent: '−', disabled: single || l.item.quantity <= 1 }); minus.setAttribute('aria-label', 'One fewer');
-    const plus = h('button', { type: 'button', textContent: '+', disabled: single || l.item.quantity >= MAX_QUANTITY }); plus.setAttribute('aria-label', 'One more');
+    const pack = l.item.product === 'studio-product' && STUDIO_PRODUCTS[l.item.productId]?.packSize;
+    const minus = h('button', { type: 'button', textContent: '−', disabled: single || l.item.quantity <= 1 }); minus.setAttribute('aria-label', pack ? 'One fewer pack' : 'One fewer');
+    const plus = h('button', { type: 'button', textContent: '+', disabled: single || l.item.quantity >= MAX_QUANTITY }); plus.setAttribute('aria-label', pack ? 'One more pack' : 'One more');
     minus.onclick = () => cart.setQuantity(l.id, l.item.quantity - 1);
     plus.onclick = () => cart.setQuantity(l.id, l.item.quantity + 1);
     const remove = h('button', { type: 'button', className: 'link', textContent: 'Remove' }); remove.onclick = () => cart.remove(l.id);
@@ -66,7 +67,7 @@ function render(view = cart.view()) {
         h('strong', { textContent: l.describe.title }),
         h('ul', { className: 'cart-spec' }, ...l.describe.spec.map(s => h('li', { textContent: s }))),
         h('div', { className: 'cart-controls' },
-          h('div', { className: 'qty', role: 'group', ariaLabel: 'Quantity' }, minus, h('span', { textContent: String(l.item.quantity), ariaLive: 'polite' }), plus),
+          h('div', { className: 'qty', role: 'group', ariaLabel: pack ? 'Number of 3-packs' : 'Quantity' }, minus, h('span', { textContent: pack ? l.item.quantity + (l.item.quantity === 1 ? ' pack' : ' packs') : String(l.item.quantity), ariaLive: 'polite' }), plus),
           edit, remove)),
       h('span', { className: 'cart-price', textContent: money(l.totalCents) }));
   }));

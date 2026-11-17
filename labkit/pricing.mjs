@@ -1,5 +1,5 @@
 import { normalizeGraphicLayout, layoutSummary } from './graphic-layout.mjs';
-import { PRODUCT_DESIGNS, GRAPHIC_COLORS, normalizeStudioProduct, priceStudioProduct, describeStudioProduct } from './product-options.mjs';
+import { PRODUCT_DESIGNS, STUDIO_PRODUCTS, GRAPHIC_COLORS, normalizeStudioProduct, priceStudioProduct, describeStudioProduct } from './product-options.mjs';
 // Validation and pricing for Garment Lab items. Pure functions, shared by browser and server.
 // The browser uses them to show prices; the server re-runs them on every checkout and ignores any
 // price a browser sends.
@@ -225,7 +225,7 @@ export function sidesFor(item) {
 
 // Exact physical piece count. An expected range is not an exact fulfilment promise.
 export const unitsFor = item => {
-  const units = item.product === 'mystery-pack' ? MYSTERY_PACKAGES[item.package].units : item.product === 'trinity' ? TRINITY.units : 1;
+  const units = item.product === 'mystery-pack' ? MYSTERY_PACKAGES[item.package].units : item.product === 'trinity' ? TRINITY.units : item.product === 'studio-product' ? STUDIO_PRODUCTS[item.productId]?.packSize || 1 : 1;
   return units === null ? null : units * item.quantity;
 };
 export const expectedUnitsFor = item => {

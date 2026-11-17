@@ -247,11 +247,11 @@ window.showroomCollection=[
   {
     "id": "08",
     "slug": "sacrificial-beanie",
-    "name": "Centaur Skully",
+    "name": "Centaur Skullies (3-pack)",
     "chapter": "IV",
-    "price": "$78",
+    "price": "$45",
     "tagline": "The centaur, stitched in red.",
-    "description": "A ribbed skully with a folded cuff finished with red centaur embroidery. Available in black and white.",
+    "description": "Three ribbed skullies with folded cuffs finished with red centaur embroidery. Each 3-pack comes in your selected color: black or white.",
     "images": [
       "/accessory-collection/posters/skully-black.png?v=quality-3"
     ],
@@ -279,7 +279,7 @@ window.showroomCollection=[
     "accessoryId": "accessory-skully-black",
     "accessoryPreview": {
       "slug": "skully-black",
-      "name": "Black Skully",
+      "name": "Black Skullies (3-pack)",
       "family": "skully",
       "color": "#131417",
       "model": "/accessory-collection/models/skully-black.glb?v=quality-3",
@@ -295,16 +295,19 @@ window.showroomCollection=[
       "webMaterialFinish": "matte fabric",
       "id": "accessory-skully-black",
       "href": "/product?item=accessory-skully-black",
-      "tagline": "The centaur, stitched in red.",
-      "description": "A ribbed skully with a folded cuff finished with red centaur embroidery. Available in black and white.",
+      "tagline": "Three skullies. The centaur, stitched in red.",
+      "description": "Three ribbed skullies with folded cuffs finished with red centaur embroidery. Each 3-pack comes in your selected color: black or white.",
       "embroiderySource": "centaur_.png",
       "embroideryColor": "#d7192b",
       "embroideryHeightMm": 60.0,
       "raisedThreadGeometry": true,
       "stitchSegments": 1918,
       "triangles": 215024,
-      "qualityRevision": 3
-    }
+      "qualityRevision": 3,
+      "price": "$45",
+      "packSize": 3
+    },
+    "packSize": 3
   },
   {
     "id": "H1",

@@ -29,7 +29,7 @@ window.BTR_HAT_STYLES = [
 window.BTR_ACCESSORIES = [
   {
     "slug": "headband-black",
-    "name": "Black Headband",
+    "name": "Black Headbands (3-pack)",
     "family": "headband",
     "color": "#121315",
     "model": "/accessory-collection/models/headband-black.glb?v=quality-3",
@@ -45,8 +45,8 @@ window.BTR_ACCESSORIES = [
     "webMaterialFinish": "matte fabric",
     "id": "accessory-headband-black",
     "href": "/product?item=accessory-headband-black",
-    "tagline": "The centaur, stitched in red.",
-    "description": "A wide fabric headband finished with red centaur embroidery. Available in black and white.",
+    "tagline": "Three headbands. The centaur, stitched in red.",
+    "description": "Three wide fabric headbands finished with red centaur embroidery. Each 3-pack comes in your selected color: black or white.",
     "embroiderySource": "centaur_.png",
     "embroideryColor": "#d7192b",
     "embroideryHeightMm": 44.0,
@@ -54,11 +54,12 @@ window.BTR_ACCESSORIES = [
     "stitchSegments": 1918,
     "triangles": 82336,
     "qualityRevision": 3,
-    "price": "$35"
+    "price": "$35",
+    "packSize": 3
   },
   {
     "slug": "headband-white",
-    "name": "White Headband",
+    "name": "White Headbands (3-pack)",
     "family": "headband",
     "color": "#f4f1e8",
     "model": "/accessory-collection/models/headband-white.glb?v=quality-3",
@@ -74,8 +75,8 @@ window.BTR_ACCESSORIES = [
     "webMaterialFinish": "matte fabric",
     "id": "accessory-headband-white",
     "href": "/product?item=accessory-headband-white",
-    "tagline": "The centaur, stitched in red.",
-    "description": "A wide fabric headband finished with red centaur embroidery. Available in black and white.",
+    "tagline": "Three headbands. The centaur, stitched in red.",
+    "description": "Three wide fabric headbands finished with red centaur embroidery. Each 3-pack comes in your selected color: black or white.",
     "embroiderySource": "centaur_.png",
     "embroideryColor": "#d7192b",
     "embroideryHeightMm": 44.0,
@@ -83,7 +84,8 @@ window.BTR_ACCESSORIES = [
     "stitchSegments": 1918,
     "triangles": 82336,
     "qualityRevision": 3,
-    "price": "$35"
+    "price": "$35",
+    "packSize": 3
   },
   {
     "slug": "gloves-white",
@@ -140,7 +142,7 @@ window.BTR_ACCESSORIES = [
   },
   {
     "slug": "skully-black",
-    "name": "Black Skully",
+    "name": "Black Skullies (3-pack)",
     "family": "skully",
     "color": "#131417",
     "model": "/accessory-collection/models/skully-black.glb?v=quality-3",
@@ -156,8 +158,8 @@ window.BTR_ACCESSORIES = [
     "webMaterialFinish": "matte fabric",
     "id": "accessory-skully-black",
     "href": "/product?item=accessory-skully-black",
-    "tagline": "The centaur, stitched in red.",
-    "description": "A ribbed skully with a folded cuff finished with red centaur embroidery. Available in black and white.",
+    "tagline": "Three skullies. The centaur, stitched in red.",
+    "description": "Three ribbed skullies with folded cuffs finished with red centaur embroidery. Each 3-pack comes in your selected color: black or white.",
     "embroiderySource": "centaur_.png",
     "embroideryColor": "#d7192b",
     "embroideryHeightMm": 60.0,
@@ -165,11 +167,12 @@ window.BTR_ACCESSORIES = [
     "stitchSegments": 1918,
     "triangles": 215024,
     "qualityRevision": 3,
-    "price": "$78"
+    "price": "$45",
+    "packSize": 3
   },
   {
     "slug": "skully-white",
-    "name": "White Skully",
+    "name": "White Skullies (3-pack)",
     "family": "skully",
     "color": "#f4f1e9",
     "model": "/accessory-collection/models/skully-white.glb?v=quality-3",
@@ -185,8 +188,8 @@ window.BTR_ACCESSORIES = [
     "webMaterialFinish": "matte fabric",
     "id": "accessory-skully-white",
     "href": "/product?item=accessory-skully-white",
-    "tagline": "The centaur, stitched in red.",
-    "description": "A ribbed skully with a folded cuff finished with red centaur embroidery. Available in black and white.",
+    "tagline": "Three skullies. The centaur, stitched in red.",
+    "description": "Three ribbed skullies with folded cuffs finished with red centaur embroidery. Each 3-pack comes in your selected color: black or white.",
     "embroiderySource": "centaur_.png",
     "embroideryColor": "#d7192b",
     "embroideryHeightMm": 60.0,
@@ -194,7 +197,8 @@ window.BTR_ACCESSORIES = [
     "stitchSegments": 1918,
     "triangles": 215024,
     "qualityRevision": 3,
-    "price": "$78"
+    "price": "$45",
+    "packSize": 3
   },
   {
     "slug": "trucker-cobalt",

@@ -31,7 +31,7 @@ function mountOptions(){
  const retryPreview=h('button',{type:'button',className:'studio-preview-retry',textContent:'Retry preview',hidden:true});retryPreview.onclick=()=>updatePreview();
  const subtotal=h('strong',{className:'studio-total'}),breakdown=h('p',{className:'studio-breakdown'}),save=h('button',{type:'submit',className:'studio-save',textContent:edit?'Update saved design':'Save design'});
  const editorHost=h('section',{className:'studio-graphics-pane'}),artMode=h('div',{className:'studio-art-mode'}),settingsSummary=h('summary',{textContent:'Garment options'}),settings=h('details',{className:'studio-garment-settings',open:true},settingsSummary,fields);
- const total=h('div',{className:'studio-checkout'},h('div',{},h('span',{className:'studio-eyebrow',textContent:'Your piece / USD'}),subtotal),save);
+ const total=h('div',{className:'studio-checkout'},h('div',{},h('span',{className:'studio-eyebrow',textContent:product?.packSize?'Your 3-pack / USD':'Your piece / USD'}),subtotal),save);
  form.append(h('div',{className:'studio-config-title'},h('h2',{textContent:'Make it yours'}),h('span',{textContent:design?'Garment Lab':'Studio options'})), ...(design?[artMode,settings,editorHost]:[fields]),previewNote,retryPreview,breakdown,total,feedback);
  $('tagline').after(form);
  const existingHat=document.querySelector('.hat-customizer');
@@ -62,12 +62,13 @@ function mountOptions(){
    if(state.artwork==='product-design'&&design.core)fields.append(h('label',{className:'studio-select'},'Graphic color',h('select',{name:'graphic',ariaLabel:'Graphic color'},...GRAPHIC_COLORS.map(c=>h('option',{value:c,textContent:c,selected:state.productDesign?.graphic===c})))));
 
   }else{
+   if(product.packSize)fields.append(h('p',{className:'studio-small',textContent:'One pack includes '+product.packSize+' '+product.packNoun+' in your selected color. The price is for the complete pack.'}));
    if(['headband','skully','gloves'].includes(product.family))fields.append(field('Color',h('div',{className:'studio-color-grid'},...['black','white'].map(c=>radio('productColor',c,c==='white'?'White':'Black',state.options.color===c)))));
    if(product.family==='belt')fields.append(field('Strap color',h('label',{className:'studio-custom-color'},h('span',{textContent:'Color · included in the complete belt'}),h('input',{type:'color',name:'strapColor',value:state.options.strapColor,ariaLabel:'Belt strap color'}))),h('p',{className:'studio-small',textContent:'Complete belt · sculptural buckle and strap included. No-hole clamp design.'}));
    if(product.family==='necklace')fields.append(field('Chain',h('p',{className:'studio-chain',textContent:'22-inch sterling silver French cable · 3.4 mm'})),h('p',{className:'studio-small',textContent:'Complete necklace · pendant and chain included.'}));
    fields.append(h('label',{className:'studio-select'},'Notes for the studio',h('textarea',{name:'studioNotes',maxLength:280,rows:2,value:state.notes||'',placeholder:'Fit, finish or other requests…'})),h('p',{className:'studio-small',textContent:'Special requests are confirmed by the studio before making.'}));
   }
-  fields.append(h('label',{className:'studio-select studio-quantity'},'Quantity',h('select',{name:'quantity',ariaLabel:'Quantity'},...[1,2,3,4,5].map(q=>h('option',{value:String(q),textContent:String(q),selected:state.quantity===q,disabled:design&&state.construction==='cut-sew'&&q>1})))));
+  fields.append(h('label',{className:'studio-select studio-quantity',style:product?.packSize?'max-width:100%':''},product?.packSize?'Number of 3-packs':'Quantity',h('select',{name:'quantity',ariaLabel:product?.packSize?'Number of 3-packs':'Quantity'},...[1,2,3,4,5].map(q=>h('option',{value:String(q),textContent:product?.packSize?`${q} ${q===1?'pack':'packs'} · ${q*product.packSize} ${product.packNoun}`:String(q),selected:state.quantity===q,disabled:design&&state.construction==='cut-sew'&&q>1})))));
   if(design){const artField=[...fields.querySelectorAll('fieldset')].find(f=>f.querySelector('[name=artwork]'));if(artField)artMode.replaceChildren(artField);
    const editing=state.artwork==='pick';if(settings.dataset.artwork!==state.artwork){settings.open=!editing;settings.dataset.artwork=state.artwork;}
    settingsSummary.textContent=(state.labMode==='cut-sew'?'Cut & Sew':state.labMode==='random'?'Random':'Blank')+' · '+(state.labMode==='random'?'studio color':state.color)+' · '+(state.size||'choose size');
@@ -81,8 +82,8 @@ function mountOptions(){
   const n=normalized(true);
   // Artwork can still be empty while the customer browses; the quote remains visible.
   const price=design?priceItem({...state,product:'garment',color:state.labMode==='random'?'random':state.color,quantity:state.quantity}):n.ok?priceItem(n.item):null;
-  const value=price?formatCents(price.totalCents):'Choose options';subtotal.textContent=value;$('price').textContent=value+(price?' USD':'');
-  breakdown.textContent=price?price.lines.filter(l=>l.cents).map(l=>formatCents(l.cents)+' '+l.label).join(' + ')+(state.quantity>1?` · ${state.quantity} × ${formatCents(price.unitCents)} each`:'')+(design?' · artwork included.':' · selected colors included.'):'Choose the options for a live total.';
+  const value=price?formatCents(price.totalCents):'Choose options';subtotal.textContent=value;$('price').textContent=value+(price?' USD':'')+(price&&product?.packSize?` / ${state.quantity===1?'3-pack':state.quantity+' packs'}`:'');
+  breakdown.textContent=price?price.lines.filter(l=>l.cents).map(l=>formatCents(l.cents)+' '+l.label).join(' + ')+(state.quantity>1?` · ${state.quantity} × ${formatCents(price.unitCents)} ${product?.packSize?'per 3-pack':'each'}`:'')+(design?' · artwork included.':' · selected colors included.'):'Choose the options for a live total.';
   const slot=design?`${state.construction}:${state.garment}`:`studio:${id}`,open=!!status?.checkout?.available&&status?.slots?.[slot]?.available>0;
   save.textContent=edit?'Update saved design':open?'Add to bag':'Save design';
  }

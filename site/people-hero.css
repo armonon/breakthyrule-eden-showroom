@@ -68,3 +68,11 @@
  .wearer-topline>span{max-width:140px}
 }
 @media(prefers-reduced-motion:reduce){.wearer-photo,.wearer-actions a{transition:none!important}.wearer-photo.is-entering{transform:none}.wearer-actions a:hover{transform:none}}
+/* Lift the edge wordmark slightly while keeping its dissolve and full width. */
+html[data-btr-theme] body[data-page="home"] main #wearer-hero[data-masthead-edge][data-particle-hero]{
+ --btr-wordmark-lift:clamp(12px,2vw,28px);
+ height:calc(var(--btr-photo-height) + var(--btr-ink-height)*.98 + 24px - var(--btr-wordmark-lift))!important;
+}
+html[data-btr-script="ballet"] body[data-page="home"] main #wearer-hero[data-masthead-edge][data-particle-hero] .wearer-content{
+ top:calc(var(--btr-photo-height) - var(--btr-ink-height)*.02 - var(--btr-ink-offset) - var(--btr-wordmark-lift))!important;
+}

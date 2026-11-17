@@ -49,7 +49,10 @@
     nav.setAttribute('aria-label', 'Main');
     const active = ['index', 'product', 'random-shirt', 'mystery-box', 'core', 'belts', 'accessories', 'reliquary', 'passport'].includes(page)
       ? 'products' : page.startsWith('lab') ? 'lab' : page;
-    const links = [['/?nocover=1', 'Products'], ['/lab', 'Lab'], ['/gallery', 'Gallery'], ['/archive', 'Archive'], ['/about', 'About']];
+    const links = [['/?nocover=1', 'Products'], ['/gallery', 'Gallery'], ['/archive', 'Archive'], ['/about', 'About']];
+    for (const link of nav.querySelectorAll('a')) {
+      if (/^\/lab(?:\.html)?\/?$/.test(new URL(link.href, location.href).pathname)) link.remove();
+    }
     const oldLinks = Array.from(nav.querySelectorAll('a'));
     for (const [href, label] of links) {
       let link = oldLinks.find(node => node.textContent.trim().toLowerCase() === label.toLowerCase());
