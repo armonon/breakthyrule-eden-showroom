@@ -112,33 +112,6 @@ window.BTR_ACCESSORIES = [
     "price": "$35"
   },
   {
-    "slug": "apple-gloves-black",
-    "name": "Black Apple Gloves",
-    "family": "gloves",
-    "color": "#151618",
-    "pair": true,
-    "artwork": "original Apple Gloves photograph",
-    "model": "/accessory-collection/models/apple-gloves-black.glb?v=quality-3",
-    "poster": "/accessory-collection/posters/apple-gloves-black.png?v=quality-3",
-    "dimensionsMm": [
-      333.4,
-      32.7,
-      262.5
-    ],
-    "bytes": 5715864,
-    "status": "visualization concept",
-    "editableMaster": "masters/apple-gloves-black.blend",
-    "artworkVerified": true,
-    "webMaterialFinish": "matte fabric",
-    "id": "accessory-apple-gloves-black",
-    "href": "/product?item=apple-gloves&glove=black",
-    "tagline": "The original apples. Black cotton.",
-    "description": "Black cotton gloves with the original red and blue Apple Gloves artwork.",
-    "triangles": 235786,
-    "qualityRevision": 3,
-    "price": "$35"
-  },
-  {
     "slug": "skully-black",
     "name": "Black Skully",
     "family": "skully",

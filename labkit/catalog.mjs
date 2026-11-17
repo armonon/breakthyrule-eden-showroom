@@ -203,7 +203,7 @@ export function allSkus() {
   return out;
 }
 export function allSlots() {
-  const out = Object.values(STUDIO_PRODUCTS).map(p => ({ slot: `studio:${p.id}`, label: p.name }));
+  const out = Object.values(STUDIO_PRODUCTS).filter(p => p.available !== false).map(p => ({ slot: `studio:${p.id}`, label: p.name }));
   for (const [construction, garments] of Object.entries(OFFERINGS))
     for (const [garment, o] of Object.entries(garments)) out.push({ slot: `${construction}:${garment}`, label: `${CONSTRUCTIONS[construction].name} · ${o.name}` });
   for (const [garment, o] of Object.entries(RANDOM_OFFERINGS))

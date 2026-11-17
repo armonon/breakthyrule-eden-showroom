@@ -49,7 +49,7 @@ export async function buildDiscoveryCatalog({
     // The current centaur skully replaces legacy printed beanies in rotation.
     // Their individual product pages remain available through the collection.
     if (/beanie/i.test(item.slug || item.id) && accessories.some(accessory => accessory.family === 'skully')) continue;
-    // Both official glove colors below link to this same published product and its price.
+    // The white gloves below link to this same published product and its price.
     if (item === gloves && accessories.some(accessory => accessory.family === 'gloves')) continue;
     const accessory = /beanie|gloves/i.test(item.slug || item.id);
     const priceCents = cents(item.price), photo = item.images?.[0];

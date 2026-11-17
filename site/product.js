@@ -1,7 +1,8 @@
 'use strict';
 (()=>{
  const el=window.siteEl,$=id=>document.getElementById(id);
- const slug=new URLSearchParams(location.search).get('item');
+ const requestedSlug=new URLSearchParams(location.search).get('item');
+ const slug=requestedSlug==='accessory-apple-gloves-black'?'accessory-gloves-white':requestedSlug;
  if(slug==='core-thermal'){location.replace('/core.html');return;}
  if(slug?.startsWith('pendant-')){
   document.body.classList.add('pendant-product');
@@ -51,7 +52,7 @@
  photos.forEach((src,i)=>{const b=el('button',{type:'button'},el('img',{src,alt:(g.photoViews?.[i]||'Photo '+(i+1)),loading:'lazy',decoding:'async'}));b.onclick=()=>photoMode(true,src);$('thumbs').append(b);});
  if(viewer&&g.model){
   $('viewer-status').textContent='Loading 3D…';
-  modelTask=viewer.load(g.slug==='apple-gloves'&&new URLSearchParams(location.search).get('glove')==='black'?'/accessory-collection/models/apple-gloves-black.glb?v=quality-3':g.model).then(committed=>{if(committed===false)return;modelReady=true;for(const id of ['spin','front','back'])$(id).disabled=false;$('spin').setAttribute('aria-pressed',String(viewer.isAuto()));$('viewer-status').textContent='3D / drag to turn';photoMode(false);if(archiveModel){const T=window.THREE,size=new T.Box3().setFromObject(viewer.model()).getSize(new T.Vector3()),aspect=$('viewer').clientWidth/$('viewer').clientHeight,d=Math.max(4.4,2.2/Math.tan(Math.PI/12)/aspect/2.4);viewer.setZoom(Math.min(2,.76*2*d*Math.tan(Math.PI/12)/Math.max(size.y,Math.hypot(size.x,size.z)/aspect)));if(g.defaultView==='back'){viewer.view('back');viewer.setAuto(!matchMedia('(prefers-reduced-motion: reduce)').matches);}$('spin').setAttribute('aria-pressed',String(viewer.isAuto()));}window.mountAppleGloveColors?.({viewer,garment:g,photoMode});})
+  modelTask=viewer.load(g.model).then(committed=>{if(committed===false)return;modelReady=true;for(const id of ['spin','front','back'])$(id).disabled=false;$('spin').setAttribute('aria-pressed',String(viewer.isAuto()));$('viewer-status').textContent='3D / drag to turn';photoMode(false);if(archiveModel){const T=window.THREE,size=new T.Box3().setFromObject(viewer.model()).getSize(new T.Vector3()),aspect=$('viewer').clientWidth/$('viewer').clientHeight,d=Math.max(4.4,2.2/Math.tan(Math.PI/12)/aspect/2.4);viewer.setZoom(Math.min(2,.76*2*d*Math.tan(Math.PI/12)/Math.max(size.y,Math.hypot(size.x,size.z)/aspect)));if(g.defaultView==='back'){viewer.view('back');viewer.setAuto(!matchMedia('(prefers-reduced-motion: reduce)').matches);}$('spin').setAttribute('aria-pressed',String(viewer.isAuto()));}})
    .catch(()=>{$('viewer-status').textContent='3D unavailable — photographs shown';photoMode(true);});
  }else{$('viewer-status').textContent='Photographs';photoMode(true);}
  window.BTRProductMedia={viewer,ready:modelTask,item:g,setPhotoMode:photoMode};

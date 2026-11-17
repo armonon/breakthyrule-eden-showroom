@@ -10,7 +10,7 @@ const $=id=>document.getElementById(id);
 const h=(tag,props={},...kids)=>{const e=Object.assign(document.createElement(tag),props);for(const k of kids.flat())if(k!=null)e.append(k);return e;};
 const ready=document.readyState==='loading'?new Promise(r=>document.addEventListener('DOMContentLoaded',r,{once:true})):Promise.resolve();
 await ready;
-const params=new URLSearchParams(location.search),id=params.get('item'),design=Object.hasOwn(PRODUCT_DESIGNS,id)?PRODUCT_DESIGNS[id]:null,product=Object.hasOwn(STUDIO_PRODUCTS,id)?STUDIO_PRODUCTS[id]:null;
+const params=new URLSearchParams(location.search),requestedId=params.get('item'),id=requestedId==='accessory-apple-gloves-black'?'accessory-gloves-white':requestedId,design=Object.hasOwn(PRODUCT_DESIGNS,id)?PRODUCT_DESIGNS[id]:null,product=Object.hasOwn(STUDIO_PRODUCTS,id)?STUDIO_PRODUCTS[id]:null;
 document.body.classList.add('silkroad-product');
 const info=document.querySelector('.product-info');
 const trail=h('nav',{className:'studio-trail',ariaLabel:'Breadcrumb'},h('a',{href:'/?nocover=1',textContent:'Marketplace'}),h('span',{textContent:'/'}),h('span',{textContent:design?'Garments':product?.family==='necklace'?'Necklaces':product?.family==='belt'?'Belts':'Accessories'}));
@@ -63,7 +63,8 @@ function mountOptions(){
 
   }else{
    if(product.packSize)fields.append(h('p',{className:'studio-small',textContent:product.family==='daily-apple'?'One bag contains three white Hanes tees with a red bitmap apple on the chest. The price is for all three tees.':'One pack includes '+product.packSize+' '+product.packNoun+' in your selected color. The price is for the complete pack.'}));
-   if(['headband','skully','gloves'].includes(product.family))fields.append(field('Color',h('div',{className:'studio-color-grid'},...['black','white'].map(c=>radio('productColor',c,c==='white'?'White':'Black',state.options.color===c)))));
+   if(['headband','skully'].includes(product.family))fields.append(field('Color',h('div',{className:'studio-color-grid'},...['black','white'].map(c=>radio('productColor',c,c==='white'?'White':'Black',state.options.color===c)))));
+   if(product.family==='gloves')fields.append(field('Color',h('p',{className:'studio-small',textContent:'White'})));
    if(['headband','skully'].includes(product.family))fields.append(field('Fabric weight',h('div',{className:'studio-color-grid'},...Object.entries(HEADWEAR_WEIGHTS).map(([key,weight])=>radio('weight',key,weight.name,(state.options.weight||'thin')===key,{price:weight.addCents?'+'+formatCents(weight.addCents):'Included'})))));
    if(product.family==='daily-apple')fields.append(field('Size for all three tees',h('div',{className:'studio-size-grid'},...DAILY_APPLE_SIZES.map(size=>radio('productSize',size,size,state.options.size===size)))));
    if(product.family==='belt')fields.append(field('Strap color',h('label',{className:'studio-custom-color'},h('span',{textContent:'Color · included in the complete belt'}),h('input',{type:'color',name:'strapColor',value:state.options.strapColor,ariaLabel:'Belt strap color'}))),h('p',{className:'studio-small',textContent:'Complete belt · sculptural buckle and strap included. No-hole clamp design.'}));
@@ -85,7 +86,7 @@ function mountOptions(){
   // Artwork can still be empty while the customer browses; the quote remains visible.
   const price=design?priceItem({...state,product:'garment',color:state.labMode==='random'?'random':state.color,quantity:state.quantity}):n.ok?priceItem(n.item):null;
   const value=price?formatCents(price.totalCents):'Choose options';subtotal.textContent=value;$('price').textContent=value+(price?' USD':'')+(price&&product?.packSize?` / ${state.quantity===1?'3-pack':state.quantity+' packs'}`:'');
-  breakdown.textContent=price?price.lines.filter(l=>l.cents).map(l=>formatCents(l.cents)+' '+l.label).join(' + ')+(state.quantity>1?` · ${state.quantity} × ${formatCents(price.unitCents)} ${product?.packSize?'per 3-pack':'each'}`:'')+(design?' · artwork included.':' · selected colors included.'):'Choose the options for a live total.';
+  breakdown.textContent=price?price.lines.filter(l=>l.cents).map(l=>formatCents(l.cents)+' '+l.label).join(' + ')+(state.quantity>1?` · ${state.quantity} × ${formatCents(price.unitCents)} ${product?.packSize?'per 3-pack':'each'}`:'')+(design?' · artwork included.':product.family==='gloves'?' · white.':' · selected colors included.'):'Choose the options for a live total.';
   const slot=design?`${state.construction}:${state.garment}`:`studio:${id}`,open=!!status?.checkout?.available&&status?.slots?.[slot]?.available>0;
   save.textContent=edit?'Update saved design':open?'Add to bag':'Save design';
  }
@@ -95,9 +96,9 @@ function mountOptions(){
   if(!design){
    if(product.family==='belt'){try{media.setStrapColor(state.options.strapColor);previewNote.textContent='Strap color is included.';}catch{previewNote.textContent='Your strap color is saved; the 3D preview is loading.';}}
    if(['headband','skully','gloves'].includes(product.family)){
-    const variant=(window.BTR_ACCESSORIES||[]).find(p=>p.family===product.family&&(p.slug.endsWith('-'+state.options.color)||(p.family==='gloves'&&state.options.color==='white')));
-    if(media.setVariant&&variant){await media.setVariant({...variant,model:product.family==='gloves'&&state.options.color==='black'?'/accessory-collection/models/apple-gloves-black.glb?v=quality-3':variant.model});}
-    else if(media.viewer&&product.family==='gloves'){await media.viewer.load('/accessory-collection/models/'+(state.options.color==='black'?'apple-gloves-black':'gloves-white')+'.glb?v=quality-3');media.viewer.redraw();}
+    const variant=(window.BTR_ACCESSORIES||[]).find(p=>p.family===product.family&&(product.family==='gloves'?p.slug==='gloves-white':p.slug.endsWith('-'+state.options.color)));
+    if(media.setVariant&&variant){await media.setVariant(variant);}
+    else if(media.viewer&&product.family==='gloves'){await media.viewer.load('/accessory-collection/models/gloves-white.glb?v=quality-3');media.viewer.redraw();}
    }
    if(['headband','skully'].includes(product.family))media.setWeight?.(state.options.weight||'thin');
    return;
@@ -147,6 +148,7 @@ function mountOptions(){
  render();
 }
 function defaultOptions(p){
+ if(p.family==='gloves')return {color:'white'};
  if(p.family==='daily-apple')return {color:'white',size:null};
  if(['headband','skully'].includes(p.family))return {color:/white/.test(id)?'white':'black',weight:'thin'};
  if(p.family==='belt')return {strapColor:'#151619'};

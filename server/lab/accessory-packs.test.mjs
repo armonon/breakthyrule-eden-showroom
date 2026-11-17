@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {normalizeItem, priceCart, unitsFor, describeItem} from '../../labkit/pricing.mjs';
 import {STUDIO_PRODUCTS} from '../../labkit/product-options.mjs';
+import {allSlots} from '../../labkit/catalog.mjs';
 import {createLab, MemoryStore} from './storefront-api.mjs';
 
 const selected = (productId, quantity = 1, options = {color: 'black'}) => ({product: 'studio-product', productId, quantity, options});
@@ -60,6 +61,23 @@ test('truckers remain $45 each and glove prices remain $35 per existing product'
   }
 });
 
+test('Apple Gloves are white only, including stale black choices and the legacy black link', () => {
+  for (const productId of ['apple-gloves','accessory-gloves-white','accessory-apple-gloves-black']) {
+    for (const options of [{},{color:'white'},{color:'black'},{color:'red'}]) {
+      const n=normalizeItem(selected(productId,2,options));
+      assert.equal(n.ok,true);
+      assert.deepEqual(n.item.options,{color:'white'});
+      assert.equal(n.item.productId,productId==='accessory-apple-gloves-black'?'accessory-gloves-white':productId);
+      assert.equal(priceCart([n.item]).subtotalCents,7000);
+      assert.doesNotMatch(describeItem(n.item).title,/Black/);
+      assert.match(describeItem(n.item).spec.join(' '),/Color: white/);
+    }
+  }
+  // Existing order records retain their original description.
+  assert.match(describeItem(selected('accessory-apple-gloves-black')).title,/Black/);
+  assert.equal(allSlots().some(entry=>entry.slot==='studio:accessory-apple-gloves-black'),false);
+});
+
 test('actual Netlify checkout charges single headwear and Daily Apple packs correctly', async () => {
   const store=new MemoryStore();
   await store.set('capacity',{slots:{
@@ -79,4 +97,17 @@ test('actual Netlify checkout charges single headwear and Daily Apple packs corr
   ]);
   assert.deepEqual(order.reservation.needs.slots,{'studio:accessory-headband-black':2,'studio:accessory-skully-white':1,'studio:daily-apple-3-pack':1,'studio:accessory-trucker-cobalt':1});
   assert.equal(order.payment.status,'pending');
+});
+
+test('checkout saves white gloves and uses the white inventory slot for a retired black link', async () => {
+  const store=new MemoryStore();
+  await store.set('capacity',{slots:{'studio:accessory-gloves-white':{limit:10,used:0,reserved:0,open:true}}});
+  const env={CONTEXT:'deploy-preview',LAB_PREVIEW:'true',LAB_SESSION_SECRET:'white-glove-test-'.repeat(3),LAB_PAYMENT_PROVIDER:'test-gateway',LAB_ALLOW_TEST_GATEWAY:'true'};
+  const lab=createLab({store,env,artworkPool:[]});
+  const result=await lab.checkout({items:[selected('accessory-apple-gloves-black',2,{color:'black'})],idempotencyKey:'white_glove_checkout_20261117',origin:'https://fixture.invalid'});
+  const {value:order}=await store.get('orders/'+result.orderId);
+  assert.equal(order.subtotalCents,7000);
+  assert.equal(order.items[0].productId,'accessory-gloves-white');
+  assert.deepEqual(order.items[0].options,{color:'white'});
+  assert.deepEqual(order.reservation.needs.slots,{'studio:accessory-gloves-white':2});
 });
