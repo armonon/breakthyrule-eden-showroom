@@ -1,6 +1,5 @@
 'use strict';
-// The opening gallery is a living scrapbook. The two equal groups in each lane
-// make the loop seamless; only the original photographs enter the tab order.
+// The opening gallery is a living scrapbook with native, manually scrollable lanes.
 (() => {
  const host = document.getElementById('gallery-reel');
  if (!host) return;
@@ -18,11 +17,10 @@
 .gallery-reel #reel-motion{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:9px 13px;border:1px solid #564838;border-radius:0;background:#f4eddf;color:#33261b;box-shadow:2px 2px 0 #ae9a79;font:12px/1.2 Georgia,serif;cursor:pointer;white-space:nowrap}
 .gallery-reel #reel-motion::before{content:'Ⅱ';font-size:14px;font-style:normal}.gallery-reel #reel-motion[aria-pressed=false]::before{content:'▷'}
 .gallery-reel #reel-motion:hover{background:#fff8e9;box-shadow:3px 3px 0 #ae9a79}.gallery-reel :focus-visible{outline:3px solid #a3322a;outline-offset:4px}
-.reel-lane{position:relative;overflow:hidden;padding:18px 0 22px;transform:rotate(-1deg);margin-inline:-14px;contain:layout paint}
-.reel-lane:nth-of-type(2){transform:rotate(1deg);margin-top:-12px}
-.gallery-reel .reel-track{display:flex;width:max-content;gap:0;animation:reel-drift var(--reel-duration,100s) linear infinite;animation-play-state:paused;will-change:transform}
-.gallery-reel .reel-lane:nth-of-type(2) .reel-track{animation-direction:reverse}
-.gallery-reel[data-reel-running=true] .reel-track{animation-play-state:running}
+.reel-lane{position:relative;overflow-x:auto;overflow-y:hidden;padding:18px 20px 22px;overscroll-behavior-x:contain;touch-action:pan-x pan-y pinch-zoom;scrollbar-width:thin;scrollbar-color:#a3322a transparent;cursor:grab;contain:layout paint}
+.reel-lane:nth-of-type(2){margin-top:-12px}
+.reel-lane[data-gallery-dragging=true],.reel-lane[data-gallery-dragging=true] *{cursor:grabbing!important;user-select:none}
+.gallery-reel .reel-track{display:flex;width:max-content;gap:0}
 .reel-group{display:flex;align-items:center;gap:20px;padding-right:20px;flex:0 0 auto}
 .gallery-reel .reel-track a{position:relative;display:block;flex:0 0 auto;height:198px;min-width:126px;max-width:310px;width:auto;padding:7px;background:#f6f0e5;border:1px solid #b3a18a;border-radius:0;box-shadow:3px 7px 9px #51361c28;transform:rotate(var(--r));transition:transform .25s ease,box-shadow .25s ease;overflow:visible}
 .gallery-reel .reel-lane:nth-of-type(2) .reel-track a{height:154px;max-width:260px}
@@ -38,10 +36,7 @@
 .reel-live::before{content:'';width:6px;height:6px;flex:0 0 auto;border-radius:50%;background:currentColor}
 .gallery-reel[data-reel-running=true] .reel-live::before{animation:reel-heartbeat 2.4s ease-in-out infinite}
 .reel-foot em{font:italic 23px/1 var(--serif,Georgia,serif);color:#8f2a22;transform:rotate(-3deg)}
-.gallery-reel[data-reel-static=true] .reel-lane{overflow-x:auto;scrollbar-width:thin;scrollbar-color:#a3322a transparent;transform:none;margin-inline:0;padding-inline:20px}
-.gallery-reel[data-reel-static=true] .reel-track{animation:none;will-change:auto}.gallery-reel[data-reel-static=true] .reel-group[aria-hidden=true]{display:none}
 .gallery-reel[data-reel-static=true]::before,.gallery-reel[data-reel-static=true]::after{display:none}
-@keyframes reel-drift{to{transform:translateX(-50%)}}
 @keyframes reel-heartbeat{50%{opacity:.35}}
 @media(max-width:700px){.gallery-reel{padding-top:22px;padding-bottom:16px}.gallery-reel .reel-head{flex-wrap:wrap;gap:15px;padding-bottom:8px}.gallery-reel .reel-head>span{gap:7px;font-size:16px;flex:1 1 100%}.gallery-reel .reel-tools{width:100%;justify-content:space-between}.gallery-reel .reel-head b{font-size:32px}.gallery-reel .reel-track a{height:156px;min-width:102px;max-width:230px;padding:5px}.gallery-reel .reel-lane:nth-of-type(2) .reel-track a{height:124px;max-width:190px}.reel-group{gap:14px;padding-right:14px}.reel-lane{padding-block:17px 19px}.reel-foot{font-size:15px;padding-top:5px}.reel-foot em{font-size:20px}.reel-live{font-size:9px;letter-spacing:.08em}}
 @media(prefers-reduced-motion:reduce){.gallery-reel .reel-track a{transition:none}.gallery-reel .reel-track a:hover,.gallery-reel .reel-track a:focus-visible{transform:rotate(0)}.gallery-reel .reel-live::before{animation:none!important}}
@@ -55,7 +50,8 @@
  fetch('/site/data/gallery.json', {cache:'no-cache'}).then(response => {
   if (!response.ok) throw new Error('Gallery unavailable');
   return response.json();
- }).then(data => {
+ }).then(async data => {
+  const { enableGalleryScroll } = await import('./horizontal-gallery.mjs?v=1');
   const items = (data.items || []).filter(item => item.thumb || item.src);
   if (!items.length) { host.hidden = true; return; }
   for (let i = items.length - 1; i > 0; i--) {
@@ -74,12 +70,11 @@
   const rows = [items.filter((_, index) => index % 2 === 0), items.filter((_, index) => index % 2 === 1)];
   if (!rows[1].length) rows.pop();
 
+  const scrollers = [];
   rows.forEach((photos, row) => {
    const lane = document.createElement('div'); lane.className = 'reel-lane';
    const track = document.createElement('div'); track.className = 'reel-track';
-   // A minimum of eight prints fills wide screens even when a catalog is tiny.
-   const count = Math.max(8, photos.length);
-   track.style.setProperty('--reel-duration', Math.max(65, count * (row ? 8.5 : 7)) + 's');
+   const count = photos.length;
    const group = document.createElement('div'); group.className = 'reel-group';
    for (let index = 0; index < count; index++) {
     const photo = photos[index % photos.length];
@@ -88,15 +83,13 @@
     a.style.aspectRatio = String(photo.ratio || 1);
     a.style.setProperty('--r', ((index % 2 ? 1 : -1) * (1.5 + index % 4)).toFixed(1) + 'deg');
     a.setAttribute('aria-label', (photo.alt || 'Break Thy Rule photograph') + ' — open the gallery');
-    if (index >= photos.length) { a.tabIndex = -1; a.setAttribute('aria-hidden', 'true'); }
     const img = document.createElement('img');
     img.src = photo.thumb || photo.src; img.alt = ''; img.loading = index < 4 ? 'eager' : 'lazy'; img.decoding = 'async'; img.draggable = false;
     img.addEventListener('error', () => { if (photo.src && img.getAttribute('src') !== photo.src) img.src = photo.src; }, {once:true});
     a.append(img); group.append(a);
    }
-   const repeat = group.cloneNode(true); repeat.setAttribute('aria-hidden', 'true');
-   repeat.querySelectorAll('a').forEach(a => { a.tabIndex = -1; a.setAttribute('aria-hidden', 'true'); });
-   track.append(group, repeat); lane.append(track); lanes.append(lane);
+   track.append(group); lane.append(track); lanes.append(lane);
+   scrollers.push({lane, track, position:0, direction:row ? -1 : 1, speed:row ? 16 : 20, limit:0, edgeUntil:0, initialized:false});
   });
   const foot = document.createElement('div'); foot.className = 'reel-foot';
   const live = document.createElement('span'); live.className = 'reel-live'; live.textContent = 'The living archive';
@@ -104,12 +97,47 @@
   foot.append(live, note); host.replaceChildren(head, lanes, foot);
 
   let requested = !reduced.matches, onscreen = false, hovering = false, focusing = false;
+  let frame = 0, last = 0, manualUntil = 0, resumeTimer = 0;
+  function stop() { cancelAnimationFrame(frame); frame = 0; last = 0; }
+  function tick(now) {
+   frame = 0;
+   if (host.dataset.reelRunning !== 'true') return;
+   const elapsed = last ? Math.min(50, now - last) : 0; last = now;
+   for (const state of scrollers) {
+    if (state.limit <= 1 || now < state.edgeUntil) continue;
+    state.position = Math.max(0, Math.min(state.limit, state.position + state.direction * state.speed * elapsed / 1000));
+    state.lane.scrollLeft = state.position;
+    if ((state.direction > 0 && state.position >= state.limit) || (state.direction < 0 && state.position <= 0)) {
+     state.direction *= -1; state.edgeUntil = now + 800;
+    }
+   }
+   frame = requestAnimationFrame(tick);
+  }
   function update() {
-   const running = requested && onscreen && !document.hidden && !hovering && !focusing;
+   stop();
+   for (const state of scrollers) {
+    state.limit = Math.max(0, state.lane.scrollWidth - state.lane.clientWidth);
+    if (!state.initialized && state.limit > 0) {
+     state.initialized = true;
+     if (state.direction < 0) state.lane.scrollLeft = state.limit;
+    }
+    state.position = state.lane.scrollLeft;
+   }
+   const running = requested && scrollers.some(state => state.limit > 1) && onscreen && !document.hidden && !hovering && !focusing && performance.now() >= manualUntil;
    host.dataset.reelRunning = String(running);
    host.dataset.reelStatic = String(reduced.matches && !requested);
    toggle.setAttribute('aria-pressed', String(requested));
    toggle.textContent = requested ? 'Pause motion' : 'Play motion';
+   if (running) frame = requestAnimationFrame(tick);
+  }
+  function hold() {
+   manualUntil = performance.now() + 10000;
+   clearTimeout(resumeTimer); resumeTimer = setTimeout(update, 10050); update();
+  }
+  for (const [index, state] of scrollers.entries()) {
+   enableGalleryScroll(state.lane, { label:`Gallery photo row ${index + 1}`, onInteract:hold });
+   new ResizeObserver(update).observe(state.track);
+   new ResizeObserver(update).observe(state.lane);
   }
   toggle.addEventListener('click', () => { requested = !requested; update(); });
   lanes.addEventListener('pointerenter', event => { if (event.pointerType !== 'touch') { hovering = true; update(); } });
@@ -118,6 +146,8 @@
   lanes.addEventListener('focusout', event => { if (!lanes.contains(event.relatedTarget)) { focusing = false; update(); } });
   document.addEventListener('visibilitychange', update);
   reduced.addEventListener('change', () => { if (reduced.matches) requested = false; update(); });
+  addEventListener('pagehide', () => { stop(); clearTimeout(resumeTimer); manualUntil = 0; });
+  addEventListener('pageshow', update);
   new IntersectionObserver(([entry]) => { onscreen = entry.isIntersecting; update(); }, {threshold:.02}).observe(host);
   update();
  }).catch(() => { host.hidden = true; });

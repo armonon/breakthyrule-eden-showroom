@@ -5,7 +5,7 @@ import { PRODUCT_DESIGNS, STUDIO_PRODUCTS, GRAPHIC_COLORS, HEADWEAR_WEIGHTS, DAI
 import { normalizeItem, priceItem } from '/labkit/pricing.mjs';
 import { cart, POOL, labStatus } from '/site/cart-store.mjs?v=site-audit-1';
 import { tintProductDesign } from '/site/product-preview.mjs?v=1';
-import { mountProductGallery } from '/site/product-gallery.mjs?v=regular-gallery-5';
+import { mountProductGallery } from '/site/product-gallery.mjs?v=scrollable-6';
 const $=id=>document.getElementById(id);
 const h=(tag,props={},...kids)=>{const e=Object.assign(document.createElement(tag),props);for(const k of kids.flat())if(k!=null)e.append(k);return e;};
 const ready=document.readyState==='loading'?new Promise(r=>document.addEventListener('DOMContentLoaded',r,{once:true})):Promise.resolve();

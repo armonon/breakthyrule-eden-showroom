@@ -1,8 +1,11 @@
 /* Straight color photographs with clean edges. */
 #worn-photos .witness-head{flex-direction:row;align-items:center;gap:12px;margin:30px 0 8px}
 #worn-photos .witness-head>a{margin-left:auto}
-#witness-strip{gap:18px;align-items:center;padding:8px 6px 14px;overflow-x:auto;overflow-y:hidden;scroll-behavior:auto!important;scroll-snap-type:none!important;overscroll-behavior-x:contain;scrollbar-width:none}
-#witness-strip::-webkit-scrollbar{display:none}
+#witness-strip{gap:18px;align-items:center;padding:8px 6px 14px;overflow-x:auto;overflow-y:hidden;scroll-behavior:auto!important;scroll-snap-type:none!important;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#707768 transparent;cursor:grab;touch-action:pan-x pan-y pinch-zoom}
+#witness-strip::-webkit-scrollbar{height:5px}
+#witness-strip::-webkit-scrollbar-thumb{background:#707768;border-radius:3px}
+#witness-strip:focus-visible{outline:2px dashed #eeeedf;outline-offset:4px}
+#witness-strip[data-gallery-dragging=true],#witness-strip[data-gallery-dragging=true] *{cursor:grabbing!important;user-select:none}
 #witness-strip .polaroid,#witness-strip .polaroid:hover,#witness-strip .polaroid:focus-visible{flex:0 0 clamp(154px,17vw,210px);padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;transform:none!important;transition:none!important}
 #witness-strip .polaroid::before,#witness-strip .polaroid::after{display:none!important;content:none!important}
 #witness-strip .polaroid>span{display:none!important}

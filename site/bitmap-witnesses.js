@@ -1,9 +1,10 @@
 /* Move the original linked photos. No clones: the gallery updates images by index. */
-(() => {
+(async () => {
   'use strict';
   const strip = document.getElementById('witness-strip');
   const button = document.getElementById('witness-motion');
   if (!strip || !button || strip.dataset.bitmapMotion) return;
+  const { enableGalleryScroll } = await import('./horizontal-gallery.mjs?v=1');
   strip.dataset.bitmapMotion = 'ready';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const speed = 18;
@@ -44,9 +45,9 @@
     if (canMove()) frame = requestAnimationFrame(tick);
   }
   function hold() {
-    manualUntil = performance.now() + 3500;
+    manualUntil = performance.now() + 10000;
     clearTimeout(resumeTimer);
-    resumeTimer = setTimeout(sync, 3550);
+    resumeTimer = setTimeout(sync, 10050);
     sync();
   }
   button.addEventListener('click', () => { playing = !playing; sync(); });
@@ -58,8 +59,7 @@
   const release = () => { if (pressed) { pressed = false; hold(); } };
   window.addEventListener('pointerup', release, { passive: true });
   window.addEventListener('pointercancel', release, { passive: true });
-  strip.addEventListener('wheel', hold, { passive: true });
-  strip.addEventListener('touchmove', hold, { passive: true });
+  enableGalleryScroll(strip, { label: 'People wearing Break Thy Rule', onInteract: hold });
   strip.addEventListener('focusin', () => { focused = true; sync(); });
   strip.addEventListener('focusout', () => queueMicrotask(() => {
     focused = strip.contains(document.activeElement); sync();

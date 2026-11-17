@@ -49,19 +49,18 @@ function mount() {
     try{
       const next=nextGraphic(), texture=await loadFeaturedTexture(next);
       if(!alive)return;
-      // Both permutations change every card's silhouette, without duplicates.
-      const shift=Math.random()<.5?1:2;
-      nextLook={graphic:next,texture,kinds:cards.map((_,i)=>cards[(i+shift)%3].kind),colors:cards.map(card=>new T.Color(sample(COLORS.filter(color=>color.slice(1)!==card.to.getHexString()))))};
+      // Keep tee, hoodie and crewneck in place while their artwork and colors change.
+      nextLook={graphic:next,texture,colors:cards.map(card=>new T.Color(sample(COLORS.filter(color=>color.slice(1)!==card.to.getHexString()))))};
     }catch{
       // Keep the current complete design if an image is temporarily unavailable.
-      nextLook={graphic,texture:null,kinds:cards.map((_,i)=>cards[(i+1)%3].kind),colors:cards.map(card=>card.to.clone())};
+      nextLook={graphic,texture:null,colors:cards.map(card=>card.to.clone())};
     }finally{pendingNext=false;request();}
   }
   function commitLook(){
     if(!nextLook)return false;
     graphic=nextLook.graphic; pass++; blend=0;
     for(let i=0;i<cards.length;i++){
-      const card=cards[i];card.from.copy(card.to);card.to.copy(nextLook.colors[i]);card.kind=nextLook.kinds[i];
+      const card=cards[i];card.from.copy(card.to);card.to.copy(nextLook.colors[i]);
       if(nextLook.texture)models.get(card.kind).material.setGraphic(nextLook.texture);
     }
     nextLook=null;publish();prepareNext();return true;
