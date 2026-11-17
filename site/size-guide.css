@@ -1,0 +1,15 @@
+.size-guide-main{width:min(1040px,92vw);margin:clamp(40px,7vw,90px) auto;line-height:1.6}
+.size-guide-main h1{font-size:clamp(54px,8vw,96px);line-height:1.05;margin:0 0 24px}
+.size-guide-main>.lede,.size-guide-main>p{max-width:780px}
+.size-guide-main a{text-decoration:underline;text-underline-offset:4px}
+.size-guide-nav{display:flex;gap:12px 24px;flex-wrap:wrap;margin:32px 0}
+.size-guide-nav a{min-height:44px;display:inline-flex;align-items:center}
+.size-guide-section{padding:24px 0;border-top:1px solid currentColor;scroll-margin-top:120px}
+.size-guide-section h2{font-size:30px}
+.size-chart-scroll{overflow-x:auto;margin:20px 0 12px}
+.size-chart-scroll:focus-visible{outline:2px solid var(--red,#d5d971);outline-offset:4px}
+.size-chart-scroll table{width:100%;min-width:510px;border-collapse:collapse}
+.size-chart-scroll caption{text-align:left;font-weight:700;font-size:18px;padding-bottom:12px}
+.size-chart-scroll th,.size-chart-scroll td{padding:12px 14px;text-align:left;border:1px solid color-mix(in srgb,currentColor 35%,transparent)}
+.size-chart-scroll th{font-weight:700}
+.size-chart-scroll thead{background:color-mix(in srgb,currentColor 7%,transparent)}

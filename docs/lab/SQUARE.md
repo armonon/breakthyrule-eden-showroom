@@ -29,7 +29,17 @@ Enter secrets in Netlify's environment-variable settings for this site's Functio
 
 Use an access token with the required Square payment/order permissions: `ORDERS_READ`, `ORDERS_WRITE`, `PAYMENTS_READ`, and `PAYMENTS_WRITE`. Configure the webhook subscription for `payment.created`, `payment.updated`, `refund.created`, and `refund.updated`. API version is pinned to `2026-09-16`.
 
-The existing studio launch gates still apply in live mode: verified size charts, confirmed shipping/tax configuration, and published mystery-package policies when applicable. Seed stock and production capacity through the studio before offering those items. Square configuration alone does not populate inventory or approve policy text.
+The existing studio launch gates still apply in live mode: verified size charts, confirmed shipping/tax configuration, and published mystery-package policies when applicable. Configure product availability through the studio before offering those items. Square configuration alone does not populate availability or approve policy text.
+
+## Made-to-order availability
+
+The owner selected made-to-order sales without a stock limit. This uses an explicit `unlimited: true` flag on each recognized `inventory.skus[sku]` and `capacity.slots[slot]` record. It does not manufacture a large stock quantity or capacity limit. Missing records remain unavailable until configured.
+
+- Active unlimited public entries return `{ unlimited: true, available: null }`. Finite entries retain their numeric availability. A capacity record with `open: false` stays closed even if its stored unlimited flag is true; its public entry is `{ unlimited: false, available: 0 }`.
+- Reserved quantities and completed-production `used` counters remain real. Retries, payments, cancellation and refunds keep their existing idempotent receipts. Unlimited SKU payments do not decrement `onHand`; full refunds do not create physical stock.
+- Studio stock updates accept `{ sku, onHand, unlimited }`; capacity updates accept `{ slot, limit, open, leadTimeDays, unlimited }`. Omitting `unlimited` preserves the existing value. The API requires an actual boolean when supplied.
+- Switching an unlimited SKU back to finite requires enough declared `onHand` to cover active holds. Switching an active unlimited capacity slot back to finite requires a limit covering existing `used + reserved`; closing the slot remains available independently. Unexpected manual-store changes that would make a paid SKU count negative send that order to review.
+- Enabling unlimited availability does not attest size charts, publish mystery policies, establish production lead times or switch on live payments. Those settings remain independent. The local seed fixture remains intentionally finite and should not be used to initialize production made-to-order availability.
 
 ## Shipping and tax scope
 
@@ -40,6 +50,12 @@ Square collects the actual address on its hosted page. A shopper can edit that a
 Tips, coupon redemption, loyalty discounts and automatic catalog discounts are disabled. Flat shipping and explicit Square catalog tax IDs remain supported for other configurations/fixtures. Regional shipping is a fixed fee, not a carrier quote; the fulfillment staff choose the actual shipping service. The two rates treat America as the United States, with all other countries using the international tier.
 
 ## Verification before real checkout
+
+### Current sizing decision
+
+The owner requested Shaka Wear references from the Ghost Studio garment list and explicitly chose no Cut & Sew chart for now. `/size-guide` publishes the seven supplier charts verified against the official Shaka pages on 2026-11-17, plus a separately labeled Shaka sweat-shorts reference. These are named supplier references, not inferred 3D-model measurements or measurements of house patterns. The inconsistent sweatpants length row is omitted with an explanation and source link. Canvas checkout accepts S–XXL (XXL corresponds to supplier 2XL); Cut & Sew retains XS–XXL with an explicit no-chart notice. Hanes/Daily Apple and mystery sizing are separate.
+
+For this owner-approved policy, the size-chart launch flag means the published supplier guidance has been verified; it does not assert that Cut & Sew measurements exist. Do not manufacture Cut & Sew data or apply Shaka charts to Hanes products.
 
 1. Deploy the function and ensure `/api/lab/status` returns JSON rather than the old static API-unavailable response. Route `/api/lab/*` to the Netlify `lab` function before the generic `/api/*` fallback.
 2. Configure sandbox values, stock and capacity. Create a cart with a real variant and artwork selection. Confirm the Square checkout shows the same products, quantities, subtotal, shipping and tax.

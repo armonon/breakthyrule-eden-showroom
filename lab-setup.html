@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; font-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>Owner setup — Break Thy Rule Studio</title>
+  <script src="/site/lab-setup.js"></script>
+  <link rel="stylesheet" href="/site/lab-setup.css">
+</head>
+<body>
+  <main class="setup-shell">
+    <header>
+      <p class="brand">BREAK THY RULE</p>
+      <p class="eyebrow">Studio · Owner setup</p>
+    </header>
+    <section class="setup-card" aria-labelledby="setup-title">
+      <div id="setup-status" aria-live="polite" aria-atomic="true">
+        <h1 id="setup-title" tabindex="-1">Checking your setup link</h1>
+        <p id="setup-description">Please wait while we check whether owner setup is available.</p>
+      </div>
+
+      <form id="setup-form" method="post" action="/api/lab/setup-owner" hidden>
+        <fieldset id="setup-fields" disabled>
+          <legend class="visually-hidden">Choose your studio password</legend>
+          <label for="setup-password">New password</label>
+          <input id="setup-password" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required aria-describedby="password-help">
+          <p id="password-help" class="field-help">Use 12–128 characters. A long, unique passphrase works well.</p>
+
+          <label for="setup-confirm">Confirm password</label>
+          <input id="setup-confirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+
+          <label class="show-password" for="setup-show">
+            <input id="setup-show" type="checkbox">
+            <span>Show passwords</span>
+          </label>
+
+          <p id="setup-error" class="form-error" role="alert"></p>
+          <button id="setup-submit" type="submit">Set studio password</button>
+        </fieldset>
+      </form>
+
+      <div id="setup-success" hidden>
+        <p id="setup-email"></p>
+        <a class="button-link" href="/lab-admin">Sign in to the studio</a>
+      </div>
+
+      <button id="setup-retry" class="secondary" type="button" hidden>Try again</button>
+      <noscript><p>JavaScript is required to use this private setup link. Enable it, then reopen the original link.</p></noscript>
+    </section>
+    <footer><a href="/lab-admin">Already set up? Studio sign in</a></footer>
+  </main>
+</body>
+</html>

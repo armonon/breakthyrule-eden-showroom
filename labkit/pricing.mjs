@@ -10,6 +10,7 @@ import {
 } from './catalog.mjs';
 import { ARTWORK_POOL } from './artwork-pool.mjs';
 import { isUploadId, normalizeUploadRefs, uploadForId } from './custom-artwork.mjs';
+import { garmentSizes } from './sizing.mjs';
 const GRAPHIC_NAME = Object.fromEntries(ARTWORK_POOL.map(a => [a.id, a.display || a.name]));
 export const graphicName = (id, uploads) => GRAPHIC_NAME[id] || (uploadForId(id, uploads)?.name ? 'Your upload: ' + uploadForId(id, uploads).name : id);
 import { drawArt, drawChaos, isSeed } from './random.mjs';
@@ -49,7 +50,7 @@ export function normalizeItem(raw, { artworkPool = [] } = {}) {
     const offering = offeringFor({ construction, garment, labMode });
     if (Object.hasOwn(CONSTRUCTIONS, construction) && !offering) errors.push('That garment is not offered in ' + CONSTRUCTIONS[construction].name + '.');
     const size = raw.size;
-    if (!SIZES.includes(size)) errors.push('Choose a size.');
+    if (!garmentSizes({ construction, garment, labMode }).includes(size)) errors.push(construction === 'canvas' ? 'Choose a Shaka Wear size from S to XXL.' : 'Choose a size.');
     const fits = Object.hasOwn(FITS, construction) ? FITS[construction] : [];
     if (!fits.some(f => f.id === fit)) fit = fits.length === 1 ? fits[0].id : (errors.push('Choose a fit.'), null);
     if (!Object.hasOwn(COLORS, color)) errors.push('Choose a color.');

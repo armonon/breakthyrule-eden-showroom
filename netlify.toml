@@ -89,6 +89,16 @@ to = "/account.html"
 status = 200
 
 [[redirects]]
+from = "/size-guide"
+to = "/size-guide.html"
+status = 200
+
+[[redirects]]
+from = "/lab-setup"
+to = "/lab-setup.html"
+status = 200
+
+[[redirects]]
 from = "/product"
 to = "/product.html"
 status = 200

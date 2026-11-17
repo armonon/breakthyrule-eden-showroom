@@ -280,11 +280,11 @@ function createLab({ store, env = {}, stripe = null, square = null, artworkPool 
   }
   const skuAvail = (inv, sku) => {
     const s = inv.skus[sku];
-    return s ? Math.max(0, s.onHand - s.reserved) : 0;
+    return s?.unlimited === true ? Infinity : s ? Math.max(0, (s.onHand || 0) - (s.reserved || 0)) : 0;
   };
   const slotAvail = (cap, slot) => {
     const s = cap.slots[slot];
-    return s && Number.isInteger(s.limit) && s.open !== false ? Math.max(0, s.limit - s.used - s.reserved) : 0;
+    return s && s.open !== false ? s.unlimited === true ? Infinity : Number.isInteger(s.limit) ? Math.max(0, s.limit - (s.used || 0) - (s.reserved || 0)) : 0 : 0;
   };
   async function publicStatus() {
     const [set, inv, cap] = await Promise.all([settings(), inventory(), capacity()]);
@@ -298,9 +298,9 @@ function createLab({ store, env = {}, stripe = null, square = null, artworkPool 
     const slots = {}, skus = {};
     for (const { slot } of allSlots()) {
       const s = cap.slots[slot] || {};
-      slots[slot] = { available: slotAvail(cap, slot), leadTimeDays: Number.isInteger(s.leadTimeDays) ? s.leadTimeDays : null };
+      slots[slot] = { available: s.unlimited === true && s.open !== false ? null : slotAvail(cap, slot), unlimited: s.unlimited === true && s.open !== false, leadTimeDays: Number.isInteger(s.leadTimeDays) ? s.leadTimeDays : null };
     }
-    for (const { sku } of allSkus()) skus[sku] = { available: skuAvail(inv, sku) };
+    for (const { sku } of allSkus()) skus[sku] = { available: inv.skus[sku]?.unlimited === true ? null : skuAvail(inv, sku), unlimited: inv.skus[sku]?.unlimited === true };
     const availabilityConfigured = Object.keys(slots).some(slot => cap.slots[slot] != null) || Object.keys(skus).some(sku => inv.skus[sku] != null);
     if (mode === "live" && !availabilityConfigured) reasons.push("Product availability has not been configured yet.");
     return {
@@ -349,7 +349,7 @@ function createLab({ store, env = {}, stripe = null, square = null, artworkPool 
       for (const [sku, q] of Object.entries(needs.skus)) {
         const s = inv.skus[sku] || (inv.skus[sku] = { onHand: 0, reserved: 0 });
         s.reserved = Math.max(0, s.reserved - q);
-        if (op === "commit") s.onHand = Math.max(0, s.onHand - q);
+        if (op === "commit" && s.unlimited !== true) s.onHand = Math.max(0, s.onHand - q);
       }
       return inv;
     });
@@ -358,7 +358,7 @@ function createLab({ store, env = {}, stripe = null, square = null, artworkPool 
       for (const [slot, q] of Object.entries(needs.slots)) {
         const s = cap.slots[slot] || (cap.slots[slot] = { limit: null, used: 0, reserved: 0, leadTimeDays: null });
         s.reserved = Math.max(0, s.reserved - q);
-        if (op === "commit") s.used += q;
+        if (op === "commit") s.used = (s.used || 0) + q;
       }
       return cap;
     });
@@ -622,6 +622,42 @@ function createLab({ store, env = {}, stripe = null, square = null, artworkPool 
     if (!staff) throw new LabError(401, "unauthorized", "Sign in to the studio.");
     if (!can(staff, permission)) throw new LabError(403, "forbidden", "Your role cannot do that.");
   }
+  // The setup bearer is 32 random bytes encoded as 64 hex characters. Only its
+  // SHA-256 digest is configured. The permanent claim also survives staff deletion.
+  const ownerSetupClaimKey = "auth/owner-setup-claim";
+  function ownerSetupConfiguration() {
+    const email = String(env.LAB_SETUP_OWNER_EMAIL || "").trim().toLowerCase();
+    const digest = env.LAB_SETUP_TOKEN_SHA256;
+    const expiry = env.LAB_SETUP_EXPIRES_AT;
+    if (secret.length < 32 || env.LAB_BOOTSTRAP_OWNER || email.length > 254 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || typeof digest !== "string" || !/^[a-f0-9]{64}$/i.test(digest) || typeof expiry !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(expiry)) return null;
+    const expiresAt = Date.parse(expiry);
+    if (!Number.isFinite(expiresAt) || new Date(expiresAt).toISOString() !== (expiry.includes(".") ? expiry : expiry.replace("Z", ".000Z")) || expiresAt <= now()) return null;
+    return { email, digest, expiresAt };
+  }
+  async function ownerSetupStatus() {
+    if (!ownerSetupConfiguration()) return { available: false };
+    const [claim, staffKeys] = await Promise.all([store.get(ownerSetupClaimKey), store.list("staff/")]);
+    return { available: !claim && staffKeys.length === 0 };
+  }
+  async function setupOwner(input) {
+    const config = ownerSetupConfiguration();
+    const unavailable = () => new LabError(409, "setup_unavailable", "Owner setup is not available. Sign in to the studio or request a new setup link.");
+    if (!config) throw unavailable();
+    if (!input || typeof input !== "object" || Array.isArray(input)) throw new LabError(400, "bad_request", "Enter your setup token and password.");
+    const { token, password } = input;
+    if (typeof token !== "string" || !/^[a-f0-9]{64}$/i.test(token) || !crypto.timingSafeEqual(crypto.createHash("sha256").update(Buffer.from(token, "hex")).digest(), Buffer.from(config.digest, "hex"))) throw new LabError(403, "invalid_setup", "This setup link is invalid.");
+    if (typeof password !== "string" || password.length < 12 || password.length > 128) throw new LabError(400, "bad_request", "Choose a password between 12 and 128 characters.");
+    if (!(await ownerSetupStatus()).available) throw unavailable();
+    const passwordHash = hashPassword(password);
+    if (config.expiresAt <= now()) throw unavailable();
+    const at = new Date(now()).toISOString();
+    // Consume before creation: concurrent requests can never replace the winner's
+    // password. A storage failure after this claim fails closed for operator review.
+    if (!await store.set(ownerSetupClaimKey, { email: config.email, at }, { ifNew: true })) throw unavailable();
+    if ((await store.list("staff/")).length || config.expiresAt <= now()) throw unavailable();
+    if (!await store.set("staff/" + config.email, { email: config.email, role: "owner", passwordHash, active: true, at, addedBy: "owner-setup" }, { ifNew: true })) throw unavailable();
+    return { ok: true, email: config.email };
+  }
   async function login(email, password) {
     if (!secret) throw new LabError(503, "auth_unavailable", "Studio sign-in is not configured (LAB_SESSION_SECRET).");
     email = String(email || "").trim().toLowerCase();
@@ -784,32 +820,40 @@ function createLab({ store, env = {}, stripe = null, square = null, artworkPool 
     need(staff, "orders:read");
     const [inv, cap] = await Promise.all([inventory(), capacity()]);
     return {
-      skus: allSkus().map((s) => ({ ...s, onHand: inv.skus[s.sku]?.onHand ?? 0, reserved: inv.skus[s.sku]?.reserved ?? 0 })),
-      slots: allSlots().map((s) => ({ ...s, ...{ limit: null, used: 0, reserved: 0, leadTimeDays: null, open: true }, ...cap.slots[s.slot] || {} }))
+      skus: allSkus().map((s) => ({ ...s, onHand: inv.skus[s.sku]?.onHand ?? 0, reserved: inv.skus[s.sku]?.reserved ?? 0, unlimited: inv.skus[s.sku]?.unlimited === true })),
+      slots: allSlots().map((s) => ({ ...s, ...{ limit: null, used: 0, reserved: 0, leadTimeDays: null, open: true, unlimited: false }, ...cap.slots[s.slot] || {} }))
     };
   }
-  async function setStock(staff, sku, onHand) {
+  async function setStock(staff, sku, onHand, { unlimited } = {}) {
     need(staff, "inventory:write");
     if (!allSkus().some((s) => s.sku === sku)) throw new LabError(400, "bad_request", "Unknown SKU.");
-    if (!Number.isInteger(onHand) || onHand < 0 || onHand > 1e5) throw new LabError(400, "bad_request", "Stock must be a whole number.");
+    if (unlimited !== void 0 && typeof unlimited !== "boolean") throw new LabError(400, "bad_request", "Unlimited stock must be true or false.");
+    if (onHand !== void 0 && (!Number.isInteger(onHand) || onHand < 0 || onHand > 1e5) || onHand === void 0 && unlimited === void 0) throw new LabError(400, "bad_request", "Stock must be a whole number.");
     return store.update("inventory", (inv) => {
       inv = inv || { skus: {} };
       const s = inv.skus[sku] || (inv.skus[sku] = { onHand: 0, reserved: 0 });
-      if (onHand < s.reserved) throw new LabError(409, "below_reserved", `${s.reserved} are held in open checkouts.`);
-      s.onHand = onHand;
+      const nextUnlimited = unlimited === void 0 ? s.unlimited === true : unlimited;
+      const nextOnHand = onHand === void 0 ? s.onHand : onHand;
+      if (!nextUnlimited && (!Number.isInteger(nextOnHand) || nextOnHand < (s.reserved || 0))) throw new LabError(409, "below_reserved", `${s.reserved || 0} are held in open checkouts. Set finite stock that covers those holds.`);
+      if (onHand !== void 0) s.onHand = onHand;
+      if (unlimited !== void 0) s.unlimited = unlimited;
       return inv;
     });
   }
-  async function setSlot(staff, slot, { limit, leadTimeDays, open }) {
+  async function setSlot(staff, slot, { limit, leadTimeDays, open, unlimited }) {
     need(staff, "inventory:write");
     if (!allSlots().some((s) => s.slot === slot)) throw new LabError(400, "bad_request", "Unknown production slot.");
+    if (unlimited !== void 0 && typeof unlimited !== "boolean") throw new LabError(400, "bad_request", "Unlimited capacity must be true or false.");
     const okInt = (v) => v === null || Number.isInteger(v) && v >= 0 && v <= 1e4;
     if (limit !== void 0 && !okInt(limit)) throw new LabError(400, "bad_request", "Capacity must be a whole number or empty.");
     if (leadTimeDays !== void 0 && !okInt(leadTimeDays)) throw new LabError(400, "bad_request", "Lead time must be whole days or empty.");
     return store.update("capacity", (cap) => {
       cap = cap || { slots: {} };
       const s = cap.slots[slot] || (cap.slots[slot] = { limit: null, used: 0, reserved: 0, leadTimeDays: null, open: true });
+      const nextLimit = limit === void 0 ? s.limit : limit;
+      if (s.unlimited === true && unlimited === false && (open === void 0 ? s.open : open) !== false && (!Number.isInteger(nextLimit) || nextLimit < (s.used || 0) + (s.reserved || 0))) throw new LabError(409, "below_reserved", "Finite capacity must cover existing production and checkout holds.");
       if (limit !== void 0) s.limit = limit;
+      if (unlimited !== void 0) s.unlimited = unlimited;
       if (leadTimeDays !== void 0) s.leadTimeDays = leadTimeDays;
       if (open !== void 0) s.open = !!open;
       return cap;
@@ -915,6 +959,8 @@ function createLab({ store, env = {}, stripe = null, square = null, artworkPool 
     sweepExpired,
     customerOrder,
     testGateway,
+    ownerSetupStatus,
+    setupOwner,
     login,
     staffFromToken,
     addStaff,
@@ -2054,7 +2100,11 @@ function createHandler(getLab, env = process.env) {
       const path2 = url.pathname.replace(/^\/\.netlify\/functions\/lab/, "/api/lab").replace(/\/+$/, "");
       if (!path2.startsWith("/api/lab")) return json(404, { error: "Not found." });
       const route = path2.slice("/api/lab".length) || "/";
+      const seg = route.split("/").filter(Boolean);
+      const ownerSetupRoute = seg.length === 1 && seg[0] === "setup-owner";
       if (rawBody.length > MAX_BODY) throw new LabError(413, "too_large", "Request too large.");
+      if (ownerSetupRoute && Buffer.byteLength(rawBody) > 2048) throw new LabError(413, "too_large", "Request too large.");
+      if (method === "POST" && ownerSetupRoute && (headers.origin && headers.origin !== url.origin || headers["sec-fetch-site"] === "cross-site")) throw new LabError(403, "cross_origin", "Set up the owner account from this shop.");
       if (method === "POST" && route === "/artwork" && (headers.origin && headers.origin !== url.origin || headers["sec-fetch-site"] === "cross-site")) throw new LabError(403, "cross_origin", "Upload artwork from this shop.");
       const lab = await getLab();
       const body = () => {
@@ -2067,9 +2117,10 @@ function createHandler(getLab, env = process.env) {
       const auth = String(headers.authorization || "");
       const staff = auth.startsWith("Bearer ") ? await lab.staffFromToken(auth.slice(7)) : null;
       const origin = env.LAB_PUBLIC_URL || `${url.protocol}//${url.host}`;
-      const seg = route.split("/").filter(Boolean);
       const is = (m, ...parts) => method === m && seg.length === parts.length && parts.every((p, i) => p === "*" || p === seg[i]);
       if (is("GET", "status")) return json(200, await lab.publicStatus());
+      if (is("GET", "setup-owner")) return json(200, await lab.ownerSetupStatus());
+      if (is("POST", "setup-owner")) return json(201, await lab.setupOwner(body()));
       if (is("POST", "artwork")) return json(201, await lab.uploadArtwork(body(), clientIP));
       if (is("GET", "artwork", "*")) {
         const artwork = await lab.getArtwork(seg[1], url.searchParams.get("key"), staff);
@@ -2127,7 +2178,7 @@ function createHandler(getLab, env = process.env) {
         if (is("GET", "admin", "stock")) return json(200, await lab.stock(staff));
         if (is("POST", "admin", "stock")) {
           const b = body();
-          return json(200, await lab.setStock(staff, b.sku, b.onHand));
+          return json(200, await lab.setStock(staff, b.sku, b.onHand, { unlimited: b.unlimited }));
         }
         if (is("POST", "admin", "capacity")) {
           const b = body();
