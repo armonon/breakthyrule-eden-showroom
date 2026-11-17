@@ -10,6 +10,8 @@ const h = (tag, props = {}, ...kids) => { const n = Object.assign(document.creat
 const button = h('button', { type: 'button', className: 'cart-button', title: 'Your cart' }, h('span', { textContent: 'Cart' }), h('span', { className: 'cart-count', textContent: '0' }));
 button.setAttribute('aria-label', 'Open your cart');
 const top = document.querySelector('.site-top');
+// The shared header may mount before this module and provide a temporary cart link.
+top?.querySelector('a.cart-button')?.remove();
 (top?.querySelector('.enter-showroom') || top?.lastChild)?.before(button);
 
 const drawer = h('dialog', { className: 'cart-drawer', id: 'cart-drawer' });
@@ -19,6 +21,14 @@ const subtotal = h('strong', { className: 'cart-subtotal' });
 const note = h('textarea', { id: 'cart-note', maxLength: 500, rows: 2, placeholder: 'A note for the studio (optional)' });
 const status = h('p', { className: 'cart-status', role: 'status' });
 const checkout = h('button', { type: 'button', className: 'solid big cart-checkout', textContent: 'Checkout' });
+const paymentNote = h('p', { className: 'fine', textContent: 'Shipping and any taxes are shown at secure checkout. Card details go directly to the payment provider.' });
+const shippingSelect = h('select', { id: 'cart-shipping', name: 'shippingRegion' },
+  h('option', { value: '', textContent: 'Choose a destination' }),
+  h('option', { value: 'us', textContent: 'United States' }),
+  h('option', { value: 'international', textContent: 'International' }));
+const shippingField = h('div', { className: 'cart-shipping', hidden: true },
+  h('label', { htmlFor: 'cart-shipping', textContent: 'First-class shipping' }), shippingSelect,
+  h('p', { className: 'fine', textContent: 'Choose where your order will be shipped. Use an address in that destination at checkout.' }));
 const close = h('button', { type: 'button', className: 'cart-close', textContent: '×', title: 'Close cart' });
 close.setAttribute('aria-label', 'Close cart');
 drawer.append(
@@ -26,7 +36,8 @@ drawer.append(
   list,
   h('footer', { className: 'cart-foot' },
     h('div', { className: 'cart-row' }, h('span', { textContent: 'Subtotal' }), subtotal),
-    h('p', { className: 'fine', textContent: 'Shipping and any taxes are calculated at checkout. Card details are handled by Stripe and never touch our servers.' }),
+    paymentNote,
+    shippingField,
     h('label', { className: 'cart-note' }, h('span', { textContent: 'Note' }), note),
     h('div', { className: 'cart-upsell', id: 'cart-upsell', hidden: true }),
     status, checkout,
@@ -39,6 +50,8 @@ const sessionMemory = new Map();
 function sessionRead(key) { if (sessionMemory.has(key)) return sessionMemory.get(key); try { return sessionStorage.getItem(key); } catch { return null; } }
 function sessionWrite(key, value) { sessionMemory.set(key, value); try { sessionStorage.setItem(key, value); } catch {} }
 note.value = sessionRead('btr-cart-note') || '';
+shippingSelect.value = sessionRead('btr-shipping-region') || '';
+shippingSelect.addEventListener('change', () => sessionWrite('btr-shipping-region', shippingSelect.value));
 note.addEventListener('input', () => sessionWrite('btr-cart-note', note.value));
 let checkingOut = false;
 
@@ -89,8 +102,8 @@ drawer.addEventListener('click', e => { if (e.target === drawer || e.target.clos
 document.addEventListener('lab:open-cart', openCart);
 
 // One checkout key per cart state, so a double click or a retry never opens two checkouts.
-function checkoutKey(items, orderNote) {
-  const sig = JSON.stringify(items) + orderNote;
+function checkoutKey(items, orderNote, shippingRegion) {
+  const sig = JSON.stringify({ items, orderNote, shippingRegion });
   let saved = null;
   try { saved = JSON.parse(sessionRead('btr-checkout-key') || 'null'); } catch {}
   if (saved && saved.sig === sig && typeof saved.key === 'string' && /^[a-f0-9]{36}$/.test(saved.key)) return saved.key;
@@ -108,9 +121,16 @@ checkout.onclick = async () => {
     const st = await labStatus({ refresh: true });
     if (!st) throw new Error('Ordering could not be reached. Please try again. Your cart is saved on this device.');
     if (!st.checkout?.available) throw new Error((st.checkout?.reasons?.join(' ') || 'Ordering is currently unavailable.') + ' Your cart is saved on this device.');
-    const r = await fetch('/api/lab/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items, note: orderNote, idempotencyKey: checkoutKey(items, orderNote) }) });
+    configureShipping(st.shipping);
+    const shippingRegion = st.shipping?.mode === 'regional' ? shippingSelect.value : undefined;
+    if (st.shipping?.mode === 'regional' && !['us', 'international'].includes(shippingRegion)) {
+      shippingSelect.focus();
+      throw new Error('Choose your shipping destination before continuing.');
+    }
+    const r = await fetch('/api/lab/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items, note: orderNote, shippingRegion, idempotencyKey: checkoutKey(items, orderNote, shippingRegion) }) });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok || !data.url) throw new Error(data.error || 'Checkout could not start. Nothing was charged.');
+    if (['checkout_rejected', 'checkout_finished', 'checkout_collision', 'checkout_changed'].includes(data.code)) sessionWrite('btr-checkout-key', '');
+    if (!r.ok || !data.url) throw new Error(data.error || 'Checkout could not be opened. Your cart is saved; please try again.');
     sessionWrite('btr-last-order', data.orderId);
     location.href = data.url;
   } catch (e) {
@@ -119,4 +139,18 @@ checkout.onclick = async () => {
     checkingOut = false; checkout.disabled = !cart.items().length;
   }
 };
-labStatus().then(st => { if (st?.checkout?.mode === 'test') { const b = h('span', { className: 'test-badge', textContent: 'Test mode — no real charges' }); drawer.querySelector('.cart-head h2').append(b); } });
+function configureShipping(shipping) {
+  shippingField.hidden = shipping?.mode !== 'regional';
+  if (shippingField.hidden) return;
+  shippingSelect.querySelector('[value="us"]').textContent = `United States — ${money(shipping.usCents)}`;
+  shippingSelect.querySelector('[value="international"]').textContent = `International — ${money(shipping.internationalCents)}`;
+}
+labStatus().then(st => {
+  configureShipping(st?.shipping);
+  const provider = { square: 'Square', stripe: 'Stripe' }[st?.checkout?.provider];
+  if (provider) {
+    paymentNote.textContent = `Shipping and any taxes are shown at checkout. Card details are handled securely by ${provider}.`;
+    checkout.textContent = `Checkout with ${provider}`;
+  }
+  if (st?.checkout?.mode === 'test') { const b = h('span', { className: 'test-badge', textContent: 'Test mode — no real charges' }); drawer.querySelector('.cart-head h2').append(b); }
+});

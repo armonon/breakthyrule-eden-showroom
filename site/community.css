@@ -1,0 +1,30 @@
+/* Shared community handoff and account page. Keep the existing page skins intact. */
+.community-handoff{padding:clamp(22px,4vw,42px);margin:22px 0;border:1px solid currentColor;background:color-mix(in srgb,currentColor 3%,transparent)}
+.community-handoff .kicker{font:700 11px/1.5 'Courier New',monospace;letter-spacing:.1em;text-transform:uppercase;margin:0 0 16px;color:inherit}
+.community-handoff h2,.community-handoff h3{font-family:inherit;font-size:clamp(25px,3vw,40px);line-height:1.1;max-width:650px;margin:0 0 16px}
+.community-handoff p{max-width:690px}
+.community-actions{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-top:24px}
+.community-actions a{min-height:44px;display:inline-flex;align-items:center}
+.community-actions .solid,.community-actions .ghost{font-size:12px;text-decoration:none;padding:12px 18px}
+#archive-market .community-actions a.solid{color:#fff;background:#20251c;text-decoration:none}
+#archive-market .community-actions a.solid:focus-visible{outline:2px solid var(--red,#526c36);outline-offset:4px}
+.community-actions>a:not(.solid):not(.ghost){text-decoration:underline;text-underline-offset:4px;font-size:13px}
+.community-local-notes{margin:28px 0;padding:18px 0;border-top:1px solid currentColor}
+.community-local-notes>summary{cursor:pointer;font-weight:700;min-height:44px;padding:10px 0}
+.community-local-notes>summary:focus-visible{outline:2px solid currentColor;outline-offset:4px}
+.community-local-notes .preview-note{margin-top:12px}
+#archive-market .reading-layout[data-view="forum"]{grid-template-columns:minmax(0,1fr)}
+#archive-market .community-local-notes>.reading-sidebar{position:static;max-height:420px;margin-block:18px;overflow-y:auto}
+.account-main{width:min(1040px,92vw);margin:clamp(44px,8vw,100px) auto}
+.account-heading{max-width:700px;margin-bottom:42px}
+.account-heading h1{font-size:clamp(58px,9vw,112px);line-height:.96;margin:0 0 22px}
+.account-heading .lede{max-width:630px}
+.account-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.account-grid .community-handoff{margin:0}
+.account-grid h2{font-size:28px}
+.account-grid .community-actions{align-items:flex-start;flex-direction:column;gap:12px}
+.account-footer-note{max-width:720px;margin-top:28px;font-size:14px;color:var(--muted,#666)}
+.account-footer-note a{text-decoration:underline;text-underline-offset:3px}
+.account-skip{position:absolute;left:16px;top:-100px;z-index:10;background:#fff;color:#111;padding:12px}
+.account-skip:focus{top:10px}
+@media(max-width:650px){.account-grid{grid-template-columns:1fr}.community-actions{align-items:stretch;flex-direction:column}.community-actions a{justify-content:center}.account-grid .community-actions{align-items:stretch}}

@@ -1,8 +1,8 @@
 'use strict';
 // Shared chrome for the public site: header, tabs, footer, and the discussion board
-// (a Circle space when one is configured, otherwise a local preview board).
+// (CreatingCo's hosted Circle community, with earlier browser notes kept separately).
 (()=>{
- const tabs=[['/', 'Products','home'],['/lab','Lab','lab'],['/gallery','Gallery','gallery'],['/archive','Archive','archive'],['/about','About','about']];
+ const tabs=[['/', 'Products','home'],['/lab','Lab','lab'],['/gallery','Gallery','gallery'],['/archive','Archive','archive'],['/archive#forum','Forum','forum'],['/about','About','about'],['/account','Account','account']];
  const page=document.body.dataset.page||'';
  // Keep old shared About links working at the dedicated page.
  if(new URLSearchParams(location.search).has('about')){location.replace('/about');return;}
@@ -25,6 +25,8 @@
   el('p',{textContent:'Here ends the first book. A codex worn on the body.'}),
   el('div',{className:'foot-links'},
    el('a',{href:'/about',textContent:'About'}),
+   el('a',{href:'/archive#forum',textContent:'Forum'}),
+   el('a',{href:'/account',textContent:'Account'}),
    el('a',{href:'/lab',textContent:'Garment Lab'}),
    el('a',{href:'/showroom',textContent:'3D Showroom'}),
    el('a',{href:'/broadcast.html',textContent:'Broadcast Room'}),
@@ -34,18 +36,26 @@
  document.body.append(footer);
 
  // Discussion board. `key` names the thread (forum, gallery, topic:symbols …).
- window.siteDiscussion=function(mount,{key,space,title='Discussion',prompt='Say something…',allowImages=true}){
+ window.siteCommunityDiscussion=function(mount,{key,space,title='Discussion',prompt='Say something…',allowImages=true}){
   const circle=siteConfig.circle||{};
   mount.classList.add('discussion');
-  if(circle.community&&space){
-   const src=circle.community.replace(/\/$/,'')+'/'+space.replace(/^\//,'')+'?iframe=true';
-   const frame=el('iframe',{src,title:title+' on Circle',loading:'lazy'});frame.setAttribute('allow','clipboard-write');
-   mount.replaceChildren(el('div',{className:'circle-frame'},frame),el('p',{className:'fine'},el('a',{href:src.replace('?iframe=true',''),target:'_blank',rel:'noopener',textContent:'Open in Circle ↗'})));
-   return;
+  const root=mount;
+  if(circle.community){
+   // Circle/Now owns its member session. Never imply that a link signs the shop in.
+   const local=el('details',{className:'community-local-notes'},el('summary',{textContent:'Earlier notes on this device'}));
+   mount=el('div');local.append(mount);
+   root.replaceChildren(
+    el('section',{className:'community-handoff'},
+     el('p',{className:'kicker',textContent:'The Circle / thecreatingco'}),
+     el('h3',{textContent:'Share it with the community.'}),
+     el('p',{textContent:'Post your fit, share a source, and meet other makers in The Circle.'}),
+     el('div',{className:'community-actions'},
+      el('a',{href:circle.community,className:'solid',textContent:'Open The Circle ↗'}),
+      el('a',{href:'/account',className:'ghost',textContent:'Your account'}))),local);
   }
   const storeKey='btr-board:'+key;
-  const load=()=>{try{return JSON.parse(localStorage.getItem(storeKey))||[];}catch{return [];}};
-  const save=posts=>{try{localStorage.setItem(storeKey,JSON.stringify(posts.slice(-60)));return true;}catch{return false;}};
+  const load=()=>{try{const value=JSON.parse(localStorage.getItem(storeKey)||'[]');return Array.isArray(value)?value:null;}catch{return null;}};
+  const save=posts=>{try{localStorage.setItem(storeKey,JSON.stringify(posts));return true;}catch{return false;}};
   const list=el('ol',{className:'posts'});
   const status=el('p',{className:'fine',role:'status'});
   const name=el('input',{name:'name',placeholder:'Name',maxLength:40,autocomplete:'nickname',required:true});
@@ -53,10 +63,12 @@
   const file=el('input',{type:'file',accept:'image/*',name:'image'});
   const form=el('form',{className:'compose'},
    el('div',{className:'compose-row'},name,allowImages?el('label',{className:'attach'},file,el('span',{textContent:'Add image'})):null),
-   text,el('button',{type:'submit',className:'solid',textContent:'Post'}));
-  name.value=localStorage.getItem('btr-name')||'';
+   text,el('button',{type:'submit',className:'solid',textContent:'Save local note'}));
+  try{name.value=localStorage.getItem('btr-name')||'';}catch{}
   function render(){
-   const posts=load();list.replaceChildren(...posts.slice().reverse().map(p=>el('li',{},
+   const posts=load();
+   if(posts===null){list.replaceChildren(el('li',{className:'empty',textContent:'Your saved notes could not be read. Existing notes have not been changed.'}));return;}
+   list.replaceChildren(...posts.filter(p=>p&&typeof p.text==='string').slice().reverse().map(p=>el('li',{},
     el('div',{className:'post-meta'},el('strong',{textContent:p.name}),el('time',{textContent:new Date(p.at).toLocaleString()})),
     el('p',{textContent:p.text}),p.image?el('img',{src:p.image,alt:'Shared by '+p.name,loading:'lazy'}):null)));
    if(!posts.length)list.append(el('li',{className:'empty',textContent:'No posts yet. Start the thread.'}));
@@ -67,17 +79,20 @@
    return c.toDataURL('image/jpeg',.78);
   }
   form.onsubmit=async event=>{
-   event.preventDefault();localStorage.setItem('btr-name',name.value.trim());
+   event.preventDefault();try{localStorage.setItem('btr-name',name.value.trim());}catch{}
    let image='';if(file.files[0]){try{image=await shrink(file.files[0]);}catch{status.textContent='That image could not be read.';return;}}
-   const posts=load();posts.push({name:name.value.trim(),text:text.value.trim(),image,at:Date.now()});
+   const posts=load();if(posts===null){status.textContent='Your existing notes could not be read. This draft has not been saved.';return;}posts.push({name:name.value.trim(),text:text.value.trim(),image,at:Date.now()});
    if(!save(posts)){status.textContent='This device is out of space for images. Try a smaller one.';return;}
-   text.value='';file.value='';status.textContent='Posted.';render();
+   text.value='';file.value='';status.textContent='Saved on this device. This note is not posted to Circle.';render();
   };
   mount.replaceChildren(
-   el('p',{className:'preview-note',textContent:'Preview board — posts stay on this device until the Circle community is connected in site/config.js.'}),
+   el('p',{className:'preview-note',textContent:'Private local notes — saved only in this browser. To share with other people, post in The Circle.'}),
    form,status,list);
   render();
  };
+ // Keep older page integrations working. Gallery uses the direct community helper:
+ // a historical enhancement intentionally suppresses its old siteDiscussion board.
+ window.siteDiscussion=window.siteCommunityDiscussion;
 
  // The glow behind a garment takes the strongest ink colour in its photo (skips paper-white and grey).
  const haloCache=new Map();

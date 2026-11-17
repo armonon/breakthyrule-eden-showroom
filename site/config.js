@@ -1,17 +1,18 @@
 'use strict';
 // One place to connect the public site to outside services.
-// Leave a value empty and the page shows a clearly labelled local preview instead.
 window.siteConfig={
  instagram:'https://www.instagram.com/breakthyrule/',
- // Circle community, e.g. 'https://breakthyrule.circle.so'. In Circle: Settings → Embed → allow this domain.
- // Each space is the path after the community URL, e.g. 'c/forum'. Pages embed `${community}/${space}?iframe=true`.
+ // CreatingCo's own Circle app. Open its hosted account/session flow; it is not Circle.so.
  circle:{
-  community:'',
+  community:'https://thecreatingco.com/community/network',
+  profile:'https://thecreatingco.com/community/network?view=Profile',
+  settings:'https://thecreatingco.com/community/network?view=Settings',
+  messages:'https://thecreatingco.com/community/network?view=Messages',
   spaces:{
-   forum:'',            // Community tab: the main forum
-   gallery:'',          // Gallery tab: "worn by you" photo space
-   archive:'',          // Archive tab: general archive discussion
-   topics:{}            // Archive topics by id, e.g. {symbols:'c/symbols', scripture:'c/scripture'}
+   forum:'',
+   gallery:'',
+   archive:'',
+   topics:{}            // No dedicated Break Thy Rule spaces have been created yet.
   }
  },
  librarianApp:'https://librarian-atlas.netlify.app/'

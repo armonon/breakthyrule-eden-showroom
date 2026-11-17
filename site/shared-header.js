@@ -49,7 +49,7 @@
     nav.setAttribute('aria-label', 'Main');
     const active = ['index', 'product', 'random-shirt', 'mystery-box', 'core', 'belts', 'accessories', 'reliquary', 'passport'].includes(page)
       ? 'products' : page.startsWith('lab') ? 'lab' : page;
-    const links = [['/?nocover=1', 'Products'], ['/gallery', 'Gallery'], ['/archive', 'Archive'], ['/about', 'About']];
+    const links = [['/?nocover=1', 'Products'], ['/gallery', 'Gallery'], ['/archive', 'Archive'], ['/archive#forum', 'Forum'], ['/about', 'About'], ['/account', 'Account']];
     for (const link of nav.querySelectorAll('a')) {
       if (/^\/lab(?:\.html)?\/?$/.test(new URL(link.href, location.href).pathname)) link.remove();
     }
@@ -63,6 +63,19 @@
       if (active === label.toLowerCase()) link.setAttribute('aria-current', 'page');
       nav.append(link);
     }
+    const syncReadingNav = () => {
+      if (page !== 'archive') return;
+      const inForum = /^#forum(?:\/|$)/.test(location.hash);
+      for (const link of nav.querySelectorAll('a')) {
+        if (!['Archive', 'Forum'].includes(link.textContent)) continue;
+        if (link.textContent === (inForum ? 'Forum' : 'Archive')) link.setAttribute('aria-current', 'page');
+        else link.removeAttribute('aria-current');
+      }
+    };
+    syncReadingNav();
+    window.addEventListener('hashchange', syncReadingNav);
+    window.addEventListener('popstate', syncReadingNav);
+    document.addEventListener('btr:reading-view', syncReadingNav);
 
     let eden = header.querySelector('.enter-showroom');
     if (!eden) { eden = create('a', 'enter-showroom'); header.append(eden); }

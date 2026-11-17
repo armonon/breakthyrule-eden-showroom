@@ -3,6 +3,8 @@
 import { CURRENCY, PRODUCTION_STATUSES, skuFor, slotFor, allSkus, allSlots } from '../../labkit/catalog.mjs';
 import { priceCart, describeItem, unitsFor, expectedUnitsFor } from '../../labkit/pricing.mjs';
 import { ARTWORK_POOL } from '../../labkit/artwork-pool.mjs';
+import { createSquare, squareConfiguration, verifySquareSignature } from './square.mjs';
+import { createSquareOrders } from './square-orders.mjs';
 import { createRequire as __cr } from "node:module";
 import crypto3 from "node:crypto";
 import crypto2 from "node:crypto";
@@ -259,11 +261,13 @@ var DEFAULT_SETTINGS = {
   returnsNote: ""
   // shown under Add to cart only when filled in
 };
-function createLab({ store, env = {}, stripe = null, artworkPool = [], now = () => Date.now() }) {
+function createLab({ store, env = {}, stripe = null, square = null, artworkPool = [], now = () => Date.now() }) {
   const secret = env.LAB_SESSION_SECRET || "";
-  const gatewayAllowed = env.LAB_PAYMENT_PROVIDER === "test-gateway" && env.LAB_ALLOW_TEST_GATEWAY === "true" && env.CONTEXT !== "production" && !stripe;
-  const provider = stripe ? "stripe" : gatewayAllowed ? "test-gateway" : null;
-  const mode = stripe ? stripe.mode : gatewayAllowed ? "test" : null;
+  const squareSelected = env.LAB_PAYMENT_PROVIDER === "square";
+  const gatewayAllowed = env.LAB_PAYMENT_PROVIDER === "test-gateway" && env.LAB_ALLOW_TEST_GATEWAY === "true" && env.CONTEXT !== "production" && !stripe && !square;
+  const provider = squareSelected ? "square" : stripe ? "stripe" : gatewayAllowed ? "test-gateway" : null;
+  const mode = squareSelected ? square?.mode || null : stripe ? stripe.mode : gatewayAllowed ? "test" : null;
+  const squareOrders = createSquareOrders({ store, env, square, now, LabError });
   const customerArtwork = createCustomerArtwork({ store, now, LabError });
   async function settings() {
     return { ...DEFAULT_SETTINGS, ...(await store.get("settings"))?.value || {} };
@@ -286,15 +290,22 @@ function createLab({ store, env = {}, stripe = null, artworkPool = [], now = () 
     const [set, inv, cap] = await Promise.all([settings(), inventory(), capacity()]);
     const reasons = [];
     if (!provider) reasons.push("Payments are not configured yet.");
+    if (provider === "square") reasons.push(...squareConfiguration(env).reasons);
+    if (provider === "square" && !square && !reasons.length) reasons.push("Square payments are not connected yet.");
     if (mode === "live" && env.LAB_ALLOW_LIVE !== "true") reasons.push("Live checkout has not been switched on.");
+    if (mode === "live" && !set.launch.sizeChartsVerified) reasons.push("Size charts are not published yet.");
+    if (mode === "live" && !set.launch.shippingTaxConfigured) reasons.push("Shipping and tax settings are not ready yet.");
     const slots = {}, skus = {};
     for (const { slot } of allSlots()) {
       const s = cap.slots[slot] || {};
       slots[slot] = { available: slotAvail(cap, slot), leadTimeDays: Number.isInteger(s.leadTimeDays) ? s.leadTimeDays : null };
     }
     for (const { sku } of allSkus()) skus[sku] = { available: skuAvail(inv, sku) };
+    const availabilityConfigured = Object.keys(slots).some(slot => cap.slots[slot] != null) || Object.keys(skus).some(sku => inv.skus[sku] != null);
+    if (mode === "live" && !availabilityConfigured) reasons.push("Product availability has not been configured yet.");
     return {
       checkout: { available: !reasons.length, provider, mode, reasons },
+      ...(provider === "square" ? { shipping: squareConfiguration(env).shippingPolicy } : {}),
       launch: set.launch,
       relicPolicies: set.launch.relicPoliciesPublished ? set.relicPolicies : null,
       notice: set.notice,
@@ -352,7 +363,8 @@ function createLab({ store, env = {}, stripe = null, artworkPool = [], now = () 
       return cap;
     });
   }
-  async function checkout({ items, note = "", idempotencyKey, origin }) {
+  async function checkout({ items, note = "", idempotencyKey, origin, shippingRegion }) {
+    if (provider === "square") await squareOrders.sweepExpired();
     const st = await publicStatus();
     if (!st.checkout.available) throw new LabError(503, "checkout_unavailable", st.checkout.reasons.join(" "));
     if (typeof idempotencyKey !== "string" || !/^[A-Za-z0-9_-]{16,80}$/.test(idempotencyKey)) throw new LabError(400, "bad_request", "Missing checkout key.");
@@ -366,6 +378,7 @@ function createLab({ store, env = {}, stripe = null, artworkPool = [], now = () 
       if (priced.items.some((i) => i.product === "relic-box") && !set.launch.relicPoliciesPublished) throw new LabError(409, "not_launched", "The Relic Box policies are not published yet.");
       if (priced.items.some((i) => i.product === "mystery-pack") && !set.launch.relicPoliciesPublished) throw new LabError(409, "not_launched", "The mystery package policies are not published yet.");
     }
+    if (provider === "square") return squareOrders.checkout({ priced, note, idempotencyKey, shippingRegion });
     const reqKey = "checkout-requests/" + idempotencyKey;
     const claimed = await store.set(reqKey, { at: now(), orderId: null }, { ifNew: true });
     if (!claimed) {
@@ -559,10 +572,10 @@ function createLab({ store, env = {}, stripe = null, artworkPool = [], now = () 
     return { ok: true };
   }
   async function sweepExpired() {
-    let released = 0;
+    let released = await squareOrders.sweepExpired();
     for (const key of await store.list("orders/")) {
       const o = (await store.get(key))?.value;
-      if (o?.payment.status === "pending" && o.reservation.state === "held" && o.reservation.expiresAt + SWEEP_GRACE_MS < now()) {
+      if (o?.provider !== "square" && o?.payment.status === "pending" && o.reservation.state === "held" && o.reservation.expiresAt + SWEEP_GRACE_MS < now()) {
         await markEnded(o.id, "expired");
         released++;
       }
@@ -722,6 +735,9 @@ function createLab({ store, env = {}, stripe = null, artworkPool = [], now = () 
     o.relic[index] = (Array.isArray(contents) ? contents : []).map((c) => clean2(c, 120)).filter(Boolean).slice(0, it.product === "mystery-pack" ? 30 : 20);
   });
   async function cancelOrder(staff, id) {
+    need(staff, "orders:refund");
+    const existing = (await store.get("orders/" + id))?.value;
+    if (existing?.provider === "square") return squareOrders.cancel(id);
     let needs = null;
     await editOrder(staff, id, (o2) => {
       if (o2.payment.status === "paid") throw new LabError(409, "paid", "Paid orders are refunded, not canceled.");
@@ -746,6 +762,7 @@ function createLab({ store, env = {}, stripe = null, artworkPool = [], now = () 
     need(staff, "orders:refund");
     const o = (await store.get("orders/" + id))?.value;
     if (!o) throw new LabError(404, "not_found", "Order not found.");
+    if (o.provider === "square") return squareOrders.refund(id, staff, amountCents);
     if (!["paid", "partially_refunded", "review"].includes(o.payment.status) || !o.payment.paymentIntent) throw new LabError(409, "not_refundable", "Nothing to refund on this order.");
     const amount = amountCents == null ? void 0 : Number(amountCents);
     if (amount !== void 0 && (!Number.isInteger(amount) || amount < 1 || amount > (o.payment.amountTotal || o.subtotalCents))) throw new LabError(400, "bad_request", "Refund amount is out of range.");
@@ -894,6 +911,7 @@ function createLab({ store, env = {}, stripe = null, artworkPool = [], now = () 
     publicStatus,
     checkout,
     handleEvent,
+    handleSquareEvent: squareOrders.handleEvent,
     sweepExpired,
     customerOrder,
     testGateway,
@@ -2014,7 +2032,8 @@ var cached = null;
 async function labFromEnv(env = process.env) {
   if (cached && cached.env === env) return cached.lab;
   const store = await openStore(env);
-  const stripe = createStripe({ secretKey: env.STRIPE_SECRET_KEY });
+  const stripe = env.LAB_PAYMENT_PROVIDER === "square" ? null : createStripe({ secretKey: env.STRIPE_SECRET_KEY });
+  const square = createSquare({ env });
   let labEnv = env;
   if (!env.LAB_SESSION_SECRET && env.LAB_PREVIEW === "true") {
     let s = (await store.get("preview-session-secret"))?.value;
@@ -2025,7 +2044,7 @@ async function labFromEnv(env = process.env) {
     }
     labEnv = { ...env, LAB_SESSION_SECRET: s };
   }
-  const lab = createLab({ store, env: labEnv, stripe, artworkPool: ARTWORK_POOL.map((a) => a.id) });
+  const lab = createLab({ store, env: labEnv, stripe, square, artworkPool: ARTWORK_POOL.map((a) => a.id) });
   cached = { env, lab };
   return lab;
 }
@@ -2058,9 +2077,13 @@ function createHandler(getLab, env = process.env) {
       }
       if (is("POST", "checkout")) {
         const b = body();
-        return json(200, await lab.checkout({ items: b.items, note: b.note, idempotencyKey: b.idempotencyKey, origin }));
+        return json(200, await lab.checkout({ items: b.items, note: b.note, idempotencyKey: b.idempotencyKey, origin, shippingRegion: b.shippingRegion }));
       }
       if (is("GET", "orders", "*")) return json(200, await lab.customerOrder(seg[1], url.searchParams.get("key")));
+      if (is("POST", "square-webhook")) {
+        if (!verifySquareSignature(rawBody, headers["x-square-hmacsha256-signature"], env.SQUARE_WEBHOOK_SIGNATURE_KEY, env.SQUARE_WEBHOOK_URL)) return json(400, { error: "Invalid signature." });
+        return json(200, await lab.handleSquareEvent(body()));
+      }
       if (is("POST", "stripe-webhook")) {
         if (!verifyStripeSignature(rawBody, headers["stripe-signature"], env.STRIPE_WEBHOOK_SECRET)) return json(400, { error: "Invalid signature." });
         return json(200, await lab.handleEvent(JSON.parse(rawBody)));
@@ -2128,8 +2151,9 @@ function createHandler(getLab, env = process.env) {
       if (e instanceof LabError) return json(e.status, { error: e.message, code: e.code, ...e.extra || {} });
       if (e.code === "STORE_UNAVAILABLE") return json(503, { error: "The order store is not set up yet.", code: "store_unavailable" });
       if (e.code === "CONFLICT") return json(409, { error: "Busy \u2014 please try again.", code: "conflict" });
+      if (e.code === "SQUARE_UNAVAILABLE") return json(502, { error: "Square could not be reached. Please retry the same request.", code: "payment_unavailable" });
       console.error("[lab]", e);
-      return json(500, { error: "Something went wrong. Nothing was charged." });
+      return json(500, { error: "Something went wrong. Please retry or check your order status before starting another checkout." });
     }
   };
 }

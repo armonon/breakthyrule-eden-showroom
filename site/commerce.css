@@ -76,3 +76,7 @@ body .site-top > .enter-showroom::before{content:'3D'}
 @media(max-width:900px){body .site-top > .cart-button{margin-left:auto!important}}
 @media(max-width:480px){body .site-top{padding-left:12px;padding-right:12px}body .site-top > .brand{padding:0!important}}
 @media(max-width:360px){body .site-top > .brand img.site-logo.in-header{width:112px;height:auto;max-width:112px}}
+.cart-shipping{display:grid;gap:8px;margin:18px 0}
+.cart-shipping[hidden]{display:none}
+.cart-shipping label{font-weight:700;font-size:13px}
+.cart-shipping select{width:100%;min-height:44px;padding:10px;border:1px solid currentColor;border-radius:0;background:Canvas;color:CanvasText;font:inherit;font-size:16px}

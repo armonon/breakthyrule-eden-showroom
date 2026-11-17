@@ -9,7 +9,7 @@
   (()=>{let theme='day';try{if(localStorage.getItem('btr-archive-theme')==='night')theme='night';}catch{}document.documentElement.dataset.archiveTheme=theme;document.documentElement.style.colorScheme=theme==='night'?'dark':'light';document.querySelector('meta[name="theme-color"]').content=theme==='night'?'#141912':'#ffffff';})();
  </script>
  <title>Break Thy Rule — Library</title>
- <meta name="description" content="Find new books in the Library, browse the Break Thy Rule Archive, and keep local discussions in the Forum.">
+ <meta name="description" content="Find new books in the Library, browse the Break Thy Rule Archive, and join the conversation in CreatingCo’s Circle.">
  <link rel="icon" type="image/png" href="/assets/favicon-32.png">
  <link rel="stylesheet" href="/site/site.css?v=2">
  <link rel="stylesheet" href="/site/commerce.css?v=5">
@@ -37,7 +37,7 @@
   <div class="reading-tabs" role="tablist" aria-label="Reading room sections">
    <button class="reading-tab" id="tab-library" type="button" role="tab" aria-controls="panel-library" aria-selected="true"><strong>Library</strong><span>Find new books</span></button>
    <button class="reading-tab" id="tab-archive" type="button" role="tab" aria-controls="panel-archive" aria-selected="false" tabindex="-1"><strong>Archive</strong><span>Our collection</span></button>
-   <button class="reading-tab" id="tab-forum" type="button" role="tab" aria-controls="panel-forum" aria-selected="false" tabindex="-1"><strong>Forum</strong><span>Local discussions</span></button>
+   <button class="reading-tab" id="tab-forum" type="button" role="tab" aria-controls="panel-forum" aria-selected="false" tabindex="-1"><strong>Forum</strong><span>The Circle community</span></button>
   </div>
   <div class="reading-layout">
    <aside id="reading-sidebar" class="market-sidebar reading-sidebar" aria-label="Reading room subjects">
@@ -53,9 +53,9 @@
      <nav id="topics" class="market-topics grouped-topics" aria-label="Archive topics"></nav>
     </section>
     <section id="sidebar-forum" aria-labelledby="forum-sidebar-title" hidden>
-     <h2 id="forum-sidebar-title" class="market-rail-title">Discussion topics</h2>
-     <p class="sidebar-guide">Open a topic to keep notes in this browser.</p>
-     <nav id="forum-topics" class="market-topics grouped-topics" aria-label="Discussion topics"></nav>
+     <h2 id="forum-sidebar-title" class="market-rail-title">Your reading notes</h2>
+     <p class="sidebar-guide">Choose a subject for your private notes. Shared conversations happen in The Circle.</p>
+     <nav id="forum-topics" class="market-topics grouped-topics" aria-label="Local note topics"></nav>
     </section>
    </aside>
    <div class="reading-content">
@@ -90,9 +90,18 @@
     </section>
   </section>
   <section id="panel-forum" class="reading-panel" role="tabpanel" aria-labelledby="tab-forum" tabindex="0" hidden>
-   <div class="forum-intro"><h1>Forum</h1><p>Share a source, ask a question, or leave a reading note.</p></div>
-   <p class="forum-local-note"><strong>Local discussions.</strong> Notes are saved only in this browser. Other visitors cannot see them.</p>
-    <section class="forum-thread" aria-labelledby="forum-topic-title"><div class="market-heading"><h2 id="forum-topic-title">General discussion</h2></div><p id="forum-topic-blurb" class="market-blurb">What are you reading?</p><div id="forum-boards"></div></section>
+   <div class="forum-intro"><h1>Forum</h1><p>Share a source, ask a question, and find your people.</p></div>
+   <section class="community-handoff" aria-labelledby="circle-forum-title">
+    <p class="kicker">The Circle / thecreatingco</p>
+    <h2 id="circle-forum-title">Keep the conversation going.</h2>
+    <p>Join The Circle, CreatingCo’s creative community. Share what you’re reading or making, build your profile, and keep in touch through NOW.</p>
+    <div class="community-actions"><a class="solid" href="https://thecreatingco.com/community/network">Open The Circle ↗</a><a class="ghost" href="/account">Your account</a><a href="https://thecreatingco.com/community/network?view=Messages">Messages in NOW ↗</a></div>
+   </section>
+   <details class="community-local-notes" id="forum-local-notes">
+    <summary>Your notes on this device</summary>
+    <p class="forum-local-note"><strong>Private reading notes.</strong> Your earlier notes are kept here. They stay in this browser and are not posted to The Circle.</p>
+    <section class="forum-thread" aria-labelledby="forum-topic-title"><div class="market-heading"><h2 id="forum-topic-title">General notes</h2></div><p id="forum-topic-blurb" class="market-blurb">What are you reading?</p><div id="forum-boards"></div></section>
+   </details>
   </section>
    </div>
   </div>

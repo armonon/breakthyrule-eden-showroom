@@ -7,7 +7,7 @@ function requestEnvironment(context) {
   const preview = deployContext && deployContext !== "production";
   if (preview) {
     base.LAB_PREVIEW = "true";
-    if (!base.STRIPE_SECRET_KEY && base.LAB_DISABLE_PREVIEW_GATEWAY !== "true") {
+    if (!base.STRIPE_SECRET_KEY && !base.SQUARE_ACCESS_TOKEN && base.LAB_PAYMENT_PROVIDER !== "square" && base.LAB_DISABLE_PREVIEW_GATEWAY !== "true") {
       base.LAB_PAYMENT_PROVIDER = "test-gateway";
       base.LAB_ALLOW_TEST_GATEWAY = "true";
     }

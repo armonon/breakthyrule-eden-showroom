@@ -1,5 +1,10 @@
 'use strict';
 (async()=>{
+ // Community access is independent of whichever gallery renderer is active.
+ const discussion=document.getElementById('gallery-community');
+ // Keep the original storage key, but avoid the legacy enhancement's removed
+ // #discussion section and its siteDiscussion wrapper for the former upload board.
+ if(discussion)window.siteCommunityDiscussion(discussion,{key:'gallery',title:'Worn by you',prompt:'Post a photo of your fit and tell us where you wore it.'});
  // The enhanced wall owns its data and virtualized cards. Keep this initializer
  // only as a fallback when that wall cannot mount.
  if(window.BTRCollage?.readyWithoutLegacy){
@@ -54,5 +59,4 @@
  let touch=null;$('lightbox').addEventListener('touchstart',e=>touch=e.touches[0].clientX,{passive:true});
  $('lightbox').addEventListener('touchend',e=>{if(touch==null)return;const dx=e.changedTouches[0].clientX-touch;if(Math.abs(dx)>50)step(dx<0?1:-1);touch=null;});
 
- window.siteDiscussion($('discussion'),{key:'gallery',space:siteConfig.circle.spaces.gallery,title:'Worn by you',prompt:'Post a photo of your fit and tell us where you wore it.'});
 })();

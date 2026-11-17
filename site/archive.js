@@ -57,10 +57,13 @@
  const readingLayout=document.querySelector('.reading-layout'),readingContent=document.querySelector('.reading-content'),libraryDiscovery=document.querySelector('.library-discovery');
  function placeReadingSidebar(){
   const inLibrary=mobileReadingLayout.matches&&activeView==='library';
-  const parent=inLibrary?$('panel-library'):readingLayout;
+  const inForum=activeView==='forum';
+  readingLayout.dataset.view=activeView;
+  const parent=inForum?$('forum-local-notes'):inLibrary?$('panel-library'):readingLayout;
   if(readingSidebar.parentElement===parent)return;
   const focused=readingSidebar.contains(document.activeElement)?document.activeElement:null;
-  if(inLibrary)libraryDiscovery.after(readingSidebar);else readingLayout.insertBefore(readingSidebar,readingContent);
+  if(inForum)parent.querySelector('summary').after(readingSidebar);
+  else if(inLibrary)libraryDiscovery.after(readingSidebar);else readingLayout.insertBefore(readingSidebar,readingContent);
   focused?.focus({preventScroll:true});
  }
  mobileReadingLayout.addEventListener('change',placeReadingSidebar);
@@ -130,7 +133,7 @@
   $('discuss-topic').textContent=archiveTopic.id==='all'?'Discuss this collection in the Forum »':'Discuss '+archiveTopic.title+' in the Forum »';
  }
  function renderForum(){
-  $('forum-topic-title').textContent=forumTopic.id==='all'?'General discussion':forumTopic.title;
+  $('forum-topic-title').textContent=forumTopic.id==='all'?'General notes':forumTopic.title;
   $('forum-topic-blurb').textContent=forumTopic.id==='all'?'What are you reading? Leave a source, a thought, or a question.':forumTopic.blurb;
   for(const button of forumButtons)button.setAttribute('aria-pressed',String(button.dataset.id===forumTopic.id));
   if(!boards.has(forumTopic.id)){
@@ -144,7 +147,7 @@
   if(activeView==='library'&&view!=='library')stopLibrarySearch();
   activeView=view;
   if(view==='archive'&&topic&&topic.id!==archiveTopic.id){archiveTopic=topic;$('archive-query').value='';$('sort').value='shelf';}
-  if(view==='forum'&&topic)forumTopic=topic;
+  if(view==='forum'&&topic){forumTopic=topic;if(topic.id!=='all')$('forum-local-notes').open=true;}
   for(const name of views){const selected=name===view;$('panel-'+name).hidden=!selected;$('sidebar-'+name).hidden=!selected;$('tab-'+name).setAttribute('aria-selected',String(selected));$('tab-'+name).tabIndex=selected?0:-1;}
   placeReadingSidebar();
   if(view==='archive')renderArchive();else if(view==='forum')renderForum();
@@ -152,6 +155,7 @@
   document.title='Break Thy Rule — '+view[0].toUpperCase()+view.slice(1);
   const hash=routeHash(view,view==='archive'?archiveTopic:forumTopic);
   if(push&&location.hash!==hash)history.pushState(null,'',hash);
+  document.dispatchEvent(new CustomEvent('btr:reading-view'));
  }
  function readRoute(){
   let hash='';try{hash=decodeURIComponent(location.hash.slice(1));}catch{}
