@@ -1,5 +1,7 @@
 # Square checkout activation
 
+Owner enrollment completed on November 17, 2026. The one-time setup variables were removed after verifying the active owner record and consumed claim. Production is configured for Square live checkout, no tax, $10 US / $25 international first-class shipping, and explicit unlimited made-to-order inventory/capacity. The Git deployment containing this note activates the live environment switch. Normal garments and accessories are ready; Mystery/Relic packages retain their unpublished-policy gate. Sandbox payments/refunds and signed production endpoint checks passed; no real production card charge was performed.
+
 The public cart still uses `/api/lab/checkout`. Set `LAB_PAYMENT_PROVIDER=square` to use Square-hosted checkout. Canonical product prices, variants, artwork and production specifications stay in `labkit`; the browser cannot choose the charge amount. Square receives an itemized order and returns a hosted checkout URL. Customer card details never enter this application.
 
 The running API is `server/lab/storefront-api.mjs` through `server/lab/api.mjs`, with Square behavior in `square.mjs` and `square-orders.mjs`. The older `service.mjs` is retained for its legacy tests; it is not the Netlify entry point. Do not rebuild the recovered API from the older service.

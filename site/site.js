@@ -2,7 +2,7 @@
 // Shared chrome for the public site: header, tabs, footer, and the discussion board
 // (CreatingCo's hosted Circle community, with earlier browser notes kept separately).
 (()=>{
- const tabs=[['/', 'Products','home'],['/lab','Lab','lab'],['/gallery','Gallery','gallery'],['/archive','Archive','archive'],['/archive#forum','Forum','forum'],['/about','About','about'],['/account','Account','account']];
+ const tabs=[['/', 'Products','home'],['/lab','Lab','lab'],['/gallery','Gallery','gallery'],['/archive','Archive','archive'],['/about','About','about'],['/account','Account','account']];
  const page=document.body.dataset.page||'';
  // Keep old shared About links working at the dedicated page.
  if(new URLSearchParams(location.search).has('about')){location.replace('/about');return;}
@@ -41,17 +41,16 @@
   mount.classList.add('discussion');
   const root=mount;
   if(circle.community){
-   // Circle/Now owns its member session. Never imply that a link signs the shop in.
    const local=el('details',{className:'community-local-notes'},el('summary',{textContent:'Earlier notes on this device'}));
    mount=el('div');local.append(mount);
    root.replaceChildren(
     el('section',{className:'community-handoff'},
-     el('p',{className:'kicker',textContent:'The Circle / thecreatingco'}),
+     el('p',{className:'kicker',textContent:'The Break Thy Rule forum'}),
      el('h3',{textContent:'Share it with the community.'}),
-     el('p',{textContent:'Post your fit, share a source, and meet other makers in The Circle.'}),
+     el('p',{textContent:'Read, post, and reply in the forum right here on Break Thy Rule. No account is needed to join as a guest.'}),
      el('div',{className:'community-actions'},
-      el('a',{href:circle.community,className:'solid',textContent:'Open The Circle ↗'}),
-      el('a',{href:'/account',className:'ghost',textContent:'Your account'}))),local);
+      el('a',{href:'/archive#forum',className:'solid',textContent:'Join the conversation →'}),
+      el('a',{href:'/account',textContent:'Your account'}))),local);
   }
   const storeKey='btr-board:'+key;
   const load=()=>{try{const value=JSON.parse(localStorage.getItem(storeKey)||'[]');return Array.isArray(value)?value:null;}catch{return null;}};
