@@ -1,9 +1,9 @@
-import { normalizeItem, sidesFor } from '../labkit/pricing.mjs';
+import { normalizeItem } from '../labkit/pricing.mjs';
 import { newSeed as createSeed, isSeed } from '../labkit/random.mjs';
-import { ARTWORK_POOL, POOL_IDS } from '../labkit/artwork-pool.mjs';
+import { POOL_IDS } from '../labkit/artwork-pool.mjs';
+import { curatedDiscoveryPicks } from '../labkit/showcase-artwork.mjs';
 
 const previewGarments = new Set(['tee', 'hoodie', 'crewneck']);
-const explicitArtwork = new Set(ARTWORK_POOL.filter(art => art.explicit).map(art => art.id));
 
 export function productRoute(pathname) {
   if (/^\/random-shirt(?:\.html)?\/?$/.test(pathname)) return 'random';
@@ -17,35 +17,21 @@ export function productRoute(pathname) {
 export function randomProductDesign(params, { newSeed = createSeed, artworkPool = POOL_IDS } = {}) {
   const garment = previewGarments.has(params.get('g')) ? params.get('g') : 'tee';
   const seed = Number(params.get('seed'));
-  const prepare = candidate => {
-    if (!isSeed(candidate)) return null;
+  if (params.get('art') === 'curated-1' || !isSeed(seed)) {
+    const chosenSeed = isSeed(seed) ? seed : newSeed();
     const raw = {
       product: 'garment', construction: 'canvas', labMode: 'blank', garment,
-      fit: 'blank', color: 'random', artwork: 'random-experimental',
-      seed: candidate, quantity: 1
+      fit: 'blank', color: 'random', artwork: 'pick',
+      picks: curatedDiscoveryPicks(chosenSeed, artworkPool), seed: chosenSeed, quantity: 1
     };
-    // Validate with the same temporary size used by the Lab's price preview.
-    const normalized = normalizeItem({ ...raw, size: 'M' }, { artworkPool });
-    return normalized.ok ? { raw, sides: sidesFor(normalized.item) } : null;
+    if (!normalizeItem({...raw, size:'M'}, {artworkPool}).ok) throw new Error('This featured garment could not be restored.');
+    return raw;
+  }
+  // Seed-only links made before the curated showcase retain their exact artwork.
+  const raw = {
+    product: 'garment', construction: 'canvas', labMode: 'blank', garment,
+    fit: 'blank', color: 'random', artwork: 'random-experimental', seed, quantity: 1
   };
-
-  if (isSeed(seed)) {
-    const restored = prepare(seed);
-    if (restored) return restored.raw;
-    throw new Error('This random garment could not be restored.');
-  }
-
-  // New draws follow the hero's bounded, non-explicit artwork selection. A
-  // supplied seed is restored exactly instead of quietly becoming another design.
-  let fallback = null;
-  for (let attempt = 0; attempt < 36; attempt++) {
-    const candidate = prepare(newSeed());
-    if (!candidate) continue;
-    const { front, back } = candidate.sides;
-    if ([...front, ...back].some(id => explicitArtwork.has(id))) continue;
-    fallback = candidate.raw;
-    if (front.length && back.length) return fallback;
-  }
-  if (fallback) return fallback;
-  throw new Error('Could not prepare a random garment. Please try again.');
+  if (!normalizeItem({...raw,size:'M'}, {artworkPool}).ok) throw new Error('This random garment could not be restored.');
+  return raw;
 }

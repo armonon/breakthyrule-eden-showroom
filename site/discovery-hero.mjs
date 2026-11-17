@@ -1,6 +1,6 @@
 import { createSmoke } from './discovery-smoke.mjs?v=tab-loop-5';
-import { buildDiscoveryCatalog, createDiscoveryScheduler } from './discovery-catalog.mjs?v=centaur-daily-2';
-import { createDiscoveryStage } from './discovery-stage.mjs?v=centaur-wordmark-2';
+import { buildDiscoveryCatalog, createDiscoveryScheduler, curatedDiscoveryPicks } from './discovery-catalog.mjs?v=curated-rotation-3';
+import { createDiscoveryStage } from './discovery-stage.mjs?v=rotation-3';
 import { OFFERINGS, MYSTERY_PACKAGES } from '/labkit/catalog.mjs';
 import { normalizeItem, priceItem, sidesFor } from '/labkit/pricing.mjs';
 import { newSeed, isSeed } from '/labkit/random.mjs';
@@ -19,7 +19,15 @@ const artPool = ARTWORK_POOL.map(a => a.id);
 const explicitArt = new Set(ARTWORK_POOL.filter(a => a.explicit).map(a => a.id));
 const money = cents => '$' + (cents / 100).toFixed(cents % 100 ? 2 : 0);
 const encode = value => btoa(unescape(encodeURIComponent(JSON.stringify(value)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-function draw(garment, seed) {
+function draw(garment, seed, legacy = false) {
+  if (!legacy) {
+    const chosenSeed = isSeed(seed) ? seed : newSeed();
+    const raw = { product: 'garment', construction: 'canvas', garment, size: 'M', fit: 'blank', color: 'random', artwork: 'pick', picks: curatedDiscoveryPicks(chosenSeed, artPool), seed: chosenSeed, quantity: 1 };
+    const normalized = normalizeItem(raw, { artworkPool: artPool });
+    if (!normalized.ok) throw new Error('Could not prepare a featured Lab design.');
+    return { raw, item: normalized.item, sides: sidesFor(normalized.item) };
+  }
+  // Previously shared seeded URLs keep their exact original designs.
   let result;
   for (let i = 0; i < 36; i++) {
     const raw = { product: 'garment', construction: 'canvas', garment, size: 'M', fit: 'blank', color: 'random', artwork: 'random-experimental', seed: i === 0 && isSeed(seed) ? seed : newSeed(), quantity: 1 };
@@ -34,9 +42,9 @@ function draw(garment, seed) {
   return result;
 }
 function labLink(piece) { const { size, ...design } = piece.raw; return '/lab?design=' + encode(design) + '#build'; }
-function randomProductLink(piece) { return '/random-shirt?g=' + piece.raw.garment + '&seed=' + piece.raw.seed; }
-function generated({ sequence = 1, random = Math.random, garment = ['tee', 'tee', 'hoodie', 'crewneck'][Math.floor(random() * 4)], seed } = {}) {
-  const piece = draw(garment, seed), priceCents = priceItem(piece.item).totalCents;
+function randomProductLink(piece) { return '/random-shirt?g=' + piece.raw.garment + '&seed=' + piece.raw.seed + (piece.raw.artwork === 'pick' ? '&art=curated-1' : ''); }
+function generated({ sequence = 1, random = Math.random, garment = ['tee', 'tee', 'hoodie', 'crewneck'][Math.floor(random() * 4)], seed, legacy = false } = {}) {
+  const piece = draw(garment, seed, legacy), priceCents = priceItem(piece.item).totalCents;
   return {
     id: 'lab-random-' + sequence + '-' + piece.raw.seed, origin: 'generated', category: 'generated', renderKind: 'generated',
     name: 'Random ' + OFFERINGS.canvas[garment].name, description: 'A fresh draw from the Garment Lab. Artwork and color keep changing as this piece turns.',
@@ -59,7 +67,7 @@ function prepareDescriptor(descriptor) {
   return descriptor;
 }
 function printPlan(piece) { return { front: piece.sides.front.length ? { kind: 'refs', ids: piece.sides.front } : null, back: piece.sides.back.length ? { kind: 'big', ids: piece.sides.back } : null }; }
-const categoryNames = { garment: 'Original / Garments', core: 'Core / Original artwork', accessory: 'Accessories / In rotation', belt: 'Metal / Belts', necklace: 'Metal / Necklaces', mystery: 'Mystery / House-picked', generated: 'Garment Lab / Random design' };
+const categoryNames = { garment: 'Original / Garments', core: 'FW27 / Original artwork', accessory: 'Accessories / In rotation', belt: 'Metal / Belts', necklace: 'Metal / Necklaces', mystery: 'Mystery / House-picked', generated: 'Garment Lab / Random design' };
 let stage, printer, scheduler, catalog, current, next, started = false, busy = false, artBusy = false;
 let paused = reduced.matches, elapsed = 0, lastArt = 0, sequence = 0, revision = 0, keyboardFocus = false, disposed = false;
 const history = []; let historyIndex = -1;
@@ -83,7 +91,7 @@ function retryFirstPiece() {
 let mysteryOpen = false, selectedPackage = Object.hasOwn(MYSTERY_PACKAGES, pageParams.get('package')) ? pageParams.get('package') : 'one-tee', detailsHovered = false, boxPaused = reduced.matches;
 let smoke = null, turnPending = false, switchTimer = 0;
 function controls() {
-  stage?.setAuto(!paused && !mysteryOpen);
+  stage?.setAuto(!paused && !mysteryOpen && !detailsHovered && !keyboardFocus && !busy && !artBusy);
   if ($('discovery-random-shirt').tagName === 'BUTTON') $('discovery-random-shirt').disabled = !stage || busy || artBusy || disposed;
 }
 
@@ -97,12 +105,12 @@ function labels(item, manual) {
   $('discovery-name').textContent = item.name;
   $('discovery-description').textContent = item.description;
   $('discovery-price').textContent = item.priceText;
-  $('discovery-price-note').textContent = Number.isFinite(item.priceCents) ? 'USD' : 'Explore available options';
+  $('discovery-price-note').textContent = item.priceRangeCents ? 'USD · Random to Cut & Sew' : Number.isFinite(item.priceCents) ? 'USD' : 'Explore available options';
   $('discovery-variation').textContent = item.rainbow ? '↻ Color-shifting fabric + graphics' : item.mystery ? item.mystery.countLabel + ' / a surprise inside' : item.colorway?.name || 'Original artwork';
   $('discovery-link').href = item.href;
   $('discovery-link').replaceChildren(document.createTextNode(item.ctaText || 'View piece'), Object.assign(document.createElement('span'), { textContent: '↗' }));
   $('discovery-link').lastElementChild.setAttribute('aria-hidden', 'true');
-  $('discovery-footnote').textContent = item.mystery?.offerOnly ? 'Illustrative preview. Mystery contents and colors are selected by the house.' : item.origin === 'generated' ? 'Random artwork + house-selected color. Rainbow animation represents the possibilities.' : item.priceCents == null ? 'Design preview. Visit the piece for customization and availability.' : 'Original design. Open the piece for details and available sizes.';
+  $('discovery-footnote').textContent = item.mystery?.offerOnly ? 'Illustrative preview. Mystery contents and colors are selected by the house.' : item.origin === 'generated' ? 'Featured artwork + house-selected color. Rainbow animation represents the possibilities.' : item.priceRangeCents ? 'Choose your base, size and artwork on the product page.' : item.priceCents == null ? 'Design preview. Visit the piece for customization and availability.' : 'Original design. Open the piece for details and available sizes.';
   mount.setAttribute('aria-label', item.name + ', ' + item.priceText + '. Rotating 3D preview. Drag or use the arrow keys to turn.');
   $('discovery-fallback').hidden = true;
   if (manual) $('discovery-status').textContent = item.name + ', ' + item.priceText;
@@ -148,7 +156,8 @@ async function show(item, { manual = false, append = true, historyTarget = null 
 async function advance(manual = false) {
   if (standalone) {
     if (stage && !busy && !artBusy && !disposed && !mysteryPage) {
-      const ok = await show(generated({ garment: pageGarment, seed: Number(pageParams.get('seed')) }), { manual });
+      const seed = Number(pageParams.get('seed'));
+      const ok = await show(generated({ garment: pageGarment, seed, legacy: isSeed(seed) && pageParams.get('art') !== 'curated-1' }), { manual });
       if (!ok && !current) retryFirstPiece();
     }
     return;
@@ -213,7 +222,7 @@ function finishTurn() {
   switchTimer = setTimeout(() => {
     switchTimer = 0;
     if (disposed || mysteryOpen) return;
-    if (!pageActive() || !nearby || detailsHovered || keyboardFocus) { turnPending = true; return; }
+    if (!pageActive() || !nearby || detailsHovered || keyboardFocus || paused || busy || artBusy) { turnPending = true; return; }
     void advance();
   }, 260);
 }
@@ -275,8 +284,8 @@ if (section && mount) {
   if ($('discovery-random-shirt').tagName === 'BUTTON') $('discovery-random-shirt').addEventListener('click', randomShirt);
   selectMode(mysteryPage ? 'mystery' : 'chance');
   const details = section.querySelector('.discovery-details');
-  details.addEventListener('pointerenter', event => { detailsHovered = event.pointerType === 'mouse'; });
-  details.addEventListener('pointerleave', () => { detailsHovered = false; });
+  details.addEventListener('pointerenter', event => { detailsHovered = event.pointerType === 'mouse'; controls(); });
+  details.addEventListener('pointerleave', () => { detailsHovered = false; controls(); });
   controls();
   const maybeStart = () => {
     updateBoxMotion();

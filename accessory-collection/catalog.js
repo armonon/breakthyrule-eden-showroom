@@ -170,36 +170,6 @@ window.BTR_ACCESSORIES = [
     "price": "$50"
   },
   {
-    "slug": "trucker-cobalt",
-    "name": "Cobalt / White Trucker",
-    "family": "trucker",
-    "frontColor": "#f7f4e9",
-    "brimColor": "#2452c6",
-    "meshColor": "#f1f0e9",
-    "meshIsGeometry": false,
-    "model": "/accessory-collection/models/mesh-trucker-v2.glb",
-    "poster": "/accessory-collection/posters/mesh-trucker-v2.png",
-    "dimensionsMm": [
-      200,
-      300,
-      135
-    ],
-    "bytes": 2967912,
-    "status": "visualization concept",
-    "webMaterialFinish": "matte fabric",
-    "id": "accessory-trucker-cobalt",
-    "href": "/product?item=accessory-trucker-cobalt",
-    "tagline": "Your colors. Your graphics.",
-    "description": "Choose a mesh trucker or solid six-panel baseball cap. Mix your front, brim and side colors, then arrange Sticker Lab artwork on the front.",
-    "customizationEnabled": true,
-    "defaultGraphic": "centaur",
-    "triangles": 66001,
-    "qualityRevision": 4,
-    "hatStyle": "trucker",
-    "meshFinish": "Open alpha-tested mesh",
-    "price": "$45"
-  },
-  {
     "slug": "trucker-cherry",
     "name": "Cherry / White Trucker",
     "family": "trucker",

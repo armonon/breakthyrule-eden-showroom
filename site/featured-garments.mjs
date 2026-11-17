@@ -5,7 +5,7 @@ const GRAPHICS = ['illuminti','house-of-horus','diamond-body','nu-cross','divide
 const NAMES = {'illuminti':'Illuminati','house-of-horus':'House of Horus','diamond-body':'Diamond Body','nu-cross':'Nu Cross','divide':'Divide','war':'WAR','god-loves-u':'God Loves You'};
 const KINDS = ['tee','hoodie','crewneck'];
 const LABELS = {tee:'FW27 Crew Tee',hoodie:'FW27 Crew Hoodie',crewneck:'FW27 Crewneck'};
-const PRICES = {tee:'$30–$80',hoodie:'$50–$180',crewneck:'$40–$150'};
+const PRICES = {tee:'$30–$85',hoodie:'$50–$180',crewneck:'$40–$150'};
 const COLORS = ['#f2efe7','#17191d','#903c48','#4b62a1','#819477','#baa2c9','#bda45c'];
 const TURN_SECONDS = 4.8, TRANSITION_SECONDS = 1.2, TAU = Math.PI * 2;
 const sample = list => list[Math.floor(Math.random()*list.length)];

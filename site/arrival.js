@@ -3,6 +3,14 @@
   'use strict';
   const params = new URLSearchParams(location.search);
   if (window.btrArrival || params.has('cover') || params.has('about')) return;
+  // A Back/Forward reload is a return to the collection, not a fresh arrival.
+  // Keep the settled handle so the Codex does not replace it when storage is unavailable.
+  if (window.performance?.getEntriesByType?.('navigation')?.[0]?.type === 'back_forward') {
+    const noop = () => {};
+    window.btrArrival = { active: false, hold: () => noop, mount: noop, pending: [], failures: [] };
+    document.documentElement.dataset.arrivalState = 'history';
+    return;
+  }
   const pending = new Set(), failures = [], locked = new Map();
   let active = true, sealed = false, finishing = false, overlay, observer, film;
   let slowTimer, previousFocus;
@@ -145,4 +153,5 @@
   document.addEventListener('visibilitychange', maybeReveal);
   // BFCache restores a usable page, never a stranded mid-load overlay.
   window.addEventListener('pagehide', () => release('navigation'));
+  window.addEventListener('pageshow', event => { if (event.persisted) { release('history'); overlay?.remove(); } });
 })();

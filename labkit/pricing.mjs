@@ -56,12 +56,12 @@ export function normalizeItem(raw, { artworkPool = [] } = {}) {
     const customColor = color === 'custom' ? clean(raw.customColor, CUSTOM_COLOR_MAX) : '';
     if (color === 'custom' && customColor.length < 2) errors.push('Name the custom color you want.');
     if (!Object.hasOwn(ARTWORK,artwork)) errors.push('Choose an artwork direction.');
-    const sourceDesign = typeof raw.sourceDesign === 'string' && Object.hasOwn(PRODUCT_DESIGNS,raw.sourceDesign) ? raw.sourceDesign : null;
+    const sourceDesign = typeof raw.sourceDesign === 'string' && Object.hasOwn(PRODUCT_DESIGNS,raw.sourceDesign) && PRODUCT_DESIGNS[raw.sourceDesign].available !== false ? raw.sourceDesign : null;
     if (raw.sourceDesign != null && !sourceDesign) errors.push('The source garment is unavailable.');
     let productDesign = null;
     if (artwork === 'product-design') {
       const ref = Object.hasOwn(PRODUCT_DESIGNS,raw.productDesign?.id) ? PRODUCT_DESIGNS[raw.productDesign.id] : null;
-      if (!ref) errors.push('Choose a valid collection design.');
+      if (!ref || ref.available === false) errors.push('Choose an available collection design.');
       else productDesign = { id: ref.id, graphic: GRAPHIC_COLORS.includes(raw.productDesign?.graphic) ? raw.productDesign.graphic : 'Red' };
     }
     const maxQ = construction === 'cut-sew' ? 1 : MAX_QUANTITY;

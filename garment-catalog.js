@@ -40,40 +40,6 @@ window.showroomCollection=[
     "defaultView": "front"
   },
   {
-    "id": "02",
-    "slug": "god-loves-you-tee",
-    "name": "God Loves You Tee",
-    "chapter": "IV",
-    "price": "$60",
-    "tagline": "He has a great plan. Wear the proof.",
-    "description": "A devotional bootleg. Heavyweight 6oz cotton in raw white, hand-printed with an airbrushed dove-and-hearts composition and the gospel pronouncement set in inverted serif blue. Each print is registered manually \u2014 small variation is part of the casting, not a defect. Cut boxy through the chest, regular through the body.",
-    "images": [
-      "/products/god-loves-you-tee.webp"
-    ],
-    "photoViews": [
-      "PHOTO",
-      "PHOTO 2"
-    ],
-    "imageAlt": "God Loves You Tee original product photograph",
-    "model": "/graphic-models/models/god-loves-you-tee.glb?v=1",
-    "rackModel": "/graphic-models/models/god-loves-you-tee.glb?v=1",
-    "previousModel": "/models/god-loves-you-tee-tailored-v6.glb",
-    "previousRackModel": "/rack-models/god-loves-you-tee-tailored-v6.glb",
-    "estimated": false,
-    "qualitySample": false,
-    "qualityRevision": "archive-hq-v1",
-    "modelStatus": "archive-artwork-refined",
-    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
-    "artworkSources": [
-      {
-        "filename": "god-loves-you-tee.png",
-        "kind": "original-product-photo-reference",
-        "side": "front"
-      }
-    ],
-    "defaultView": "front"
-  },
-  {
     "id": "03",
     "slug": "dance-to-your-vibration-tee",
     "name": "Dance To Your Vibration Tee",
@@ -108,77 +74,6 @@ window.showroomCollection=[
     "defaultView": "front"
   },
   {
-    "id": "04",
-    "slug": "all-seeing-tee",
-    "name": "All-Seeing Tee",
-    "chapter": "I",
-    "price": "$60",
-    "tagline": "Archive artwork concept / All-Seeing Tee",
-    "description": "An archive-artwork concept on the updated shirt model. Featuring HOUSE OF HORUS, EYE SEE YOU. Explore the placement in 3D.",
-    "images": [
-      "/graphic-models/posters/all-seeing-tee.webp"
-    ],
-    "photoViews": [
-      "3D CONCEPT"
-    ],
-    "imageAlt": "All-Seeing Tee archive artwork concept in 3D",
-    "model": "/graphic-models/models/all-seeing-tee.glb?v=1",
-    "rackModel": "/graphic-models/models/all-seeing-tee.glb?v=1",
-    "previousModel": "/models/all-seeing-tee-tailored-v6.glb",
-    "previousRackModel": "/rack-models/all-seeing-tee-tailored-v6.glb",
-    "estimated": true,
-    "qualitySample": false,
-    "qualityRevision": "archive-hq-v1",
-    "modelStatus": "archive-concept",
-    "modelNote": "Archive concept: HOUSE OF HORUS, EYE SEE YOU.",
-    "artworkSources": [
-      {
-        "filename": "HOUSE OF HORUS.png",
-        "kind": "original-archive-artwork",
-        "side": "front"
-      },
-      {
-        "filename": "EYE SEE YOU.png",
-        "kind": "original-archive-artwork",
-        "side": "back"
-      }
-    ],
-    "defaultView": "front"
-  },
-  {
-    "id": "05",
-    "slug": "hermetic-hoodie",
-    "name": "Hermetic Hoodie",
-    "chapter": "I",
-    "price": "$80",
-    "tagline": "Archive artwork concept / Hermetic Hoodie",
-    "description": "An archive-artwork concept on the updated hoodie model. Featuring DIAMOND BODY. Explore the placement in 3D.",
-    "images": [
-      "/graphic-models/posters/hermetic-hoodie.webp"
-    ],
-    "photoViews": [
-      "3D CONCEPT"
-    ],
-    "imageAlt": "Hermetic Hoodie archive artwork concept in 3D",
-    "model": "/graphic-models/models/hermetic-hoodie.glb?v=1",
-    "rackModel": "/graphic-models/models/hermetic-hoodie.glb?v=1",
-    "previousModel": "/models/hermetic-hoodie-tailored-v6.glb",
-    "previousRackModel": "/rack-models/hermetic-hoodie-tailored-v6.glb",
-    "estimated": true,
-    "qualitySample": false,
-    "qualityRevision": "archive-hq-v1",
-    "modelStatus": "archive-concept",
-    "modelNote": "Archive concept: DIAMOND BODY.",
-    "artworkSources": [
-      {
-        "filename": "DIAMOND BODY.png",
-        "kind": "original-archive-artwork",
-        "side": "back"
-      }
-    ],
-    "defaultView": "back"
-  },
-  {
     "id": "06",
     "slug": "veil-crewneck",
     "name": "Veil Crewneck",
@@ -205,39 +100,6 @@ window.showroomCollection=[
     "artworkSources": [
       {
         "filename": "complete-logo-transparent.png",
-        "kind": "original-archive-artwork",
-        "side": "front"
-      }
-    ],
-    "defaultView": "front"
-  },
-  {
-    "id": "07",
-    "slug": "initiates-coach-jacket",
-    "name": "Initiate's Coach Jacket",
-    "chapter": "II",
-    "price": "$80",
-    "tagline": "Archive artwork concept / Initiate's Coach Jacket",
-    "description": "An archive-artwork concept on the updated jacket model. Featuring HOUSE OF HORUS. Explore the placement in 3D.",
-    "images": [
-      "/graphic-models/posters/initiates-coach-jacket.webp"
-    ],
-    "photoViews": [
-      "3D CONCEPT"
-    ],
-    "imageAlt": "Initiate's Coach Jacket archive artwork concept in 3D",
-    "model": "/graphic-models/models/initiates-coach-jacket.glb?v=1",
-    "rackModel": "/graphic-models/models/initiates-coach-jacket.glb?v=1",
-    "previousModel": "/models/initiates-coach-jacket-tailored-v6.glb",
-    "previousRackModel": "/rack-models/initiates-coach-jacket-tailored-v6.glb",
-    "estimated": true,
-    "qualitySample": false,
-    "qualityRevision": "archive-hq-v1",
-    "modelStatus": "archive-concept",
-    "modelNote": "Archive concept: HOUSE OF HORUS.",
-    "artworkSources": [
-      {
-        "filename": "HOUSE OF HORUS.png",
         "kind": "original-archive-artwork",
         "side": "front"
       }
@@ -308,57 +170,6 @@ window.showroomCollection=[
     }
   },
   {
-    "id": "H1",
-    "slug": "accessory-trucker-cobalt",
-    "name": "Custom Trucker / Baseball Hat",
-    "chapter": "A",
-    "price": "$45",
-    "tagline": "Your colors. Your graphics.",
-    "description": "Choose a mesh trucker or solid six-panel baseball cap. Mix your front, brim and side colors, then arrange Sticker Lab artwork on the front.",
-    "images": [
-      "/accessory-collection/posters/mesh-trucker-v2.png"
-    ],
-    "imageAlt": "Custom mesh trucker hat with changeable colors and graphics",
-    "photoViews": [
-      "3D PREVIEW"
-    ],
-    "model": "/accessory-collection/models/mesh-trucker-v2.glb",
-    "rackModel": "/accessory-collection/models/mesh-trucker-v2.glb",
-    "accessoryId": "accessory-trucker-cobalt",
-    "accessoryPreview": {
-      "slug": "trucker-cobalt",
-      "name": "Cobalt / White Trucker",
-      "family": "trucker",
-      "frontColor": "#f7f4e9",
-      "brimColor": "#2452c6",
-      "meshColor": "#f1f0e9",
-      "meshIsGeometry": false,
-      "model": "/accessory-collection/models/mesh-trucker-v2.glb",
-      "poster": "/accessory-collection/posters/mesh-trucker-v2.png",
-      "dimensionsMm": [
-        200,
-        300,
-        135
-      ],
-      "bytes": 2967912,
-      "status": "visualization concept",
-      "webMaterialFinish": "matte fabric",
-      "id": "accessory-trucker-cobalt",
-      "href": "/product?item=accessory-trucker-cobalt",
-      "tagline": "Your colors. Your graphics.",
-      "description": "Choose a mesh trucker or solid six-panel baseball cap. Mix your front, brim and side colors, then arrange Sticker Lab artwork on the front.",
-      "customizationEnabled": true,
-      "defaultGraphic": "centaur",
-      "triangles": 66001,
-      "qualityRevision": 4,
-      "hatStyle": "trucker",
-      "meshFinish": "Open alpha-tested mesh"
-    },
-    "modelStatus": "accessory-model",
-    "qualityRevision": "hat-replacement-1",
-    "defaultView": "front"
-  },
-  {
     "id": "09",
     "slug": "cross-tee",
     "name": "Cross Tee",
@@ -420,40 +231,6 @@ window.showroomCollection=[
     "artworkSources": [
       {
         "filename": "jesus.png",
-        "kind": "original-archive-artwork",
-        "side": "front"
-      }
-    ],
-    "defaultView": "front"
-  },
-  {
-    "id": "11",
-    "slug": "blackmarket-baby-tee",
-    "name": "Blackmarket Baby Tee",
-    "chapter": "IV",
-    "price": "$60",
-    "tagline": "Everything you need. No questions asked.",
-    "description": "Raw white cotton, cropped. A collage of redacted IDs, ghost databases, and an AR-15 schematic frames the title text in red. The paperwork of commerce, printed flat and worn proud. Boxy crop, 6oz cotton.",
-    "images": [
-      "/products/003-black-market-baby.webp"
-    ],
-    "photoViews": [
-      "PHOTO",
-      "PHOTO 2"
-    ],
-    "imageAlt": "Blackmarket Baby Tee original product photograph",
-    "model": "/graphic-models/models/blackmarket-baby-tee.glb?v=1",
-    "rackModel": "/graphic-models/models/blackmarket-baby-tee.glb?v=1",
-    "previousModel": "/models/blackmarket-baby-tee-tailored-v6.glb",
-    "previousRackModel": "/rack-models/blackmarket-baby-tee-tailored-v6.glb",
-    "estimated": false,
-    "qualitySample": false,
-    "qualityRevision": "archive-hq-v1",
-    "modelStatus": "archive-artwork-refined",
-    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
-    "artworkSources": [
-      {
-        "filename": "black markey baby.png",
         "kind": "original-archive-artwork",
         "side": "front"
       }
@@ -677,40 +454,6 @@ window.showroomCollection=[
         "filename": "021-IMG_0370.png",
         "kind": "original-product-photo-reference",
         "side": "back"
-      }
-    ],
-    "defaultView": "front"
-  },
-  {
-    "id": "18",
-    "slug": "cave-painting-tee",
-    "name": "Cave Painting Tee",
-    "chapter": "I",
-    "price": "$60",
-    "tagline": "The first transmission.",
-    "description": "Raw white cotton, printed with a detailed cave-painting hunting sequence across the chest \u2014 labeled stages annotated in cursive script: sighting, cornering, the kill, the return. The oldest story, re-rendered. Regular fit, 6oz cotton.",
-    "images": [
-      "/products/023-IMG_0620.webp"
-    ],
-    "photoViews": [
-      "PHOTO",
-      "PHOTO 2"
-    ],
-    "imageAlt": "Cave Painting Tee original product photograph",
-    "model": "/graphic-models/models/cave-painting-tee.glb?v=1",
-    "rackModel": "/graphic-models/models/cave-painting-tee.glb?v=1",
-    "previousModel": "/models/cave-painting-tee-tailored-v6.glb",
-    "previousRackModel": "/rack-models/cave-painting-tee-tailored-v6.glb",
-    "estimated": false,
-    "qualitySample": false,
-    "qualityRevision": "archive-hq-v1",
-    "modelStatus": "archive-artwork-refined",
-    "modelNote": "Updated 3D garment. Original archive artwork and product print references.",
-    "artworkSources": [
-      {
-        "filename": "023-IMG_0620.png",
-        "kind": "original-product-photo-reference",
-        "side": "front"
       }
     ],
     "defaultView": "front"
