@@ -129,6 +129,12 @@ force = false
   [redirects.headers]
 
 [[redirects]]
+from = "/api/community/feed"
+to = "/.netlify/functions/community"
+status = 200
+force = true
+
+[[redirects]]
 from = "/api/lab/*"
 to = "/.netlify/functions/lab/:splat"
 status = 200

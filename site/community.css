@@ -15,6 +15,21 @@
 .community-local-notes .preview-note{margin-top:12px}
 #archive-market .reading-layout[data-view="forum"]{grid-template-columns:minmax(0,1fr)}
 #archive-market .community-local-notes>.reading-sidebar{position:static;max-height:420px;margin-block:18px;overflow-y:auto}
+#archive-market .community-public>h2{margin-bottom:14px}
+#archive-market .community-public>.kicker{margin-bottom:14px}
+.community-feed{margin-top:30px;min-width:0}
+.community-feed-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+#archive-market .community-feed-status{font-size:13px;max-width:600px}
+#archive-market .community-feed-refresh{background:var(--paper);color:var(--ink);border:1px solid var(--line);padding:10px 14px;min-height:44px;white-space:nowrap}
+.community-feed-refresh:disabled{opacity:.6;cursor:wait}
+.community-feed-posts{list-style:none;padding:0;margin:0;display:grid;gap:16px}
+.community-post{padding:clamp(16px,3vw,26px);border:1px solid var(--line);background:var(--paper);overflow-wrap:anywhere}
+.community-post-meta{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px 20px;margin-bottom:14px}
+#archive-market .community-post-meta h3{font-size:16px;line-height:1.4;font-weight:700;margin:0;max-width:none}
+.community-post-meta time{font-size:12px;color:var(--muted)}
+#archive-market .community-post-body{white-space:pre-wrap;font-size:15px;line-height:1.65;max-width:80ch}
+.community-post-actions{margin-top:18px;font-size:13px}
+.community-post-actions a{display:inline-flex;align-items:center;min-height:44px}
 .account-main{width:min(1040px,92vw);margin:clamp(44px,8vw,100px) auto}
 .account-heading{max-width:700px;margin-bottom:42px}
 .account-heading h1{font-size:clamp(58px,9vw,112px);line-height:.96;margin:0 0 22px}

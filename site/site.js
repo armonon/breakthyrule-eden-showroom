@@ -2,7 +2,7 @@
 // Shared chrome for the public site: header, tabs, footer, and the discussion board
 // (CreatingCo's hosted Circle community, with earlier browser notes kept separately).
 (()=>{
- const tabs=[['/', 'Products','home'],['/lab','Lab','lab'],['/gallery','Gallery','gallery'],['/archive','Archive','archive'],['/archive#forum','Forum','forum'],['/about','About','about'],['/account','Account','account']];
+ const tabs=[['/', 'Products','home'],['/lab','Lab','lab'],['/gallery','Gallery','gallery'],['/archive','Archive','archive'],['/about','About','about'],['/account','Account','account']];
  const page=document.body.dataset.page||'';
  // Keep old shared About links working at the dedicated page.
  if(new URLSearchParams(location.search).has('about')){location.replace('/about');return;}
@@ -42,16 +42,18 @@
   const root=mount;
   if(circle.community){
    // Circle/Now owns its member session. Never imply that a link signs the shop in.
+   const compose=new URL(circle.community),discover=new URL(circle.community);compose.searchParams.set('view','Create');discover.searchParams.set('view','Discover');
    const local=el('details',{className:'community-local-notes'},el('summary',{textContent:'Earlier notes on this device'}));
    mount=el('div');local.append(mount);
    root.replaceChildren(
     el('section',{className:'community-handoff'},
      el('p',{className:'kicker',textContent:'The Circle / thecreatingco'}),
      el('h3',{textContent:'Share it with the community.'}),
-     el('p',{textContent:'Post your fit, share a source, and meet other makers in The Circle.'}),
+     el('p',{textContent:'Read public conversations in The Circle, or join in as a guest. No account is needed for text posts and replies.'}),
      el('div',{className:'community-actions'},
-      el('a',{href:circle.community,className:'solid',textContent:'Open The Circle ↗'}),
-      el('a',{href:'/account',className:'ghost',textContent:'Your account'}))),local);
+      el('a',{href:compose.href,className:'solid',textContent:'Write as a guest ↗',target:'_blank',rel:'noopener',ariaLabel:'Write as a guest in The Circle (opens in a new tab)'}),
+      el('a',{href:discover.href,className:'ghost',textContent:'Read The Circle ↗',target:'_blank',rel:'noopener'}),
+      el('a',{href:'/account',textContent:'Your account'}))),local);
   }
   const storeKey='btr-board:'+key;
   const load=()=>{try{const value=JSON.parse(localStorage.getItem(storeKey)||'[]');return Array.isArray(value)?value:null;}catch{return null;}};

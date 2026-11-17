@@ -80,6 +80,22 @@
   return {mount,previous,next,select,total,note};
  });
  const boards=new Map(),archiveButtons=[],forumButtons=[],libraryButtons=[];
+ let communityFeed=null,communityFeedModule=null;
+ function loadCommunityFeed(){
+  if(communityFeed){communityFeed.load();return;}
+  if(communityFeedModule)return;
+  const mount=$('circle-feed');
+  mount.setAttribute('aria-busy','true');
+  mount.replaceChildren(el('p',{role:'status',textContent:'Loading public conversations…'}));
+  communityFeedModule=import('/site/community-feed.mjs?v=1').then(({mountCommunityFeed})=>{
+   communityFeed=mountCommunityFeed(mount);
+   return communityFeed.load();
+  }).catch(()=>{
+   communityFeedModule=null;mount.setAttribute('aria-busy','false');
+   const retry=el('button',{type:'button',className:'community-feed-refresh',textContent:'Try again'});retry.onclick=loadCommunityFeed;
+   mount.replaceChildren(el('p',{role:'status',textContent:'The community feed could not be loaded. Try again, or open The Circle above.'}),retry);
+  });
+ }
  const topicSections=[],openGroups=new Set();
  function updateLibraryTopics(){
   for(const button of libraryButtons)button.setAttribute('aria-pressed',String(button.dataset.id==='new'?libraryMode==='featured':button.dataset.id===libraryTopic));
@@ -150,7 +166,7 @@
   if(view==='forum'&&topic){forumTopic=topic;if(topic.id!=='all')$('forum-local-notes').open=true;}
   for(const name of views){const selected=name===view;$('panel-'+name).hidden=!selected;$('sidebar-'+name).hidden=!selected;$('tab-'+name).setAttribute('aria-selected',String(selected));$('tab-'+name).tabIndex=selected?0:-1;}
   placeReadingSidebar();
-  if(view==='archive')renderArchive();else if(view==='forum')renderForum();
+  if(view==='archive')renderArchive();else if(view==='forum'){renderForum();loadCommunityFeed();}
   revealTopic(view==='archive'?archiveTopic.id:view==='forum'?forumTopic.id:libraryTopic);
   document.title='Break Thy Rule — '+view[0].toUpperCase()+view.slice(1);
   const hash=routeHash(view,view==='archive'?archiveTopic:forumTopic);
