@@ -7,6 +7,8 @@
 .community-actions a{min-height:44px;display:inline-flex;align-items:center}
 .community-actions .solid,.community-actions .ghost{font-size:12px;text-decoration:none;padding:12px 18px}
 #archive-market .community-actions a.solid{color:#fff;background:#20251c;text-decoration:none}
+/* The cave skin colors Archive links lime, including lime-filled buttons. */
+html[data-btr-theme="cave"] #archive-market .community-actions a.solid{color:#10120f!important}
 #archive-market .community-actions a.solid:focus-visible{outline:2px solid var(--red,#526c36);outline-offset:4px}
 .community-actions>a:not(.solid):not(.ghost){text-decoration:underline;text-underline-offset:4px;font-size:13px}
 .community-local-notes{margin:28px 0;padding:18px 0;border-top:1px solid currentColor}
