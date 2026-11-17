@@ -6,12 +6,8 @@ window.gardenResidentDefinitions = [
 window.createGardenResidents = function(T,scene,{reduced=false,onChange=()=>{},renderer,sky}={}) {
  const start=performance.now(),epoch=Date.now()/1000,entries=new Map();
  const point=new T.Vector3(),tangent=new T.Vector3();
- let environment;
- if(renderer&&sky){
-  const backdrop=new T.Scene();backdrop.add(sky.clone());
-  const generator=new T.PMREMGenerator(renderer);
-  environment=generator.fromScene(backdrop,0,.1,400).texture;generator.dispose();
- }
+ // Residents share the world's cached sky environment, including day/night.
+ // A separate PMREM here duplicated six sky renders and retained its GPU target.
  for(const def of window.gardenResidentDefinitions){
   const curve=new T.CatmullRomCurve3(def.points.map(([x,z])=>new T.Vector3(x,0,z)),true,'centripetal');
   curve.arcLengthDivisions=500;
@@ -64,7 +60,7 @@ window.createGardenResidents = function(T,scene,{reduced=false,onChange=()=>{},r
     entry.root=gltf.scene;entry.root.name=entry.def.name;
     // Residents keep moving, so they wear a soft blob shadow instead of redrawing the whole sun shadow map as they go.
     entry.root.traverse(n=>{if(n.isMesh){n.castShadow=false;n.receiveShadow=true;n.frustumCulled=false;n.userData.residentId=id;
-     if(entry.def.assetVersion===4&&environment)for(const material of Array.isArray(n.material)?n.material:[n.material]){material.envMap=environment;material.envMapIntensity=.85;material.needsUpdate=true;}
+     if(entry.def.assetVersion===4)for(const material of Array.isArray(n.material)?n.material:[n.material])material.envMapIntensity=.85;
     }});
     const blobMap=window.GardenCharacterDetails?.blobTexture?.(T);
     if(blobMap){const blob=new T.Mesh(new T.PlaneGeometry(1,1).rotateX(-Math.PI/2),new T.MeshBasicMaterial({map:blobMap,transparent:true,depthWrite:false,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-2}));
@@ -85,7 +81,7 @@ window.createGardenResidents = function(T,scene,{reduced=false,onChange=()=>{},r
   // True while a resident moves (walks, dances or fights) within `radius` of `position`; the sun shadow only needs refreshing then.
   walkingNear(position,radius){for(const e of entries.values())if(e.root&&(e.walking||e.controller?.active)&&e.root.position.distanceTo(position)<radius)return true;return false;},
   ready:Promise.all([...entries.keys()].map(load)),retry:load,
-  update(){const time=now();for(const entry of entries.values())updateEntry(entry,time);},
+  update(){const time=now();for(const entry of entries.values())if(entry.root?.visible)updateEntry(entry,time);},
   get(id){return entries.get(id);},
   pose,
   pathState(id){const entry=entries.get(id);return entry?pathState(entry,now()):null;},

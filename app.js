@@ -196,12 +196,16 @@ function rackStatus(){
 async function loadRackModels(){
  if(rackLoading||!collectionRack)return;rackLoading=true;rackStatus();
  const queue=collection.map((_,i)=>i).filter(i=>!rackModels.has(i));
- async function worker(){while(queue.length){const index=queue.shift(),item=collection[index];try{
+ const near=()=>camera.position.distanceTo(collectionRack.rack.getWorldPosition(new T.Vector3()))<18||state.view==='approach';
+ async function worker(){while(queue.length&&near()){const index=queue.shift(),item=collection[index];try{
   const gltf=await showroomAssets.model(item.rackModel||item.model),model=prepareCollectionModel(THREE,gltf.scene);
+  // Rack pieces occupy a small part of the screen. Keep their detailed mesh,
+  // but upload display-sized maps; the separate inspection model keeps originals.
+  await window.prepareWorldModel?.(THREE,model,{renderer,camera,scene,maxTextureSize:1024});
   rackModels.set(index,model);rackFailures.delete(index);const placed=collectionRack.place(index,model);placed?.traverse(n=>{if(n.isMesh)pickables.push(n);});
   renderer.shadowMap.needsUpdate=true;requestDraw();
  }catch{rackFailures.add(index);}rackStatus();await new Promise(resolve=>setTimeout(resolve,35));}}
- await Promise.all([worker(),worker()]);rackLoading=false;rackStatus();
+ await worker();rackLoading=false;rackStatus();
 }
 $('retry-rack').onclick=loadRackModels;
 window.addEventListener('online',()=>{if(rackFailures.size)loadRackModels();});
@@ -225,6 +229,9 @@ dialog.addEventListener('keydown',event=>{if(!['INPUT','SELECT','BUTTON'].includ
 function fallback(){instagramSlideshow?.destroy();instagramSlideshow=null;wallFilm?.destroy();wallFilm=null;$('film-link').hidden=false;state.ready=false;$('loading').hidden=true;$('fallback').hidden=false;$('scene').hidden=true;$('spawn').disabled=true;$('approach').disabled=true;$('wall-view').disabled=true;$('film-view').disabled=true;$('movement-hint').textContent='EXPLORE THE PRODUCT PHOTOS';$('world-hint').textContent='Select the vault to inspect product photography.';}
 if(!window.THREE){fallback();return;}
 const T=THREE,stage=$('scene');let renderer;
+// Layout reads belong to resize observers, not to every projected HUD label.
+const viewport={width:stage.clientWidth,height:stage.clientHeight};let shelfWidth=160;
+new ResizeObserver(entries=>{const entry=entries[0];if(entry.contentRect.width>0)shelfWidth=entry.contentRect.width;}).observe($('shelf-actions'));
 try{renderer=new T.WebGLRenderer({alpha:true,antialias:true,powerPreference:'high-performance'});}catch{fallback();return;}
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(stage.clientWidth,stage.clientHeight);renderer.setClearColor(0xc7d9b8,0);renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.AgXToneMapping;renderer.toneMappingExposure=1.5;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;stage.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Garden of Eden with a sunlit fruit tree, wildflowers, a reflective pond, stone paths and the Break Thy Rule collection in an open garden pavilion.');renderer.domElement.setAttribute('role','img');
 window.showroomEnableKTX2(renderer);
@@ -291,7 +298,7 @@ Promise.allSettled([garden.ready,gardenLibrary.ready]).then(()=>{
  const stats={};
  // The Photoreal setting may already have hidden these; they still merge, for when it is switched off.
  const swapped=[garden.stones,garden.pond.lilies],shown=swapped.map(o=>o.visible);for(const o of swapped)o.visible=true;
- for(const [name,options] of [['Garden of Eden',{skip:o=>o.name==='Endless road section'||o.name==='Eden stones'||o.name==='Eden lilies'}],['Eden stones',{}],['Eden lilies',{}],['Eden amphitheater',{}],['Break Thy Rule garden pavilion',{}],['Open library beside the apple tree',{skip:o=>o.userData.dynamic}]])stats[name]=mergeStaticMeshes(T,scene.getObjectByName(name),options);
+ for(const [name,options] of [['Garden of Eden',{skip:o=>o.name==='Endless road section'||o.name==='Eden stones'||o.name==='Eden lilies'}],['Eden stones',{}],['Eden lilies',{}],['Eden amphitheater',{}],['Museum',{skip:o=>o.layers.mask===4}],['Break Thy Rule garden pavilion',{}],['Open library beside the apple tree',{skip:o=>o.userData.dynamic}]])stats[name]=mergeStaticMeshes(T,scene.getObjectByName(name),options);
  swapped.forEach((o,i)=>{o.visible=shown[i];});
  window.edenBatching=stats;renderer.shadowMap.needsUpdate=true;requestDraw();
 });
@@ -357,23 +364,23 @@ function toggleDoor(){if(garden.skybox.isOpen()||!secrets||secrets.tryDoor())gar
 function updateDoorPrompt(){
  const sky=garden.skybox,near=sky.distance(targetPosition);if(near>3.8){if(!doorPrompt.hidden)doorPrompt.hidden=true;return;}const point=sky.marker.clone().project(camera);
  doorPrompt.hidden=modalOpen()||!['free','spawn'].includes(state.view)||near>3.8||point.z< -1||point.z>1||Math.abs(point.x)>.9||Math.abs(point.y)>.85;
- if(!doorPrompt.hidden){const label=(sky.isOpen()?'CLOSE THE DOOR':'OPEN THE DOOR')+(finePointer?'  (E)':'');if(doorPrompt.textContent!==label)doorPrompt.textContent=label;doorPrompt.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,110,stage.clientWidth-110)+'px';doorPrompt.style.top=Math.max(125,(1-point.y)*stage.clientHeight/2-10)+'px';}
+ if(!doorPrompt.hidden){const label=(sky.isOpen()?'CLOSE THE DOOR':'OPEN THE DOOR')+(finePointer?'  (E)':'');if(doorPrompt.textContent!==label)doorPrompt.textContent=label;doorPrompt.style.left=T.MathUtils.clamp((point.x+1)*viewport.width/2,110,viewport.width-110)+'px';doorPrompt.style.top=Math.max(125,(1-point.y)*viewport.height/2-10)+'px';}
 }
 function updateRoadCaption(){if(state.view!=='free'){roadCaption='';return;}const pocket=pockets?.inside(camera.position),place=pocket?pocket.name:garden.nightBuilt()&&garden.pyramid.gathering.inspect().inside?'gathering':camera.position.z<garden.road.door-.5?'road':'garden';if(place===roadCaption)return;roadCaption=place;document.querySelector('.world-caption h1').textContent=pocket?pocket.caption[0]:place==='gathering'?'THE GATHERING':place==='road'?'THE LONG BRICK ROAD':'GARDEN OF EDEN';document.querySelector('.world-caption .edition').textContent=pocket?pocket.caption[1]:place==='gathering'?'BREAKTHYRULE / WITHIN THE PYRAMID':place==='road'?'BREAKTHYRULE / BEYOND THE SIGN':'BREAKTHYRULE / IN THE BEGINNING';}
-function updateMusicPrompt(){const point=amphitheater.marker.clone().project(camera),button=$('music-prompt');button.hidden=modalOpen()||pockets?.enclosed(camera.position)||!['amphitheater','free'].includes(state.view)||point.z< -1||point.z>1||Math.abs(point.x)>.9||Math.abs(point.y)>.8||camera.position.distanceTo(amphitheater.marker)>26;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,90,stage.clientWidth-90)+'px';button.style.top=T.MathUtils.clamp((1-point.y)*stage.clientHeight/2,245,stage.clientHeight-170)+'px';}}
+function updateMusicPrompt(){const point=amphitheater.marker.clone().project(camera),button=$('music-prompt');button.hidden=modalOpen()||pockets?.enclosed(camera.position)||!['amphitheater','free'].includes(state.view)||point.z< -1||point.z>1||Math.abs(point.x)>.9||Math.abs(point.y)>.8||camera.position.distanceTo(amphitheater.marker)>26;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*viewport.width/2,90,viewport.width-90)+'px';button.style.top=T.MathUtils.clamp((1-point.y)*viewport.height/2,245,viewport.height-170)+'px';}}
 function updateShelfActions(){
  const controls=$('shelf-actions');if(!gardenLibrary){controls.hidden=true;return;}
  const point=gardenLibrary.marker.clone().project(camera);
  controls.hidden=modalOpen()||!['library','spawn','free'].includes(state.view)||point.z< -1||point.z>1||Math.abs(point.x)>.96||Math.abs(point.y)>.9||camera.position.distanceTo(gardenLibrary.marker)>24;
- if(!controls.hidden){const margin=controls.offsetWidth/2+12;controls.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,margin,stage.clientWidth-margin)+'px';controls.style.top=T.MathUtils.clamp((1-point.y)*stage.clientHeight/2,145,stage.clientHeight-170)+'px';}
+ if(!controls.hidden){const margin=shelfWidth/2+12;controls.style.left=T.MathUtils.clamp((point.x+1)*viewport.width/2,margin,viewport.width-margin)+'px';controls.style.top=T.MathUtils.clamp((1-point.y)*viewport.height/2,145,viewport.height-170)+'px';}
 }
-function updateNPCPrompt(){loadNearbyAssets();if(camera.position.distanceTo(librarianNPC.marker)>22){const b=$('npc-prompt');if(!b.hidden)b.hidden=true;return;}const point=librarianNPC.marker.clone().project(camera),button=$('npc-prompt');button.hidden=modalOpen()||pockets?.enclosed(camera.position)||state.view==='film'||point.z< -1||point.z>1||Math.abs(point.x)>.85||Math.abs(point.y)>.78||camera.position.distanceTo(librarianNPC.marker)>22;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*stage.clientWidth/2,105,stage.clientWidth-105)+'px';button.style.top=Math.max(125,(1-point.y)*stage.clientHeight/2-20)+'px';}}
+function updateNPCPrompt(){loadNearbyAssets();if(camera.position.distanceTo(librarianNPC.marker)>22){const b=$('npc-prompt');if(!b.hidden)b.hidden=true;return;}const point=librarianNPC.marker.clone().project(camera),button=$('npc-prompt');button.hidden=modalOpen()||pockets?.enclosed(camera.position)||state.view==='film'||point.z< -1||point.z>1||Math.abs(point.x)>.85||Math.abs(point.y)>.78||camera.position.distanceTo(librarianNPC.marker)>22;if(!button.hidden){button.style.left=T.MathUtils.clamp((point.x+1)*viewport.width/2,105,viewport.width-105)+'px';button.style.top=Math.max(125,(1-point.y)*viewport.height/2-20)+'px';}}
 // Lazy loads near the librarian and the rack: checked four times a second, not every frame.
 let nearbyCheckedAt=-1e9;
 function loadNearbyAssets(){
  {const t=performance.now();if(t-nearbyCheckedAt<250)return;nearbyCheckedAt=t;}
  if(camera.position.distanceTo(librarianNPC.marker)<16)librarianNPC.load();
- if(collectionRack&&camera.position.distanceTo(collectionRack.rack.getWorldPosition(new T.Vector3()))<12&&!rackLoading&&!rackModels.size&&!rackFailures.size)loadRackModels();
+ if(collectionRack&&camera.position.distanceTo(collectionRack.rack.getWorldPosition(new T.Vector3()))<12&&!rackLoading&&rackModels.size<collection.length&&!rackFailures.size)loadRackModels();
 }
 function markView(){const libraryView=state.view==='library'||state.view==='librarian',musicView=state.view==='amphitheater';stage.classList.toggle('watching-film',state.view==='film');wallFilm?.setInteractive(state.view==='film');$('browse-library').hidden=!libraryView;$('talk-librarian').hidden=!libraryView;$('inspect-jacket').hidden=libraryView||musicView;$('open-music').hidden=!musicView;for(const [id,view]of[['spawn','spawn'],['library-view','library'],['approach','approach'],['wall-view','wall'],['film-view','film'],['amphitheater-view','amphitheater']]){const selected=state.view===view||(view==='wall'&&state.view==='lookbook')||(view==='library'&&state.view==='librarian');$(id).classList.toggle('selected',selected);$(id).setAttribute('aria-pressed',String(selected));}}
 let edenNavigation=0;
@@ -536,16 +543,9 @@ function updateBodyAnim(){
 let deathDrop=0,lowShown=0;
 function updateFeel(dt){
  updateMatchGate();updateBodyAnim();horror?.update(dt);
- // Smoothness: once ready, keep the hidden world hidden, warm up textures, shaders, the match and weapons in idle
- // time (prewarm.js), and re-sort any root added later. perf-hud.js (F8) names any spike that remains.
- if(state.ready&&!prewarm&&window.createPrewarm){if(worlds&&!worlds.loading())worlds.apply();prewarm=window.createPrewarm({T,renderer,scene,camera,tasks:[()=>Promise.resolve(combat?.ready?.()).then(()=>prewarm.add(()=>combat?.prewarmShaders?.())),
-  ()=>Promise.resolve(battle?.prewarm?.()).then(()=>{
-   // Every weapon as it appears on a pickup pad, then Beyond Eden built step by step (its street lamps change the
-   // light count, and so every shader variant), then one compile under Beyond's exact lights; stand-ins removed.
-   const stand=new T.Group();stand.name='Prewarm stand-ins';stand.position.set(0,-60,0);for(const w of combat?.weapons||[]){try{const m=combat.weaponModel?.(w.id);if(m)stand.add(m);}catch{}}
-   scene.add(stand);rootCount=scene.children.length;
-   const warm=()=>{if(garden.warmNight&&!garden.warmNight()){prewarm.add(warm);return;}prewarm.add(()=>worlds?.compileFor?.('beyond'));prewarm.add(()=>{scene.remove(stand);rootCount=scene.children.length;});};
-   prewarm.add(warm);})]});prewarm.start();rootCount=scene.children.length;}
+ // Prepare only the current world. The doorway's loading screen already owns
+ // Beyond's build/compile; doing it here stalled Eden and filled GPU memory.
+ if(state.ready&&!prewarm&&window.createPrewarm){if(worlds&&!worlds.loading())worlds.apply();prewarm=window.createPrewarm({T,renderer,scene,camera,budgetMs:3,canRun:()=>pageActive()&&!keys.size&&!drag&&!worlds?.loading()});prewarm.start();rootCount=scene.children.length;}
  if(prewarm&&scene.children.length!==rootCount){rootCount=scene.children.length;if(worlds&&!worlds.loading())worlds.apply();prewarm.rescan();}
  // Bars, pipes and ropes (parkour-grips.js) appear with the district; the momentum meter (momentum-hud.js).
  if(!gripsView&&garden.nightBuilt?.())gripsView=window.parkourGrips?.mount(T,scene,{getPose:()=>parkour?.ropePose?.()})||null;gripsView?.update();
@@ -629,7 +629,7 @@ renderer.domElement.addEventListener('pointerdown',event=>{if(event.button!==0||
 renderer.domElement.addEventListener('pointermove',event=>{if(drag){const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)drag.moved=true;if(drag.moved){freeView();const yaw=drag.yaw+dx*.0035,pitch=T.MathUtils.clamp(drag.pitch-dy*.0035,-1.35,.4);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));renderer.domElement.style.cursor='grabbing';requestDraw();}}else renderer.domElement.style.cursor=lookLocked?'none':hit(event)?'pointer':event.pointerType==='mouse'?'crosshair':'grab';});
 renderer.domElement.addEventListener('pointerup',event=>{if(drag){suppressClickUntil=drag.moved?performance.now()+300:0;drag=null;renderer.domElement.releasePointerCapture(event.pointerId);}});
 renderer.domElement.addEventListener('pointercancel',()=>{drag=null;suppressClickUntil=0;});
-new ResizeObserver(()=>{renderer.setSize(stage.clientWidth,stage.clientHeight);camera.aspect=stage.clientWidth/stage.clientHeight;camera.updateProjectionMatrix();if(followResident)focusResident(followResident);else if(state.view==='free'){camera.position.copy(targetPosition);camera.lookAt(targetAim);requestDraw();}else go(state.view,true);}).observe(stage);
+new ResizeObserver(()=>{viewport.width=stage.clientWidth;viewport.height=stage.clientHeight;renderer.setSize(viewport.width,viewport.height);camera.aspect=viewport.width/viewport.height;camera.updateProjectionMatrix();if(followResident)focusResident(followResident);else if(state.view==='free'){camera.position.copy(targetPosition);camera.lookAt(targetAim);requestDraw();}else go(state.view,true);}).observe(stage);
 function pageVisibilityChanged(){keys.clear();drag=null;previous=0;quality.pause();if(!pageActive()){cancelAnimationFrame(frame);frame=0;}else requestDraw();}
 document.addEventListener('visibilitychange',pageVisibilityChanged);
 document.addEventListener('btr:page-visibility',pageVisibilityChanged);

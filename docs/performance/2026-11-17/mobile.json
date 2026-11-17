@@ -1,0 +1,901 @@
+{
+  "url": "http://127.0.0.1:8794/showroom.html",
+  "preset": "low",
+  "device": "mobile",
+  "phases": [
+    {
+      "name": "garden",
+      "samples": 428,
+      "medianMs": 16.700000000000728,
+      "p95Ms": 16.700000000000728,
+      "p99Ms": 16.799999999999272,
+      "over50": 1,
+      "drawCalls": 277,
+      "triangles": 632990,
+      "submitMs": 4.899999976158142,
+      "quality": {
+        "pixelRatio": 1,
+        "max": 1,
+        "min": 0.75,
+        "frameMs": 16.7,
+        "drops": 0,
+        "climbWaitS": 8,
+        "vsyncMs": 16.7,
+        "targetFps": null
+      },
+      "memory": {
+        "geometries": 503,
+        "textures": 122
+      },
+      "prewarm": {
+        "textures": 5,
+        "compiled": 0,
+        "tasks": 0,
+        "slices": 3,
+        "done": true,
+        "ms": 11.6,
+        "queued": 0
+      },
+      "world": {
+        "world": "eden",
+        "busy": false,
+        "primed": false,
+        "stableLights": 6,
+        "pointSources": 4,
+        "switches": 0,
+        "hiddenLast": 0,
+        "film": {
+          "ready": false,
+          "failed": false,
+          "playing": false,
+          "dissolve": 1
+        }
+      },
+      "position": [
+        -1.0371203330123957,
+        1.6968459068877704,
+        13.052207972154127
+      ],
+      "cpu": [
+        {
+          "fn": "(idle)",
+          "file": "",
+          "line": 0,
+          "samples": 2117
+        },
+        {
+          "fn": "(program)",
+          "file": "",
+          "line": 0,
+          "samples": 96
+        },
+        {
+          "fn": "Sf.renderBufferDirect",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 61
+        },
+        {
+          "fn": "w_",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 24
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 21
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 20
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 19
+        },
+        {
+          "fn": "upload",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 17
+        },
+        {
+          "fn": "bindVertexArray",
+          "file": "",
+          "line": 0,
+          "samples": 16
+        },
+        {
+          "fn": "setValue",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 15
+        },
+        {
+          "fn": "multiplyMatrices",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 15
+        },
+        {
+          "fn": "xu",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 14
+        },
+        {
+          "fn": "querySelector",
+          "file": "",
+          "line": 0,
+          "samples": 13
+        },
+        {
+          "fn": "r",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 13
+        },
+        {
+          "fn": "setValue",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 12
+        },
+        {
+          "fn": "Kt",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 11
+        },
+        {
+          "fn": "o",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 3824,
+          "samples": 11
+        },
+        {
+          "fn": "querySelector",
+          "file": "",
+          "line": 0,
+          "samples": 11
+        },
+        {
+          "fn": "i",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 10
+        },
+        {
+          "fn": "Wt",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 10
+        },
+        {
+          "fn": "Oa",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 10
+        },
+        {
+          "fn": "a",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4078,
+          "samples": 9
+        }
+      ]
+    },
+    {
+      "name": "library",
+      "samples": 393,
+      "medianMs": 16.69999999999709,
+      "p95Ms": 16.799999999995634,
+      "p99Ms": 16.80000000000291,
+      "over50": 1,
+      "drawCalls": 221,
+      "triangles": 405945,
+      "submitMs": 3,
+      "quality": {
+        "pixelRatio": 1,
+        "max": 1,
+        "min": 0.75,
+        "frameMs": 16.7,
+        "drops": 0,
+        "climbWaitS": 8,
+        "vsyncMs": 16.7,
+        "targetFps": null
+      },
+      "memory": {
+        "geometries": 529,
+        "textures": 125
+      },
+      "prewarm": {
+        "textures": 5,
+        "compiled": 0,
+        "tasks": 0,
+        "slices": 3,
+        "done": true,
+        "ms": 11.6,
+        "queued": 0
+      },
+      "world": {
+        "world": "eden",
+        "busy": false,
+        "primed": false,
+        "stableLights": 6,
+        "pointSources": 4,
+        "switches": 0,
+        "hiddenLast": 0,
+        "film": {
+          "ready": false,
+          "failed": false,
+          "playing": false,
+          "dissolve": 1
+        }
+      },
+      "position": [
+        6.796581752077888,
+        1.7538663272873445,
+        -0.00011394159740372768
+      ],
+      "cpu": [
+        {
+          "fn": "(idle)",
+          "file": "",
+          "line": 0,
+          "samples": 3575
+        },
+        {
+          "fn": "(program)",
+          "file": "",
+          "line": 0,
+          "samples": 168
+        },
+        {
+          "fn": "Sf.renderBufferDirect",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 70
+        },
+        {
+          "fn": "upload",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 31
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 28
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 28
+        },
+        {
+          "fn": "i",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 24
+        },
+        {
+          "fn": "xu",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 23
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 20
+        },
+        {
+          "fn": "bindVertexArray",
+          "file": "",
+          "line": 0,
+          "samples": 20
+        },
+        {
+          "fn": "setValue",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 18
+        },
+        {
+          "fn": "f",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 3824,
+          "samples": 18
+        },
+        {
+          "fn": "w_",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 18
+        },
+        {
+          "fn": "Kt",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 17
+        },
+        {
+          "fn": "querySelector",
+          "file": "",
+          "line": 0,
+          "samples": 16
+        },
+        {
+          "fn": "setValue",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 16
+        },
+        {
+          "fn": "Fy",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 16
+        },
+        {
+          "fn": "multiplyMatrices",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 15
+        },
+        {
+          "fn": "querySelector",
+          "file": "",
+          "line": 0,
+          "samples": 14
+        },
+        {
+          "fn": "R_",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 14
+        },
+        {
+          "fn": "xu",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 13
+        },
+        {
+          "fn": "r",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 13
+        }
+      ]
+    },
+    {
+      "name": "museum",
+      "samples": 388,
+      "medianMs": 16.69999999999709,
+      "p95Ms": 16.80000000000291,
+      "p99Ms": 33.400000000001455,
+      "over50": 1,
+      "drawCalls": 71,
+      "triangles": 112945,
+      "submitMs": 2.299999952316284,
+      "quality": {
+        "pixelRatio": 0.75,
+        "max": 1,
+        "min": 0.75,
+        "frameMs": 16.7,
+        "drops": 1,
+        "climbWaitS": 30,
+        "vsyncMs": 16.7,
+        "targetFps": null
+      },
+      "memory": {
+        "geometries": 739,
+        "textures": 239
+      },
+      "prewarm": {
+        "textures": 5,
+        "compiled": 0,
+        "tasks": 0,
+        "slices": 3,
+        "done": true,
+        "ms": 11.6,
+        "queued": 0
+      },
+      "world": {
+        "world": "eden",
+        "busy": false,
+        "primed": false,
+        "stableLights": 6,
+        "pointSources": 4,
+        "switches": 0,
+        "hiddenLast": 0,
+        "film": {
+          "ready": false,
+          "failed": false,
+          "playing": false,
+          "dissolve": 1
+        }
+      },
+      "position": [
+        -1011,
+        1.7454484533499461,
+        -1.0011344679361605
+      ],
+      "cpu": [
+        {
+          "fn": "(idle)",
+          "file": "",
+          "line": 0,
+          "samples": 1551
+        },
+        {
+          "fn": "(program)",
+          "file": "",
+          "line": 0,
+          "samples": 196
+        },
+        {
+          "fn": "backGeometry",
+          "file": "collection-artwork.mjs?v=blank-backs-2",
+          "line": 35,
+          "samples": 85
+        },
+        {
+          "fn": "createObjectURL",
+          "file": "",
+          "line": 0,
+          "samples": 62
+        },
+        {
+          "fn": "(garbage collector)",
+          "file": "",
+          "line": 0,
+          "samples": 45
+        },
+        {
+          "fn": "wasm-function[2]",
+          "file": "e5dcf6aa",
+          "line": 1,
+          "samples": 24
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 18
+        },
+        {
+          "fn": "wasm-function[4]",
+          "file": "e5dcf6aa",
+          "line": 1,
+          "samples": 16
+        },
+        {
+          "fn": "Sf.renderBufferDirect",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 15
+        },
+        {
+          "fn": "xu",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 14
+        },
+        {
+          "fn": "xu",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 13
+        },
+        {
+          "fn": "finishCollectionArtwork",
+          "file": "collection-artwork.mjs?v=blank-backs-2",
+          "line": 80,
+          "samples": 12
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 12
+        },
+        {
+          "fn": "multiplyMatrices",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 10
+        },
+        {
+          "fn": "update",
+          "file": "museum-exhibition.js?v=1",
+          "line": 179,
+          "samples": 9
+        },
+        {
+          "fn": "c",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4227,
+          "samples": 8
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 8
+        },
+        {
+          "fn": "xu",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 7
+        },
+        {
+          "fn": "Jf",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 7
+        },
+        {
+          "fn": "",
+          "file": "asset-loader.js?v=22cfe9f00cc65b66",
+          "line": 51,
+          "samples": 7
+        },
+        {
+          "fn": "",
+          "file": "collection-artwork.mjs?v=blank-backs-2",
+          "line": 59,
+          "samples": 7
+        },
+        {
+          "fn": "upload",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 7
+        }
+      ]
+    },
+    {
+      "name": "return",
+      "samples": 461,
+      "medianMs": 16.69999999999709,
+      "p95Ms": 16.80000000000291,
+      "p99Ms": 33.400000000001455,
+      "over50": 2,
+      "drawCalls": 292,
+      "triangles": 613099,
+      "submitMs": 6.399999976158142,
+      "quality": {
+        "pixelRatio": 0.75,
+        "max": 1,
+        "min": 0.75,
+        "frameMs": 16.9,
+        "drops": 1,
+        "climbWaitS": 30,
+        "vsyncMs": 16.7,
+        "targetFps": null
+      },
+      "memory": {
+        "geometries": 738,
+        "textures": 234
+      },
+      "prewarm": {
+        "textures": 5,
+        "compiled": 0,
+        "tasks": 0,
+        "slices": 3,
+        "done": true,
+        "ms": 11.6,
+        "queued": 0
+      },
+      "world": {
+        "world": "eden",
+        "busy": false,
+        "primed": false,
+        "stableLights": 6,
+        "pointSources": 4,
+        "switches": 0,
+        "hiddenLast": 0,
+        "film": {
+          "ready": false,
+          "failed": false,
+          "playing": false,
+          "dissolve": 1
+        }
+      },
+      "position": [
+        -0.0030930512098814806,
+        1.7503731470793518,
+        10
+      ],
+      "cpu": [
+        {
+          "fn": "(idle)",
+          "file": "",
+          "line": 0,
+          "samples": 1001
+        },
+        {
+          "fn": "(program)",
+          "file": "",
+          "line": 0,
+          "samples": 66
+        },
+        {
+          "fn": "Sf.renderBufferDirect",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 38
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 13
+        },
+        {
+          "fn": "Kt",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 12
+        },
+        {
+          "fn": "multiplyMatrices",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 11
+        },
+        {
+          "fn": "setValue",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 11
+        },
+        {
+          "fn": "bindVertexArray",
+          "file": "",
+          "line": 0,
+          "samples": 11
+        },
+        {
+          "fn": "w_",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 10
+        },
+        {
+          "fn": "Fy",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 10
+        },
+        {
+          "fn": "_A",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 9
+        },
+        {
+          "fn": "upload",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 9
+        },
+        {
+          "fn": "xu",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 8
+        },
+        {
+          "fn": "f",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 3824,
+          "samples": 8
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 8
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 8
+        },
+        {
+          "fn": "setValue",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 7
+        },
+        {
+          "fn": "Wt",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 7
+        },
+        {
+          "fn": "r",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 7
+        },
+        {
+          "fn": "kc",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 7
+        },
+        {
+          "fn": "a",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4078,
+          "samples": 6
+        },
+        {
+          "fn": "R_",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 6
+        }
+      ]
+    }
+  ],
+  "readyMs": 2627,
+  "resources": {
+    "requests": 311,
+    "decodedBytes": 102500988,
+    "largest": [
+      {
+        "name": "a2f7c77b32b8591ff16717548b68e0cfe2ea2a79.glb",
+        "bytes": 4402436
+      },
+      {
+        "name": "26fa7e1b0c0e789ae43f3c93bc2b38e9647b0899.glb",
+        "bytes": 4308280
+      },
+      {
+        "name": "eye-back.webp",
+        "bytes": 4075218
+      },
+      {
+        "name": "violet-trickster.glb?v=4",
+        "bytes": 2900936
+      },
+      {
+        "name": "c8eff52e5ef56b019667a34f547850da5a363607.glb",
+        "bytes": 2517836
+      },
+      {
+        "name": "363b72065e14e6893bd08300263e3d9248ee83af.glb",
+        "bytes": 2409592
+      },
+      {
+        "name": "be6bb4e5fd7c74974a321fecc3bec71dc87aa2a5.glb",
+        "bytes": 2368576
+      },
+      {
+        "name": "0e297a867c93c00d3a95a1ae9da70393014531f2.glb",
+        "bytes": 2320412
+      },
+      {
+        "name": "18c85d6a54161f8f4251ada75ccaff6b204d0f31.glb",
+        "bytes": 2188136
+      },
+      {
+        "name": "cd0ade7a0eb8b77c77a17851d72cd0ab77a88d98.glb",
+        "bytes": 2147104
+      },
+      {
+        "name": "17ae7dd82bd516db90aba7ec3a89bba512d8e78a.glb",
+        "bytes": 2135416
+      },
+      {
+        "name": "pit-viper.glb?v=1",
+        "bytes": 2087716
+      },
+      {
+        "name": "61e38f962b325e53e7399d321a8f663db64e305e.glb",
+        "bytes": 2050484
+      },
+      {
+        "name": "462ddc0c96b5dae04b4c27edb288bf995a2350a7.glb",
+        "bytes": 1993860
+      },
+      {
+        "name": "462ddc0c96b5dae04b4c27edb288bf995a2350a7.glb",
+        "bytes": 1993860
+      }
+    ],
+    "longTasks": [
+      {
+        "start": 187.39999997615814,
+        "ms": 85
+      },
+      {
+        "start": 304.60000002384186,
+        "ms": 161
+      },
+      {
+        "start": 492.89999997615814,
+        "ms": 1203
+      },
+      {
+        "start": 1746.8000000715256,
+        "ms": 848
+      },
+      {
+        "start": 2654.100000023842,
+        "ms": 330
+      },
+      {
+        "start": 3032.7000000476837,
+        "ms": 93
+      },
+      {
+        "start": 3319.399999976158,
+        "ms": 424
+      },
+      {
+        "start": 3823.399999976158,
+        "ms": 79
+      },
+      {
+        "start": 3946.5,
+        "ms": 73
+      },
+      {
+        "start": 4072.3000000715256,
+        "ms": 354
+      },
+      {
+        "start": 4461.100000023842,
+        "ms": 213
+      },
+      {
+        "start": 4760,
+        "ms": 118
+      },
+      {
+        "start": 18340.700000047684,
+        "ms": 320
+      },
+      {
+        "start": 28773.800000071526,
+        "ms": 336
+      },
+      {
+        "start": 37740,
+        "ms": 1685
+      },
+      {
+        "start": 39522.39999997616,
+        "ms": 106
+      },
+      {
+        "start": 43967.10000002384,
+        "ms": 65
+      },
+      {
+        "start": 56574.10000002384,
+        "ms": 61
+      }
+    ]
+  },
+  "errors": []
+}

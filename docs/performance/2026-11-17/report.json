@@ -1,0 +1,167 @@
+{
+  "date": "2026-11-17",
+  "baselineCommit": "4dc9dddbd5b05c5604ea923087fa9f334270408c",
+  "environment": {
+    "cpu": "Apple M3",
+    "browser": "Chrome 157, Metal GPU backend",
+    "desktopViewport": [
+      1280,
+      800
+    ],
+    "desktopPreset": "medium",
+    "deviceScaleFactor": 1
+  },
+  "method": "Fresh Chrome profiles; local static server; 15 seconds warmup; 2.5 seconds settling then 6.5 seconds sampled per location. CPU profiler enabled equally in before/after. Adaptive resolution retained. Final desktop run performed without concurrent test jobs.",
+  "comparison": [
+    {
+      "phase": "garden",
+      "p95FrameMs": {
+        "before": 33.4,
+        "after": 16.8
+      },
+      "medianRenderSubmissionMs": {
+        "before": 5.8,
+        "after": 2.4
+      },
+      "gpuTextureCount": {
+        "before": 309,
+        "after": 150
+      },
+      "medianDrawCalls": {
+        "before": 303,
+        "after": 292
+      },
+      "sampledFramesOver50ms": {
+        "before": 2,
+        "after": 2
+      },
+      "pixelRatio": {
+        "before": 0.75,
+        "after": 0.75
+      }
+    },
+    {
+      "phase": "library",
+      "p95FrameMs": {
+        "before": 49.9,
+        "after": 16.7
+      },
+      "medianRenderSubmissionMs": {
+        "before": 8.6,
+        "after": 2.2
+      },
+      "gpuTextureCount": {
+        "before": 377,
+        "after": 153
+      },
+      "medianDrawCalls": {
+        "before": 304,
+        "after": 279
+      },
+      "sampledFramesOver50ms": {
+        "before": 8,
+        "after": 1
+      },
+      "pixelRatio": {
+        "before": 0.75,
+        "after": 0.75
+      }
+    },
+    {
+      "phase": "museum",
+      "p95FrameMs": {
+        "before": 50.1,
+        "after": 16.8
+      },
+      "medianRenderSubmissionMs": {
+        "before": 6.2,
+        "after": 2.2
+      },
+      "gpuTextureCount": {
+        "before": 410,
+        "after": 275
+      },
+      "medianDrawCalls": {
+        "before": 110,
+        "after": 167
+      },
+      "sampledFramesOver50ms": {
+        "before": 12,
+        "after": 0
+      },
+      "pixelRatio": {
+        "before": 0.75,
+        "after": 0.75
+      }
+    },
+    {
+      "phase": "return",
+      "p95FrameMs": {
+        "before": 33.5,
+        "after": 16.7
+      },
+      "medianRenderSubmissionMs": {
+        "before": 10.5,
+        "after": 2.7
+      },
+      "gpuTextureCount": {
+        "before": 412,
+        "after": 270
+      },
+      "medianDrawCalls": {
+        "before": 413,
+        "after": 312
+      },
+      "sampledFramesOver50ms": {
+        "before": 5,
+        "after": 1
+      },
+      "pixelRatio": {
+        "before": 0.75,
+        "after": 0.75
+      }
+    }
+  ],
+  "changes": [
+    "Eden no longer constructs, shader-compiles or uploads hidden combat/night worlds during browsing. Their existing doorway loading screen owns initialization.",
+    "The library no longer triggers construction of the night district by proximity.",
+    "Projected HUD labels use cached viewport measurements, avoiding forced layout every frame.",
+    "Portal interiors stay hidden outside portal passes; targets use 8-bit color and quantized distance-scaled resolution with a resize cooldown. Stationary portals refresh at 30 fps; movement refreshes immediately.",
+    "Rack models stream serially, pause when the visitor leaves, and resume on return. Display texture dimensions are capped at 1024 before staged GPU upload; original geometry and separate inspection models are retained.",
+    "The jester shares the world environment map; daytime Eden no longer prebakes five night sky environments.",
+    "Static museum exterior meshes join existing geometry batching. Idle preparation respects active input, visibility and spare frame time."
+  ],
+  "validation": {
+    "focusedTests": {
+      "passed": 44,
+      "failed": 0,
+      "command": "node --test server/world.test.mjs server/expedition.test.mjs tools/expedition/adaptive-resolution-test.mjs tools/expedition/animation-presentation-test.mjs tools/expedition/character-checkpoint-test.mjs tools/performance/eden-performance.test.mjs"
+    },
+    "nativeCombat": "Passed cold Beyond Eden entry, real pointer lock, 3 pistol shots, reload, stronger assisted hit, armed momentum HUD, aerial stomp and ground tackle; no runtime exceptions.",
+    "movement": {
+      "passed": 8,
+      "failed": 1,
+      "knownExistingFailure": "A jump just after walking off an edge still works: left=false, upSpeed=0. Previously reproduced on unchanged source; shared movement code was not modified."
+    },
+    "desktopRuntimeExceptions": [],
+    "mobile": {
+      "file": "mobile.json",
+      "viewport": [
+        390,
+        844
+      ],
+      "preset": "low",
+      "runtimeExceptions": [],
+      "physicalDevice": false
+    }
+  },
+  "limitations": [
+    "These are short, local desktop measurements, not a guarantee of 60 fps on every device or network.",
+    "The mobile run emulates a viewport on the same M3, not phone GPU/CPU performance.",
+    "Initial garden camera motion and resident positions vary slightly; library, museum and return viewpoints are fixed.",
+    "Rack assets load during museum sampling, so garment count and draw calls vary with timing. Museum timing is an end-to-end loading result, not a fixed geometry benchmark.",
+    "Startup time is not used as a headline comparison because driver caches and resource timing vary.",
+    "GPU texture counts are object counts, not VRAM byte measurements. Full-route long tasks fell from 50 to 16, but transient stalls still exist.",
+    "Multiplayer backend load and live audio were not benchmarked by the static-server route."
+  ]
+}

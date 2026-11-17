@@ -45,7 +45,8 @@ const maxSize=Math.min(4096,renderer.capabilities.maxTextureSize),dayHalf=mobile
   if(envTarget&&envTarget!==target&&![...envCache.values()].includes(envTarget))envTarget.dispose();
   envTarget=target;bakedNight=level;
   scene.environment=settings.environment?target.texture:null;
-  prebakeSoon();
+  // Do not prepare five night skies while a visitor is browsing sunny Eden.
+  if(level>0)prebakeSoon();
  }
  let prebakeTimer=0;
  function prebakeSoon(){if(prebakeTimer||disposed||!settings.environment)return;prebakeTimer=setTimeout(function next(){prebakeTimer=0;if(disposed||!settings.environment)return;
