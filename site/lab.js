@@ -3,7 +3,8 @@ import { graphicBaseURL, prepareGraphicBase } from '/site/graphic-base.mjs?v=1';
 import { PRODUCT_DESIGNS } from '/labkit/product-options.mjs';
 import { tintProductDesign } from '/site/product-preview.mjs?v=1';
 // The Garment Lab: open configurator, mystery packages and catalog.
-import { CONSTRUCTIONS, OFFERINGS, offeringFor, garmentPriceParts, GARMENT_TYPES, COLORS, ARTWORK, SIZES, FITS, MYSTERY_PACKAGES, MYSTERY_FITS, MYSTERY_PREFERENCES_MAX, SIZE_CHART, PICK_LIMITS, BACK_SIZES } from '/labkit/catalog.mjs';
+import { CONSTRUCTIONS, OFFERINGS, offeringFor, garmentPriceParts, GARMENT_TYPES, COLORS, ARTWORK, SIZES, FITS, MYSTERY_PACKAGES, MYSTERY_FITS, MYSTERY_PREFERENCES_MAX, PICK_LIMITS, BACK_SIZES } from '/labkit/catalog.mjs';
+import { garmentSizes, garmentSizeGuide } from '/labkit/sizing.mjs';
 import { normalizeItem, priceItem, describeItem, sidesFor } from '/labkit/pricing.mjs';
 import { drawArt, drawChaos, newSeed } from '/labkit/random.mjs';
 import { artworkThumb, ARTWORK_POOL, PICKER_TAGS } from '/labkit/artwork-pool.mjs';
@@ -15,6 +16,7 @@ import { uploadArtworkFile } from '/site/artwork-upload.mjs';
 import { quoteGarment, modeSelection, garmentSelection } from '/site/lab-price.mjs?v=price-square-1';
 import { createLabFlow } from '/site/lab-flow.mjs?v=3';
 import { productRoute, randomProductDesign } from '/site/lab-product-route.mjs?v=curated-2';
+import { hasAvailability, madeToOrderLabel } from '/site/availability.mjs';
 
 const $ = id => document.getElementById(id);
 const h = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); for (const k of kids.flat()) if (k != null) n.append(k); return n; };
@@ -59,7 +61,8 @@ const slotInfo = (c, g) => status?.slots?.[`${c}:${g}`] || null;
 const skuInfo = sku => status?.skus?.[sku] || null;
 function availabilityText(info) {
   if (!status) return { text: '', open: true };
-  if (!info || info.available <= 0) return { text: 'At capacity — waitlist', open: false };
+  if (!hasAvailability(info)) return { text: 'At capacity — waitlist', open: false };
+  if (info.unlimited === true) return { text: madeToOrderLabel(info), open: true };
   return { text: info.leadTimeDays != null ? `About ${info.leadTimeDays} days to make` : '', open: true };
 }
 function choice(group, value, title, { sub = '', price = '', checked = false, disabled = false, badge = '', swatch = null } = {}) {
@@ -118,11 +121,14 @@ function renderGarments() {
   }));
 }
 function renderSizes() {
-  $('opt-size').replaceChildren(...SIZES.map(s => sizeButton('size', s, state.size === s)));
+  const item = { ...state, product: 'garment', labMode: state.baseMode }, sizes = garmentSizes(item), guide = garmentSizeGuide(item);
+  if (state.size && !sizes.includes(state.size)) state.size = null;
+  $('opt-size').replaceChildren(...sizes.map(s => sizeButton('size', s, state.size === s)));
+  $('opt-size').setAttribute('aria-describedby', 'size-note');
   const fits = FITS[state.construction];
   $('opt-fit').hidden = fits.length < 2;
   $('opt-fit').replaceChildren(...fits.map(f => choice('fit', f.id, f.name, { sub: f.note, checked: state.fit === f.id })));
-  $('size-note').textContent = SIZE_CHART ? '' : 'Fit varies by piece; confirmed before production.';
+  $('size-note').replaceChildren(...(guide.href ? [h('a', { href: guide.href, target: '_blank', rel: 'noopener', textContent: guide.label + ' ↗', ariaLabel: guide.label + ' (opens in a new tab)', style: 'text-decoration:underline;text-underline-offset:3px' }), h('br')] : []), h('span', { textContent: guide.note }));
 }
 function renderColors() {
   $('opt-color').replaceChildren(...Object.values(COLORS).map(c => choice('color', c.id, c.name, {
@@ -466,7 +472,7 @@ function renderReview() {
   $('breakdown').replaceChildren(...p.lines.map(l => h('tr', {}, h('th', { scope: 'row', textContent: l.label }), h('td', { textContent: l.cents ? money(l.cents) : 'included' }))));
   $('total').textContent = money(p.totalCents);
   const info = slotInfo(n.item.construction, n.item.garment);
-  const orderOpen = !!status?.checkout?.available && info?.available > 0;
+  const orderOpen = !!status?.checkout?.available && hasAvailability(info, n.item.quantity);
   add.disabled = blocked || !state.size;
   add.textContent = orderOpen ? 'Review order' : 'Save design';
   $('cancel-edit').hidden = !state.editId;
@@ -573,7 +579,7 @@ form.addEventListener('submit', e => {
   const r = state.editId ? cart.replace(state.editId, config()) : cart.add(config());
   if (!r.ok) { $('lab-error').textContent = r.errors.join(' '); flow?.message($('lab-error').textContent); return; }
   state.editId = r.id;
-  const open = !!status?.checkout?.available && slotInfo(normalized.item.construction, normalized.item.garment)?.available > 0;
+  const open = !!status?.checkout?.available && hasAvailability(slotInfo(normalized.item.construction, normalized.item.garment), normalized.item.quantity);
   if (open) document.dispatchEvent(new CustomEvent('lab:open-cart', { detail: { added: r.id } }));
   else flow?.message('Design saved on this device. Ordering is not open yet.');
   renderReview();
@@ -626,12 +632,13 @@ function renderPackageDetail() {
 function renderPackageAvailability() {
   const p = MYSTERY_PACKAGES[packageState.package];
   const info = packageState.size && skuInfo(`mystery-pack:${p.id}:${packageState.size}`);
-  const unavailable = !!status && !!packageState.size && !(info?.available > 0);
+  const unavailable = !!status && !!packageState.size && !hasAvailability(info, packageState.quantity);
   $('package-submit').textContent = `${packageState.editId ? 'Update' : 'Add'} ${p.name} — ${money(p.priceCents)}${packageState.quantity > 1 ? ' each' : ''}`;
   $('package-submit').disabled = unavailable;
   $('package-stock').textContent = !packageState.size ? 'Choose your size and preferred fit.'
     : !status ? 'Availability is confirmed at checkout.'
     : unavailable ? 'Not available in this size right now.'
+    : info.unlimited === true ? 'Made to order in your selected size.'
     : `${info.available} ${info.available === 1 ? 'package' : 'packages'} available in this size.`;
 }
 function renderPackagePolicy() {
@@ -673,7 +680,7 @@ $('package-form').addEventListener('submit', e => {
   const cfg = packageConfig();
   const normalized = normalizeItem(cfg, { artworkPool: POOL });
   if (!normalized.ok) { $('package-error').textContent = normalized.errors.join(' '); return; }
-  if (status && !(skuInfo(`mystery-pack:${cfg.package}:${cfg.size}`)?.available >= cfg.quantity)) {
+  if (status && !hasAvailability(skuInfo(`mystery-pack:${cfg.package}:${cfg.size}`), cfg.quantity)) {
     $('package-error').textContent = 'This package is not available in that quantity and size right now.';
     return;
   }
@@ -697,11 +704,14 @@ function catalogEntries() {
   const out = [];
   for (const [c, garments] of Object.entries(OFFERINGS)) for (const [g, o] of Object.entries(garments)) {
     const info = slotInfo(c, g);
-    out.push({ type: c, title: o.name, sub: CONSTRUCTIONS[c].name, priceCents: o.priceCents, available: status ? (info?.available || 0) > 0 : null, href: `?c=${c}&g=${g}#build`,
+    out.push({ type: c, title: o.name, sub: CONSTRUCTIONS[c].name, priceCents: o.priceCents, available: status ? hasAvailability(info) : null, madeToOrder: madeToOrderLabel(info), href: `?c=${c}&g=${g}#build`,
       art: `<div class="offer-mark"><span>${c === 'cut-sew' ? 'II' : 'I'}</span><b>${o.name}</b><i>${c === 'cut-sew' ? 'Cut & Sew · 100% cotton' : 'The Canvas'}</i></div>` });
   }
-  const anySku = prefix => status ? Object.entries(status.skus || {}).some(([k, v]) => k.startsWith(prefix) && v.available > 0) : null;
-  for (const p of Object.values(MYSTERY_PACKAGES)) out.push({ type: 'special', package: p.id, title: p.name, sub: p.countLabel, priceCents: p.priceCents, available: anySku(`mystery-pack:${p.id}:`), href: `/lab?package=${encodeURIComponent(p.id)}#packages`, art: itemSketch({ product: 'mystery-pack', package: p.id }) });
+  const packageSkus = prefix => Object.entries(status?.skus || {}).filter(([key]) => key.startsWith(prefix)).map(([, value]) => value);
+  for (const p of Object.values(MYSTERY_PACKAGES)) {
+    const skus = packageSkus(`mystery-pack:${p.id}:`), unlimited = skus.find(info => info.unlimited === true && hasAvailability(info));
+    out.push({ type: 'special', package: p.id, title: p.name, sub: p.countLabel, priceCents: p.priceCents, available: status ? skus.some(info => hasAvailability(info)) : null, madeToOrder: unlimited ? 'Made to order · choose a size' : '', href: `/lab?package=${encodeURIComponent(p.id)}#packages`, art: itemSketch({ product: 'mystery-pack', package: p.id }) });
+  }
   return out;
 }
 function renderCatalog() {
@@ -711,7 +721,7 @@ function renderCatalog() {
   $('catalog-grid').replaceChildren(...(list.length ? list.map(e => {
     const card = h('a', { className: 'offer', href: e.href }, h('div', { className: 'offer-art' }), h('div', { className: 'offer-body' },
       h('span', { className: 'offer-sub', textContent: e.sub }), h('strong', { textContent: e.title }), h('em', { textContent: money(e.priceCents) }),
-      e.available === false ? h('span', { className: 'offer-state off', textContent: 'At capacity / sold out' }) : null));
+      e.available === false ? h('span', { className: 'offer-state off', textContent: 'At capacity / sold out' }) : e.madeToOrder ? h('span', { className: 'offer-state', textContent: e.madeToOrder }) : null));
     card.querySelector('.offer-art').innerHTML = e.art;
     card.addEventListener('click', ev => {
       if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey || ev.button !== 0) return;

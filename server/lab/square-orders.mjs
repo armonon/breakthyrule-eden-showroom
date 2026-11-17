@@ -44,15 +44,16 @@ export function createSquareOrders({ store, env, square, now, LabError }) {
       for (const [key, quantity] of Object.entries(needs)) {
         const item = record[group][key];
         if (operation === 'hold') {
-          const available = group === 'skus' ? (item?.onHand ?? 0) - (item?.reserved ?? 0) : item?.open !== false && Number.isInteger(item?.limit) ? item.limit - (item.used || 0) - (item.reserved || 0) : 0;
+          const available = group === 'skus' ? item?.unlimited === true ? Infinity : (item?.onHand ?? 0) - (item?.reserved ?? 0) : item && item.open !== false ? item.unlimited === true ? Infinity : Number.isInteger(item.limit) ? item.limit - (item.used || 0) - (item.reserved || 0) : 0 : 0;
           if (available < quantity) fail(409, group === 'skus' ? 'out_of_stock' : 'at_capacity', 'That piece is unavailable in the selected quantity.');
           item.reserved = (item.reserved || 0) + quantity;
         } else {
           if (!item || item.reserved < quantity) fail(409, 'reservation_missing', 'The inventory hold needs studio review.');
+          if (operation === 'commit' && group === 'skus' && item.unlimited !== true && (!Number.isInteger(item.onHand) || item.onHand < quantity)) fail(409, 'reservation_missing', 'Finite stock no longer covers this paid order. The studio must review it.');
           item.reserved -= quantity;
           if (operation === 'commit') {
-            if (group === 'skus') item.onHand -= quantity;
-            else item.used += quantity;
+            if (group === 'skus') { if (item.unlimited !== true) item.onHand -= quantity; }
+            else item.used = (item.used || 0) + quantity;
           }
         }
       }

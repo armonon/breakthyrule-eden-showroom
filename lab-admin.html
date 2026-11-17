@@ -16,7 +16,7 @@
  <link rel="stylesheet" href="/site/lab-admin.css?v=1">
  <script defer src="/site/config.js?v=1"></script>
  <script defer src="/site/site.js?v=night-2"></script>
- <script type="module" src="/site/lab-admin.js?v=packages-1"></script>
+ <script type="module" src="/site/lab-admin.js?v=made-to-order-1"></script>
  <link rel="stylesheet" href="/site/shared-header.css?v=about-1">
  <link rel="stylesheet" href="/site/shared-header-layout.css?v=about-1">
  <script defer src="/site/shared-header.js?v=header-no-lab-1"></script>
@@ -63,12 +63,12 @@
    </div>
 
    <div class="tab-panel" data-panel="stock" hidden>
-    <h2>Ready-made stock</h2>
-    <p class="fine">Mystery packages and legacy bundles are sold from counted stock. Nothing sells until you enter a real count. "Held" are units in open checkouts.</p>
-    <table class="admin-table" aria-label="Stock"><thead><tr><th>SKU</th><th>On hand</th><th>Held</th><th></th></tr></thead><tbody id="skus"></tbody></table>
+    <h2>Stock &amp; made-to-order pieces</h2>
+    <p class="fine">Turn on Made to order to accept orders without a stock limit. Turn it off to use the saved on-hand count. "Held" are units in open checkouts.</p>
+    <table class="admin-table" aria-label="Stock"><thead><tr><th>SKU</th><th>Made to order</th><th>On hand</th><th>Held</th><th></th></tr></thead><tbody id="skus"></tbody></table>
     <h2>Made-to-order capacity</h2>
-    <p class="fine">Slots the studio can take on for The Canvas and Cut &amp; Sew. Empty = not open. Lead time is shown to customers only when you set it.</p>
-    <table class="admin-table" aria-label="Capacity"><thead><tr><th>Piece</th><th>Slots</th><th>Used</th><th>Held</th><th>Lead time (days)</th><th>Open</th><th></th></tr></thead><tbody id="slots"></tbody></table>
+    <p class="fine">Turn on No limit to accept made-to-order work without a quantity cap. The saved slot count stays in place if you turn it off. Open controls whether orders are accepted. Lead time is shown only when you set it.</p>
+    <table class="admin-table" aria-label="Capacity"><thead><tr><th>Piece</th><th>No limit</th><th>Slots</th><th>Used</th><th>Held</th><th>Lead time (days)</th><th>Open</th><th></th></tr></thead><tbody id="slots"></tbody></table>
    </div>
 
    <div class="tab-panel" data-panel="archive" hidden>

@@ -308,3 +308,74 @@ test('full refund of a reviewed shipping mismatch releases held capacity without
   assert.equal((await f.store.get('capacity')).value.slots['canvas:hoodie'].reserved,0);
   assert.equal((await f.store.get('capacity')).value.slots['canvas:hoodie'].used,0);
 });
+
+test('unlimited capacity has no fake limit and preserves retry, payment and cancellation counters', async () => {
+  const f=await fixture();
+  await f.store.set('capacity',{slots:{'canvas:hoodie':{unlimited:true,open:true}}});
+  let status=await f.lab.publicStatus();
+  assert.equal(status.slots['canvas:hoodie'].unlimited,true); assert.equal(status.slots['canvas:hoodie'].available,null);
+  const first=await f.checkout('unlimited_capacity_first_123',[{...item,quantity:5}]);
+  assert.equal(first.status,200);
+  const retry=await f.checkout('unlimited_capacity_first_123',[{...item,quantity:5}]); assert.equal(retry.body.duplicate,true);
+  const second=await f.checkout('unlimited_capacity_second_123',[{...item,quantity:5}]); assert.equal(second.status,200);
+  assert.equal((await f.store.get('capacity')).value.slots['canvas:hoodie'].reserved,10);
+  f.pay(); await f.webhook('evt_unlimited_paid'); await f.webhook('evt_unlimited_paid_again');
+  await f.lab.cancelOrder(owner,first.body.orderId);
+  const slot=(await f.store.get('capacity')).value.slots['canvas:hoodie'];
+  assert.equal(slot.used,5); assert.equal(slot.reserved,0); assert.equal(slot.limit,undefined);
+  status=await f.lab.publicStatus(); assert.equal(status.slots['canvas:hoodie'].available,null);
+});
+
+test('unlimited SKU never depletes stock and refunds do not manufacture inventory', async () => {
+  const f=await fixture(),sku='mystery-pack:one-tee:M';
+  await f.lab.setStock(owner,sku,undefined,{unlimited:true});
+  const packageItem={product:'mystery-pack',package:'one-tee',size:'M',fit:'regular',quantity:2};
+  const first=await f.checkout('unlimited_inventory_first_123',[packageItem]); assert.equal(first.status,200);
+  assert.equal((await f.checkout('unlimited_inventory_first_123',[packageItem])).body.duplicate,true);
+  assert.equal((await f.lab.publicStatus()).skus[sku].available,null);
+  const payment=f.pay(); await f.webhook('evt_unlimited_sku_paid');
+  let stock=(await f.store.get('inventory')).value.skus[sku];
+  assert.equal(stock.onHand,0); assert.equal(stock.reserved,0); assert.equal(stock.unlimited,true);
+  await f.lab.refund(owner,first.body.orderId,{});
+  payment.refunded_money={...payment.total_money}; await f.webhook('evt_unlimited_sku_refunded');
+  stock=(await f.store.get('inventory')).value.skus[sku]; assert.equal(stock.onHand,0); assert.equal(stock.reserved,0);
+  const second=await f.checkout('unlimited_inventory_cancel_123',[packageItem]); assert.equal(second.status,200);
+  await f.lab.cancelOrder(owner,second.body.orderId);
+  assert.equal((await f.store.get('inventory')).value.skus[sku].reserved,0);
+});
+
+test('unlimited flags survive admin edits, closed slots stay closed, finite transitions cover holds', async () => {
+  const f=await fixture(),sku='mystery-pack:one-tee:M';
+  await f.lab.setSlot(owner,'canvas:hoodie',{unlimited:true,limit:null});
+  await f.lab.setSlot(owner,'canvas:hoodie',{leadTimeDays:7});
+  assert.equal((await f.lab.stock(owner)).slots.find(s=>s.slot==='canvas:hoodie').unlimited,true);
+  await f.lab.setSlot(owner,'canvas:hoodie',{open:false});
+  const closed=(await f.lab.publicStatus()).slots['canvas:hoodie'];
+  assert.equal(closed.unlimited,false); assert.equal(closed.available,0);
+  assert.equal((await f.checkout()).status,409);
+  await f.lab.setSlot(owner,'canvas:hoodie',{open:true});
+  assert.equal((await f.checkout()).status,200);
+  await assert.rejects(()=>f.lab.setSlot(owner,'canvas:hoodie',{unlimited:false,limit:0}),e=>e.code==='below_reserved');
+  await f.lab.setSlot(owner,'canvas:hoodie',{unlimited:false,limit:1});
+  assert.equal((await f.lab.publicStatus()).slots['canvas:hoodie'].available,0);
+  await f.lab.setStock(owner,sku,undefined,{unlimited:true});
+  await f.lab.setStock(owner,sku,0);
+  assert.equal((await f.lab.stock(owner)).skus.find(s=>s.sku===sku).unlimited,true);
+  await f.checkout('unlimited_switch_sku_12345',[{product:'mystery-pack',package:'one-tee',size:'M',fit:'regular',quantity:2}]);
+  await assert.rejects(()=>f.lab.setStock(owner,sku,1,{unlimited:false}),e=>e.code==='below_reserved');
+  await f.lab.setStock(owner,sku,2,{unlimited:false});
+  f.pay('FINITE_AFTER_UNLIMITED'); await f.webhook('evt_finite_switch','FINITE_AFTER_UNLIMITED');
+  assert.equal((await f.store.get('inventory')).value.skus[sku].onHand,0);
+  await assert.rejects(()=>f.lab.setStock(owner,sku,0,{unlimited:'true'}),e=>e.status===400);
+  await assert.rejects(()=>f.lab.setSlot(owner,'canvas:hoodie',{unlimited:'true'}),e=>e.status===400);
+});
+
+test('unexpected finite stock reduction on an unlimited hold goes to review without negative stock', async () => {
+  const f=await fixture(),sku='mystery-pack:one-tee:M';
+  await f.lab.setStock(owner,sku,undefined,{unlimited:true});
+  const result=await f.checkout('unlimited_corrupt_fixture_123',[{product:'mystery-pack',package:'one-tee',size:'M',fit:'regular',quantity:2}]);
+  await f.store.update('inventory',inventory=>{inventory.skus[sku].unlimited=false;inventory.skus[sku].onHand=0;return inventory;});
+  f.pay(); await f.webhook('evt_stock_corruption');
+  assert.equal((await f.store.get('orders/'+result.body.orderId)).value.payment.status,'review');
+  assert.equal((await f.store.get('inventory')).value.skus[sku].onHand,0);
+});

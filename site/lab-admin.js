@@ -129,12 +129,33 @@ async function shrink(file, max = 1600) {
 // ---------- stock & capacity ----------
 async function loadStock() {
   const s = await api('stock'), owner = me.role === 'owner';
-  $('skus').replaceChildren(...s.skus.map(x => { const inp = h('input', { type: 'number', min: 0, value: x.onHand, disabled: !owner, ariaLabel: 'On hand for ' + x.label });
-    return h('tr', {}, h('td', { textContent: x.label }), h('td', {}, inp), h('td', { textContent: x.reserved }), h('td', {}, owner ? h('button', { className: 'ghost', type: 'button', textContent: 'Save', onclick: async e => { try { await api('stock', { sku: x.sku, onHand: Number(inp.value) }); e.target.textContent = 'Saved'; } catch (err) { alert(err.message); } } }) : null)); }));
+  $('skus').replaceChildren(...s.skus.map(x => {
+    const unlimited = h('input', { type: 'checkbox', checked: x.unlimited === true, disabled: !owner, ariaLabel: 'Made to order with no stock limit for ' + x.label });
+    const inp = h('input', { type: 'number', min: 0, step: 1, required: true, value: x.onHand ?? 0, disabled: !owner || unlimited.checked, ariaLabel: 'On hand for ' + x.label });
+    unlimited.onchange = () => { inp.disabled = !owner || unlimited.checked; };
+    const save = owner ? h('button', { className: 'ghost', type: 'button', textContent: 'Save', onclick: async () => {
+      if (!inp.disabled && !inp.reportValidity()) return;
+      save.disabled = true;
+      try { await api('stock', { sku: x.sku, onHand: Number(inp.value), unlimited: unlimited.checked }); save.textContent = 'Saved'; }
+      catch (err) { alert(err.message); }
+      finally { save.disabled = false; }
+    } }) : null;
+    return h('tr', {}, h('td', { textContent: x.label }), h('td', {}, unlimited), h('td', {}, inp), h('td', { textContent: x.reserved }), h('td', {}, save));
+  }));
   $('slots').replaceChildren(...s.slots.map(x => {
-    const lim = h('input', { type: 'number', min: 0, value: x.limit ?? '', placeholder: 'closed', disabled: !owner }), lead = h('input', { type: 'number', min: 0, value: x.leadTimeDays ?? '', placeholder: 'not set', disabled: !owner }), open = h('input', { type: 'checkbox', checked: x.open !== false, disabled: !owner });
-    return h('tr', {}, h('td', { textContent: x.label }), h('td', {}, lim), h('td', { textContent: x.used }), h('td', { textContent: x.reserved }), h('td', {}, lead), h('td', {}, open),
-      h('td', {}, owner ? h('button', { className: 'ghost', type: 'button', textContent: 'Save', onclick: async e => { try { await api('capacity', { slot: x.slot, limit: lim.value === '' ? null : Number(lim.value), leadTimeDays: lead.value === '' ? null : Number(lead.value), open: open.checked }); e.target.textContent = 'Saved'; } catch (err) { alert(err.message); } } }) : null));
+    const unlimited = h('input', { type: 'checkbox', checked: x.unlimited === true, disabled: !owner, ariaLabel: 'No production limit for ' + x.label });
+    const lim = h('input', { type: 'number', min: 0, step: 1, value: x.limit ?? '', placeholder: 'closed', disabled: !owner || unlimited.checked, ariaLabel: 'Production limit for ' + x.label });
+    const lead = h('input', { type: 'number', min: 0, step: 1, value: x.leadTimeDays ?? '', placeholder: 'not set', disabled: !owner, ariaLabel: 'Lead time in days for ' + x.label });
+    const open = h('input', { type: 'checkbox', checked: x.open !== false, disabled: !owner, ariaLabel: 'Open for orders: ' + x.label });
+    unlimited.onchange = () => { lim.disabled = !owner || unlimited.checked; };
+    const save = owner ? h('button', { className: 'ghost', type: 'button', textContent: 'Save', onclick: async () => {
+      if ((!lim.disabled && !lim.reportValidity()) || !lead.reportValidity()) return;
+      save.disabled = true;
+      try { await api('capacity', { slot: x.slot, limit: lim.value === '' ? null : Number(lim.value), leadTimeDays: lead.value === '' ? null : Number(lead.value), open: open.checked, unlimited: unlimited.checked }); save.textContent = 'Saved'; }
+      catch (err) { alert(err.message); }
+      finally { save.disabled = false; }
+    } }) : null;
+    return h('tr', {}, h('td', { textContent: x.label }), h('td', {}, unlimited), h('td', {}, lim), h('td', { textContent: x.used }), h('td', { textContent: x.reserved }), h('td', {}, lead), h('td', {}, open), h('td', {}, save));
   }));
 }
 

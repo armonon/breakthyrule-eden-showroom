@@ -1,11 +1,13 @@
 import { createGarmentGraphicsEditor } from '/site/garment-graphics-editor.mjs?v=2';
 import { graphicBaseURL, prepareGraphicBase } from '/site/graphic-base.mjs?v=1';
-import { offeringFor, SIZES, FITS, COLORS, formatCents } from '/labkit/catalog.mjs';
+import { offeringFor, FITS, COLORS, formatCents } from '/labkit/catalog.mjs';
+import { garmentSizes, garmentSizeGuide } from '/labkit/sizing.mjs';
 import { PRODUCT_DESIGNS, STUDIO_PRODUCTS, GRAPHIC_COLORS, HEADWEAR_WEIGHTS, DAILY_APPLE_SIZES, productDesignDefaultColor } from '/labkit/product-options.mjs';
 import { normalizeItem, priceItem } from '/labkit/pricing.mjs';
 import { cart, POOL, labStatus } from '/site/cart-store.mjs?v=site-audit-1';
 import { tintProductDesign } from '/site/product-preview.mjs?v=1';
 import { mountProductGallery } from '/site/product-gallery.mjs?v=scrollable-6';
+import { hasAvailability, madeToOrderLabel } from '/site/availability.mjs';
 const $=id=>document.getElementById(id);
 const h=(tag,props={},...kids)=>{const e=Object.assign(document.createElement(tag),props);for(const k of kids.flat())if(k!=null)e.append(k);return e;};
 const ready=document.readyState==='loading'?new Promise(r=>document.addEventListener('DOMContentLoaded',r,{once:true})):Promise.resolve();
@@ -30,9 +32,10 @@ function mountOptions(){
  const form=h('form',{className:'studio-config',id:'product-config',noValidate:true,ariaLabel:'Customize this product'}),fields=h('div',{className:'studio-config-fields'}),feedback=h('p',{className:'studio-form-status',role:'status',ariaLive:'polite'}),previewNote=h('p',{className:'studio-preview-note',role:'status'});
  const retryPreview=h('button',{type:'button',className:'studio-preview-retry',textContent:'Retry preview',hidden:true});retryPreview.onclick=()=>updatePreview();
  const subtotal=h('strong',{className:'studio-total'}),breakdown=h('p',{className:'studio-breakdown'}),save=h('button',{type:'submit',className:'studio-save',textContent:edit?'Update saved design':'Save design'});
+ const availabilityNote=h('p',{className:'studio-small',role:'status',hidden:true});
  const editorHost=h('section',{className:'studio-graphics-pane'}),artMode=h('div',{className:'studio-art-mode'}),settingsSummary=h('summary',{textContent:'Garment options'}),settings=h('details',{className:'studio-garment-settings',open:true},settingsSummary,fields);
  const total=h('div',{className:'studio-checkout'},h('div',{},h('span',{className:'studio-eyebrow',textContent:product?.packSize?'Your 3-pack / USD':'Your piece / USD'}),subtotal),save);
- form.append(h('div',{className:'studio-config-title'},h('h2',{textContent:'Make it yours'}),h('span',{textContent:design?'Garment Lab':'Studio options'})), ...(design?[artMode,settings,editorHost]:[fields]),previewNote,retryPreview,breakdown,total,feedback);
+ form.append(h('div',{className:'studio-config-title'},h('h2',{textContent:'Make it yours'}),h('span',{textContent:design?'Garment Lab':'Studio options'})), ...(design?[artMode,settings,editorHost]:[fields]),previewNote,retryPreview,breakdown,availabilityNote,total,feedback);
  $('tagline').after(form);
  const existingHat=document.querySelector('.hat-customizer');
  if(existingHat){form.insertBefore(existingHat,previewNote);existingHat.addEventListener('btr:hat-design',e=>{state.options={...state.options,...e.detail};updatePrice();});new MutationObserver(()=>{save.disabled=!!existingHat.querySelector('.hat-shape-options[aria-busy=true]');}).observe(existingHat,{attributes:true,subtree:true,attributeFilter:['aria-busy']});}
@@ -51,12 +54,17 @@ function mountOptions(){
   const previous=document.activeElement?.closest('#product-config')?{name:document.activeElement.name,value:document.activeElement.value}:null;
   fields.replaceChildren();
   if(design){
+   const sizes=garmentSizes(state),guide=garmentSizeGuide(state);
+   if(state.size&&!sizes.includes(state.size))state.size=null;
    fields.append(field('01 / Construction',h('div',{className:'studio-mode-grid'},...['random','blank','cut-sew'].map(mode=>{const c=mode==='cut-sew'?'cut-sew':'canvas',o=offeringFor({construction:c,garment:state.garment,labMode:mode});return radio('labMode',mode,mode==='random'?'Random':mode==='blank'?'Blank':'Cut & Sew',state.labMode===mode,{price:o?formatCents(o.priceCents):'—',small:mode==='random'?'Studio base + color':mode==='blank'?'Your chosen color':'Made from scratch',disabled:!o});}))));
    if(design.archiveShape)fields.append(h('p',{className:'studio-small',textContent:'Archive silhouette shown. This design is reworked onto a '+(state.garment==='hoodie'?'hoodie':'tee')+' base in the Lab.'}));
    if(state.labMode!=='random'){
     fields.append(field('02 / Garment color',h('div',{className:'studio-color-grid'},...['black','white','custom'].map(c=>radio('color',c,c==='custom'?'Custom +$40':COLORS[c].name,state.color===c))),...(state.color==='custom'?[h('label',{className:'studio-custom-color'},'Choose your color',h('input',{type:'color',name:'customColor',value:/^#[0-9a-f]{6}$/i.test(state.customColor)?state.customColor:'#87665c',ariaLabel:'Custom garment color'}))]:[])));
    }else fields.append(h('p',{className:'studio-small',textContent:'The studio chooses your base and color. The model is a design reference.'}));
-   fields.append(field('03 / Size',h('div',{className:'studio-size-grid'},...SIZES.map(size=>radio('size',size,size,state.size===size)))));
+   const sizeHelp=h('p',{className:'studio-small',id:'product-size-help'},...(guide.href?[h('a',{href:guide.href,target:'_blank',rel:'noopener',textContent:guide.label+' ↗',ariaLabel:guide.label+' (opens in a new tab)',style:'text-decoration:underline;text-underline-offset:3px'}),h('br')]:[]),h('span',{textContent:guide.note}));
+   const sizeGrid=h('div',{className:'studio-size-grid',role:'radiogroup',ariaLabel:'Garment size'},...sizes.map(size=>radio('size',size,size,state.size===size)));
+   sizeGrid.setAttribute('aria-describedby','product-size-help');
+   fields.append(field('03 / Size',sizeGrid,sizeHelp));
    if(state.construction==='cut-sew')fields.append(field('Fit',h('div',{className:'studio-color-grid'},...FITS['cut-sew'].map(f=>radio('fit',f.id,f.name,state.fit===f.id)))));
    fields.append(field('04 / Artwork',h('div',{className:'studio-art-grid'},radio('artwork','product-design','This design',state.artwork==='product-design'),radio('artwork','artists-choice','Studio surprise',state.artwork==='artists-choice'),radio('artwork','pick','Choose graphics',state.artwork==='pick'))));
    if(state.artwork==='product-design'&&design.core)fields.append(h('label',{className:'studio-select'},'Graphic color',h('select',{name:'graphic',ariaLabel:'Graphic color'},...GRAPHIC_COLORS.map(c=>h('option',{value:c,textContent:c,selected:state.productDesign?.graphic===c})))));
@@ -87,7 +95,8 @@ function mountOptions(){
   const price=design?priceItem({...state,product:'garment',color:state.labMode==='random'?'random':state.color,quantity:state.quantity}):n.ok?priceItem(n.item):null;
   const value=price?formatCents(price.totalCents):'Choose options';subtotal.textContent=value;$('price').textContent=value+(price?' USD':'')+(price&&product?.packSize?` / ${state.quantity===1?'3-pack':state.quantity+' packs'}`:'');
   breakdown.textContent=price?price.lines.filter(l=>l.cents).map(l=>formatCents(l.cents)+' '+l.label).join(' + ')+(state.quantity>1?` · ${state.quantity} × ${formatCents(price.unitCents)} ${product?.packSize?'per 3-pack':'each'}`:'')+(design?' · artwork included.':product.family==='gloves'?' · white.':' · selected colors included.'):'Choose the options for a live total.';
-  const slot=design?`${state.construction}:${state.garment}`:`studio:${id}`,open=!!status?.checkout?.available&&status?.slots?.[slot]?.available>0;
+  const slot=design?`${state.construction}:${state.garment}`:`studio:${id}`,availability=status?.slots?.[slot],open=!!status?.checkout?.available&&hasAvailability(availability,state.quantity);
+  availabilityNote.textContent=madeToOrderLabel(availability);availabilityNote.hidden=!availabilityNote.textContent;
   save.textContent=edit?'Update saved design':open?'Add to bag':'Save design';
  }
  async function updatePreview(){

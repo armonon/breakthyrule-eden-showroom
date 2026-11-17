@@ -1,5 +1,7 @@
 # The Garment Lab — commerce for BREAKTHYRULE
 
+Current production setup uses Square; follow [SQUARE.md](./SQUARE.md) and the repository's `AGENTS.md` shipping workflow. The historical Stripe/deployment checklist below is not the current release procedure. The owner selected unlimited made-to-order sales, Shaka Wear sizing references, and no Cut & Sew chart for now. Published sizing lives at `/size-guide`, backed by `labkit/sizing.mjs`; the legacy `SIZE_CHART` object is not the active chart renderer.
+
 Branch: `claude/garment-lab` (built on `claude/gifted-edison-gyg0ql`). Nothing here is live until the activation
 checklist at the bottom is complete.
 
