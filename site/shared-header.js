@@ -49,10 +49,10 @@
     nav.setAttribute('aria-label', 'Main');
     const active = ['index', 'product', 'random-shirt', 'mystery-box', 'core', 'belts', 'accessories', 'reliquary', 'passport'].includes(page)
       ? 'products' : page.startsWith('lab') ? 'lab' : page;
-    const links = [['/?nocover=1', 'Products'], ['/gallery', 'Gallery'], ['/archive', 'Archive'], ['/about', 'About'], ['/account', 'Account']];
+    const links = [['/?nocover=1', 'Products'], ['/gallery', 'Gallery'], ['/archive', 'Archive'], ['/about', 'About']];
     for (const link of nav.querySelectorAll('a')) {
       const target = new URL(link.href, location.href);
-      if (/^\/lab(?:\.html)?\/?$/.test(target.pathname) || link.textContent.trim().toLowerCase() === 'forum' || (/^\/archive(?:\.html)?\/?$/.test(target.pathname) && /^#forum(?:\/|$)/.test(target.hash))) link.remove();
+      if (/^\/(?:lab|account)(?:\.html)?\/?$/.test(target.pathname) || link.textContent.trim().toLowerCase() === 'forum' || (/^\/archive(?:\.html)?\/?$/.test(target.pathname) && /^#forum(?:\/|$)/.test(target.hash))) link.remove();
     }
     const oldLinks = Array.from(nav.querySelectorAll('a'));
     for (const [href, label] of links) {

@@ -1,0 +1,35 @@
+#archive-market #forum-theme-toggle{min-height:30px;padding:5px 10px;border:1px solid #afbf9f;border-radius:2px;background:#edf2e6;color:#456431;font:12px Arial,sans-serif;cursor:pointer}
+#archive-market .forum-masthead{padding-bottom:10px;margin-bottom:10px}
+#archive-market .forum-access{border:0;padding:0}
+/* Keep the compact market layout; use a quiet ink-and-moss palette at night. */
+html[data-forum-theme=night]:has(#panel-forum:not([hidden])){background:#161b14!important;color-scheme:dark!important}
+html[data-forum-theme=night] body#archive-market:has(#panel-forum:not([hidden])){background:#161b14!important;color:#d4ddcb!important;--paper:#1e251a!important;--ink:#d4ddcb!important;--muted:#9baa90!important;--line:#43523a!important;border-top-color:#77955c!important}
+html[data-forum-theme=night] body#archive-market:has(#panel-forum:not([hidden])) header#btr-site-header{background:transparent!important;border-bottom-color:#43523a!important}
+html[data-forum-theme=night] body#archive-market:has(#panel-forum:not([hidden])) header#btr-site-header .brand::before{color:#b4ca9b!important}
+html[data-forum-theme=night] body#archive-market:has(#panel-forum:not([hidden])) header#btr-site-header .brand::after{color:#8e9e81!important}
+html[data-forum-theme=night] body#archive-market:has(#panel-forum:not([hidden])) header#btr-site-header .tabs a{color:#acc393!important;border-color:#43523a!important}
+html[data-forum-theme=night] body#archive-market:has(#panel-forum:not([hidden])) header#btr-site-header .tabs a[aria-current=page]{background:#303e25!important;color:#d0dfbd!important}
+html[data-forum-theme=night] body#archive-market:has(#panel-forum:not([hidden])) header#btr-site-header :is(.cart-button,.cart-count,.enter-showroom),html[data-forum-theme=night] body#archive-market:has(#panel-forum:not([hidden])) header#btr-site-header .enter-showroom::after{background:#273220!important;color:#bed3a5!important;border-color:#526546!important}
+html[data-forum-theme=night] body#archive-market:has(#panel-forum:not([hidden])) :is(.market-welcome,.reading-tabs,.reading-tab){background:#20291b!important;color:#a6b69b!important;border-color:#43523a!important}
+html[data-forum-theme=night] body#archive-market:has(#panel-forum:not([hidden])) .reading-tab strong{color:#c0d0b1!important}
+html[data-forum-theme=night] body#archive-market:has(#panel-forum:not([hidden])) .reading-tab span{color:#99aa8c!important}
+html[data-forum-theme=night] body#archive-market:has(#panel-forum:not([hidden])) .reading-tab[aria-selected=true]{background:#344329!important;box-shadow:inset 0 -2px #8eac70!important}
+html[data-forum-theme=night] #archive-market #panel-forum{--forum-bg:#1b2217;--forum-surface:#20291b;--forum-raised:#303c26;--forum-line:#44553a;--forum-lime:#b2cd92;--forum-text:#d6dfcd;--forum-muted:#9aaa8e;background:#1b2217!important;color:#d6dfcd!important;border-color:#44553a;color-scheme:dark}
+html[data-forum-theme=night] #archive-market #panel-forum :is(.forum-masthead,.forum-compose-heading,.forum-post-header,.community-local-notes){border-color:#44553a!important}
+html[data-forum-theme=night] #archive-market #panel-forum :is(.forum-notice,.forum-category-sidebar>.forum-eyebrow,.forum-list-heading,.forum-replies-heading){background:#2b3822!important;color:#bdcfac!important;border-color:#4c6040!important}
+html[data-forum-theme=night] #archive-market #panel-forum :is(.forum-topic-row,.forum-post,.forum-reply,.forum-empty){background:#20291b!important;border-color:#3c4b33!important;color:#d6dfcd!important}
+html[data-forum-theme=night] #archive-market #panel-forum .forum-posts>li:nth-child(even) .forum-topic-row{background:#242e1e!important}
+html[data-forum-theme=night] #archive-market #panel-forum :is(.forum-topic-title,.forum-post-body a){color:#b5cf96!important}
+html[data-forum-theme=night] #archive-market #panel-forum :is(.forum-toolbar h2,.forum-thread-heading h2,.forum-compose-heading h3,.forum-person strong,.forum-empty h3,.forum-topic-author strong,.forum-topic-replies){color:#c2d5ae!important}
+html[data-forum-theme=night] #archive-market #panel-forum :is(.forum-eyebrow,.forum-topic-excerpt,.forum-topic-author time,.forum-category-tag,.forum-status,.forum-sidebar-note p,.forum-sidebar-note small,.forum-guest-identity,.forum-compose-help,.forum-character-count,.forum-compose-category,.forum-compose-body){color:#a2b394!important}
+html[data-forum-theme=night] #archive-market #panel-forum .forum-category{color:#b5cba0!important}
+html[data-forum-theme=night] #archive-market #panel-forum .forum-category[aria-pressed=true]{background:#35462a!important;color:#d4e1c5!important;border-color:#89a96b!important}
+html[data-forum-theme=night] #archive-market #panel-forum .forum-category:hover{background:#303e26!important}
+html[data-forum-theme=night] #archive-market #panel-forum .forum-composer{background:#26321f!important;border-color:#526a40!important}
+html[data-forum-theme=night] #archive-market #panel-forum .forum-composer :is(textarea,select){background:#161e12!important;color:#d6dfcd!important;border-color:#5c724c!important}
+html[data-forum-theme=night] #archive-market #panel-forum :is(.forum-button,#forum-theme-toggle){background:#303e26!important;color:#c6dab1!important;border-color:#5b7548!important;box-shadow:none!important}
+html[data-forum-theme=night] #archive-market #panel-forum .forum-button-primary{background:#597d3e!important;color:#fff!important}
+html[data-forum-theme=night] #archive-market #panel-forum .forum-avatar{background:#34472a;color:#c5dcae;border-color:#627b4d}
+html[data-forum-theme=night] #archive-market #panel-forum .forum-compose-status{color:#bdd99c!important}
+html[data-forum-theme=night] body#archive-market:has(#panel-forum:not([hidden])) .site-foot{background:transparent!important;color:#9cad8e!important;border-color:#43523a!important}
+html[data-forum-theme=night] body#archive-market:has(#panel-forum:not([hidden])) .site-foot a{color:#b2c999!important}
