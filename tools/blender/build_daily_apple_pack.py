@@ -28,9 +28,9 @@ cotton=material('White cotton jersey / three tees',(.78,.77,.74),.94)
 rib=material('White rib-knit neckline',(.54,.535,.51),.90)
 seam=material('White cotton double needle seams',(.79,.785,.76),.88)
 inner=material('Inside the folded cotton neckline',(.59,.60,.58),1)
-bag=material('Clear flexible polyethylene film',(.92,.96,.96),.17,.065)
+bag=material('Clear flexible polyethylene film',(.92,.96,.96),.16,.075)
 edge=material('Thin heat-sealed plastic perimeter',(.85,.93,.93),.22,.085)
-crinkle=material('Fine plastic crease highlights',(.96,.99,.99),.12,.16)
+crinkle=material('Fine plastic crease highlights',(.96,.99,.99),.11,.23)
 
 ink=material('Packaging typography / dark green',(.025,.055,.043),.75)
 
@@ -183,7 +183,7 @@ patch=mesh('Original bitmap Apple / left chest',lv,lf,logo,lu)
 objects.remove(patch);tee_parts.append(patch)
 
 for index in range(3):
-    offset=Vector(([-.001,.004,-.003][index],[-.016,.000,.016][index],[-.014,.000,.014][index]))
+    offset=Vector(([-.001,.004,-.003][index],[-.016,.000,.016][index],[-.006,.000,.006][index]))
     for base in tee_parts:
         o=base.copy();o.data=base.data;bpy.context.collection.objects.link(o)
         o.name=f'Tee {index+1} / '+('chest Apple' if base==patch else base.name)
@@ -192,28 +192,34 @@ for index in range(3):
         o['artwork']='site/eden-apple-red-bitmap.png';objects.append(o)
 for o in tee_parts:bpy.data.objects.remove(o,do_unlink=True)
 
-# A soft, irregular polybag following the stack. Clear panels remain separate
-# for correct alpha sorting in Three.js, with no transmission or thick glass.
-TOP=.233;BOTTOM=-.195
+# Retail pack proportions follow the supplied multipack reference: wide sealed
+# strip, gathered clear shoulders, a softly padded rectangular shirt stack.
+TOP=.276;BOTTOM=-.194
+
+def smoothstep(a,b,x):
+    t=max(0,min(1,(x-a)/(b-a)));return t*t*(3-2*t)
+
 def outline(v):
-    return .158*(1-.075*abs(v)**8)+.0017*math.sin(v*17)+.001*math.cos(v*31)
+    z=(TOP+BOTTOM)/2+v*(TOP-BOTTOM)/2
+    return .154+.021*smoothstep(.168,.230,z)-.005*max(0,-v)**16+.0011*math.sin(v*13)*(1-smoothstep(.218,.235,z))
+
 def panel_point(u,v,back=False):
     w=outline(v);x=u*w
     z=(TOP+BOTTOM)/2+v*(TOP-BOTTOM)/2
-    z+=.0026*math.sin(u*16+1.8)*(abs(v)**7)+.0018*math.cos(u*29)*abs(v)**12
-    edge_round=.009*abs(u)**10*(abs(v)**5)
-    z-=math.copysign(edge_round,v)
-    top_gather=max(0,min(1,(z-.179)/.055))
-    if back:y=.048*(1-top_gather)+.004*top_gather
-    else:y=-.034*(1-top_gather)-.004*top_gather
-    # Creases gather near the sealed borders; the center stays optically clear.
-    wr=(.0010*math.sin(u*33+v*17)+.0018*math.sin(u*19-v*31))*(abs(u)**5+.40*abs(v)**8)
-    y+=wr
-    y+=(1 if back else -1)*.0035*(1-u*u)*(1-v*v)
+    below_header=1-smoothstep(.217,.232,z)
+    z+=below_header*(.0018*math.sin(u*14+.8)*abs(v)**9+.0012*math.cos(u*27)*abs(v)**12)
+    z+=.006*abs(u)**9*max(0,-v)**8
+    top_gather=smoothstep(.151,.231,z)
+    y=(.052 if back else -.040)*(1-top_gather)+(.0012 if back else -.0012)*top_gather
+    shoulder=math.exp(-((z-.195)/.028)**2)
+    side=abs(u)**6
+    wrinkle=(.0022*math.sin(u*31+v*12)+.0013*math.sin(u*56-v*17))*(side+.8*shoulder)*below_header
+    y+=wrinkle
+    y+=(1 if back else -1)*.0065*(1-u*u)*(1-v*v)*(1-top_gather)
     return (x,y,z)
 
 for back in (False,True):
-    nx=36;nz=48;verts=[];faces=[];uv=[]
+    nx=42;nz=56;verts=[];faces=[];uv=[]
     for j in range(nz+1):
         v=j/nz*2-1
         for i in range(nx+1):
@@ -221,48 +227,88 @@ for back in (False,True):
     for j in range(nz):
         for i in range(nx):
             a=j*(nx+1)+i;q=(a,a+1,a+nx+2,a+nx+1);faces.append(q[::-1] if back else q)
-    mesh('Clear polybag / '+('rear soft film' if back else 'front soft film'),verts,faces,bag,uv)
+    mesh('Clear retail bag / '+('rear soft film' if back else 'front crinkled film'),verts,faces,bag,uv)
 
-# Narrow heat-seal bands are flat ribbons, never rigid bars or boxed gussets.
+# The heat seals are thin film ribbons, not hard frame pieces.
 for side in (-1,1):
     for back in (False,True):
         vv=[];ff=[]
         for j in range(65):
-            v=j/64*2-1
-            vv.extend([panel_point(side*.970,v,back),panel_point(side,v,back)])
+            v=j/64*2-1;vv.extend([panel_point(side*.974,v,back),panel_point(side,v,back)])
         for j in range(64):ff.append((j*2,j*2+1,j*2+3,j*2+2))
-        mesh('Polybag / fine side heat seal',vv,ff,edge)
-    # The edge turn follows both curved panels and remains transparent.
+        mesh('Retail bag / narrow welded side',vv,ff,edge)
     vv=[];ff=[]
     for j in range(65):
         v=j/64*2-1;vv.extend([panel_point(side,v,False),panel_point(side,v,True)])
     for j in range(64):ff.append((j*2,j*2+1,j*2+3,j*2+2))
-    mesh('Polybag / flexible side return',vv,ff,bag)
+    mesh('Retail bag / folded side film',vv,ff,bag)
 for top in (-1,1):
-    # Pinched, wavy top and bottom seams, with a soft curved film return.
     for back in (False,True):
         vv=[];ff=[]
         for i in range(65):
-            u=i/64*2-1;vv.extend([panel_point(u,top*.978,back),panel_point(u,top,back)])
+            u=i/64*2-1;vv.extend([panel_point(u,top*.976,back),panel_point(u,top,back)])
         for i in range(64):ff.append((i*2,i*2+1,i*2+3,i*2+2))
-        mesh('Polybag / pinched top seal' if top>0 else 'Polybag / folded bottom seal',vv,ff,edge)
+        mesh('Retail bag / top heat seal' if top>0 else 'Retail bag / soft bottom weld',vv,ff,edge)
     vv=[];ff=[]
     for i in range(65):
         u=i/64*2-1;vv.extend([panel_point(u,top,False),panel_point(u,top,True)])
     for i in range(64):ff.append((i*2,i*2+1,i*2+3,i*2+2))
-    mesh('Polybag / softly turned film end',vv,ff,bag)
+    mesh('Retail bag / sealed film return',vv,ff,bag)
 
-# Sparse curved highlight slivers catch direct studio lights, like creased film.
-creases=[(-.97,-.94,-.72,-.71),(-.98,-.82,-.89,-.39),(.96,-.91,.69,-.69),(.97,-.66,.88,-.34),(-.96,.89,-.71,.72),(.93,.91,.74,.64),(-.54,.99,-.36,.77),(.42,.99,.30,.76)]
-for index,(ua,va,ub,vb) in enumerate(creases):
+# Creases gathered beneath the sealed strip and along the sides: broad, tapered
+# reflected streaks with an adjacent low-alpha edge keep the center truly clear.
+creases=[(-.96,.77,-.55,.51,.018),(-.85,.81,-.68,.53,.014),(-.68,.78,-.25,.57,.012),(-.25,.79,.08,.55,.013),(.13,.79,.36,.57,.016),(.46,.78,.65,.51,.015),(.78,.80,.86,.42,.018),(.97,.74,.71,.43,.019),(-.96,.44,-.86,.10,.010),(-.97,-.10,-.88,-.50,.011),(.97,.32,.86,-.12,.010),(.96,-.39,.83,-.73,.013),(-.95,-.91,-.60,-.72,.016),(.96,-.92,.62,-.77,.015),(-.56,-.97,-.31,-.89,.012)]
+for index,(ua,va,ub,vb,span) in enumerate(creases):
     vv=[];ff=[]
-    for i in range(17):
-        t=i/16;u=ua+(ub-ua)*t+.022*math.sin(t*math.pi);v=va+(vb-va)*t
-        width=.0035*math.sin(t*math.pi)
+    for i in range(25):
+        t=i/24;u=ua+(ub-ua)*t+.024*math.sin(t*math.pi);v=va+(vb-va)*t
+        width=span*math.sin(t*math.pi)**1.3
         for du in (-width,width):
-            x,y,z=panel_point(u+du,v);vv.append((x,y-.00045,z))
-    for i in range(16):ff.append((i*2,i*2+1,i*2+3,i*2+2))
-    mesh('Polybag / subtle crinkle highlight '+str(index+1),vv,ff,crinkle)
+            x,y,z=panel_point(u+du,v);vv.append((x,y-.00055,z))
+    for i in range(24):ff.append((i*2,i*2+1,i*2+3,i*2+2))
+    mesh('Retail bag / gathered light crease '+str(index+1),vv,ff,crinkle)
+
+# Blue print lies directly on the top film, like the supplied retail package.
+blue=material('Daily Apple / cobalt printed film',(.008,.032,.35),.40)
+cyan=material('Daily Apple / cyan label border',(.008,.39,.68),.65)
+whiteink=material('Daily Apple / white package ink',(.94,.96,.94),.70)
+redink=material('Daily Apple / red brand stamp',(.67,.012,.023),.66)
+for back in (False,True):
+    vv=[];ff=[]
+    for j in range(5):
+        z=.233+j*.036/4;v=(z-(TOP+BOTTOM)/2)/((TOP-BOTTOM)/2)
+        for i in range(33):
+            u=(i/32*2-1)*.975;x,y,zz=panel_point(u,v,back);vv.append((x,y+(.0003 if back else -.0003),zz))
+    for j in range(4):
+        for i in range(32):
+            a=j*33+i;q=(a,a+1,a+34,a+33);ff.append(q[::-1] if back else q)
+    mesh('Daily Apple / blue printed top strip '+str(back),vv,ff,blue)
+text('Top strip / pack count','3',(-.161,-.0025,.237),.036,whiteink)
+text('Top strip / Daily Apple','DAILY APPLE',(-.126,-.0026,.251),.018,whiteink)
+text('Top strip / subtitle','WHITE TEES  /  THREE PACK',(-.125,-.0026,.237),.0085,whiteink)
+text('Top strip / brand','BREAKTHYRULE',(.083,-.0026,.246),.0072,whiteink)
+
+# A thin insert card, slightly left of center, preserves the chest Apple beside
+# it and uses only the real product's name and contents (no invented claims).
+label_x=-.037;label_z=.087;label_y=-.0275
+box('Daily Apple / slim cyan insert',(label_x,label_y,label_z),(.111,.00045,.153),cyan,.003)
+box('Daily Apple / blue insert face',(label_x,label_y-.00035,label_z+.002),(.101,.00025,.142),blue,.002)
+text('Insert / Daily Apple','DAILY APPLE',(label_x,label_y-.00065,.139),.011,whiteink,'CENTER')
+text('Insert / count','3',(label_x-.038,label_y-.0007,.102),.041,whiteink)
+text('Insert / tees','WHITE TEES',(label_x-.009,label_y-.0007,.109),.0079,whiteink)
+# Printed tee pictogram, deliberately flat on the card.
+x=label_x;y=label_y-.0008;z=.071;w=.036;h=.038
+icon=[(-.22,.5),(-.08,.44),(.08,.44),(.22,.5),(.5,.29),(.36,.09),(.23,.19),(.23,-.5),(-.23,-.5),(-.23,.19),(-.36,.09),(-.5,.29)]
+mesh('Insert / flat white tee pictogram',[(x+a*w,y,z+b*h) for a,b in icon],[tuple(range(len(icon)))],whiteink)
+text('Insert / footer','BREAKTHYRULE',(label_x,label_y-.0008,.030),.0073,whiteink,'CENTER')
+# A small red brand tab echoes the site's red apple without copying Hanes marks.
+box('Daily Apple / small red brand tab',(label_x-.018,label_y-.001,.162),(.078,.0003,.022),redink,.001)
+text('Insert / brand tab','BREAKTHYRULE',(label_x-.018,label_y-.0013,.158),.0073,whiteink,'CENTER')
+
+# Font/curve geometry must be explicit meshes in the shipped GLB.
+for o in objects:
+    if o.type in ('CURVE','FONT'):
+        bpy.ops.object.select_all(action='DESELECT');o.select_set(True);bpy.context.view_layer.objects.active=o;bpy.ops.object.convert(target='MESH')
 
 scene=bpy.context.scene;scene.render.engine='CYCLES';scene.cycles.samples=48;scene.cycles.use_denoising=True
 scene.render.resolution_x=1000;scene.render.resolution_y=1100;scene.render.resolution_percentage=100
@@ -272,7 +318,7 @@ for name,loc,power,size in [('Key',(-.5,-.7,.85),22,.65),('Fill',(.6,-.35,.3),10
     data=bpy.data.lights.new(name,'AREA');data.energy=power;data.shape='DISK';data.size=size
     o=bpy.data.objects.new(name,data);scene.collection.objects.link(o);o.location=loc;o.rotation_euler=(Vector((0,0,.025))-o.location).to_track_quat('-Z','Y').to_euler()
 camdata=bpy.data.cameras.new('Catalog camera');cam=bpy.data.objects.new('Catalog camera',camdata);scene.collection.objects.link(cam)
-cam.location=(.48,-1.35,.43);target=Vector((0,0,.01));cam.rotation_euler=(target-cam.location).to_track_quat('-Z','Y').to_euler();camdata.type='ORTHO';camdata.ortho_scale=.54;scene.camera=cam
+cam.location=(.27,-1.45,.31);target=Vector((0,0,.01));cam.rotation_euler=(target-cam.location).to_track_quat('-Z','Y').to_euler();camdata.type='ORTHO';camdata.ortho_scale=.57;scene.camera=cam
 scene['product']='Daily Apple 3-Pack';scene['pieces']=3;scene['source_artwork']='site/eden-apple-red-bitmap.png';scene['packaging']='Clear flexible polybag visualization'
 bpy.ops.wm.save_as_mainfile(filepath=str(WORK/'daily-apple-3-pack.blend'))
 bpy.ops.object.select_all(action='DESELECT')
@@ -285,5 +331,5 @@ pts=[o.matrix_world@Vector(corner) for o in objects for corner in o.bound_box]
 low=Vector([min(p[i] for p in pts) for i in range(3)]);high=Vector([max(p[i] for p in pts) for i in range(3)])
 triangles=0
 for o in objects:o.data.calc_loop_triangles();triangles+=len(o.data.loop_triangles)
-report={'model':str(path),'bytes':path.stat().st_size,'triangles':triangles,'dimensionsMm':[round(v*1000,1) for v in high-low],'shirts':3,'artwork':'Original site bitmap Apple','packaging':'Clear soft polybag visualization','hanesWordmarkAdded':False,'revision':'clear-bag-2'}
+report={'model':str(path),'bytes':path.stat().st_size,'triangles':triangles,'dimensionsMm':[round(v*1000,1) for v in high-low],'shirts':3,'artwork':'Original site bitmap Apple','packaging':'Clear retail multipack with sealed printed film','hanesWordmarkAdded':False,'revision':'retail-bag-3'}
 (WORK/'validation.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report),flush=True)
