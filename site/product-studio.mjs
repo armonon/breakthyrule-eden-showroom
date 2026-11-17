@@ -1,7 +1,7 @@
 import { createGarmentGraphicsEditor } from '/site/garment-graphics-editor.mjs?v=2';
 import { graphicBaseURL, prepareGraphicBase } from '/site/graphic-base.mjs?v=1';
 import { offeringFor, SIZES, FITS, COLORS, formatCents } from '/labkit/catalog.mjs';
-import { PRODUCT_DESIGNS, STUDIO_PRODUCTS, GRAPHIC_COLORS, productDesignDefaultColor } from '/labkit/product-options.mjs';
+import { PRODUCT_DESIGNS, STUDIO_PRODUCTS, GRAPHIC_COLORS, HEADWEAR_WEIGHTS, DAILY_APPLE_SIZES, productDesignDefaultColor } from '/labkit/product-options.mjs';
 import { normalizeItem, priceItem } from '/labkit/pricing.mjs';
 import { cart, POOL, labStatus } from '/site/cart-store.mjs?v=site-audit-1';
 import { tintProductDesign } from '/site/product-preview.mjs?v=1';
@@ -62,8 +62,10 @@ function mountOptions(){
    if(state.artwork==='product-design'&&design.core)fields.append(h('label',{className:'studio-select'},'Graphic color',h('select',{name:'graphic',ariaLabel:'Graphic color'},...GRAPHIC_COLORS.map(c=>h('option',{value:c,textContent:c,selected:state.productDesign?.graphic===c})))));
 
   }else{
-   if(product.packSize)fields.append(h('p',{className:'studio-small',textContent:'One pack includes '+product.packSize+' '+product.packNoun+' in your selected color. The price is for the complete pack.'}));
+   if(product.packSize)fields.append(h('p',{className:'studio-small',textContent:product.family==='daily-apple'?'One bag contains three white Hanes tees with a red bitmap apple on the chest. The price is for all three tees.':'One pack includes '+product.packSize+' '+product.packNoun+' in your selected color. The price is for the complete pack.'}));
    if(['headband','skully','gloves'].includes(product.family))fields.append(field('Color',h('div',{className:'studio-color-grid'},...['black','white'].map(c=>radio('productColor',c,c==='white'?'White':'Black',state.options.color===c)))));
+   if(['headband','skully'].includes(product.family))fields.append(field('Fabric weight',h('div',{className:'studio-color-grid'},...Object.entries(HEADWEAR_WEIGHTS).map(([key,weight])=>radio('weight',key,weight.name,(state.options.weight||'thin')===key,{price:weight.addCents?'+'+formatCents(weight.addCents):'Included'})))));
+   if(product.family==='daily-apple')fields.append(field('Size for all three tees',h('div',{className:'studio-size-grid'},...DAILY_APPLE_SIZES.map(size=>radio('productSize',size,size,state.options.size===size)))));
    if(product.family==='belt')fields.append(field('Strap color',h('label',{className:'studio-custom-color'},h('span',{textContent:'Color · included in the complete belt'}),h('input',{type:'color',name:'strapColor',value:state.options.strapColor,ariaLabel:'Belt strap color'}))),h('p',{className:'studio-small',textContent:'Complete belt · sculptural buckle and strap included. No-hole clamp design.'}));
    if(product.family==='necklace')fields.append(field('Chain',h('p',{className:'studio-chain',textContent:'22-inch sterling silver French cable · 3.4 mm'})),h('p',{className:'studio-small',textContent:'Complete necklace · pendant and chain included.'}));
    fields.append(h('label',{className:'studio-select'},'Notes for the studio',h('textarea',{name:'studioNotes',maxLength:280,rows:2,value:state.notes||'',placeholder:'Fit, finish or other requests…'})),h('p',{className:'studio-small',textContent:'Special requests are confirmed by the studio before making.'}));
@@ -77,7 +79,7 @@ function mountOptions(){
   updatePrice();
   if(previous?.name){const el=[...form.elements].find(e=>e.name===previous.name&&e.value===previous.value);el?.focus({preventScroll:true});}
  }
- function normalized(forDisplay=false){const cfg=design?{...state,size:state.size||(forDisplay?'M':null),color:state.labMode==='random'?'random':state.color,productDesign:state.artwork==='product-design'?state.productDesign:undefined}:state;return normalizeItem(cfg,{artworkPool:POOL});}
+ function normalized(forDisplay=false){const cfg=design?{...state,size:state.size||(forDisplay?'M':null),color:state.labMode==='random'?'random':state.color,productDesign:state.artwork==='product-design'?state.productDesign:undefined}:forDisplay&&product?.family==='daily-apple'?{...state,options:{...state.options,size:state.options.size||'M'}}:state;return normalizeItem(cfg,{artworkPool:POOL});}
  function updatePrice(){
   const n=normalized(true);
   // Artwork can still be empty while the customer browses; the quote remains visible.
@@ -96,7 +98,9 @@ function mountOptions(){
     const variant=(window.BTR_ACCESSORIES||[]).find(p=>p.family===product.family&&(p.slug.endsWith('-'+state.options.color)||(p.family==='gloves'&&state.options.color==='white')));
     if(media.setVariant&&variant){await media.setVariant({...variant,model:product.family==='gloves'&&state.options.color==='black'?'/accessory-collection/models/apple-gloves-black.glb?v=quality-3':variant.model});}
     else if(media.viewer&&product.family==='gloves'){await media.viewer.load('/accessory-collection/models/'+(state.options.color==='black'?'apple-gloves-black':'gloves-white')+'.glb?v=quality-3');media.viewer.redraw();}
-   }return;
+   }
+   if(['headband','skully'].includes(product.family))media.setWeight?.(state.options.weight||'thin');
+   return;
   }
   const viewer=media.viewer;if(!viewer)return;media.setPhotoMode?.(false);
   const chosen=JSON.parse(JSON.stringify(state)),keep=chosen.artwork==='product-design';const caption=$('viewer').querySelector('.core-caption');if(caption)caption.textContent=keep?'Complete logo embroidery · left chest':chosen.artwork==='pick'?'Custom graphics · drag to place':'Studio chooses the print';
@@ -121,6 +125,8 @@ function mountOptions(){
   else if(name==='graphic')state.productDesign={id,graphic:value};
   else if(name==='quantity')state.quantity=Number(value);
   else if(name==='productColor')state.options.color=value;
+  else if(name==='weight')state.options.weight=value;
+  else if(name==='productSize')state.options.size=value;
   else if(name==='strapColor')state.options.strapColor=value;
   else if(name==='customColor')state.customColor=value;
   else if(name==='studioNotes')state.notes=value;
@@ -133,7 +139,7 @@ function mountOptions(){
   if(printingBusy||graphicsEditor?.isUploading()){feedback.textContent='Wait for the graphic preview to finish updating.';return;}
   if(existingHat?.querySelector('.hat-shape-options[aria-busy=true]')){feedback.textContent='Wait for your selected hat shape to finish loading.';return;}
   if(product?.family==='trucker'&&existingHat?.btrDesign)state.options=existingHat.btrDesign();
-  const n=normalized();if(!n.ok){feedback.textContent=n.errors.join(' ');if(design&&!state.size){settings.open=true;fields.querySelector('[name=size]')?.focus();}return;}
+  const n=normalized();if(!n.ok){feedback.textContent=n.errors.join(' ');if(design&&!state.size){settings.open=true;fields.querySelector('[name=size]')?.focus();}if(product?.family==='daily-apple'&&!state.options.size)fields.querySelector('[name=productSize]')?.focus();return;}
   const result=edit?cart.replace(edit,n.item):cart.add(n.item);
   if(!result.ok){feedback.textContent=result.errors?.join(' ')||'Your design could not be saved.';return;}
   feedback.textContent='Your configuration is saved in your bag.';document.dispatchEvent(new CustomEvent('lab:open-cart',{detail:{added:result.id}}));
@@ -141,6 +147,8 @@ function mountOptions(){
  render();
 }
 function defaultOptions(p){
+ if(p.family==='daily-apple')return {color:'white',size:null};
+ if(['headband','skully'].includes(p.family))return {color:/white/.test(id)?'white':'black',weight:'thin'};
  if(p.family==='belt')return {strapColor:'#151619'};
  if(p.family==='necklace')return {chain:'22-inch sterling silver French cable · 3.4 mm'};
  if(p.family==='trucker'){const original=(window.BTR_ACCESSORIES||[]).find(x=>x.id===id);return {style:'trucker',colors:{front:original?.frontColor||'#f0eadf',brim:original?.brimColor||'#282828',mesh:original?.meshColor||'#f0eadf'},picks:[]};}

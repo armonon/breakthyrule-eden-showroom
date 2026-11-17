@@ -29,7 +29,7 @@ window.BTR_HAT_STYLES = [
 window.BTR_ACCESSORIES = [
   {
     "slug": "headband-black",
-    "name": "Black Headbands (3-pack)",
+    "name": "Black Headband",
     "family": "headband",
     "color": "#121315",
     "model": "/accessory-collection/models/headband-black.glb?v=quality-3",
@@ -45,8 +45,8 @@ window.BTR_ACCESSORIES = [
     "webMaterialFinish": "matte fabric",
     "id": "accessory-headband-black",
     "href": "/product?item=accessory-headband-black",
-    "tagline": "Three headbands. The centaur, stitched in red.",
-    "description": "Three wide fabric headbands finished with red centaur embroidery. Each 3-pack comes in your selected color: black or white.",
+    "tagline": "The centaur in front. BreakThyRule in back.",
+    "description": "One fabric headband with red centaur embroidery on the front and cursive BreakThyRule lettering on the back. Choose black or white, with thin or heavy fabric.",
     "embroiderySource": "centaur_.png",
     "embroideryColor": "#d7192b",
     "embroideryHeightMm": 44.0,
@@ -54,12 +54,11 @@ window.BTR_ACCESSORIES = [
     "stitchSegments": 1918,
     "triangles": 82336,
     "qualityRevision": 3,
-    "price": "$35",
-    "packSize": 3
+    "price": "$60"
   },
   {
     "slug": "headband-white",
-    "name": "White Headbands (3-pack)",
+    "name": "White Headband",
     "family": "headband",
     "color": "#f4f1e8",
     "model": "/accessory-collection/models/headband-white.glb?v=quality-3",
@@ -75,8 +74,8 @@ window.BTR_ACCESSORIES = [
     "webMaterialFinish": "matte fabric",
     "id": "accessory-headband-white",
     "href": "/product?item=accessory-headband-white",
-    "tagline": "Three headbands. The centaur, stitched in red.",
-    "description": "Three wide fabric headbands finished with red centaur embroidery. Each 3-pack comes in your selected color: black or white.",
+    "tagline": "The centaur in front. BreakThyRule in back.",
+    "description": "One fabric headband with red centaur embroidery on the front and cursive BreakThyRule lettering on the back. Choose black or white, with thin or heavy fabric.",
     "embroiderySource": "centaur_.png",
     "embroideryColor": "#d7192b",
     "embroideryHeightMm": 44.0,
@@ -84,8 +83,7 @@ window.BTR_ACCESSORIES = [
     "stitchSegments": 1918,
     "triangles": 82336,
     "qualityRevision": 3,
-    "price": "$35",
-    "packSize": 3
+    "price": "$60"
   },
   {
     "slug": "gloves-white",
@@ -142,7 +140,7 @@ window.BTR_ACCESSORIES = [
   },
   {
     "slug": "skully-black",
-    "name": "Black Skullies (3-pack)",
+    "name": "Black Skully",
     "family": "skully",
     "color": "#131417",
     "model": "/accessory-collection/models/skully-black.glb?v=quality-3",
@@ -158,8 +156,8 @@ window.BTR_ACCESSORIES = [
     "webMaterialFinish": "matte fabric",
     "id": "accessory-skully-black",
     "href": "/product?item=accessory-skully-black",
-    "tagline": "Three skullies. The centaur, stitched in red.",
-    "description": "Three ribbed skullies with folded cuffs finished with red centaur embroidery. Each 3-pack comes in your selected color: black or white.",
+    "tagline": "The centaur in front. BreakThyRule in back.",
+    "description": "One ribbed skully with red centaur embroidery on the front and cursive BreakThyRule lettering on the back. Choose black or white, with thin or heavy fabric.",
     "embroiderySource": "centaur_.png",
     "embroideryColor": "#d7192b",
     "embroideryHeightMm": 60.0,
@@ -167,12 +165,11 @@ window.BTR_ACCESSORIES = [
     "stitchSegments": 1918,
     "triangles": 215024,
     "qualityRevision": 3,
-    "price": "$45",
-    "packSize": 3
+    "price": "$50"
   },
   {
     "slug": "skully-white",
-    "name": "White Skullies (3-pack)",
+    "name": "White Skully",
     "family": "skully",
     "color": "#f4f1e9",
     "model": "/accessory-collection/models/skully-white.glb?v=quality-3",
@@ -188,8 +185,8 @@ window.BTR_ACCESSORIES = [
     "webMaterialFinish": "matte fabric",
     "id": "accessory-skully-white",
     "href": "/product?item=accessory-skully-white",
-    "tagline": "Three skullies. The centaur, stitched in red.",
-    "description": "Three ribbed skullies with folded cuffs finished with red centaur embroidery. Each 3-pack comes in your selected color: black or white.",
+    "tagline": "The centaur in front. BreakThyRule in back.",
+    "description": "One ribbed skully with red centaur embroidery on the front and cursive BreakThyRule lettering on the back. Choose black or white, with thin or heavy fabric.",
     "embroiderySource": "centaur_.png",
     "embroideryColor": "#d7192b",
     "embroideryHeightMm": 60.0,
@@ -197,8 +194,7 @@ window.BTR_ACCESSORIES = [
     "stitchSegments": 1918,
     "triangles": 215024,
     "qualityRevision": 3,
-    "price": "$45",
-    "packSize": 3
+    "price": "$50"
   },
   {
     "slug": "trucker-cobalt",
@@ -253,7 +249,7 @@ window.BTR_ACCESSORIES = [
     "tagline": "Your colors. Your graphics.",
     "description": "Choose a mesh trucker or solid six-panel baseball cap. Mix your front, brim and side colors, then arrange Sticker Lab artwork on the front.",
     "customizationEnabled": true,
-    "defaultGraphic": "stay-weird",
+    "defaultGraphic": "centaur",
     "triangles": 66001,
     "qualityRevision": 4,
     "hatStyle": "trucker",
@@ -283,7 +279,7 @@ window.BTR_ACCESSORIES = [
     "tagline": "Your colors. Your graphics.",
     "description": "Choose a mesh trucker or solid six-panel baseball cap. Mix your front, brim and side colors, then arrange Sticker Lab artwork on the front.",
     "customizationEnabled": true,
-    "defaultGraphic": "love-doves",
+    "defaultGraphic": "centaur",
     "triangles": 66001,
     "qualityRevision": 4,
     "hatStyle": "trucker",
@@ -313,7 +309,7 @@ window.BTR_ACCESSORIES = [
     "tagline": "Your colors. Your graphics.",
     "description": "Choose a mesh trucker or solid six-panel baseball cap. Mix your front, brim and side colors, then arrange Sticker Lab artwork on the front.",
     "customizationEnabled": true,
-    "defaultGraphic": "alien",
+    "defaultGraphic": "centaur",
     "triangles": 66001,
     "qualityRevision": 4,
     "hatStyle": "trucker",
@@ -343,7 +339,7 @@ window.BTR_ACCESSORIES = [
     "tagline": "Your colors. Your graphics.",
     "description": "Choose a mesh trucker or solid six-panel baseball cap. Mix your front, brim and side colors, then arrange Sticker Lab artwork on the front.",
     "customizationEnabled": true,
-    "defaultGraphic": "lion",
+    "defaultGraphic": "centaur",
     "triangles": 66001,
     "qualityRevision": 4,
     "hatStyle": "trucker",
@@ -373,11 +369,33 @@ window.BTR_ACCESSORIES = [
     "tagline": "Your colors. Your graphics.",
     "description": "Choose a mesh trucker or solid six-panel baseball cap. Mix your front, brim and side colors, then arrange Sticker Lab artwork on the front.",
     "customizationEnabled": true,
-    "defaultGraphic": "divine-mother",
+    "defaultGraphic": "centaur",
     "triangles": 66001,
     "qualityRevision": 4,
     "hatStyle": "trucker",
     "meshFinish": "Open alpha-tested mesh",
     "price": "$45"
+  },
+  {
+    "slug": "daily-apple-3-pack",
+    "name": "Daily Apple 3 Pack",
+    "family": "daily-apple",
+    "color": "#ffffff",
+    "model": "/accessory-collection/models/daily-apple-3-pack.glb",
+    "poster": "/accessory-collection/posters/daily-apple-3-pack.webp",
+    "id": "daily-apple-3-pack",
+    "href": "/product?item=daily-apple-3-pack",
+    "price": "$45",
+    "packSize": 3,
+    "tagline": "An apple a day. Three tees in a bag.",
+    "description": "Three white Hanes tees with a red bitmap apple on the chest, packed together in a bag. Choose one size for all three tees.",
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "qualityRevision": "daily-apple-1"
   }
 ];

@@ -46,6 +46,9 @@ export async function buildDiscoveryCatalog({
   const gloves = original.find(item => item.slug === 'apple-gloves' || item.id === 'apple-gloves');
   for (const item of original) {
     if (!item.model) continue;
+    // The current centaur skully replaces legacy printed beanies in rotation.
+    // Their individual product pages remain available through the collection.
+    if (/beanie/i.test(item.slug || item.id) && accessories.some(accessory => accessory.family === 'skully')) continue;
     // Both official glove colors below link to this same published product and its price.
     if (item === gloves && accessories.some(accessory => accessory.family === 'gloves')) continue;
     const accessory = /beanie|gloves/i.test(item.slug || item.id);
@@ -79,9 +82,9 @@ export async function buildDiscoveryCatalog({
       colorway: publishedColor(item.name, item.color)
     };
     if (item.family !== 'trucker') { items.push(base(item, 'accessory', 'accessory', extra)); continue; }
-    const styles = scope.BTR_HAT_STYLES?.length ? scope.BTR_HAT_STYLES : [{ id: 'trucker', name: 'Mesh trucker', model: item.model, poster: item.poster }];
+    const styles = scope.BTR_HAT_STYLES?.length ? scope.BTR_HAT_STYLES.filter(style => style.id === 'trucker') : [{ id: 'trucker', name: 'Mesh trucker', model: item.model, poster: item.poster }];
     for (const style of styles) {
-      const sourceItem = { ...item, hatStyle: style.id, model: style.model };
+      const sourceItem = { ...item, hatStyle: style.id, model: style.model, defaultGraphic: 'centaur' };
       items.push(base(item, 'accessory', 'hat', {
         ...extra, id: item.id + ':' + style.id, name: style.id === 'trucker' ? item.name : item.name.replace(/trucker/i, 'Baseball Cap'),
         href: extra.href + (extra.href.includes('?') ? '&' : '?') + 'hat=' + encodeURIComponent(style.id),

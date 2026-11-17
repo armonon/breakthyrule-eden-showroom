@@ -1,6 +1,6 @@
 import { createSmoke } from './discovery-smoke.mjs?v=tab-loop-5';
-import { buildDiscoveryCatalog, createDiscoveryScheduler } from './discovery-catalog.mjs?v=product-pages-1';
-import { createDiscoveryStage } from './discovery-stage.mjs?v=flowing-colors-1';
+import { buildDiscoveryCatalog, createDiscoveryScheduler } from './discovery-catalog.mjs?v=centaur-daily-2';
+import { createDiscoveryStage } from './discovery-stage.mjs?v=centaur-wordmark-2';
 import { OFFERINGS, MYSTERY_PACKAGES } from '/labkit/catalog.mjs';
 import { normalizeItem, priceItem, sidesFor } from '/labkit/pricing.mjs';
 import { newSeed, isSeed } from '/labkit/random.mjs';

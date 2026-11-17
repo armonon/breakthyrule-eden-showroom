@@ -11,6 +11,7 @@ export function disposeDiscoveryModel(root) {
     materials.add(m);
     for (const value of Object.values(m)) if (value?.isTexture) textures.add(value);
     if (m.userData.hatInk?.texture) textures.add(m.userData.hatInk.texture);
+    if (m.userData.accessoryWordmark?.texture) textures.add(m.userData.accessoryWordmark.texture);
     for (const u of Object.values(m.userData.decal || {})) if (u?.value?.isTexture) textures.add(u.value);
   });
   textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); geometries.forEach(g => g.dispose());
@@ -147,8 +148,9 @@ export function createDiscoveryStage(mount, { onTurn, onFrame, onInteraction, on
       root.userData.hatInkArea = d.ink || window.BTR_HAT_STYLES?.find(s => s.id === item.hatStyle)?.ink;
       const colors = colorway.colors || { front: item.frontColor, brim: item.brimColor, mesh: item.meshColor };
       eachMaterial(root, m => { const key = m.name?.startsWith('Front panel / color') ? 'front' : /^(Brim|Topstitch) \/ color/.test(m.name) ? 'brim' : /^(Open mesh|Snapback) \/ color/.test(m.name) ? 'mesh' : null; if (key && colors[key]) m.color?.set(colors[key]); });
-      await window.decorateAccessoryModel?.(root, item);
+      await window.decorateAccessoryModel?.(root, { ...item, defaultGraphic: 'centaur' });
     }
+    await window.applyAccessoryBackWordmark?.(root, item);
     if (d.renderKind === 'belt' && colorway.value) root.traverse(o => { if (o.name === 'BTR_Strap') for (const m of [].concat(o.material)) m.color?.set(colorway.value); });
   }
 

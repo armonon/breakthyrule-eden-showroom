@@ -247,11 +247,11 @@ window.showroomCollection=[
   {
     "id": "08",
     "slug": "sacrificial-beanie",
-    "name": "Centaur Skullies (3-pack)",
+    "name": "Centaur Skully",
     "chapter": "IV",
-    "price": "$45",
-    "tagline": "The centaur, stitched in red.",
-    "description": "Three ribbed skullies with folded cuffs finished with red centaur embroidery. Each 3-pack comes in your selected color: black or white.",
+    "price": "$50",
+    "tagline": "The centaur in front. BreakThyRule in back.",
+    "description": "One ribbed skully with red centaur embroidery on the front and cursive BreakThyRule lettering on the back. Choose black or white, with thin or heavy fabric.",
     "images": [
       "/accessory-collection/posters/skully-black.png?v=quality-3"
     ],
@@ -279,7 +279,7 @@ window.showroomCollection=[
     "accessoryId": "accessory-skully-black",
     "accessoryPreview": {
       "slug": "skully-black",
-      "name": "Black Skullies (3-pack)",
+      "name": "Black Skully",
       "family": "skully",
       "color": "#131417",
       "model": "/accessory-collection/models/skully-black.glb?v=quality-3",
@@ -295,8 +295,8 @@ window.showroomCollection=[
       "webMaterialFinish": "matte fabric",
       "id": "accessory-skully-black",
       "href": "/product?item=accessory-skully-black",
-      "tagline": "Three skullies. The centaur, stitched in red.",
-      "description": "Three ribbed skullies with folded cuffs finished with red centaur embroidery. Each 3-pack comes in your selected color: black or white.",
+      "tagline": "The centaur in front. BreakThyRule in back.",
+      "description": "One ribbed skully with red centaur embroidery on the front and cursive BreakThyRule lettering on the back. Choose black or white, with thin or heavy fabric.",
       "embroiderySource": "centaur_.png",
       "embroideryColor": "#d7192b",
       "embroideryHeightMm": 60.0,
@@ -304,10 +304,8 @@ window.showroomCollection=[
       "stitchSegments": 1918,
       "triangles": 215024,
       "qualityRevision": 3,
-      "price": "$45",
-      "packSize": 3
-    },
-    "packSize": 3
+      "price": "$50"
+    }
   },
   {
     "id": "H1",

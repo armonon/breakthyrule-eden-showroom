@@ -4,3 +4,8 @@
 @media(min-width:851px){.hat-product .accessory-stage,.hat-product .accessory-fallback{height:clamp(280px,calc(100dvh - 270px),560px)}}
 
 .hat-shape-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0 8px}.hat-shape-option{display:flex;flex-direction:column;gap:7px;min-height:83px;text-align:left;border:1px solid #74785e;background:transparent;color:inherit;padding:14px;cursor:pointer;font:inherit;border-radius:3px;transition:background .16s,border-color .16s}.hat-shape-option strong{font-size:1rem}.hat-shape-option span{font-size:.76rem;opacity:.75}.hat-shape-option[aria-pressed=true]{background:#e5ddbe;color:#202219;border-color:#e5ddbe}.hat-shape-option:focus-visible{outline:2px solid #ce3c50;outline-offset:3px}.hat-shape-status{min-height:1.4em;margin:8px 0;font-size:.78rem}.hat-model-credits{display:inline-block;font-size:.72rem;opacity:.65;text-underline-offset:3px;margin-bottom:12px}.hat-color-fields{flex-wrap:wrap}.hat-shape-options[aria-busy=true]{cursor:progress}@media(prefers-reduced-motion:reduce){.hat-shape-option{transition:none}}
+
+/* Keep the Daily Apple pack beside the everyday accessories. */
+#accessories .accessory-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:1000px){#accessories .accessory-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){#accessories .accessory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#accessories .daily-apple-card{grid-column:1/-1}#accessories .daily-apple-card .accessory-image{aspect-ratio:1.3;max-height:330px}}

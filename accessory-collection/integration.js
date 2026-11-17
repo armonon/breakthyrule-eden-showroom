@@ -3,7 +3,7 @@
  const $=id=>document.getElementById(id),list=window.BTR_ACCESSORIES||[];
  window.renderAccessoryProduct=function(item){
   document.title='BREAKTHYRULE — '+item.name;document.body.classList.add('accessory-product');
-  $('numeral').textContent='A';$('chapter').textContent='Accessories / '+({headband:'Headbands',gloves:'Gloves',skully:'Skullies',trucker:'Custom hats'}[item.family]);$('name').textContent=item.name;$('price').textContent=item.price&&item.price!=='Customize'?item.price:'Design preview';$('tagline').textContent=item.tagline;$('description').textContent=item.description;$('model-note').textContent='';$('thumbs').hidden=true;
+  $('numeral').textContent='A';$('chapter').textContent='Accessories / '+({headband:'Headbands',gloves:'Gloves',skully:'Skullies',trucker:'Custom hats','daily-apple':'Daily Apple'}[item.family]);$('name').textContent=item.name;$('price').textContent=item.price&&item.price!=='Customize'?item.price:'Design preview';$('tagline').textContent=item.tagline;$('description').textContent=item.description;$('model-note').textContent='';$('thumbs').hidden=true;
   const buy=$('buy');buy.textContent='Explore all accessories ↗';buy.href='/accessories.html';buy.removeAttribute('target');buy.removeAttribute('rel');buy.parentElement.querySelector('a[href="/showroom"]')?.remove();
   // Load only the chosen shape on entry, including a saved design or shared URL.
   if(item.family==='trucker'){
@@ -19,7 +19,7 @@
   $('model-note').after(nav);
  };
  document.addEventListener('DOMContentLoaded',()=>{
-  const cards=[...document.querySelectorAll('[data-accessory-model]')].map(a=>{const item=list.find(x=>x.slug===a.dataset.accessoryModel);if(!item)return null;const canvas=document.createElement('canvas');canvas.setAttribute('aria-hidden','true');a.append(canvas);return {canvas,url:item.model,family:item.family,item,colorCycle:document.body.dataset.page==='home'&&!!a.closest('#accessories')};}).filter(Boolean);
+  const cards=[...document.querySelectorAll('[data-accessory-model]')].map(a=>{const item=list.find(x=>x.slug===a.dataset.accessoryModel);if(!item)return null;const canvas=document.createElement('canvas');canvas.setAttribute('aria-hidden','true');a.append(canvas);return {canvas,url:item.model,family:item.family,item,colorCycle:['headband','gloves','skully','trucker'].includes(item.family)&&document.body.dataset.page==='home'&&!!a.closest('#accessories')};}).filter(Boolean);
   const carousel=window.createAccessoryCarousel(cards);
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)for(const b of document.querySelectorAll('[data-accessory-motion]')){b.setAttribute('aria-pressed','false');b.textContent='Play previews';}
   for(const b of document.querySelectorAll('[data-accessory-motion]'))b.addEventListener('click',()=>{const auto=b.getAttribute('aria-pressed')!=='true';carousel?.setAuto(auto);b.setAttribute('aria-pressed',String(auto));b.textContent=auto?'Pause previews':'Play previews';});
