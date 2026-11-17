@@ -52,7 +52,7 @@
 
  function createCombat(o){
   const {T,scene,camera,renderer,stage}=o;
-  const hudHost=stage.parentElement;
+  const hudHost=stage.parentElement,mobile=o.mobile??matchMedia('(pointer:coarse)').matches,sceneryQuery=window.createNearestSceneryQuery(T);
   let touchMode=false,built=false,armed=false,locked=false,current=null,previous=null,lastTime=0,scoped=false,arsenal=null;
   let yaw=0,pitch=0,buttons={left:false,right:false},pendingFire=false;
   const RECOIL_RECOVERY={pistol:[150,22,.25],smg:[190,26,.15],rifle:[135,21,.5],pump:[85,17,1.6],sniper:[65,15,2]};
@@ -363,7 +363,7 @@
   }
 
   /* ------------------------------------------------------------ world: range, effects */
-  let hitListAt=-1e9,hitWorld=null;const hitList=[],hitResults=[];
+  let hitListAt=-1e9,hitWorld=null;const hitList=[];
   function worldHits(origin,dir,far){
    const now=performance.now(),worldName=window.breakThyRuleShowroom?.worlds()?.world();
    if(now-hitListAt>300||hitWorld!==worldName){hitListAt=now;hitWorld=worldName;hitList.length=0;scene.traverseVisible(ob=>{
@@ -373,8 +373,7 @@
     if(!mat||!mat.visible||mat.transparent&&mat.opacity<.25||ob.isInstancedMesh&&mat.alphaTest>.1)return;
     if(!ob.geometry.boundingSphere)ob.geometry.computeBoundingSphere();if(ob.geometry.boundingSphere?.radius>90)return;hitList.push(ob);
    });}
-   raycaster.set(origin,dir);raycaster.near=.02;raycaster.far=far;hitResults.length=0;raycaster.intersectObjects(hitList,false,hitResults);
-   for(const h of hitResults){let visible=true;for(let p=h.object;p;p=p.parent)if(!p.visible){visible=false;break;}if(visible)return h;}return null;
+   raycaster.set(origin,dir);raycaster.near=.02;raycaster.far=far;return sceneryQuery.hit(raycaster,hitList);
   }
   // Ground height: a downward ray against static scenery only (no animated characters, instanced foliage or effects),
   // gathered every few seconds, with results cached per 25 cm cell. Ray-testing skinned characters vertex by vertex
@@ -389,12 +388,13 @@
    return groundList;
   }
   function groundAt(x,z,from=12){
+   const supported=o.groundAt?.(x,z,from);if(Number.isFinite(supported))return supported;
    const list=groundMeshes(),key=Math.round(x*4)+':'+Math.round(z*4)+':'+Math.round(from*2);let y=groundCache.get(key);if(y!==undefined)return y;
    raycaster.set(groundFrom.set(x,from,z),groundDown);raycaster.near=.02;raycaster.far=40;const hit=raycaster.intersectObjects(list,false)[0];
    y=hit?hit.point.y:0;if(groundCache.size>20000)groundCache.clear();groundCache.set(key,y);return y;
   }
-  let wallPull=0,wallTarget=0,wallAt=-1e9;const wallEye=new T.Vector3(),wallDir=new T.Vector3(),wallHits=[];
-  function updateWallPull(dt){if(lastTime-wallAt>.06){wallAt=lastTime;camera.getWorldPosition(wallEye);camera.getWorldDirection(wallDir);raycaster.set(wallEye,wallDir);raycaster.near=.02;raycaster.far=.85;wallHits.length=0;raycaster.intersectObjects(groundMeshes(),false,wallHits);wallTarget=wallHits.length?clamp((.85-wallHits[0].distance)/.65,0,1):0;}wallPull+=(wallTarget-wallPull)*(1-Math.exp(-dt*20));}
+  let wallPull=0,wallTarget=0,wallAt=-1e9;const wallEye=new T.Vector3(),wallDir=new T.Vector3();
+  function updateWallPull(dt){if(lastTime-wallAt>.06){wallAt=lastTime;camera.getWorldPosition(wallEye);camera.getWorldDirection(wallDir);raycaster.set(wallEye,wallDir);raycaster.near=.02;raycaster.far=.85;const hit=sceneryQuery.hit(raycaster,groundMeshes());wallTarget=hit?clamp((.85-hit.distance)/.65,0,1):0;}wallPull+=(wallTarget-wallPull)*(1-Math.exp(-dt*20));}
   function targetOf(object){let v=object;while(v){if(v.userData.target)return v.userData.target;v=v.parent;}return null;}
 
   let rangeOn=false,rangeRoot=null;
@@ -1289,7 +1289,7 @@
 
   function render(){
    if(!built)return;
-   renderHeat();
+   if(!mobile)renderHeat();
    if(armed)renderViewmodel();
    renderPost();
   }
@@ -1368,12 +1368,16 @@
   }
   function pass(src,dst,dx,dy){post.quad.material=post.blur;post.blur.uniforms.tex.value=src.texture;post.blur.uniforms.dir.value.set(dx/src.width,dy/src.height);renderer.setRenderTarget(dst);renderer.render(post.quadScene,post.cam);}
   function warmPost(){
+   if(mobile)return;
    if(!post)buildPost();const target=renderer.getRenderTarget(),flash=state.flash;const warm=new T.WebGLRenderTarget(8,8);
    try{renderer.setRenderTarget(warm);state.flash=1;renderPost();}finally{state.flash=flash;renderer.setRenderTarget(target);warm.dispose();}
    renderer.compile(post.overlay,post.cam);
   }
   function glowActive(){return (state.flash||0)>.02||(state.blast||0)>.01||tracers.some(t=>t.alive)||particles.some(p=>p.alive&&p.additive)||flips.some(f=>f.alive&&f.glowMesh)||charges.some(c=>!c.done&&c.stuck);}
   function renderPost(){
+   // Phones retain the flash sprite, tracer, smoke, recoil and impact effects
+   // in the normal passes; avoid re-rendering the world for ten bloom passes.
+   if(mobile)return;
    if(!glowActive())return;
    if(!post)buildPost();
    renderer.getDrawingBufferSize(post.size);const w=Math.max(4,Math.ceil(post.size.x/4)),h=Math.max(4,Math.ceil(post.size.y/4));

@@ -119,7 +119,15 @@
   function compileFor(name){if(busy||name===world)return null;const was=world;world=name;apply();let job=null;const self=[];
    for(const c of scene.children)if(classify(c)===name&&!c.visible){self.push(c);c.visible=true;}
    try{job=renderer.compileAsync?renderer.compileAsync(scene,camera):renderer.compile(scene,camera);job?.catch?.(()=>{});}catch(e){console.warn('Prewarm compile failed',e);}finally{for(const c of self)c.visible=false;world=was;apply();}return job;}
+  // Interior entry streams only nearby assets. No second WebGL/video renderer
+  // and no forced compile of every room, hidden artwork and character at once.
+  async function prepareInterior(title,task){
+   if(busy)return;busy=true;
+   try{show(title,'Preparing the nearby exhibits…','THE LOST EDEN ARCHIVE',true);await frame();await frame();await task(progress);progress(1);await frame();}
+   catch(error){console.warn('Interior preparation deferred:',error.message);}
+   finally{hide();busy=false;requestDraw();}
+  }
   syncLights(true);
-  return {enter,veil,card,chapter,chapters,world:()=>world,loading:()=>busy||!el.hidden,apply,syncLights,compileFor,inspect:()=>({world,busy,primed,stableLights:stableLights.size+pointPool.length,pointSources:pointSources.size,...stats,film:film.inspect()})};
+  return {enter,veil,card,prepareInterior,chapter,chapters,world:()=>world,loading:()=>busy||!el.hidden,apply,syncLights,compileFor,inspect:()=>({world,busy,primed,stableLights:stableLights.size+pointPool.length,pointSources:pointSources.size,...stats,film:film.inspect()})};
  };
 })(window);

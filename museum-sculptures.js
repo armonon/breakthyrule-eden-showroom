@@ -10,6 +10,7 @@ export const exhibits = [
 ];
 
 export function createMuseumSculptures(T,{place,solids,onChange=()=>{}}){
+ const compact=matchMedia('(pointer:coarse), (max-width:760px)').matches;
  const root=new T.Group();root.name='Museum sculpture collection';place.far.add(root);
  const ownedMaterials=new Set(),ownedTextures=new Set(),ownedGeometry=new Set();
  const keepG=g=>(ownedGeometry.add(g),g),keepM=m=>(ownedMaterials.add(m),m),keepT=t=>(ownedTextures.add(t),t);
@@ -85,7 +86,9 @@ export function createMuseumSculptures(T,{place,solids,onChange=()=>{}}){
    const scale=Math.min(e.spec.height/size.y,(e.spec.w-.16)/size.x,(e.spec.d-.16)/size.z);
    model.scale.setScalar(scale);model.position.set(-center.x*scale,e.spec.base+.015-bounds.min.y*scale,-center.z*scale);
    const originalMaterials=new Set();model.traverse(o=>{if(!o.isMesh)return;for(const m of Array.isArray(o.material)?o.material:[o.material])if(m)originalMaterials.add(m);o.material=materials[e.spec.finish];o.castShadow=false;o.receiveShadow=false;});
-   originalMaterials.forEach(m=>m.dispose());model.name=e.spec.title+' sculpture';model.userData.museumSculpture=e.spec.id;
+   const originalTextures=new Set();for(const m of originalMaterials){for(const value of Object.values(m))if(value?.isTexture)originalTextures.add(value);m.dispose();}
+   for(const texture of originalTextures){texture.dispose();texture.image?.close?.();}
+   model.name=e.spec.title+' sculpture';model.userData.museumSculpture=e.spec.id;
    e.mount.add(model);e.model=model;model=null;e.status='ready';onChange();
   }catch(error){
    if(model)disposeModel(model);
@@ -99,8 +102,9 @@ export function createMuseumSculptures(T,{place,solids,onChange=()=>{}}){
   update(cameraPosition,inside){
    if(disposed)return;
    for(const e of entries){const distance=inside?cameraPosition.distanceTo(e.world):Infinity;e.distance=distance;e.wanted=inside&&distance<(e.model||e.loading?34:24);if(!e.wanted)release(e);}
-   for(const e of [...entries].sort((a,b)=>a.distance-b.distance)){
-    if(active>=2)break;if(e.wanted&&!e.model&&!e.loading&&performance.now()>=e.retryAt)void load(e);
+   const nearest=[...entries].sort((a,b)=>a.distance-b.distance);if(compact)for(const e of nearest.slice(3)){e.wanted=false;release(e);}
+   for(const e of nearest){
+    if(active>=1)break;if(e.wanted&&!e.model&&!e.loading&&performance.now()>=e.retryAt)void load(e);
    }
   },
   inspect:()=>({active,loaded:entries.filter(e=>e.model).length,entries:entries.map(e=>({id:e.spec.id,status:e.status,attempts:e.attempts,world:e.world.toArray(),obstacle:[...e.obstacle]}))}),

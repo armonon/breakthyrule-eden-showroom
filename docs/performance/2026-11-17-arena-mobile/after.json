@@ -1,0 +1,719 @@
+{
+  "url": "http://127.0.0.1:8794/showroom.html",
+  "physicalPhone": false,
+  "cpuThrottle": 4,
+  "viewport": [
+    844,
+    390
+  ],
+  "dpr": 3,
+  "phases": [
+    {
+      "name": "idle",
+      "samples": 394,
+      "medianMs": 16.700000000000728,
+      "p95Ms": 33.400000000001455,
+      "p99Ms": 33.400000000001455,
+      "over50": 2,
+      "drawCalls": 606,
+      "triangles": 452827,
+      "renderPasses": 2,
+      "mutations": 15,
+      "modes": {
+        "ground": 394
+      },
+      "shots": 0,
+      "quality": {
+        "pixelRatio": 0.5,
+        "max": 1,
+        "min": 0.5,
+        "frameMs": 22.7,
+        "drops": 2,
+        "climbWaitS": 60,
+        "vsyncMs": 16.7,
+        "targetFps": 60
+      },
+      "memory": {
+        "geometries": 1205,
+        "textures": 427
+      },
+      "cpu": [
+        {
+          "fn": "(program)",
+          "file": "",
+          "line": 0,
+          "samples": 536
+        },
+        {
+          "fn": "Sf.renderBufferDirect",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 328
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 222
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 213
+        },
+        {
+          "fn": "A",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4175,
+          "samples": 194
+        },
+        {
+          "fn": "_A",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 176
+        },
+        {
+          "fn": "w_",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 172
+        },
+        {
+          "fn": "Qa",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 150
+        },
+        {
+          "fn": "bindVertexArray",
+          "file": "",
+          "line": 0,
+          "samples": 146
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 131
+        },
+        {
+          "fn": "xu",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 127
+        },
+        {
+          "fn": "multiplyMatrices",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 118
+        },
+        {
+          "fn": "upload",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 115
+        },
+        {
+          "fn": "getVertexPosition",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 111
+        },
+        {
+          "fn": "Kt",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 106
+        },
+        {
+          "fn": "i",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 98
+        },
+        {
+          "fn": "multiplyMatrices",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 96
+        },
+        {
+          "fn": "xu",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 89
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 84
+        },
+        {
+          "fn": "h",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4175,
+          "samples": 83
+        },
+        {
+          "fn": "intersectTriangle",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 74
+        },
+        {
+          "fn": "f",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 3824,
+          "samples": 71
+        },
+        {
+          "fn": "Wt",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 66
+        },
+        {
+          "fn": "setValue",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 66
+        }
+      ]
+    },
+    {
+      "name": "pistol",
+      "samples": 373,
+      "medianMs": 16.700000000004366,
+      "p95Ms": 33.400000000001455,
+      "p99Ms": 33.400000000001455,
+      "over50": 1,
+      "drawCalls": 614,
+      "triangles": 453007,
+      "renderPasses": 2,
+      "mutations": 19,
+      "modes": {
+        "ground": 373
+      },
+      "shots": 29,
+      "quality": {
+        "pixelRatio": 0.5,
+        "max": 1,
+        "min": 0.5,
+        "frameMs": 24.5,
+        "drops": 2,
+        "climbWaitS": 60,
+        "vsyncMs": 16.7,
+        "targetFps": 60
+      },
+      "memory": {
+        "geometries": 1268,
+        "textures": 430
+      },
+      "cpu": [
+        {
+          "fn": "(program)",
+          "file": "",
+          "line": 0,
+          "samples": 648
+        },
+        {
+          "fn": "Sf.renderBufferDirect",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 409
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 208
+        },
+        {
+          "fn": "A",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4175,
+          "samples": 208
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 195
+        },
+        {
+          "fn": "Qa",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 172
+        },
+        {
+          "fn": "w_",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 162
+        },
+        {
+          "fn": "bindVertexArray",
+          "file": "",
+          "line": 0,
+          "samples": 144
+        },
+        {
+          "fn": "getVertexPosition",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 123
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 114
+        },
+        {
+          "fn": "upload",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 111
+        },
+        {
+          "fn": "multiplyMatrices",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 103
+        },
+        {
+          "fn": "xu",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 96
+        },
+        {
+          "fn": "i",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 89
+        },
+        {
+          "fn": "Kt",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 87
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 85
+        },
+        {
+          "fn": "multiplyMatrices",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 85
+        },
+        {
+          "fn": "h",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4175,
+          "samples": 83
+        },
+        {
+          "fn": "xu",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 81
+        },
+        {
+          "fn": "intersectTriangle",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 75
+        },
+        {
+          "fn": "multiplyMatrices",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 71
+        },
+        {
+          "fn": "f",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 3824,
+          "samples": 66
+        },
+        {
+          "fn": "update",
+          "file": "combat.js?v=6ced264d2edf4a00",
+          "line": 790,
+          "samples": 62
+        },
+        {
+          "fn": "update",
+          "file": "combat.js?v=6ced264d2edf4a00",
+          "line": 790,
+          "samples": 61
+        }
+      ]
+    },
+    {
+      "name": "parkour",
+      "samples": 318,
+      "medianMs": 33.299999999995634,
+      "p95Ms": 33.400000000001455,
+      "p99Ms": 50.099999999998545,
+      "over50": 4,
+      "drawCalls": 569,
+      "triangles": 400691,
+      "renderPasses": 2,
+      "mutations": 245,
+      "modes": {
+        "air": 281,
+        "ground": 37
+      },
+      "shots": 0,
+      "quality": {
+        "pixelRatio": 0.5,
+        "max": 1,
+        "min": 0.5,
+        "frameMs": 26.9,
+        "drops": 2,
+        "climbWaitS": 60,
+        "vsyncMs": 16.7,
+        "targetFps": 60
+      },
+      "memory": {
+        "geometries": 1296,
+        "textures": 433
+      },
+      "cpu": [
+        {
+          "fn": "(program)",
+          "file": "",
+          "line": 0,
+          "samples": 800
+        },
+        {
+          "fn": "Sf.renderBufferDirect",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 325
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 180
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 173
+        },
+        {
+          "fn": "querySelector",
+          "file": "",
+          "line": 0,
+          "samples": 125
+        },
+        {
+          "fn": "xu",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 122
+        },
+        {
+          "fn": "w_",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 121
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 112
+        },
+        {
+          "fn": "getVertexPosition",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 104
+        },
+        {
+          "fn": "xu",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 99
+        },
+        {
+          "fn": "upload",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 97
+        },
+        {
+          "fn": "Qa",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 94
+        },
+        {
+          "fn": "A",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4175,
+          "samples": 89
+        },
+        {
+          "fn": "texSubImage2D",
+          "file": "",
+          "line": 0,
+          "samples": 86
+        },
+        {
+          "fn": "Kt",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 86
+        },
+        {
+          "fn": "update",
+          "file": "combat.js?v=6ced264d2edf4a00",
+          "line": 790,
+          "samples": 85
+        },
+        {
+          "fn": "multiplyMatrices",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 84
+        },
+        {
+          "fn": "multiplyMatrices",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 84
+        },
+        {
+          "fn": "bindVertexArray",
+          "file": "",
+          "line": 0,
+          "samples": 82
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 71
+        },
+        {
+          "fn": "i",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 69
+        },
+        {
+          "fn": "multiplyMatrices",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 67
+        },
+        {
+          "fn": "intersectTriangle",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 64
+        },
+        {
+          "fn": "querySelectorAll",
+          "file": "",
+          "line": 0,
+          "samples": 62
+        }
+      ]
+    },
+    {
+      "name": "pistol-parkour",
+      "samples": 288,
+      "medianMs": 33.30000000000291,
+      "p95Ms": 49.900000000001455,
+      "p99Ms": 50,
+      "over50": 2,
+      "drawCalls": 621,
+      "triangles": 401539,
+      "renderPasses": 2,
+      "mutations": 229,
+      "modes": {
+        "air": 256,
+        "ground": 32
+      },
+      "shots": 31,
+      "quality": {
+        "pixelRatio": 0.5,
+        "max": 1,
+        "min": 0.5,
+        "frameMs": 27,
+        "drops": 2,
+        "climbWaitS": 60,
+        "vsyncMs": 16.7,
+        "targetFps": 60
+      },
+      "memory": {
+        "geometries": 1304,
+        "textures": 435
+      },
+      "cpu": [
+        {
+          "fn": "(program)",
+          "file": "",
+          "line": 0,
+          "samples": 808
+        },
+        {
+          "fn": "Sf.renderBufferDirect",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 303
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 174
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 141
+        },
+        {
+          "fn": "querySelector",
+          "file": "",
+          "line": 0,
+          "samples": 122
+        },
+        {
+          "fn": "xu",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 122
+        },
+        {
+          "fn": "w_",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 117
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 107
+        },
+        {
+          "fn": "update",
+          "file": "combat.js?v=6ced264d2edf4a00",
+          "line": 790,
+          "samples": 103
+        },
+        {
+          "fn": "upload",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 101
+        },
+        {
+          "fn": "A",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4175,
+          "samples": 99
+        },
+        {
+          "fn": "Kt",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4124,
+          "samples": 95
+        },
+        {
+          "fn": "multiplyMatrices",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 91
+        },
+        {
+          "fn": "Qa",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 91
+        },
+        {
+          "fn": "xu",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 76
+        },
+        {
+          "fn": "bindVertexArray",
+          "file": "",
+          "line": 0,
+          "samples": 76
+        },
+        {
+          "fn": "multiplyMatrices",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 70
+        },
+        {
+          "fn": "updateMatrixWorld",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 68
+        },
+        {
+          "fn": "h",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4175,
+          "samples": 62
+        },
+        {
+          "fn": "i",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 4226,
+          "samples": 62
+        },
+        {
+          "fn": "querySelectorAll",
+          "file": "",
+          "line": 0,
+          "samples": 59
+        },
+        {
+          "fn": "update",
+          "file": "combat.js?v=6ced264d2edf4a00",
+          "line": 790,
+          "samples": 58
+        },
+        {
+          "fn": "multiplyMatrices",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 58
+        },
+        {
+          "fn": "intersectTriangle",
+          "file": "three.min.js?v=0c535de97fa620db",
+          "line": 2,
+          "samples": 56
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

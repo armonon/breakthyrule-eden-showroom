@@ -572,30 +572,32 @@
     <div class="ar-vitals"><div class="ar-shimmer"></div><div class="ar-bar ar-shield"><i></i><span></span></div><div class="ar-bar ar-armor"><i></i><span></span></div><div class="ar-bar ar-hp"><i></i><span></span></div><div class="ar-heals"></div><div class="ar-heal-progress"><i></i></div></div>
     <div class="ar-end" hidden><div class="ar-end-card"><span class="ar-end-kicker"></span><h2></h2><p class="ar-end-stats"></p><div class="ar-loadout"></div><div class="ar-end-actions"><button class="ar-again">PLAY AGAIN</button><button class="ar-leave">LEAVE ARENA</button></div></div></div>
     <button class="ar-exit" title="Leave the arena">LEAVE</button>`;
-   host.appendChild(el);const q=s=>el.querySelector(s);
+   host.appendChild(el);const nodes=new Map(),values=new WeakMap(),q=s=>{if(!nodes.has(s))nodes.set(s,el.querySelector(s));return nodes.get(s);};
+   const html=(sel,value)=>{const n=q(sel);if(values.get(n)===value)return;values.set(n,value);n.innerHTML=value;for(const key of nodes.keys())if(key.startsWith(sel+' '))nodes.delete(key);};
+   const text=(sel,value)=>{const n=q(sel),v=String(value);if(n.textContent!==v)n.textContent=v;};
    q('.ar-again').onclick=()=>{start();};q('.ar-leave').onclick=q('.ar-exit').onclick=()=>exit();
-   let toastT=0,annT=0;const map=q('.ar-map').getContext('2d');
+   let toastT=0,annT=0,lastMap=-Infinity;const map=q('.ar-map').getContext('2d');
    const toMap=(x,z)=>[(x-B[0])/(B[1]-B[0])*180,(z-B[2])/(B[3]-B[2])*160];
    return {el,
     update(){
      const everyone=[player,...bots].filter(Boolean).sort((a,b)=>(b.score||0)-(a.score||0));
-     q('.ar-alive').textContent=player?.score||0;q('.ar-top-label').textContent=player?`SCORE · #${everyone.indexOf(player)+1} OF ${everyone.length}`:'SCORE';
+     text('.ar-alive',player?.score||0);text('.ar-top-label',player?`SCORE · #${everyone.indexOf(player)+1} OF ${everyone.length}`:'SCORE');
      const un=untilNight(),mm=x=>`${Math.floor(x/60)}:${String(Math.floor(x)%60).padStart(2,'0')}`;
      const open=templeOpen(),inT=pages.filter(pg=>pg.state==='delivered').length,mine=player?pagesOf(player):0;
-     q('.ar-zone').textContent=(open?`MOON TEMPLE OPEN · DAWN IN ${mm(-un)}`:`TEMPLE OPENS IN ${mm(un)}`)+(event?.kind==='supply'?` · ${event.label}`:'')+(window.edenStory?.has('pages')&&!window.edenStory.has('office')?' · THE OFFICE IS OPEN: THE PYRAMID':'');
-     q('.ar-pages').innerHTML=pages.map(pg=>`<i class="pg ${pg.state}${pg.carrier===player?' mine':''}" title="${pg.state}"></i>`).join('')+`<span>${mine?`<b>${mine}</b> CARRIED · `:''}${inT}/${PAGE_COUNT} IN THE TEMPLE${pinged&&clock<pingUntil?` · <em>${pinged===player?'YOU ARE':nameOf(pinged)+' IS'} PINGED</em>`:''}</span>`;
-     {const pw=player?.power||0,lv=Math.min(POWER_MAX,pw);q('.ar-power').innerHTML=pw?`<b>POWER ${pw}</b><span>+${Math.round(lv*POWER_DMG*100)}% DAMAGE · +${lv*POWER_SHIELD} SHIELD${pw>=POWER_GLOW?' · <em>YOU GLOW RED</em>':''}</span>`:'';
-      const top=strongest();if(top&&top!==player)q('.ar-power').innerHTML+=`<small>STRONGEST: ${nameOf(top)} · POWER ${top.power}</small>`;}
+     text('.ar-zone',(open?`MOON TEMPLE OPEN · DAWN IN ${mm(-un)}`:`TEMPLE OPENS IN ${mm(un)}`)+(event?.kind==='supply'?` · ${event.label}`:'')+(window.edenStory?.has('pages')&&!window.edenStory.has('office')?' · THE OFFICE IS OPEN: THE PYRAMID':''));
+     html('.ar-pages',pages.map(pg=>`<i class="pg ${pg.state}${pg.carrier===player?' mine':''}" title="${pg.state}"></i>`).join('')+`<span>${mine?`<b>${mine}</b> CARRIED · `:''}${inT}/${PAGE_COUNT} IN THE TEMPLE${pinged&&clock<pingUntil?` · <em>${pinged===player?'YOU ARE':nameOf(pinged)+' IS'} PINGED</em>`:''}</span>`);
+     {const pw=player?.power||0,lv=Math.min(POWER_MAX,pw),top=strongest();html('.ar-power',(pw?`<b>POWER ${pw}</b><span>+${Math.round(lv*POWER_DMG*100)}% DAMAGE · +${lv*POWER_SHIELD} SHIELD${pw>=POWER_GLOW?' · <em>YOU GLOW RED</em>':''}</span>`:'')+(top&&top!==player?`<small>STRONGEST: ${nameOf(top)} · POWER ${top.power}</small>`:''));}
      const board=q('.ar-board');if(!board.hidden)board.innerHTML='<h3>BEYOND EDEN · OPEN MATCH</h3><table><tr><th></th><th>SCORE</th><th>KILLS</th><th>PAGES</th><th>POWER</th><th>DEATHS</th></tr>'+everyone.map((c,i)=>`<tr class="${c===player?'me':''}"><td>${i+1}. ${nameOf(c)}${pinged===c&&clock<pingUntil?' ◉':''}</td><td>${c.score||0}</td><td>${c.kills||0}</td><td>${c.delivered||0}${pagesOf(c)?' +'+pagesOf(c):''}</td><td${(c.power||0)>=POWER_GLOW?' class="glow"':''}>${c.power||0}</td><td>${c.deaths||0}</td></tr>`).join('')+'</table>';
-     if(player){const sh=Math.max(0,player.shield||0);q('.ar-shield i').style.width=(player.shieldMax?sh/player.shieldMax*100:0)+'%';q('.ar-shield span').textContent=sh>0?'SHIELD '+Math.ceil(sh):'SHIELD DOWN';q('.ar-shield').classList.toggle('down',sh<=0);
-      const hp=Math.max(0,player.hp),ar=Math.max(0,player.armor);q('.ar-hp i').style.width=hp+'%';q('.ar-hp span').textContent=Math.ceil(hp)+' HP';
-      q('.ar-armor i').style.width=(player.armorMax?ar/player.armorMax*100:0)+'%';q('.ar-armor span').textContent=player.garment?`${Math.ceil(ar)} · ${player.garment.name.toUpperCase()}`:'NO ARMOR';
-      q('.ar-heals').innerHTML=`<kbd></kbd> BANDAGE ×${player.heals.bandage} · MEDKIT ×${player.heals.medkit}`;q('.ar-heals kbd').textContent=window.edenControls?.hint('heal')||'H';q('.ar-prompt kbd').textContent=window.edenControls?.hint('loot')||'F';
+     if(player){const sh=Math.max(0,player.shield||0);q('.ar-shield i').style.width=(player.shieldMax?sh/player.shieldMax*100:0)+'%';text('.ar-shield span',sh>0?'SHIELD '+Math.ceil(sh):'SHIELD DOWN');q('.ar-shield').classList.toggle('down',sh<=0);
+      const hp=Math.max(0,player.hp),ar=Math.max(0,player.armor);q('.ar-hp i').style.width=hp+'%';text('.ar-hp span',Math.ceil(hp)+' HP');
+      q('.ar-armor i').style.width=(player.armorMax?ar/player.armorMax*100:0)+'%';text('.ar-armor span',player.garment?`${Math.ceil(ar)} · ${player.garment.name.toUpperCase()}`:'NO ARMOR');
+      html('.ar-heals',`<kbd></kbd> BANDAGE ×${player.heals.bandage} · MEDKIT ×${player.heals.medkit}`);text('.ar-heals kbd',window.edenControls?.hint('heal')||'H');text('.ar-prompt kbd',window.edenControls?.hint('loot')||'F');
       q('.ar-heal-progress').style.opacity=player.healing?1:0;if(player.healing)q('.ar-heal-progress i').style.width=(player.healing.t/player.healing.dur*100)+'%';}
      if(zone){const ph=ZONE_PHASES[Math.max(0,zone.phase)],left=Math.max(0,(zone.state==='wait'?ph.wait:ph.shrink)-zone.t);
-      q('.ar-zone').textContent=phase!=='live'?'':zone.state==='wait'?`NIGHT FALLS IN ${Math.floor(left/60)}:${String(Math.ceil(left)%60).padStart(2,'0')}`:`NIGHT CLOSING · ${Math.ceil(left)}s`;
+      text('.ar-zone',phase!=='live'?'':zone.state==='wait'?`NIGHT FALLS IN ${Math.floor(left/60)}:${String(Math.ceil(left)%60).padStart(2,'0')}`:`NIGHT CLOSING · ${Math.ceil(left)}s`);
       el.classList.toggle('in-dark',!!player?.alive&&outside(posOf(player))>0);}
-     // minimap
+     // Minimap samples at 10 Hz; damage and prompts above still update immediately.
+     if(clock>=lastMap&&clock-lastMap<.1)return;lastMap=clock;
      map.clearRect(0,0,180,160);map.fillStyle='rgba(18,24,20,.55)';map.fillRect(0,0,180,160);
      map.fillStyle='rgba(230,226,214,.5)';for(const l of layout.landmarks){const [x,y]=toMap(l.x-l.w/2,l.z-l.d/2);map.fillRect(x,y,l.w/(B[1]-B[0])*180,l.d/(B[3]-B[2])*160);}
      map.strokeStyle='rgba(230,226,214,.25)';map.beginPath();const [rx1,ry1]=toMap(11.7,B[2]),[rx2,ry2]=toMap(11.7,B[3]);map.moveTo(rx1,ry1);map.lineTo(rx2,ry2);map.stroke();
@@ -621,8 +623,8 @@
     feed(){q('.ar-feed').innerHTML=feed.slice(-5).map(f=>`<div>${f.html}</div>`).join('');},
     end(won){
      const card=q('.ar-end');card.hidden=false;const place=won?1:combatants().length+1;
-     q('.ar-end-kicker').textContent=won?'LAST ONE STANDING':'YOU FELL AT NIGHT';q('.ar-end h2').textContent=won?'#1 · EDEN IS YOURS':`#${place} OF 8`;
-     q('.ar-end-stats').textContent=`${player.kills} ELIMINATIONS · ${Math.floor((clock-matchStart)/60)}:${String(Math.floor(clock-matchStart)%60).padStart(2,'0')} SURVIVED`;
+     text('.ar-end-kicker',won?'LAST ONE STANDING':'YOU FELL AT NIGHT');text('.ar-end h2',won?'#1 · EDEN IS YOURS':`#${place} OF 8`);
+     text('.ar-end-stats',`${player.kills} ELIMINATIONS · ${Math.floor((clock-matchStart)/60)}:${String(Math.floor(clock-matchStart)%60).padStart(2,'0')} SURVIVED`);
      const worn=[...player.worn];q('.ar-loadout').innerHTML=worn.length?`<span>WORN THIS MATCH</span>`+worn.map(g=>`<button class="ar-garment" data-id="${g.id}">${g.image?`<img src="${g.image}" alt="">`:''}<b>${g.name}</b><small>${g.price||''} · SHOP</small></button>`).join(''):'<span>NO PIECES WORN · FIND ARMOR IN THE CHESTS</span>';
      q('.ar-loadout').querySelectorAll('button').forEach(b=>b.onclick=()=>o.openShop?.(b.dataset.id));
      document.exitPointerLock?.();

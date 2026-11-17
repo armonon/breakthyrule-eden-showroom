@@ -201,7 +201,7 @@ async function loadRackModels(){
   const gltf=await showroomAssets.model(item.rackModel||item.model),model=prepareCollectionModel(THREE,gltf.scene);
   // Rack pieces occupy a small part of the screen. Keep their detailed mesh,
   // but upload display-sized maps; the separate inspection model keeps originals.
-  await window.prepareWorldModel?.(THREE,model,{renderer,camera,scene,maxTextureSize:1024});
+  await window.prepareWorldModel?.(THREE,model,{renderer,camera,scene,maxTextureSize:mobileDevice?512:1024});
   rackModels.set(index,model);rackFailures.delete(index);const placed=collectionRack.place(index,model);placed?.traverse(n=>{if(n.isMesh)pickables.push(n);});
   renderer.shadowMap.needsUpdate=true;requestDraw();
  }catch{rackFailures.add(index);}rackStatus();await new Promise(resolve=>setTimeout(resolve,35));}}
@@ -380,6 +380,7 @@ function updateNPCPrompt(){loadNearbyAssets();if(camera.position.distanceTo(libr
 let nearbyCheckedAt=-1e9;
 function loadNearbyAssets(){
  {const t=performance.now();if(t-nearbyCheckedAt<250)return;nearbyCheckedAt=t;}
+ if(worlds?.loading())return;
  if(camera.position.distanceTo(librarianNPC.marker)<16)librarianNPC.load();
  if(collectionRack&&camera.position.distanceTo(collectionRack.rack.getWorldPosition(new T.Vector3()))<12&&!rackLoading&&rackModels.size<collection.length&&!rackFailures.size)loadRackModels();
 }
@@ -466,7 +467,7 @@ function prepareWalking(){
 // Parkour (parkour.js): roofs, crate staircases and walls with height beyond the door; wall-runs, climbs, hangs.
 const parkourOn=()=>garden.nightBuilt()&&targetPosition.z<garden.road.door-.2&&!arena?.active()&&!pockets?.inside(targetPosition);
 let parkour=null,playerBail=null,bailLoading=false;
-let worlds=null,lastPocket=null,officeSeen=false;let gripsView=null,momentumHud=null,prewarm=null,rootCount=0,perfHud=null;
+let worlds=null,lastPocket=null,pendingMuseumEntry=false,officeSeen=false;let gripsView=null,momentumHud=null,prewarm=null,rootCount=0,perfHud=null;
 const expeditionPreferences=window.createExpeditionPreferences?.({onChange:()=>{movement.crouchHeld=false;keys.clear();requestDraw();}});
 window.edenControls?.setContext(()=>expedition?.active()?'expedition':arena?.active()?'arena':horror?.interactionActive()?'horror':battle?.active()?'battle':combat?.armed()?'combat':fistsEngaged()?'fists':'walk');
 const expeditionPrefs=()=>expedition?.active()?expeditionPreferences?.get():null;
@@ -556,7 +557,8 @@ function updateFeel(dt){
  // Bars, pipes and ropes (parkour-grips.js) appear with the district; the momentum meter (momentum-hud.js).
  if(!gripsView&&garden.nightBuilt?.())gripsView=window.parkourGrips?.mount(T,scene,{getPose:()=>parkour?.ropePose?.()})||null;gripsView?.update();
  momentumHud??=window.createMomentumHud?.({host:document.body})||null;momentumHud?.update({momentum:movement.momentum?.()||0,chain:parkour?.chain?.()||0,mode:movement.state(),armed:!!combat?.armed(),speed:Math.hypot(walkVelocity.x,walkVelocity.z),active:(!!battle?.active()||!!arena?.active())&&!modalOpen()&&!worlds?.loading()&&!battle?.dead?.()});
- {const pkt=pockets?.inside(camera.position)||null;if(pkt!==lastPocket){if(pkt?.name==='Black box')worlds?.veil({title:'THE BLACK CUBE',sub:'THE WHITE WORLD',kicker:'INSIDE THE BLACK BOX'});lastPocket=pkt;}}
+ {const pkt=pockets?.inside(camera.position)||null;if(pkt!==lastPocket){if(pkt?.name==='Black box')worlds?.veil({title:'THE BLACK CUBE',sub:'THE WHITE WORLD',kicker:'INSIDE THE BLACK BOX'});pendingMuseumEntry=pkt?.name==='Museum';lastPocket=pkt;}
+ if(pendingMuseumEntry&&!worlds?.loading()){pendingMuseumEntry=false;keys.clear();combat?.holster();battle?.suspend();void worlds?.prepareInterior('THE MUSEUM',progress=>museum.prepare(camera.position.clone(),progress));}}
  const fallen=battle?.dead?.()&&!battle.soul?.();
  deathDrop+=((fallen?1.25:0)-deathDrop)*(1-Math.exp(-(fallen?5:10)*dt));
  // Low health drains the colour and closes the vignette (the blood itself is battle-arena.js's HUD).
@@ -738,7 +740,8 @@ try{
 }catch(error){console.warn('Garden secrets unavailable',error);}
 function correctExpeditionPose(p){if(playerBail?.active){const current=playerBail.pose();if(!current||!['x','y','z'].every(k=>Number.isFinite(p[k])))return;const delta=new T.Vector3(p.x-current.x,p.y-current.y,p.z-current.z);if(delta.length()>7.9)delta.setLength(7.9);if(playerBail.correct?.({position:[current.x+delta.x,current.y+delta.y,current.z+delta.z]})){const shift=playerBail.cameraTarget.clone().sub(targetPosition);targetPosition.add(shift);targetAim.add(shift);}else $('night-event').textContent='Synchronizing physical position…';requestDraw();return;}playerBail?.cancel();movement.cancelTraversal();motion.reset();parkour?.reset();freeView();targetPosition.set(p.x,1.75+(p.y||0),p.z);targetAim.set(p.x+Math.sin(p.yaw)*5,1.75+(p.y||0),p.z+Math.cos(p.yaw)*5);requestDraw();}
 expedition=window.createExpedition({getCharacter:()=>playerBody?.getAppearance(),T,scene,camera,garden,entryUrl:'/expedition.html',correct:correctExpeditionPose,layout:window.nightLayout,preferences:()=>expeditionPreferences?.get(),getPose:()=>state.ready?{x:targetPosition.x,y:targetPosition.y-1.75,z:targetPosition.z,...(playerBail?.active?playerBail.pose():{}),yaw:Math.atan2(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z),pitch:Math.atan2(targetAim.y-targetPosition.y,Math.hypot(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z)),mode:playerBail?.active?'ragdoll':movement.state(),movement:playerBail?.active?'ragdoll':movement.state(),vy:playerBail?.active?playerBail.pose()?.vy:motion.inspect().velocity}:null,place(x,z,lx=x,lz=z-5,y=0){playerBail?.cancel();movement.cancelTraversal();motion.reset();parkour?.reset();freeView();targetPosition.set(x,1.75+y,z);targetAim.set(lx,1.75+y,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=60;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},stopMoving(){keys.clear();movement.crouchHeld=false;drag=null;},requestDraw,returnHome:()=>go('spawn',true),onAction(action){if(action==='flare')playerBody?.anim?.('pistolShoot',{fade:.04,mask:'upper',arms:true});else if(action==='reload')playerBody?.anim?.('pistolReload',{fade:.1,mask:'upper',arms:true,speed:(window.GardenAnim?.duration?.('pistolReload')||1.5)/1.5});else playerBody?.stopAnim?.('pistolReload',.08);}});
-combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,reduced,requestDraw,aimTargets:()=>battle?.aimTargets?.()||[],thirdPerson:()=>thirdK,setThird,
+combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,reduced,mobile:mobileDevice,requestDraw,aimTargets:()=>battle?.aimTargets?.()||[],thirdPerson:()=>thirdK,setThird,
+ groundAt:(x,z,from)=>worlds?.world()==='beyond'&&garden.nightBuilt()?makeParkour().floorAt(x,z,from):null,
  onAction(action,weapon,duration){const B=playerBody;if(!B)return;if(action==='holster'){B.stopAnim('pistolReload',.12);return;}const id=action==='shoot'?'pistolShoot':action==='reload'?'pistolReload':action==='swing'?'swingA':action==='throw'?'throw':null;if(id)B.anim(id,{fade:.12,mask:'upper',arms:true,weight:.8,speed:duration?(window.GardenAnim?.duration(id)||duration)/duration:1});},
  // Eden is a safe zone: weapons come out only beyond the hidden door (the open match and the firing range).
  canAct:()=>state.ready&&!modalOpen()&&!expedition?.active()&&!arena?.active()&&!pockets?.inside(camera.position)&&targetPosition.z<garden.road.door&&(battle?.canAct()??true),
@@ -811,7 +814,7 @@ const play=window.createPlayMenu?.({nav:document.querySelector('.view-nav'),afte
   {id:'arena',title:'ONLINE ARENA',text:'Swords and crossbows against other visitors.',keys:'1 / 2 WEAPONS · TAB SCORES',available:()=>!!window.showroomDeployment?.realtime,note:'Online PvP with swords and crossbows. Opens when the live server is running.',run:()=>arenaLaunch.click()}
  ]});
 
-window.breakThyRuleShowroom={garden:()=>garden,_player:()=>({targetPosition,motion,walkVelocity,movement}),prewarm:()=>prewarm?.inspect(),perf:()=>perfHud?.report(),scene:()=>scene,renderer:()=>renderer,combat:()=>combat,battle:()=>battle,fists:()=>fists,fight:key=>fists?.key(key,true),teleport(x,z,yaw=Math.PI){if(!state.ready)return;freeView();motion.reset();walkVelocity.set(0,0,0);targetPosition.set(x,1.75+groundHeight(groundPoint.set(x,0,z)),z);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,Math.cos(yaw)).multiplyScalar(5));camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();},go,inspect,showSide,focusResident,
+window.breakThyRuleShowroom={museum:()=>museum,garden:()=>garden,_player:()=>({targetPosition,motion,walkVelocity,movement}),prewarm:()=>prewarm?.inspect(),perf:()=>perfHud?.report(),scene:()=>scene,renderer:()=>renderer,combat:()=>combat,battle:()=>battle,fists:()=>fists,fight:key=>fists?.key(key,true),teleport(x,z,yaw=Math.PI){if(!state.ready)return;freeView();motion.reset();walkVelocity.set(0,0,0);targetPosition.set(x,1.75+groundHeight(groundPoint.set(x,0,z)),z);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,Math.cos(yaw)).multiplyScalar(5));camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();},go,inspect,showSide,focusResident,
  // camera placement for captures and checks: stand at (x,z) looking toward (lx,ly,lz)
  place(x,z,lx,lz,ly=1.75){if(expedition?.active())expedition.leave();motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,ly,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.lookAt(aim);requestDraw();},
 third:on=>{lastThirdToggle=0;return setThird(!!on);},bodyAnim:()=>({...bodyAnim,playing:['slideLoop','jumpLoop','dash','roll','climbUp','getUp','wave','cheer'].filter(id=>playerBody?.animPlaying?.(id))}),bodyClip:(id,o)=>playerBody?.anim?.(id,o),climbs:()=>garden.nightBuilt()?garden.district.climbs:[],horror:()=>horror,worlds:()=>worlds,story:()=>window.edenStory,parkour:()=>pk(),// Run the movement logic n steps of dt with keys held (and Space pressed on the first step), without drawing.

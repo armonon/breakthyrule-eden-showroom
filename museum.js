@@ -14,14 +14,14 @@ window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{},camera=null
  function loadSculptures(){
   if(sculptures||sculptureLoading||performance.now()<sculptureRetryAt)return;
   sculptureLoading=true;
-  import('/museum-sculptures.js?v=1').then(module=>{sculptures=module.createMuseumSculptures(T,{place,solids,onChange});onChange();})
+  import('/museum-sculptures.js?v=mobile-memory-2').then(module=>{sculptures=module.createMuseumSculptures(T,{place,solids,onChange});onChange();})
    .catch(error=>{sculptureRetryAt=performance.now()+5000;console.warn('Museum sculpture display unavailable:',error.message);})
    .finally(()=>{sculptureLoading=false;});
  }
  function loadExhibition(){
   if(exhibition||exhibitionLoading||performance.now()<exhibitionRetryAt)return;
   exhibitionLoading=true;
-  import('/museum-exhibition.js?v=1').then(module=>module.createMuseumExhibition(T,{place,camera,stage,onChange}))
+  import('/museum-exhibition.js?v=mobile-memory-2').then(module=>module.createMuseumExhibition(T,{place,camera,stage,onChange}))
    .then(result=>{exhibition=result;onChange();})
    .catch(error=>{exhibitionRetryAt=performance.now()+5000;console.warn('Museum exhibition unavailable:',error.message);})
    .finally(()=>{exhibitionLoading=false;});
@@ -91,5 +91,18 @@ window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{},camera=null
  };
  loadSculptures();
  loadExhibition();
- return Object.assign(place,{adopt,pickables:[...(broadcast?.pickables||[])],broadcast:()=>broadcast,sculptures:()=>sculptures,exhibition:()=>exhibition});
+ async function prepare(position,progress=()=>{}){
+  loadSculptures();loadExhibition();const until=performance.now()+6000;
+  // A slow/failed download continues as ordinary nearby streaming, never an
+  // unbounded loading screen. Updates and uploads are spread across frames.
+  while(performance.now()<until){
+   if(!place.inside(camera.position))break;
+   sculptures?.update(position,true);exhibition?.update(position,true);onChange();
+   const art=exhibition?.inspect(),stat=sculptures?.inspect();
+   if(art&&stat&&!art.active&&!stat.active&&art.loaded>0)break;
+   progress(Math.min(.9,1-(until-performance.now())/6000));
+   await new Promise(resolve=>setTimeout(resolve,50));
+  }
+ }
+ return Object.assign(place,{adopt,prepare,pickables:[...(broadcast?.pickables||[])],broadcast:()=>broadcast,sculptures:()=>sculptures,exhibition:()=>exhibition});
 };

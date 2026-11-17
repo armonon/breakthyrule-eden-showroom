@@ -15,6 +15,9 @@
     const context=canvas.getContext('2d');if(!context)continue;
     context.imageSmoothingEnabled=true;context.imageSmoothingQuality='high';context.drawImage(image,0,0,canvas.width,canvas.height);
     for(const map of maps){map.dispose();map.image=canvas;map.needsUpdate=true;}
+    // This display model owns its decoded images; inspection loads separately.
+    // Release the original full-size bitmap once every map points at the canvas.
+    image.close?.();
    }catch{/* Keep the original texture if a device cannot resize it. */}
   }
   // Serialize uploads and yield between them, rather than attaching several

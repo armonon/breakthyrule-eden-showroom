@@ -3,6 +3,7 @@ import {createMuseumReader} from './museum-reader.js';
 // Every picture is an existing house asset or a page from the supplied newspaper.
 // The compositions are scene graphs: the source images remain unchanged.
 export async function createMuseumExhibition(T,{place,camera,stage,onChange=()=>{}}){
+ const compact=matchMedia('(pointer:coarse), (max-width:760px)').matches,textureLimit=compact?8:20;
  const response=await fetch('/assets/lost-eden/daily-apple/catalog.json');
  if(!response.ok)throw Error('Daily Apple catalog '+response.status);
  const daily=await response.json(),absolute=p=>'/'+String(p).replace(/^\/+/,''),pages=(daily.pages||[]).map(p=>({...p,file:absolute(p.file||p.url)}));
@@ -128,7 +129,9 @@ export async function createMuseumExhibition(T,{place,camera,stage,onChange=()=>
  async function load(entry){
   active++;entry.loading=true;entry.state='loading';const control=new AbortController();entry.controller=control;const timeout=setTimeout(()=>control.abort(),18000);let bitmap;
   try{const r=await fetch(entry.url,{signal:control.signal});if(!r.ok)throw Error('HTTP '+r.status);const blob=await r.blob();if(!entry.wanted||disposed||control.signal.aborted)return;
-   bitmap=await createImageBitmap(blob,{imageOrientation:'flipY',premultiplyAlpha:'none'});if(!entry.wanted||disposed||control.signal.aborted){bitmap.close();return;}
+   // Decode at display size, before GPU upload. The reader keeps the original
+   // source for zooming; wall art does not need a full newspaper-size texture.
+   bitmap=await createImageBitmap(blob,{imageOrientation:'flipY',premultiplyAlpha:'none',resizeWidth:compact?768:1536,resizeQuality:'high'});if(!entry.wanted||disposed||control.signal.aborted){bitmap.close();return;}
    const texture=new T.Texture(bitmap);texture.flipY=false;texture.colorSpace=T.SRGBColorSpace;texture.anisotropy=2;texture.needsUpdate=true;entry.bitmap=bitmap;entry.texture=texture;entry.state='ready';entry.refs.forEach(l=>fitLayer(l,texture));
   }catch(e){if(bitmap&&!entry.texture)bitmap.close();if(entry.wanted&&!disposed){entry.state='failed';entry.retryAt=performance.now()+12000;console.warn('Exhibition image unavailable:',entry.url,e.message);}}
   finally{clearTimeout(timeout);active--;entry.loading=false;entry.controller=null;if(!entry.wanted)entry.state='idle';onChange();}
@@ -182,8 +185,10 @@ export async function createMuseumExhibition(T,{place,camera,stage,onChange=()=>
    // Away from the exhibition, settle once (hide everything, release textures) and then skip the per-frame work.
    if(!inside){if(outsideSettled)return;outsideSettled=true;}else outsideSettled=false;
    for(const f of frames){f.distance=inside?position.distanceTo(f.world):Infinity;f.wanted=inside&&f.distance<(f.wanted?32:23);f.mount.visible=inside&&f.distance<65;for(const l of f.layers)l.mesh.visible=f.wanted&&!!l.entry.texture;}
-   for(const e of pool.values()){e.wanted=e.refs.some(l=>l.frame.wanted);e.distance=Math.min(...e.refs.map(l=>l.frame.distance));if(!e.wanted)release(e);}
-   for(const e of [...pool.values()].sort((a,b)=>a.distance-b.distance)){if(active>=3)break;if(e.wanted&&!e.loading&&!e.texture&&now>=e.retryAt)void load(e);}maxConcurrent=Math.max(maxConcurrent,active);
+   for(const e of pool.values()){e.wanted=e.refs.some(l=>l.frame.wanted);e.distance=Math.min(...e.refs.map(l=>l.frame.distance));}
+   const nearest=[...pool.values()].sort((a,b)=>a.distance-b.distance);let kept=0;
+   for(const e of nearest){if(e.wanted&&kept++>=textureLimit)e.wanted=false;if(!e.wanted)release(e);}
+   for(const e of nearest){if(active>=(compact?1:2))break;if(e.wanted&&!e.loading&&!e.texture&&now>=e.retryAt)void load(e);}maxConcurrent=Math.max(maxConcurrent,active);
    if(now-lastLookCheck>100){lastLookCheck=now;lastLooked=inside&&!dialog?hit():null;}const looked=inside&&!dialog?lastLooked:null;prompt.hidden=!looked||document.hidden;if(looked){const use=window.edenControls?(window.edenControls.hint('interact')+' / '+window.edenControls.hint('useTarget')):'E / click',text=looked.exit?use+' · Return to the museum':looked.portal?collected.length===3?'Walk into the painting · '+use+' to enter':'After the Garden · '+collected.length+' / 3 seals':looked.newspaper?use+' · Read The Daily Apple':use+' · '+looked.title;if(prompt.textContent!==text)prompt.textContent=text;}
    if(inside&&!dialog&&now>portalCooldown){localCamera.copy(position);place.far.worldToLocal(localCamera);if(collected.length===3&&Math.hypot(localCamera.x-34,localCamera.z-55.31)<.95)enterPainting();else if(Math.hypot(localCamera.x-40,localCamera.z-67.13)<.95)leavePainting();}
    if(now-lastTick<33)return;lastTick=now;const moving=motion&&!reduce.matches&&!dialog&&!document.hidden&&inside;
@@ -202,7 +207,7 @@ export async function createMuseumExhibition(T,{place,camera,stage,onChange=()=>
    if(moving&&animated.length)onChange();
   },
   open:id=>{const f=frames.find(f=>f.id===id);if(f)openFrame(f);},visit:id=>{const f=frames.find(f=>f.id===id);if(f)visit(f);},reader,
-  inspect:()=>({frames:frames.length,active,maxConcurrent,loaded:[...pool.values()].filter(e=>e.texture).length,failed:[...pool.values()].filter(e=>e.state==='failed').map(e=>e.url),seals:[...collected],motion:motion&&!reduce.matches,framesVisible:frames.filter(f=>f.mount.visible).map(f=>f.id),sources:[...pool.keys()],entries:frames.map(f=>({id:f.id,wanted:f.wanted,distance:f.distance,world:f.world.toArray()}))}),
+  inspect:()=>({frames:frames.length,active,maxConcurrent,loaded:[...pool.values()].filter(e=>e.texture).length,maxTextureWidth:Math.max(0,...[...pool.values()].map(e=>e.texture?.image?.width||0)),failed:[...pool.values()].filter(e=>e.state==='failed').map(e=>e.url),seals:[...collected],motion:motion&&!reduce.matches,framesVisible:frames.filter(f=>f.mount.visible).map(f=>f.id),sources:[...pool.keys()],entries:frames.map(f=>({id:f.id,wanted:f.wanted,distance:f.distance,world:f.world.toArray()}))}),
   dispose(){if(disposed)return;disposed=true;pool.forEach(e=>{e.wanted=false;release(e);});reader.dispose();guide.remove();ui.remove();prompt.remove();style.remove();host.removeEventListener('pointerdown',down,true);host.removeEventListener('click',click,true);host.removeEventListener('auxclick',click,true);document.removeEventListener('keydown',key,true);reduce.removeEventListener('change',updateUI);root.removeFromParent();document.body.classList.remove('lost-eden-inside');plane.dispose();cube.dispose();ownedMaterials.forEach(m=>m.dispose());ownedTextures.forEach(t=>t.dispose());}
  };
  window.museumExhibition=api;

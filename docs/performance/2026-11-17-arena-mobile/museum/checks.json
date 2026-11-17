@@ -1,0 +1,2265 @@
+{
+  "physicalDevice": false,
+  "visits": [
+    {
+      "art": {
+        "frames": 54,
+        "active": 0,
+        "maxConcurrent": 1,
+        "loaded": 8,
+        "failed": [],
+        "seals": [],
+        "motion": true,
+        "framesVisible": [
+          "orchard",
+          "saints-0",
+          "saints-1",
+          "saints-2",
+          "books",
+          "procession",
+          "nobody",
+          "atlas",
+          "after",
+          "first-dream",
+          "daily-apple",
+          "architecture",
+          "paper-1-0",
+          "archive-0",
+          "paper-2-1",
+          "portal"
+        ],
+        "sources": [
+          "/assets/lost-eden/daily-apple/highlights/p004-memorial-hall.webp",
+          "/assets/museum-gallery/graphics-flowers-of-avalon-1.webp",
+          "/assets/museum-gallery/graphics-angel-copy.webp",
+          "/assets/museum-gallery/graphics-white-dove.webp",
+          "/assets/museum-gallery/graphics-the-seed.webp",
+          "/products/war-tee-front.webp",
+          "/assets/lost-eden/daily-apple/highlights/p013-court-of-honor.webp",
+          "/products/dance-to-your-vibration-tee.webp",
+          "/assets/museum-gallery/graphics-silver-angel.webp",
+          "/assets/lost-eden/daily-apple/highlights/p022-japanese-garden.webp",
+          "/graphic-models/posters/veil-crewneck.webp",
+          "/library/covers/codex-magica.webp",
+          "/library/covers/book-of-formulas.webp",
+          "/library/covers/bible-unveiled.webp",
+          "/assets/museum-gallery/graphics-to-avalon.webp",
+          "/assets/museum-gallery/graphics-jester-of-avalon.webp",
+          "/assets/museum-gallery/graphics-gods-chariot.webp",
+          "/assets/museum-gallery/graphics-the-walker.webp",
+          "/assets/museum-gallery/graphics-eye-see-you.webp",
+          "/assets/museum-gallery/graphics-cross-of-avalon.webp",
+          "/assets/lost-eden/daily-apple/highlights/p026-grand-basin.webp",
+          "/assets/colour-collage-0524.jpg",
+          "/assets/lost-eden/daily-apple/pages/page-001.webp",
+          "/assets/lost-eden/daily-apple/pages/page-002.webp",
+          "/assets/lost-eden/daily-apple/pages/page-003.webp",
+          "/assets/lost-eden/daily-apple/pages/page-004.webp",
+          "/assets/lost-eden/daily-apple/pages/page-005.webp",
+          "/accessory-collection/posters/skully-black.png?v=quality-3",
+          "/assets/lost-eden/daily-apple/pages/page-006.webp",
+          "/assets/lost-eden/daily-apple/pages/page-007.webp",
+          "/assets/lost-eden/daily-apple/pages/page-008.webp",
+          "/products/005-fm.webp",
+          "/assets/lost-eden/daily-apple/pages/page-009.webp",
+          "/assets/lost-eden/daily-apple/pages/page-010.webp",
+          "/assets/lost-eden/daily-apple/pages/page-011.webp",
+          "/products/008-IMG_0065.webp",
+          "/assets/lost-eden/daily-apple/pages/page-012.webp",
+          "/assets/lost-eden/daily-apple/pages/page-013.webp",
+          "/assets/lost-eden/daily-apple/pages/page-014.webp",
+          "/products/027-IMG_0624.webp",
+          "/assets/lost-eden/daily-apple/pages/page-015.webp",
+          "/assets/lost-eden/daily-apple/pages/page-016.webp",
+          "/assets/lost-eden/daily-apple/pages/page-017.webp",
+          "/products/055-IMG_1747.webp",
+          "/assets/lost-eden/daily-apple/pages/page-018.webp",
+          "/assets/lost-eden/daily-apple/pages/page-019.webp"
+        ],
+        "entries": [
+          {
+            "id": "orchard",
+            "wanted": true,
+            "distance": 5.795791027815689,
+            "world": [
+              -1017.245,
+              1.65,
+              -1.000000000000001
+            ]
+          },
+          {
+            "id": "saints-0",
+            "wanted": true,
+            "distance": 12.068088499495781,
+            "world": [
+              -1012.64,
+              2,
+              -13
+            ]
+          },
+          {
+            "id": "saints-1",
+            "wanted": true,
+            "distance": 21.404035506955047,
+            "world": [
+              -1015.56,
+              2,
+              -22
+            ]
+          },
+          {
+            "id": "saints-2",
+            "wanted": false,
+            "distance": 30.027898893101458,
+            "world": [
+              -1012.64,
+              2,
+              -31
+            ]
+          },
+          {
+            "id": "books",
+            "wanted": false,
+            "distance": 39.21949372296453,
+            "world": [
+              -1015.56,
+              2,
+              -40
+            ]
+          },
+          {
+            "id": "procession",
+            "wanted": false,
+            "distance": 62.937152708902246,
+            "world": [
+              -1014,
+              5,
+              -63.79
+            ]
+          },
+          {
+            "id": "nobody",
+            "wanted": false,
+            "distance": 45.06122679984707,
+            "world": [
+              -1008.3,
+              3.45,
+              -45.91
+            ]
+          },
+          {
+            "id": "atlas",
+            "wanted": false,
+            "distance": 49.59798993724462,
+            "world": [
+              -1022.9399999999999,
+              3.7,
+              -49.2
+            ]
+          },
+          {
+            "id": "after",
+            "wanted": false,
+            "distance": 45.68385010818653,
+            "world": [
+              -1019.6,
+              3.45,
+              -45.91
+            ]
+          },
+          {
+            "id": "first-dream",
+            "wanted": false,
+            "distance": 60.63821547193302,
+            "world": [
+              -1022.9399999999999,
+              3.7,
+              -60.5
+            ]
+          },
+          {
+            "id": "daily-apple",
+            "wanted": false,
+            "distance": 48.667859322506104,
+            "world": [
+              -1005.06,
+              3.65,
+              -49.2
+            ]
+          },
+          {
+            "id": "architecture",
+            "wanted": false,
+            "distance": 59.881592961615354,
+            "world": [
+              -1005.06,
+              3.7,
+              -60.5
+            ]
+          },
+          {
+            "id": "paper-1-0",
+            "wanted": false,
+            "distance": 55.57983386181158,
+            "world": [
+              -1030,
+              2,
+              -53.39
+            ]
+          },
+          {
+            "id": "archive-0",
+            "wanted": false,
+            "distance": 58.34044706979987,
+            "world": [
+              -1030,
+              2,
+              -56.31
+            ]
+          },
+          {
+            "id": "paper-2-1",
+            "wanted": false,
+            "distance": 61.158956270578855,
+            "world": [
+              -1043,
+              2,
+              -53.39000000000001
+            ]
+          },
+          {
+            "id": "paper-3-2",
+            "wanted": false,
+            "distance": 68.77294476832132,
+            "world": [
+              -1056,
+              2,
+              -53.39000000000001
+            ]
+          },
+          {
+            "id": "archive-2",
+            "wanted": false,
+            "distance": 71.02258629692473,
+            "world": [
+              -1056,
+              2,
+              -56.31000000000001
+            ]
+          },
+          {
+            "id": "paper-4-3",
+            "wanted": false,
+            "distance": 77.82684583167028,
+            "world": [
+              -1069,
+              2,
+              -53.39000000000001
+            ]
+          },
+          {
+            "id": "archive-3",
+            "wanted": false,
+            "distance": 79.8217248893064,
+            "world": [
+              -1069,
+              2,
+              -56.31000000000001
+            ]
+          },
+          {
+            "id": "paper-5-4",
+            "wanted": false,
+            "distance": 87.87672008050012,
+            "world": [
+              -1082,
+              2,
+              -53.39000000000001
+            ]
+          },
+          {
+            "id": "archive-4",
+            "wanted": false,
+            "distance": 89.64824462477844,
+            "world": [
+              -1082,
+              2,
+              -56.31000000000001
+            ]
+          },
+          {
+            "id": "paper-6-5",
+            "wanted": false,
+            "distance": 98.6185476069617,
+            "world": [
+              -1095,
+              2,
+              -53.39000000000001
+            ]
+          },
+          {
+            "id": "archive-5",
+            "wanted": false,
+            "distance": 100.20033814465955,
+            "world": [
+              -1095,
+              2,
+              -56.31000000000001
+            ]
+          },
+          {
+            "id": "paper-7-6",
+            "wanted": false,
+            "distance": 109.84952404132925,
+            "world": [
+              -1108,
+              2,
+              -53.390000000000015
+            ]
+          },
+          {
+            "id": "archive-6",
+            "wanted": false,
+            "distance": 111.27177433789808,
+            "world": [
+              -1108,
+              2,
+              -56.31000000000002
+            ]
+          },
+          {
+            "id": "paper-8-7",
+            "wanted": false,
+            "distance": 121.43400648956029,
+            "world": [
+              -1121,
+              2,
+              -53.390000000000015
+            ]
+          },
+          {
+            "id": "archive-7",
+            "wanted": false,
+            "distance": 122.7220752933396,
+            "world": [
+              -1121,
+              2,
+              -56.31000000000002
+            ]
+          },
+          {
+            "id": "paper-9-8",
+            "wanted": false,
+            "distance": 133.27984818458705,
+            "world": [
+              -1134,
+              2,
+              -53.390000000000015
+            ]
+          },
+          {
+            "id": "archive-8",
+            "wanted": false,
+            "distance": 134.45448212798306,
+            "world": [
+              -1134,
+              2,
+              -56.31000000000002
+            ]
+          },
+          {
+            "id": "paper-10-9",
+            "wanted": false,
+            "distance": 145.32315002127694,
+            "world": [
+              -1147,
+              2,
+              -53.390000000000015
+            ]
+          },
+          {
+            "id": "archive-9",
+            "wanted": false,
+            "distance": 146.40118771480002,
+            "world": [
+              -1147,
+              2,
+              -56.31000000000002
+            ]
+          },
+          {
+            "id": "paper-11-10",
+            "wanted": false,
+            "distance": 157.51862725438718,
+            "world": [
+              -1160,
+              2,
+              -53.39000000000002
+            ]
+          },
+          {
+            "id": "archive-10",
+            "wanted": false,
+            "distance": 158.513746294459,
+            "world": [
+              -1160,
+              2,
+              -56.310000000000024
+            ]
+          },
+          {
+            "id": "paper-12-11",
+            "wanted": false,
+            "distance": 169.8335006178303,
+            "world": [
+              -1173,
+              2,
+              -53.39000000000002
+            ]
+          },
+          {
+            "id": "archive-11",
+            "wanted": false,
+            "distance": 170.75686740012569,
+            "world": [
+              -1173,
+              2,
+              -56.310000000000024
+            ]
+          },
+          {
+            "id": "paper-13-12",
+            "wanted": false,
+            "distance": 182.24356760145628,
+            "world": [
+              -1186,
+              2,
+              -53.39000000000002
+            ]
+          },
+          {
+            "id": "archive-12",
+            "wanted": false,
+            "distance": 183.10436304005458,
+            "world": [
+              -1186,
+              2,
+              -56.310000000000024
+            ]
+          },
+          {
+            "id": "paper-14-13",
+            "wanted": false,
+            "distance": 194.73062915757902,
+            "world": [
+              -1199,
+              2,
+              -53.39000000000002
+            ]
+          },
+          {
+            "id": "archive-13",
+            "wanted": false,
+            "distance": 195.53646147024372,
+            "world": [
+              -1199,
+              2,
+              -56.310000000000024
+            ]
+          },
+          {
+            "id": "paper-15-14",
+            "wanted": false,
+            "distance": 207.2807707726565,
+            "world": [
+              -1212,
+              2,
+              -53.39000000000002
+            ]
+          },
+          {
+            "id": "archive-14",
+            "wanted": false,
+            "distance": 208.03799596300698,
+            "world": [
+              -1212,
+              2,
+              -56.310000000000024
+            ]
+          },
+          {
+            "id": "paper-16-15",
+            "wanted": false,
+            "distance": 219.88319156339932,
+            "world": [
+              -1225,
+              2,
+              -53.39000000000003
+            ]
+          },
+          {
+            "id": "archive-15",
+            "wanted": false,
+            "distance": 220.59716173220386,
+            "world": [
+              -1225,
+              2,
+              -56.31000000000003
+            ]
+          },
+          {
+            "id": "paper-17-16",
+            "wanted": false,
+            "distance": 232.52939154461004,
+            "world": [
+              -1238,
+              2,
+              -53.39000000000003
+            ]
+          },
+          {
+            "id": "archive-16",
+            "wanted": false,
+            "distance": 233.2046478188291,
+            "world": [
+              -1238,
+              2,
+              -56.31000000000003
+            ]
+          },
+          {
+            "id": "paper-18-17",
+            "wanted": false,
+            "distance": 245.21259741723418,
+            "world": [
+              -1251,
+              2,
+              -53.39000000000003
+            ]
+          },
+          {
+            "id": "archive-17",
+            "wanted": false,
+            "distance": 245.8530206532027,
+            "world": [
+              -1251,
+              2,
+              -56.31000000000003
+            ]
+          },
+          {
+            "id": "portal",
+            "wanted": false,
+            "distance": 63.67707173846021,
+            "world": [
+              -1043,
+              1.8,
+              -56.31000000000001
+            ]
+          },
+          {
+            "id": "reading-garden",
+            "wanted": false,
+            "distance": 85.54513738991977,
+            "world": [
+              -1049,
+              2.15,
+              -77.86
+            ]
+          },
+          {
+            "id": "return",
+            "wanted": false,
+            "distance": 76.91965856399187,
+            "world": [
+              -1049,
+              1.8,
+              -68.13
+            ]
+          },
+          {
+            "id": "garden-flower-34.2-70",
+            "wanted": false,
+            "distance": 76.8661239106757,
+            "world": [
+              -1043.2,
+              2,
+              -71
+            ]
+          },
+          {
+            "id": "garden-flower-45.8-70",
+            "wanted": false,
+            "distance": 82.33808963688277,
+            "world": [
+              -1054.8,
+              2,
+              -71
+            ]
+          },
+          {
+            "id": "garden-flower-34.2-74",
+            "wanted": false,
+            "distance": 80.52582811969742,
+            "world": [
+              -1043.2,
+              2,
+              -75
+            ]
+          },
+          {
+            "id": "garden-flower-45.8-74",
+            "wanted": false,
+            "distance": 85.76461388220112,
+            "world": [
+              -1054.8,
+              2,
+              -75
+            ]
+          }
+        ]
+      },
+      "statues": {
+        "active": 0,
+        "loaded": 2,
+        "entries": [
+          {
+            "id": "ethereal-insight",
+            "status": "ready",
+            "attempts": 1,
+            "world": [
+              -1011.15,
+              0,
+              -3.2500000000000004
+            ],
+            "obstacle": [
+              1.1749999999999998,
+              3.125,
+              1.275,
+              3.2249999999999996
+            ]
+          },
+          {
+            "id": "neon-shamrock",
+            "status": "ready",
+            "attempts": 1,
+            "world": [
+              -1016.05,
+              0,
+              -3.500000000000001
+            ],
+            "obstacle": [
+              6.075,
+              8.025,
+              1.65,
+              3.3499999999999996
+            ]
+          },
+          {
+            "id": "equine-reverie",
+            "status": "idle",
+            "attempts": 0,
+            "world": [
+              -1008.55,
+              0,
+              -49.8
+            ],
+            "obstacle": [
+              -2.1,
+              1.2000000000000002,
+              47.275,
+              50.324999999999996
+            ]
+          },
+          {
+            "id": "lion-rampant",
+            "status": "idle",
+            "attempts": 0,
+            "world": [
+              -1019.45,
+              0,
+              -49.8
+            ],
+            "obstacle": [
+              8.874999999999998,
+              12.025,
+              47.375,
+              50.224999999999994
+            ]
+          },
+          {
+            "id": "absolute-darkness",
+            "status": "idle",
+            "attempts": 0,
+            "world": [
+              -1008.55,
+              0,
+              -59.3
+            ],
+            "obstacle": [
+              -2.1,
+              1.2000000000000002,
+              56.75,
+              59.849999999999994
+            ]
+          },
+          {
+            "id": "peaceful-flight",
+            "status": "idle",
+            "attempts": 0,
+            "world": [
+              -1019.45,
+              0,
+              -59.3
+            ],
+            "obstacle": [
+              9.024999999999999,
+              11.875,
+              57.075,
+              59.52499999999999
+            ]
+          },
+          {
+            "id": "crimson-sentinel",
+            "status": "idle",
+            "attempts": 0,
+            "world": [
+              -1014,
+              0,
+              -60.25
+            ],
+            "obstacle": [
+              3.3000000000000003,
+              6.7,
+              57.650000000000006,
+              60.849999999999994
+            ]
+          }
+        ]
+      },
+      "rack": {
+        "loaded": 33,
+        "total": 33
+      },
+      "memory": {
+        "geometries": 1558,
+        "textures": 609
+      },
+      "losses": 0,
+      "contextLost": false,
+      "arena": false,
+      "momentum": 0,
+      "afterExit": {
+        "geometries": 1557,
+        "textures": 605
+      }
+    },
+    {
+      "art": {
+        "frames": 54,
+        "active": 0,
+        "maxConcurrent": 1,
+        "loaded": 8,
+        "failed": [],
+        "seals": [],
+        "motion": true,
+        "framesVisible": [
+          "orchard",
+          "saints-0",
+          "saints-1",
+          "saints-2",
+          "books",
+          "procession",
+          "nobody",
+          "atlas",
+          "after",
+          "first-dream",
+          "daily-apple",
+          "architecture",
+          "paper-1-0",
+          "archive-0",
+          "paper-2-1",
+          "portal"
+        ],
+        "sources": [
+          "/assets/lost-eden/daily-apple/highlights/p004-memorial-hall.webp",
+          "/assets/museum-gallery/graphics-flowers-of-avalon-1.webp",
+          "/assets/museum-gallery/graphics-angel-copy.webp",
+          "/assets/museum-gallery/graphics-white-dove.webp",
+          "/assets/museum-gallery/graphics-the-seed.webp",
+          "/products/war-tee-front.webp",
+          "/assets/lost-eden/daily-apple/highlights/p013-court-of-honor.webp",
+          "/products/dance-to-your-vibration-tee.webp",
+          "/assets/museum-gallery/graphics-silver-angel.webp",
+          "/assets/lost-eden/daily-apple/highlights/p022-japanese-garden.webp",
+          "/graphic-models/posters/veil-crewneck.webp",
+          "/library/covers/codex-magica.webp",
+          "/library/covers/book-of-formulas.webp",
+          "/library/covers/bible-unveiled.webp",
+          "/assets/museum-gallery/graphics-to-avalon.webp",
+          "/assets/museum-gallery/graphics-jester-of-avalon.webp",
+          "/assets/museum-gallery/graphics-gods-chariot.webp",
+          "/assets/museum-gallery/graphics-the-walker.webp",
+          "/assets/museum-gallery/graphics-eye-see-you.webp",
+          "/assets/museum-gallery/graphics-cross-of-avalon.webp",
+          "/assets/lost-eden/daily-apple/highlights/p026-grand-basin.webp",
+          "/assets/colour-collage-0524.jpg",
+          "/assets/lost-eden/daily-apple/pages/page-001.webp",
+          "/assets/lost-eden/daily-apple/pages/page-002.webp",
+          "/assets/lost-eden/daily-apple/pages/page-003.webp",
+          "/assets/lost-eden/daily-apple/pages/page-004.webp",
+          "/assets/lost-eden/daily-apple/pages/page-005.webp",
+          "/accessory-collection/posters/skully-black.png?v=quality-3",
+          "/assets/lost-eden/daily-apple/pages/page-006.webp",
+          "/assets/lost-eden/daily-apple/pages/page-007.webp",
+          "/assets/lost-eden/daily-apple/pages/page-008.webp",
+          "/products/005-fm.webp",
+          "/assets/lost-eden/daily-apple/pages/page-009.webp",
+          "/assets/lost-eden/daily-apple/pages/page-010.webp",
+          "/assets/lost-eden/daily-apple/pages/page-011.webp",
+          "/products/008-IMG_0065.webp",
+          "/assets/lost-eden/daily-apple/pages/page-012.webp",
+          "/assets/lost-eden/daily-apple/pages/page-013.webp",
+          "/assets/lost-eden/daily-apple/pages/page-014.webp",
+          "/products/027-IMG_0624.webp",
+          "/assets/lost-eden/daily-apple/pages/page-015.webp",
+          "/assets/lost-eden/daily-apple/pages/page-016.webp",
+          "/assets/lost-eden/daily-apple/pages/page-017.webp",
+          "/products/055-IMG_1747.webp",
+          "/assets/lost-eden/daily-apple/pages/page-018.webp",
+          "/assets/lost-eden/daily-apple/pages/page-019.webp"
+        ],
+        "entries": [
+          {
+            "id": "orchard",
+            "wanted": true,
+            "distance": 5.795777358168812,
+            "world": [
+              -1017.245,
+              1.65,
+              -1.000000000000001
+            ]
+          },
+          {
+            "id": "saints-0",
+            "wanted": true,
+            "distance": 12.065319566454624,
+            "world": [
+              -1012.64,
+              2,
+              -13
+            ]
+          },
+          {
+            "id": "saints-1",
+            "wanted": true,
+            "distance": 21.40131667087934,
+            "world": [
+              -1015.56,
+              2,
+              -22
+            ]
+          },
+          {
+            "id": "saints-2",
+            "wanted": false,
+            "distance": 30.02513570750088,
+            "world": [
+              -1012.64,
+              2,
+              -31
+            ]
+          },
+          {
+            "id": "books",
+            "wanted": false,
+            "distance": 39.216746336997794,
+            "world": [
+              -1015.56,
+              2,
+              -40
+            ]
+          },
+          {
+            "id": "procession",
+            "wanted": false,
+            "distance": 62.934359843026265,
+            "world": [
+              -1014,
+              5,
+              -63.79
+            ]
+          },
+          {
+            "id": "nobody",
+            "wanted": false,
+            "distance": 45.058447397114485,
+            "world": [
+              -1008.3,
+              3.45,
+              -45.91
+            ]
+          },
+          {
+            "id": "atlas",
+            "wanted": false,
+            "distance": 49.59527790144184,
+            "world": [
+              -1022.9399999999999,
+              3.7,
+              -49.2
+            ]
+          },
+          {
+            "id": "after",
+            "wanted": false,
+            "distance": 45.6811085881082,
+            "world": [
+              -1019.6,
+              3.45,
+              -45.91
+            ]
+          },
+          {
+            "id": "first-dream",
+            "wanted": false,
+            "distance": 60.63548415267675,
+            "world": [
+              -1022.9399999999999,
+              3.7,
+              -60.5
+            ]
+          },
+          {
+            "id": "daily-apple",
+            "wanted": false,
+            "distance": 48.66509631700308,
+            "world": [
+              -1005.06,
+              3.65,
+              -49.2
+            ]
+          },
+          {
+            "id": "architecture",
+            "wanted": false,
+            "distance": 59.878827129708526,
+            "world": [
+              -1005.06,
+              3.7,
+              -60.5
+            ]
+          },
+          {
+            "id": "paper-1-0",
+            "wanted": false,
+            "distance": 55.5772319188373,
+            "world": [
+              -1030,
+              2,
+              -53.39
+            ]
+          },
+          {
+            "id": "archive-0",
+            "wanted": false,
+            "distance": 58.33783044888081,
+            "world": [
+              -1030,
+              2,
+              -56.31
+            ]
+          },
+          {
+            "id": "paper-2-1",
+            "wanted": false,
+            "distance": 61.15659169509225,
+            "world": [
+              -1043,
+              2,
+              -53.39000000000001
+            ]
+          },
+          {
+            "id": "paper-3-2",
+            "wanted": false,
+            "distance": 68.77084198815822,
+            "world": [
+              -1056,
+              2,
+              -53.39000000000001
+            ]
+          },
+          {
+            "id": "archive-2",
+            "wanted": false,
+            "distance": 71.0204369282699,
+            "world": [
+              -1056,
+              2,
+              -56.31000000000001
+            ]
+          },
+          {
+            "id": "paper-4-3",
+            "wanted": false,
+            "distance": 77.82498768236475,
+            "world": [
+              -1069,
+              2,
+              -53.39000000000001
+            ]
+          },
+          {
+            "id": "archive-3",
+            "wanted": false,
+            "distance": 79.81981246208463,
+            "world": [
+              -1069,
+              2,
+              -56.31000000000001
+            ]
+          },
+          {
+            "id": "paper-5-4",
+            "wanted": false,
+            "distance": 87.87507443957145,
+            "world": [
+              -1082,
+              2,
+              -53.39000000000001
+            ]
+          },
+          {
+            "id": "archive-4",
+            "wanted": false,
+            "distance": 89.64654182667817,
+            "world": [
+              -1082,
+              2,
+              -56.31000000000001
+            ]
+          },
+          {
+            "id": "paper-6-5",
+            "wanted": false,
+            "distance": 98.61708121699922,
+            "world": [
+              -1095,
+              2,
+              -53.39000000000001
+            ]
+          },
+          {
+            "id": "archive-5",
+            "wanted": false,
+            "distance": 100.19881467104469,
+            "world": [
+              -1095,
+              2,
+              -56.31000000000001
+            ]
+          },
+          {
+            "id": "paper-7-6",
+            "wanted": false,
+            "distance": 109.84820757645625,
+            "world": [
+              -1108,
+              2,
+              -53.390000000000015
+            ]
+          },
+          {
+            "id": "archive-6",
+            "wanted": false,
+            "distance": 111.27040245043764,
+            "world": [
+              -1108,
+              2,
+              -56.31000000000002
+            ]
+          },
+          {
+            "id": "paper-8-7",
+            "wanted": false,
+            "distance": 121.43281561324443,
+            "world": [
+              -1121,
+              2,
+              -53.390000000000015
+            ]
+          },
+          {
+            "id": "archive-7",
+            "wanted": false,
+            "distance": 122.72083140804726,
+            "world": [
+              -1121,
+              2,
+              -56.31000000000002
+            ]
+          },
+          {
+            "id": "paper-9-8",
+            "wanted": false,
+            "distance": 133.27876315362556,
+            "world": [
+              -1134,
+              2,
+              -53.390000000000015
+            ]
+          },
+          {
+            "id": "archive-8",
+            "wanted": false,
+            "distance": 134.45334678423723,
+            "world": [
+              -1134,
+              2,
+              -56.31000000000002
+            ]
+          },
+          {
+            "id": "paper-10-9",
+            "wanted": false,
+            "distance": 145.32215491025522,
+            "world": [
+              -1147,
+              2,
+              -53.390000000000015
+            ]
+          },
+          {
+            "id": "archive-9",
+            "wanted": false,
+            "distance": 146.40014501865207,
+            "world": [
+              -1147,
+              2,
+              -56.31000000000002
+            ]
+          },
+          {
+            "id": "paper-11-10",
+            "wanted": false,
+            "distance": 157.51770918776154,
+            "world": [
+              -1160,
+              2,
+              -53.39000000000002
+            ]
+          },
+          {
+            "id": "archive-10",
+            "wanted": false,
+            "distance": 158.51278327466954,
+            "world": [
+              -1160,
+              2,
+              -56.310000000000024
+            ]
+          },
+          {
+            "id": "paper-12-11",
+            "wanted": false,
+            "distance": 169.83264912189358,
+            "world": [
+              -1173,
+              2,
+              -53.39000000000002
+            ]
+          },
+          {
+            "id": "archive-11",
+            "wanted": false,
+            "distance": 170.75597342840558,
+            "world": [
+              -1173,
+              2,
+              -56.310000000000024
+            ]
+          },
+          {
+            "id": "paper-13-12",
+            "wanted": false,
+            "distance": 182.24277408929063,
+            "world": [
+              -1186,
+              2,
+              -53.39000000000002
+            ]
+          },
+          {
+            "id": "archive-12",
+            "wanted": false,
+            "distance": 183.10352935288373,
+            "world": [
+              -1186,
+              2,
+              -56.310000000000024
+            ]
+          },
+          {
+            "id": "paper-14-13",
+            "wanted": false,
+            "distance": 194.7298865294185,
+            "world": [
+              -1199,
+              2,
+              -53.39000000000002
+            ]
+          },
+          {
+            "id": "archive-13",
+            "wanted": false,
+            "distance": 195.53568078865388,
+            "world": [
+              -1199,
+              2,
+              -56.310000000000024
+            ]
+          },
+          {
+            "id": "paper-15-14",
+            "wanted": false,
+            "distance": 207.28007310824697,
+            "world": [
+              -1212,
+              2,
+              -53.39000000000002
+            ]
+          },
+          {
+            "id": "archive-14",
+            "wanted": false,
+            "distance": 208.03726219473845,
+            "world": [
+              -1212,
+              2,
+              -56.310000000000024
+            ]
+          },
+          {
+            "id": "paper-16-15",
+            "wanted": false,
+            "distance": 219.8825338851638,
+            "world": [
+              -1225,
+              2,
+              -53.39000000000003
+            ]
+          },
+          {
+            "id": "archive-15",
+            "wanted": false,
+            "distance": 220.5964697393917,
+            "world": [
+              -1225,
+              2,
+              -56.31000000000003
+            ]
+          },
+          {
+            "id": "paper-17-16",
+            "wanted": false,
+            "distance": 232.52876963455557,
+            "world": [
+              -1238,
+              2,
+              -53.39000000000003
+            ]
+          },
+          {
+            "id": "archive-16",
+            "wanted": false,
+            "distance": 233.20399323657037,
+            "world": [
+              -1238,
+              2,
+              -56.31000000000003
+            ]
+          },
+          {
+            "id": "paper-18-17",
+            "wanted": false,
+            "distance": 245.2120076745024,
+            "world": [
+              -1251,
+              2,
+              -53.39000000000003
+            ]
+          },
+          {
+            "id": "archive-17",
+            "wanted": false,
+            "distance": 245.8523997472515,
+            "world": [
+              -1251,
+              2,
+              -56.31000000000003
+            ]
+          },
+          {
+            "id": "portal",
+            "wanted": false,
+            "distance": 63.67467706372855,
+            "world": [
+              -1043,
+              1.8,
+              -56.31000000000001
+            ]
+          },
+          {
+            "id": "reading-garden",
+            "wanted": false,
+            "distance": 85.54265786309375,
+            "world": [
+              -1049,
+              2.15,
+              -77.86
+            ]
+          },
+          {
+            "id": "return",
+            "wanted": false,
+            "distance": 76.91725308926968,
+            "world": [
+              -1049,
+              1.8,
+              -68.13
+            ]
+          },
+          {
+            "id": "garden-flower-34.2-70",
+            "wanted": false,
+            "distance": 76.86361176969969,
+            "world": [
+              -1043.2,
+              2,
+              -71
+            ]
+          },
+          {
+            "id": "garden-flower-45.8-70",
+            "wanted": false,
+            "distance": 82.33574445089512,
+            "world": [
+              -1054.8,
+              2,
+              -71
+            ]
+          },
+          {
+            "id": "garden-flower-34.2-74",
+            "wanted": false,
+            "distance": 80.52329338946615,
+            "world": [
+              -1043.2,
+              2,
+              -75
+            ]
+          },
+          {
+            "id": "garden-flower-45.8-74",
+            "wanted": false,
+            "distance": 85.7622339860969,
+            "world": [
+              -1054.8,
+              2,
+              -75
+            ]
+          }
+        ]
+      },
+      "statues": {
+        "active": 0,
+        "loaded": 2,
+        "entries": [
+          {
+            "id": "ethereal-insight",
+            "status": "ready",
+            "attempts": 2,
+            "world": [
+              -1011.15,
+              0,
+              -3.2500000000000004
+            ],
+            "obstacle": [
+              1.1749999999999998,
+              3.125,
+              1.275,
+              3.2249999999999996
+            ]
+          },
+          {
+            "id": "neon-shamrock",
+            "status": "ready",
+            "attempts": 2,
+            "world": [
+              -1016.05,
+              0,
+              -3.500000000000001
+            ],
+            "obstacle": [
+              6.075,
+              8.025,
+              1.65,
+              3.3499999999999996
+            ]
+          },
+          {
+            "id": "equine-reverie",
+            "status": "idle",
+            "attempts": 0,
+            "world": [
+              -1008.55,
+              0,
+              -49.8
+            ],
+            "obstacle": [
+              -2.1,
+              1.2000000000000002,
+              47.275,
+              50.324999999999996
+            ]
+          },
+          {
+            "id": "lion-rampant",
+            "status": "idle",
+            "attempts": 0,
+            "world": [
+              -1019.45,
+              0,
+              -49.8
+            ],
+            "obstacle": [
+              8.874999999999998,
+              12.025,
+              47.375,
+              50.224999999999994
+            ]
+          },
+          {
+            "id": "absolute-darkness",
+            "status": "idle",
+            "attempts": 0,
+            "world": [
+              -1008.55,
+              0,
+              -59.3
+            ],
+            "obstacle": [
+              -2.1,
+              1.2000000000000002,
+              56.75,
+              59.849999999999994
+            ]
+          },
+          {
+            "id": "peaceful-flight",
+            "status": "idle",
+            "attempts": 0,
+            "world": [
+              -1019.45,
+              0,
+              -59.3
+            ],
+            "obstacle": [
+              9.024999999999999,
+              11.875,
+              57.075,
+              59.52499999999999
+            ]
+          },
+          {
+            "id": "crimson-sentinel",
+            "status": "idle",
+            "attempts": 0,
+            "world": [
+              -1014,
+              0,
+              -60.25
+            ],
+            "obstacle": [
+              3.3000000000000003,
+              6.7,
+              57.650000000000006,
+              60.849999999999994
+            ]
+          }
+        ]
+      },
+      "rack": {
+        "loaded": 33,
+        "total": 33
+      },
+      "memory": {
+        "geometries": 1558,
+        "textures": 610
+      },
+      "losses": 0,
+      "contextLost": false,
+      "arena": false,
+      "momentum": 0,
+      "afterExit": {
+        "geometries": 1557,
+        "textures": 605
+      }
+    },
+    {
+      "art": {
+        "frames": 54,
+        "active": 0,
+        "maxConcurrent": 1,
+        "loaded": 8,
+        "failed": [],
+        "seals": [],
+        "motion": true,
+        "framesVisible": [
+          "orchard",
+          "saints-0",
+          "saints-1",
+          "saints-2",
+          "books",
+          "procession",
+          "nobody",
+          "atlas",
+          "after",
+          "first-dream",
+          "daily-apple",
+          "architecture",
+          "paper-1-0",
+          "archive-0",
+          "paper-2-1",
+          "portal"
+        ],
+        "sources": [
+          "/assets/lost-eden/daily-apple/highlights/p004-memorial-hall.webp",
+          "/assets/museum-gallery/graphics-flowers-of-avalon-1.webp",
+          "/assets/museum-gallery/graphics-angel-copy.webp",
+          "/assets/museum-gallery/graphics-white-dove.webp",
+          "/assets/museum-gallery/graphics-the-seed.webp",
+          "/products/war-tee-front.webp",
+          "/assets/lost-eden/daily-apple/highlights/p013-court-of-honor.webp",
+          "/products/dance-to-your-vibration-tee.webp",
+          "/assets/museum-gallery/graphics-silver-angel.webp",
+          "/assets/lost-eden/daily-apple/highlights/p022-japanese-garden.webp",
+          "/graphic-models/posters/veil-crewneck.webp",
+          "/library/covers/codex-magica.webp",
+          "/library/covers/book-of-formulas.webp",
+          "/library/covers/bible-unveiled.webp",
+          "/assets/museum-gallery/graphics-to-avalon.webp",
+          "/assets/museum-gallery/graphics-jester-of-avalon.webp",
+          "/assets/museum-gallery/graphics-gods-chariot.webp",
+          "/assets/museum-gallery/graphics-the-walker.webp",
+          "/assets/museum-gallery/graphics-eye-see-you.webp",
+          "/assets/museum-gallery/graphics-cross-of-avalon.webp",
+          "/assets/lost-eden/daily-apple/highlights/p026-grand-basin.webp",
+          "/assets/colour-collage-0524.jpg",
+          "/assets/lost-eden/daily-apple/pages/page-001.webp",
+          "/assets/lost-eden/daily-apple/pages/page-002.webp",
+          "/assets/lost-eden/daily-apple/pages/page-003.webp",
+          "/assets/lost-eden/daily-apple/pages/page-004.webp",
+          "/assets/lost-eden/daily-apple/pages/page-005.webp",
+          "/accessory-collection/posters/skully-black.png?v=quality-3",
+          "/assets/lost-eden/daily-apple/pages/page-006.webp",
+          "/assets/lost-eden/daily-apple/pages/page-007.webp",
+          "/assets/lost-eden/daily-apple/pages/page-008.webp",
+          "/products/005-fm.webp",
+          "/assets/lost-eden/daily-apple/pages/page-009.webp",
+          "/assets/lost-eden/daily-apple/pages/page-010.webp",
+          "/assets/lost-eden/daily-apple/pages/page-011.webp",
+          "/products/008-IMG_0065.webp",
+          "/assets/lost-eden/daily-apple/pages/page-012.webp",
+          "/assets/lost-eden/daily-apple/pages/page-013.webp",
+          "/assets/lost-eden/daily-apple/pages/page-014.webp",
+          "/products/027-IMG_0624.webp",
+          "/assets/lost-eden/daily-apple/pages/page-015.webp",
+          "/assets/lost-eden/daily-apple/pages/page-016.webp",
+          "/assets/lost-eden/daily-apple/pages/page-017.webp",
+          "/products/055-IMG_1747.webp",
+          "/assets/lost-eden/daily-apple/pages/page-018.webp",
+          "/assets/lost-eden/daily-apple/pages/page-019.webp"
+        ],
+        "entries": [
+          {
+            "id": "orchard",
+            "wanted": true,
+            "distance": 5.7957634634078605,
+            "world": [
+              -1017.245,
+              1.65,
+              -1.000000000000001
+            ]
+          },
+          {
+            "id": "saints-0",
+            "wanted": true,
+            "distance": 12.069153725569427,
+            "world": [
+              -1012.64,
+              2,
+              -13
+            ]
+          },
+          {
+            "id": "saints-1",
+            "wanted": true,
+            "distance": 21.405113048257714,
+            "world": [
+              -1015.56,
+              2,
+              -22
+            ]
+          },
+          {
+            "id": "saints-2",
+            "wanted": false,
+            "distance": 30.029006936060345,
+            "world": [
+              -1012.64,
+              2,
+              -31
+            ]
+          },
+          {
+            "id": "books",
+            "wanted": false,
+            "distance": 39.2206023732837,
+            "world": [
+              -1015.56,
+              2,
+              -40
+            ]
+          },
+          {
+            "id": "procession",
+            "wanted": false,
+            "distance": 62.9381911838073,
+            "world": [
+              -1014,
+              5,
+              -63.79
+            ]
+          },
+          {
+            "id": "nobody",
+            "wanted": false,
+            "distance": 45.06228571799329,
+            "world": [
+              -1008.3,
+              3.45,
+              -45.91
+            ]
+          },
+          {
+            "id": "atlas",
+            "wanted": false,
+            "distance": 49.5990186564959,
+            "world": [
+              -1022.9399999999999,
+              3.7,
+              -49.2
+            ]
+          },
+          {
+            "id": "after",
+            "wanted": false,
+            "distance": 45.68489459471326,
+            "world": [
+              -1019.6,
+              3.45,
+              -45.91
+            ]
+          },
+          {
+            "id": "first-dream",
+            "wanted": false,
+            "distance": 60.63926826882246,
+            "world": [
+              -1022.9399999999999,
+              3.7,
+              -60.5
+            ]
+          },
+          {
+            "id": "daily-apple",
+            "wanted": false,
+            "distance": 48.66890945077486,
+            "world": [
+              -1005.06,
+              3.65,
+              -49.2
+            ]
+          },
+          {
+            "id": "architecture",
+            "wanted": false,
+            "distance": 59.88265906068486,
+            "world": [
+              -1005.06,
+              3.7,
+              -60.5
+            ]
+          },
+          {
+            "id": "paper-1-0",
+            "wanted": false,
+            "distance": 55.58088943793425,
+            "world": [
+              -1030,
+              2,
+              -53.39
+            ]
+          },
+          {
+            "id": "archive-0",
+            "wanted": false,
+            "distance": 58.34150946876128,
+            "world": [
+              -1030,
+              2,
+              -56.31
+            ]
+          },
+          {
+            "id": "paper-2-1",
+            "wanted": false,
+            "distance": 61.15991555514012,
+            "world": [
+              -1043,
+              2,
+              -53.39000000000001
+            ]
+          },
+          {
+            "id": "paper-3-2",
+            "wanted": false,
+            "distance": 68.77379784999422,
+            "world": [
+              -1056,
+              2,
+              -53.39000000000001
+            ]
+          },
+          {
+            "id": "archive-2",
+            "wanted": false,
+            "distance": 71.023458991333,
+            "world": [
+              -1056,
+              2,
+              -56.31000000000001
+            ]
+          },
+          {
+            "id": "paper-4-3",
+            "wanted": false,
+            "distance": 77.82759967204352,
+            "world": [
+              -1069,
+              2,
+              -53.39000000000001
+            ]
+          },
+          {
+            "id": "archive-3",
+            "wanted": false,
+            "distance": 79.82250138334153,
+            "world": [
+              -1069,
+              2,
+              -56.31000000000001
+            ]
+          },
+          {
+            "id": "paper-5-4",
+            "wanted": false,
+            "distance": 87.877387709876,
+            "world": [
+              -1082,
+              2,
+              -53.39000000000001
+            ]
+          },
+          {
+            "id": "archive-4",
+            "wanted": false,
+            "distance": 89.64893600647784,
+            "world": [
+              -1082,
+              2,
+              -56.31000000000001
+            ]
+          },
+          {
+            "id": "paper-6-5",
+            "wanted": false,
+            "distance": 98.61914251661219,
+            "world": [
+              -1095,
+              2,
+              -53.39000000000001
+            ]
+          },
+          {
+            "id": "archive-5",
+            "wanted": false,
+            "distance": 100.20095671745634,
+            "world": [
+              -1095,
+              2,
+              -56.31000000000001
+            ]
+          },
+          {
+            "id": "paper-7-6",
+            "wanted": false,
+            "distance": 109.85005812794031,
+            "world": [
+              -1108,
+              2,
+              -53.390000000000015
+            ]
+          },
+          {
+            "id": "archive-6",
+            "wanted": false,
+            "distance": 111.27233136361238,
+            "world": [
+              -1108,
+              2,
+              -56.31000000000002
+            ]
+          },
+          {
+            "id": "paper-8-7",
+            "wanted": false,
+            "distance": 121.43448962593726,
+            "world": [
+              -1121,
+              2,
+              -53.390000000000015
+            ]
+          },
+          {
+            "id": "archive-7",
+            "wanted": false,
+            "distance": 122.72258034727577,
+            "world": [
+              -1121,
+              2,
+              -56.31000000000002
+            ]
+          },
+          {
+            "id": "paper-9-8",
+            "wanted": false,
+            "distance": 133.28028838020973,
+            "world": [
+              -1134,
+              2,
+              -53.390000000000015
+            ]
+          },
+          {
+            "id": "archive-8",
+            "wanted": false,
+            "distance": 134.4549431114139,
+            "world": [
+              -1134,
+              2,
+              -56.31000000000002
+            ]
+          },
+          {
+            "id": "paper-10-9",
+            "wanted": false,
+            "distance": 145.32355373686627,
+            "world": [
+              -1147,
+              2,
+              -53.390000000000015
+            ]
+          },
+          {
+            "id": "archive-9",
+            "wanted": false,
+            "distance": 146.4016110809357,
+            "world": [
+              -1147,
+              2,
+              -56.31000000000002
+            ]
+          },
+          {
+            "id": "paper-11-10",
+            "wanted": false,
+            "distance": 157.51899971340558,
+            "world": [
+              -1160,
+              2,
+              -53.39000000000002
+            ]
+          },
+          {
+            "id": "archive-10",
+            "wanted": false,
+            "distance": 158.5141373098739,
+            "world": [
+              -1160,
+              2,
+              -56.310000000000024
+            ]
+          },
+          {
+            "id": "paper-12-11",
+            "wanted": false,
+            "distance": 169.83384606936235,
+            "world": [
+              -1173,
+              2,
+              -53.39000000000002
+            ]
+          },
+          {
+            "id": "archive-11",
+            "wanted": false,
+            "distance": 170.75723038013223,
+            "world": [
+              -1173,
+              2,
+              -56.310000000000024
+            ]
+          },
+          {
+            "id": "paper-13-12",
+            "wanted": false,
+            "distance": 182.2438895291468,
+            "world": [
+              -1186,
+              2,
+              -53.39000000000002
+            ]
+          },
+          {
+            "id": "archive-12",
+            "wanted": false,
+            "distance": 183.10470154284283,
+            "world": [
+              -1186,
+              2,
+              -56.310000000000024
+            ]
+          },
+          {
+            "id": "paper-14-13",
+            "wanted": false,
+            "distance": 194.7309304417556,
+            "world": [
+              -1199,
+              2,
+              -53.39000000000002
+            ]
+          },
+          {
+            "id": "archive-13",
+            "wanted": false,
+            "distance": 195.53677845125083,
+            "world": [
+              -1199,
+              2,
+              -56.310000000000024
+            ]
+          },
+          {
+            "id": "paper-15-14",
+            "wanted": false,
+            "distance": 207.28105381513248,
+            "world": [
+              -1212,
+              2,
+              -53.39000000000002
+            ]
+          },
+          {
+            "id": "archive-14",
+            "wanted": false,
+            "distance": 208.03829389584396,
+            "world": [
+              -1212,
+              2,
+              -56.310000000000024
+            ]
+          },
+          {
+            "id": "paper-16-15",
+            "wanted": false,
+            "distance": 219.8834583835534,
+            "world": [
+              -1225,
+              2,
+              -53.39000000000003
+            ]
+          },
+          {
+            "id": "archive-15",
+            "wanted": false,
+            "distance": 220.59744270297773,
+            "world": [
+              -1225,
+              2,
+              -56.31000000000003
+            ]
+          },
+          {
+            "id": "paper-17-16",
+            "wanted": false,
+            "distance": 232.52964385366408,
+            "world": [
+              -1238,
+              2,
+              -53.39000000000003
+            ]
+          },
+          {
+            "id": "archive-16",
+            "wanted": false,
+            "distance": 233.2049135998072,
+            "world": [
+              -1238,
+              2,
+              -56.31000000000003
+            ]
+          },
+          {
+            "id": "paper-18-17",
+            "wanted": false,
+            "distance": 245.21283667604322,
+            "world": [
+              -1251,
+              2,
+              -53.39000000000003
+            ]
+          },
+          {
+            "id": "archive-17",
+            "wanted": false,
+            "distance": 245.85327276059098,
+            "world": [
+              -1251,
+              2,
+              -56.31000000000003
+            ]
+          },
+          {
+            "id": "portal",
+            "wanted": false,
+            "distance": 63.67805044797403,
+            "world": [
+              -1043,
+              1.8,
+              -56.31000000000001
+            ]
+          },
+          {
+            "id": "reading-garden",
+            "wanted": false,
+            "distance": 85.54614468563689,
+            "world": [
+              -1049,
+              2.15,
+              -77.86
+            ]
+          },
+          {
+            "id": "return",
+            "wanted": false,
+            "distance": 76.92064307846931,
+            "world": [
+              -1049,
+              1.8,
+              -68.13
+            ]
+          },
+          {
+            "id": "garden-flower-34.2-70",
+            "wanted": false,
+            "distance": 76.8671470326016,
+            "world": [
+              -1043.2,
+              2,
+              -71
+            ]
+          },
+          {
+            "id": "garden-flower-45.8-70",
+            "wanted": false,
+            "distance": 82.33904476572206,
+            "world": [
+              -1054.8,
+              2,
+              -71
+            ]
+          },
+          {
+            "id": "garden-flower-34.2-74",
+            "wanted": false,
+            "distance": 80.52686108664707,
+            "world": [
+              -1043.2,
+              2,
+              -75
+            ]
+          },
+          {
+            "id": "garden-flower-45.8-74",
+            "wanted": false,
+            "distance": 85.76558375285595,
+            "world": [
+              -1054.8,
+              2,
+              -75
+            ]
+          }
+        ]
+      },
+      "statues": {
+        "active": 0,
+        "loaded": 2,
+        "entries": [
+          {
+            "id": "ethereal-insight",
+            "status": "ready",
+            "attempts": 3,
+            "world": [
+              -1011.15,
+              0,
+              -3.2500000000000004
+            ],
+            "obstacle": [
+              1.1749999999999998,
+              3.125,
+              1.275,
+              3.2249999999999996
+            ]
+          },
+          {
+            "id": "neon-shamrock",
+            "status": "ready",
+            "attempts": 3,
+            "world": [
+              -1016.05,
+              0,
+              -3.500000000000001
+            ],
+            "obstacle": [
+              6.075,
+              8.025,
+              1.65,
+              3.3499999999999996
+            ]
+          },
+          {
+            "id": "equine-reverie",
+            "status": "idle",
+            "attempts": 0,
+            "world": [
+              -1008.55,
+              0,
+              -49.8
+            ],
+            "obstacle": [
+              -2.1,
+              1.2000000000000002,
+              47.275,
+              50.324999999999996
+            ]
+          },
+          {
+            "id": "lion-rampant",
+            "status": "idle",
+            "attempts": 0,
+            "world": [
+              -1019.45,
+              0,
+              -49.8
+            ],
+            "obstacle": [
+              8.874999999999998,
+              12.025,
+              47.375,
+              50.224999999999994
+            ]
+          },
+          {
+            "id": "absolute-darkness",
+            "status": "idle",
+            "attempts": 0,
+            "world": [
+              -1008.55,
+              0,
+              -59.3
+            ],
+            "obstacle": [
+              -2.1,
+              1.2000000000000002,
+              56.75,
+              59.849999999999994
+            ]
+          },
+          {
+            "id": "peaceful-flight",
+            "status": "idle",
+            "attempts": 0,
+            "world": [
+              -1019.45,
+              0,
+              -59.3
+            ],
+            "obstacle": [
+              9.024999999999999,
+              11.875,
+              57.075,
+              59.52499999999999
+            ]
+          },
+          {
+            "id": "crimson-sentinel",
+            "status": "idle",
+            "attempts": 0,
+            "world": [
+              -1014,
+              0,
+              -60.25
+            ],
+            "obstacle": [
+              3.3000000000000003,
+              6.7,
+              57.650000000000006,
+              60.849999999999994
+            ]
+          }
+        ]
+      },
+      "rack": {
+        "loaded": 33,
+        "total": 33
+      },
+      "memory": {
+        "geometries": 1558,
+        "textures": 610
+      },
+      "losses": 0,
+      "contextLost": false,
+      "arena": false,
+      "momentum": 0,
+      "afterExit": {
+        "geometries": 1557,
+        "textures": 606
+      }
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,112 @@
+{
+  "date": "2026-11-17",
+  "baseline": "d632a7066bc1bc06f5af9966145cb82286aec556",
+  "measurement": "Chrome mobile emulation: 844x390, DPR 3, coarse pointer; Metal GPU on this Mac, renderer CPU throttled 4x. Same seeded action script and camera entry. This is not a physical-phone FPS guarantee. Dynamic bots and streamed assets can vary the exact scene.",
+  "changes": [
+    "Exact scenery hits ordered by bounding boxes; nearer surfaces prune distant triangle tests",
+    "Use the same measured parkour floor data for arena ground queries",
+    "Mobile flashes use the existing flash/tracer/smoke/recoil pass, without HDR bloom and heat-distortion passes",
+    "Cache unchanged HUD markup and cap minimap sampling at 10 Hz",
+    "Museum uses a lightweight bounded entry screen without video or a full-scene shader compile",
+    "Stream one image and one sculpture at a time on phones, up to eight wall textures and three nearby statues",
+    "Wall images decode at 768px width on mobile; separate reader retains original sources",
+    "Mobile rack maps limited to 512px; original decoded model bitmaps released after resizing"
+  ],
+  "checks": {
+    "unit_and_server_tests": 59,
+    "movement_browser_checks": 9,
+    "museum_repeated_visits": 3,
+    "physical_phone": false
+  },
+  "phases": [
+    {
+      "name": "idle",
+      "before_p95_ms": 100,
+      "after_p95_ms": 33.4,
+      "before_median_ms": 66.7,
+      "after_median_ms": 16.7,
+      "before_render_passes": 2,
+      "after_render_passes": 2,
+      "before_shots": 0,
+      "after_shots": 0
+    },
+    {
+      "name": "pistol",
+      "before_p95_ms": 150,
+      "after_p95_ms": 33.4,
+      "before_median_ms": 66.7,
+      "after_median_ms": 16.7,
+      "before_render_passes": 2,
+      "after_render_passes": 2,
+      "before_shots": 24,
+      "after_shots": 29
+    },
+    {
+      "name": "parkour",
+      "before_p95_ms": 133.3,
+      "after_p95_ms": 33.4,
+      "before_median_ms": 66.7,
+      "after_median_ms": 33.3,
+      "before_render_passes": 2,
+      "after_render_passes": 2,
+      "before_shots": 0,
+      "after_shots": 0
+    },
+    {
+      "name": "pistol-parkour",
+      "before_p95_ms": 133.4,
+      "after_p95_ms": 49.9,
+      "before_median_ms": 66.6,
+      "after_median_ms": 33.3,
+      "before_render_passes": 14,
+      "after_render_passes": 2,
+      "before_shots": 36,
+      "after_shots": 31
+    }
+  ],
+  "museum": [
+    {
+      "loaded_images": 8,
+      "loaded_statues": 2,
+      "rack": {
+        "loaded": 33,
+        "total": 33
+      },
+      "after_exit": {
+        "geometries": 1557,
+        "textures": 605
+      },
+      "context_losses": 0
+    },
+    {
+      "loaded_images": 8,
+      "loaded_statues": 2,
+      "rack": {
+        "loaded": 33,
+        "total": 33
+      },
+      "after_exit": {
+        "geometries": 1557,
+        "textures": 605
+      },
+      "context_losses": 0
+    },
+    {
+      "loaded_images": 8,
+      "loaded_statues": 2,
+      "rack": {
+        "loaded": 33,
+        "total": 33
+      },
+      "after_exit": {
+        "geometries": 1557,
+        "textures": 606
+      },
+      "context_losses": 0
+    }
+  ],
+  "limits": [
+    "The reported museum crash was not reproduced on this desktop; memory pressure and loading bursts were reduced and repeated entry was checked.",
+    "Arena performance samples cover sprint/jump and pistol input; the separate nine movement scenarios cover ledge catches, climbs, slides and dives."
+  ]
+}
