@@ -111,9 +111,15 @@ export async function prepareFeaturedGarment(gltf, kind = 'tee') {
         float featuredPigment = 0.0;
         vec3 featuredFabric = featuredDye();
         ${eye ? `
-          // Achromatic source detail changes brightness only, never the dye hue.
+          // Keep the garment's hue, with a distinctly separate tonal range for
+          // the back print. The source alpha still cuts out every original edge.
           float eyeLuma = dot(diffuseColor.rgb,vec3(.2126,.7152,.0722));
-          diffuseColor.rgb = featuredFabric * mix(.66,1.25,sqrt(clamp(eyeLuma,0.0,1.0)));
+          float fabricLuma = dot(featuredFabric,vec3(.2126,.7152,.0722));
+          float lightCloth = smoothstep(.06,.45,fabricLuma);
+          float eyeTone = mix(mix(.018,.48,pow(clamp(eyeLuma,0.0,1.0),.72)),
+                              mix(.012,.34,pow(clamp(eyeLuma,0.0,1.0),.72)),lightCloth);
+          vec3 dyeHue = featuredFabric/max(max(featuredFabric.r,max(featuredFabric.g,featuredFabric.b)),.004);
+          diffuseColor.rgb = dyeHue * eyeTone;
         ` : `
           diffuseColor.rgb = featuredFabric * ${detail ? '0.86' : '1.0'};
           if(featuredHasGraphic>.5 && featuredNormal.z>.28) {
@@ -127,7 +133,7 @@ export async function prepareFeaturedGarment(gltf, kind = 'tee') {
         #include <opaque_fragment>
       `);
     };
-    material.customProgramCacheKey = () => 'featured-garment-gradient-1-' + Number(eye) + '-' + Number(detail);
+    material.customProgramCacheKey = () => 'featured-garment-gradient-2-' + Number(eye) + '-' + Number(detail);
     material.needsUpdate = true;
     return material;
   }

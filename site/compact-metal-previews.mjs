@@ -1,16 +1,16 @@
-// Four visible canvases share one studio renderer. Each pair keeps its pieces for
-// two complete turns, then advances through its entire collection in catalog order.
+// One featured canvas per metal collection shares one studio renderer. Each piece
+// makes two complete turns before advancing; the other box is a poster overview.
 const TAU = Math.PI * 2;
 const TURN_SECONDS = 5;
 const SIZE = 480;
-const CACHE_LIMIT = 8;
+const CACHE_LIMIT = 4;
 const rows = new Map(), cache = new Map(), pending = new Map(), queue = [];
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
 const pageActive = () => window.showroomPageActive?.() ?? !document.hidden;
 let renderer, scene, camera, environment, frame = 0, last = 0, loads = 0, dead = false, contextLost = false;
 
-export function compactMetalPair(items, round) {
-  return items.length ? [0, 1].map(slot => items[(round * 2 + slot) % items.length]) : [];
+export function compactMetalSelection(items, round) {
+  return items.length ? [items[round % items.length]] : [];
 }
 
 function disposeModel(root) {
@@ -72,7 +72,7 @@ function trim() {
   const protectedURLs = new Set();
   for (const row of rows.values()) {
     for (const item of row.items || []) protectedURLs.add(item.model);
-    if (row.next) for (const item of compactMetalPair(row.catalog, row.round + 1)) protectedURLs.add(item.model);
+    if (row.next) for (const item of compactMetalSelection(row.catalog, row.round + 1)) protectedURLs.add(item.model);
   }
   for (const [url, entry] of cache) {
     if (cache.size <= CACHE_LIMIT) break;
@@ -121,13 +121,13 @@ function publish(row, slot, item) {
 
 function prepareNext(row) {
   if (row.next || !row.catalog.length || !active(row) || motion.matches) return;
-  row.next = Promise.all(compactMetalPair(row.catalog, row.round + 1).map(load));
+  row.next = Promise.all(compactMetalSelection(row.catalog, row.round + 1).map(load));
 }
 
 async function advance(row) {
   if (row.changing || !active(row)) return;
   row.changing = true;
-  const nextItems = compactMetalPair(row.catalog, row.round + 1);
+  const nextItems = compactMetalSelection(row.catalog, row.round + 1);
   const entries = await (row.next || Promise.all(nextItems.map(load)));
   if (dead) return;
   row.round++; row.angle = 0; row.items = nextItems; row.entries = entries; row.next = null; row.changing = false;
@@ -187,8 +187,8 @@ async function catalogFor(key) {
 async function mount(element) {
   const key = element.dataset.compactCollection;
   if (!['belts', 'necklaces'].includes(key) || rows.has(key)) return;
-  const hosts = [...element.querySelectorAll('.collection-compact-slot')].slice(0, 2);
-  if (hosts.length !== 2) return;
+  const hosts = [...element.querySelectorAll('.collection-compact-slot[data-compact-role="featured"]')].slice(0, 1);
+  if (hosts.length !== 1) return;
   const row = {key, element, visible: new Set(), expanded: element.dataset.collectionExpanded === 'true', catalog: [], round: 0, angle: 0, next: null, entries: null, changing: false};
   row.slots = hosts.map(host => {
     const canvas = host.querySelector('canvas'), image = host.querySelector('[data-compact-fallback]'), name = host.querySelector('[data-compact-name]');
@@ -198,7 +198,7 @@ async function mount(element) {
   rows.set(key, row);
   try {
     row.catalog = await catalogFor(key); if (!row.catalog.length || dead) return;
-    row.items = compactMetalPair(row.catalog, 0); row.slots.forEach((slot, index) => publish(row, slot, row.items[index]));
+    row.items = compactMetalSelection(row.catalog, 0); row.slots.forEach((slot, index) => publish(row, slot, row.items[index]));
     const begin = async () => {
       if (row.started || !active(row) || !ensureRenderer()) return;
       row.started = true; row.entries = await Promise.all(row.items.map(load)); request();

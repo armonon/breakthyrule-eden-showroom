@@ -12,7 +12,10 @@ function letteringCanvas() {
     const ascent = metrics.actualBoundingBoxAscent || 220, descent = metrics.actualBoundingBoxDescent || 90;
     const scale = Math.min(1900 / (left + right), 440 / (ascent + descent));
     ctx.translate(canvas.width / 2, canvas.height / 2); ctx.scale(scale, scale);
-    ctx.fillStyle = '#fff'; ctx.fillText(text, (left - right) / 2, (ascent - descent) / 2);
+    // Reinforce fine swashes at the same weight as the larger embroidered mark.
+    ctx.fillStyle = ctx.strokeStyle = '#fff'; ctx.lineWidth = 3.2; ctx.lineJoin = 'round';
+    ctx.strokeText(text, (left - right) / 2, (ascent - descent) / 2);
+    ctx.fillText(text, (left - right) / 2, (ascent - descent) / 2);
     return canvas;
   })().catch(error => { canvasPromise = null; throw error; });
 }
@@ -24,11 +27,22 @@ export async function applyBackWordmark(root, item) {
   root.updateMatrixWorld(true);
   const inverse = root.matrixWorld.clone().invert();
   const box = new T.Box3().setFromObject(root).applyMatrix4(inverse), size = box.getSize(new T.Vector3()), center = box.getCenter(new T.Vector3());
-  const width = size.x * .72, height = Math.min(width / 4, size.y * .65);
-  const cy = item.family === 'headband' ? center.y : box.min.y + size.y * .17;
+  const cuff = new T.Box3(); let red = new T.Color('#d7192b');
+  root.traverse(object => {
+    if (!object.isMesh) return;
+    for (const material of [].concat(object.material || [])) {
+      if (/^Centaur embroidery \/ red thread/.test(material?.name || '') && material.color) red.copy(material.color);
+      if (/^Folded rib cuff \/ color/.test(material?.name || '')) cuff.expandByObject(object);
+    }
+  });
+  if (!cuff.isEmpty()) cuff.applyMatrix4(inverse);
+  const width = size.x * .85;
+  const height = Math.min(width / 4, !cuff.isEmpty() ? cuff.getSize(new T.Vector3()).y * .80 : size.y * .76);
+  const cy = !cuff.isEmpty() ? cuff.getCenter(new T.Vector3()).y : center.y;
   const texture = new T.CanvasTexture(canvas); texture.colorSpace = T.SRGBColorSpace; texture.anisotropy = 8;
   const uniforms = {
     accessoryBrandMap: {value: texture}, accessoryBrandRoot: {value: inverse},
+    accessoryBrandColor: {value: red},
     accessoryBrandRect: {value: new T.Vector4(center.x, cy, width, height)}, accessoryBrandBackZ: {value: center.z}
   };
   const materials = new Set();
@@ -46,18 +60,16 @@ export async function applyBackWordmark(root, item) {
           mat4 brandMatrix = accessoryBrandRoot * modelMatrix;
           vAccessoryBrandPosition = (brandMatrix * vec4(transformed, 1.0)).xyz;
           vAccessoryBrandNormal = normalize(mat3(brandMatrix) * objectNormal);`);
-        shader.fragmentShader = 'uniform sampler2D accessoryBrandMap; uniform vec4 accessoryBrandRect; uniform float accessoryBrandBackZ; varying vec3 vAccessoryBrandPosition; varying vec3 vAccessoryBrandNormal;\n' + shader.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+        shader.fragmentShader = 'uniform sampler2D accessoryBrandMap; uniform vec3 accessoryBrandColor; uniform vec4 accessoryBrandRect; uniform float accessoryBrandBackZ; varying vec3 vAccessoryBrandPosition; varying vec3 vAccessoryBrandNormal;\n' + shader.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
           if(vAccessoryBrandNormal.z < -0.35 && vAccessoryBrandPosition.z < accessoryBrandBackZ){
             vec2 brandUV = vec2(-(vAccessoryBrandPosition.x-accessoryBrandRect.x)/accessoryBrandRect.z, (vAccessoryBrandPosition.y-accessoryBrandRect.y)/accessoryBrandRect.w) + 0.5;
             if(brandUV.x>=0.0 && brandUV.x<=1.0 && brandUV.y>=0.0 && brandUV.y<=1.0){
               float ink = texture2D(accessoryBrandMap,brandUV).a;
-              float luminance = dot(diffuseColor.rgb,vec3(0.2126,0.7152,0.0722));
-              vec3 thread = mix(vec3(0.94,0.91,0.84),vec3(0.025),smoothstep(0.2,0.65,luminance));
-              diffuseColor.rgb = mix(diffuseColor.rgb,thread,ink*0.98);
+              diffuseColor.rgb = mix(diffuseColor.rgb,accessoryBrandColor,ink*0.98);
             }
           }`);
       };
-      material.customProgramCacheKey = () => cacheKey + '|accessory-ballet-back-1';
+      material.customProgramCacheKey = () => cacheKey + '|accessory-ballet-back-2';
       material.userData.accessoryWordmark = {texture}; material.needsUpdate = true;
     }
     if (printed) {

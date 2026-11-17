@@ -24,16 +24,16 @@ def material(name,color,roughness=.8,alpha=1):
     if alpha<1:m.surface_render_method='BLENDED';m.use_transparency_overlap=False
     return m
 
-cotton=material('White cotton jersey / three tees',(.91,.90,.87),.94)
-rib=material('White rib-knit neckline',(.84,.835,.81),.90)
+cotton=material('White cotton jersey / three tees',(.78,.77,.74),.94)
+rib=material('White rib-knit neckline',(.54,.535,.51),.90)
 seam=material('White cotton double needle seams',(.79,.785,.76),.88)
 inner=material('Inside the folded cotton neckline',(.59,.60,.58),1)
-bag=material('Frosted clear recycled zip bag',(.73,.79,.79),.29,.10)
-edge=material('Heat-sealed translucent bag edges',(.72,.78,.79),.40,.52)
-header=material('Frosted zip header',(.67,.74,.75),.43,.76)
-zipmat=material('Zip closure / charcoal',(.13,.17,.17),.52)
+bag=material('Clear flexible polyethylene film',(.92,.96,.96),.17,.065)
+edge=material('Thin heat-sealed plastic perimeter',(.85,.93,.93),.22,.085)
+crinkle=material('Fine plastic crease highlights',(.96,.99,.99),.12,.16)
+
 ink=material('Packaging typography / dark green',(.025,.055,.043),.75)
-red=material('Apple red zip marker',(.68,.008,.022),.5)
+
 
 # A tiny embedded, repeating jersey normal texture works in both Blender and glTF.
 N=128;pixels=[]
@@ -94,122 +94,186 @@ t=logo.node_tree.nodes.new('ShaderNodeTexImage');t.image=logo_image;t.interpolat
 logo.node_tree.links.new(t.outputs['Color'],p.inputs['Base Color']);logo.node_tree.links.new(t.outputs['Alpha'],p.inputs['Alpha'])
 logo.surface_render_method='DITHERED';logo.alpha_threshold=.3
 
-def make_tee(index):
-    # Three discrete folded shirts, staggered enough to expose all three collars.
-    ox=-.008*index; oy=.027*index; oz=.018*index-.022
-    width=.264;height=.316;thickness=.025
-    nx=32;nz=32;verts=[];uv=[];faces=[]
-    def front_y(x,z):
-        bulge=.0045*(1-(x/(width*.5))**2)*math.sin(math.pi*(z/height+.5))
-        wrinkle=.0009*math.sin(x*86+z*24)*math.sin(z*39)*(abs(x)/(width*.5))**2
-        return oy-.042-bulge+wrinkle
-    for back in (False,True):
-        for j in range(nz+1):
-            v=j/nz
-            for i in range(nx+1):
-                u=i/nx;x=(u-.5)*width
-                neckline=.029*math.sqrt(max(0,1-(x/.046)**2)) if abs(x)<.046 and not back else 0
-                z=-height/2+v*(height-neckline)
-                y=front_y(x,z)+(thickness if back else 0)
-                verts.append((x+ox,y,z+oz));uv.append((u,v))
-    layer=(nx+1)*(nz+1)
-    for b in (0,1):
-        for j in range(nz):
-            for i in range(nx):
-                a=b*layer+j*(nx+1)+i
-                quad=(a,a+1,a+nx+2,a+nx+1);faces.append(quad if b==0 else quad[::-1])
-    # Close the fold volume with soft fabric sides, not a flat card.
-    boundaries=[list(range(nx+1)),[j*(nx+1)+nx for j in range(nz+1)],list(range(nz*(nx+1),layer)),[j*(nx+1) for j in range(nz+1)]]
-    for edge_ids in boundaries:
-        for a,b in zip(edge_ids,edge_ids[1:]):faces.append((a,b,b+layer,a+layer))
-    o=mesh(f'Tee {index+1} / separately folded white cotton',verts,faces,cotton,uv)
-    o['pack_piece']=index+1;o['garment']='white crew-neck tee';o['artwork']='site/eden-apple-red-bitmap.png'
-    # Raised U-shaped rib neck and inner folded collar lip.
-    pts=[]
-    for i in range(49):
-        theta=math.pi+math.pi*i/48;x=.046*math.cos(theta);z=height/2+.029*math.sin(theta)
-        pts.append((ox+x,front_y(x,z)-.0012,oz+z))
-    line(f'Tee {index+1} / ribbed crew neckline',pts,.0039,rib)
-    line(f'Tee {index+1} / neckline inner seam',[(x,y-.0008,z+.001) for x,y,z in pts],.00065,seam)
-    # Visible two-fold edges and a double needle hem.
-    for zoffset in (.009,.013):
-        z=-height/2+zoffset
-        line(f'Tee {index+1} / double needle hem',[(ox+x,front_y(x,z)-.00055,oz+z) for x in [-.127+k*.254/30 for k in range(31)]],.00038,seam)
-    for side in (-1,1):
-        x=side*(width/2-.007)
-        line(f'Tee {index+1} / tucked sleeve fold',[(ox+x,front_y(x,z)-.0005,oz+z) for z in [-.13+k*.26/22 for k in range(23)]],.0005,seam)
-    # A printed original Apple, positioned on the wearer's left chest.
-    x=.064;z=.066;sz=.050;lv=[];lf=[];lu=[];segments=12
-    for j in range(segments+1):
-        for i in range(segments+1):
-            u=i/segments;v=j/segments;xx=x+(u-.5)*sz;zz=z+(v-.5)*sz
-            lv.append((ox+xx,front_y(xx,zz)-.0009,oz+zz));lu.append((u,v))
-    for j in range(segments):
-        for i in range(segments):
-            a=j*(segments+1)+i;lf.append((a,a+1,a+segments+2,a+segments+1))
-    mesh(f'Tee {index+1} / bitmap Apple left-chest print',lv,lf,logo,lu)
+# Fold the actual collection tee, retaining its rounded hem, ribbed neckline,
+# garment-shaped shoulders and sewn details. Shared mesh data keeps three shirts
+# inexpensive in glTF. The base is flattened, never replaced with a rectangular box.
+from mathutils import Matrix
+from mathutils.bvhtree import BVHTree
+bpy.ops.import_scene.gltf(filepath=str(ROOT/'core-collection/models/core-tee-black.glb'))
+imported=list(bpy.context.selected_objects)
+imported_helpers=[o for o in imported if o.type!='MESH']
+tee_parts=[]
 
-# Back-to-front creation gives transparent sorting a stable, natural hierarchy.
-for i in (2,1,0):make_tee(i)
+def fold_position(p):
+    x,y,z=p
+    y*=.040
+    # A monotonic rolled-under sleeve edge prevents surface intersections while
+    # compressing the tucked sleeve behind the front of the folded shirt.
+    side=-1 if x<0 else 1;distance=abs(x)-.170;radius=.0075
+    if distance>0:
+        x=side*(.170+radius*(1-math.exp(-distance/radius)))
+        y+=.012*(1-math.exp(-distance/.012))+.004*distance/.23
+    # Rounded lower fold: strictly monotonic in height, so no triangle can fold
+    # back through its neighbor. Original hem irregularities are compressed.
+    distance=1.120-z;radius=.080
+    if distance>0:
+        z=1.120-distance/(1+distance/radius)
+        y+=.016*(1-math.exp(-distance/.035))
+    # Small uneven jersey folds; the narrow seam curves get the same transform.
+    y+=.0015*math.sin(z*48+x*17)*math.exp(-((abs(x)-.135)/.042)**2)
+    return Vector((x*.81,y*.81,(z-1.255)*.81))
 
-W=.334;H=.438;YFRONT=-.057;YBACK=.055;ZCENTER=.025
-def bag_y(z,back=False):
-    fold=max(0,min(1,(z-.172)/.072))
-    return (YBACK if back else YFRONT)*(1-fold)+(.006 if back else -.006)*fold
-# The two softly rippled bag panels are separate from the folded clothes.
+for o in imported:
+    if o.type!='MESH':continue
+    if any((m and (m.name.startswith('Core logo') or m.name.startswith('Core eye'))) for m in o.data.materials):
+        bpy.data.objects.remove(o,do_unlink=True);continue
+    if all(m and 'stitching' in m.name for m in o.data.materials):
+        # Separate thread spans are not foldable cloth. Preserve the actual rib
+        # collar in the body mesh; omit long stitching strips through the fold.
+        bpy.data.objects.remove(o,do_unlink=True);continue
+    world=o.matrix_world.copy();o.data=o.data.copy()
+    bpy.context.view_layer.objects.active=o
+    # Split UV vertices are welded before the bend so the hem stays continuous.
+    import bmesh
+    bm=bmesh.new();bm.from_mesh(o.data)
+    bmesh.ops.remove_doubles(bm,verts=list(bm.verts),dist=.0000001)
+    bm.to_mesh(o.data);bm.free()
+    sub=o.modifiers.new('Cloth fold sampling','SUBSURF');sub.subdivision_type='SIMPLE';sub.levels=1
+    bpy.ops.object.modifier_apply(modifier=sub.name)
+    bend=o.vertex_groups.new(name='Soft folded corners')
+    for vertex in o.data.vertices:
+        p=world@vertex.co
+        weight=max(min(1,max(0,(abs(p.x)-.135)/.045)),min(1,max(0,(1.10-p.z)/.04)))
+        if weight>0:bend.add([vertex.index],weight,'REPLACE')
+    for v in o.data.vertices:v.co=fold_position(world@v.co)
+    o.matrix_world=Matrix.Identity(4)
+    for i,m in enumerate(o.data.materials):
+        o.data.materials[i]=rib if m and 'rib knit' in m.name else seam if m and 'stitching' in m.name else cotton
+    try:o.data.normals_split_custom_set([(0,0,0)]*len(o.data.loops))
+    except Exception:pass
+    for p in o.data.polygons:p.use_smooth=True
+    o.data.update()
+    smooth=o.modifiers.new('Relax folded jersey','SMOOTH');smooth.vertex_group=bend.name;smooth.factor=.70;smooth.iterations=10
+    bpy.ops.object.modifier_apply(modifier=smooth.name)
+    # The original knit/body are dense enough to reduce without losing the fold.
+    if 'cloth' in o.name.lower():
+        bpy.context.view_layer.objects.active=o
+        mod=o.modifiers.new('Web garment detail','DECIMATE');mod.ratio=.10
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    try:bpy.ops.mesh.customdata_custom_splitnormals_clear()
+    except Exception:pass
+    tee_parts.append(o)
+for o in imported_helpers:bpy.data.objects.remove(o,do_unlink=True)
+
+# Surface-following Apple patch, fitted by ray casting onto the real front cloth.
+bpy.context.view_layer.update()
+cloth=next(o for o in tee_parts if 'cloth' in o.name.lower())
+surface=BVHTree.FromObject(cloth,bpy.context.evaluated_depsgraph_get())
+lv=[];lf=[];lu=[];segments=14;cx=.067;cz=.094;sz=.050
+for j in range(segments+1):
+    for i in range(segments+1):
+        u=i/segments;v=j/segments;x=cx+(u-.5)*sz;z=cz+(v-.5)*sz
+        hit,normal,face,distance=surface.ray_cast(Vector((x,-1,z)),Vector((0,1,0)))
+        y=hit.y-.00055 if hit else -.005
+        lv.append((x,y,z));lu.append((u,v))
+for j in range(segments):
+    for i in range(segments):
+        a=j*(segments+1)+i;lf.append((a,a+1,a+segments+2,a+segments+1))
+patch=mesh('Original bitmap Apple / left chest',lv,lf,logo,lu)
+objects.remove(patch);tee_parts.append(patch)
+
+for index in range(3):
+    offset=Vector(([-.001,.004,-.003][index],[-.016,.000,.016][index],[-.014,.000,.014][index]))
+    for base in tee_parts:
+        o=base.copy();o.data=base.data;bpy.context.collection.objects.link(o)
+        o.name=f'Tee {index+1} / '+('chest Apple' if base==patch else base.name)
+        o.location=offset;o.rotation_euler.z=[-.012,.014,-.007][index]
+        o['pack_piece']=index+1;o['garment']='Folded white crew-neck cotton tee'
+        o['artwork']='site/eden-apple-red-bitmap.png';objects.append(o)
+for o in tee_parts:bpy.data.objects.remove(o,do_unlink=True)
+
+# A soft, irregular polybag following the stack. Clear panels remain separate
+# for correct alpha sorting in Three.js, with no transmission or thick glass.
+TOP=.233;BOTTOM=-.195
+def outline(v):
+    return .158*(1-.075*abs(v)**8)+.0017*math.sin(v*17)+.001*math.cos(v*31)
+def panel_point(u,v,back=False):
+    w=outline(v);x=u*w
+    z=(TOP+BOTTOM)/2+v*(TOP-BOTTOM)/2
+    z+=.0026*math.sin(u*16+1.8)*(abs(v)**7)+.0018*math.cos(u*29)*abs(v)**12
+    edge_round=.009*abs(u)**10*(abs(v)**5)
+    z-=math.copysign(edge_round,v)
+    top_gather=max(0,min(1,(z-.179)/.055))
+    if back:y=.048*(1-top_gather)+.004*top_gather
+    else:y=-.034*(1-top_gather)-.004*top_gather
+    # Creases gather near the sealed borders; the center stays optically clear.
+    wr=(.0010*math.sin(u*33+v*17)+.0018*math.sin(u*19-v*31))*(abs(u)**5+.40*abs(v)**8)
+    y+=wr
+    y+=(1 if back else -1)*.0035*(1-u*u)*(1-v*v)
+    return (x,y,z)
+
 for back in (False,True):
-    nx=18;nz=22;verts=[];faces=[];uv=[]
+    nx=36;nz=48;verts=[];faces=[];uv=[]
     for j in range(nz+1):
-        v=j/nz
+        v=j/nz*2-1
         for i in range(nx+1):
-            u=i/nx;x=(u-.5)*W;z=(v-.5)*H+ZCENTER
-            wave=.0014*math.sin(u*math.pi*8+v*math.pi*3)*math.sin(math.pi*u)*math.sin(math.pi*v)
-            y=bag_y(z,back)+wave
-            verts.append((x,y,z));uv.append((u,v))
+            u=i/nx*2-1;verts.append(panel_point(u,v,back));uv.append(((u+1)/2,(v+1)/2))
     for j in range(nz):
         for i in range(nx):
-            a=j*(nx+1)+i;face=(a,a+1,a+nx+2,a+nx+1);faces.append(face[::-1] if back else face)
-    panel=mesh('Zip bag / '+('back panel' if back else 'clear front window'),verts,faces,bag,uv)
-    panel.data.materials.append(header)
-    for poly in panel.data.polygons:
-        if sum(panel.data.vertices[v].co.z for v in poly.vertices)/len(poly.vertices)>.198:poly.material_index=1
+            a=j*(nx+1)+i;q=(a,a+1,a+nx+2,a+nx+1);faces.append(q[::-1] if back else q)
+    mesh('Clear polybag / '+('rear soft film' if back else 'front soft film'),verts,faces,bag,uv)
+
+# Narrow heat-seal bands are flat ribbons, never rigid bars or boxed gussets.
 for side in (-1,1):
-    x=side*W/2
-    vv=[];ff=[]
-    for j in range(23):
-        z=ZCENTER-H/2+j*H/22;vv.extend([(x,bag_y(z),z),(x,bag_y(z,True),z)])
-    for j in range(22):ff.append((j*2,j*2+1,j*2+3,j*2+2))
-    mesh('Zip bag / folded side gusset',vv,ff,bag)
     for back in (False,True):
-        line('Zip bag / heat sealed side',[(x,bag_y(ZCENTER-H/2+j*H/22,back),ZCENTER-H/2+j*H/22) for j in range(23)],.0014,edge)
-box('Zip bag / folded bottom gusset',(0,0,ZCENTER-H/2),(W,.112,.005),edge,.0018)
-for dz in (0,.0038):
-    z=ZCENTER+H/2-.047+dz
-    line('Zip bag / double press seal',[(x,bag_y(z)-.0007,z) for x in [-W/2+.006+i*(W-.012)/50 for i in range(51)]],.0012,zipmat)
-box('Zip bag / red closure tab',(.135,bag_y(ZCENTER+H/2-.041)-.002,ZCENTER+H/2-.041),(.016,.006,.012),red,.002)
-title=text('Daily Apple package title','DAILY APPLE',(0,bag_y(ZCENTER+H/2-.027)-.0008,ZCENTER+H/2-.027),.024,ink,'CENTER')
-title.rotation_euler.x=math.atan2(1,(.057-.006)/.072)
-text('Pack quantity label','3 WHITE TEES',(0,YFRONT-.002,ZCENTER-H/2+.019),.012,ink,'CENTER')
+        vv=[];ff=[]
+        for j in range(65):
+            v=j/64*2-1
+            vv.extend([panel_point(side*.970,v,back),panel_point(side,v,back)])
+        for j in range(64):ff.append((j*2,j*2+1,j*2+3,j*2+2))
+        mesh('Polybag / fine side heat seal',vv,ff,edge)
+    # The edge turn follows both curved panels and remains transparent.
+    vv=[];ff=[]
+    for j in range(65):
+        v=j/64*2-1;vv.extend([panel_point(side,v,False),panel_point(side,v,True)])
+    for j in range(64):ff.append((j*2,j*2+1,j*2+3,j*2+2))
+    mesh('Polybag / flexible side return',vv,ff,bag)
+for top in (-1,1):
+    # Pinched, wavy top and bottom seams, with a soft curved film return.
+    for back in (False,True):
+        vv=[];ff=[]
+        for i in range(65):
+            u=i/64*2-1;vv.extend([panel_point(u,top*.978,back),panel_point(u,top,back)])
+        for i in range(64):ff.append((i*2,i*2+1,i*2+3,i*2+2))
+        mesh('Polybag / pinched top seal' if top>0 else 'Polybag / folded bottom seal',vv,ff,edge)
+    vv=[];ff=[]
+    for i in range(65):
+        u=i/64*2-1;vv.extend([panel_point(u,top,False),panel_point(u,top,True)])
+    for i in range(64):ff.append((i*2,i*2+1,i*2+3,i*2+2))
+    mesh('Polybag / softly turned film end',vv,ff,bag)
 
-# Creased highlights at corners make the film read as a soft bag at every angle.
-for side in (-1,1):
-    x=side*(W/2-.004)
-    line('Zip bag / corner crease',[(x,YFRONT-.0007,ZCENTER-H/2+.010),(x-side*.020,YFRONT-.001,ZCENTER-H/2+.029),(x-side*.024,YFRONT-.0003,ZCENTER-H/2+.065)],.00055,edge)
+# Sparse curved highlight slivers catch direct studio lights, like creased film.
+creases=[(-.97,-.94,-.72,-.71),(-.98,-.82,-.89,-.39),(.96,-.91,.69,-.69),(.97,-.66,.88,-.34),(-.96,.89,-.71,.72),(.93,.91,.74,.64),(-.54,.99,-.36,.77),(.42,.99,.30,.76)]
+for index,(ua,va,ub,vb) in enumerate(creases):
+    vv=[];ff=[]
+    for i in range(17):
+        t=i/16;u=ua+(ub-ua)*t+.022*math.sin(t*math.pi);v=va+(vb-va)*t
+        width=.0035*math.sin(t*math.pi)
+        for du in (-width,width):
+            x,y,z=panel_point(u+du,v);vv.append((x,y-.00045,z))
+    for i in range(16):ff.append((i*2,i*2+1,i*2+3,i*2+2))
+    mesh('Polybag / subtle crinkle highlight '+str(index+1),vv,ff,crinkle)
 
-scene=bpy.context.scene;scene.render.engine='CYCLES';scene.cycles.samples=40;scene.cycles.use_denoising=True
+scene=bpy.context.scene;scene.render.engine='CYCLES';scene.cycles.samples=48;scene.cycles.use_denoising=True
 scene.render.resolution_x=1000;scene.render.resolution_y=1100;scene.render.resolution_percentage=100
-scene.render.film_transparent=True;scene.view_settings.view_transform='AgX';scene.view_settings.look='AgX - Medium High Contrast';scene.view_settings.exposure=-.8
-scene.world.color=(.35,.35,.35)
-for name,loc,power,size in [('Key',(-.5,-.7,.85),22,.65),('Fill',(.6,-.35,.3),12,.6),('Rim',(.3,.55,.65),24,.45)]:
+scene.render.film_transparent=True;scene.view_settings.view_transform='AgX';scene.view_settings.look='AgX - Medium High Contrast';scene.view_settings.exposure=-.65
+scene.world.color=(.30,.30,.30)
+for name,loc,power,size in [('Key',(-.5,-.7,.85),22,.65),('Fill',(.6,-.35,.3),10,.6),('Rim',(.3,.55,.65),24,.45)]:
     data=bpy.data.lights.new(name,'AREA');data.energy=power;data.shape='DISK';data.size=size
     o=bpy.data.objects.new(name,data);scene.collection.objects.link(o);o.location=loc;o.rotation_euler=(Vector((0,0,.025))-o.location).to_track_quat('-Z','Y').to_euler()
 camdata=bpy.data.cameras.new('Catalog camera');cam=bpy.data.objects.new('Catalog camera',camdata);scene.collection.objects.link(cam)
-cam.location=(.47,-1.35,.42);target=Vector((0,0,.023));cam.rotation_euler=(target-cam.location).to_track_quat('-Z','Y').to_euler();camdata.type='ORTHO';camdata.ortho_scale=.54;scene.camera=cam
-
-for o in objects:
-    if o.type in ('CURVE','FONT'):
-        bpy.ops.object.select_all(action='DESELECT');o.select_set(True);bpy.context.view_layer.objects.active=o;bpy.ops.object.convert(target='MESH')
-scene['product']='Daily Apple 3-Pack';scene['pieces']=3;scene['source_artwork']='site/eden-apple-red-bitmap.png'
+cam.location=(.48,-1.35,.43);target=Vector((0,0,.01));cam.rotation_euler=(target-cam.location).to_track_quat('-Z','Y').to_euler();camdata.type='ORTHO';camdata.ortho_scale=.54;scene.camera=cam
+scene['product']='Daily Apple 3-Pack';scene['pieces']=3;scene['source_artwork']='site/eden-apple-red-bitmap.png';scene['packaging']='Clear flexible polybag visualization'
 bpy.ops.wm.save_as_mainfile(filepath=str(WORK/'daily-apple-3-pack.blend'))
 bpy.ops.object.select_all(action='DESELECT')
 for o in objects:o.select_set(True)
@@ -220,7 +284,6 @@ scene.render.image_settings.file_format='PNG';scene.render.filepath=str(WORK/'da
 pts=[o.matrix_world@Vector(corner) for o in objects for corner in o.bound_box]
 low=Vector([min(p[i] for p in pts) for i in range(3)]);high=Vector([max(p[i] for p in pts) for i in range(3)])
 triangles=0
-for o in objects:
-    o.data.calc_loop_triangles();triangles+=len(o.data.loop_triangles)
-report={'model':str(path),'bytes':path.stat().st_size,'triangles':triangles,'dimensionsMm':[round(v*1000,1) for v in high-low],'shirts':3,'artwork':'Original site bitmap Apple','packaging':'Product visualization','hanesWordmarkAdded':False}
+for o in objects:o.data.calc_loop_triangles();triangles+=len(o.data.loop_triangles)
+report={'model':str(path),'bytes':path.stat().st_size,'triangles':triangles,'dimensionsMm':[round(v*1000,1) for v in high-low],'shirts':3,'artwork':'Original site bitmap Apple','packaging':'Clear soft polybag visualization','hanesWordmarkAdded':False,'revision':'clear-bag-2'}
 (WORK/'validation.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report),flush=True)

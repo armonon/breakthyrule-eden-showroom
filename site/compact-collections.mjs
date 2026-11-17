@@ -32,16 +32,15 @@ function completeBeltGrid(section, grid) {
 }
 
 function startPhotoCycle(state) {
-  let timer = 0, generation = 0, visible = false, pair = 0;
+  let timer = 0, generation = 0, visible = false, photoIndex = 0;
   const photos = [...state.grid.querySelectorAll('.product-card:not([data-accessory-replacement])')].map(card => ({
     src: card.querySelector('img')?.getAttribute('src'),
     alt: card.querySelector('img')?.alt,
     name: card.querySelector('h3')?.textContent || 'Garment'
   })).filter(photo => photo.src);
-  function paint() {
+  async function paint() {
     const current = ++generation;
-    state.slots.forEach(async (slot, index) => {
-      const photo = photos[(pair * 2 + index) % photos.length];
+      const slot = state.slots[0], photo = photos[photoIndex % photos.length];
       if (!photo) return;
       const image = new Image(); image.decoding = 'async'; image.src = photo.src;
       try { await image.decode(); } catch { return; }
@@ -51,12 +50,11 @@ function startPhotoCycle(state) {
       slot.querySelector('[data-compact-name]').textContent = photo.name;
       slot.setAttribute('aria-label', 'Expand garments — ' + photo.name);
       if (!reduced.matches && visible) target.animate([{opacity: .3}, {opacity: 1}], {duration: 380, easing: 'ease-out'});
-    });
   }
   function schedule() {
     clearTimeout(timer);
     if (!visible || state.expanded || !activePage() || reduced.matches || photos.length < 3) return;
-    timer = setTimeout(() => { pair++; paint(); schedule(); }, 5000);
+    timer = setTimeout(() => { photoIndex++; paint(); schedule(); }, 5000);
   }
   const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; schedule(); }, {threshold: .05});
   observer.observe(state.preview);
@@ -65,6 +63,45 @@ function startPhotoCycle(state) {
   reduced.addEventListener('change', schedule);
   state.photoMotion = schedule;
   paint();
+}
+
+function overviewItems(definition, grid) {
+  if (definition.id === 'belts') return (window.BTR_BELTS || []).map(item => ({id:item.id,name:item.name,src:'/btr-belts/'+item.poster}));
+  return [...grid.children].map(card => {
+    const link = card.matches('a') ? card : card.querySelector('h3 a');
+    const id = link && new URL(link.href).searchParams.get('item');
+    const player = card.querySelector('transparent-spin');
+    const src = player ? player.getAttribute('poster')?.replace('-detail-poster.png','-full-poster.png') : card.querySelector('img')?.getAttribute('src');
+    return {id,name:card.querySelector('h3')?.textContent || definition.title,src};
+  }).filter(item => item.id && item.src);
+}
+
+function mountOverview(slot, definition, grid) {
+  const items = overviewItems(definition, grid);
+  const columns = definition.id === 'products' ? 6 : 5;
+  const mosaic = element('span', {className:'collection-compact-overview-grid'});
+  mosaic.setAttribute('aria-hidden','true');
+  mosaic.style.setProperty('--overview-columns',String(columns));
+  mosaic.style.setProperty('--overview-rows',String(Math.max(1,Math.ceil(items.length/columns))));
+  for (const item of items) {
+    const image = element('img', {alt:'',width:128,height:128,loading:'lazy',decoding:'async'});
+    image.dataset.overviewSrc = '/site/collection-overviews/'+definition.id+'/'+encodeURIComponent(item.id)+'.webp';
+    image.addEventListener('error', () => { if (!image.dataset.overviewFallback) { image.dataset.overviewFallback='true'; image.src=item.src; } });
+    const cell = element('span', {className:'collection-compact-overview-item',title:item.name}, image);
+    cell.dataset.product = item.id; mosaic.append(cell);
+  }
+  slot.classList.add('collection-compact-overview');
+  slot.dataset.overviewCount = String(items.length);
+  slot.setAttribute('aria-label','Show all '+items.length+' '+(definition.id==='products'?'pieces':definition.title.toLowerCase()));
+  slot.querySelector('[data-compact-name]').textContent='All '+items.length+' '+(definition.id==='products'?'pieces':definition.title.toLowerCase());
+  slot.prepend(mosaic);
+  // The contact sheet has no model loads and fetches its tiny posters only when visible.
+  const observer = new IntersectionObserver(entries => {
+    if (!entries.some(entry => entry.isIntersecting)) return;
+    for (const image of mosaic.querySelectorAll('img')) image.src=image.dataset.overviewSrc;
+    slot.dataset.overviewLoaded='true'; observer.disconnect();
+  }, {threshold:.01});
+  observer.observe(slot);
 }
 
 function mount(definition) {
@@ -81,12 +118,13 @@ function mount(definition) {
     const player = [...grid.querySelectorAll('transparent-spin')][index];
     const slot = element('button', {className: 'collection-compact-slot', type: 'button', ariaLabel: 'Expand ' + definition.title.toLowerCase()});
     slot.dataset.compactSlot = String(index);
+    slot.dataset.compactRole = index === 0 ? 'featured' : 'overview';
     slot.setAttribute('aria-controls', panel.id); slot.setAttribute('aria-expanded', 'false');
     const fallback = element('img', {src: source?.getAttribute('src') || player?.getAttribute('poster') || '', alt: source?.alt || player?.getAttribute('label') || definition.title, loading: 'lazy', decoding: 'async', width: 480, height: 480});
     fallback.dataset.compactFallback = '';
     const name = element('span', {className: 'collection-compact-name', textContent: [...grid.querySelectorAll('h3')][index]?.textContent || definition.title}); name.dataset.compactName = '';
-    slot.append(fallback);
-    if (definition.id !== 'products') {
+    if (index === 0) slot.append(fallback);
+    if (index === 0 && definition.id !== 'products') {
       const canvas = element('canvas', {width: 480, height: 480});
       canvas.dataset.compactMetal = definition.id; canvas.dataset.compactSlot = String(index); canvas.setAttribute('aria-hidden', 'true');
       slot.append(canvas);
@@ -131,6 +169,7 @@ function mount(definition) {
   collapse.addEventListener('click', () => setExpanded(false, true, true));
   setExpanded(history.state?.btrCompactCollections?.[definition.id] === true, false);
   if (definition.id === 'products') startPhotoCycle(state);
+  mountOverview(slots[1], definition, grid);
   document.dispatchEvent(new CustomEvent('btr:collection-ready', {detail: {section: definition.id, element: section, slots}}));
 }
 

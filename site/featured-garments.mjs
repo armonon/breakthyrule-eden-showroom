@@ -1,4 +1,4 @@
-import {prepareFeaturedGarment, loadFeaturedTexture} from './featured-garment-materials.mjs?v=1';
+import {prepareFeaturedGarment, loadFeaturedTexture} from './featured-garment-materials.mjs?v=2';
 
 // A single clock, graphic and renderer for the three collection previews.
 const GRAPHICS = ['illuminti','house-of-horus','diamond-body','nu-cross','divide','war','god-loves-u'];
