@@ -2,7 +2,7 @@
 // Shared chrome for the public site: header, tabs, footer, and the discussion board
 // (CreatingCo's hosted Circle community, with earlier browser notes kept separately).
 (()=>{
- const tabs=[['/', 'Products','home'],['/lab','Lab','lab'],['/gallery','Gallery','gallery'],['/archive','Archive','archive'],['/about','About','about'],['/account','Account','account']];
+ const tabs=[['/', 'Products','home'],['/lab','Lab','lab'],['/gallery','Gallery','gallery'],['/archive','Archive','archive'],['/about','About','about']];
  const page=document.body.dataset.page||'';
  // Keep old shared About links working at the dedicated page.
  if(new URLSearchParams(location.search).has('about')){location.replace('/about');return;}
