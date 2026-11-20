@@ -270,12 +270,17 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
  let lastLod=null;const lodAt=new T.Vector3();
  // ---- Photoreal setting: the scanned jacaranda at two levels of detail (tools/pipeline/build-photoreal-flora.py) and real
  // leaves on the hero tree. Empty until the setting is first picked; the card trees stay for every other setting.
- const PHOTO_NEAR=15,photo={on:false,built:false,near:[],mid:[],hero:null};
+ // Crowns are drawn only for trees in view; shadows come from the mid-detail crown of every tree within LOD range, on a
+ // layer only the sun's shadow camera sees (three uses the shadow camera's layers once any beyond 0 is enabled).
+ const PHOTO_NEAR=15,SHADOW_LAYER=9,photo={on:false,built:false,near:[],mid:[],shadow:[],hero:null,culled:0};
+ const viewFrustum=new T.Frustum(),viewMatrix=new T.Matrix4(),crownSphere=new T.Sphere();let lodCamera=null,lodYaw=0;
  function buildPhotoTrees({near,mid,heroLeaves,maps}){
   const n=jacarandaSpots.length,leaf=windMaterial({map:maps.leaves,normalMap:maps.leavesNormal,vertexColors:true,alphaTest:.5,roughness:.6},{sway:.045,flutter:.012,glow:.6,shadeCurve:.55,tint:'*vec3(1.35,1.4,1.)',through:.22});
   const trunk=new T.MeshStandardMaterial({map:maps.trunk,normalMap:maps.trunkNormal,roughness:.95,color:0xa8a29c}),branch=new T.MeshStandardMaterial({map:maps.branches,roughness:.92,color:0xa8a29c});
   const level=parts=>[[parts.trunk,trunk,false],[parts.branches,branch,false],[parts.leaves,leaf,true]].map(([geometry,material,isLeaf])=>{const m=new T.InstancedMesh(geometry,material,n);m.count=0;shadowed(m,true);gardenMeshes.push(m);if(isLeaf)leafMeshes.push(m);return m;});
   photo.near=level(near);photo.mid=level(mid);
+  for(const m of [...photo.near,...photo.mid])m.castShadow=false;
+  photo.shadow=level(mid);for(const m of photo.shadow){m.castShadow=true;m.receiveShadow=false;m.layers.set(SHADOW_LAYER);}
   const heroLeaf=windMaterial({map:maps.heroLeaves,vertexColors:true,alphaTest:.5,roughness:.55},{sway:.03,flutter:.01,glow:.7,shadeCurve:.5,tint:'*vec3(1.45,1.55,.9)',through:.42});
   photo.hero=new T.InstancedMesh(heroLeaves,heroLeaf,1);photo.hero.setMatrixAt(0,new T.Matrix4().makeTranslation(.5,0,-7));photo.hero.setColorAt(0,new T.Color(1,1,1));photo.hero.count=0;photo.hero.computeBoundingSphere();shadowed(photo.hero,true);gardenMeshes.push(photo.hero);leafMeshes.push(photo.hero);
   photo.built=true;
@@ -283,24 +288,33 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
  function setPhotoTrees(on){
   photo.on=!!on&&photo.built;if(!photo.built)return;
   if(heroMeshes[1])heroMeshes[1].count=photo.on?0:1;photo.hero.count=photo.on?1:0;
+  if(photo.on){let world=garden;while(world.parent)world=world.parent;world.traverse(o=>{if(o.isLight&&o.castShadow)o.shadow.camera.layers.enable(SHADOW_LAYER);});}
   lastLod=null;if(lastLodSeen)updateLod(lodAt.clone());
  }
  let lastLodSeen=false;
  function updatePhotoLod(){
-  const [nearTrunk,nearBranch,nearLeaves]=photo.near,[midTrunk,midBranch,midLeaves]=photo.mid,far=jacaranda.far;let near=0,mid=0,distant=0;const tmp=new T.Color();
+  const [nearTrunk,nearBranch,nearLeaves]=photo.near,[midTrunk,midBranch,midLeaves]=photo.mid,far=jacaranda.far;let near=0,mid=0,distant=0,shadows=0,culled=0;const tmp=new T.Color();
+  if(lodCamera){lodCamera.updateMatrixWorld();viewMatrix.multiplyMatrices(lodCamera.projectionMatrix,lodCamera.matrixWorldInverse);viewFrustum.setFromProjectionMatrix(viewMatrix);}
   jacarandaSpots.forEach((t,i)=>{const d=Math.hypot(t.x-lodAt.x,t.z-lodAt.z);
+   const inRange=d<LOD_NEAR*(.9+t.s*.1);
+   if(inRange){for(const m of photo.shadow)m.setMatrixAt(shadows,spotMatrices[i]);shadows++;}
+   // A generous sphere (crown plus a margin) so turning a little never shows a gap before the next re-split.
+   if(inRange&&lodCamera){crownSphere.center.set(t.x,4.5*t.s,t.z);crownSphere.radius=7*t.s+3;if(!viewFrustum.intersectsSphere(crownSphere)){culled++;return;}}
    if(d<PHOTO_NEAR){nearTrunk.setMatrixAt(near,spotMatrices[i]);nearBranch.setMatrixAt(near,spotMatrices[i]);nearLeaves.setMatrixAt(near,spotMatrices[i]);nearLeaves.setColorAt(near,jacaranda.tints[i]);near++;}
    else if(d<LOD_NEAR*(.9+t.s*.1)){midTrunk.setMatrixAt(mid,spotMatrices[i]);midBranch.setMatrixAt(mid,spotMatrices[i]);midLeaves.setMatrixAt(mid,spotMatrices[i]);midLeaves.setColorAt(mid,jacaranda.tints[i]);mid++;}
    else{far.setMatrixAt(distant,spotMatrices[i]);far.setColorAt(distant,t.bloom?tmp.copy(jacaranda.tints[i]).lerp(lilac,.45):jacaranda.tints[i]);distant++;}
   });
-  for(const m of photo.near)m.count=near;for(const m of photo.mid)m.count=mid;far.count=distant;
-  for(const m of [...photo.near,...photo.mid,far]){m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;m.computeBoundingSphere();}
+  for(const m of photo.near)m.count=near;for(const m of photo.mid)m.count=mid;for(const m of photo.shadow)m.count=shadows;far.count=distant;photo.culled=culled;
+  for(const m of [...photo.near,...photo.mid,...photo.shadow,far]){m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;m.computeBoundingSphere();}
  }
- function updateLod(position){
+ function updateLod(position,camera=null){
   if(!jacaranda.ready)return;
-  if(lastLod&&lodAt.distanceToSquared(position)<4)return;lodAt.copy(position);lastLod=true;lastLodSeen=true; // re-split after moving ~2 m
+  // In Photoreal the crowns are culled to the view, so turning (not only walking) re-splits them.
+  let yaw=lodYaw;if(camera&&photo.on){lodCamera=camera;const e=camera.matrixWorld.elements;yaw=Math.atan2(-e[8],-e[10]);}
+  const turned=photo.on&&Math.abs(Math.atan2(Math.sin(yaw-lodYaw),Math.cos(yaw-lodYaw)))>.2;
+  if(lastLod&&!turned&&lodAt.distanceToSquared(position)<4)return;lodYaw=yaw;lodAt.copy(position);lastLod=true;lastLodSeen=true; // re-split after moving ~2 m
   if(photo.on){for(const m of [...jacaranda.near,jacaranda.bloom])m.count=0;updatePhotoLod();return;}
-  if(photo.built)for(const m of [...photo.near,...photo.mid])m.count=0;
+  if(photo.built)for(const m of [...photo.near,...photo.mid,...photo.shadow])m.count=0;
   const [wood,leaves]=jacaranda.near,far=jacaranda.far,bloom=jacaranda.bloom;let near=0,distant=0,blooming=0;const tmpTint=new T.Color();
   jacarandaSpots.forEach((t,i)=>{
    if(Math.hypot(t.x-position.x,t.z-position.z)<LOD_NEAR*(0.9+t.s*.1)){wood.setMatrixAt(near,spotMatrices[i]);leaves.setMatrixAt(near,spotMatrices[i]);leaves.setColorAt(near,jacaranda.tints[i]);near++;if(t.bloom)bloom.setMatrixAt(blooming++,spotMatrices[i]);}
@@ -361,9 +375,10 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
   get forest(){return {trees:(jacaranda.ready?[{wood:jacaranda.wood,foliage:jacaranda.leaves,material:jacaranda.leafMaterial,woodMaterial:jacaranda.woodMaterial,height:jacaranda.height}]:[[forestTemplates[0],leafMaterial],[forestTemplates[1],leafMaterial]].map(([t,material])=>({wood:t.wood,foliage:t.foliage,material,height:t.height}))).concat([{wood:forestCypress.wood,foliage:forestCypress.foliage,material:cypressMaterial,height:forestCypress.height}]),fern:{geometry:fern,material:fernMaterial}};},
   update(t){time.value=t;},
   buildPhotoTrees,setPhotoTrees,photoLeaves:()=>photo.built?[photo.near[2].geometry,photo.mid[2].geometry,photo.hero.geometry]:[],
+  photoStats:()=>photo.built?{near:photo.near[0].count,mid:photo.mid[0].count,shadow:photo.shadow[0].count,culled:photo.culled}:null,
   // Low plants left out of the Photoreal pond's reflection.
   groundCover:()=>flowerMeshes,
-  lod(position){updateLod(position);},
+  lod(position,camera){updateLod(position,camera);},
   // Hide the garden's own trees and ground cover (not the road woodland, which uses its own instances).
   setVisible(value){if(gardenMeshes[0]?.visible===value)return;for(const mesh of gardenMeshes)mesh.visible=value;},
   inspect:()=>({trees:{jacaranda:jacarandaSpots.length,jacarandaNear:jacaranda.near[0]?.count??0,cypress:cypresses.length,hero:1},ferns:ferns.length,flowers:flowerSpots.length,shrubs:shrubCount})

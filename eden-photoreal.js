@@ -1,6 +1,7 @@
 'use strict';
-// The Photoreal graphics setting: real captured content in the garden, loaded only when someone picks it. Never chosen
-// automatically. It swaps the sky and horizon for a photographed panorama, the pond for a planar-reflection water surface,
+// Real captured content in the garden, in two tiers. 'lite' (the High setting) brings the cheap realism: the photographed
+// sky and horizon, scanned stones, the grade and a quarter-resolution pond reflection refreshed every third frame. 'full'
+// (PHOTOREAL, only ever chosen by hand) adds the scanned jacaranda crowns, the hero tree's real leaves and denser grass. It swaps the sky and horizon for a photographed panorama, the pond for a planar-reflection water surface,
 // the garden's trees and stones for scans and the grass for a denser field; every other setting keeps the original scene.
 window.edenPhotoSkyChunk=`uniform sampler2D photoMap;uniform vec4 photoSky;uniform vec3 photoSun;
  vec3 edenPhotoSky(vec3 d){float e=asin(clamp(d.y,-1.,1.));
@@ -11,7 +12,7 @@ window.edenPhotoSkyChunk=`uniform sampler2D photoMap;uniform vec4 photoSky;unifo
 window.createEdenPhotoreal=function(T,{renderer,scene,camera,garden,lighting,post,requestDraw=()=>{}}){
  const skyUniforms=garden.sky.material.uniforms,sunDir=new T.Vector3(-.38,.32,-.8).normalize();
  const original={fog:scene.fog.density,fogColor:scene.fog.color.clone(),water:garden.pond.water.material};
- let on=false,loaded=null;
+ let level=0,loaded=null,treesLoaded=null;
 
  // ---- sky ----
  async function loadSky(){
@@ -48,7 +49,7 @@ window.createEdenPhotoreal=function(T,{renderer,scene,camera,garden,lighting,pos
   float glint=pow(max(dot(reflect(-sun,N),V),0.),900.);col+=vec3(1.,.95,.82)*glint*2.4*(1.-night);
   col=mix(col,col*.25,night*(1.-F));gl_FragColor=vec4(col,1.);}`});
  const planeNormal=new T.Vector3(0,1,0),planePoint=new T.Vector3(),view=new T.Vector3(),eye=new T.Vector3(),look=new T.Vector3(),goal=new T.Vector3(),rotation=new T.Matrix4(),clipPlane=new T.Vector4(),q=new T.Vector4(),plane=new T.Plane();
- let reflectedFrame=false,rendering=false,frameCount=0;const tuning={reflectEvery:2,reflectLeaves:.3};
+ let reflectedFrame=false,rendering=false,frameCount=0;const TUNING={lite:{reflectEvery:3,reflectLeaves:.15,reflectShift:2},full:{reflectEvery:2,reflectLeaves:.3,reflectShift:1}};let tuning=TUNING.full;
  const hiddenInReflection=()=>[garden.pond.water,garden.grassMesh,...garden.flora.groundCover(),...scene.children.filter(o=>o.isObject3D&&o!==garden.stones.parent&&o.name!=='Eden sky box'&&!o.isLight)];
  function renderReflection(render,mainCamera){
   // Only the main camera's first pass of a frame draws it.
@@ -70,7 +71,7 @@ window.createEdenPhotoreal=function(T,{renderer,scene,camera,garden,lighting,pos
   q.set((Math.sign(clipPlane.x)+e[8])/e[0],(Math.sign(clipPlane.y)+e[9])/e[5],-1,(1+e[10])/e[14]);
   clipPlane.multiplyScalar(2/clipPlane.dot(q));e[2]=clipPlane.x;e[6]=clipPlane.y;e[10]=clipPlane.z+1-.003;e[14]=clipPlane.w;
   virtual.projectionMatrixInverse.copy(virtual.projectionMatrix).invert();
-  renderer.getDrawingBufferSize(SIZE);const w=Math.max(256,SIZE.x>>1),h=Math.max(256,SIZE.y>>1);if(reflection.width!==w||reflection.height!==h)reflection.setSize(w,h);
+  renderer.getDrawingBufferSize(SIZE);const w=Math.max(256,SIZE.x>>tuning.reflectShift),h=Math.max(256,SIZE.y>>tuning.reflectShift);if(reflection.width!==w||reflection.height!==h)reflection.setSize(w,h);
   const hidden=hiddenInReflection().filter(o=>o&&o.visible),target=renderer.getRenderTarget(),shadow=renderer.shadowMap.autoUpdate,xr=renderer.xr.enabled;
   for(const o of hidden)o.visible=false;
   const thinned=garden.flora.photoLeaves().map(g=>{const count=g.drawRange.count;g.setDrawRange(0,Math.floor(g.index.count*tuning.reflectLeaves/3)*3);return [g,count];});
@@ -99,11 +100,12 @@ window.createEdenPhotoreal=function(T,{renderer,scene,camera,garden,lighting,pos
  }
 
  function apply(){
-  skyUniforms.photoSky.value.x=on&&loaded===true?1:0;
-  const ready=on&&loaded===true;
-  // Grade toward a real garden photograph: fuller colour, more contrast (measured, see docs/graphics/RESULTS.md).
-  post.set(ready?{saturation:1.3,contrast:.17,grain:.018}:{saturation:1.06,contrast:.12,grain:.028});
-  garden.stones.visible=!ready;scanned.visible=ready;garden.setDenseGrass(ready);garden.flora.setPhotoTrees(ready);renderer.shadowMap.needsUpdate=true;
+  const ready=!!level&&loaded===true,full=ready&&level==='full'&&treesLoaded===true;
+  skyUniforms.photoSky.value.x=ready?1:0;tuning=full?TUNING.full:TUNING.lite;
+  // Grade toward a real garden photograph: fuller colour, more contrast (measured, see docs/graphics/RESULTS.md). The light
+  // tier keeps the standard trees, so it grades halfway.
+  post.set(full?{saturation:1.3,contrast:.17,grain:.018}:ready?{saturation:1.18,contrast:.15,grain:.022}:{saturation:1.06,contrast:.12,grain:.028});
+  garden.stones.visible=!ready;scanned.visible=ready;garden.setDenseGrass(full);garden.flora.setPhotoTrees(full);renderer.shadowMap.needsUpdate=true;
   scene.fog.density=ready?.0075:original.fog;scene.fog.color.copy(original.fogColor);if(ready)scene.fog.color.set(0xb9cbd6);
   const water=garden.pond.water;
   water.material=ready?waterMaterial:original.water;
@@ -111,15 +113,23 @@ window.createEdenPhotoreal=function(T,{renderer,scene,camera,garden,lighting,pos
   garden.pond.lilies.visible=!ready;
   requestDraw();
  }
+ // The light tier fetches about 2 MB (sky, rocks); the scanned crowns (about 15 MB) load only for the full tier.
  async function load(){
-  if(loaded)return;loaded='loading';
-  try{await Promise.all([loadSky(),loadTrees(),loadRocks()]);loaded=true;apply();}catch(error){loaded=null;console.warn('Photoreal assets unavailable; keeping the standard garden.',error);}
+  if(!loaded){loaded='loading';
+   try{await Promise.all([loadSky(),loadRocks()]);loaded=true;}catch(error){loaded=null;console.warn('Photoreal assets unavailable; keeping the standard garden.',error);}
+  }
+  if(level==='full'&&!treesLoaded&&loaded===true){treesLoaded='loading';
+   try{await loadTrees();treesLoaded=true;}catch(error){treesLoaded=null;console.warn('Scanned trees unavailable; keeping the standard trees.',error);}
+  }
+  apply();
  }
  return {
-  set(value){on=!!value;if(on)load();apply();},
-  get active(){return on&&loaded===true;},
+  // false/0: off; 'lite': the High setting's cheap realism; true or 'full': PHOTOREAL.
+  set(value){level=value===true?'full':value==='lite'||value==='full'?value:0;if(level)load();apply();},
+  get active(){return !!level&&loaded===true;},
+  get level(){return this.active?(level==='full'&&treesLoaded===true?'full':'lite'):0;},
   update(){reflectedFrame=false;},
   tuning,
-  inspect:()=>({on,loaded,fog:scene.fog.density,reflection:[reflection.width,reflection.height]})
+  inspect:()=>({level,loaded,trees:treesLoaded,fog:scene.fog.density,reflection:[reflection.width,reflection.height],tuning})
  };
 };
