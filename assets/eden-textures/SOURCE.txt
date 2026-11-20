@@ -3,3 +3,6 @@ leafy_grass (2k diffuse, 1k normal), monastery_stone_floor (1k diff, arm, nor_gl
 Diffuse maps recompressed with sips for size; normals are OpenGL convention (three.js default).
 Poly Haven (CC0 1.0), graphics plan: forest_leaves_02, grass_path_2 (1k).
 Foliage cards (assets/eden-textures/foliage) are composed by tools/pipeline/build-foliage-cards.py from Poly Haven tree_small_02, grass_bermuda_01, grass_medium_01, fern_02 (CC0 1.0).
+
+foliage/cypress-card-v2.webp: rendered from "Fir Sapling" by Rob Tuytel (photography) and Rico Cilliers (modelling),
+Poly Haven, CC0 (https://polyhaven.com/a/fir_sapling). tools/pipeline/render-cypress-card.cjs + compose-cypress-card.py.

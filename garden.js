@@ -73,7 +73,11 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  const heroModel=window.showroomAssets.model('/assets/eden-hero/hero-tree.glb?v=2');assetJobs.push(heroModel.catch(()=>{}));
  const flora=window.createEdenFlora(T,garden,{bark,openGround,mobile,heroModel});assetJobs.push(flora.ready);
  const terrainHeight=(x,worldZ)=>{const z=-worldZ,edge=Math.max(0,Math.hypot(x,z)-25),roadClearance=worldZ<roadStart?T.MathUtils.smoothstep(Math.abs(x-roadX),95,115):1,valley=window.edenValley,settled=T.MathUtils.smoothstep(Math.hypot(x-valley.x,worldZ-valley.z),valley.rim+2,valley.rim+14);return terrain.position.y+Math.sin(x*.12)*Math.cos(z*.15)*Math.min(6,edge*.15)*roadClearance*settled+valley.height(x,worldZ);};
- const grass=window.createEdenGrass(T,garden,{openGround,height:terrainHeight,mobile,wind});
+ // Verges: a strip either side of the brick road, inside the garden up to the sky box wall (the road beyond the door is
+ // the open match's ground and keeps its own look).
+ // Kept clear: the "where is god ?" sign and the Gilded Sentinel's plinth beside the door.
+ const roadVerge=(x,z)=>z>-21.2&&Math.abs(x-roadX)>2.3&&Math.abs(x-roadX)<4.5&&!(x>7.1&&x<9.7&&z>-16.1&&z<-15.1)&&Math.hypot(x-(roadX+2.8),z+19.8)>1.05;
+ const grass=window.createEdenGrass(T,garden,{openGround,height:terrainHeight,mobile,wind,verge:roadVerge,vergeMin:-21.2});
  let activeGrass=grass,denseGrass=null;
 
  // Stepping stones and pond rim sit in their own group: the Photoreal setting swaps them for scanned rock (positions kept here).
@@ -183,5 +187,5 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
   if(reduced)return;wind.value=time;flora.update(time);waterUniforms.time.value=time;dust.rotation.y=Math.sin(time*.025)*.07;
  },get animating(){return skyMoving;},foliage:flora.leaves,flora,sky,get grassMesh(){return activeGrass.mesh;},pond:{water,lilies,time:waterUniforms.time,bed:groundLitter},stones,stoneSpots,
   // Photoreal: a denser, taller field of the same scanned blades, built the first time it is asked for.
-  setDenseGrass(on){denseGrass??=on?window.createEdenGrass(T,garden,{openGround,height:terrainHeight,mobile,wind,cell:.36,radius:24,tall:1.35}):null;const next=on&&denseGrass?denseGrass:grass;if(next===activeGrass)return;activeGrass.mesh.visible=false;activeGrass=next;activeGrass.reset();onChange();}};
+  setDenseGrass(on){denseGrass??=on?window.createEdenGrass(T,garden,{openGround,height:terrainHeight,mobile,wind,cell:.36,radius:24,tall:1.35,verge:roadVerge,vergeMin:-21.2}):null;const next=on&&denseGrass?denseGrass:grass;if(next===activeGrass)return;activeGrass.mesh.visible=false;activeGrass=next;activeGrass.reset();onChange();}};
 };

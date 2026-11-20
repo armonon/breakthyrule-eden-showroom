@@ -12,7 +12,7 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
  // ---- textures: cards composed from photographic CC0 scans (tools/pipeline/build-foliage-cards.py) ----
  function canvasTexture(w,h,paint){const c=document.createElement('canvas');c.width=w;c.height=h;paint(c.getContext('2d'));const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;t.anisotropy=4;return t;}
  const scanned=name=>{const t=new T.TextureLoader().load('/assets/eden-textures/foliage/'+name+'.webp');t.colorSpace=T.SRGBColorSpace;t.anisotropy=4;return t;};
- const broadleafMap=scanned('broadleaf-card'),cypressMap=scanned('cypress-card'),fernMap=scanned('fern-card');
+ const broadleafMap=scanned('broadleaf-card'),cypressMap=scanned('cypress-card-v2'),fernMap=scanned('fern-card');
 
  // ---- materials ----
  // Double-sided leaves keep their outward crown normals on back faces (three would flip them inward).
