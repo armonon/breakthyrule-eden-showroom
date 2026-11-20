@@ -28,7 +28,13 @@ window.createEdenExtras=function({T,scene,camera,garden,combat,secrets,collectio
   const halo=glow(.9);group.add(halo);
   if(h.id==='backstage'){const crate=new T.Mesh(new T.BoxGeometry(.7,.6,.7),new T.MeshStandardMaterial({color:0x7a5b3a,roughness:.9}));crate.position.set(h.at.x,.3,h.at.z);scene.add(crate);}
   if(h.id==='road'){const plinth=new T.Mesh(new T.CylinderGeometry(.32,.38,.65,16),stone);plinth.position.set(h.at.x,.32,h.at.z);scene.add(plinth);}
-  garmentModel(h.index,.5).then(model=>{model.traverse(n=>{if(n.isMesh){n.userData.onPick=()=>claim(h);addPickable(n);}});halo.userData.onPick=()=>claim(h);group.add(model);h.model=model;requestDraw();});
+  halo.userData.onPick=()=>claim(h);addPickable(halo);
+ }
+ // The garment itself (a full collection model, 1.5-2 MB) loads only once someone is close enough to see it; the glow is
+ // the clue from further away.
+ function loadHidden(h){
+  if(h.loading||!h.group?.parent)return;h.loading=true;
+  garmentModel(h.index,.5).then(model=>{if(!h.group.parent)return;model.traverse(n=>{if(n.isMesh){n.userData.onPick=()=>claim(h);addPickable(n);}});h.group.add(model);h.model=model;requestDraw();}).catch(()=>{h.loading=false;});
  }
  for(const h of hidden)placeHidden(h);
  function claim(h){
@@ -41,7 +47,7 @@ window.createEdenExtras=function({T,scene,camera,garden,combat,secrets,collectio
  const DROP_AT=new T.Vector3(4.6,0,15.4),DROP_MINUTES=10;
  const force=new URLSearchParams(location.search).get('drop')==='1',forcedAt=Date.now();
  const crate=new T.Group();crate.name='The Drop';crate.visible=false;scene.add(crate);
- {const logo=new T.TextureLoader().load('/logo.png');logo.colorSpace=T.SRGBColorSpace;
+ {const logo=new T.TextureLoader().load('/products/web/logo.webp');logo.colorSpace=T.SRGBColorSpace;
   const body=new T.Mesh(new T.BoxGeometry(1,1,1),[...Array(6)].map((_,i)=>new T.MeshStandardMaterial({color:i===2||i===3?0x1d1d1f:0xf3f0e8,map:i===2||i===3?null:logo,roughness:.6,metalness:.1})));body.position.y=.5;crate.add(body);
   for(const y of [.04,.96])for(const z of [-.5,.5]){const band=new T.Mesh(new T.BoxGeometry(1.04,.06,.04),iron);band.position.set(0,y,z);crate.add(band);}
   crate.traverse(n=>{if(n.isMesh){n.castShadow=true;n.userData.onPick=()=>openDrop();addPickable(n);}});}
@@ -147,7 +153,8 @@ window.createEdenExtras=function({T,scene,camera,garden,combat,secrets,collectio
  }
  function update(time,dt){
   const t=now();let busy=false;
-  for(const h of hidden)if(h.group?.parent){h.group.rotation.y=reduced?0:t*.6;h.group.position.y=h.at.y+(reduced?0:Math.sin(t*1.6)*.04);}
+  const viewer=getPlayer();
+  for(const h of hidden)if(h.group?.parent){h.group.rotation.y=reduced?0:t*.6;h.group.position.y=h.at.y+(reduced?0:Math.sin(t*1.6)*.04);if(viewer&&!h.loading&&Math.hypot(viewer.position.x-h.at.x,viewer.position.z-h.at.z)<16)loadHidden(h);}
   busy=updateDrop(t)||busy;updateMiles();busy=updateBout()||busy;
   const target=progress.toll?1:0;if(Math.abs(armLift-target)>.001){armLift+=Math.sign(target-armLift)*Math.min(Math.abs(target-armLift),dt*.9);busy=true;}
   arm.rotation.x=-armLift*1.35;bells.forEach((b,i)=>{b.position.y=-.12+Math.sin(t*9+i)*.02*(armLift>0&&armLift<1?1:0);});

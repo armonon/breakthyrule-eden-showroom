@@ -1,5 +1,6 @@
 // Collection-only print finish. Blank/custom Lab models keep the customer's own plan.
-const EYE_URL = '/site/artwork/eye-back.webp';
+// The 3D showroom's rack shows the print small, so it takes a 1024 px copy; every other page keeps the full artwork.
+const EYE_URL = /\/showroom(\.html)?$/.test(globalThis.location?.pathname || '') ? '/site/artwork/eye-back-1024.webp' : '/site/artwork/eye-back.webp';
 const EYE_ASPECT = 4800 / 5700;
 let eyeImage;
 function loadEye() {

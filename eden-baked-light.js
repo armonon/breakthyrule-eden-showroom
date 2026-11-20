@@ -76,7 +76,11 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
  const apply=()=>{params.x=state.enabled&&state.loaded&&state.world==='eden'?1-state.night:0;params.z=state.gain;
   beyondParams.x=state.enabled&&state.beyondLoaded&&state.world==='beyond'?T.MathUtils.smoothstep(state.night,.55,.84):0;beyondParams.z=state.gain;shadows(beyondParams.x>.999);
  };
+ // Beyond Eden's bake is not needed in the garden, so it waits until someone heads there or the first view has settled.
+ let beyondStart=null;const beyondGo=new Promise(resolve=>{beyondStart=resolve;});
+ setTimeout(()=>beyondStart(),20000);
  const beyondReady=(async()=>{
+  await beyondGo;
   try{
    const [meta,bin,ground,sun]=await Promise.all([fetch(beyondUrl+'bake.json').then(r=>{if(!r.ok)throw Error(r.status);return r.json();}),fetch(beyondUrl+'probes.bin').then(r=>{if(!r.ok)throw Error(r.status);return r.arrayBuffer();}),new T.TextureLoader().loadAsync(beyondUrl+'lightmap.jpg'),new T.TextureLoader().loadAsync(beyondUrl+'sun.jpg')]);
    const [nx,ny,nz]=meta.dims,n=nx*ny*nz,bytes=new Uint8Array(bin);if(bytes.length!==n*8)throw Error('Invalid Beyond probe data');
@@ -98,7 +102,8 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
   }catch(error){console.warn('Baked light unavailable; using the live sky only',error);return null;}
  })();
  return {ready,beyondReady,registerStatic,unregisterStatic,refreshShadows(){shadows(staticOff,true);},
-  setWorld(world){if(world!==state.world){state.world=world;apply();}},
+  setWorld(world){if(world==='beyond')beyondStart();if(world!==state.world){state.world=world;apply();}},
+  loadBeyond(){beyondStart();return beyondReady;},
   nightStrength:()=>beyondParams.x,
   dynamicShadowOnly:()=>staticOff,
   setNight(v){if(v!==state.night){state.night=v;apply();}},

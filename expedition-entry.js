@@ -148,7 +148,7 @@
   // authored landmarks and the actual player model must all finish successfully.
   await new Promise((resolve,reject)=>{const began=performance.now();function check(){if(disposed){resolve();return;}const models=garden.district.inspect().models,failed=garden.requiredLandmarks.filter(id=>models[id]==='fallback');if(failed.length){reject(new Error('Required landmark artwork could not load: '+failed.join(', ')+'.'));return;}const loaded=garden.requiredLandmarks.filter(id=>models[id]==='model').length,prepared=garden.warmupLandmarks.filter(id=>models[id]==='model'||models[id]==='fallback').length,elapsed=performance.now()-began;status.textContent='Preparing district artwork and shaders '+prepared+' / '+garden.warmupLandmarks.length+(body.inspect().ready?' · Character ready':' · Preparing your character');if(loaded===garden.requiredLandmarks.length&&body.inspect().ready&&(prepared===garden.warmupLandmarks.length||elapsed>75000)){resolve();return;}if(elapsed>45000&&(loaded!==garden.requiredLandmarks.length||!body.inspect().ready)){reject(new Error('The landmark or character artwork is unavailable.'));return;}setTimeout(check,100);}check();});
   if(disposed)return;status.textContent='Preparing character textures, tools and movement effects…';preparingAvatar=true;
-  await window.edenBaked?.beyondReady;
+  await (window.edenBaked?.loadBeyond?.()??window.edenBaked?.beyondReady);
   for(const c of scene.children)if(['Garden of Eden','Beyond Eden / the old civilization','Parkour grips','Pyramid at the end of the road'].includes(c.name))window.edenBaked?.registerStatic(c);
   await warmup.prepare(body.getModel().root,{waitForImages:true});
   await warmup.prepare(flareModel());
