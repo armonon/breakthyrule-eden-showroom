@@ -36,6 +36,20 @@ for = "/*"
   X-Frame-Options = "SAMEORIGIN"
   Content-Security-Policy = "frame-ancestors 'self'"
 
+# Multiplayer lives on the game host (Netlify can't hold WebSockets; see docs/MULTIPLAYER-HOSTING.md).
+# 302, not a proxy, so live play goes straight to the host. Temporary so the target can move (domain, Fly.io).
+[[redirects]]
+from = "/play"
+to = "https://lillypads-macbook-air.tail4736c7.ts.net:10000/showroom"
+status = 302
+force = true
+
+[[redirects]]
+from = "/play/"
+to = "https://lillypads-macbook-air.tail4736c7.ts.net:10000/showroom"
+status = 302
+force = true
+
 [[redirects]]
 from = "/showroom"
 to = "/showroom.html"
