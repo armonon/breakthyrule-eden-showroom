@@ -1,4 +1,4 @@
-Breakthyrule animation library — 62 clips
+Breakthyrule animation library — 71 clips
 
 51 in-place clips retargeted from Quaternius Universal Animation Libraries 1 and 2 (Standard).
 License: CC0-1.0. Original notices: licenses/ual1-CC0.txt and licenses/ual2-CC0.txt.
@@ -8,6 +8,11 @@ Sources: https://quaternius.itch.io/universal-animation-library
 11 retained Microsoft Rocketbox clips. License: MIT. See licenses/Rocketbox-LICENSE.md.
 These use the existing game skeleton; first-person and procedural motion remain game code.
 
-Runtime clips.json SHA-256: 3fb2914d5787bd9eb6da41745114503312ef5c6e67cc8c111d18741cb5cb262c
+9 parkour clips (pkVault, pkClimb, pkHang, pkShimmyL, pkShimmyR, pkScramble, pkLeap, pkRoll, pkWallRun)
+baked by tools/animation/bake-mixamo.cjs from Adobe Mixamo (https://www.mixamo.com), X Bot rig.
+Mixamo animations are royalty-free for use in projects; the raw Mixamo files are not redistributed,
+only the baked rotations in clips.json.
+
+Runtime clips.json SHA-256: d15d0632fb8d31a3f376170aa9d1bf612e339781f25d853c05d1316cf099b28c
 Portable source/build kit is retained separately (not a runtime download):
 animation-build-kit.tar.gz SHA-256 f3160519e8c4085e22b4a0670f82783c1430d0759db5edbab22b421ee1c04899.

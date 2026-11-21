@@ -100,13 +100,22 @@ test('movement clocks drive slide, vault and wall-run clips, including a late-lo
  assert.ok(drive('slide',0).includes('slideStart'));
  assert.ok(drive('slide',.3).includes('slideLoop'));
  assert.ok(drive(null,0).includes('slideExit'));
- assert.ok(drive('vault',.3,.6).includes('climbUp'));
- const layer=motion.captureState().state.layers.find(l=>l.id==='climbUp'&&!l.out);
+ assert.ok(drive('vault',.3,.6).includes('pkVault'),'the baked Mixamo vault replaces the climbUp fallback');
+ const layer=motion.captureState().state.layers.find(l=>l.id==='pkVault'&&!l.out);
  assert.ok(layer.t>0,'a late-loaded model joins the vault in progress');
- assert.ok(drive('wallrun',.3,1).includes('sprint'));
+ assert.ok(drive('wallrun',.3,1).includes('pkWallRun'),'the baked Mixamo wall run replaces the sprint fallback');
  for(let i=0;i<300;i++)drive(i%50<25?'slide':'wallrun',(i%25)/60);
  assert.ok(motion.captureState().state.layers.length<8,'transitions do not leak animation layers');
  assert.ok(bones.every(b=>b.quaternion.toArray().concat(b.position.toArray()).every(Number.isFinite)));
  drive(null,0);for(let i=0;i<120;i++)motion.update(1/60);
  assert.equal(motion.inspect().actions.length,0,'finished moves release their clips');
+});
+
+test('every traversal move plays its baked Mixamo parkour clip',async()=>{
+ const {motion}=await rig();
+ const drive=(move)=>{motion.traversal({time:.2,duration:.8,side:1,...move});motion.update(1/60,{velocity:new T.Vector3(0,0,4)});const a=motion.inspect().actions;motion.traversal(null);for(let i=0;i<90;i++)motion.update(1/60);return a;};
+ for(const [move,id] of [
+  [{kind:'vault'},'pkVault'],[{kind:'climb'},'pkClimb'],[{kind:'scramble'},'pkScramble'],[{kind:'warp'},'pkLeap'],
+  [{kind:'wallrun'},'pkWallRun'],[{kind:'hang'},'pkHang'],[{kind:'hang',shimmy:-1},'pkShimmyL'],[{kind:'hang',shimmy:1},'pkShimmyR'],
+ ])assert.ok(drive(move).includes(id),`${JSON.stringify(move)} plays ${id}`);
 });
