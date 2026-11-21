@@ -23,14 +23,38 @@ import {createHandler as createLabHandler, labFromEnv} from './lab/api.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((pairs, arg, i, all) => arg.startsWith('--') ? [...pairs, [arg.slice(2), all[i + 1]]] : pairs, []));
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const PORT = Number(args.port || 8777), HOST = args.host || '127.0.0.1';
-const DATA = path.resolve(args.data || path.join(ROOT, 'server', 'data'));
+const env = process.env;
+const PORT = Number(args.port || env.PORT || 8777), HOST = args.host || env.EDEN_HOST || '127.0.0.1';
+const DATA = path.resolve(args.data || env.EDEN_DATA_DIR || path.join(ROOT, 'server', 'data'));
+// Public hosting. Setting the public HTTPS origin turns on production mode: Secure cookies, that origin accepted,
+// the prop editor and the local Garment Lab store switched off, revalidating static caching and security headers.
+// EDEN_TRUST_PROXY=1 reads the client address from the reverse proxy's X-Forwarded-For (rate limits are per player,
+// not per proxy). Only set it when the proxy is the sole way in.
+const PUBLIC_ORIGIN = String(args['public-origin'] || env.EDEN_PUBLIC_ORIGIN || '').replace(/\/+$/, '');
+const PRODUCTION = !!PUBLIC_ORIGIN;
+if (PRODUCTION && (!/^https:\/\//.test(PUBLIC_ORIGIN) || new URL(PUBLIC_ORIGIN).origin !== PUBLIC_ORIGIN)) throw Error('EDEN_PUBLIC_ORIGIN must be an exact https:// origin, e.g. https://play.example.com');
+const TRUST_PROXY = /^(1|true|yes)$/i.test(String(args['trust-proxy'] || env.EDEN_TRUST_PROXY || ''));
+const LAB_ON = !PRODUCTION || /^(1|true|yes)$/i.test(String(env.EDEN_ENABLE_LAB || ''));
+if (!PRODUCTION && !/^(127\.|::1$|localhost$)/.test(HOST)) console.warn(`Warning: listening on ${HOST} without EDEN_PUBLIC_ORIGIN. The prop editor is writable by anyone who can reach it. Only do this on a trusted network.`);
 fs.mkdirSync(DATA, {recursive: true});
+function clientIp(req) {
+  if (TRUST_PROXY) { const hops = String(req.headers['x-forwarded-for'] || '').split(',').map(s => s.trim()).filter(Boolean); if (hops.length) return hops[hops.length - 1]; }
+  return req.socket.remoteAddress || '?';
+}
 
 // ---------- persistence ----------
 const store = {users: {}, sessions: {}};
 const STORE_FILE = path.join(DATA, 'accounts.json');
-try { Object.assign(store, JSON.parse(fs.readFileSync(STORE_FILE, 'utf8'))); } catch {}
+try { Object.assign(store, JSON.parse(fs.readFileSync(STORE_FILE, 'utf8'))); } catch (error) {
+  // A missing file is a fresh install. A file that exists but will not parse must never be silently replaced.
+  if (error.code !== 'ENOENT') throw Error(`Could not read ${STORE_FILE} (${error.message}). Restore it from a backup before starting.`);
+}
+const SESSION_DAYS = 30;
+function pruneSessions() { // the cookie expires after 30 days; drop the server side too
+  const cutoff = Date.now() - SESSION_DAYS * 864e5; let dropped = 0;
+  for (const [t, s] of Object.entries(store.sessions)) if (!(s.created > cutoff) || !store.users[s.userId]) { delete store.sessions[t]; dropped++; }
+  if (dropped) save();
+}
 let saveTimer = null;
 function save() {
   clearTimeout(saveTimer);
@@ -56,10 +80,12 @@ function newSession(user) {
 function userFromRequest(req) {
   const token = /(?:^|;\s*)eden_session=([a-f0-9]{64})/.exec(req.headers.cookie || '')?.[1];
   const session = token && store.sessions[token];
+  if (session && !(session.created > Date.now() - SESSION_DAYS * 864e5)) return {user: null, token: null};
   return session ? {user: store.users[session.userId] || null, token} : {user: null, token: null};
 }
-const sessionCookie = token => `eden_session=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${60 * 60 * 24 * 30}`;
-const clearCookie = 'eden_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0';
+const SECURE = PRODUCTION ? '; Secure' : '';
+const sessionCookie = token => `eden_session=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${60 * 60 * 24 * SESSION_DAYS}${SECURE}`;
+const clearCookie = `eden_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${SECURE}`;
 
 // simple per-key rate limiter
 const buckets = new Map();
@@ -119,7 +145,7 @@ function postMessage(user, kind, text, nonce) {
 // ---------- social API ----------
 class HttpError extends Error { constructor(status, message) { super(message); this.status = status; } }
 async function social(action, req, res, body) {
-  const ip = req.socket.remoteAddress || '?';
+  const ip = clientIp(req);
   const {user, token} = userFromRequest(req);
   const reply = (data, headers = {}) => send(res, 200, JSON.stringify(data), {'Content-Type': 'application/json', ...headers});
   switch (action) {
@@ -196,13 +222,14 @@ function wsAccept(req, socket) {
   socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
   socket.setNoDelay(true);
   liveSockets.get(connectionId)?.socket.destroy();
-  const client = {socket, req, sentVersion: -1, lastPose: 0};
+  const client = {socket, req, sentVersion: -1, lastPose: 0, heard: Date.now()};
   liveSockets.set(connectionId, client);
   setPose(connectionId, userFromRequest(req).user, null);
   sendSnapshot(connectionId, client);
   socket.write(frame(Buffer.from(JSON.stringify(world.state()))));
   let buffer = Buffer.alloc(0);
   socket.on('data', chunk => {
+    client.heard = Date.now();
     buffer = Buffer.concat([buffer, chunk]);
     while (buffer.length >= 2) {
       const opcode = buffer[0] & 0x0f, masked = buffer[1] & 0x80; let length = buffer[1] & 0x7f, offset = 2;
@@ -247,6 +274,13 @@ function sendSnapshot(connectionId, client) {
 }
 function broadcast(force = false) { for (const [id, c] of liveSockets) if (force || c.sentVersion !== version) sendSnapshot(id, c); }
 setInterval(broadcast, 50); // ~20 snapshots/s, only to clients that are behind
+// Keep-alive: a player standing still sends nothing, and hosting proxies close sockets that are idle for about a
+// minute. Browsers answer pings automatically; a socket silent for 75 s is dead (lost Wi-Fi, sleeping phone).
+setInterval(() => {
+  const now = Date.now();
+  for (const c of liveSockets.values()) { if (now - c.heard > 75e3) c.socket.destroy(); else c.socket.write(frame(Buffer.alloc(0), 0x9)); }
+}, 25e3).unref();
+pruneSessions(); setInterval(pruneSessions, 6 * 3600e3).unref();
 
 // Arena combat events go straight out to everyone in the arena (and the snapshot carries health/scores).
 const arena = createArena({root: ROOT, presence, emit(events) {
@@ -280,8 +314,11 @@ setInterval(()=>{try{expedition.tick();}catch(error){console.error('Expedition c
 const TYPES = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.glb': 'model/gltf-binary', '.gltf': 'model/gltf+json', '.wasm': 'application/wasm',
   '.mp4': 'video/mp4', '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8', '.webmanifest': 'application/manifest+json'};
-function send(res, status, body, headers = {}) { res.writeHead(status, {'Cache-Control': 'no-store', ...headers}); res.end(body); }
+// Production pages get the same headers netlify.toml sets for the static site.
+const SECURITY_HEADERS = PRODUCTION ? {'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'X-Frame-Options': 'SAMEORIGIN', 'Content-Security-Policy': "frame-ancestors 'self'", 'Strict-Transport-Security': 'max-age=31536000'} : {};
+function send(res, status, body, headers = {}) { res.writeHead(status, {'Cache-Control': 'no-store', ...SECURITY_HEADERS, ...headers}); res.end(body); }
 const trustedOrigins=new Set((process.env.EDEN_ALLOWED_ORIGINS||'').split(',').map(s=>s.trim()).filter(Boolean));
+if(PRODUCTION)trustedOrigins.add(PUBLIC_ORIGIN);
 for(const origin of trustedOrigins){const parsed=new URL(origin);if(!['http:','https:'].includes(parsed.protocol)||parsed.origin!==origin)throw Error('EDEN_ALLOWED_ORIGINS must contain exact HTTP(S) origins only.');}
 function sameOrigin(req) { const origin = req.headers.origin; return !origin || origin === `http://${req.headers.host}` || trustedOrigins.has(origin); }
 function readBody(req, limit = 65536) {
@@ -325,10 +362,13 @@ const server = http.createServer(async (req, res) => {
         },()=>res.end(),()=>!user || userFromRequest(req).user?.id===user.id,body.generation,body.connectionEpoch);
         res.on('close',unsubscribe);return;
       }
-      const result=expedition.command(body,{user,ip:req.socket.remoteAddress||'?'});
+      const result=expedition.command(body,{user,ip:clientIp(req)});
       return send(res,200,JSON.stringify(result),{'Content-Type':'application/json'});
     }
+    if (url.pathname === '/healthz') return send(res, 200, JSON.stringify({ok: true, live: liveSockets.size, uptime: Math.round(process.uptime())}), {'Content-Type': 'application/json'});
     if (url.pathname.startsWith('/api/lab/')) {
+      // Shop orders live in the Netlify function in production; a second store here would split customer data.
+      if (!LAB_ON) throw new HttpError(404, 'The Garment Lab runs on the main site.');
       const raw = req.method === 'GET' || req.method === 'HEAD' ? '' : await readRaw(req);
       const local = new URL(url.pathname + url.search, `http://${req.headers.host || 'localhost'}`);
       const r = await labHandle({method: req.method, url: local, headers: req.headers, rawBody: raw});
@@ -342,6 +382,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (url.pathname === '/deployment.js') return send(res, 200, LOCAL_DEPLOYMENT, {'Content-Type': TYPES['.js']});
     if (req.method === 'PUT' && url.pathname === '/assets/props/scene.json') {
+      if (PRODUCTION) throw new HttpError(404, 'The prop editor is local only.');
       if (!sameOrigin(req)) throw new HttpError(403, 'Cross-site request refused.');
       const data = JSON.parse(await readBody(req, 2e6));
       if (!Array.isArray(data.props) || !data.props.every(e => typeof e.url === 'string' && e.url.startsWith('/assets/props/') && Array.isArray(e.placements))) throw new HttpError(400, 'invalid scene');
@@ -358,7 +399,13 @@ const server = http.createServer(async (req, res) => {
     // Clean page URLs for the public site: /gallery → gallery.html, /showroom → showroom.html.
     if (!fs.existsSync(file) && !path.extname(file) && fs.existsSync(file + '.html')) file += '.html';
     if (!fs.existsSync(file)) throw new HttpError(404, 'Not found.');
-    res.writeHead(200, {'Content-Type': TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-store', 'Content-Length': fs.statSync(file).size});
+    const stat = fs.statSync(file), type = TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream';
+    if (!PRODUCTION) res.writeHead(200, {'Content-Type': type, 'Cache-Control': 'no-store', 'Content-Length': stat.size});
+    else { // revalidate every time (a new deploy shows at once) but skip re-downloading unchanged models and textures
+      const etag = `W/"${stat.size.toString(36)}-${Math.floor(stat.mtimeMs).toString(36)}"`;
+      if (req.headers['if-none-match'] === etag) { res.writeHead(304, {ETag: etag, 'Cache-Control': 'no-cache', ...SECURITY_HEADERS}); return res.end(); }
+      res.writeHead(200, {'Content-Type': type, 'Cache-Control': 'no-cache', ETag: etag, 'Content-Length': stat.size, ...SECURITY_HEADERS});
+    }
     if (req.method === 'HEAD') return res.end();
     fs.createReadStream(file).pipe(res);
   } catch (error) {
@@ -370,7 +417,7 @@ const server = http.createServer(async (req, res) => {
 server.on('upgrade', (req, socket) => {
   if (new URL(req.url, 'http://local').pathname === '/api/social/live') wsAccept(req, socket); else socket.destroy();
 });
-server.listen(PORT, HOST, () => console.log(`Eden server: http://${HOST}:${server.address().port}/  (live multiplayer on, data in ${DATA})`));
+server.listen(PORT, HOST, () => console.log(`Eden server: http://${HOST}:${server.address().port}/  (live multiplayer on, data in ${DATA}${PRODUCTION ? `, public at ${PUBLIC_ORIGIN}${TRUST_PROXY ? ', behind a proxy' : ''}` : ''})`));
 let stopping=false;
 function shutdown(){if(stopping)return;stopping=true;
   try{expedition.close();if(saveTimer){clearTimeout(saveTimer);const temporary=STORE_FILE+'.tmp';fs.writeFileSync(temporary,JSON.stringify(store,null,1));fs.renameSync(temporary,STORE_FILE);}}

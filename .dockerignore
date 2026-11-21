@@ -1,0 +1,12 @@
+.git
+node_modules
+# Player accounts and room checkpoints belong on the volume, never in the image.
+server/data
+.env
+.env.*
+docs
+tools
+.anim-work
+**/*.blend
+**/*.blend1
+**/__pycache__

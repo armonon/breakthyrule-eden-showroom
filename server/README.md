@@ -6,6 +6,7 @@ One Node process (Node 20.18+) that serves the site and runs the shared garden. 
 npm ci
 node server/eden-server.mjs            # http://127.0.0.1:8777/
 node server/eden-server.mjs --port 8780 --data /path/to/data
+EDEN_PUBLIC_ORIGIN=https://play.example.com node server/eden-server.mjs   # production mode, see docs/MULTIPLAYER-HOSTING.md
 ```
 
 - **Accounts and characters**: `/api/social/{register,login,recover,logout,delete,me,character}`: the contract
@@ -95,7 +96,9 @@ Local loopback play is free and needs no external provider. No existing free pub
 in this checkout. Public hosting, reverse proxies, tunnels, paid infrastructure and production rollout have not been
 enabled by this change. Do not expose the local editor/account server directly to the Internet.
 
-Not here yet: public hosting for players outside this machine or a distributed multi-instance room service.
+Public hosting: the server now has a production mode (`EDEN_PUBLIC_ORIGIN`) and a `Dockerfile`; see
+`docs/MULTIPLAYER-HOSTING.md` for running it as one container with a volume. Still single-instance: no distributed
+multi-instance room service.
 
 ### Input-authority development module (not enabled)
 

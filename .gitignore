@@ -13,3 +13,6 @@ assets/beyond-eden/trees/*.png
 
 # Garment Lab order data (customer information) never goes into git.
 server/data/lab/
+
+# Untouched generator output kept by tools/3d-gen/modly-prop.mjs --keep-raw (large, not loaded by the site).
+assets/props/*.raw.glb
