@@ -8,7 +8,10 @@
  root.createPerfHud=function({renderer,quality=null,host=document.body,key='F8'}={}){
   let on=/[?&]perf=1/.test(location.search),el=null,canvas=null,ctx=null,text=null,last=0,prev=null;
   const times=new Float32Array(240);let head=0;const spikes=[];
-  function snapshot(){const i=renderer.info;return {programs:i.programs?.length||0,textures:i.memory.textures,geometries:i.memory.geometries,ratio:renderer.getPixelRatio(),heap:performance.memory?.usedJSHeapSize||0};}
+  // performance.memory is slow to read (several ms on some machines): every frame only while the overlay is open,
+  // otherwise once a second, which is enough to label a GC spike.
+  let heap=0,heapAt=-1e9;
+  function snapshot(){const i=renderer.info,t=performance.now();if(on||t-heapAt>1000){heapAt=t;heap=performance.memory?.usedJSHeapSize||0;}return {programs:i.programs?.length||0,textures:i.memory.textures,geometries:i.memory.geometries,ratio:renderer.getPixelRatio(),heap};}
   function build(){
    el=document.createElement('div');el.id='perf-hud';el.setAttribute('aria-hidden','true');
    el.style.cssText='position:fixed;right:10px;bottom:10px;z-index:9999;width:300px;padding:8px;background:rgba(6,8,9,.82);color:#e8e4d8;font:11px/1.35 ui-monospace,Menlo,monospace;border-radius:8px;pointer-events:auto;backdrop-filter:blur(6px)';

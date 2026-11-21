@@ -356,11 +356,19 @@
    grid=g;finder=new PF.AStarFinder({diagonalMovement:PF.DiagonalMovement.OnlyWhenNoObstacles});
   }
   function root_PF(){return window.NightPathfinding;}
+  // One working copy of the grid, its A* bookkeeping cleared before each search (the same result as searching a fresh
+  // clone, which rebuilt every node: ~24 MB of garbage per 6 s with seven bots).
+  let work=null;
+  function workGrid(){
+   if(!work||work.src!==grid){work=grid.clone();work.src=grid;work.cells=[];for(const row of work.nodes)for(const n of row)work.cells.push(n);}
+   const cells=work.cells;for(let i=0;i<cells.length;i++){const n=cells[i];n.opened=n.closed=n.tested=false;n.parent=null;n.g=n.h=n.f=0;}
+   return work;
+  }
   function findPath(from,to){
    if(!grid)return [to.clone()];
    const c=v=>[clamp(Math.floor(v.x-B[0]),0,grid.width-1),clamp(Math.floor(v.z-B[2]),0,grid.height-1)];
    const [ax,az]=c(from),[bx,bz]=c(to);
-   try{const path=finder.findPath(ax,az,bx,bz,grid.clone());if(!path.length)return [to.clone()];
+   try{const path=finder.findPath(ax,az,bx,bz,workGrid());if(!path.length)return [to.clone()];
     const out=[];for(let i=2;i<path.length;i+=3)out.push(new T.Vector3(B[0]+path[i][0]+.5,0,B[2]+path[i][1]+.5));out.push(to.clone());return out;}catch{return [to.clone()];}
   }
 
