@@ -28,6 +28,7 @@
  if(!window.THREE){fail(new Error('The graphics engine is unavailable.'));return;}
  const T=window.THREE,targetPosition=new T.Vector3(11.7,1.75,-24),targetAim=new T.Vector3(11.7,1.75,-29),walkVelocity=new T.Vector3(),aim=new T.Vector3();
  const sway=window.createCameraSway(T,{reduced}),footsteps=window.createFootsteps?.(),state={get ready(){return ready;}};
+ let ambience=null;const ambienceFacing=new T.Vector3();
  let gripsView=null,perfHud=null;let movement=null,parkour=null,post=null,atmosphere=null,lighting=null,quality=null,warmup=null,flare=null,world=null,lastLandmarkCheck=-Infinity,lastBailLabel='';
  const groundHeight=()=>0,surfaceAt=p=>Math.abs(p.x-11.7)<2.1?'brick':'grass';
  function shiftHeight(delta){targetPosition.y+=delta;targetAim.y+=delta;}
@@ -91,7 +92,7 @@
    if(ready&&time-lastLandmarkCheck>2000){lastLandmarkCheck=time;const missing=Object.entries(garden.district.inspect().models).filter(([,value])=>value==='fallback');if(missing.length)$('entry-hint').textContent='Some distant landmark artwork is unavailable. Return to Eden and enter again to retry.';}
    for(const dust of puffs)if(dust.alive){dust.t+=dt;dust.alive=dust.t<.8;dust.sprite.visible=dust.alive;dust.sprite.material.opacity=Math.max(0,1-dust.t/.8)*.4;dust.sprite.scale.setScalar(.15+dust.t*.7);dust.sprite.position.y+=dt*.12;}
    if(expedition?.active()){const label=p.bailKey.toUpperCase()+' · '+(bail?.active?'Get up':'Bail');if(label!==lastBailLabel){lastBailLabel=label;$('night-bail').textContent=label;$('night-bail').title='Manual bail / recover ('+p.bailKey.toUpperCase()+')';}}
-   atmosphere?.update(time/1000);window.edenPush?.update(new T.Vector3(targetPosition.x,targetPosition.y-1.75,targetPosition.z),time/1000);post.render();perfHud??=window.createPerfHud?.({renderer,quality})||null;perfHud?.frame(time);requestDraw();
+   atmosphere?.update(time/1000);ambience?.update(targetPosition,{night:1,place:'courtyard',facing:camera.getWorldDirection(ambienceFacing)});window.edenPush?.update(new T.Vector3(targetPosition.x,targetPosition.y-1.75,targetPosition.z),time/1000);post.render();perfHud??=window.createPerfHud?.({renderer,quality})||null;perfHud?.frame(time);requestDraw();
   }catch(error){fail(error);}
  }
  try{
@@ -103,7 +104,7 @@
   const hemi=new T.HemisphereLight(0xdceffc,0x5a6538,1.35),sun=new T.DirectionalLight(0xffe4ad,3.2);sun.position.set(-23,19,-48);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.normalBias=.035;sun.shadow.bias=-.00015;scene.add(hemi,sun);const fill=new T.DirectionalLight(0xe4edff,.35);fill.position.set(10,9,18);scene.add(fill);
   warmup=window.createRenderWarmup(renderer,camera,scene,{signal:lifetime.signal});
   garden=window.createExpeditionScene(T,scene,{layout,reduced,mobile:stage.clientWidth<700,onChange:requestDraw,prepareModel:model=>warmup.prepare(model)});world=garden.authority;
-  lighting=window.createEdenLighting(T,renderer,scene,{sun,hemi,camera,mobile:stage.clientWidth<700,getNight:()=>1});post=window.createEdenPost(T,renderer,scene,camera,{enabled:true});post.setLights({sky:garden.sky,lamps:()=>garden.district.lamps});atmosphere=window.createEdenAtmosphere?.(T,scene,camera,{getNight:()=>post.night(),getLamps:()=>garden.district.lamps,isGarden:()=>false,reduced})||null;window.edenAcoustics?.setSpace('courtyard');
+  lighting=window.createEdenLighting(T,renderer,scene,{sun,hemi,camera,mobile:stage.clientWidth<700,getNight:()=>1});post=window.createEdenPost(T,renderer,scene,camera,{enabled:true});post.setLights({sky:garden.sky,lamps:()=>garden.district.lamps});atmosphere=window.createEdenAtmosphere?.(T,scene,camera,{getNight:()=>post.night(),getLamps:()=>garden.district.lamps,isGarden:()=>false,reduced})||null;window.edenAcoustics?.setSpace('courtyard');ambience=window.createEdenAmbience?.({reduced})||null;
   quality=window.createAdaptiveResolution(renderer,{targetFps:stage.clientWidth<700?30:60,max:Math.min(devicePixelRatio,1.25),onFloor(){post.set({ao:0,rays:0,flare:0,glare:0,wet:0,motionBlur:0,haze:0,exposure:0});atmosphere?.set({fireflies:0,cones:0,life:0});}});
   function setGraphics(value){graphics=['low','medium','high','photo'].includes(value)?value:'medium';const q=graphics==='low'?{ratio:1,post:true,samples:0,shadow:1024,ao:0,motionBlur:0,wet:0,air:0}:graphics==='medium'?{ratio:1.25,post:true,samples:2,shadow:2048,ao:0,motionBlur:.3,wet:0,air:1}:{ratio:1.5,post:true,samples:4,shadow:4096,ao:.8,motionBlur:.4,wet:.8,air:1};quality.setMax(Math.min(devicePixelRatio,q.ratio));post.set({enabled:q.post,samples:q.samples,ao:q.ao,rays:.7,flare:.8,glare:.9,grain:.028,bloom:.2,exposure:1,haze:.3,clouds:0,dof:0,wet:q.wet,motionBlur:reduced?0:q.motionBlur});atmosphere?.set({dust:0,fireflies:q.air,cones:q.air,life:q.air});lighting.set({shadowSize:q.shadow});renderer.shadowMap.needsUpdate=true;try{localStorage.setItem('eden-graphics',graphics);}catch{}}
   let savedGraphics=null;try{savedGraphics=localStorage.getItem('eden-graphics');}catch{}setGraphics(savedGraphics||(stage.clientWidth<700?'low':'medium'));

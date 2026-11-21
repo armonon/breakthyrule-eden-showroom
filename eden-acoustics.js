@@ -41,6 +41,7 @@ window.edenAcoustics=(()=>{
   // garden | courtyard | blackbox | museum | stone
   setSpace(name){if(!SPACES[name]||name===space)return;space=name;for(const r of rigs.values())apply(r);},
   setEnabled(value){enabled=!!value;for(const r of rigs.values())apply(r,true);},
+  space:()=>space,
   inspect:()=>({space,enabled,contexts:rigs.size})
  };
 })();

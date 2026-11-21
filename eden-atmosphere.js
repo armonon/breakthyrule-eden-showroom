@@ -131,6 +131,8 @@ window.createEdenAtmosphere=function(T,scene,camera,{getNight=()=>0,getLamps=()=
    if(allLamps&&seconds-mothCheck>.5){mothCheck=seconds;const near=[...allLamps].sort((p,q)=>p.distanceToSquared(center.value)-q.distanceToSquared(center.value));
     mothLamps.forEach((v,i)=>{const p=near[i%Math.max(1,near.length)];if(p)v.set(p.x,p.y,p.z,i<near.length?1:0);else v.w=0;});}
   },
+  // Where the flock's lead bird is right now (into `out`), or null when no flock is in the sky; for the birdsong.
+  flock(out){if(!birds.visible)return null;const age=time.value-flock.start.value;return out.copy(flock.origin.value).addScaledVector(flock.dir.value,age*9);},
   // dust, fireflies, cones, life (birds, butterflies, moths): 0 (off) to 1
   set(next={}){Object.assign(settings,next);apply();},
   inspect:()=>({...settings,night:+night.value.toFixed(2),cones:cones?cones.count:0,birds:birds.visible,butterflies:flies.visible,moths:moths.visible}),
