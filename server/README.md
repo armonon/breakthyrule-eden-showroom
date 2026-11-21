@@ -15,6 +15,9 @@ EDEN_PUBLIC_ORIGIN=https://play.example.com node server/eden-server.mjs   # prod
 - **Presence and chat, live**: WebSocket `/api/social/live?connectionId=…`. Clients send their pose up to 15×/s;
   the server pushes room snapshots ~20×/s while anything changes, and chat at once. Chat keeps the last 80 messages
   in memory; you need a character to chat (guests appear as ghosts). The HTTP `sync` poll still works as a fallback.
+  In the game, new messages also show for a few seconds over the garden (bottom left) and Enter opens a quick box to
+  answer (a chat button on touch screens); both live in `multiplayer.js`. Text is stripped of control characters and
+  direction overrides, cut to 280 characters, and limited to 8 sends per 10 seconds. Tests: `node --test server/social-chat.test.mjs`.
 - **Local mode switch**: the server answers `/deployment.js` with `mode: "local"` and the live URL, so the deployed
   preview copy of that file (which disables accounts) is untouched.
 - **Prop editor**: `PUT /assets/props/scene.json` (with `?edit`), same as `eden_dev_server.py`, which this replaces.

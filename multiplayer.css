@@ -33,3 +33,28 @@ body:has(dialog[open]) .social-move{display:none}
 #social-message:disabled{background:#f1f4f1;color:#839187}#social-logout[hidden]{display:none}
 @media(max-width:700px){.character-launcher{top:168px}body:has(#social-panel:not([hidden])) .character-launcher{visibility:hidden}}
 @media(max-width:700px){body:has(#social-panel:not([hidden])) .social-launcher{visibility:hidden}}
+/* On-screen chat (multiplayer.js): a short feed over the game and a quick box opened with Enter. */
+.chat-overlay{position:fixed;left:24px;bottom:250px;z-index:5;width:min(380px,calc(100vw - 48px));display:flex;flex-direction:column;gap:6px;pointer-events:none;font:13px/1.4 'DM Sans',Arial,sans-serif;letter-spacing:0;color:#f4f0df}
+.chat-overlay[hidden]{display:none}
+.chat-feed{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;max-height:38vh;overflow:hidden}
+.chat-overlay.open .chat-feed{overflow:auto;pointer-events:auto;background:#14231dd9;border:1px solid #eee7d33d;border-radius:8px;padding:8px 10px;overscroll-behavior:contain}
+.chat-overlay.open .chat-feed:empty{display:none}
+.chat-feed li{align-self:flex-start;max-width:100%;padding:5px 10px;border-radius:6px;background:#14231dc4;overflow-wrap:anywhere;white-space:pre-wrap;transition:opacity 1.5s ease;text-shadow:0 1px 2px #0006}
+.chat-overlay.open .chat-feed li{background:none;padding:2px 0;text-shadow:none}
+.chat-feed li.fading{opacity:0}
+.chat-feed strong{font-weight:600;margin-right:6px;color:#bfe3cf}
+.chat-feed li.own strong{color:#f3d9a4}
+.chat-feed li.wave span{font-style:italic;color:#e8d3a9}
+.chat-quick{pointer-events:auto;margin:0}
+.chat-quick[hidden]{display:none}
+.chat-quick input{width:100%;box-sizing:border-box;min-height:42px;padding:10px 12px;border:1px solid #ffffff70;border-radius:8px;background:#fffffff2;color:#21362d;font:inherit;font-size:14px;box-shadow:0 6px 24px #0b161236}
+.chat-quick input:disabled{display:none}
+.chat-quick-note{margin:0;padding:8px 11px;border-radius:6px;background:#14231de6;color:#f4f0df;font-size:12px}
+.chat-quick-note.action{cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.chat-touch{display:none}
+@media (pointer:coarse){
+ .chat-touch{display:flex;align-items:center;justify-content:center;align-self:flex-start;pointer-events:auto;width:44px;height:44px;border-radius:14px;border:1px solid #eee7d34d;background:#182922e8;color:#f4f0df}
+ .chat-touch svg{width:20px;height:20px}
+}
+body.eden-mobile .chat-overlay{z-index:10;left:12px;bottom:calc(232px + env(safe-area-inset-bottom));width:min(320px,calc(100vw - 120px))}
+@media (prefers-reduced-motion:reduce){.chat-feed li{transition:none}}

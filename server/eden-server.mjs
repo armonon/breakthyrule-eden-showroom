@@ -199,7 +199,8 @@ async function social(action, req, res, body) {
     case 'chat': case 'wave': {
       if (!user?.character) throw new HttpError(401, 'Create a character to chat.');
       if (!allow('chat:' + user.id, 8, 10e3)) throw new HttpError(429, 'Slow down a little.');
-      const text = action === 'wave' ? 'waves' : String(body.text || '').replace(/\s+/g, ' ').trim().slice(0, 280);
+      // Control characters and invisible direction overrides could hide or reorder what others see: drop them.
+      const text = action === 'wave' ? 'waves' : String(body.text || '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u200b\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, '').replace(/\s+/g, ' ').trim().slice(0, 280);
       if (!text) throw new HttpError(400, 'Say something first.');
       return reply({message: postMessage(user, action, text, typeof body.nonce === 'string' ? body.nonce.slice(0, 64) : null)});
     }

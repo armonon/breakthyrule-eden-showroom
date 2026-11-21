@@ -16,7 +16,7 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
 
  // ---- materials ----
  // Double-sided leaves keep their outward crown normals on back faces (three would flip them inward).
- function windMaterial(params,{sway=.05,flutter=.025,keepNormals=true,glow=.35,shadeCurve=0,tint='',through=0}={}){
+ function windMaterial(params,{sway=.05,flutter=.025,keepNormals=true,glow=.35,shadeCurve=0,tint='',through=0,bend=0}={}){
   const material=new T.MeshStandardMaterial({side:T.DoubleSide,alphaTest:.45,alphaToCoverage:!mobile,roughness:.85,...params});
   material.onBeforeCompile=shader=>{
    shader.uniforms.edenTime=time;
@@ -31,13 +31,16 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
    if(through)shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
    totalEmissiveRadiance+=diffuseColor.rgb*vec3(1.,1.05,.55)*${through.toFixed(2)}*max(edenBake.x,0.);`);
    window.edenTranslucency?.(shader,glow);
+   // Low plants part around the visitor (eden-grass.js); trees and shrubs share materials, so they never bend.
+   if(bend&&window.edenBend)window.edenBend(T,shader,bend);
   };
+  if(bend)material.customProgramCacheKey=()=>'eden-bend'+bend+sway+flutter+keepNormals;
   if(shadeCurve)material.customProgramCacheKey=()=>'eden-photo-leaf'+shadeCurve+tint+sway+flutter+through;
   return material;
  }
  const leafMaterial=windMaterial({map:broadleafMap,emissive:0x2c3a16,emissiveIntensity:.14});
  const cypressMaterial=windMaterial({map:cypressMap,emissive:0x16220f,emissiveIntensity:.1},{sway:.025,flutter:.01});
- const fernMaterial=windMaterial({map:fernMap,roughness:.9,emissive:0x1c2a10,emissiveIntensity:.1},{sway:.0,flutter:.02});
+ const fernMaterial=windMaterial({map:fernMap,roughness:.9,emissive:0x1c2a10,emissiveIntensity:.1},{sway:.0,flutter:.02,bend:.2});
  const fruitMaterial=new T.MeshStandardMaterial({color:0xb23a24,roughness:.42});
 
  // ---- geometry builder ----
@@ -348,7 +351,7 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
     p.push(-c,0,-s_, c,0,s_, c,h,s_, -c,h,-s_);uv.push(0,0,1,0,1,1,0,1);for(let k=0;k<4;k++)n.push(0,1,0);idx.push(o,o+1,o+2,o,o+2,o+3);}
    g.setAttribute('position',new T.Float32BufferAttribute(p,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setAttribute('normal',new T.Float32BufferAttribute(n,3));g.setIndex(idx);
    const map=new T.TextureLoader().load(type.url);map.colorSpace=T.SRGBColorSpace;map.anisotropy=4;
-   const material=windMaterial({map,alphaTest:.62,roughness:.8},{sway:.35,flutter:.008,keepNormals:false}); // high cutoff drops faint backdrop haze
+   const material=windMaterial({map,alphaTest:.62,roughness:.8},{sway:.35,flutter:.008,keepNormals:false,bend:.26}); // high cutoff drops faint backdrop haze
    const mesh=instance(g,material,spots.map(f=>matrix(f.x,f.z,f.s,-.03)),spots.map(()=>new T.Color().setHSL(0,0,between(.9,1.05))),false);
    if(mesh)flowerMeshes.push(mesh);
   });
