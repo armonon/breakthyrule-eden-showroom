@@ -73,6 +73,38 @@ fly certs add play.breakthyrule.com   # then add the DNS record it prints
 fly scale count 1                     # never more than one
 ```
 
+## Free: Oracle Cloud Always Free
+
+`tools/deploy/oracle-setup.sh` does all of this on the server. It installs Docker, opens the server's own firewall, and
+runs the game plus Caddy for free HTTPS. It updates from `main` every 15 minutes and backs up player data daily. Without a
+domain the address is `https://<ip-with-dashes>.sslip.io/showroom`.
+
+1. **Compute → Instances → Create instance.** Image: Canonical Ubuntu 24.04. Shape: Ampere `VM.Standard.A1.Flex` with
+   2 OCPUs and 12 GB (inside Always Free). Networking: a public subnet with a public IPv4 address. Download the SSH key.
+2. Same page, **Advanced options → Management → Initialization script → Paste cloud-init script**:
+   ```bash
+   #!/bin/bash
+   curl -fsSL https://raw.githubusercontent.com/armonon/breakthyrule-eden-showroom/main/tools/deploy/oracle-setup.sh | bash
+   ```
+3. **Open ports 80 and 443.** Go to Networking → Virtual cloud networks → the instance's VCN → Security Lists → Default
+   → Add Ingress Rules. Use source `0.0.0.0/0`, protocol TCP, destination port `80,443`.
+4. Wait about 10 minutes (the first build is slow on ARM), then open `https://<public-ip-with-dashes>.sslip.io/showroom`.
+   For example, `129.146.10.20` becomes `https://129-146-10-20.sslip.io/showroom`.
+
+The setup log is in `/var/log/eden-setup.log`. To use your own domain:
+1. Point an A record (e.g. `play.breakthyrule.com`) at the server's IP.
+2. Run `curl -fsSL …/oracle-setup.sh | sudo EDEN_DOMAIN=play.breakthyrule.com bash` over SSH.
+3. Sessions are tied to the address, so players sign in again after the move.
+
+Oracle may reclaim Always Free servers that sit under 20% CPU for 7 days, and a quiet game server often does. Upgrading
+the account to Pay As You Go keeps Always Free resources free; check Oracle's terms on reclaiming before relying on it.
+Backups stay on the same disk (`/var/backups/eden`), so copy them off now and then:
+`scp -i key ubuntu@<ip>:/var/backups/eden/*.tgz .`. To restore one:
+1. Stop the `eden` container.
+2. Untar the backup into the `eden-deploy_eden-data` volume.
+3. Delete `expedition/writer.lock` from it.
+4. Start the container again.
+
 ## Linking it from the main site
 
 The Netlify build serves `deployment.js` with `mode: "preview"`, so the showroom there stays solo, which is correct.
