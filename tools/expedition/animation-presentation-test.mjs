@@ -127,3 +127,10 @@ test('a clip held at full weight stays at full weight every frame',async()=>{
  // The roll only goes down here; a weight that dipped to 0.79 on alternate frames made the head bounce back up.
  for(let i=8;i<heights.length;i++)assert.ok(heights[i]<=heights[i-1]+.01,`head rises at frame ${i}: ${heights[i-1].toFixed(3)} -> ${heights[i].toFixed(3)}`);
 });
+
+test('a long wall run hands over from the wall-run clip to the looping sprint stride',async()=>{
+ const {motion}=await rig();const at=t=>{motion.traversal({kind:'wallrun',time:t,duration:0,side:1});motion.update(1/60,{velocity:new T.Vector3(0,0,6)});return motion.inspect().actions;};
+ assert.ok(at(.3).includes('pkWallRunR'),'the run starts on the mirrored wall-run clip');
+ let late=[];for(let i=0;i<30;i++)late=at(.6+i/60);
+ assert.ok(late.includes('sprint')&&!late.includes('pkWallRunR'),'past 0.6 s it is the sprint stride, not the push-off tuck');
+});
