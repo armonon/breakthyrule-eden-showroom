@@ -71,7 +71,7 @@
     eden.setAttribute('aria-label', 'Enter Eden showroom');
     eden.title = 'Enter Eden';
     const apple = create('img', 'btr-eden-apple-logo');
-    apple.src = '/site/eden-apple-red-bitmap.png';
+    apple.src = '/site/eden-apple-red-bitmap.webp';
     apple.alt = '';
     apple.width = 40;
     apple.height = 42;

@@ -96,3 +96,28 @@ against .6M. These timings are noisy, and no unloaded run or other GPU has been 
 
 Not done: real play with the mouse, level-of-detail popping while walking, other GPUs. Still clearly CG: the museum, AI-made
 props and flower cards, the Trickster and statues, and cypress cards.
+
+
+## Light and photoreal pass (2026-11-20)
+
+Goal: keep the photoreal look but make it cheap enough to be the everyday one. Measured in headless Chromium with
+SwiftShader (software GPU), so triangle counts and bytes are exact but frame times are not meaningful; GPU timings still
+need `tools/agent/garden-baseline.mjs` on a real machine.
+
+- **High gets the cheap photoreal parts** (`eden-photoreal.js` level `'lite'`): photographed sky and horizon, scanned
+  stones, a halfway grade (saturation 1.18, contrast .15, exposure 1.65) and the planar-reflection pond at quarter
+  resolution, refreshed every third frame. About 2 MB. PHOTOREAL (`'full'`) adds the scanned crowns, hero leaves and
+  dense grass; their ~15 MB load only then.
+- **PHOTOREAL is lighter:** crowns are drawn only for trees in view (re-split on turning as well as walking); shadows
+  come from mid-detail crowns on a layer only the sun's shadow camera sees. Spawn view, instanced triangles:
+  main pass 1.99 M -> 1.29 M, shadow casters 1.94 M -> 1.36 M.
+- **First load 38.6 MB -> 29.0 MB** (Medium, first 90 s, uncompressed; about 24.6 MB on the wire once Netlify compresses
+  text). Hidden garments load within 16 m (they had pulled 3.4 MB of models and the 4.1 MB back print at spawn); the 3D
+  showroom uses a 1024 px back print; Beyond Eden's bake starts when someone heads there or after 20 s; WebP header apple.
+- **Cypress foliage** is a new card rendered from the CC0 Poly Haven fir sapling's modelled needles
+  (`tools/pipeline/render-cypress-card.cjs`, `compose-cypress-card.py`), replacing tinted fern fronds with polygon shards.
+- **Road verges** inside the garden grow grass (the bake's grass mask marks everything past z -11 as floor, so verge tufts
+  bypass it and keep clear of the sign and the Sentinel). Beyond the door is left as is: it is the open match's ground,
+  lit differently at night, and its frame rate could not be measured here.
+- **Not done:** impostors for the apple tree and cypresses (each cypress is ~300 card triangles and the apple tree is a
+  single tree, so a stand-in saves nothing); Gaussian splats (still need a real capture).

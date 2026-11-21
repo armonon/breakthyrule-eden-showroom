@@ -255,9 +255,9 @@ const quality=createAdaptiveResolution(renderer,{...renderProfile,onFloor(){if(p
 const GRAPHICS={
  low:{label:'LOW',post:false,samples:0,ratio:1,shadow:1024,ao:0,bloom:0,rays:0,flare:0,glare:0},
  medium:{label:'MEDIUM',post:true,samples:2,ratio:1.25,shadow:2048,ao:0,bloom:.26,rays:0,flare:.8,glare:.9},
- high:{label:'HIGH',post:true,samples:4,ratio:1.5,shadow:4096,ao:.8,bloom:.26,rays:.7,flare:.8,glare:.9},
+ high:{label:'HIGH',post:true,samples:4,ratio:1.5,shadow:4096,ao:.8,bloom:.26,rays:.7,flare:.8,glare:.9,photo:'lite'},
  // Real captured content (eden-photoreal.js), for strong GPUs. Only ever chosen by hand.
- photo:{label:'PHOTOREAL',post:true,samples:4,ratio:1.5,shadow:4096,ao:.8,bloom:.16,rays:.35,flare:.25,glare:.9,photo:true}
+ photo:{label:'PHOTOREAL',post:true,samples:4,ratio:1.5,shadow:4096,ao:.8,bloom:.16,rays:.35,flare:.25,glare:.9,photo:'full'}
 };
 function autoGraphics(){
  if(mobileDevice||(navigator.deviceMemory&&navigator.deviceMemory<=4))return 'low';
@@ -268,7 +268,7 @@ let graphics='high',photoreal=null;
 function setGraphics(level,{save=true}={}){
  const q=GRAPHICS[level]||GRAPHICS.medium;graphics=GRAPHICS[level]?level:'medium';postStep=0;
  post.set({enabled:q.post,samples:q.samples,ao:q.ao,bloom:q.bloom,rays:q.rays,flare:q.flare,glare:q.glare});
- quality.setMax(Math.min(devicePixelRatio,q.ratio));lighting.set({shadowSize:q.shadow});renderer.shadowMap.needsUpdate=true;photoreal?.set(!!q.photo);
+ quality.setMax(Math.min(devicePixelRatio,q.ratio));lighting.set({shadowSize:q.shadow});renderer.shadowMap.needsUpdate=true;photoreal?.set(q.photo||false);
  if(save){try{localStorage.setItem('eden-graphics',graphics);}catch{}requestDraw();}
 }
 {let saved=null;try{saved=localStorage.getItem('eden-graphics');}catch{}setGraphics(GRAPHICS[saved]?saved:autoGraphics(),{save:false});}
@@ -318,7 +318,7 @@ $('poster-links').replaceChildren(wallSwitch,...galleryLinks.map(poster=>{const 
 collectionRack=createCollectionRack(T,scene,chrome,rod);museum.adopt(roomData.room,collectionRack.rack);rails.push(collectionRack.rack);collectionRack.rack.traverse(node=>{if(Number.isInteger(node.userData.collectionIndex))pickables.push(node);});
 $('collection-status').textContent=collection.length+' GARMENTS / GHOST STUDIO';
 try{spinViewer=createSpinViewer({element:$('garment-viewer'),textures,onAngle:degrees=>{$('image-caption').textContent='360° / '+String(degrees).padStart(3,'0')+'°';},onInteraction:updateSpinButton});$('show-3d').disabled=!collection[state.selected].model;}catch(error){console.warn('360 viewer unavailable; photographs remain available.');}
-if(graphics==='photo')photoreal.set(true);state.ready=true;$('spawn').disabled=false;$('approach').disabled=false;$('wall-view').disabled=false;$('loading').hidden=true;go('spawn',true);requestDraw();
+if(GRAPHICS[graphics]?.photo)photoreal.set(GRAPHICS[graphics].photo);state.ready=true;$('spawn').disabled=false;$('approach').disabled=false;$('wall-view').disabled=false;$('loading').hidden=true;go('spawn',true);requestDraw();
 $('library-view').disabled=false;
 $('open-residents').disabled=false;
 $('amphitheater-view').disabled=false;
@@ -347,7 +347,7 @@ let roadCaption='';
 // Clothes are for sale: inside a pocket world (museum, vault, black box) colour has to match the product photos, so those
 // rooms use Neutral tone mapping without the film LUT. The garden keeps AgX and the grade.
 let interiorGrade=false;
-function updateGrade(){const inside=!!pockets?.inside(camera.position);if(!inside)renderer.toneMappingExposure=photoreal?.active?1.8:1.5;if(inside===interiorGrade)return;interiorGrade=inside;renderer.toneMapping=inside?T.NeutralToneMapping:T.AgXToneMapping;renderer.toneMappingExposure=inside?.9:1.5;post.set({lut:inside?0:1});}
+function updateGrade(){const inside=!!pockets?.inside(camera.position);if(!inside)renderer.toneMappingExposure=photoreal?.level==='full'?1.8:photoreal?.active?1.65:1.5;if(inside===interiorGrade)return;interiorGrade=inside;renderer.toneMapping=inside?T.NeutralToneMapping:T.AgXToneMapping;renderer.toneMappingExposure=inside?.9:1.5;post.set({lut:inside?0:1});}
 // Fist-fight hits shake, roll and drop the view only for this frame; the walking camera underneath is untouched.
 const savedCameraPosition=new T.Vector3(),savedCameraQuaternion=new T.Quaternion();
 function withHitEffects(render){
@@ -518,7 +518,7 @@ function updateMatchGate(){
  if(worlds&&!worlds.loading()&&!pockets?.inside(camera.position)){
   const there=targetPosition.z<garden.road.door-.8,home=targetPosition.z>garden.road.door+.3;
   if(there&&worlds.world()==='eden'){walkVelocity.set(0,0,0);worlds.enter('beyond',{title:'BEYOND EDEN',sub:'THE OLD CIVILIZATION · EIGHT PAGES ARE WAITING',kicker:'THROUGH THE HIDDEN DOOR',
-   steps:[async()=>{garden.district;garden.pyramid;await window.edenBaked?.beyondReady;const d=garden.district;d.prepare(nightLayout.landmarks.map(s=>s.id));const start=performance.now();while(Object.values(d.inspect().models).some(s=>s==='waiting'||s==='loading')){if(performance.now()-start>90000)break;d.update(performance.now()/1000,camera,0);await new Promise(r=>setTimeout(r,50));}},async()=>{if(!battle.busy()&&!expedition?.active()&&!combat?.inRange()&&!arena?.active()&&state.view==='free')await battle.enter();}]});return;}
+   steps:[async()=>{garden.district;garden.pyramid;await (window.edenBaked?.loadBeyond?.()??window.edenBaked?.beyondReady);const d=garden.district;d.prepare(nightLayout.landmarks.map(s=>s.id));const start=performance.now();while(Object.values(d.inspect().models).some(s=>s==='waiting'||s==='loading')){if(performance.now()-start>90000)break;d.update(performance.now()/1000,camera,0);await new Promise(r=>setTimeout(r,50));}},async()=>{if(!battle.busy()&&!expedition?.active()&&!combat?.inRange()&&!arena?.active()&&state.view==='free')await battle.enter();}]});return;}
   if(home&&worlds.world()==='beyond'){if(battle.active())battle.suspend();worlds.enter('eden',{title:'GARDEN OF EDEN',sub:'IN THE BEGINNING',kicker:'BACK THROUGH THE DOOR',min:500});return;}
  }
  // The office: once the eight pages are in, walking into the pyramid starts the office (locked for good).
