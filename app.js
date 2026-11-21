@@ -257,10 +257,10 @@ const GRAPHICS={
  // Realism extras: exposure/haze/clouds are near-free folds into the final pass; motion blur and depth of field run only
  // while sprinting or inspecting; wet ground (a half-resolution ray march) only on High and Photoreal at night.
  low:{label:'LOW',post:false,samples:0,ratio:1,shadow:1024,ao:0,bloom:0,rays:0,flare:0,glare:0,exposure:0,haze:0,clouds:0,wet:0,dof:0,motionBlur:0,air:0},
- medium:{label:'MEDIUM',post:true,samples:2,ratio:1.25,shadow:2048,ao:0,bloom:.26,rays:0,flare:.8,glare:.9,exposure:1,haze:.3,clouds:.3,wet:0,dof:.8,motionBlur:.5,air:1},
- high:{label:'HIGH',post:true,samples:4,ratio:1.5,shadow:4096,ao:.8,bloom:.26,rays:.7,flare:.8,glare:.9,photo:'lite',exposure:1,haze:.3,clouds:.3,wet:.8,dof:1,motionBlur:.6,air:1},
+ medium:{label:'MEDIUM',post:true,samples:2,ratio:1.25,shadow:2048,ao:0,bloom:.26,rays:0,flare:.8,glare:.9,exposure:1,haze:.3,clouds:.3,wet:0,dof:.8,motionBlur:.3,air:1},
+ high:{label:'HIGH',post:true,samples:4,ratio:1.5,shadow:4096,ao:.8,bloom:.26,rays:.7,flare:.8,glare:.9,photo:'lite',exposure:1,haze:.3,clouds:.3,wet:.8,dof:1,motionBlur:.4,air:1},
  // Real captured content (eden-photoreal.js), for strong GPUs. Only ever chosen by hand.
- photo:{label:'PHOTOREAL',post:true,samples:4,ratio:1.5,shadow:4096,ao:.8,bloom:.16,rays:.35,flare:.25,glare:.9,photo:'full',exposure:1,haze:.25,clouds:.3,wet:.8,dof:1,motionBlur:.6,air:1}
+ photo:{label:'PHOTOREAL',post:true,samples:4,ratio:1.5,shadow:4096,ao:.8,bloom:.16,rays:.35,flare:.25,glare:.9,photo:'full',exposure:1,haze:.25,clouds:.3,wet:.8,dof:1,motionBlur:.4,air:1}
 };
 function autoGraphics(){
  if(mobileDevice||(navigator.deviceMemory&&navigator.deviceMemory<=4))return 'low';
