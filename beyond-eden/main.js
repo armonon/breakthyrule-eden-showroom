@@ -74,7 +74,7 @@ async function init() {
   const post = createPostProcessing({ renderer, scene, camera, preset: quality.preset, enabled: CONFIG.post });
   const lampTint = new THREE.Vector3(1, .72, .44), moonTint = new THREE.Vector3(.72, .82, 1), moonPoint = new THREE.Vector3();
   practicalLights.lamps.forEach(lamp => post.addLight({ ...lamp, radius: .13, tint: lampTint }));
-  post.addLight({ position: () => moonPoint.copy(atmosphere.moonDirection).multiplyScalar(150).add(camera.position), distant: true, radius: 1.8, size: 1.6, strength: .35, tint: moonTint });
+  post.addLight({ position: () => moonPoint.copy(atmosphere.moonDirection).multiplyScalar(150).add(camera.position), distant: true, radius: 1.8, size: 1.6, strength: .15, tint: moonTint });
 
   const streamer = new DistrictStreamer({ scene, camera, config: CONFIG.streaming, enabled: true });
   const pbr = createPbrMaterialLibrary({ assetLoader: assets });
