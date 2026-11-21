@@ -131,7 +131,7 @@ bookDialog.addEventListener('click',event=>{if(event.target===bookDialog){const 
 bookDialog.addEventListener('close',()=>{keys.clear();requestDraw();});
 const collection=window.showroomCollection,models=new Map(),modelJobs=new Map(),rackModels=new Map(),rackFailures=new Set();
 let productGeneration=0,wants3D=false,rackLoading=false;
-const shop=createGarmentShop({collection,onOpen(){keys.clear();if(dialog.open)dialog.close();},onSelect:index=>inspect('front',index),onClose(){keys.clear();if(state.ready)requestDraw();}});
+const shop=createGarmentShop({collection,onOpen(){keys.clear();if(dialog.open)dialog.close();},onSelect:index=>{inspect('front',index);if(!$('show-3d').disabled)$('show-3d').click();},onClose(){keys.clear();if(state.ready)requestDraw();}});
 let collectionRack=null,pockets=null,museum=null,libraryGarden=null;
 let spinViewer=null,wallFilm=null,instagramSlideshow=null;
 let filmHint='Loading the video…',filmStatus='loading';

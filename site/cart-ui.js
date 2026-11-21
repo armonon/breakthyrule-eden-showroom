@@ -132,7 +132,8 @@ checkout.onclick = async () => {
     if (['checkout_rejected', 'checkout_finished', 'checkout_collision', 'checkout_changed'].includes(data.code)) sessionWrite('btr-checkout-key', '');
     if (!r.ok || !data.url) throw new Error(data.error || 'Checkout could not be opened. Your cart is saved; please try again.');
     sessionWrite('btr-last-order', data.orderId);
-    location.href = data.url;
+    // Inside the Eden shop the product page is framed; checkout opens in the whole window.
+    (document.documentElement.classList.contains('eden-embed') ? window.top : window).location.href = data.url;
   } catch (e) {
     status.textContent = e.message;
     // A lost response may still have created a checkout. Retry the same cart with the same key.
