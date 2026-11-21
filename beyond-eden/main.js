@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { CONFIG, QUALITY_PRESETS, THREE_REVISION, VERSION } from './config.js';
 import { createRenderer } from './core/renderer.js';
+import { createPostProcessing } from './core/post.js';
 import { QualityManager } from './core/quality.js';
 import { SliceAssetLoader } from './core/asset-loader.js';
 import { CollisionWorld } from './core/collisions.js';
@@ -70,6 +71,10 @@ async function init() {
   ritualDoor.setPages(0);
   const flashlight = new Flashlight({ camera, config: CONFIG.flashlight, preset: quality.preset });
   const trees = await new TreeSystem({ scene, camera, assetLoader: assets, preset: quality.preset }).init();
+  const post = createPostProcessing({ renderer, scene, camera, preset: quality.preset, enabled: CONFIG.post });
+  const lampTint = new THREE.Vector3(1, .72, .44), moonTint = new THREE.Vector3(.72, .82, 1), moonPoint = new THREE.Vector3();
+  practicalLights.lamps.forEach(lamp => post.addLight({ ...lamp, radius: .13, tint: lampTint }));
+  post.addLight({ position: () => moonPoint.copy(atmosphere.moonDirection).multiplyScalar(150).add(camera.position), distant: true, radius: 1.8, size: 1.6, strength: .35, tint: moonTint });
 
   const streamer = new DistrictStreamer({ scene, camera, config: CONFIG.streaming, enabled: true });
   const pbr = createPbrMaterialLibrary({ assetLoader: assets });
@@ -85,6 +90,7 @@ async function init() {
     streaming: streamer.inspect(),
     vegetation: trees.inspect(),
     flashlight: flashlight.snapshot(),
+    post: post.inspect(),
   });
 
   const bench = new BenchRunner({
@@ -108,6 +114,7 @@ async function init() {
     atmosphere.applyQuality(snapshot);
     practicalLights.applyQuality(snapshot);
     flashlight.applyQuality(snapshot);
+    post.applyQuality(snapshot);
     trees.applyQuality(snapshot);
     streamer.applyQuality(snapshot);
     document.querySelectorAll('[data-quality]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.quality === snapshot.name)));
@@ -181,7 +188,7 @@ async function init() {
         target.texture.colorSpace = THREE.SRGBColorSpace;
 
         renderer.setRenderTarget(target);
-        renderer.render(scene, camera);
+        post.render();
         renderer.setRenderTarget(null);
 
         const pixels = await renderer.readRenderTargetPixelsAsync(target, 0, 0, width, height);
@@ -213,7 +220,7 @@ async function init() {
       // Legacy fallback for unusual renderer builds that do not expose async
       // render-target readback. It may fail if the browser clears the canvas,
       // which is why the path above is preferred.
-      renderer.render(scene, camera);
+      post.render();
       const blob = await new Promise((resolve, reject) => {
         renderer.domElement.toBlob(value => value ? resolve(value) : reject(new Error('The renderer canvas did not encode a PNG.')), 'image/png');
       });
@@ -319,7 +326,7 @@ async function init() {
     quality.observe(frameMs, now);
     updateStatus(now);
 
-    renderer.render(scene, camera);
+    post.render();
     bench.sample(frameMs);
     updateLiveMetrics(now);
   });
@@ -347,6 +354,7 @@ async function init() {
     streamer,
     trees,
     flashlight,
+    post,
     ritualDoor,
     controls,
     bench,
@@ -359,6 +367,7 @@ async function init() {
       streamer.dispose();
       trees.dispose();
       flashlight.dispose();
+      post.dispose();
       ritualDoor.dispose();
       practicalLights.dispose();
       atmosphere.dispose();

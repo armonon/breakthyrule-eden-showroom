@@ -14,7 +14,8 @@ export function createPracticalLights({ scene, preset }) {
   });
 
   const glowGeometry = new THREE.SphereGeometry(.13, 10, 7);
-  const glowMaterial = new THREE.MeshBasicMaterial({ color: 0xffddb0, transparent: true, opacity: .9, depthWrite: false });
+  // Over-bright (linear HDR) so bloom and lamp glare pick the globes out; tone mapping brings them back to white.
+  const glowMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffddb0).multiplyScalar(7), transparent: true, opacity: .9, depthWrite: false });
   const glows = positions.map(([x, y, z]) => {
     const mesh = new THREE.Mesh(glowGeometry, glowMaterial);
     mesh.position.set(x, y, z);
@@ -29,6 +30,8 @@ export function createPracticalLights({ scene, preset }) {
   applyQuality(preset);
 
   return {
+    // For lens glare: each lamp's globe position and whether it is lit at this quality.
+    lamps: glows.map(glow => ({ position: () => glow.position, visible: () => glow.visible })),
     applyQuality,
     update(time) {
       lights.forEach((light, index) => {
