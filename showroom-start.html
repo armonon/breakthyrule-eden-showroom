@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+ <meta name="theme-color" content="#0b0b0b">
+ <title>BREAKTHYRULE — Enter the Garden of Eden</title>
+ <meta name="description" content="Enter the Garden of Eden alone, or with everyone else who's there.">
+ <link rel="icon" type="image/png" href="/assets/favicon-32.png">
+ <!-- Netlify serves this at /showroom (netlify.toml) so players choose before the game's heavy assets load.
+      Solo is the static showroom here; Multiplayer goes through /play to the game host (docs/MULTIPLAYER-HOSTING.md). -->
+ <style>
+  @font-face{font-family:Ballet;src:url(/fonts/ballet-latin.woff2) format('woff2');font-display:swap}
+  @font-face{font-family:Inter;src:url(/fonts/inter.woff2) format('woff2');font-weight:100 900;font-display:swap}
+  :root{--ink:#f4f1ec;--muted:#a9a49c;--line:#2c2a28;--red:#c0392b;--card:#151413;--ok:#5fbf6a;--off:#8a8580}
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:#0b0b0b;color:var(--ink);font-family:Inter,system-ui,sans-serif}
+  main{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;text-align:center}
+  .apple{width:132px;height:auto;aspect-ratio:1;object-fit:cover;object-position:center;border-radius:50%;margin-bottom:8px}
+  .kicker{font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);margin:0}
+  h1{font-family:Ballet,serif;font-weight:400;font-size:clamp(44px,9vw,76px);line-height:1.15;margin:22px 0 30px}
+  .choices{display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:16px;width:100%;justify-content:center}
+  .choice{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:22px 22px 20px;background:var(--card);border:1px solid var(--line);border-radius:14px;color:inherit;text-decoration:none;text-align:left;transition:border-color .15s,transform .15s}
+  .choice:hover,.choice:focus-visible{border-color:var(--red);transform:translateY(-2px);outline:none}
+  .choice strong{font-size:20px;font-weight:700;letter-spacing:.01em}
+  .choice span{font-size:14px;line-height:1.45;color:var(--muted)}
+  .status{display:inline-flex;align-items:center;gap:7px;margin-top:4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .status::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--off)}
+  .status[data-state="online"]{color:var(--ok)}
+  .status[data-state="online"]::before{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .choice[aria-disabled="true"]{opacity:.55;pointer-events:none}
+  .note{margin:22px 0 0;font-size:13px;color:var(--muted);max-width:520px}
+  @media (max-width:560px){.choices{grid-template-columns:1fr;max-width:340px}}
+ </style>
+</head>
+<body>
+ <main>
+  <img class="apple" src="/assets/og-default.jpg" alt="" width="132" height="132">
+  <p class="kicker">Break Thy Rule</p>
+  <h1>Garden of Eden</h1>
+  <div class="choices">
+   <a class="choice" id="solo" href="/showroom.html">
+    <strong>Solo</strong>
+    <span>Explore the garden on your own. Always available.</span>
+   </a>
+   <a class="choice" id="multi" href="/play">
+    <strong>Multiplayer</strong>
+    <span>Share the garden with other players: chat, fight, and run Beyond Eden together.</span>
+    <em class="status" id="status" data-state="checking">Checking server…</em>
+   </a>
+  </div>
+  <p class="note" id="note" hidden>The multiplayer server is offline right now. Solo works as usual — try multiplayer again later.</p>
+ </main>
+ <script>
+  'use strict';
+  // Carry options like ?night=1 into whichever version the player picks.
+  const q = location.search;
+  document.getElementById('solo').href = '/showroom.html' + q;
+  document.getElementById('multi').href = '/play' + q;
+  // /play-status redirects to the game host's /deployment.js (netlify.toml). It only counts as online if that script
+  // actually ran and declared the live-multiplayer mode, so a proxy error page or a timeout reads as offline.
+  const status = document.getElementById('status'), multi = document.getElementById('multi');
+  let settled = false;
+  const finish = online => {
+   if (settled) return; settled = true;
+   if (online) { status.dataset.state = 'online'; status.textContent = 'Server online'; return; }
+   status.dataset.state = 'offline'; status.textContent = 'Offline right now';
+   multi.setAttribute('aria-disabled', 'true'); multi.tabIndex = -1;
+   document.getElementById('note').hidden = false;
+  };
+  const probe = document.createElement('script');
+  probe.src = '/play-status?t=' + Date.now();
+  probe.onload = () => finish(window.showroomDeployment?.mode === 'local');
+  probe.onerror = () => finish(false);
+  setTimeout(() => finish(false), 6000);
+  document.head.appendChild(probe);
+ </script>
+</body>
+</html>
