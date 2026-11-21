@@ -51,7 +51,7 @@ function measureRest(scene,src){
 
 // Sample one clip: per frame, each bone's world-rotation change from rest in our axes, and the hip's height change.
 function sample(scene,clip,rest,src,fps,hipFirst=false,maxDur=0){let base=null;
- const S=SOURCES[src],by=bonesByName(scene),mixer=new THREE.AnimationMixer(scene),act=mixer.clipAction(clip);act.play();
+ const S=SOURCES[src],by=bonesByName(scene),mixer=new THREE.AnimationMixer(scene),act=mixer.clipAction(clip);act.setLoop(THREE.LoopOnce,1);act.clampWhenFinished=true;act.play();// clamp: at t=duration a repeating action wraps to frame 0, which would make a one-shot's held last frame its first
  const dur=Math.min(clip.duration,maxDur||Infinity),n=Math.max(2,Math.round(dur*fps)+1),q=new Int16Array(n*OURS.length*4),hip=new Int16Array(n),prev=OURS.map(()=>null);
  const restInv=Object.fromEntries(Object.entries(rest.wq).map(([k,v])=>[k,v.clone().invert()]));
  let leftFwd=-1e9,phase0=0;const tmp=new THREE.Quaternion();

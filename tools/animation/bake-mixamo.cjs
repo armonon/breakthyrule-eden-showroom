@@ -9,17 +9,20 @@
 // Any file that is missing is skipped; the game falls back to the older clip for that move.
 const {chromium}=require('playwright');const fs=require('fs');const path=require('path');const http=require('http');
 const ROOT=path.join(__dirname,'../..'),DIR=path.join(ROOT,'.anim-work/mixamo'),OUT=path.join(ROOT,'assets/anim/clips.json');
-// [our id, file, loop, Mixamo search term]
+// [our id, file, loop, Mixamo search term, keep hip height]
+// Clips whose hip track is root motion (the body rising onto a ledge, over a wall, up a wall or through a leap) are
+// stored flat: player-movement.js / parkour.js already move the body along that path, and the two would stack.
 const WANT=[
- ['pkVault','vault.fbx',false,'Jump Over / Vault'],
- ['pkClimb','climb.fbx',false,'Braced Hang To Crouch / Climbing'],
- ['pkHang','hang.fbx',true,'Hanging Idle'],
- ['pkShimmyL','shimmy-left.fbx',true,'Left Shimmy'],
- ['pkShimmyR','shimmy-right.fbx',true,'Right Shimmy'],
- ['pkScramble','wall-climb.fbx',true,'Climbing Up Wall'],
- ['pkLeap','leap.fbx',false,'Running Jump'],
- ['pkRoll','roll.fbx',false,'Falling To Roll / Sprinting Forward Roll'],
- ['pkWallRun','wallrun.fbx',true,'Running (or any wall run you like)'],
+ ['pkVault','vault.fbx',false,'Jump Over / Vault',true],// its rise is used: character-motion.js drops the model by the vault lift
+ ['pkClimb','climb.fbx',false,'Braced Hang To Crouch / Climbing',false],
+ ['pkHang','hang.fbx',true,'Hanging Idle',true],
+ ['pkShimmyL','shimmy-left.fbx',true,'Left Shimmy',true],
+ ['pkShimmyR','shimmy-right.fbx',true,'Right Shimmy',true],
+ ['pkScramble','wall-climb.fbx',true,'Climbing Up Wall',true],
+ ['pkLeap','leap.fbx',false,'Running Jump',false],
+ ['pkRoll','roll.fbx',false,'Falling To Roll / Sprinting Forward Roll',true],
+ ['pkWallRun','wallrun.fbx',false,'Diagonal Wall Run (wall on the left)',false],
+ ['pkWallRunR','wallrun-mirror.fbx',false,'Diagonal Wall Run, Mirror ticked (wall on the right)',false],
 ];
 // .fbx from Mixamo, or the same name as .glb.
 const found=f=>[f,f.replace(/\.fbx$/,'.glb')].find(n=>fs.existsSync(path.join(DIR,n)));
@@ -35,6 +38,7 @@ const server=http.createServer((q,r)=>{const f=path.join(ROOT,decodeURIComponent
  const baked=await p.evaluate(({jobs,rest})=>window.bake(jobs,rest?{mixamo:rest}:{},30),{jobs,rest});
  const lib=JSON.parse(fs.readFileSync(OUT,'utf8'));
  if(JSON.stringify(lib.bones)!==JSON.stringify(baked.bones))throw Error('bone list changed: rebake everything with bake-clips.cjs');
+ for(const [id,,,,keepHip] of WANT)if(baked.clips[id]&&!keepHip)baked.clips[id].hip=Buffer.alloc(baked.clips[id].n*2).toString('base64');
  lib.sources.mixamo=baked.sources.mixamo;Object.assign(lib.clips,baked.clips);
  if(!/Mixamo/.test(lib.credits||''))lib.credits=(lib.credits||'')+' Parkour clips: Adobe Mixamo (royalty-free for use in projects; raw files not redistributed).';
  fs.writeFileSync(OUT,JSON.stringify(lib));

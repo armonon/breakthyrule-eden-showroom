@@ -157,6 +157,9 @@ function vaultPoint(v,k){
  const lift=k<.28?T.MathUtils.smoothstep(k,0,.28):k>.78?1-T.MathUtils.smoothstep(k,.78,1):1;
  p.y=(k<.78?v.from.y:v.to.y)+v.lift*lift;return p;
 }
+// How far the vault path has raised the body above the ground right now (metres): the vault clip carries its own
+// rise over the obstacle, so character-motion.js lowers the model by this much to plant the hand on the top.
+function vaultLift(v){const k=Math.min(1,v.t/v.dur);return v.lift*(k<.28?T.MathUtils.smoothstep(k,0,.28):k>.78?1-T.MathUtils.smoothstep(k,.78,1):1);}
 function tryVault(dir){
  const P=h.pk(),probe=P?.raycast?((o,d,n)=>P.raycast(o,d,n)):h.combat?.worldHits?.bind(h.combat);
  if(vault||!probe||h.arena?.active()||P?.active?.())return false;
@@ -168,7 +171,8 @@ function tryVault(dir){
   const to=targetPosition.clone().addScaledVector(d,distance),floor=P?.floorAt(to.x,to.z,feet+.2)??groundHeight(to),radius=profile().radius;
   if(Math.abs(floor-feet)>.18)continue;to.y=floor+1.75;
   const constrained=h.garden.constrain(to.clone(),targetPosition,P?feet:null,{height:profile().height,radius});
-  if(Math.hypot(constrained.x-to.x,constrained.z-to.z)>.02||obstacle(to)||!fits(feetPoint(to),profile().height))continue;
+  if(Math.hypot(constrained.x-to.x,constrained.z-to.z)>.02||obstacle(to)||obstacle(to.clone().addScaledVector(d,-.25))||// land a stride clear, so the trailing leg does not clip the far face
+!fits(feetPoint(to),profile().height))continue;
   if(P&&[[radius,radius],[-radius,radius],[radius,-radius],[-radius,-radius]].some(([x,z])=>Math.abs(P.floorAt(to.x+x,to.z+z,feet+.2)-floor)>.18))continue;
   const plan={from:targetPosition.clone(),to,t:0,dur:.62,lift:top.point.y-feet+.035,speed:Math.max(3.5,Math.hypot(walkVelocity.x,walkVelocity.z))};
   let previous=feetPoint(),safe=true;
@@ -277,7 +281,7 @@ function updateJump(dt){
  const api={captureState,restoreState,validateState,move,jump,updateJump,tryVault,cancelTraversal,bodyHeight,tryStep,startSlide,tapDodge,updateCrouch,updateAir,
   needsStep:()=>!!(keys.size||walkVelocity.lengthSq()||slide||vault||h.parkour()?.active()||momentum>0),
   momentum:()=>h.momentumEnabled?.()===false?0:momentum,
-  traversal:()=>h.parkour()?.presentation?.()||(vault?{kind:'vault',time:vault.t,duration:vault.dur}:dive?{kind:'dive',time:dive.t}:slide?{kind:slide.kind,time:slide.t,duration:slide.dur}:null),
+  traversal:()=>h.parkour()?.presentation?.()||(vault?{kind:'vault',time:vault.t,duration:vault.dur,lift:vaultLift(vault)}:dive?{kind:'dive',time:dive.t}:slide?{kind:slide.kind,time:slide.t,duration:slide.dur}:null),
   get slide(){return slide;},set slide(v){slide=v;},get dive(){return dive;},set dive(v){dive=v;},get vault(){return vault;},set vault(v){if(v===null)cancelTraversal();},
   // Exactly one answer to "what is the player doing".
   state:()=>h.parkour()?.kind()||(vault?'vault':dive?'dive':slide?slide.kind:motion.inspect().airborne?'air':proneT>0?'prone':crouchAmount>.1?'crouch':'ground'),

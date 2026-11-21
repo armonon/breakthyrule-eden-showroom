@@ -72,7 +72,7 @@ $('close-residents').onclick=()=>residentDialog.close();
 residentDialog.addEventListener('close',()=>{keys.clear();requestDraw();});
 residentDialog.addEventListener('click',event=>{if(event.target===residentDialog){const r=residentDialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)residentDialog.close();}});
 $('resident-concepts').onclick=()=>{residentDialog.close();showPoster({name:'Garden residents / full-body concepts',file:'/residents/full-body-concepts.png',alt:'Front and back concept designs for Violet Trickster, Azure Oracle and Gilded Sentinel.'});};
-let selectedBook=0,gardenLibrary=null,librarianNPC=null,gardenProps=null;
+let selectedBook=0,gardenLibrary=null,librarianNPC=null,gardenProps=null,vaultLedge=null;
 const conversation=createLibrarianConversation({onOpen(){keys.clear();if(bookDialog.open)bookDialog.close();go('librarian');librarianNPC?.setTalking(true);$('npc-prompt').hidden=true;requestDraw();},onClose(){librarianNPC?.setTalking(false);go('library');requestDraw();}});
 $('npc-prompt').onclick=$('talk-librarian').onclick=$('ask-from-books').onclick=()=>conversation.open();
 function showBook(index=selectedBook){
@@ -304,6 +304,17 @@ Promise.allSettled([garden.ready,gardenLibrary.ready]).then(()=>{
  window.edenBatching=stats;renderer.shadowMap.needsUpdate=true;requestDraw();
 });
 gardenProps=createGardenProps(T,scene,{camera,renderer,onChange(){renderer.shadowMap.needsUpdate=true;requestDraw();}});
+// A low stone ledge by the white pavilion, more than 4 m from the Trickster's patrol (residents.js; his fists take
+// over the body within 3.5 m): run at it and jump to vault it (player-movement.js tryVault).
+vaultLedge=(()=>{
+ const W=2.6,D=.42,H=.72,cx=-8.6,cz=10.3,base=groundHeight(new T.Vector3(cx,0,cz)),g=new T.Group();g.name='Vault ledge';
+ const stone=new T.MeshStandardMaterial({color:0x9a958a,roughness:.92}),cap=new T.MeshStandardMaterial({color:0xb3ad9f,roughness:.85});
+ const wall=new T.Mesh(new T.BoxGeometry(W,H-.08,D),stone);wall.position.y=(H-.08)/2;
+ const top=new T.Mesh(new T.BoxGeometry(W+.08,.08,D+.08),cap);top.position.y=H-.04;
+ for(const m of [wall,top]){m.castShadow=m.receiveShadow=true;g.add(m);}
+ g.position.set(cx,base,cz);scene.add(g);
+ return {blocks:p=>g.visible&&Math.abs(p.x-cx)<W/2+.25&&Math.abs(p.z-cz)<D/2+.25,group:g};// hidden (and not solid) outside Eden: worlds.js hides unclaimed scene roots
+})();
 gardenLibrary.ready.then(requestDraw);
 setShelfPage(0);
 const textures=allTextures.slice(0,2);
@@ -337,7 +348,9 @@ let lastShiftShown=null,socialShift=null,perfBox=null,perfOn=false;const perf={n
 function perfFrame(raw){if(!perfOn||!raw)return;perf.n++;perf.sum+=raw;perf.worst=Math.max(perf.worst,raw);const now=performance.now();if(now-perf.at<500)return;perf.at=now;
  const i=renderer.info.render;perfBox.textContent=`${Math.round(perf.n/perf.sum)} FPS · ${(perf.sum/perf.n*1000).toFixed(1)} ms avg · ${(perf.worst*1000).toFixed(0)} ms worst · ${i.calls} draws · ${Math.round(i.triangles/1000)}k tris · ${graphics.toUpperCase()} · ×${renderer.getPixelRatio().toFixed(2)}`;perf.n=perf.sum=perf.worst=0;}
 document.addEventListener('keydown',e=>{if(e.key!=='F9')return;e.preventDefault();perfOn=!perfOn;if(!perfBox){perfBox=document.createElement('div');perfBox.id='perf-hud';perfBox.style.cssText='position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:80;background:rgba(0,0,0,.6);color:#9effa8;font:600 11px monospace;padding:4px 10px;pointer-events:none;letter-spacing:.04em';document.body.append(perfBox);}perfBox.hidden=!perfOn;perfBox.textContent='measuring…';requestDraw();});
-function draw(time){frame=0;if(!pageActive()){previous=0;quality.pause();return;}if(!state.ready)return;if(lookLocked&&modalOpen())document.exitPointerLock?.();if(worlds?.loading())quality.pause();else quality.frame(time,!!previous);const raw=Math.min((time-(previous||time))/1000,.25),dt=Math.min(raw,.05);previous=time;perfFrame(raw);
+// ?slowmo=0.25 runs the whole game clock at a quarter speed, for checking animations frame by frame.
+const SLOWMO=Math.min(1,Math.max(.05,+new URLSearchParams(location.search).get('slowmo')||1));
+function draw(time){frame=0;if(!pageActive()){previous=0;quality.pause();return;}if(!state.ready)return;if(lookLocked&&modalOpen())document.exitPointerLock?.();if(worlds?.loading())quality.pause();else quality.frame(time,!!previous);const raw=Math.min((time-(previous||time))/1000,.25)*SLOWMO,dt=Math.min(raw,.05);previous=time;perfFrame(raw);
  // Movement and the match run in steps of at most 50 ms, so a long frame catches up instead of slowing the game down
  // and snapping back (what reads as rubber banding when the frame rate dips).
  const steps=Math.max(1,Math.ceil(raw/.05-1e-6)),sdt=(raw||.016)/steps;
@@ -441,7 +454,7 @@ function focusResident(id){
 }
 function obstacle(next){
  const pond=((next.x-5.7)/4.1)**2+((next.z-3.5)/5.9)**2<1;const trunk=Math.hypot(next.x-.5,next.z+7)<.75;
- return !!(pond||trunk||pockets?.blocks(next)||libraryGarden?.blocks(next)||amphitheater.blocks(next)||gardenLibrary?.blocks(next)||gardenProps?.blocks(next)||combat?.blocks(next)||secrets?.blocks(next)||extras?.blocks(next));
+ return !!(pond||trunk||pockets?.blocks(next)||libraryGarden?.blocks(next)||amphitheater.blocks(next)||gardenLibrary?.blocks(next)||gardenProps?.blocks(next)||vaultLedge?.blocks(next)||combat?.blocks(next)||secrets?.blocks(next)||extras?.blocks(next));
 }
 // The jester's punches and tackles shove the visitor through the same collision rules as walking.
 function shove({direction,distance}){
@@ -657,12 +670,12 @@ arena=multiplayer&&window.createArena?.({T,scene,camera,renderer,multiplayer,req
  stopMoving:()=>{keys.clear();drag=null;walkVelocity.set(0,0,0);}});
 // Ragdolls collide with the same walls, props and pond edge that stop the player.
 const solidFar=new T.Vector3(1e6,0,1e6);
-if(window.GardenCharacterMotion)GardenCharacterMotion.solid=p=>{const q=garden.constrain(p.clone(),solidFar.clone());if(q.distanceToSquared(p)>1e-6)return true;return ((p.x-5.7)/4.1)**2+((p.z-3.5)/5.9)**2<1||Math.hypot(p.x-.5,p.z+7)<.75||!!pockets?.blocks(p)||!!libraryGarden?.blocks(p)||!!amphitheater.blocks(p)||!!gardenLibrary?.blocks(p)||!!gardenProps?.blocks(p);};
+if(window.GardenCharacterMotion)GardenCharacterMotion.solid=p=>{const q=garden.constrain(p.clone(),solidFar.clone());if(q.distanceToSquared(p)>1e-6)return true;return ((p.x-5.7)/4.1)**2+((p.z-3.5)/5.9)**2<1||Math.hypot(p.x-.5,p.z+7)<.75||!!pockets?.blocks(p)||!!libraryGarden?.blocks(p)||!!amphitheater.blocks(p)||!!gardenLibrary?.blocks(p)||!!gardenProps?.blocks(p)||!!vaultLedge?.blocks(p);};
 // First-person body: your own character under the camera, reaching for walls and things, guarding and punching.
 // Third person: scroll out on foot, or past hip-fire with a gun, and the camera pulls back over your shoulder so you see
 // your own character (holding what you hold); scroll in to come back to first person (and further in to aim).
 const thirdCheck={at:0,near:Infinity,room:9};
-// Free running: the camera swings out behind you while you vault, leap, climb or run a wall (or sprint through the district), then returns to the view you chose.
+// Free running: the camera swings out behind you while you vault, leap, climb or run a wall, then returns to the view you chose. Sprinting alone does not.
 const runCam={owned:false,since:0,k:0};
 let thirdSide=1,thirdSideK=1,thirdK=0,thirdOn=false,thirdOffset=null,lastThirdToggle=0,heldWeapon=null;
 const thirdAllowed=()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident&&!arena?.active()&&!fistsEngaged()&&!battle?.dead?.();
@@ -698,7 +711,7 @@ if($('night-view'))$('night-view').onclick=()=>{lastThirdToggle=0;setThird(!thir
 window.addEventListener('pagehide',event=>{if(event.persisted)playerBail?.cancel();else{playerBail?.dispose();playerBail=null;}});
 function applyThird(dt){
  if(thirdOn&&!thirdAllowed())thirdOn=false;
- {const P=pk(),now=performance.now(),run=!!P&&window.edenSettings?.get?.('freeRunCamera')!==false&&(P.active()||keys.has('shift')&&Math.hypot(walkVelocity.x,walkVelocity.z)>4.5);
+ {const P=pk(),now=performance.now(),run=!!P&&window.edenSettings?.get?.('freeRunCamera')!==false&&P.active();// sprinting alone keeps the view you chose
   if(run)runCam.since=now;
   if(run&&!thirdOn&&thirdAllowed()){thirdOn=true;runCam.owned=true;thirdSide=window.edenSettings?.get('shoulder')==='left'?-1:1;combat?.zoom?.(0);}
   else if(runCam.owned&&thirdOn&&!run&&now-runCam.since>900&&!P?.active()){thirdOn=false;runCam.owned=false;}
@@ -825,7 +838,7 @@ const play=window.createPlayMenu?.({nav:document.querySelector('.view-nav'),afte
 window.breakThyRuleShowroom={museum:()=>museum,garden:()=>garden,_player:()=>({targetPosition,motion,walkVelocity,movement}),prewarm:()=>prewarm?.inspect(),perf:()=>perfHud?.report(),scene:()=>scene,renderer:()=>renderer,combat:()=>combat,battle:()=>battle,fists:()=>fists,fight:key=>fists?.key(key,true),teleport(x,z,yaw=Math.PI){if(!state.ready)return;freeView();motion.reset();walkVelocity.set(0,0,0);targetPosition.set(x,1.75+groundHeight(groundPoint.set(x,0,z)),z);targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,Math.cos(yaw)).multiplyScalar(5));camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();},go,inspect,showSide,focusResident,
  // camera placement for captures and checks: stand at (x,z) looking toward (lx,ly,lz)
  place(x,z,lx,lz,ly=1.75){if(expedition?.active())expedition.leave();motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,ly,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.lookAt(aim);requestDraw();},
-third:on=>{lastThirdToggle=0;return setThird(!!on);},bodyAnim:()=>({...bodyAnim,playing:['slideLoop','jumpLoop','dash','roll','climbUp','getUp','wave','cheer','pkLeap','pkVault','pkClimb','pkScramble','pkHang','pkShimmyL','pkShimmyR','pkWallRun','pkRoll'].filter(id=>playerBody?.animPlaying?.(id))}),bodyClip:(id,o)=>playerBody?.anim?.(id,o),climbs:()=>garden.nightBuilt()?garden.district.climbs:[],horror:()=>horror,worlds:()=>worlds,story:()=>window.edenStory,parkour:()=>pk(),// Run the movement logic n steps of dt with keys held (and Space pressed on the first step), without drawing.
+third:on=>{lastThirdToggle=0;return setThird(!!on);},bodyAnim:()=>({...bodyAnim,playing:['slideLoop','jumpLoop','dash','roll','climbUp','getUp','wave','cheer','pkLeap','pkVault','pkClimb','pkScramble','pkHang','pkShimmyL','pkShimmyR','pkWallRun','pkWallRunR','pkRoll'].filter(id=>playerBody?.animPlaying?.(id))}),bodyClip:(id,o)=>playerBody?.anim?.(id,o),climbs:()=>garden.nightBuilt()?garden.district.climbs:[],horror:()=>horror,worlds:()=>worlds,story:()=>window.edenStory,parkour:()=>pk(),// Run the movement logic n steps of dt with keys held (and Space pressed on the first step), without drawing.
 // Test hook: drop from h metres above the floor at (x, z), looking at (lx, lz).
 dropAt:(x,z,h,lx,lz)=>{const floor=pk()?.floorAt(x,z)??groundHeight(new T.Vector3(x,0,z));walkVelocity.set(0,0,0);targetPosition.set(x,1.75+floor+h,z);targetAim.set(lx,targetPosition.y,lz);motion.set(h,0);camera.position.copy(targetPosition);aim.copy(targetAim);},sim:(n=30,dt=1/30,hold=[],jumpFirst=false,jumpAt=[],{holdC=false,crouchAt=[]}={})=>{for(const k of hold)keys.add(k);const hadC=movement.crouchHeld;if(holdC)movement.crouchHeld=true;for(let i=0;i<n;i++){if(crouchAt.includes(i))parkour?.crouchPressed();if((jumpFirst&&i===0)||jumpAt.includes(i))movement.jump();movement.updateJump(dt);if(movement.needsStep())movement.move(dt);updateFeel(dt);}for(const k of hold)keys.delete(k);if(holdC)movement.crouchHeld=hadC;return {pos:targetPosition.toArray().map(v=>+v.toFixed(2)),feet:+(targetPosition.y-1.75).toFixed(2),pk:parkour?.inspect()};},
 face:yaw=>{targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw),0,-Math.cos(yaw)).multiplyScalar(5));requestDraw();},vault:(x,z)=>movement.tryVault(new T.Vector3(x,0,z)),touch:()=>edenMobile?.inspect().enabled?edenMobile.inspect():touch?.inspect?.()||null,sprintTo:v=>{const f=targetAim.clone().sub(targetPosition).setY(0).normalize();walkVelocity.copy(f).multiplyScalar(v||7);},getState:()=>({...state,secrets:secrets?.inspect(),extras:extras?.inspect(),ambience:ambience?.inspect(),aim:targetAim.toArray().map(v=>+v.toFixed(3)),third:+thirdK.toFixed(2),parkour:parkour?.inspect()||null,feel:{mode:movement.state(),weaponShown:combat?.weaponShown?.()??false,lift:+(parkour?.lift()||0).toFixed(2),...movement.counts(),vault:!!movement.vault,dive:!!movement.dive,prone:+movement.proneT.toFixed(2),crouch:+movement.crouchAmount.toFixed(2),slide:movement.slide?.kind||null,fovKick:+fovKick.toFixed(1),lookLocked},combat:combat?.inspect(),fists:fists?.inspect(),position:camera.position.toArray(),arena:arena?.inspect(),movement:{...motion.inspect(),vy:motion.inspect().velocity,momentum:+(movement.momentum?.()||0).toFixed(3),chain:parkour?.chain?.()||0,velocity:walkVelocity.toArray().map(v=>+v.toFixed(3)),sway:sway.inspect(),sprinting:keys.has('shift'),speed:motion.speed(keys.has('shift'))},expedition:expedition?.inspect(),district:garden.nightBuilt()?garden.district.inspect():null,library:gardenLibrary?.inspect(),props:gardenProps?.inspect(),lighting:lighting.inspect(),post:post.inspect(),quality:quality.inspect(),residents:residents.inspect(),bail:playerBail?.inspect(),body:playerBody?.inspect(),amphitheater:amphitheater.inspect(),music:music.inspect(),racks:rails.length,garments:rackModels.size,rackTotal:collection.length,rackFailures:[...rackFailures],rackLoading,posters:posterMeshes.length,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,multiplayer:multiplayer?.inspect()})};

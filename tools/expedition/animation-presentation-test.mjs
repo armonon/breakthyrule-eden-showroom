@@ -103,7 +103,7 @@ test('movement clocks drive slide, vault and wall-run clips, including a late-lo
  assert.ok(drive('vault',.3,.6).includes('pkVault'),'the baked Mixamo vault replaces the climbUp fallback');
  const layer=motion.captureState().state.layers.find(l=>l.id==='pkVault'&&!l.out);
  assert.ok(layer.t>0,'a late-loaded model joins the vault in progress');
- assert.ok(drive('wallrun',.3,1).includes('pkWallRun'),'the baked Mixamo wall run replaces the sprint fallback');
+ assert.ok(drive('wallrun',.3,1).includes('pkWallRunR'),'a wall on the right plays the mirrored Mixamo wall run, not the sprint fallback');
  for(let i=0;i<300;i++)drive(i%50<25?'slide':'wallrun',(i%25)/60);
  assert.ok(motion.captureState().state.layers.length<8,'transitions do not leak animation layers');
  assert.ok(bones.every(b=>b.quaternion.toArray().concat(b.position.toArray()).every(Number.isFinite)));
@@ -116,6 +116,14 @@ test('every traversal move plays its baked Mixamo parkour clip',async()=>{
  const drive=(move)=>{motion.traversal({time:.2,duration:.8,side:1,...move});motion.update(1/60,{velocity:new T.Vector3(0,0,4)});const a=motion.inspect().actions;motion.traversal(null);for(let i=0;i<90;i++)motion.update(1/60);return a;};
  for(const [move,id] of [
   [{kind:'vault'},'pkVault'],[{kind:'climb'},'pkClimb'],[{kind:'scramble'},'pkScramble'],[{kind:'warp'},'pkLeap'],
-  [{kind:'wallrun'},'pkWallRun'],[{kind:'hang'},'pkHang'],[{kind:'hang',shimmy:-1},'pkShimmyL'],[{kind:'hang',shimmy:1},'pkShimmyR'],
+  [{kind:'wallrun',side:-1},'pkWallRun'],[{kind:'wallrun',side:1},'pkWallRunR'],[{kind:'hang'},'pkHang'],[{kind:'hang',shimmy:-1},'pkShimmyL'],[{kind:'hang',shimmy:1},'pkShimmyR'],
  ])assert.ok(drive(move).includes(id),`${JSON.stringify(move)} plays ${id}`);
+});
+
+test('a clip held at full weight stays at full weight every frame',async()=>{
+ const {motion,bones}=await rig();const head=bones.find(b=>b.name==='head'),group=bones[0].parent;
+ motion.play('pkRoll',{fade:.08});const heights=[];
+ for(let i=0;i<30;i++){motion.update(1/60,{velocity:new T.Vector3()});group.updateMatrixWorld(true);heights.push(head.getWorldPosition(new T.Vector3()).y);}
+ // The roll only goes down here; a weight that dipped to 0.79 on alternate frames made the head bounce back up.
+ for(let i=8;i<heights.length;i++)assert.ok(heights[i]<=heights[i-1]+.01,`head rises at frame ${i}: ${heights[i-1].toFixed(3)} -> ${heights[i].toFixed(3)}`);
 });

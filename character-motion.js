@@ -178,13 +178,15 @@
     // Mixamo parkour clips (tools/animation/bake-mixamo.cjs) where they are baked; the older clips otherwise.
     const pick=(...ids)=>ids.find(i=>A.has(i)),timed=(i,lp=false)=>{id=i;loop=lp;speed=duration&&!lp?A.duration(i)/duration:1;start=lp?0:Math.min(t*speed,A.duration(i)*.98);};
     if(kind==='warp'){const leap=pick('pkLeap');if(leap)timed(leap);else{id='dash';speed=duration?Math.max(.8,A.duration(id)/duration):1.2;start=Math.min(t*speed,A.duration(id)*.9);}}// a gap leap reads as a lunge, not a climb
-    else if(kind==='vault')timed(pick('pkVault','climbUp'));
+    else if(kind==='vault'){const v=pick('pkVault','climbUp');timed(v);if(v==='pkVault'){const lead=.2,span=A.duration(v)-lead;speed=duration?span/duration:1;start=lead+Math.min(t*speed,span*.98);}}// skip the clip's approach steps: the run-up is ours
     else if(kind==='climb')timed(pick('pkClimb','climbUp'));
     else if(kind==='scramble')timed(pick('pkScramble','climbUp'),true);
     else if(kind==='pipe')timed('climbUp',true);
     else if(kind==='hang'){const sh=move.shimmy||0,c=sh<0?pick('pkShimmyL'):sh>0?pick('pkShimmyR'):null;const h=c||pick('pkHang');if(h){id=h;loop=true;}}
-    else if(kind==='wallrun'){id=pick('pkWallRun','sprint');loop=true;speed=id==='sprint'?1.15:1;}
-    const managed=['slideStart','slideLoop','climbUp','dash','sprint','pkLeap','pkVault','pkClimb','pkScramble','pkHang','pkShimmyL','pkShimmyR','pkWallRun'];
+    // The wall-run clip has the wall on the runner's left; the mirrored copy serves a wall on the right (side 1). It plays
+    // once along the run's own clock and holds its push-off, rather than looping a one-shot back to its first stride.
+    else if(kind==='wallrun'){const w=pick(...(move.side>0?['pkWallRunR','pkWallRun']:['pkWallRun']));if(w){id=w;start=Math.min(t,A.duration(w)*.98);}else{id='sprint';loop=true;speed=1.15;}}
+    const managed=['slideStart','slideLoop','climbUp','dash','sprint','pkLeap','pkVault','pkClimb','pkScramble','pkHang','pkShimmyL','pkShimmyR','pkWallRun','pkWallRunR'];
     const sliding=api.playing('slideStart')||api.playing('slideLoop');
     for(const clip of managed)if(clip!==id)api.stop(clip,.12);
     if(id){api.stop('slideExit',.14);api.stop('jumpStart',.14);if(!api.playing(id))api.play(id,{fade:.16,mask:'full',weight:.85,loop,speed,start,hold:!loop});}
@@ -346,7 +348,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     if(A?.ready()){
      const busy=state.hold.x>.05||sides.some(s=>s.touchWeight.x>.05||s.punch)||state.guard.x>.08;
      let full=0;for(const L of state.layers){L.t+=dt*L.speed;if(!L.loop&&L.t>=L.dur){if(L.hold)L.t=L.dur;else L.out=true;}
-      const target=L.out?0:1,rate=dt/Math.max(.01,L.fade);L.w=target>L.w?Math.min(1,L.w+rate):Math.max(0,L.w-rate);if(L.mask==='full')full=Math.max(full,L.w*L.weight);}
+      const target=L.out?0:1,rate=dt/Math.max(.01,L.fade);L.w=target>L.w?Math.min(target,L.w+rate):Math.max(target,L.w-rate);/* settle on the target: at w=1 the old else-branch faded a held layer out every other frame */if(L.mask==='full')full=Math.max(full,L.w*L.weight);}
      let layerCount=0;for(const L of state.layers)if(!(L.out&&L.w<=0))state.layers[layerCount++]=L;state.layers.length=layerCount;
      const M=A.masks(),noArms=k=>{const key=k+'-noarms';M[key]??=M[k].map((v,i)=>M.arms[i]?0:v);return M[key];},list=animList;list.length=0;animCount=locoCount=0;
      loco.length=0;
@@ -370,7 +372,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
      // Cosmetic torso/clip layers must not detach solved world contacts. Reuse
      // this frame's targets; do not advance gait, springs or action time twice.
      group.updateMatrixWorld(true);
-     const freeLegs=state.layers.some(L=>L.mask==='full'&&L.w>.01&&['roll','pkRoll','getUp','slideStart','slideLoop','slideExit','climbUp','dash','sprint','pkLeap','pkVault','pkClimb','pkScramble','pkHang','pkShimmyL','pkShimmyR','pkWallRun'].includes(L.id));
+     const freeLegs=state.layers.some(L=>L.mask==='full'&&L.w>.01&&['roll','pkRoll','getUp','slideStart','slideLoop','slideExit','climbUp','dash','sprint','pkLeap','pkVault','pkClimb','pkScramble','pkHang','pkShimmyL','pkShimmyR','pkWallRun','pkWallRunR'].includes(L.id));
      for(const [i,s] of sides.entries()){
       if(!state.airborne&&!freeLegs){
        // Keep planted feet fixed, but retain the clip's knee lift on the swing.
@@ -460,6 +462,9 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
   handRise+=(riseTo-handRise)*(1-Math.exp(-14*dt));model.root.position.y+=handRise;
   if(hands){const swap=shoulder?.getWorldPosition(probe).distanceToSquared(hands[0])>probe.distanceToSquared(hands[1]);model.motion.touch('L',hands[swap?1:0],null,1,'grab');model.motion.touch('R',hands[swap?0:1],null,1,'grab');handsOn=true;}else if(handsOn){model.motion.touch('L',null,null,0);model.motion.touch('R',null,null,0);handsOn=false;}
   model.motion.traversal?.(pose?.traversal);
+  // The vault clip rises over the obstacle by itself (its hip track); drop the model by the controller's lift so the
+  // planted hand lands on the top instead of floating a ledge-height above it.
+  if(pose?.traversal?.kind==='vault'&&pose.traversal.lift>0&&root.GardenAnim?.has?.('pkVault'))model.root.position.y-=pose.traversal.lift;
   const bank=pose?.traversal?.kind==='wallrun'?-(pose.traversal.side||1)*.28:0;
   model.root.rotation.z+=(bank-model.root.rotation.z)*(1-Math.exp(-12*dt));
   model.root.rotation.order='YXZ';const pitchTo=pose?(pose.dive||0)*1.25-(pose.slide||0)*.32:0;model.root.rotation.x+=(pitchTo-model.root.rotation.x)*(1-Math.exp(-10*dt));if(pose?.dive)model.root.position.y+=.35*pose.dive;
