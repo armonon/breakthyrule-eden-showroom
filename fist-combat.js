@@ -89,6 +89,7 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
  function emit(name,data){for(const fn of listeners[name]||[])try{fn(data);}catch(error){console.warn(error);}}
  function spend(amount){if(player.stamina<amount){player.tiredUntil=now()+1.2;shout('WINDED','block');return false;}player.stamina-=amount;return true;}
  let network=null;
+ let invited=false;
  function fighting(){return now()<player.fightUntil||jester.mode!=='path'||player.down;}
  function key(name,pressed,repeat=false){
   if(name==='q'){if(pressed&&(!canAct()||player.down))return true;if(pressed&&!player.blocking)player.blockStart=now();player.blocking=pressed;if(pressed){player.attack=null;player.fightUntil=now()+8;}requestDraw();return true;}
@@ -316,6 +317,9 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
   const foe=hud.querySelector('.fight-foe');foe.hidden=jester.mode==='path'||jester.mode==='return';foe.querySelector('i').style.width=Math.max(0,jester.hp)+'%';
  }
  function updateFists(t,dt){
+  // An invitation, once per approach, instead of squaring up on his own.
+  {const p=getPlayer(),r=residents.get(jesterId)?.root,near=!!p&&!!r&&Math.hypot(p.position.x-r.position.x,p.position.z-r.position.z)<3.5;
+   if(near&&!fighting()&&!invited&&ensureJester()){invited=true;say('Fancy a round? Swing first — F.',true);}else if(!near)invited=false;}
   const a=player.attack;
   arms.update(t,dt,{show:fighting()&&!player.down&&canAct(),blocking:player.blocking,hurtAge:t-player.lastHurt,landedAge:t-player.landedAt,leadHand:0,
    attack:a&&{kind:a.kind,hand:a.hand,elapsed:t-a.start,impact:a.spec.impact,recover:a.spec.recover,freeze:a.freeze||0,landed:!!a.landed,missed:!!a.missed}});
@@ -361,7 +365,10 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
   // A side-step: blows that land in the next 0.35 s miss.
   dodge(){if(player.down)return false;player.dodgeUntil=now()+.35;player.fightUntil=now()+8;sfx('whoosh');requestDraw();return true;},
   // Squaring up: a fight is on, or the jester is close enough to throw a punch at.
-  engaged(){if(fighting())return true;const p=getPlayer(),r=residents.get(jesterId)?.root;return !!p&&!!r&&Math.hypot(p.position.x-r.position.x,p.position.z-r.position.z)<3.5;},
+  // Squaring up is the player's choice: walking past the jester changes nothing until a punch is thrown (or he is
+  // provoked). nearby() is the range where your first punch (F/G, or a click on him) starts the fight.
+  engaged(){return fighting();},
+  nearby(){const p=getPlayer(),r=residents.get(jesterId)?.root;return !!p&&!!r&&Math.hypot(p.position.x-r.position.x,p.position.z-r.position.z)<3.5;},
   receive(event){return hurt({damage:clamp(Number(event.damage)||0,0,25),direction:new T.Vector3(event.direction?.[0]||0,0,event.direction?.[1]||1).normalize(),kind:['jab','cross','power','tackle'].includes(event.kind)?event.kind:'jab',from:event.from});},
   netState:()=>({hp:Math.round(player.hp),down:player.down,ko:player.ko,block:player.blocking,punch:{seq:player.seq,hand:player.attack?.hand??player.nextHand,kind:player.attack?.kind||'jab'}}),
   inReach(id){if(id!==jesterId||!jester.entry?.root)return false;const p=getPlayer();return !!p&&Math.hypot(p.position.x-jester.entry.root.position.x,p.position.z-jester.entry.root.position.z)<2.3;},
