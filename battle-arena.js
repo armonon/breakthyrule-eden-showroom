@@ -68,6 +68,8 @@
  }
 
  function createArena(o){
+  const BOT_MELEE={botBash:{windup:.22,recover:1.1,reach:2.6,damage:45,tier:'heavy'},botChop:{windup:.35,recover:.75,reach:2.2,damage:44,tier:'heavy'}};
+  const botMove=id=>window.EdenMelee?.move(id)||BOT_MELEE[id];
   const {T,scene,camera,combat,garden,layout}=o;
   const A=layout.arena,CENTER=new T.Vector3(A.x,0,A.z);
   const B=layout.bounds; // [minX,maxX,minZ,maxZ]
@@ -267,7 +269,9 @@
    if(!target.bot&&godMode)return {killed:false};
    if(target===player&&clock<(player.protectUntil||0))return {killed:false};
    // Finisher: melee on a bot that is down (tackled, knocked over) hits twice as hard.
-   const finisher=target.bot&&attacker===player&&['melee','axe'].includes(meta.weapon)&&(target.model.motion?.downAmount?.()||0)>.3;if(finisher){amount*=2;meta={...meta,finisher:true};}
+   const finisher=target.bot&&attacker===player&&['melee','axe'].includes(meta.weapon)&&(target.model.motion?.downAmount?.()||0)>.3;if(finisher){amount*=2;meta={...meta,finisher:true};window.EdenMelee?.pop('FINISHER','ko');}
+   // A bot's melee blow lands on you with the same weight as yours land on them (melee-core.js), and breaks your combo.
+   if(target===player&&attacker?.bot&&['melee','axe'].includes(meta.weapon))window.EdenMelee?.land(meta.tier||'heavy',{hitStop:ms=>o.hitStop?.(ms),combo:false,pop:false});
    if(attacker&&attacker!==target&&attacker.power)amount*=1+POWER_DMG*Math.min(POWER_MAX,attacker.power);
    let a=amount,shielded=0;
    const raw=meta.kind==='zone'||meta.kind==='attendant'||meta.kind==='fall';
@@ -280,7 +284,8 @@
    if(target.bot){target.seen=attacker&&attacker!==target?attacker:target.seen;if(target.state!=='fight'&&attacker&&attacker!==target){target.state='fight';target.target=attacker;target.aimT=target.reaction*.5;}
     // Hit reactions: heavy blows knock the bot down into a ragdoll (it gets back up); light ones flinch it, at most
     // every 0.7 s so a spray cannot pin it down. Either way it side-steps out of the line of fire.
-    if(target.hp>0&&meta.kind!=='zone'){const heavy=meta.blast||['sniper','axe','melee'].includes(meta.weapon)||(meta.weapon==='pump'&&amount>=30)||amount>=45;
+    // Melee blows say their own tier (a quick axe chop only flinches; a bash, slam or cleave knocks the bot down).
+    if(target.hp>0&&meta.kind!=='zone'){const heavy=meta.tier?meta.tier!=='light':meta.blast||['sniper','axe','melee'].includes(meta.weapon)||(meta.weapon==='pump'&&amount>=30)||amount>=45;
      const dir=blowDirection(target,attacker,meta);if(heavy){target.model.motion?.hit?.(dir,2.2);}else if(clock-target.lastFlinch>.7){target.lastFlinch=clock;target.model.motion?.hit?.(dir,meta.head?1.2:.7,{zone:meta.zone});target.model.motion?.play?.(meta.head?'hitHead':'hitChest',{mask:'upper',fade:.04,speed:1.2});}
      target.dodgeT=.38;target.strafe=Math.random()<.5?1:-1;}}
    else{combat.hurt(attacker&&attacker!==target?eyeOf(attacker):null,a+(amount-a)*.4+shielded*.55);if(meta.kind==='zone')combat.hurt(null,a*.4);hud.update();}
@@ -466,12 +471,13 @@
     const tp=posOf(b.target),to=tp.clone().sub(p);to.y=0;const dist=to.length();to.normalize();
     b.heading=Math.atan2(to.x,to.z);b.model.motion?.aimAt?.(eyeOf(b.target).add(new T.Vector3(0,-.3,0)));
     const id=b.weapon,w=W(id);
-    if(id==='axe'){move.copy(to);speed=5;if(dist<1.8&&b.fireT<=0){b.fireT=.75;b.model.motion?.play?.(Math.random()<.5?'swingA':'swingB',{mask:'upper',arms:true,fade:.06,speed:1.1});setTimeout(()=>{if(b.alive&&b.target?.alive&&posOf(b.target).distanceTo(b.root.position)<2.2)damage(b.target,w.dmg*.8,b,{weapon:'axe'});},350);}}
+    // Bot melee uses the shared moves: the swing is telegraphed for its windup, then lands if you are still in reach.
+    if(id==='axe'){move.copy(to);speed=5;const m=botMove('botChop');if(dist<1.8&&b.fireT<=0){b.fireT=m.recover;b.model.motion?.play?.(Math.random()<.5?'swingA':'swingB',{mask:'upper',arms:true,fade:.06,speed:1.1});setTimeout(()=>{if(b.alive&&b.target?.alive&&posOf(b.target).distanceTo(b.root.position)<m.reach)damage(b.target,m.damage,b,{weapon:'axe',tier:m.tier});},m.windup*1000);}}
     else{
      let ideal=id==='pump'?6:id==='smg'?12:id==='pistol'?14:id==='sniper'?45:24;
      if(b.target===player&&player.shield<=0)ideal*=.55; // smells blood: closes in while your shield is down
      if(b.strafeT<=0){b.strafeT=rand(.35,1.1);b.strafe*=Math.random()<.6?-1:1;}
-     if(dist<2.2&&b.bashT<=0){b.bashT=1.1;b.model.motion?.play?.('hook',{mask:'upper',arms:true,fade:.05,speed:1.2});setTimeout(()=>{if(b.alive&&b.target?.alive&&posOf(b.target).distanceTo(b.root.position)<2.6)damage(b.target,45,b,{weapon:'melee'});},180);}
+     if(dist<2.2&&b.bashT<=0){const m=botMove('botBash');b.bashT=m.recover;b.model.motion?.play?.('hook',{mask:'upper',arms:true,fade:.05,speed:1.2});setTimeout(()=>{if(b.alive&&b.target?.alive&&posOf(b.target).distanceTo(b.root.position)<m.reach)damage(b.target,m.damage,b,{weapon:'melee',tier:m.tier});},m.windup*1000);}
      // Smelling blood (you are reloading or your shield is down) and close: the bot charges in for a tackle.
      if(b.target===player&&!b.lunge&&dist>1.8&&dist<6&&Math.abs(tp.y-p.y)<1.2&&clock>(b.lungeCd||0)&&(player.shield<=0||combat.inspect().action==='reload')&&Math.random()<dt*1.2){b.lunge={t:0,dir:to.clone()};b.lungeCd=clock+7;b.model.motion?.play?.('dash',{fade:.06,speed:1.3});}
      if(b.lunge){b.lunge.t+=dt;move.copy(b.lunge.dir);speed=9;b.heading=Math.atan2(b.lunge.dir.x,b.lunge.dir.z);

@@ -34,20 +34,24 @@ export function createArena({root, presence, emit}) {
     return out;
   }
 
-  function swing(id, p) {
-    const a = p.arena, now = Date.now();
-    if (a.dead || now - a.lastSwing < rules.sword.cooldownMs || p.weapon !== 'sword') return;
-    a.lastSwing = now;
-    const events = [event('swing', {attacker: id})], fx = Math.sin(p.pose.yaw), fz = Math.cos(p.pose.yaw);
+  // heavy: a held, wound-up lunge (the client's shared melee rule): more damage and reach, a longer cooldown, and it
+  // pushes more through a block. The cooldown that applies is the previous swing's; 60 ms of slack absorbs network jitter.
+  function swing(id, p, heavy = false) {
+    const a = p.arena, now = Date.now(), s = rules.sword;
+    if (a.dead || now - a.lastSwing < (a.swingCooldown ?? s.cooldownMs) - 60 || p.weapon !== 'sword') return;
+    a.lastSwing = now; a.swingCooldown = heavy ? s.heavyCooldownMs ?? s.cooldownMs : s.cooldownMs;
+    const range = heavy ? s.heavyRange ?? s.range : s.range;
+    const events = [event('swing', {attacker: id, ...(heavy ? {heavy: true} : {})})], fx = Math.sin(p.pose.yaw), fz = Math.cos(p.pose.yaw);
     for (const [tid, t] of fighters()) {
       if (tid === id || t.arena.dead) continue;
       const dx = t.pose.x - p.pose.x, dz = t.pose.z - p.pose.z, dist = Math.hypot(dx, dz);
-      if (dist > rules.sword.range || dist < 1e-3) continue;
+      if (dist > range || dist < 1e-3) continue;
       if ((dx * fx + dz * fz) / dist < Math.cos(rules.sword.arcDegrees * Math.PI / 180)) continue;
       // blocked if the target is blocking and the attacker is in front of the target
       const tfx = Math.sin(t.pose.yaw), tfz = Math.cos(t.pose.yaw);
       const blocked = t.blocking && t.weapon === 'sword' && (-dx * tfx - dz * tfz) / dist > Math.cos(rules.blockArcDegrees * Math.PI / 180);
-      events.push(...damage(id, p, tid, t, blocked ? rules.sword.blockedDamage : rules.sword.damage, blocked ? 'sword-blocked' : 'sword'));
+      const amount = blocked ? (heavy ? s.heavyBlockedDamage ?? s.blockedDamage : s.blockedDamage) : (heavy ? s.heavyDamage ?? s.damage : s.damage);
+      events.push(...damage(id, p, tid, t, amount, blocked ? 'sword-blocked' : heavy ? 'sword-heavy' : 'sword'));
     }
     emit(events);
   }
@@ -111,7 +115,7 @@ export function createArena({root, presence, emit}) {
     },
     action(id, p, message) {
       if (p.zone !== 'arena' || !p.arena) return;
-      if (message.t === 'attack') swing(id, p);
+      if (message.t === 'attack') swing(id, p, message.heavy === true);
       else if (message.t === 'shoot') shoot(id, p, message.dir);
     },
     publicState: p => p.zone === 'arena' && p.arena ? {health: p.arena.health, dead: p.arena.dead, kills: p.arena.kills, deaths: p.arena.deaths,

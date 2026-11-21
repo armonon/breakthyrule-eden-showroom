@@ -663,7 +663,7 @@ function focusVisitor(p){
  targetAim.set(p.x,p.ghost?.9:(p.character?.height||175)/100*.58,p.z);requestDraw();
 }
 multiplayer=window.createGardenMultiplayer?.({T,scene,camera,requestDraw,enter:enterMultiplayer,inExpedition:()=>expedition?.active(),getPose:()=>state.ready&&!expedition?.active()?{x:camera.position.x,z:camera.position.z,yaw:Math.atan2(aim.x-camera.position.x,aim.z-camera.position.z),...arena?.poseExtras()}:null,lookAt:focusVisitor,stopMoving:()=>{keys.clear();drag=null;}});
-arena=multiplayer&&window.createArena?.({T,scene,camera,renderer,multiplayer,requestDraw,
+arena=multiplayer&&window.createArena?.({T,scene,camera,renderer,multiplayer,requestDraw,hitStop:ms=>hitStop(ms),
  player:{position:targetPosition,aim:targetAim,motion,
   place(x,z,lx,lz){motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,1.75,lz);camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();},
   home:()=>go('spawn',true)},
@@ -680,7 +680,7 @@ const runCam={owned:false,since:0,k:0};
 let thirdSide=1,thirdSideK=1,thirdK=0,thirdOn=false,thirdOffset=null,lastThirdToggle=0,heldWeapon=null;
 const thirdAllowed=()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident&&!arena?.active()&&!fistsEngaged()&&!battle?.dead?.();
 function setThird(on){const t=performance.now();if(on===thirdOn||t-lastThirdToggle<260)return false;if(on&&!thirdAllowed())return false;lastThirdToggle=t;runCam.owned=false;if(on&&!thirdOn){thirdSide=window.edenSettings?.get('shoulder')==='left'?-1:1;}thirdOn=on;if(on)combat?.zoom?.(0);requestDraw();return true;}
-const playerBody=window.createPlayerBody?.({T,scene,camera,pickables,requestDraw,canPunch:()=>!expedition?.active(),enabled:()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident&&!arena?.active()&&(thirdK>.05||parkour?.handsFull()||!battle?.active()&&!combat?.armed()&&!fistsEngaged())});
+const playerBody=window.createPlayerBody?.({T,scene,camera,pickables,requestDraw,hitStop:ms=>hitStop(ms),canPunch:()=>!expedition?.active(),enabled:()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident&&!arena?.active()&&(thirdK>.05||parkour?.handsFull()||!battle?.active()&&!combat?.armed()&&!fistsEngaged())});
 let expeditionFlareModel=null;
 function flareModel(){
  if(expeditionFlareModel)return expeditionFlareModel;
@@ -761,7 +761,7 @@ try{
 }catch(error){console.warn('Garden secrets unavailable',error);}
 function correctExpeditionPose(p){if(playerBail?.active){const current=playerBail.pose();if(!current||!['x','y','z'].every(k=>Number.isFinite(p[k])))return;const delta=new T.Vector3(p.x-current.x,p.y-current.y,p.z-current.z);if(delta.length()>7.9)delta.setLength(7.9);if(playerBail.correct?.({position:[current.x+delta.x,current.y+delta.y,current.z+delta.z]})){const shift=playerBail.cameraTarget.clone().sub(targetPosition);targetPosition.add(shift);targetAim.add(shift);}else $('night-event').textContent='Synchronizing physical position…';requestDraw();return;}playerBail?.cancel();movement.cancelTraversal();motion.reset();parkour?.reset();freeView();targetPosition.set(p.x,1.75+(p.y||0),p.z);targetAim.set(p.x+Math.sin(p.yaw)*5,1.75+(p.y||0),p.z+Math.cos(p.yaw)*5);requestDraw();}
 expedition=window.createExpedition({getCharacter:()=>playerBody?.getAppearance(),T,scene,camera,garden,entryUrl:'/expedition.html',correct:correctExpeditionPose,layout:window.nightLayout,preferences:()=>expeditionPreferences?.get(),getPose:()=>state.ready?{x:targetPosition.x,y:targetPosition.y-1.75,z:targetPosition.z,...(playerBail?.active?playerBail.pose():{}),yaw:Math.atan2(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z),pitch:Math.atan2(targetAim.y-targetPosition.y,Math.hypot(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z)),mode:playerBail?.active?'ragdoll':movement.state(),movement:playerBail?.active?'ragdoll':movement.state(),vy:playerBail?.active?playerBail.pose()?.vy:motion.inspect().velocity}:null,place(x,z,lx=x,lz=z-5,y=0){playerBail?.cancel();movement.cancelTraversal();motion.reset();parkour?.reset();freeView();targetPosition.set(x,1.75+y,z);targetAim.set(lx,1.75+y,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=60;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},stopMoving(){keys.clear();movement.crouchHeld=false;drag=null;},requestDraw,returnHome:()=>go('spawn',true),onAction(action){if(action==='flare')playerBody?.anim?.('pistolShoot',{fade:.04,mask:'upper',arms:true});else if(action==='reload')playerBody?.anim?.('pistolReload',{fade:.1,mask:'upper',arms:true,speed:(window.GardenAnim?.duration?.('pistolReload')||1.5)/1.5});else playerBody?.stopAnim?.('pistolReload',.08);}});
-combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,reduced,mobile:mobileDevice,requestDraw,aimTargets:()=>battle?.aimTargets?.()||[],thirdPerson:()=>thirdK,setThird,
+combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,reduced,mobile:mobileDevice,requestDraw,aimTargets:()=>battle?.aimTargets?.()||[],thirdPerson:()=>thirdK,setThird,lunge:shove,
  groundAt:(x,z,from)=>worlds?.world()==='beyond'&&garden.nightBuilt()?makeParkour().floorAt(x,z,from):null,
  onAction(action,weapon,duration){const B=playerBody;if(!B)return;if(action==='holster'){B.stopAnim('pistolReload',.12);return;}const id=action==='shoot'?'pistolShoot':action==='reload'?'pistolReload':action==='swing'?'swingA':action==='throw'?'throw':null;if(id)B.anim(id,{fade:.12,mask:'upper',arms:true,weight:.8,speed:duration?(window.GardenAnim?.duration(id)||duration)/duration:1});},
  // Eden is a safe zone: weapons come out only beyond the hidden door (the open match and the firing range).
@@ -778,7 +778,7 @@ combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,
 });
 // No expeditions while a battle is on: its gate, its entry screen and the Attendant stay out of the arena.
 {const openNight=$('night-launch').onclick;$('night-launch').onclick=event=>{if(battle?.active())battle.suspend();combat?.leaveRange?.();openNight?.(event);};}
-battle=window.createBattleArena?.({T,scene,camera,combat,garden,playerAnchor:()=>targetPosition,
+battle=window.createBattleArena?.({T,scene,camera,combat,garden,playerAnchor:()=>targetPosition,hitStop:ms=>hitStop(ms),
  movement:()=>({airborne:motion.inspect().airborne,momentum:movement.momentum(),velocity:walkVelocity}),
  onPlayerAction(id){playerBody?.anim?.(id,{fade:.16,mask:'upper',arms:true,weight:.65,speed:1.4});},
  onRunTackle(){sway.bump(.7,0);hitStop(45);playerBody?.anim?.('push',{fade:.12,loop:false,speed:2.2,mask:'upper',weight:.7});walkVelocity.multiplyScalar(.7);requestDraw();},

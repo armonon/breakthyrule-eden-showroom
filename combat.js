@@ -879,7 +879,7 @@
   const lastPain=new WeakMap();
   function fire(){
    const w=current,s=state[w.id];
-   if(w.id==='axe'){if(s.action)return;const heavy=inWindow();startAction('swing',heavy?.7:.56,{heavy,hit:false});sfx.whoosh(heavy);s.focus=0;s.windowT=0;return;}
+   if(w.id==='axe'){if(s.action)return;const heavy=inWindow();startAction('swing',meleeMove(heavy?'cleave':'chop').recover,{heavy,hit:false});sfx.whoosh(heavy);meleeLunge(heavy?'cleave':'chop');s.focus=0;s.windowT=0;return;}
    if(w.id==='c4'){if(s.action)return;if(throwCharge()){startAction('throw',.55);}return;}
    if(s.action?.name==='reload'&&w.id==='pump'){s.action.cancel=true;return;}
    if(w.id==='pump'&&!s.chamber){if(s.ammo>0&&!s.action){startAction('pump',.42);}else sfx.dry();return;}
@@ -1042,26 +1042,47 @@
    s.vel.set(rand(-.3,.3),-1,rand(-.3,.3));s.spin.set(rand(-3,3),rand(-3,3),rand(-3,3));s.ground=groundAt(pos.x,pos.z,pos.y);s.bounces=0;s.age=0;
   }
 
-  // Right click: a Halo-style melee bash with whatever is in your hands (the axe swings heavy instead).
-  function bash(){
-   if(!current||!o.canAct())return;const s=state[current.id];
-   if(current.id==='axe'){if(!s.action){startAction('swing',.7,{heavy:true,hit:false});sfx.whoosh(true);}return;}
-   if(lastTime-(state.lastBash??-9)<.75||(s.action&&s.action.name!=='reload'))return;
-   if(s.action?.name==='reload')s.action=null;
-   state.lastBash=lastTime;sfx.whoosh(false);anim.posZ.kick(-5);anim.rotX.kick(-8);anim.rotY.kick(5);anim.rotZ.kick(-3);look.kickPitch.kick(-.5);
-   setTimeout(()=>{if(armed)bashStrike();},110);
+  // The shared melee core (melee-core.js) sets every melee timing, reach, damage and impact; these are its fallback.
+  const MELEE_FALLBACK={bash:{windup:.11,recover:.64,reach:2.4,damage:55,tier:'heavy',label:'BASH'},slam:{windup:.24,recover:.95,reach:2.6,damage:80,tier:'heavy',label:'SLAM'},
+   chop:{windup:.26,recover:.56,reach:2.2,damage:55,tier:'light',label:'CHOP'},cleave:{windup:.33,recover:.7,reach:2.2,damage:94,tier:'heavy',label:'CLEAVE'}};
+  function meleeMove(id){return root.EdenMelee?.move(id)||MELEE_FALLBACK[id];}
+  // One landed blow, felt the same way as every other melee hit in the game.
+  function meleeLand(move,killed){
+   const M=root.EdenMelee,shake=v=>{look.shake=Math.max(look.shake,v*2.6);};
+   if(!M){o.hitStop?.(killed?130:90);shake(.16);return;}
+   M.land(killed?'ko':move.tier,{hitStop:ms=>o.hitStop?.(ms),shake,label:move.tier==='heavy'&&move.label!=='BASH'?move.label:null});
   }
-  function bashStrike(){
+  // A target just past reach: step into it as the blow goes out.
+  function meleeLunge(id){
+   const M=root.EdenMelee,list=o.aimTargets?.();if(!M||!list?.length||!o.lunge)return;
+   const p=camera.getWorldPosition(new T.Vector3()),f=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion).setY(0).normalize();
+   const step=M.lunge(p,f,list.map(t=>t.chest).filter(Boolean),meleeMove(id));if(step)o.lunge({direction:new T.Vector3(step.x,0,step.z),distance:step.distance});
+  }
+  // B (or right click): a Halo-style melee bash with whatever is in your hands. Hold B for a wound-up slam that hits harder.
+  // With the axe, a bash is its heavy swing.
+  function bash(heavy=false){
+   if(!current||!o.canAct())return;const s=state[current.id];
+   if(current.id==='axe'){if(!s.action){startAction('swing',meleeMove('cleave').recover,{heavy:true,hit:false});sfx.whoosh(true);meleeLunge('cleave');}return;}
+   const move=meleeMove(heavy?'slam':'bash');
+   if(lastTime-(state.lastBash??-9)<(state.bashRecover??.75)||(s.action&&s.action.name!=='reload'))return;
+   if(s.action?.name==='reload')s.action=null;
+   state.lastBash=lastTime;state.bashRecover=move.windup+move.recover;sfx.whoosh(heavy);root.EdenMelee?.sound(heavy?'swoosh':'whoosh',.6);
+   const k=heavy?1.6:1;anim.posZ.kick(-5*k);anim.rotX.kick(-8*k);anim.rotY.kick(5*k);anim.rotZ.kick(-3*k);look.kickPitch.kick(-.5*k);
+   meleeLunge(heavy?'slam':'bash');
+   setTimeout(()=>{if(armed)bashStrike(move);},move.windup*1000);
+  }
+  function bashStrike(move=meleeMove('bash')){
    const origin=camera.getWorldPosition(new T.Vector3()),f=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion),r=new T.Vector3(1,0,0).applyQuaternion(camera.quaternion);
-   for(const off of [0,-.22,.22]){const d=f.clone().addScaledVector(r,off).normalize();const ch=o.shotHook?.(origin,d,2.4,{weapon:'melee',player:true});
-    if(ch){const res=ch.apply(55*(ch.head?1.3:1),{head:ch.head,weapon:'melee',melee:true});bloodPuff(ch.point,d);hud.hitmarker(false,res?.killed);state.hitStop=.08;o.hitStop?.(res?.killed?130:90);look.shake=Math.max(look.shake,.42);sfx.wood(ch.point,.9);return;}}
-   const h=worldHits(origin,f,2.1);if(h){impact(h,f,1.4,false);sfx.wood(h.point,.8);look.shake=Math.max(look.shake,.16);state.hitStop=.05;}
+   for(const off of [0,-.22,.22]){const d=f.clone().addScaledVector(r,off).normalize();const ch=o.shotHook?.(origin,d,move.reach,{weapon:'melee',player:true});
+    if(ch){const res=ch.apply(move.damage*(ch.head?1.3:1),{head:ch.head,weapon:'melee',melee:true,tier:move.tier,dir:f.clone().setY(0).normalize()});bloodPuff(ch.point,d);hud.hitmarker(move.tier==='heavy'&&move.label!=='BASH',res?.killed);state.hitStop=.08;meleeLand(move,res?.killed);return;}}
+   const h=worldHits(origin,f,move.reach-.3);if(h){impact(h,f,move.tier==='heavy'?2.2:1.4,false);sfx.wood(h.point,.8);look.shake=Math.max(look.shake,.16);state.hitStop=.05;root.EdenMelee?.combo.reset();}
+   else root.EdenMelee?.whiff();
   }
   function meleeHit(heavy){
    const origin=camera.getWorldPosition(new T.Vector3()),f=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion),r=new T.Vector3(1,0,0).applyQuaternion(camera.quaternion);
-   for(const off of [0,-.2,.2]){const d=f.clone().addScaledVector(r,off).normalize();const ch=o.shotHook?.(origin,d,2.2,{weapon:'axe',player:true});if(ch){const res=ch.apply(WEAPONS[2].dmg*(heavy?1.7:1)*(ch.head?1.4:1),{head:ch.head,isTrue:heavy,weapon:'axe'});bloodPuff(ch.point,d);hud.hitmarker(heavy,res?.killed);state.hitStop=.07;o.hitStop?.(res?.killed?110:heavy?80:50);look.shake=Math.max(look.shake,.25);anim.posZ.kick(1.2);sfx.wood(ch.point,.7);return;}}
+   for(const off of [0,-.2,.2]){const d=f.clone().addScaledVector(r,off).normalize();const move=meleeMove(heavy?'cleave':'chop');const ch=o.shotHook?.(origin,d,move.reach,{weapon:'axe',player:true});if(ch){const res=ch.apply(move.damage*(ch.head?1.4:1),{head:ch.head,isTrue:heavy,weapon:'axe',melee:true,tier:move.tier,dir:f.clone().setY(0).normalize()});bloodPuff(ch.point,d);hud.hitmarker(heavy,res?.killed);state.hitStop=.07;meleeLand(move,res?.killed);anim.posZ.kick(1.2);sfx.wood(ch.point,.7);return;}}
    let hit=null;for(const off of [0,-.18,.18,-.35,.35]){const d=f.clone().addScaledVector(r,off).normalize();const h=worldHits(origin,d,2.1);if(h&&(!hit||targetOf(h.object)&&!targetOf(hit.object)))hit=h;if(hit&&targetOf(hit.object))break;}
-   if(!hit){return;}
+   if(!hit){root.EdenMelee?.whiff();return;}
    const t=impact(hit,f,heavy?3.2:1.6,heavy);
    if(t?.kind==='post'||!t)decal(hit,tx.chop,heavy?.16:.11);
    if(heavy)hud.trueShot();
@@ -1083,10 +1104,12 @@
    requestFrame();
   }
   function releaseButton(key){if(key==='fire')buttons.left=false;if(key==='aim'){buttons.right=false;if(setting('aim','wheel')==='hold')zoomTarget=0;}}
-  function releaseInputs(){shiftHeld=false;buttons.left=buttons.right=false;pendingFire=false;if(setting('aim','wheel')==='hold')zoomTarget=0;}
+  function releaseInputs(){bashHold.cancel();shiftHeld=false;buttons.left=buttons.right=false;pendingFire=false;if(setting('aim','wheel')==='hold')zoomTarget=0;}
   function onMouseDown(e){if(!armed||inputBlocked(e))return;if(!locked){if(e.target===renderer.domElement&&e.button===0)requestLock();return;}if(root.edenControls)return;e.preventDefault();pressButton(e.button===0?'fire':e.button===2?'aim':'');}
   function onMouseUp(e){if(!root.edenControls)releaseButton(e.button===0?'fire':e.button===2?'aim':'');}
-  function onKeyUp(e){const k=inputKey(e);if(k==='shift')shiftHeld=false;releaseButton(k);}
+  // B: tap to bash, hold to slam (the shared tap-for-light, hold-for-heavy melee rule).
+  const bashHold=root.EdenMelee?.charge({light:()=>bash(false),heavy:()=>bash(true)})||{down:()=>bash(false),up(){},cancel(){}};
+  function onKeyUp(e){const k=inputKey(e);if(k==='shift')shiftHeld=false;if(k==='b')bashHold.up();releaseButton(k);}
   function onKey(e){
    if(inputBlocked(e)||e.repeat)return;
    if(root.edenControls&&!['walk','combat','battle'].includes(root.edenControls.context()))return;
@@ -1098,7 +1121,7 @@
    if(!armed||!o.canAct())return;
    if(k==='q'){e.preventDefault();if(previous)equip(previous);}
    if(k==='r'){e.preventDefault();reload();}
-   if(k==='b'){e.preventDefault();if(current?.id==='c4')detonate();else bash();}
+   if(k==='b'){e.preventDefault();if(current?.id==='c4')detonate();else bashHold.down();}
    if(k==='x'){e.preventDefault();holster();}
   }
 

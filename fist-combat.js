@@ -5,10 +5,13 @@
 window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-trickster',reduced=false,stage,getPlayer,blocked=()=>false,groundHeight=()=>0,knockPlayer=()=>{},canAct=()=>true,requestDraw=()=>{},hitStop=()=>{}}){
  const now=()=>performance.now()/1000,rand=(a,b)=>a+Math.random()*(b-a),pick=list=>list[Math.floor(Math.random()*list.length)];
  const clamp=T.MathUtils.clamp,tmp=new T.Vector3(),tmp2=new T.Vector3();
+ // Timings, reach, damage and feel come from the shared melee core (melee-core.js); these are its fallback.
+ const M=window.EdenMelee;
+ const fromCore=(id,fallback)=>{const m=M?.move(id);return m?{damage:m.damage,impact:m.windup,recover:m.recover,reach:m.reach,power:m.force,tier:m.tier,label:m.label,stamina:m.stamina,move:id}:fallback;};
  const PUNCHES={
-  jab:{damage:8,impact:.1,recover:.26,reach:1.75,power:1.6,label:'JAB'},
-  cross:{damage:12,impact:.13,recover:.34,reach:1.8,power:2.2,label:'CROSS'},
-  power:{damage:22,impact:.25,recover:.62,reach:1.9,power:4,label:'HAYMAKER'}
+  jab:fromCore('jab',{damage:8,impact:.1,recover:.26,reach:1.75,power:1.6,tier:'light',label:'JAB',stamina:10}),
+  cross:fromCore('cross',{damage:12,impact:.13,recover:.34,reach:1.8,power:2.2,tier:'light',label:'CROSS',stamina:14}),
+  power:fromCore('haymaker',{damage:22,impact:.25,recover:.62,reach:1.9,power:4,tier:'heavy',label:'HAYMAKER',stamina:28})
  };
  const LINES={
   provoked:['Oh, it\'s ON!','Did you just boop me?','Square up, apple-eater!','Rude!!','You want a dance-off? FIGHT-off!'],
@@ -24,6 +27,7 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
  // ---------- Sound (synthesised, no assets) ----------
  let audio=null;
  function sfx(kind){
+  if(M)return M.sound(kind);
   try{
    audio??=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();
    const t=audio.currentTime,out=audio.createGain();out.gain.value=.32;out.connect(audio.destination);
@@ -41,8 +45,8 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
  // ---------- DOM: HUD, vignette, knockout banner, touch pad ----------
  const world=stage.closest('#world')||stage.parentElement;
  const hud=document.createElement('div');hud.id='fight-hud';hud.hidden=true;
- hud.innerHTML='<div class="fight-bar fight-you"><span>YOU</span><div class="fight-meter"><i></i><b class="fight-stamina"></b></div></div><div class="fight-bar fight-foe" hidden><span>VIOLET TRICKSTER</span><div class="fight-meter"><i></i></div></div><p class="fight-keys">F PUNCH · G HAYMAKER · HOLD Q BLOCK (TAP TO PARRY) · DOUBLE-TAP A/D DODGE</p>';
- const pop=document.createElement('div');pop.id='fight-pop';pop.setAttribute('aria-live','polite');
+ hud.innerHTML='<div class="fight-bar fight-you"><span>YOU</span><div class="fight-meter"><i></i><b class="fight-stamina"></b></div></div><div class="fight-bar fight-foe" hidden><span>VIOLET TRICKSTER</span><div class="fight-meter"><i></i></div></div><p class="fight-keys">TAP F PUNCH · HOLD F OR G HAYMAKER · HOLD Q BLOCK (TAP TO PARRY) · DOUBLE-TAP A/D DODGE</p>';
+ const pop=document.getElementById('fight-pop')||document.createElement('div');pop.id='fight-pop';pop.setAttribute('aria-live','polite');
  const vignette=document.createElement('div');vignette.id='fight-vignette';
  const ko=document.createElement('div');ko.id='fight-ko';ko.hidden=true;ko.innerHTML='<strong>KNOCKED OUT</strong><span></span><div class="fight-stars"><b>★</b><b>★</b><b>★</b></div>';
  const pad=document.createElement('div');pad.id='fight-pad';pad.setAttribute('aria-label','Fight controls');
@@ -53,7 +57,7 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
   button.onpointerup=button.onpointercancel=button.onlostpointercapture=()=>key(button.dataset.fight,false);
  }
  let popTimer=0;
- function shout(text,tone='hit'){pop.textContent=text;pop.className='show '+tone;clearTimeout(popTimer);void pop.offsetWidth;popTimer=setTimeout(()=>{pop.className='';},700);}
+ function shout(text,tone='hit'){if(M)return M.pop(text,tone);pop.textContent=text;pop.className='show '+tone;clearTimeout(popTimer);void pop.offsetWidth;popTimer=setTimeout(()=>{pop.className='';},700);}
  // ---------- 3D helpers: speech bubbles, KO stars, hit flashes ----------
  function canvasSprite(width,height,paint,scale){
   const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const texture=new T.CanvasTexture(canvas);texture.colorSpace=T.SRGBColorSpace;
@@ -93,15 +97,19 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
  function key(name,pressed,repeat=false){
   if(name==='q'){if(pressed&&(!canAct()||player.down))return true;if(pressed&&!player.blocking)player.blockStart=now();player.blocking=pressed;if(pressed){player.attack=null;player.fightUntil=now()+8;}requestDraw();return true;}
   if(name==='c'){if(pressed&&!repeat)dodge();return true;}
-  if(!pressed||repeat)return name==='f'||name==='g';
-  if(name==='f')punch(player.nextHand?'cross':'jab');else if(name==='g')punch('power');else return false;
+  // F: tap for a jab or cross, hold for the haymaker (the one melee input rule); G is still a straight haymaker.
+  if(name==='f'){if(repeat)return true;if(pressed)fHold.down();else fHold.up();return true;}
+  if(!pressed||repeat)return name==='g';
+  if(name==='g')punch('power');else return false;
   return true;
  }
+ const fHold=M?M.charge({light:()=>punch(player.nextHand?'cross':'jab'),heavy:()=>punch('power')}):{down:()=>punch(player.nextHand?'cross':'jab'),up(){},cancel(){}};
  function punch(kind){
   const t=now();if(!canAct()||player.down||t<player.readyAt)return false;
   if(player.attack&&!player.attack.resolved){player.attack.resolved=true;resolve(player.attack);}
   const spec=PUNCHES[kind],hand=kind==='jab'?0:1;player.nextHand=kind==='jab'?1:0;
-  const tired=!spend({jab:10,cross:14,power:28}[kind]);
+  const tired=!spend(spec.stamina??{jab:10,cross:14,power:28}[kind]);
+  lungeIn(spec);
   const attack={kind,spec,hand,start:t,resolved:false,tired};player.blocking=false;player.attack=attack;
   // Impact is timed, not frame-bound, so punches still land on slow devices.
   setTimeout(()=>{if(!attack.resolved){attack.resolved=true;resolve(attack);requestDraw();}},spec.impact*1000);player.readyAt=t+spec.recover*(tired?1.4:.85);player.fightUntil=t+8;player.seq++;
@@ -115,16 +123,24 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
   knockPlayer({direction:right.multiplyScalar(player.dodgeSide),distance:.85});sfx('whoosh');requestDraw();return true;
  }
  function forwardOf(p){return tmp2.copy(p.forward).setY(0).normalize();}
+ // A target just beyond reach: step into it as the punch goes out (the shared melee lunge).
+ function lungeIn(spec){
+  const p=getPlayer();if(!M||!p)return;const forward=forwardOf(p).clone(),targets=[];
+  const root=jester.entry?.root;if(root&&!jester.ragdoll?.active)targets.push(root.position);
+  for(const target of network?.targets()||[])if(!target.ko)targets.push(target.root.position);
+  const step=M.lunge(p.position,forward,targets,{reach:spec.reach});
+  if(step)knockPlayer({direction:new T.Vector3(step.x,0,step.z),distance:step.distance});
+ }
  function resolve(attack){
   const p=getPlayer();if(!p)return;const forward=forwardOf(p).clone(),feet=new T.Vector3(p.position.x,0,p.position.z);
   const t=now();if(t>player.comboUntil)player.combo=0;
-  const countered=t<player.counterUntil,multiplier=Math.min(1.6,1+player.combo*.15)*(countered?1.5:1)*(attack.tired?.55:1),damage=Math.round(attack.spec.damage*multiplier);if(countered)player.counterUntil=0;
+  const countered=t<player.counterUntil,multiplier=(M?M.combo.multiplier():Math.min(1.6,1+player.combo*.15))*(countered?1.5:1)*(attack.tired?.55:1),damage=Math.round(attack.spec.damage*multiplier);if(countered)player.counterUntil=0;
   const candidates=[];
   const root=jester.entry?.root;
   if(root){const at=jester.ragdoll?.active?jester.ragdoll.pelvisPosition():root.position;const d=Math.hypot(at.x-feet.x,at.z-feet.z);candidates.push({type:'jester',at,d});}
   for(const target of network?.targets()||[])candidates.push({type:'visitor',id:target.id,name:target.name,at:target.root.position,d:Math.hypot(target.root.position.x-feet.x,target.root.position.z-feet.z),ko:target.ko});
   const hit=candidates.filter(c=>{if(c.d>attack.spec.reach+.35)return false;tmp.set(c.at.x-feet.x,0,c.at.z-feet.z);if(tmp.lengthSq()<.04)return true;return tmp.normalize().dot(forward)>Math.cos(.7);}).sort((a,b)=>a.d-b.d)[0];
-  stats.swings++;if(!hit){stats.missed++;attack.missed=true;stats.last={miss:candidates.map(c=>({type:c.type,d:+c.d.toFixed(2)}))};return;}
+  stats.swings++;if(!hit){stats.missed++;attack.missed=true;M?.whiff({shake:v=>{player.shake=Math.max(player.shake,v);}});stats.last={miss:candidates.map(c=>({type:c.type,d:+c.d.toFixed(2)}))};return;}
   const direction=tmp.set(hit.at.x-feet.x,0,hit.at.z-feet.z);if(direction.lengthSq()<1e-4)direction.copy(forward);direction.normalize();
   const contact=new T.Vector3(hit.at.x,(p.position.y-1.75)+1.45,hit.at.z).addScaledVector(direction,-.35);
   let outcome='hit';
@@ -132,12 +148,14 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
   else if(!hit.ko){network.hit({target:hit.id,kind:attack.kind,damage,direction:[direction.x,direction.z]});}
   else outcome='ragdoll';
   stats.landed++;stats.last={type:hit.type,outcome,damage};
-  if(outcome==='blocked'){sfx('block');shout('BLOCKED','block');hitStop(35);player.shake=Math.max(player.shake,.1);player.combo=0;return;}
+  const shake=v=>{player.shake=Math.max(player.shake,v);};
+  if(outcome==='blocked'){if(M)M.land('blocked',{hitStop,shake});else{sfx('block');shout('BLOCKED','block');hitStop(35);shake(.1);}player.combo=0;return;}
   player.combo++;player.comboUntil=t+1.15;attack.landed=true;attack.freeze=attack.kind==='power'||outcome==='ko'?.11:.065;player.landedAt=t;
-  sfx(attack.kind==='power'||outcome==='ko'?'heavy':'hit');flash(contact,attack.kind==='power');
-  // Impact: a short frame hold scaled to the blow, and a jolt through your own view.
-  hitStop(outcome==='ko'?170:{jab:45,cross:65,power:110}[attack.kind]||50);player.shake=Math.max(player.shake,attack.kind==='power'||outcome==='ko'?.3:.14);
-  shout(outcome==='ko'?'K.O.!':countered?'COUNTER!':player.combo>2?player.combo+' HIT COMBO':attack.spec.label,outcome==='ko'?'ko':'hit');emit('landed',{kind:attack.kind,damage,outcome,target:hit.type});
+  flash(contact,attack.kind==='power');
+  // Impact: a short frame hold scaled to the blow, and a jolt through your own view (the shared melee tiers).
+  if(M){const landed=M.land(outcome==='ko'?'ko':attack.spec.tier||'light',{hitStop,shake,label:countered?'COUNTER!':attack.spec.label});player.combo=landed.combo;}
+  else{sfx(attack.kind==='power'||outcome==='ko'?'heavy':'hit');hitStop(outcome==='ko'?170:{jab:45,cross:65,power:110}[attack.kind]||50);shake(attack.kind==='power'||outcome==='ko'?.3:.14);
+   shout(outcome==='ko'?'K.O.!':countered?'COUNTER!':player.combo>2?player.combo+' HIT COMBO':attack.spec.label,outcome==='ko'?'ko':'hit');}emit('landed',{kind:attack.kind,damage,outcome,target:hit.type});
  }
  function hurt({damage,direction,kind='jab',from='jester'}){
   if(player.down)return 'down';const t=now(),p=getPlayer();if(!p)return 'none';
@@ -146,10 +164,11 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
   if(t<player.dodgeUntil||t-player.dodgeStart<.38){shout('SLIPPED!','block');sfx('whoosh');emit('dodged',{kind,from});return 'dodged';}
   const facing=forward.dot(direction)<-.2;
   // Parry: a block raised just before the blow lands deflects it and opens a counter.
-  if(player.blocking&&kind!=='tackle'&&facing&&t-player.blockStart<.25){player.counterUntil=t+1.3;player.shake=.08;sfx('block');shout('PARRY!','block');hitStop(60);if(from==='jester')jester.parried();emit('parry',{from});return 'parried';}
+  if(player.blocking&&kind!=='tackle'&&facing&&t-player.blockStart<.25){player.counterUntil=t+1.3;player.shake=.08;if(M)M.land('parried',{hitStop});else{sfx('block');shout('PARRY!','block');hitStop(60);}if(from==='jester')jester.parried();emit('parry',{from});return 'parried';}
   player.lastHurt=t;
-  if(player.blocking&&kind!=='tackle'&&facing){damage*=.2;player.stamina=Math.max(0,player.stamina-8);player.shake=.12;sfx('block');shout('BLOCKED','block');}
-  else{player.flash=1;player.shake=kind==='uppercut'||kind==='power'?.65:.38;sfx(kind==='tackle'?'thud':'hit');hitStop(kind==='uppercut'||kind==='power'||kind==='tackle'?120:70);}
+  const heavyBlow=kind==='uppercut'||kind==='power'||kind==='tackle';
+  if(player.blocking&&kind!=='tackle'&&facing){damage*=.2;player.stamina=Math.max(0,player.stamina-8);player.shake=.12;if(M)M.land('blocked',{combo:false});else{sfx('block');shout('BLOCKED','block');}}
+  else{player.flash=1;player.shake=heavyBlow?.65:.38;if(M)M.land(heavyBlow?'heavy':'light',{hitStop,combo:false,pop:false,sound:kind==='tackle'?'thud':undefined});else{sfx(kind==='tackle'?'thud':'hit');hitStop(heavyBlow?120:70);}}
   player.hp=Math.max(0,player.hp-damage);
   knockPlayer({direction,distance:kind==='tackle'?1.4:kind==='uppercut'||kind==='power'?.8:.3});
   if(player.hp<=0)knockDown(5.5,true);else if(kind==='tackle')knockDown(2.4,false);

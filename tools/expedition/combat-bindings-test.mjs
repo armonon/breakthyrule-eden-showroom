@@ -74,7 +74,7 @@ test('actual battle listeners remap loot, heal and scores without consuming edit
 });
 test('body punch uses its walk binding and does not collide with battle loot',()=>{
  const f=fixture('walk'),source=read('player-body.js'),start=source.indexOf('  function onKey(event)'),end=source.indexOf("  document.addEventListener('keydown',onKey)",start);
- vm.runInContext('const model={root:{visible:true}},enabled=()=>true,canPunch=()=>true,api={punch(){counts.punch++;}};',f.s);vm.runInContext(source.slice(start,end),f.s);
+ vm.runInContext('const model={root:{visible:true}},enabled=()=>true,canPunch=()=>true,api={punch(){counts.punch++;},press(down){if(down)this.punch();}};',f.s);vm.runInContext(source.slice(start,end),f.s);
  f.set('gardenPunch','KeyU');f.s.onKey(f.event('f','KeyF'));assert.equal(f.s.counts.punch,0);f.s.onKey(f.event('u','KeyU'));assert.equal(f.s.counts.punch,1);
  f.s.edenControls.setContext(()=> 'battle');f.s.onKey(f.event('f','KeyF'));assert.equal(f.s.counts.punch,1);
 });
