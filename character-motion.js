@@ -191,9 +191,10 @@
     else if(kind==='scramble')timed(pick('pkScramble','climbUp'),true);
     else if(kind==='pipe')timed('climbUp',true);
     else if(kind==='hang'){const sh=move.shimmy||0,c=sh<0?pick('pkShimmyL'):sh>0?pick('pkShimmyR'):null;const h=c||pick('pkHang');if(h){id=h;loop=true;}}
-    // The wall-run clip has the wall on the runner's left; the mirrored copy serves a wall on the right (side 1). It plays
-    // once along the run's own clock and holds its push-off, rather than looping a one-shot back to its first stride.
-    else if(kind==='wallrun'){const w=pick(...(move.side>0?['pkWallRunR','pkWallRun']:['pkWallRun']));if(w){id=w;start=Math.min(t,A.duration(w)*.98);}else{id='sprint';loop=true;speed=1.15;}}
+    // The wall-run clip has the wall on the runner's left; the mirrored copy serves a wall on the right (side 1). It
+    // carries the first 0.6 s (its strides up the wall); after that it only tucks both feet up to push off, so a longer run
+    // crossfades into the looping sprint stride, banked into the wall by traverseBody, instead of floating in the tuck.
+    else if(kind==='wallrun'){const w=pick(...(move.side>0?['pkWallRunR','pkWallRun']:['pkWallRun']));if(w&&t<.6){id=w;start=Math.min(t,A.duration(w)*.98);}else{id='sprint';loop=true;speed=1.15;}}
     const managed=['slideStart','slideLoop','climbUp','dash','sprint','pkLeap','pkVault','pkClimb','pkScramble','pkHang','pkShimmyL','pkShimmyR','pkWallRun','pkWallRunR'];
     const sliding=api.playing('slideStart')||api.playing('slideLoop');
     for(const clip of managed)if(clip!==id)api.stop(clip,.12);

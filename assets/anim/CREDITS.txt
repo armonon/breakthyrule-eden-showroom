@@ -1,4 +1,4 @@
-Breakthyrule animation library — 73 clips
+Breakthyrule animation library — 72 clips
 
 51 in-place clips retargeted from Quaternius Universal Animation Libraries 1 and 2 (Standard).
 License: CC0-1.0. Original notices: licenses/ual1-CC0.txt and licenses/ual2-CC0.txt.
@@ -14,6 +14,6 @@ baked by tools/animation/bake-mixamo.cjs from Adobe Mixamo (https://www.mixamo.c
 Mixamo animations are royalty-free for use in projects; the raw Mixamo files are not redistributed,
 only the baked rotations in clips.json.
 
-Runtime clips.json SHA-256: 8ff10dff6feb6cb6b5ce98c018fa86a14e071b039bef9e73af7b5702622d08db
+Runtime clips.json SHA-256: 0b94bde921d73811574a2434a0461ffe2a2478cb6ef56fa6e0210bbe126bcff1
 Portable source/build kit is retained separately (not a runtime download):
 animation-build-kit.tar.gz SHA-256 f3160519e8c4085e22b4a0670f82783c1430d0759db5edbab22b421ee1c04899.

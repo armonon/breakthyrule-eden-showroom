@@ -68,6 +68,8 @@
  }
 
  function createArena(o){
+  const BOT_MELEE={botBash:{windup:.22,recover:1.1,reach:2.6,damage:45,tier:'heavy'},botChop:{windup:.35,recover:.75,reach:2.2,damage:44,tier:'heavy'}};
+  const botMove=id=>window.EdenMelee?.move(id)||BOT_MELEE[id];
   const {T,scene,camera,combat,garden,layout}=o;
   const A=layout.arena,CENTER=new T.Vector3(A.x,0,A.z);
   const B=layout.bounds; // [minX,maxX,minZ,maxZ]
@@ -251,13 +253,65 @@
   const FORCE={sniper:4.6,pump:4,rifle:2.6,smg:2.2,pistol:2.2,axe:3.4,melee:3.1,c4:6.2};
   function blowDirection(target,attacker,meta){if(meta.dir)return meta.dir.clone().setY(0).normalize();const from=attacker&&attacker!==target?posOf(attacker):null;const d=from?posOf(target).clone().sub(from).setY(0):new T.Vector3(0,0,1);return d.lengthSq()>1e-6?d.normalize():new T.Vector3(0,0,1);}
   // Bots flash when hit: cyan off the shield, white on the body.
-  const FLASH={shield:new T.Color(0x45d6ff),body:new T.Color(0xffffff)};
-  function flashBot(b,kind){
+  const FLASH={shield:new T.Color(0x45d6ff),body:new T.Color(0xffffff),warn:new T.Color(0xff9a2e)};
+  // Melee hit reactions by where the blow came from (the bot's own frame): a stagger step along the blow, a lean
+  // from character-motion's procedural hit, and a clip chosen by side: from the front a heavy rocks it back
+  // (knockback), from behind it lurches forward (hitHead), from the side it twists (hitChest). Slams, cleaves and
+  // combo finishers knock it down outright along the blow.
+  function meleeReaction(b,dir,meta){
+   const h=b.root.rotation.y,fwd=new T.Vector3(Math.sin(h),0,Math.cos(h)),right=new T.Vector3(fwd.z,0,-fwd.x);
+   const side=dir.dot(right),along=dir.dot(fwd),motion=b.model.motion;
+   b.lastFlinch=clock;
+   if(meta.knockdown||meta.finisher){b.stagger=null;b.stunT=0;motion?.knockdown?.(dir,meta.finisher?2.8:2.1);return;}
+   const heavy=meta.tier==='heavy';
+   stagger(b,dir,heavy?.95:.35,heavy?.45:.22);
+   motion?.hit?.(dir,heavy?1.5:.8,{zone:meta.zone||(Math.abs(side)>.6?'arm':'chest')});
+   const clip=Math.abs(side)>.6?'hitChest':along<-.3?(heavy?'knockback':'hitChest'):'hitHead';
+   motion?.play?.(clip,clip==='knockback'?{fade:.05,speed:1.15}:{mask:'upper',fade:.04,speed:1.2});
+   if(heavy){b.stunT=Math.max(b.stunT||0,.7);b.lunge=null;}
+  }
+  function stagger(b,dir,distance,duration){b.stagger={dir:dir.clone().setY(0).normalize(),distance,duration,t:0};}
+  // Bot melee: before the blow lands the bot telegraphs it (an amber glow, a glint at its weapon, a ring you can
+  // hear, and a wind-up slowed to fill the windup), so you can read it and dodge, block or parry.
+  const glints=[];let glintMat=null;
+  function telegraph(b,m,clip){
+   b.model.motion?.play?.(clip,{mask:'upper',arms:true,fade:.06,speed:Math.max(.45,Math.min(1.3,(window.GardenAnim?.duration?.(clip)||.8)*.45/m.windup))});
+   flashBot(b,'warn',m.windup);
+   const d=b.root.position.distanceTo(posOf(player||b));if(d<28)window.EdenMelee?.sound('glint',Math.max(.15,1-d/28));
+   if(!glintMat){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'#fff');g.addColorStop(.25,'#ffd27a');g.addColorStop(1,'rgba(255,160,40,0)');x.fillStyle=g;x.fillRect(0,0,64,64);x.fillStyle='#fff';x.fillRect(30,2,4,60);x.fillRect(2,30,60,4);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;glintMat=new T.SpriteMaterial({map:t,transparent:true,depthWrite:false,blending:T.AdditiveBlending,fog:false,toneMapped:false});}
+   let s=glints.find(g=>!g.visible);if(!s){s=new T.Sprite(glintMat);s.renderOrder=30;scene.add(s);glints.push(s);}
+   s.userData={bot:b,t:0,dur:m.windup};s.visible=true;
+  }
+  function updateGlints(dt){
+   for(const s of glints){if(!s.visible)continue;const u=s.userData;u.t+=dt;const b=u.bot;if(u.t>=u.dur||!b.alive||!active){s.visible=false;continue;}
+    const k=u.t/u.dur;b.hand.getWorldPosition(s.position);s.position.y+=.15;s.material.rotation=k*2;const size=.12+.38*Math.sin(Math.min(1,k*1.15)*Math.PI*.5)**2;s.scale.set(size,size,1);}
+  }
+  // The blow arrives. If the bot is still in reach it meets the target's guard (melee-core.js): parried, the bot is
+  // thrown off balance and a counter opens; blocked, only chip damage gets through; a guard that gives way takes it all.
+  function botStrike(b,m,weapon){
+   if(!b.alive||!b.target?.alive||phase!=='live')return;
+   const tp=posOf(b.target);if(tp.distanceTo(b.root.position)>m.reach)return;
+   const meta={weapon,tier:m.tier,dir:tp.clone().sub(b.root.position).setY(0).normalize()};
+   if(b.target!==player){damage(b.target,m.damage,b,meta);return;}
+   const M=window.EdenMelee,g=combat.guard?.(),look=camera.getWorldDirection(new T.Vector3()).setY(0).normalize();
+   const facing=look.dot(meta.dir.clone().negate())>Math.cos(1.2);
+   const outcome=M&&g?M.defend(g,{tier:m.tier,facing}):'hit',hs=ms=>o.hitStop?.(ms);
+   if(outcome==='parried'){M.land('parried',{hitStop:hs});parriedBot(b,meta.dir);return;}
+   if(outcome==='blocked'){M.land('blocked',{hitStop:hs,combo:false});damage(player,m.damage*M.GUARD.chip,b,{...meta,guarded:true});return;}
+   if(outcome==='broken'){M.land('broken',{hitStop:hs,combo:false});damage(player,m.damage,b,{...meta,guarded:true});o.onGuardBroken?.(meta.dir);return;}
+   damage(player,m.damage,b,meta);
+  }
+  // A parried bot reels back, can't attack for a moment and is open to the counter.
+  function parriedBot(b,dir){
+   const away=dir.clone().negate();stagger(b,away,.8,.35);b.model.motion?.hit?.(away,1.4);b.model.motion?.play?.('hitHead',{mask:'upper',fade:.04,speed:1.1});
+   b.stunT=1.1;b.fireT=Math.max(b.fireT,1.5);b.bashT=Math.max(b.bashT,1.8);b.lunge=null;flashBot(b,'shield',.3);
+  }
+  function flashBot(b,kind,dur=.14){
    if(!b.flashMats){b.flashMats=[];b.model.root.traverse(n=>{for(const m of n.isMesh?(Array.isArray(n.material)?n.material:[n.material]):[])if(m?.emissive&&!b.flashMats.includes(m)){m.userData.baseEmissive??=m.emissive.clone();b.flashMats.push(m);}});}
-   b.flashT=.14;b.flashColor=FLASH[kind];
+   b.flashT=dur;b.flashDur=dur;b.flashColor=FLASH[kind];b.flashRamp=kind==='warn';
   }
   function updateFlash(b,dt){
-   if(!(b.flashT>0))return;b.flashT=Math.max(0,b.flashT-dt);const k=b.flashT/.14;
+   if(!(b.flashT>0))return;b.flashT=Math.max(0,b.flashT-dt);const f=b.flashT/(b.flashDur||.14),k=b.flashT<=0?0:b.flashRamp?(1-f)*.7:f; // a warning builds toward the strike, then clears
    for(const m of b.flashMats)m.emissive.copy(m.userData.baseEmissive).lerp(b.flashColor,k*.85);
   }
   const aimList=[];
@@ -267,7 +321,9 @@
    if(!target.bot&&godMode)return {killed:false};
    if(target===player&&clock<(player.protectUntil||0))return {killed:false};
    // Finisher: melee on a bot that is down (tackled, knocked over) hits twice as hard.
-   const finisher=target.bot&&attacker===player&&['melee','axe'].includes(meta.weapon)&&(target.model.motion?.downAmount?.()||0)>.3;if(finisher){amount*=2;meta={...meta,finisher:true};}
+   const finisher=target.bot&&attacker===player&&['melee','axe'].includes(meta.weapon)&&(target.model.motion?.downAmount?.()||0)>.3;if(finisher){amount*=2;meta={...meta,finisher:true};window.EdenMelee?.pop('FINISHER','ko');}
+   // A bot's melee blow lands on you with the same weight as yours land on them (melee-core.js), and breaks your combo.
+   if(target===player&&attacker?.bot&&['melee','axe'].includes(meta.weapon)&&!meta.guarded)window.EdenMelee?.land(meta.tier||'heavy',{hitStop:ms=>o.hitStop?.(ms),combo:false,pop:false});
    if(attacker&&attacker!==target&&attacker.power)amount*=1+POWER_DMG*Math.min(POWER_MAX,attacker.power);
    let a=amount,shielded=0;
    const raw=meta.kind==='zone'||meta.kind==='attendant'||meta.kind==='fall';
@@ -280,8 +336,11 @@
    if(target.bot){target.seen=attacker&&attacker!==target?attacker:target.seen;if(target.state!=='fight'&&attacker&&attacker!==target){target.state='fight';target.target=attacker;target.aimT=target.reaction*.5;}
     // Hit reactions: heavy blows knock the bot down into a ragdoll (it gets back up); light ones flinch it, at most
     // every 0.7 s so a spray cannot pin it down. Either way it side-steps out of the line of fire.
-    if(target.hp>0&&meta.kind!=='zone'){const heavy=meta.blast||['sniper','axe','melee'].includes(meta.weapon)||(meta.weapon==='pump'&&amount>=30)||amount>=45;
-     const dir=blowDirection(target,attacker,meta);if(heavy){target.model.motion?.hit?.(dir,2.2);}else if(clock-target.lastFlinch>.7){target.lastFlinch=clock;target.model.motion?.hit?.(dir,meta.head?1.2:.7,{zone:meta.zone});target.model.motion?.play?.(meta.head?'hitHead':'hitChest',{mask:'upper',fade:.04,speed:1.2});}
+    // Melee blows say their own tier (a quick axe chop only flinches; a bash, slam or cleave knocks the bot down).
+    if(target.hp>0&&meta.kind!=='zone'){const heavy=meta.tier?meta.tier!=='light':meta.blast||['sniper','axe','melee'].includes(meta.weapon)||(meta.weapon==='pump'&&amount>=30)||amount>=45;
+     const dir=blowDirection(target,attacker,meta);
+     if(meta.tier)meleeReaction(target,dir,meta);
+     else if(heavy){target.model.motion?.hit?.(dir,2.2);}else if(clock-target.lastFlinch>.7){target.lastFlinch=clock;target.model.motion?.hit?.(dir,meta.head?1.2:.7,{zone:meta.zone});target.model.motion?.play?.(meta.head?'hitHead':'hitChest',{mask:'upper',fade:.04,speed:1.2});}
      target.dodgeT=.38;target.strafe=Math.random()<.5?1:-1;}}
    else{combat.hurt(attacker&&attacker!==target?eyeOf(attacker):null,a+(amount-a)*.4+shielded*.55);if(meta.kind==='zone')combat.hurt(null,a*.4);hud.update();}
    if(target.hp<=0){kill(target,attacker,meta);return {killed:true};}
@@ -421,6 +480,10 @@
    // Zone damage
    if(phase==='live'&&outside(p)>0){b.zoneTick=(b.zoneTick||0)+dt;if(b.zoneTick>=1){b.zoneTick=0;damage(b,zoneDps(),null,{kind:'zone'});if(!b.alive)return;}}
    if(b.model.motion?.downAmount?.()>0){b.model.animate?.(clock,0);return;}
+   // A stagger slides the bot along the blow, fast at first then settling; while stunned it can't act.
+   if(b.stagger){const st=b.stagger,k=Math.max(0,1-st.t/st.duration),step=st.distance/st.duration*2*k*dt,next=p.clone().addScaledVector(st.dir,step);
+    if(!blocked(next)){p.x=next.x;p.z=next.z;p.y=groundY(p.x,p.z);}st.t+=dt;if(st.t>=st.duration)b.stagger=null;}
+   if(b.stunT>0){b.stunT-=dt;b.fireT=Math.max(b.fireT,.2);b.bashT=Math.max(b.bashT,.2);b.model.animate?.(clock,0);return;}
    if(clock-b.lastHurt>SHIELD_DELAY&&b.shield<b.shieldMax)b.shield=Math.min(b.shieldMax,b.shield+30*dt);
    b.think-=dt;b.fireT-=dt;b.reloadT-=dt;b.aimT-=dt;b.strafeT-=dt;b.repath-=dt;b.dodgeT-=dt;b.bashT-=dt;
    if(phase==='countdown'){b.model.animate?.(clock,0);return;}
@@ -466,18 +529,24 @@
     const tp=posOf(b.target),to=tp.clone().sub(p);to.y=0;const dist=to.length();to.normalize();
     b.heading=Math.atan2(to.x,to.z);b.model.motion?.aimAt?.(eyeOf(b.target).add(new T.Vector3(0,-.3,0)));
     const id=b.weapon,w=W(id);
-    if(id==='axe'){move.copy(to);speed=5;if(dist<1.8&&b.fireT<=0){b.fireT=.75;b.model.motion?.play?.(Math.random()<.5?'swingA':'swingB',{mask:'upper',arms:true,fade:.06,speed:1.1});setTimeout(()=>{if(b.alive&&b.target?.alive&&posOf(b.target).distanceTo(b.root.position)<2.2)damage(b.target,w.dmg*.8,b,{weapon:'axe'});},350);}}
+    // Bot melee uses the shared moves: the swing is telegraphed for its windup, then lands if you are still in reach.
+    if(id==='axe'){move.copy(to);speed=5;const m=botMove('botChop');if(dist<1.8&&b.fireT<=0){b.fireT=m.windup+m.recover;telegraph(b,m,Math.random()<.5?'swingA':'swingB');setTimeout(()=>botStrike(b,m,'axe'),m.windup*1000);}}
     else{
      let ideal=id==='pump'?6:id==='smg'?12:id==='pistol'?14:id==='sniper'?45:24;
      if(b.target===player&&player.shield<=0)ideal*=.55; // smells blood: closes in while your shield is down
      if(b.strafeT<=0){b.strafeT=rand(.35,1.1);b.strafe*=Math.random()<.6?-1:1;}
-     if(dist<2.2&&b.bashT<=0){b.bashT=1.1;b.model.motion?.play?.('hook',{mask:'upper',arms:true,fade:.05,speed:1.2});setTimeout(()=>{if(b.alive&&b.target?.alive&&posOf(b.target).distanceTo(b.root.position)<2.6)damage(b.target,45,b,{weapon:'melee'});},180);}
+     if(dist<2.2&&b.bashT<=0){const m=botMove('botBash');b.bashT=m.windup+m.recover;telegraph(b,m,'hook');setTimeout(()=>botStrike(b,m,'melee'),m.windup*1000);}
      // Smelling blood (you are reloading or your shield is down) and close: the bot charges in for a tackle.
      if(b.target===player&&!b.lunge&&dist>1.8&&dist<6&&Math.abs(tp.y-p.y)<1.2&&clock>(b.lungeCd||0)&&(player.shield<=0||combat.inspect().action==='reload')&&Math.random()<dt*1.2){b.lunge={t:0,dir:to.clone()};b.lungeCd=clock+7;b.model.motion?.play?.('dash',{fade:.06,speed:1.3});}
      if(b.lunge){b.lunge.t+=dt;move.copy(b.lunge.dir);speed=9;b.heading=Math.atan2(b.lunge.dir.x,b.lunge.dir.z);
       if(dist<1.15){const dir=b.lunge.dir.clone();b.lunge=null;
+       const M=window.EdenMelee,g=combat.guard?.(),look=camera.getWorldDirection(new T.Vector3()).setY(0).normalize();
+       const guarded=M&&g&&!o.dodging?.()?M.defend(g,{kind:'tackle',facing:look.dot(dir.clone().negate())>Math.cos(1.2)}):'hit';
        if(o.dodging?.()){announce('DODGED');b.model.motion?.knockdown?.(dir,1.5);b.tackledUntil=clock+2;chime([660,880],.06,.05);}
-       else tackled(b,dir);}
+       // Parried, the charge is turned and the bot goes down; blocked, it bounces off with your gun still in hand.
+       else if(guarded==='parried'){M.land('parried',{hitStop:ms=>o.hitStop?.(ms)});b.model.motion?.knockdown?.(dir.clone().negate().add(dir.clone().multiplyScalar(.2)),1.7);b.tackledUntil=clock+2.4;}
+       else if(guarded==='blocked'){M.land('blocked',{hitStop:ms=>o.hitStop?.(ms),combo:false});damage(player,4,b,{weapon:'melee',dir:dir.clone(),guarded:true});stagger(b,dir.clone().negate(),1,.35);b.stunT=.8;}
+       else{if(guarded==='broken')M.land('broken',{hitStop:ms=>o.hitStop?.(ms),combo:false});tackled(b,dir);}}
       else if(b.lunge.t>.7)b.lunge=null;}
      const side=new T.Vector3(to.z,0,-to.x).multiplyScalar(b.strafe);if(!b.lunge){move.copy(side).addScaledVector(to,dist>ideal+4?1:dist<ideal-4?-.7:0);speed=dist>ideal+10?4.8:2.6;}
      if(b.dodgeT>0&&!b.lunge){move.copy(side).multiplyScalar(1.6).addScaledVector(to,.2);speed=6.5;}
@@ -668,7 +737,7 @@
   function kitPlayer(){combat.arsenal.set({owned:['axe','pistol'],reserve:{pistol:24},loaded:{pistol:12}});combat.equip('pistol');}
   function respawnBot(b){
    const spot=farSpawn();b.model.motion?.revive?.();b.root.position.set(spot.x,groundY(spot.x,spot.z),spot.z);b.root.rotation.set(0,rand(0,TAU),0);
-   Object.assign(b,{hp:100,shield:SHIELD_BOT,shieldMax:SHIELD_BOT,armor:0,armorMax:0,garment:null,alive:true,respawnAt:0,lastHurt:-9,lastFlinch:-9,flinchT:0,dodgeT:0,bashT:0,deathT:0,target:null,goal:null,seen:null,healing:null,healT:0,fireT:0,reloadT:0,aimT:0,think:rand(0,.3),repath:0,strafeT:0,stride:0,heading:b.root.rotation.y,heals:{bandage:0,medkit:0},state:'roam'});
+   Object.assign(b,{stagger:null,stunT:0,hp:100,shield:SHIELD_BOT,shieldMax:SHIELD_BOT,armor:0,armorMax:0,garment:null,alive:true,respawnAt:0,lastHurt:-9,lastFlinch:-9,flinchT:0,dodgeT:0,bashT:0,deathT:0,target:null,goal:null,seen:null,healing:null,healT:0,fireT:0,reloadT:0,aimT:0,think:rand(0,.3),repath:0,strafeT:0,stride:0,heading:b.root.rotation.y,heals:{bandage:0,medkit:0},state:'roam'});
    b.path.length=0;kitBot(b);rendererShadowDirty();
   }
   function rendererShadowDirty(){const r=window.breakThyRuleShowroom?.renderer?.();if(r)r.shadowMap.needsUpdate=true;}
@@ -1019,6 +1088,7 @@
    if(player&&!player.alive&&player.respawnAt!=null){const left=player.respawnAt-clock;if(left<=0)respawnPlayer();else hud.count(Math.ceil(left));}
    updateRunTackle(dt);
    for(const b of bots)updateBot(b,dt);
+   updateGlints(dt);
    if(player)updatePlayer(dt);
    // Loot physics + idle motion
    for(const l of loot){

@@ -246,28 +246,31 @@ const light=new T.DirectionalLight(0xffe4ad,3.2);light.position.set(-23,19,-48);
 const fill=new T.DirectionalLight(0xe4edff,.35);fill.position.set(10,9,18);scene.add(fill);
 const lighting=createEdenLighting(T,renderer,scene,{sun:light,hemi,camera,mobile:mobileDevice});window.edenLighting=lighting;window.edenScene=scene;window.edenCamera=camera;
 const post=createEdenPost(T,renderer,scene,camera,{enabled:!mobileDevice});window.edenPost=post;
-// Slow frames lower the pixel ratio first; still slow at the floor, the post effects step down: ambient occlusion,
+// Slow frames lower the pixel ratio first; still slow at the floor, the post effects step down: the realism extras
+// (wet ground, motion blur, depth of field, cloud shadows, haze, eye adaptation, air particles), then ambient occlusion,
 // then light shafts and lens flare, then bloom.
-const postSteps=[{ao:0},{rays:0,flare:0,glare:0},{bloom:0}];let postStep=0;
-const quality=createAdaptiveResolution(renderer,{...renderProfile,onFloor(){if(postStep<postSteps.length){post.set(postSteps[postStep++]);requestDraw();}}});window.edenQuality=quality;
+const postSteps=[{wet:0,motionBlur:0,dof:0,clouds:0,haze:0,exposure:0,air:0},{ao:0},{rays:0,flare:0,glare:0},{bloom:0}];let postStep=0;
+const quality=createAdaptiveResolution(renderer,{...renderProfile,onFloor(){if(postStep<postSteps.length){const step=postSteps[postStep++];post.set(step);if('air' in step){realism={clouds:0,dof:0};realismShown='';atmosphere?.set({dust:0,fireflies:0,cones:0});}requestDraw();}}});window.edenQuality=quality;
 // Graphics setting (PLAY menu): Low keeps laptops and phones smooth, High turns everything on. The first visit picks
 // one from the device (phones and small or low-memory machines: Low; integrated GPUs: Medium; otherwise High).
 const GRAPHICS={
- low:{label:'LOW',post:false,samples:0,ratio:1,shadow:1024,ao:0,bloom:0,rays:0,flare:0,glare:0},
- medium:{label:'MEDIUM',post:true,samples:2,ratio:1.25,shadow:2048,ao:0,bloom:.26,rays:0,flare:.8,glare:.9},
- high:{label:'HIGH',post:true,samples:4,ratio:1.5,shadow:4096,ao:.8,bloom:.26,rays:.7,flare:.8,glare:.9,photo:'lite'},
+ // Realism extras: exposure/haze/clouds are near-free folds into the final pass; motion blur and depth of field run only
+ // while sprinting or inspecting; wet ground (a half-resolution ray march) only on High and Photoreal at night.
+ low:{label:'LOW',post:false,samples:0,ratio:1,shadow:1024,ao:0,bloom:0,rays:0,flare:0,glare:0,exposure:0,haze:0,clouds:0,wet:0,dof:0,motionBlur:0,air:0},
+ medium:{label:'MEDIUM',post:true,samples:2,ratio:1.25,shadow:2048,ao:0,bloom:.26,rays:0,flare:.8,glare:.9,exposure:1,haze:.3,clouds:.3,wet:0,dof:.8,motionBlur:.3,air:1},
+ high:{label:'HIGH',post:true,samples:4,ratio:1.5,shadow:4096,ao:.8,bloom:.26,rays:.7,flare:.8,glare:.9,photo:'lite',exposure:1,haze:.3,clouds:.3,wet:.8,dof:1,motionBlur:.4,air:1},
  // Real captured content (eden-photoreal.js), for strong GPUs. Only ever chosen by hand.
- photo:{label:'PHOTOREAL',post:true,samples:4,ratio:1.5,shadow:4096,ao:.8,bloom:.16,rays:.35,flare:.25,glare:.9,photo:'full'}
+ photo:{label:'PHOTOREAL',post:true,samples:4,ratio:1.5,shadow:4096,ao:.8,bloom:.16,rays:.35,flare:.25,glare:.9,photo:'full',exposure:1,haze:.25,clouds:.3,wet:.8,dof:1,motionBlur:.4,air:1}
 };
 function autoGraphics(){
  if(mobileDevice||(navigator.deviceMemory&&navigator.deviceMemory<=4))return 'low';
  try{const gl=renderer.getContext(),info=gl.getExtension('WEBGL_debug_renderer_info'),name=info?gl.getParameter(info.UNMASKED_RENDERER_WEBGL):'';if(/intel|uhd|iris|mali|adreno|powervr|swiftshader|llvmpipe/i.test(name))return 'medium';}catch{}
  return 'high';
 }
-let graphics='high',photoreal=null;
+let graphics='high',photoreal=null,atmosphere=null,realism={clouds:0,dof:0},realismShown='';
 function setGraphics(level,{save=true}={}){
  const q=GRAPHICS[level]||GRAPHICS.medium;graphics=GRAPHICS[level]?level:'medium';postStep=0;
- post.set({enabled:q.post,samples:q.samples,ao:q.ao,bloom:q.bloom,rays:q.rays,flare:q.flare,glare:q.glare});
+ post.set({enabled:q.post,samples:q.samples,ao:q.ao,bloom:q.bloom,rays:q.rays,flare:q.flare,glare:q.glare,exposure:q.exposure,haze:q.haze,wet:q.wet,motionBlur:reduced?0:q.motionBlur});realism={clouds:q.clouds,dof:q.dof};atmosphere?.set({dust:q.air,fireflies:q.air,cones:q.air});
  quality.setMax(Math.min(devicePixelRatio,q.ratio));lighting.set({shadowSize:q.shadow});renderer.shadowMap.needsUpdate=true;photoreal?.set(q.photo||false);
  if(save){try{localStorage.setItem('eden-graphics',graphics);}catch{}requestDraw();}
 }
@@ -277,6 +280,9 @@ const garden=createEdenGarden(T,scene,{reduced,mobile:mobileDevice,onChange:requ
 photoreal=window.edenPhotorealGarden=createEdenPhotoreal(T,{renderer,scene,camera,garden,lighting,post,requestDraw});
 // Lens flare and god rays from the sky's sun; glare from the night district's lanterns while it is on screen.
 post.setLights({sky:garden.sky,lamps:()=>garden.nightBuilt()&&garden.district.root.visible?garden.district.lamps:null});
+// Dust by day, fireflies and lantern light cones at night (eden-atmosphere.js); off on Low.
+atmosphere=window.createEdenAtmosphere?.(T,scene,camera,{getNight:()=>post.night(),getLamps:()=>garden.nightBuilt()&&garden.district.root.visible?garden.district.lamps:null,reduced})||null;
+atmosphere?.set({dust:GRAPHICS[graphics].air,fireflies:GRAPHICS[graphics].air,cones:GRAPHICS[graphics].air});
 const nightLaunch=document.createElement('button');nightLaunch.id='night-launch';nightLaunch.textContent='BEYOND EDEN';nightLaunch.title='Night expeditions';$('amphitheater-view').after(nightLaunch);
 const arenaLaunch=document.createElement('button');arenaLaunch.id='arena-launch';arenaLaunch.textContent='ARENA';arenaLaunch.title='PvP arena: swords and crossbows';arenaLaunch.hidden=!window.showroomDeployment?.realtime;nightLaunch.after(arenaLaunch);arenaLaunch.onclick=()=>{if(battle?.active())battle.exit();arena?.enter();};
 const rangeLaunch=document.createElement('button');rangeLaunch.id='range-launch';rangeLaunch.textContent='RANGE';rangeLaunch.title='Firing range · 1–4 to draw a weapon';arenaLaunch.after(rangeLaunch);rangeLaunch.onclick=()=>{if(!state.ready)return;if(battle?.active())battle.exit();if(arena?.active())arena.leave?.();combat?.enterRange();};
@@ -350,16 +356,18 @@ function perfFrame(raw){if(!perfOn||!raw)return;perf.n++;perf.sum+=raw;perf.wors
 document.addEventListener('keydown',e=>{if(e.key!=='F9')return;e.preventDefault();perfOn=!perfOn;if(!perfBox){perfBox=document.createElement('div');perfBox.id='perf-hud';perfBox.style.cssText='position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:80;background:rgba(0,0,0,.6);color:#9effa8;font:600 11px monospace;padding:4px 10px;pointer-events:none;letter-spacing:.04em';document.body.append(perfBox);}perfBox.hidden=!perfOn;perfBox.textContent='measuring…';requestDraw();});
 // ?slowmo=0.25 runs the whole game clock at a quarter speed, for checking animations frame by frame.
 const SLOWMO=Math.min(1,Math.max(.05,+new URLSearchParams(location.search).get('slowmo')||1));
-function draw(time){frame=0;if(!pageActive()){previous=0;quality.pause();return;}if(!state.ready)return;if(lookLocked&&modalOpen())document.exitPointerLock?.();if(worlds?.loading())quality.pause();else quality.frame(time,!!previous);const raw=Math.min((time-(previous||time))/1000,.25)*SLOWMO,dt=Math.min(raw,.05);previous=time;perfFrame(raw);
+function draw(time){frame=0;if(!pageActive()){previous=0;quality.pause();return;}if(!state.ready)return;if(lookLocked&&modalOpen())document.exitPointerLock?.();if(worlds?.loading())quality.pause();else quality.frame(time,!!previous);const melee=window.EdenMelee?.timeScale?.()??1,raw=Math.min((time-(previous||time))/1000,.25)*SLOWMO*melee,dt=Math.min(raw,.05);previous=time;if(melee<1)requestDraw();perfFrame(raw);
  // Movement and the match run in steps of at most 50 ms, so a long frame catches up instead of slowing the game down
  // and snapping back (what reads as rubber banding when the frame rate dips).
  const steps=Math.max(1,Math.ceil(raw/.05-1e-6)),sdt=(raw||.016)/steps;
  for(let i=0;i<steps;i++){if(playerBail?.active){playerBail.update(sdt);const delta=playerBail.cameraTarget.clone().sub(targetPosition);targetPosition.add(delta);targetAim.add(delta);}else{if(modalOpen()||worlds?.loading())walkVelocity.set(0,0,0);else if(movement.needsStep())movement.move(sdt);movement.updateJump(sdt);}if(i<steps-1)battle?.update(time/1000,sdt);}
- const shiftDown=keys.has('shift');if(shiftDown!==lastShiftShown){lastShiftShown=shiftDown;socialShift??=$('social-move').querySelector('[data-key="shift"]');socialShift?.setAttribute('aria-pressed',String(shiftDown));}residents.update();if(followResident)frameResident();removeThird();sway.remove(camera);battle?.update(time/1000,steps>1?sdt:dt||.016);combat?.update(time/1000,(dt||.016)*(time<hitStopUntil?.15:1));const follow=reduced||combat?.armed()||state.view==='free',factor=follow?1:1-Math.exp(-7*(dt||.016));if(camera.position.distanceToSquared(targetPosition)>4e4){camera.position.copy(targetPosition);aim.copy(targetAim);}if(follow){const y=camera.position.y;camera.position.copy(targetPosition);aim.copy(targetAim);if(Math.abs(targetPosition.y-y)<.6&&!motion.inspect().airborne)camera.position.y=y+(targetPosition.y-y)*(1-Math.exp(-28*(dt||.016)));}else{camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);}const leap=pockets?.cross(camera.position);if(leap){camera.position.add(leap);aim.add(leap);targetPosition.add(leap);targetAim.add(leap);}const feel=updateFeel(dt||.016);updateDust(dt||.016);if(sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false),crouch:feel.drop,lean:feel.lean,slide:feel.slide,sprint:feel.sprint,weight:feel.weight,ads:feel.ads,effects:expeditionPrefs(),perspective:thirdK,bodyBob:playerBody?.bob?.()??null})&&!movement.slide)footsteps?.step(surfaceAt(targetPosition),feel.speed*(movement.crouchAmount>.5?.5:1));playerBody?.update(dt||.016,{aim,position:targetPosition,sprint:feel.sprint,effects:expeditionPrefs(),velocity:walkVelocity,airborne:motion.inspect().airborne,crouch:Math.min(feel.drop,.55),fovKick:feel.fov,hands:parkour?.hands?.()||null,pose:{traversal:movement.traversal(),dive:movement.dive?Math.min(1,movement.dive.t*4):movement.proneT>0?Math.min(1,movement.proneT/.4):0,slide:movement.slide?.kind==='slide'&&!movement.slide.belly?1-movement.slide.t/movement.slide.dur:0}});applyThird(dt||.016);applyFovSetting();if(!pockets?.inside(camera.position))garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();worlds?.syncLights();const fighting=arena?.update(time/1000,dt||.016);pockets?.render();const brawling=fists?.update(time/1000,dt||.016);const exploring=secrets?.update(time/1000,dt||.016);const extrasBusy=extras?.update(time/1000,dt||.016);ambience?.update(targetPosition,{night:garden.nightRoad?.amount||0,theater:window.showroomAmphitheaterPosition});if(fists&&time-lastSkinCheck>2000){lastSkinCheck=time;const character=multiplayer?.inspect().character;if(character?.skinTone)fists.setSkin(character);}photoreal?.update();updateGrade();withHitEffects(()=>post.render());combat?.render();perfHud??=window.createPerfHud?.({renderer,quality})||null;perfHud?.frame(time);wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();updateDoorPrompt();if(brawling||exploring||extrasBusy||garden.animating||combat?.busy()||motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||fighting||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001||post.settling())requestDraw();else previous=0;}
+ const shiftDown=keys.has('shift');if(shiftDown!==lastShiftShown){lastShiftShown=shiftDown;socialShift??=$('social-move').querySelector('[data-key="shift"]');socialShift?.setAttribute('aria-pressed',String(shiftDown));}residents.update();if(followResident)frameResident();removeThird();sway.remove(camera);battle?.update(time/1000,steps>1?sdt:dt||.016);combat?.update(time/1000,(dt||.016)*(time<hitStopUntil?.15:1));const follow=reduced||combat?.armed()||state.view==='free',factor=follow?1:1-Math.exp(-7*(dt||.016));if(camera.position.distanceToSquared(targetPosition)>4e4){camera.position.copy(targetPosition);aim.copy(targetAim);}if(follow){const y=camera.position.y;camera.position.copy(targetPosition);aim.copy(targetAim);if(Math.abs(targetPosition.y-y)<.6&&!motion.inspect().airborne)camera.position.y=y+(targetPosition.y-y)*(1-Math.exp(-28*(dt||.016)));}else{camera.position.lerp(targetPosition,factor);aim.lerp(targetAim,factor);}const leap=pockets?.cross(camera.position);if(leap){camera.position.add(leap);aim.add(leap);targetPosition.add(leap);targetAim.add(leap);}const feel=updateFeel(dt||.016);updateDust(dt||.016);if(sway.apply(camera,aim,dt||.016,{velocity:walkVelocity,airborne:motion.inspect().airborne,walkSpeed:motion.speed(false),crouch:feel.drop,lean:feel.lean,slide:feel.slide,sprint:feel.sprint,weight:feel.weight,ads:feel.ads,effects:expeditionPrefs(),perspective:thirdK,bodyBob:playerBody?.bob?.()??null})&&!movement.slide)footsteps?.step(surfaceAt(targetPosition),feel.speed*(movement.crouchAmount>.5?.5:1));playerBody?.update(dt||.016,{aim,position:targetPosition,sprint:feel.sprint,effects:expeditionPrefs(),velocity:walkVelocity,airborne:motion.inspect().airborne,crouch:Math.min(feel.drop,.55),fovKick:feel.fov,hands:parkour?.hands?.()||null,pose:{traversal:movement.traversal(),dive:movement.dive?Math.min(1,movement.dive.t*4):movement.proneT>0?Math.min(1,movement.proneT/.4):0,slide:movement.slide?.kind==='slide'&&!movement.slide.belly?1-movement.slide.t/movement.slide.dur:0}});applyThird(dt||.016);applyFovSetting();if(!pockets?.inside(camera.position))garden.update(time/1000,camera,!modalOpen());expedition?.update(time/1000,dt||.016);updateRoadCaption();amphitheater.update(time/1000,music.playing);music.update(camera);librarianNPC.update(time/1000,camera);const movingVisitors=multiplayer?.update(time/1000,dt||.016);lighting.update();worlds?.syncLights();const fighting=arena?.update(time/1000,dt||.016);pockets?.render();const brawling=fists?.update(time/1000,dt||.016);const exploring=secrets?.update(time/1000,dt||.016);const extrasBusy=extras?.update(time/1000,dt||.016);ambience?.update(targetPosition,{night:garden.nightRoad?.amount||0,theater:window.showroomAmphitheaterPosition});if(fists&&time-lastSkinCheck>2000){lastSkinCheck=time;const character=multiplayer?.inspect().character;if(character?.skinTone)fists.setSkin(character);}photoreal?.update();updateGrade();updateRealism();atmosphere?.update(time/1000);withHitEffects(()=>post.render());combat?.render();perfHud??=window.createPerfHud?.({renderer,quality})||null;perfHud?.frame(time);wallFilm?.update(camera);updateNPCPrompt();updateShelfActions();updateMusicPrompt();updateDoorPrompt();if(brawling||exploring||extrasBusy||garden.animating||combat?.busy()||motion.inspect().airborne||expedition?.active()||movingVisitors||(!reduced&&(!modalOpen()||librarianDialog.open))||fighting||keys.size||walkVelocity.lengthSq()>0||camera.position.distanceTo(targetPosition)>.001||aim.distanceTo(targetAim)>.001||post.settling())requestDraw();else previous=0;}
 let roadCaption='';
 // Clothes are for sale: inside a pocket world (museum, vault, black box) colour has to match the product photos, so those
 // rooms use Neutral tone mapping without the film LUT. The garden keeps AgX and the grade.
 let interiorGrade=false;
+// Cloud shadows only outdoors (not inside pocket worlds); depth of field only while inspecting something (not walking).
+function updateRealism(){const inside=!!pockets?.inside(camera.position),key=graphics+(inside?'i':'o')+state.view;if(key===realismShown)return;realismShown=key;post.set({clouds:inside?0:realism.clouds,dof:state.view!=='free'&&state.view!=='spawn'?realism.dof:0});}
 function updateGrade(){const inside=!!pockets?.inside(camera.position);if(!inside)renderer.toneMappingExposure=photoreal?.level==='full'?1.8:photoreal?.active?1.65:1.5;if(inside===interiorGrade)return;interiorGrade=inside;renderer.toneMapping=inside?T.NeutralToneMapping:T.AgXToneMapping;renderer.toneMappingExposure=inside?.9:1.5;post.set({lut:inside?0:1});}
 // Fist-fight hits shake, roll and drop the view only for this frame; the walking camera underneath is untouched.
 const savedCameraPosition=new T.Vector3(),savedCameraQuaternion=new T.Quaternion();
@@ -602,7 +610,7 @@ function setMovement(key,pressed){
  if(pressed)keys.add(key);else keys.delete(key);
  if(state.ready)requestDraw();
 }
-document.addEventListener('keydown',event=>{if(modalOpen()||(window.edenControls?.blockedModifiers(event)??(event.ctrlKey||event.metaKey||event.altKey||event.isComposing))||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;const mapped=window.edenControls?window.edenControls.key(event):(event.code==='Space'?' ':event.key.toLowerCase()),key=mapped===' '?'space':mapped;if(key==='view'&&!event.repeat){event.preventDefault();lastThirdToggle=0;setThird(!thirdOn);return;}if(key==='use'&&!event.repeat){event.preventDefault();const r=stage.getBoundingClientRect();interactWithScene({clientX:r.left+r.width/2,clientY:r.top+r.height/2,pointerType:'mouse'});return;}if(['f','g','q'].includes(key)&&fistsEngaged()){event.preventDefault();event.stopImmediatePropagation();fists.key(key,true,event.repeat);requestDraw();return;}if((key==='a'||key==='d')&&state.ready&&!event.repeat&&!arena?.active())movement.tapDodge(key);if(key==='t'&&!event.repeat&&!combat?.armed()){event.preventDefault();playEmote();return;}if(key==='v'&&thirdOn&&!event.repeat){event.preventDefault();thirdSide*=-1;requestDraw();return;}if(key==='c'&&!event.repeat)parkour?.crouchPressed();if(key==='c'&&state.ready&&!arena?.active()&&(!expedition?.active()||expedition.canMove())&&!playerBail?.active){event.preventDefault();if(!event.repeat){movement.crouchHeld=expeditionPrefs()?.crouchMode==='toggle'?!movement.crouchHeld:true;if(movement.crouchHeld)movement.startSlide();}return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&garden.skybox.distance(targetPosition)<3.8){event.preventDefault();toggleDoor();return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&!battle?.active()&&secrets?.interact()){event.preventDefault();return;}if(state.ready&&key==='m'&&!event.repeat&&ambience){ambience.setMuted(!ambience.muted);secrets?.notify(ambience.muted?'Garden ambience muted (M)':'Garden ambience on (M)');return;}if((moveKeys.has(key)||key==='shift'||key==='space')&&state.ready){if(key==='space'&&['BUTTON','A'].includes(event.target.tagName))return;event.preventDefault();if(!event.repeat)setMovement(key,true);}});
+document.addEventListener('keydown',event=>{if(modalOpen()||(window.edenControls?.blockedModifiers(event)??(event.ctrlKey||event.metaKey||event.altKey||event.isComposing))||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;const mapped=window.edenControls?window.edenControls.key(event):(event.code==='Space'?' ':event.key.toLowerCase()),key=mapped===' '?'space':mapped;if(key==='view'&&!event.repeat){event.preventDefault();lastThirdToggle=0;setThird(!thirdOn);return;}if(key==='use'&&!event.repeat){event.preventDefault();const r=stage.getBoundingClientRect();interactWithScene({clientX:r.left+r.width/2,clientY:r.top+r.height/2,pointerType:'mouse'});return;}if((['f','g','q'].includes(key)&&fistsEngaged())||(['f','g'].includes(key)&&!event.repeat&&fistsReady()&&fists.nearby?.())){event.preventDefault();event.stopImmediatePropagation();fists.key(key,true,event.repeat);requestDraw();return;}if((key==='a'||key==='d')&&state.ready&&!event.repeat&&!arena?.active())movement.tapDodge(key);if(key==='t'&&!event.repeat&&!combat?.armed()){event.preventDefault();playEmote();return;}if(key==='v'&&thirdOn&&!event.repeat){event.preventDefault();thirdSide*=-1;requestDraw();return;}if(key==='c'&&!event.repeat)parkour?.crouchPressed();if(key==='c'&&state.ready&&!arena?.active()&&(!expedition?.active()||expedition.canMove())&&!playerBail?.active){event.preventDefault();if(!event.repeat){movement.crouchHeld=expeditionPrefs()?.crouchMode==='toggle'?!movement.crouchHeld:true;if(movement.crouchHeld)movement.startSlide();}return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&garden.skybox.distance(targetPosition)<3.8){event.preventDefault();toggleDoor();return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&!battle?.active()&&secrets?.interact()){event.preventDefault();return;}if(state.ready&&key==='m'&&!event.repeat&&ambience){ambience.setMuted(!ambience.muted);secrets?.notify(ambience.muted?'Garden ambience muted (M)':'Garden ambience on (M)');return;}if((moveKeys.has(key)||key==='shift'||key==='space')&&state.ready){if(key==='space'&&['BUTTON','A'].includes(event.target.tagName))return;event.preventDefault();if(!event.repeat)setMovement(key,true);}});
 document.addEventListener('keyup',event=>{const mapped=window.edenControls?window.edenControls.key(event):(event.code==='Space'?' ':event.key.toLowerCase()),key=mapped===' '?'space':mapped;if(key==='c'&&expeditionPrefs()?.crouchMode!=='toggle')movement.crouchHeld=false;if(fists&&['f','g','q'].includes(key))fists.key(key,false);setMovement(key,false);});
 for(const button of $('social-move').querySelectorAll('button')){button.onpointerdown=event=>{if(event.button!==0)return;event.preventDefault();button.setPointerCapture(event.pointerId);setMovement(button.dataset.key,true);};button.onpointerup=button.onpointercancel=button.onlostpointercapture=()=>setMovement(button.dataset.key,false);}
 document.addEventListener('focusin',event=>{if(modalOpen()||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName)){keys.clear();if(state.ready)requestDraw();}});
@@ -666,7 +674,7 @@ function focusVisitor(p){
  targetAim.set(p.x,p.ghost?.9:(p.character?.height||175)/100*.58,p.z);requestDraw();
 }
 multiplayer=window.createGardenMultiplayer?.({T,scene,camera,requestDraw,enter:enterMultiplayer,inExpedition:()=>expedition?.active(),getPose:()=>state.ready&&!expedition?.active()?{x:camera.position.x,z:camera.position.z,yaw:Math.atan2(aim.x-camera.position.x,aim.z-camera.position.z),...arena?.poseExtras()}:null,lookAt:focusVisitor,stopMoving:()=>{keys.clear();drag=null;}});
-arena=multiplayer&&window.createArena?.({T,scene,camera,renderer,multiplayer,requestDraw,
+arena=multiplayer&&window.createArena?.({T,scene,camera,renderer,multiplayer,requestDraw,hitStop:ms=>hitStop(ms),
  player:{position:targetPosition,aim:targetAim,motion,
   place(x,z,lx,lz){motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75,z);targetAim.set(lx,1.75,lz);camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();},
   home:()=>go('spawn',true)},
@@ -677,13 +685,45 @@ if(window.GardenCharacterMotion)GardenCharacterMotion.solid=p=>{const q=garden.c
 // First-person body: your own character under the camera, reaching for walls and things, guarding and punching.
 // Third person: scroll out on foot, or past hip-fire with a gun, and the camera pulls back over your shoulder so you see
 // your own character (holding what you hold); scroll in to come back to first person (and further in to aim).
-const thirdCheck={at:0,near:Infinity,room:9};
+const thirdCheck={at:0,near:Infinity,room:9,close:1};
+// What stops the third-person camera in Eden: walls, trunks and buildings. Leaves (alpha-tested or see-through cards)
+// and small things (flowers, lanterns, under ~35 cm) are looked through, so a bush beside the path does not slam the
+// camera into your head.
+// Things right in front of the third-person lens (a speaker beside you, an arch overhead) fade out while they are there,
+// on their own copy of the material so nothing else that shares it changes. Restored as soon as the lens moves on.
+const lensFaded=new Map();
+// A small prop fades as one piece (a speaker's cabinet and its cone), not just the face the ray touched.
+function lensProp(ob){const g=ob.parent;if(!g||g===scene||g.userData.lensSize===false)return [ob];
+ if(g.userData.lensSize===undefined){const size=new T.Box3().setFromObject(g).getSize(new T.Vector3()).length();g.userData.lensSize=size<3.5?size:false;if(g.userData.lensSize===false)return [ob];}
+ const out=[];g.traverse(m=>{if(m.isMesh&&!m.isSkinnedMesh&&!m.isInstancedMesh)out.push(m);});return out;}
+function fadeLensBlockers(on,reach=1.4){
+ const keep=new Set();
+ if(on){const f=new T.Vector3(),r=new T.Vector3(),u=new T.Vector3(),d=new T.Vector3();camera.getWorldDirection(f);r.crossVectors(f,camera.up).normalize();u.crossVectors(r,f).normalize();
+  for(const [x,y] of [[0,0],[-.45,0],[.45,0],[0,-.35],[0,.3],[-.45,-.35],[.45,-.35],[-.45,.3],[.45,.3]]){
+   d.copy(f).addScaledVector(r,x).addScaledVector(u,y).normalize();const from=camera.position.clone();let gone=0;
+   for(let i=0;i<3&&gone<reach;i++){const h=combat?.worldHits?.(from,d,reach-gone);if(!h)break;const ob=h.object;
+    // Merged static batches (a whole amphitheatre in one mesh) and instanced foliage cannot fade one piece: left as is.
+    if(!ob.isInstancedMesh&&!/^Static batch/.test(ob.name)&&!(ob.geometry?.boundingSphere?.radius>4))lensProp(ob).forEach(m=>keep.add(m));gone+=h.distance+.05;from.addScaledVector(d,h.distance+.05);}}}
+ for(const ob of keep)if(!lensFaded.has(ob)){const orig=ob.material,fade=m=>{const c=m.clone();c.transparent=true;c.opacity=Math.min(m.opacity??1,.3);/* above worldHits' .25 cut-off, so a faded blocker is still found and stays faded */c.depthWrite=false;return c;};
+  lensFaded.set(ob,orig);ob.material=Array.isArray(orig)?orig.map(fade):fade(orig);ob.userData.lensFaded=true;}
+ for(const [ob,orig] of lensFaded)if(!keep.has(ob)){const faded=ob.material;ob.material=orig;(Array.isArray(faded)?faded:[faded]).forEach(m=>m.dispose());delete ob.userData.lensFaded;lensFaded.delete(ob);}
+ if(keep.size||lensFaded.size)requestDraw();
+}
+function cameraBlock(origin,dir,far){
+ const from=origin.clone(),scale=new T.Vector3();let gone=0;
+ for(let i=0;i<5&&gone<far;i++){const h=combat?.worldHits?.(from,dir,far-gone);if(!h)return Infinity;
+  const ob=h.object,m=Array.isArray(ob.material)?ob.material[0]:ob.material;ob.getWorldScale(scale);
+  const size=(ob.geometry?.boundingSphere?.radius??1)*Math.max(scale.x,scale.y,scale.z);
+  if(!(m?.alphaTest>0||m?.transparent||size<.35))return gone+h.distance;
+  const step=h.distance+.05;gone+=step;from.addScaledVector(dir,step);}
+ return Infinity;
+}
 // Free running: the camera swings out behind you while you vault, leap, climb or run a wall, then returns to the view you chose. Sprinting alone does not.
 const runCam={owned:false,since:0,k:0};
 let thirdSide=1,thirdSideK=1,thirdK=0,thirdOn=false,thirdOffset=null,lastThirdToggle=0,heldWeapon=null;
 const thirdAllowed=()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident&&!arena?.active()&&!fistsEngaged()&&!battle?.dead?.();
 function setThird(on){const t=performance.now();if(on===thirdOn||t-lastThirdToggle<260)return false;if(on&&!thirdAllowed())return false;lastThirdToggle=t;runCam.owned=false;if(on&&!thirdOn){thirdSide=window.edenSettings?.get('shoulder')==='left'?-1:1;}thirdOn=on;if(on)combat?.zoom?.(0);requestDraw();return true;}
-const playerBody=window.createPlayerBody?.({T,scene,camera,pickables,requestDraw,canPunch:()=>!expedition?.active(),enabled:()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident&&!arena?.active()&&(thirdK>.05||parkour?.handsFull()||!battle?.active()&&!combat?.armed()&&!fistsEngaged())});
+const playerBody=window.createPlayerBody?.({T,scene,camera,pickables,requestDraw,hitStop:ms=>hitStop(ms),canPunch:()=>!expedition?.active(),enabled:()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident&&!arena?.active()&&(thirdK>.05||parkour?.handsFull()||!battle?.active()&&!combat?.armed()&&!fistsEngaged())});
 let expeditionFlareModel=null;
 function flareModel(){
  if(expeditionFlareModel)return expeditionFlareModel;
@@ -725,7 +765,7 @@ function applyThird(dt){
  // What you hold shows in your character's hand.
  const want=expedition?.active()&&expedition.canMove()&&!playerBail?.active&&!parkour?.handsFull()?'flare':thirdK>.3&&combat?.armed()&&!parkour?.handsFull()?combat.inspect().weapon:null;
  if(want!==heldWeapon){heldWeapon=want;playerBody?.hold?.(want==='flare'?flareModel():want?combat.weaponModel(want):null,want==='flare'?'pistol':want);}
- if(!thirdK)return;
+ if(!thirdK){if(lensFaded.size)fadeLensBlockers(false);return;}
  const f=new T.Vector3();camera.getWorldDirection(f);const right=new T.Vector3(-f.z,0,f.x).normalize();
  const offset=f.clone().multiplyScalar(-2.7-.9*runCam.k).addScaledVector(new T.Vector3(0,1,0),.28+.22*runCam.k).addScaledVector(right,.62*thirdSideK).multiplyScalar(thirdK);
  // Keep the camera out of walls and trunks: pull it in front of whatever is between it and your head.
@@ -733,13 +773,19 @@ function applyThird(dt){
  const t=performance.now(),P=pk();
  if(P){// Beyond the door: step out along the ray against the parkour boxes and height maps (cheap, every frame).
   let near=Infinity;const eye=camera.position.y;for(let k=.3;k<=3.3;k+=.3){const qx=camera.position.x+dir.x*k,qz=camera.position.z+dir.z*k,qy=eye+dir.y*k;if(P.solid(qx,qz,qy-1.2,qy+.25,.15)){near=k;break;}}thirdCheck.near=near;}
- else if(t-thirdCheck.at>200){thirdCheck.at=t;const h=combat?.worldHits?.(camera.position.clone(),dir,3.3);thirdCheck.near=h?h.distance:Infinity;}
+ else if(t-thirdCheck.at>100){thirdCheck.at=t;thirdCheck.near=cameraBlock(camera.position.clone(),dir,3.6);}
  // Pull in fast, ease back out.
- thirdCheck.room+=((thirdCheck.near-.3)-thirdCheck.room)*(thirdCheck.near-.3<thirdCheck.room?1:1-Math.exp(-4*dt));
+ // Clamped: an open ray reports Infinity, and Infinity-Infinity left room NaN for good, so the camera stopped pulling in.
+ {const near=Math.min(thirdCheck.near,9);thirdCheck.room+=((near-.3)-thirdCheck.room)*(near-.3<thirdCheck.room?1:1-Math.exp(-4*dt));if(!Number.isFinite(thirdCheck.room))thirdCheck.room=9;}
  if(thirdCheck.room<len)offset.setLength(Math.max(.2,thirdCheck.room));
+ // Too tight behind you (a wall at your back, a speaker, a doorway): ease towards first person rather than put the
+ // camera inside your own head, and back out as soon as there is room.
+ thirdCheck.close+=((T.MathUtils.smoothstep(thirdCheck.room,.95,1.6))-thirdCheck.close)*(1-Math.exp(-(thirdCheck.room<.95?14:5)*dt));
+ if(thirdCheck.close<.999){offset.multiplyScalar(thirdCheck.close);if(!playerBail?.active)playerBody?.third?.(thirdCheck.close>.6?thirdK*thirdCheck.close:0);/* your head never fills the lens */requestDraw();}
  // ...and inside the walkable world (the sky wall at the door is too big for the wall check).
  for(const k of [1,.75,.5,.3,0]){const want=camera.position.clone().addScaledVector(offset,k),kept=garden.constrain(want.clone(),camera.position.clone());if(k===0||kept.distanceTo(want)<.05||Math.hypot(kept.x-camera.position.x,kept.z-camera.position.z)>.4){offset.x=kept.x-camera.position.x;offset.z=kept.z-camera.position.z;break;}}
  camera.position.add(offset);thirdOffset={offset,at:camera.position.clone()};
+ if(t-(thirdCheck.lensAt||0)>100){thirdCheck.lensAt=t;fadeLensBlockers(thirdK>.5&&thirdCheck.close>.5,Math.max(1,offset.length()-.7));/* everything nearer the lens than you */}
 }
 function removeThird(){if(thirdOffset&&camera.position.equals(thirdOffset.at))camera.position.sub(thirdOffset.offset);thirdOffset=null;if(fovShift){if(camera.fov===fovApplied){camera.fov-=fovShift;camera.updateProjectionMatrix();}fovShift=0;}}
 // Field of view setting: an offset on whatever the walking view uses (70°), added just for drawing.
@@ -764,7 +810,7 @@ try{
 }catch(error){console.warn('Garden secrets unavailable',error);}
 function correctExpeditionPose(p){if(playerBail?.active){const current=playerBail.pose();if(!current||!['x','y','z'].every(k=>Number.isFinite(p[k])))return;const delta=new T.Vector3(p.x-current.x,p.y-current.y,p.z-current.z);if(delta.length()>7.9)delta.setLength(7.9);if(playerBail.correct?.({position:[current.x+delta.x,current.y+delta.y,current.z+delta.z]})){const shift=playerBail.cameraTarget.clone().sub(targetPosition);targetPosition.add(shift);targetAim.add(shift);}else $('night-event').textContent='Synchronizing physical position…';requestDraw();return;}playerBail?.cancel();movement.cancelTraversal();motion.reset();parkour?.reset();freeView();targetPosition.set(p.x,1.75+(p.y||0),p.z);targetAim.set(p.x+Math.sin(p.yaw)*5,1.75+(p.y||0),p.z+Math.cos(p.yaw)*5);requestDraw();}
 expedition=window.createExpedition({getCharacter:()=>playerBody?.getAppearance(),T,scene,camera,garden,entryUrl:'/expedition.html',correct:correctExpeditionPose,layout:window.nightLayout,preferences:()=>expeditionPreferences?.get(),getPose:()=>state.ready?{x:targetPosition.x,y:targetPosition.y-1.75,z:targetPosition.z,...(playerBail?.active?playerBail.pose():{}),yaw:Math.atan2(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z),pitch:Math.atan2(targetAim.y-targetPosition.y,Math.hypot(targetAim.x-targetPosition.x,targetAim.z-targetPosition.z)),mode:playerBail?.active?'ragdoll':movement.state(),movement:playerBail?.active?'ragdoll':movement.state(),vy:playerBail?.active?playerBail.pose()?.vy:motion.inspect().velocity}:null,place(x,z,lx=x,lz=z-5,y=0){playerBail?.cancel();movement.cancelTraversal();motion.reset();parkour?.reset();freeView();targetPosition.set(x,1.75+y,z);targetAim.set(lx,1.75+y,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=60;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},stopMoving(){keys.clear();movement.crouchHeld=false;drag=null;},requestDraw,returnHome:()=>go('spawn',true),onAction(action){if(action==='flare')playerBody?.anim?.('pistolShoot',{fade:.04,mask:'upper',arms:true});else if(action==='reload')playerBody?.anim?.('pistolReload',{fade:.1,mask:'upper',arms:true,speed:(window.GardenAnim?.duration?.('pistolReload')||1.5)/1.5});else playerBody?.stopAnim?.('pistolReload',.08);}});
-combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,reduced,mobile:mobileDevice,requestDraw,aimTargets:()=>battle?.aimTargets?.()||[],thirdPerson:()=>thirdK,setThird,
+combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,reduced,mobile:mobileDevice,requestDraw,aimTargets:()=>battle?.aimTargets?.()||[],thirdPerson:()=>thirdK,setThird,lunge:shove,
  groundAt:(x,z,from)=>worlds?.world()==='beyond'&&garden.nightBuilt()?makeParkour().floorAt(x,z,from):null,
  onAction(action,weapon,duration){const B=playerBody;if(!B)return;if(action==='holster'){B.stopAnim('pistolReload',.12);return;}const id=action==='shoot'?'pistolShoot':action==='reload'?'pistolReload':action==='swing'?'swingA':action==='throw'?'throw':null;if(id)B.anim(id,{fade:.12,mask:'upper',arms:true,weight:.8,speed:duration?(window.GardenAnim?.duration(id)||duration)/duration:1});},
  // Eden is a safe zone: weapons come out only beyond the hidden door (the open match and the firing range).
@@ -781,7 +827,7 @@ combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,
 });
 // No expeditions while a battle is on: its gate, its entry screen and the Attendant stay out of the arena.
 {const openNight=$('night-launch').onclick;$('night-launch').onclick=event=>{if(battle?.active())battle.suspend();combat?.leaveRange?.();openNight?.(event);};}
-battle=window.createBattleArena?.({T,scene,camera,combat,garden,playerAnchor:()=>targetPosition,
+battle=window.createBattleArena?.({T,scene,camera,combat,garden,playerAnchor:()=>targetPosition,hitStop:ms=>hitStop(ms),
  movement:()=>({airborne:motion.inspect().airborne,momentum:movement.momentum(),velocity:walkVelocity}),
  onPlayerAction(id){playerBody?.anim?.(id,{fade:.16,mask:'upper',arms:true,weight:.65,speed:1.4});},
  onRunTackle(){sway.bump(.7,0);hitStop(45);playerBody?.anim?.('push',{fade:.12,loop:false,speed:2.2,mask:'upper',weight:.7});walkVelocity.multiplyScalar(.7);requestDraw();},
@@ -791,6 +837,7 @@ battle=window.createBattleArena?.({T,scene,camera,combat,garden,playerAnchor:()=
  setNight(v){if(v!=null)garden.district;garden.nightRoad?.setOverride(v);},
  onDeath(){sway.bump(1.5,Math.random()<.5?-1:1);hitStop(160);requestDraw();},
  dodging:()=>movement.slide?.kind==='dash'||!!movement.dive||!!movement.vault,
+ onGuardBroken(){sway.bump(1.1,Math.random()<.5?-1:1);playerBody?.anim?.('hitChest',{fade:.05,mask:'upper'});requestDraw();},
  onTackled(dir){playerBody?.anim?.('knockback',{fade:.05});movement.proneT=1;movement.slide=null;movement.dive=null;walkVelocity.copy(dir).setY(0).multiplyScalar(4.5);sway.bump(1.4,Math.random()<.5?-1:1);hitStop(90);footsteps?.land(surfaceAt(targetPosition),1);requestDraw();},
  onPagesComplete(fresh){garden.pyramid.setPages(8);if(fresh)worlds?.card('THE OFFICE IS OPEN','ALL EIGHT PAGES ARE IN · FOLLOW THE BRICK ROAD TO THE PYRAMID','EIGHT PAGES',3600);},
  onSoul(on){document.body.classList.toggle('soul-taken',!!on);requestDraw();},

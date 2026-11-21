@@ -6,7 +6,7 @@
 (function(root){
  const clamp=(n,l,h)=>Math.max(l,Math.min(h,n)),smooth=(l,h,n)=>{const t=clamp((n-l)/(h-l),0,1);return t*t*(3-2*t);};
  const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
- function createPlayerBody({T,scene,camera,pickables=[],enabled=()=>true,canPunch=()=>true,requestDraw=()=>{}}){
+ function createPlayerBody({T,scene,camera,pickables=[],enabled=()=>true,canPunch=()=>true,requestDraw=()=>{},hitStop=()=>{}}){
   const push=root.createFoliagePush?.(T,scene);
   root.GardenCharacterRocketbox?.textureListeners.add(requestDraw);
   let headClearance=Infinity,headVisible=false;
@@ -64,9 +64,12 @@
   }
   function onKey(event){
    if(event.repeat||(window.edenControls?.blockedModifiers(event)??(event.ctrlKey||event.metaKey||event.altKey||event.isComposing))||(root.edenControls?.key(event)??event.key.toLowerCase())!=='f'||root.edenControls&&root.edenControls.context()!=='walk'||!model?.root.visible||!enabled()||!canPunch()||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(event.target?.tagName)||event.target?.isContentEditable||(window.edenControls?.modalOpen?.()??!!document.querySelector('dialog[open]')))return;
-   event.preventDefault();api.punch();
+   event.preventDefault();api.press(true);
   }
-  document.addEventListener('keydown',onKey);
+  // Releasing F lets a tapped punch go (holding it throws the heavy one: the shared melee rule in melee-core.js).
+  function onKeyUp(event){if((root.edenControls?.key(event)??event.key?.toLowerCase())==='f')api.press(false);}
+  const punchHold=root.EdenMelee?.charge({light:()=>api.punch(false),heavy:()=>api.punch(true)});
+  document.addEventListener('keydown',onKey);document.addEventListener('keyup',onKeyUp);
   // Someone else's punch landed on us: the body flinches (no first-person knockdown yet).
   const onPunched=event=>{const d=event.detail?.direction;if(!physicsActive&&model&&d){const dir=camera.position.clone().set(d.x,0,d.z);if(event.detail.knockdown)model.motion.knockdown(dir,1.7);else model.motion.hit(dir,1.1);}requestDraw();};
   root.addEventListener?.('eden-punched',onPunched);
@@ -157,18 +160,25 @@
    // What you hold, gripped in both hands and pointed where you look (character-motion.js hold/aimAt).
    hold(mesh,id){heldMesh=mesh;heldId=id;if(model)model.motion.hold?.(mesh,id);requestDraw();},
    grab(point){if(!model?.root.visible||!point||point.distanceTo(camera.position)>1.6)return 0;grabPoint=point.clone();grabUntil=clock+.55;requestDraw();return 230;},
-   punch(){
+   press(down){if(!punchHold){if(down)api.punch();return;}if(down)punchHold.down();else punchHold.up();},
+   // heavy: a held punch that hits twice as hard and knocks people over more often.
+   punch(heavy=false){
     if(!model||physicsActive)return;root.dispatchEvent?.(new CustomEvent('eden-punch-thrown'));
-    const target=nearestOther(1.4),head=target?.byName?.head?.getWorldPosition(new T.Vector3());
+    const M=root.EdenMelee,reach=M?.move('shove')?.reach??1.4;
+    M?.sound(heavy?'swoosh':'whoosh',.7);
+    const target=nearestOther(reach),head=target?.byName?.head?.getWorldPosition(new T.Vector3());
     const aimPoint=head||camera.position.clone().addScaledVector(forward,.75).add(new T.Vector3(0,-.12,0));
     const land=model.motion.punch(aimPoint);guardUntil=clock+2.2;requestDraw();
-    if(target)setTimeout(()=>{if(!target.root.parent)return;const p=target.root.getWorldPosition(new T.Vector3());if(Math.hypot(p.x-camera.position.x,p.z-camera.position.z)<1.5){const direction=p.sub(camera.position).setY(0).normalize(),result=target.motion.hit(direction,1.2);
+    if(!target)setTimeout(()=>M?.whiff(),land*1000);
+    if(target)setTimeout(()=>{if(!target.root.parent)return;const p=target.root.getWorldPosition(new T.Vector3());if(Math.hypot(p.x-camera.position.x,p.z-camera.position.z)<reach+.1){const direction=p.sub(camera.position).setY(0).normalize(),finisher=!!M?.wouldFinish(heavy?'heavy':'light'),result=target.motion.hit(direction,finisher?3:heavy?2.4:1.2);
+     if(finisher)M.sound('finisher');
+     M?.land(finisher?'finisher':result==='down'?'ko':heavy?'heavy':'light',{hitStop,label:result==='down'?null:heavy?'HAYMAKER':null});
      // Tell the room: multiplayer can relay this so everyone sees the same hit or knockdown.
      if(target.root.userData.visitorId)root.dispatchEvent?.(new CustomEvent('eden-punch',{detail:{visitorId:target.root.userData.visitorId,direction:{x:direction.x,z:direction.z},knockdown:result==='down'}}));}
     requestDraw();},land*1000);
    },
    inspect:()=>({firstPerson:+(1-thirdView).toFixed(3),ready:!!model,visible:!!model?.root.visible,yaw:yaw===null?null:+yaw.toFixed(3),wall:wall?+wall.distance.toFixed(2):null,brush:+brush.toFixed(2),nearestBrush:(()=>{let best=null,bd=1e9;for(const list of plants.values())for(const [x,z,r] of list){const d=Math.hypot(x-camera.position.x,z-camera.position.z);if(d<bd){bd=d;best=[+x.toFixed(2),+z.toFixed(2),+r.toFixed(2)];}}return best;})(),plants:[...plants.values()].reduce((n,a)=>n+a.length,0),hover:!!hover,motion:model?.motion.inspect()}),
-   dispose(){if(disposed)return;disposed=true;signature='';document.removeEventListener('keydown',onKey);root.removeEventListener?.('eden-punched',onPunched);root.GardenCharacterRocketbox?.textureListeners.delete(requestDraw);if(model)GardenCharacter.dispose(model);model=null;heldMesh=null;nearby=[];plants.clear();}
+   dispose(){if(disposed)return;disposed=true;signature='';document.removeEventListener('keydown',onKey);document.removeEventListener('keyup',onKeyUp);punchHold?.cancel();root.removeEventListener?.('eden-punched',onPunched);root.GardenCharacterRocketbox?.textureListeners.delete(requestDraw);if(model)GardenCharacter.dispose(model);model=null;heldMesh=null;nearby=[];plants.clear();}
   };
   return api;
  }

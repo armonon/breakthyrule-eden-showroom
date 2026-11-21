@@ -20,7 +20,7 @@
  add('gardenPunch','Punch','f',['KeyF'],['walk']);
  add('fire','Fire / attack','fire',['Mouse0'],['combat','battle','arena','horror']);add('aim','Aim / block / alternate fire','aim',['Mouse2'],['combat','battle','arena','horror']);
  add('swap','Previous weapon / swap','q',['KeyQ'],['walk','combat','battle','arena','horror']);
- add('holster','Holster weapon','x',['KeyX','Digit0'],['walk','combat','battle','horror']);add('bash','Melee bash','b',['KeyB'],['combat','battle','horror']);
+ add('holster','Holster weapon','x',['KeyX','Digit0'],['walk','combat','battle','horror']);add('bash','Melee bash (hold: slam)','b',['KeyB'],['combat','battle','horror']);add('guard','Block (tap just before a hit: parry)','z',['KeyZ','Mouse4'],['combat','battle','horror']);
  add('detonate','Detonate C4','g',['KeyG'],['combat','battle','horror']);
  for(let n=1;n<=7;n++)add('weapon'+n,'Weapon slot '+n,String(n),['Digit'+n],n<=2?['walk','combat','battle','arena','horror']:['walk','combat','battle','horror']);
  add('chapterInteract','Take story ticket / enter garment lab','chapter',['KeyF'],['horror']);
