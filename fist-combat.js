@@ -30,7 +30,7 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
   if(M)return M.sound(kind);
   try{
    audio??=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();
-   const t=audio.currentTime,out=audio.createGain();out.gain.value=.32;out.connect(audio.destination);
+   const t=audio.currentTime,out=audio.createGain();out.gain.value=.32;out.connect(window.edenAcoustics?.input(audio)||audio.destination);
    const noise=(duration,filterType,from,to,gain)=>{const buffer=audio.createBuffer(1,Math.ceil(audio.sampleRate*duration),audio.sampleRate),data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*(1-i/data.length);const src=audio.createBufferSource();src.buffer=buffer;const f=audio.createBiquadFilter();f.type=filterType;f.frequency.setValueAtTime(from,t);f.frequency.exponentialRampToValueAtTime(to,t+duration);const g=audio.createGain();g.gain.value=gain;src.connect(f).connect(g).connect(out);src.start(t);};
    const tone=(type,from,to,duration,gain,delay=0)=>{const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(from,t+delay);o.frequency.exponentialRampToValueAtTime(to,t+delay+duration);g.gain.setValueAtTime(0,t+delay);g.gain.linearRampToValueAtTime(gain,t+delay+.012);g.gain.exponentialRampToValueAtTime(.001,t+delay+duration);o.connect(g).connect(out);o.start(t+delay);o.stop(t+delay+duration+.02);};
    if(kind==='whoosh')noise(.18,'bandpass',600,2600,.6);

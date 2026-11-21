@@ -8,6 +8,31 @@ window.edenTranslucency=(shader,strength=.7)=>{
  {vec3 edenSunV=normalize((viewMatrix*vec4(-.38,.32,-.8,0.)).xyz);float edenBack=pow(clamp(dot(-normalize(vViewPosition),edenSunV),0.,1.),3.)*.8+.2;
  reflectedLight.directDiffuse+=diffuseColor.rgb*vec3(1.,.93,.62)*edenBack*${strength.toFixed(2)}*max(edenBake.x,0.)*(.35+.65*smoothstep(.3,1.,length(reflectedLight.directDiffuse)));}`);
 };
+// Plants part around you: four "pushers" — your feet now and where they were 0.35, 0.8 and 1.4 s ago, each weaker —
+// so grass and flowers lean away as you walk through and spring back over a second or so behind you.
+window.edenPush=(()=>{let uniform=null,lastSample=-1;const trail=[],AGES=[0,.35,.8,1.4],WEIGHTS=[1,.55,.25,.1];
+ return {
+  uniform(T){uniform??={value:AGES.map(()=>new T.Vector4())};return uniform;},
+  // feet: world position of the visitor's feet; seconds: any steady clock
+  update(feet,seconds){if(!uniform)return;
+   if(!trail.length||seconds-lastSample>.1){trail.unshift({x:feet.x,y:feet.y,z:feet.z,t:seconds});lastSample=seconds;if(trail.length>20)trail.pop();}
+   else Object.assign(trail[0],{x:feet.x,y:feet.y,z:feet.z});
+   AGES.forEach((age,i)=>{const p=trail.find(q=>seconds-q.t>=age)||trail[trail.length-1];uniform.value[i].set(p.x,p.y,p.z,WEIGHTS[i]);});},
+  clear(){uniform?.value.forEach(v=>{v.w=0;});trail.length=0;}
+ };
+})();
+// Bend an instanced plant material away from the pushers: the top of each plant (0.55 m and up from its root) leans up
+// to `amount` metres and dips a little; anything more than 0.85 m away or on another floor is untouched.
+window.edenBend=(T,shader,amount)=>{
+ shader.uniforms.edenPush=window.edenPush.uniform(T);
+ shader.vertexShader='uniform vec4 edenPush[4];\n'+shader.vertexShader.replace('#include <project_vertex>',`#ifdef USE_INSTANCING
+ {mat4 edenM=modelMatrix*instanceMatrix;vec3 edenRootW=(edenM*vec4(0.,0.,0.,1.)).xyz,edenW=(edenM*vec4(transformed,1.)).xyz;vec2 edenOff=vec2(0.);
+  for(int i=0;i<4;i++){vec4 p=edenPush[i];if(p.w<=0.)continue;vec2 d=edenRootW.xz-p.xz;float r=length(d);edenOff+=(r>.001?d/r:vec2(0.))*p.w*(1.-smoothstep(.15,.85,r))*step(abs(edenRootW.y-p.y),1.2);}
+  float edenL=length(edenOff);if(edenL>.001){float k=clamp((edenW.y-edenRootW.y)/.55,0.,1.)*${amount.toFixed(3)};vec2 lean=edenOff/max(edenL,1.)*k;
+   transformed+=inverse(mat3(edenM))*vec3(lean.x,-min(edenL,1.)*k*.4,lean.y);}}
+ #endif
+ #include <project_vertex>`);
+};
 // verge(x,z): extra ground past zMax that should still grow grass (the brick road's verges inside the garden).
 window.createEdenGrass=function(T,garden,{openGround,height,mobile=false,wind,zMax=-9.2,cell=0,radius=0,tall=1,verge=null,vergeMin=zMax}){
  const R=radius||(mobile?16:30),CELL=cell||(mobile?.95:.58),capacity=Math.ceil(Math.PI*R*R/(CELL*CELL)*1.15);
@@ -23,8 +48,9 @@ window.createEdenGrass=function(T,garden,{openGround,height,mobile=false,wind,zM
    {vec3 r=instanceMatrix[3].xyz;float h=position.y*position.y;transformed.x+=h*(sin(edenTime*1.4+r.x*.7+r.z*.4)*.09+sin(edenTime*3.3+r.z*2.1)*.025);transformed.z+=h*cos(edenTime*1.1+r.z*.6)*.07;}`);
   shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_begin>',T.ShaderChunk.normal_fragment_begin.replace('normal *= faceDirection;',''));
   window.edenTranslucency(shader,.28);
+  window.edenBend(T,shader,.32);
  };
- material.customProgramCacheKey=()=>'eden-grass';
+ material.customProgramCacheKey=()=>'eden-grass-bend';
  const mesh=new T.InstancedMesh(geometry,material,capacity);mesh.name='Eden grass';mesh.count=0;mesh.frustumCulled=false;mesh.receiveShadow=true;mesh.castShadow=false;mesh.visible=false;garden.add(mesh);
  let mask=null,N=0;
  const ready=new Promise(resolve=>{const img=new Image();img.onload=()=>{N=img.width;const c=document.createElement('canvas');c.width=c.height=N;const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(img,0,0);const d=g.getImageData(0,0,N,N).data;mask=new Uint8Array(N*N);for(let i=0;i<N*N;i++)mask[i]=d[i*4];resolve();};img.onerror=()=>{console.warn('Grass mask unavailable; grass off');resolve();};img.src='/assets/eden-bake/grass-mask.png';});

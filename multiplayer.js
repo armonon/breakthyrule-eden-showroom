@@ -18,7 +18,7 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
   ws.onmessage=event=>{if(epoch!==generation||socket!==ws)return;let data;try{data=JSON.parse(event.data);}catch{return;}if(data.t==='snapshot')snapshot(data);else for(const listener of liveListeners)listener(data);};
   ws.onclose=()=>{if(socket!==ws)return;if(window.GardenCharacterMotion)GardenCharacterMotion.serverDecides=false;socket=null;failures++;setConnected(false,'Reconnecting...');if(failures>3)clearAvatars();if(!document.hidden)liveTimer=setTimeout(poll,Math.min(10000,500*2**liveRetry++));};
  }
- if(liveUrl)setInterval(()=>{if(socket?.readyState!==1||socketEpoch!==generation)return;const pose=getPose();if(!pose)return;const key=pose.x.toFixed(2)+','+pose.z.toFixed(2)+','+pose.yaw.toFixed(2)+','+(pose.zone||'')+','+(pose.weapon||'')+','+(pose.blocking?1:0)+','+(pose.pitch??0).toFixed(2)+','+(pose.y??0).toFixed(2);if(key===lastPoseSent)return;lastPoseSent=key;socket.send(JSON.stringify({t:'pose',...pose}));},66);
+ if(liveUrl)setInterval(()=>{if(socket?.readyState!==1||socketEpoch!==generation)return;const pose=getPose();if(!pose)return;const key=pose.x.toFixed(2)+','+pose.z.toFixed(2)+','+pose.yaw.toFixed(2)+','+(pose.zone||'')+','+(pose.weapon||'')+','+(pose.blocking?1:0)+','+(pose.pitch??0).toFixed(2)+','+(pose.y??0).toFixed(2);if(key===lastPoseSent)return;lastPoseSent=key;socket.send(JSON.stringify({t:'pose',...pose,ts:Math.round(performance.now())}));},66);
  const icons=()=>window.lucide?.createIcons();
  async function api(action,data){
   if(preview)throw new Error('Accounts and shared rooms are not enabled on this public preview.');
@@ -107,10 +107,13 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
  // A box that cannot take text (preview, ghost) still closes from the keyboard.
  window.addEventListener('keydown',event=>{if(quick.hidden||!quickInput.disabled||!['Escape','Enter'].includes(event.key))return;event.preventDefault();event.stopPropagation();closeChat();},true);
  overlay.querySelector('.chat-touch').onclick=()=>quick.hidden?openChat():closeChat();
+ // Network smoothing (visitor-smoothing.js): visitors are drawn a little in the past, between real samples.
+ function remember(a,p){if(!window.createVisitorSmoothing)return;(a.smoothing??=window.createVisitorSmoothing()).add(performance.now()/1000,p.x,p.z,p.yaw,+p.ts||+p.at||0);}
+ const smoothPose={x:0,z:0,yaw:0};
  function snapshot(data){
   selfId=data.selfId;user=data.user;accountUI();
   const signature=JSON.stringify(data.people.map(p=>[p.id,p.name,p.color]));const previous=JSON.stringify(people.map(p=>[p.id,p.name,p.color]));people=data.people;if(signature!==previous)renderPeople();
-  const ids=new Set();const zone=getPose()?.zone||'garden';for(const p of people){if(p.id===selfId||(p.zone||'garden')!==zone)continue;ids.add(p.id);let a=avatars.get(p.id);const signature=JSON.stringify([p.ghost,p.character,p.name]);if(a&&a.signature!==signature){destroyAvatar(a);a=null;}if(!a){a=avatar(p);avatars.set(p.id,a);}a.target.set(p.x,.02,p.z);a.yaw=p.yaw;a.wave=p.wave;}
+  const ids=new Set();const zone=getPose()?.zone||'garden';for(const p of people){if(p.id===selfId||(p.zone||'garden')!==zone)continue;ids.add(p.id);let a=avatars.get(p.id);const signature=JSON.stringify([p.ghost,p.character,p.name]);if(a&&a.signature!==signature){destroyAvatar(a);a=null;}if(!a){a=avatar(p);avatars.set(p.id,a);}a.target.set(p.x,.02,p.z);a.yaw=p.yaw;a.wave=p.wave;remember(a,p);}
   for(const [id,a] of avatars)if(!ids.has(id)){destroyAvatar(a);avatars.delete(id);}
   const nextId=data.messages.at(-1)?.id||0;if(JSON.stringify(data.messages)!==JSON.stringify(messages)||firstSnapshot){if(!firstSnapshot){const now=Date.now();for(const m of data.messages)if(m.id>lastId&&!arrived.has(m.id))arrived.set(m.id,now);for(const id of arrived.keys())if(!data.messages.some(m=>m.id===id))arrived.delete(id);}if(!firstSnapshot&&$('social-panel').hidden)unread+=data.messages.filter(m=>m.id>lastId&&m.userId!==selfId&&!muted.has(m.userId)).length;messages=data.messages;lastId=nextId;firstSnapshot=false;renderMessages();}
   $('social-unread').hidden=!unread;$('social-unread').textContent=String(unread);setConnected(true,'Live room / '+people.length+' online');requestDraw();
@@ -172,9 +175,17 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
  return {
   update(time,dt){const away=inExpedition();if(overlay.hidden!==away){overlay.hidden=away;if(away)closeChat();}let active=false;for(const a of avatars.values()){
    a.root.visible=!inExpedition();const distance=a.root.position.distanceTo(a.target);active=active||(a.ghost&&!reducedMotion)||distance>.005||Date.now()/1000-a.wave<3;
+   const smooth=!!window.GardenCharacterMotion?.natural?.net&&a.motion&&!(a.ghost&&reducedMotion);
+   if(smooth&&a.smoothing?.draw(performance.now()/1000,smoothPose)){
+    // Drawn on the ground under them, at their interpolated spot; the gait reads their real speed from the motion.
+    const g=window.GardenCharacterMotion.ground?.(smoothPose.x,smoothPose.z,(a.root.position.y||0)+.6);a.root.position.set(smoothPose.x,Number.isFinite(g)?g+.02:.02,smoothPose.z);
+    a.root.rotation.y+=Math.atan2(Math.sin(smoothPose.yaw-a.root.rotation.y),Math.cos(smoothPose.yaw-a.root.rotation.y))*(1-Math.exp(-14*dt));
+    active=active||a.smoothing.recent(performance.now()/1000);
+    a.motion.update(dt,{wave:Date.now()/1000-a.wave<3});
+   }else{
    a.root.position.lerp(a.target,1-Math.exp(-10*dt));a.root.rotation.y+=Math.atan2(Math.sin(a.yaw-a.root.rotation.y),Math.cos(a.yaw-a.root.rotation.y))*(1-Math.exp(-10*dt));
    a.moving=T.MathUtils.lerp(a.moving,distance>.02?1:0,.18);const stride=Math.sin(time*9)*.35*a.moving;
-   a.animate(a.ghost&&reducedMotion?0:time,stride,Date.now()/1000-a.wave<3);
+   a.animate(a.ghost&&reducedMotion?0:time,stride,Date.now()/1000-a.wave<3);}
    // Knocked down: the name tag follows the head to the ground and back up instead of floating where they stood.
    const down=a.motion?.downAmount()||0;
    if(down>0&&a.byName?.head){const head=a.byName.head.getWorldPosition(labelProbe);head.y+=.32;a.root.worldToLocal(head);a.label.position.lerpVectors(a.labelRest,head,Math.min(1,down*1.5));}

@@ -111,7 +111,7 @@ function setPose(connectionId, user, pose) {
   if (pose && [pose.x, pose.z, pose.yaw].every(Number.isFinite) && Math.abs(pose.x) < 500 && Math.abs(pose.z) < 500) {
     const zone = p.zone; arena.pose(p, pose);
     const leftArena = zone === 'arena' && p.zone !== 'arena', blockedEntry = pose.zone === 'arena' && p.zone !== 'arena';
-    if (!blockedEntry && !(p.arena?.dead && p.zone === 'arena') && (pose.x !== p.pose.x || pose.z !== p.pose.z || pose.yaw !== p.pose.yaw)) { p.pose = {x: +pose.x.toFixed(3), z: +pose.z.toFixed(3), yaw: +pose.yaw.toFixed(3)}; touch(); }
+    if (!blockedEntry && !(p.arena?.dead && p.zone === 'arena') && (pose.x !== p.pose.x || pose.z !== p.pose.z || pose.yaw !== p.pose.yaw)) { p.pose = {x: +pose.x.toFixed(3), z: +pose.z.toFixed(3), yaw: +pose.yaw.toFixed(3)}; p.poseAt = Date.now(); p.poseTs = Number.isFinite(pose.ts) && pose.ts > 0 ? Math.round(pose.ts) : 0; touch(); }
     if (zone !== p.zone || leftArena || p.zone === 'arena') touch();
   }
   return p;
@@ -125,7 +125,7 @@ function people() {
     if (u && seenUsers.has(u.id)) continue; // one avatar per account even with two tabs
     if (u) seenUsers.add(u.id);
     list.push({id: u ? u.id : 'guest:' + id, name: u ? u.name : guestName(id), color: u ? u.color : '#9aa5a0', ghost: !u?.character,
-      character: u?.character || null, x: p.pose.x, z: p.pose.z, yaw: p.pose.yaw, wave: p.wave, zone: p.zone || 'garden', arena: arena.publicState(p)});
+      character: u?.character || null, x: p.pose.x, z: p.pose.z, yaw: p.pose.yaw, at: p.poseAt || 0, ts: p.poseTs || 0, wave: p.wave, zone: p.zone || 'garden', arena: arena.publicState(p)});
   }
   return list;
 }

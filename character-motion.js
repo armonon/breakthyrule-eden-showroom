@@ -5,6 +5,9 @@
 (function(root){
  const clamp=(n,l,h)=>Math.max(l,Math.min(h,n)),smooth=(l,h,n)=>{const t=clamp((n-l)/(h-l),0,1);return t*t*(3-2*t);};
  const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
+ // Natural-motion features, each switchable so the same build can be compared side by side (?natural=0 turns all off).
+ const naturalOff=typeof location==='object'&&/[?&]natural=0(&|$)/.test(location.search||'');
+ const natural={feet:!naturalOff,hands:!naturalOff,weight:!naturalOff,blend:!naturalOff,net:!naturalOff,camera:!naturalOff};
  function create(T,model,{reduced=false,canonical=false}={}){
   const bone=name=>model.skeleton.getBoneByName(name),group=model.root;
   const pelvis=bone('root'),spineLow=bone('spine03'),spineHigh=bone('spine01'),neck=bone('neck01'),head=bone('head');
@@ -136,7 +139,12 @@
   const codec=()=>root.createMovementStateCodec({T});
   if(root.GardenAnim&&!root.GardenAnim.ready())setTimeout(()=>root.GardenAnim.load(),3000);
   const toLocal=p=>group.worldToLocal(v3.copy(p)).clone(),toWorld=p=>group.localToWorld(p.clone());
-  const frameV=Array.from({length:160},()=>new T.Vector3()),frameQ=Array.from({length:32},()=>new T.Quaternion());let vi=0,qi=0;
+  const frameV=Array.from({length:260},()=>new T.Vector3()),frameQ=Array.from({length:32},()=>new T.Quaternion());let vi=0,qi=0;
+  // Natural-motion extras for this character. They live outside `state`, so saved checkpoints keep their exact shape.
+  const plants=[0,1].map(()=>({on:false,point:new T.Vector3(),yaw:0,release:new T.Vector3(),releasing:false,step:-1,from:new T.Vector3(),to:new T.Vector3(),target:new T.Vector3(),pitch:0}));
+  const nat={drop:{x:0,v:0},vy:0,lastY:null,fallVy:0,accel:0,lastSpeed:0,bob:0,dip:0,sig:'',inert:null,inertP:new T.Vector3(),inertT:9,rest:null,restP:new T.Vector3()};
+  const legBones=new Set(['upperleg01.L','lowerleg01.L','foot.L','toes.L','upperleg01.R','lowerleg01.R','foot.R','toes.R'].map(bone).filter(Boolean));
+  const armBones=new Set(model.skeleton.bones.filter(b=>/(clavicle|upperarm|lowerarm|wrist|thumb|index|middle|ring|pinky)/.test(b.name)));
   const tempV=(x=0,y=0,z=0)=>frameV[vi++].set(x,y,z),copyV=v=>frameV[vi++].copy(v),tempQ=()=>frameQ[qi++].identity();
   const localTemp=p=>group.worldToLocal(copyV(p)),worldTemp=p=>group.localToWorld(copyV(p));
   const gaitOffsets=[0,0],animList=[],animEntries=Array.from({length:80},()=>({})),locoEntries=Array.from({length:8},()=>({}));let animCount=0,locoCount=0,travelMask=null;
@@ -215,6 +223,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     const worldPos=group.getWorldPosition(worldPosition);
     if(velocity)state.velocity.copy(velocity);else if(dt>0&&state.time!==null&&worldPos.distanceTo(state.last)<1.5)state.velocity.subVectors(worldPos,state.last).divideScalar(dt);else state.velocity.set(0,0,0); // a jump in position is a teleport, not a sprint
     if(state.velocity.length()>9)state.velocity.setLength(9);
+    if(nat.lastY!==null&&dt>0&&Math.abs(worldPos.y-nat.lastY)<2)nat.vy=(worldPos.y-nat.lastY)/dt;nat.lastY=worldPos.y;if(state.airborne)nat.fallVy=Math.min(nat.fallVy,nat.vy);
     state.last.copy(worldPos);state.time=(state.time||0)+dt;
     const yaw=group.rotation.y;if(state.lastYaw!==null&&dt>0)state.yawRate+=(wrap(yaw-state.lastYaw)/dt-state.yawRate)*(1-Math.exp(-10*dt));state.lastYaw=yaw;
     const moving=movingLocal.copy(state.velocity).setY(0).applyAxisAngle(worldUp,-yaw).divideScalar(scale);
@@ -224,13 +233,18 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     const gait=state.speed,w=smooth(.04,.5,gait);state.weight=w;
     const heading=headingLocal.copy(moving);if(speed>.05)heading.normalize();else heading.set(0,0,0);
     const stance=T.MathUtils.lerp(.62,.42,smooth(3,6,gait)),cycle=Math.min(1.15+.22*gait,.85/stance),stride=stance*cycle;
-    if(!reduced)state.phase=(state.phase+gait*dt/cycle)%1;
+    // Turning on the spot takes quicker, shorter steps than walking at the same measured speed.
+    const turnSteps=!canonical&&natural.feet&&speed<.5?clamp(Math.abs(state.yawRate)*.75,0,1.6):0;
+    if(!reduced)state.phase=(state.phase+Math.max(gait,turnSteps)*dt/cycle)%1;
     const run=smooth(3.5,5.5,gait),offsets=gaitOffsets;
     const shotLayer=state.layers.find(L=>L.id==='pistolShoot'&&!L.out),reloadLayer=state.layers.find(L=>L.id==='pistolReload'&&!L.out),reachLayer=state.layers.find(L=>(['pickup','interact','chestOpen'].includes(L.id))&&!L.out);
     const shot=shotLayer&&shotLayer.t<.22?Math.sin(shotLayer.t/.22*Math.PI)*shotLayer.w:0,reload=reloadLayer?Math.sin(clamp(reloadLayer.t/reloadLayer.dur,0,1)*Math.PI)*reloadLayer.w:0,reach=reachLayer?Math.sin(clamp(reachLayer.t/reachLayer.dur,0,1)*Math.PI)*reachLayer.w:0;
     const viewEase=1-Math.exp(-10*dt);view.first+=(view.firstTarget-view.first)*viewEase;view.sprint+=(view.sprintTarget-view.sprint)*viewEase;view.yaw+=(view.yawTarget-view.yaw)*viewEase;view.pitch+=(view.pitchTarget-view.pitch)*viewEase;
     // Airborne legs can use the authored tuck; grounded contact is restored below.
-    if(state.airborne!==wasFlying){api.stop(state.airborne?'jumpLand':'jumpStart',.1);if(state.airborne||!api.playing('jumpLand')&&!api.playing('roll')&&!api.playing('pkRoll'))api.play(state.airborne?'jumpStart':'jumpLand',{fade:.08,speed:2.2,mask:'full',weight:.85});wasFlying=state.airborne;}
+    // Landing weight: the landing clip and an extra sink into the knees both scale with how fast the body came down,
+    // so a hop barely dips and a long drop sinks deep before standing up again.
+    let landWeight=.85;if(!canonical&&natural.hands&&wasFlying&&!state.airborne){const fall=clamp(-nat.fallVy,0,14);landWeight=clamp(.18+fall*.07,.18,.9);state.crouch??={x:0,v:0};state.crouch.v+=clamp(fall-1.5,0,12)*1.4;nat.fallVy=0;}
+    if(state.airborne!==wasFlying){api.stop(state.airborne?'jumpLand':'jumpStart',.1);if(state.airborne||!api.playing('jumpLand')&&!api.playing('roll')&&!api.playing('pkRoll'))api.play(state.airborne?'jumpStart':'jumpLand',{fade:.08,speed:2.2,mask:'full',weight:state.airborne?.85:landWeight});wasFlying=state.airborne;}
     pelvis.position.copy(pelvisRest);for(const b of model.skeleton.bones)b.quaternion.identity();
     // Pelvis: drop on each footfall, shift over the planted foot, twist with the stride. Springs keep it heavy.
     const ph=state.phase*Math.PI*2,bob=-(.018+.03*run)*w*(.5+.5*Math.cos(2*ph)),sway=.02*w*(1-run)*Math.sin(ph);
@@ -238,10 +252,12 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     spring(state.stumble,v3.set(0,0,0),dt,2.2,.55);
     state.crouch??={x:0,v:0};scalar(state.crouch,state.crouchTarget||0,dt,9,.95);const crouch=clamp(state.crouch.x,0,1);
     pelvis.position.add(v3.set(sway+state.stumble.x.x,bob+breath+(state.airborne?.06:0)-pelvisRest.y*.34*crouch,state.stumble.x.z+pelvisRest.y*.06*crouch));
+    nat.bob=bob*scale;nat.dip=Math.max(0,crouch-(state.crouchTarget||0))*pelvisRest.y*.34*scale;
     pelvis.rotation.set(0,.13*w*Math.sin(ph)*(1-.4*run),0);
     // Reaching for something beyond arm's length bends the whole torso towards it.
     let reachLean=0;for(const s of sides)if(s.touch&&s.touchWeight.x>.01){const t=localTemp(s.touch.point);reachLean=Math.max(reachLean,clamp((t.distanceTo(s.shoulder)-s.reach*.92)*1.6,0,.45)*clamp(s.touchWeight.x,0,1)*smooth(0,.2,t.z-s.shoulder.z));}
-    scalar(state.lean,clamp(moving.z*.035+run*.08,-.12,.22)+reachLean,dt,2.5,.7);
+    const weighty=!canonical&&natural.weight;if(weighty&&dt>0){nat.accel+=((speed-nat.lastSpeed)/dt-nat.accel)*(1-Math.exp(-8*dt));}nat.lastSpeed=speed;
+    scalar(state.lean,clamp(moving.z*.035+run*.08,-.12,.22)+reachLean+(weighty?clamp(nat.accel*.03,-.16,.14):0),dt,2.5,weighty?.5:.7);
     scalar(state.bank,clamp(-state.yawRate*.05*w,-.12,.12),dt,2,.8);
     scalar(state.hitPitch,0,dt,2.4,.32);scalar(state.hitRoll,0,dt,2.4,.32);scalar(state.headPitch,0,dt,3.2,.3);
     scalar(state.guard,Math.max(state.guardTarget,state.time<(state.flinch||0)?1:0),dt,4,.9);
@@ -263,16 +279,47 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     head.rotation.set(state.lookPitch.x*.45+state.headPitch.x,state.lookYaw.x*.45,0);
     group.updateMatrixWorld(true);
     // Legs: each foot moves back at walking speed while planted and arcs forward while lifted, so it never slides.
+    // Natural feet: a planted foot is pinned to its spot on the ground in the world (turns, speed changes and network
+    // smoothing cannot drag it), feet follow the ground's height and slope, the pelvis drops for the lower foot, and a
+    // standing turn takes small steps instead of spinning on the spot.
+    const G=!canonical&&natural.feet&&!state.airborne&&!ragdoll.recovering?root.GardenCharacterMotion.ground:null,rootY=worldPos.y;
+    const groundAt=(x,z)=>{const g=G(x,z,rootY+.55);return Number.isFinite(g)&&g>rootY-.4&&g<rootY+.5?g:rootY;};
+    let lowest=0;const fwdW=tempV(Math.sin(yaw),0,Math.cos(yaw));
     for(const [i,s] of sides.entries()){
-     const p=(state.phase+i*.5)%1;let offset,lift;
-     if(p<stance){offset=stride*(.5-p/stance);lift=0;}else{const t=(p-stance)/(1-stance);offset=stride*(smooth(0,1,t)-.5);lift=Math.sin(t*Math.PI)*(.07+.05*run);}
+     const p=(state.phase+i*.5)%1;let offset,lift,swingT=-1;
+     if(p<stance){offset=stride*(.5-p/stance);lift=0;}else{swingT=(p-stance)/(1-stance);offset=stride*(smooth(0,1,swingT)-.5);lift=Math.sin(swingT*Math.PI)*(.07+.05*run);}
      offsets[i]=offset*w;
-     const target=copyV(s.ankle).addScaledVector(heading,offset*w).add(v3.set(0,lift*w,0));
+     const target=plants[i].target.copy(s.ankle).addScaledVector(heading,offset*w).add(v3.set(0,lift*w,0));
      if(state.airborne)target.add(v3.set(0,.16,.05+i*.06));
-     spring(s.foot,target,dt,14,.9);
+     const P=plants[i];P.pinned=false;P.pitch=0;
+     if(!G){P.on=false;P.step=-1;continue;}
+     const wt=worldTemp(target),ground=groundAt(wt.x,wt.z),ankleUp=s.ankle.y;
+     const pin=(x,z,g)=>{P.on=true;P.point.set(x,g,z);P.yaw=yaw;};
+     const pinnedLocal=()=>{const l=localTemp(P.point);l.y+=ankleUp;return l;};
+     if(w>.04){
+      P.step=-1;
+      if(swingT<0){if(!P.on)pin(wt.x,wt.z,ground);const l=pinnedLocal();if(l.distanceTo(target)>.45/scale)pin(wt.x,wt.z,ground);else{target.copy(l);P.pinned=true;}}
+      else{if(P.on){P.release.copy(P.point);P.releasing=true;P.on=false;}
+       target.y+=(ground-rootY)/scale;
+       if(P.releasing){const k=smooth(0,.4,swingT);if(k>=1)P.releasing=false;else{const l=localTemp(P.release);l.y+=ankleUp+lift*w;target.lerp(l,1-k);}}}
+     }else{
+      // Standing: feet stay put; a foot left behind by a turn or a drift steps back under the body, one at a time.
+      const rest=copyV(target);rest.y+=(ground-rootY)/scale;
+      if(!P.on&&P.step<0)pin(wt.x,wt.z,ground);
+      if(P.step>=0){P.step=Math.min(1,P.step+dt/.26);const k=smooth(0,1,P.step);const a=localTemp(P.from),b=localTemp(P.to);a.y+=ankleUp;b.y+=ankleUp;target.copy(a).lerp(b,k);target.y+=Math.sin(k*Math.PI)*.06;if(P.step>=1){P.step=-1;pin(P.to.x,P.to.z,P.to.y);}}
+      else{const l=pinnedLocal(),other=plants[1-i];if((l.distanceTo(rest)>.16/scale||Math.abs(wrap(yaw-P.yaw))>.55)&&other.step<0){P.step=0;P.from.copy(P.point);P.to.set(wt.x,ground,wt.z);}target.copy(l);P.pinned=true;}
+     }
+     if(swingT<0||w<=.04){const a=copyV(wt).addScaledVector(fwdW,.12),b=copyV(wt).addScaledVector(fwdW,-.12);P.pitch=-Math.atan2(groundAt(a.x,a.z)-groundAt(b.x,b.z),.24);}
+     lowest=Math.min(lowest,target.y-ankleUp-lift*w);
+    }
+    scalar(nat.drop,G?clamp(-lowest*scale,0,.3):0,dt,10,.9);
+    if(nat.drop.x>1e-4){pelvis.position.y-=nat.drop.x/scale;group.updateMatrixWorld(true);}
+    for(const [i,s] of sides.entries()){
+     const p=(state.phase+i*.5)%1,P=plants[i],target=P.target;
+     if(P.pinned){s.foot.x.copy(target);s.foot.v.set(0,0,0);}else spring(s.foot,target,dt,14,.9);
      s.footTarget.copy(worldTemp(s.foot.x));s.footPole.copy(group.localToWorld(v3.set(s.sign*.15,0,1).add(s.hip)).sub(group.localToWorld(copyV(s.hip))));
      solve(s.leg,s.footTarget,s.footPole);
-     e.set(-Math.sin(p<stance?0:((p-stance)/(1-stance))*Math.PI)*.35*w,0,0);
+     e.set(-Math.sin(p<stance?0:((p-stance)/(1-stance))*Math.PI)*.35*w*(P.pinned?0:1)+P.pitch,0,0);
      s.footRotation.copy(group.getWorldQuaternion(tempQ()).multiply(tempQ().setFromEuler(e)));orient(s.leg.end,s.footRotation);
     }
     // Arms: swing opposite the legs, then blend towards guard, wave, touch and punch targets.
@@ -389,6 +436,19 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
       if(s.touchWeight.x>.05||state.hold.x>.05){solve(s.arm,s.contactTarget,s.contactPole);orient(s.arm.end,s.contactRotation);}
      }
     }
+    // Natural blend: when the set of clips changes (a jump starts, a slide ends, a climb hands back) the last frame's pose
+    // carries into the new one and the difference fades in about a fifth of a second (inertialization), so nothing pops.
+    // Planted legs and hands holding something keep their solved contacts.
+    if(!canonical&&natural.blend){
+     const bones=model.skeleton.bones,sig=(state.airborne?'a:':'g:')+state.layers.filter(L=>!L.out&&L.mask==='full').map(L=>L.id).join(',');
+     // Only a change that happens as time passes blends; a zero-time evaluation (a pose sample, a restore) is exact.
+     if(dt>0&&nat.rest&&nat.sig&&sig!==nat.sig){nat.inert??=bones.map(()=>new T.Quaternion());bones.forEach((b,i)=>nat.inert[i].copy(nat.rest[i]).multiply(q1.copy(b.quaternion).invert()));nat.inertP.copy(nat.restP).sub(pelvis.position);nat.inertT=0;}
+     nat.sig=sig;
+     if(dt>0&&nat.inertT<.5){nat.inertT+=dt;const k=Math.exp(-nat.inertT/.065),grounded=!state.airborne,holding=sides.some(s=>s.touchWeight.x>.05)||state.hold.x>.05;
+      bones.forEach((b,i)=>{if(grounded&&legBones.has(b)||holding&&armBones.has(b))return;b.quaternion.premultiply(q2.identity().slerp(nat.inert[i],k));});
+      if(!grounded)pelvis.position.addScaledVector(nat.inertP,k);}
+     nat.rest??=bones.map(()=>new T.Quaternion());bones.forEach((b,i)=>nat.rest[i].copy(b.quaternion));nat.restP.copy(pelvis.position);
+    }
     // The held weapon follows the right hand: a gun points from the grip at the aim, the axe hangs from the hand.
     if(state.held?.mesh){const m=state.held.mesh,par=group.parent;if(par){if(m.parent!==par)par.add(m);m.visible=true;group.updateMatrixWorld(true);
      const hand=sides[1].arm.end.getWorldPosition(tempV()),fwd=tempV(0,0,1).applyQuaternion(group.getWorldQuaternion(tempQ()));
@@ -440,6 +500,9 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     if(value.animateAt===null)delete api._t;else api._t=value.animateAt;
     group.position.fromArray(value.root.p);group.rotation.order=value.root.order;group.quaternion.fromArray(value.root.q);value.bones.forEach((v,i)=>{const b=model.skeleton.bones[i];b.position.fromArray(v.p);b.rotation.order=v.order;b.quaternion.fromArray(v.q);b.scale.fromArray(v.scale);});group.updateMatrixWorld(true);
    },
+   // Vertical bob of the body's own stride and landings (metres), for a first-person camera that moves with the body.
+   bob:()=>nat.bob-nat.dip,
+   feet:()=>plants.map(P=>({pinned:!!P.pinned,stepping:P.step>=0})),
    inspect:()=>({locomotion:loco.map(L=>({...L})),actions:state.layers.filter(L=>!L.out).map(L=>L.id),presentation:{firstPerson:+view.first.toFixed(3),sprint:+view.sprint.toFixed(3),lookLag:view.enabled&&view.sway},phase:+state.phase.toFixed(3),speed:+state.speed.toFixed(2),weight:+state.weight.toFixed(2),guard:+state.guard.x.toFixed(2),ragdoll:ragdoll.inspect(),wade:+state.wade.x.toFixed(2),hit:+state.hitPitch.x.toFixed(2),touch:sides.map(s=>+s.touchWeight.x.toFixed(2)),punching:sides.some(s=>s.punch)})
   };
   // Each asynchronous replacement rig owns its own compatible spawn pose.
@@ -461,7 +524,14 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
   const shoulder=model.byName['upperarm01.L'],at=shoulder&&model.skeleton.boneInverses[model.skeleton.bones.indexOf(shoulder)]?.elements;
   const shoulderUp=at?-at[13]*model.root.scale.y:1.4,riseTo=hands?Math.max(0,Math.min(.7,hands[0].y-.33-(model.root.position.y+shoulderUp))):0;
   handRise+=(riseTo-handRise)*(1-Math.exp(-14*dt));model.root.position.y+=handRise;
-  if(hands){const swap=shoulder?.getWorldPosition(probe).distanceToSquared(hands[0])>probe.distanceToSquared(hands[1]);model.motion.touch('L',hands[swap?1:0],null,1,'grab');model.motion.touch('R',hands[swap?0:1],null,1,'grab');handsOn=true;}else if(handsOn){model.motion.touch('L',null,null,0);model.motion.touch('R',null,null,0);handsOn=false;}
+  const tr=pose?.traversal,push=natural.hands&&tr?.kind==='climb'&&tr.duration>0&&tr.time/tr.duration>.5,upward=traverseBody.up||(traverseBody.up=new T.Vector3(0,1,0));
+  if(hands){const swap=shoulder?.getWorldPosition(probe).distanceToSquared(hands[0])>probe.distanceToSquared(hands[1]);model.motion.touch('L',hands[swap?1:0],push?upward:null,1,push?'press':'grab');model.motion.touch('R',hands[swap?0:1],push?upward:null,1,push?'press':'grab');handsOn=true;}
+  else if(natural.hands&&tr?.kind==='wallrun'&&tr.normal){
+   // Wall run: the hand nearest the wall brushes along it at shoulder height.
+   const n=probe.set(tr.normal[0],0,tr.normal[1]).normalize(),side=(tr.side||1)>0?'R':'L',other=side==='R'?'L':'R',fw=new T.Vector3(Math.sin(model.root.rotation.y),0,Math.cos(model.root.rotation.y));
+   const at=model.root.getWorldPosition(new T.Vector3()).addScaledVector(n,-.5).addScaledVector(fw,.18);at.y+=1.42*model.root.scale.y;
+   model.motion.touch(side,at,n.clone(),.85,'press');model.motion.touch(other,null,null,0);handsOn=true;}
+  else if(handsOn){model.motion.touch('L',null,null,0);model.motion.touch('R',null,null,0);handsOn=false;}
   model.motion.traversal?.(pose?.traversal);
   // The vault clip rises over the obstacle by itself (its hip track); drop the model by the controller's lift so the
   // planted hand lands on the top instead of floating a ledge-height above it.
@@ -471,5 +541,5 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
   model.root.rotation.order='YXZ';const pitchTo=pose?(pose.dive||0)*1.25-(pose.slide||0)*.32:0;model.root.rotation.x+=(pitchTo-model.root.rotation.x)*(1-Math.exp(-10*dt));if(pose?.dive)model.root.position.y+=.35*pose.dive;
   return {handRise,handsOn};
  }
- root.GardenCharacterMotion={create,applyHit,turnBody,traverseBody,attention:null,bodies:new Set(),solid:null,serverDecides:false};
+ root.GardenCharacterMotion={create,applyHit,turnBody,traverseBody,natural,ground:null,attention:null,bodies:new Set(),solid:null,serverDecides:false};
 })(typeof window==='object'?window:globalThis);
