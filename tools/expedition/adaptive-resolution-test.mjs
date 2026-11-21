@@ -39,6 +39,6 @@ test('recovery requires fresh uninterrupted stability after renewed pressure at 
 });
 test('every expedition preset retains the intended post-processing style',()=>{
  const entry=readFileSync(new URL('../../expedition-entry.js',import.meta.url),'utf8'),line=entry.split('\n').find(l=>l.includes('function setGraphics(value)')),settings={};
- const set=vm.runInNewContext('let graphics;'+line+';setGraphics;', {devicePixelRatio:1,post:{set:p=>Object.assign(settings,p)},quality:{setMax(){}},lighting:{set(){}},renderer:{shadowMap:{}},localStorage:{setItem(){}}});
+ const set=vm.runInNewContext('let graphics;'+line+';setGraphics;', {devicePixelRatio:1,reduced:false,atmosphere:null,post:{set:p=>Object.assign(settings,p)},quality:{setMax(){}},lighting:{set(){}},renderer:{shadowMap:{}},localStorage:{setItem(){}}});
  for(const preset of ['low','high','medium','low']){set(preset);assert.equal(settings.enabled,true);for(const key of ['grain','flare','glare','rays','bloom'])assert.ok(settings[key]>0,key+' preserved on '+preset);}
 });

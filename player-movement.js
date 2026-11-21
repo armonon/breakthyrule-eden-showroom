@@ -151,8 +151,10 @@ function landDive(){
 let vault=null,vaultCount=0,wallPops=0,rolls=0;
 function cancelTraversal(){vault=null;slide=null;dive=null;proneT=0;jumpBuffer=0;coyote=0;}
 function vaultPoint(v,k){
- // Rise fully outside the near face, cross above the obstacle, then settle.
- const p=v.from.clone(),horizontal=k<.28?0:k>.78?1:T.MathUtils.smoothstep(k,.28,.78);
+ // Carry on over the planted take-off foot (v.lead metres, at about its pace) while rising, so it does not slide back;
+ // finish rising outside the near face, cross above the obstacle, then settle. Older snapshots have no lead: 0.
+ const span=Math.hypot(v.to.x-v.from.x,v.to.z-v.from.z)||1,lead=Math.min(.95,(v.lead||0)/span);
+ const p=v.from.clone(),horizontal=k<.28?lead*Math.min(1,k/.16):k>.78?1:lead+(1-lead)*T.MathUtils.smoothstep(k,.28,.78);
  p.lerp(v.to,horizontal);
  const lift=k<.28?T.MathUtils.smoothstep(k,0,.28):k>.78?1-T.MathUtils.smoothstep(k,.78,1):1;
  p.y=(k<.78?v.from.y:v.to.y)+v.lift*lift;return p;
@@ -165,7 +167,7 @@ function tryVault(dir){
  if(vault||!probe||h.arena?.active()||P?.active?.())return false;
  const feet=targetPosition.y-1.75,d=dir.clone().setY(0);if(d.lengthSq()<1e-4)return false;d.normalize();
  const head=new T.Vector3(targetPosition.x,feet+1.5,targetPosition.z);if(probe(head,d,1.1))return false;
- let top=null;for(const k of [.35,.55,.8,1.0]){const hit=probe(head.clone().addScaledVector(d,k),new T.Vector3(0,-1,0),1.5);if(hit&&hit.point.y>=feet+.3&&hit.point.y<=feet+1.2){top=hit;break;}}
+ let top=null,topAt=0;for(const k of [.35,.55,.8,1.0]){const hit=probe(head.clone().addScaledVector(d,k),new T.Vector3(0,-1,0),1.5);if(hit&&hit.point.y>=feet+.3&&hit.point.y<=feet+1.2){top=hit;topAt=k;break;}}
  if(!top)return false;
  for(const distance of [1,1.3,1.6,1.9,2.2]){
   const to=targetPosition.clone().addScaledVector(d,distance),floor=P?.floorAt(to.x,to.z,feet+.2)??groundHeight(to),radius=profile().radius;
@@ -174,10 +176,10 @@ function tryVault(dir){
   if(Math.hypot(constrained.x-to.x,constrained.z-to.z)>.02||obstacle(to)||obstacle(to.clone().addScaledVector(d,-.25))||// land a stride clear, so the trailing leg does not clip the far face
 !fits(feetPoint(to),profile().height))continue;
   if(P&&[[radius,radius],[-radius,radius],[radius,-radius],[-radius,-radius]].some(([x,z])=>Math.abs(P.floorAt(to.x+x,to.z+z,feet+.2)-floor)>.18))continue;
-  const plan={from:targetPosition.clone(),to,t:0,dur:.62,lift:top.point.y-feet+.035,speed:Math.max(3.5,Math.hypot(walkVelocity.x,walkVelocity.z))};
-  let previous=feetPoint(),safe=true;
-  for(let i=1;i<=32;i++){const next=feetPoint(vaultPoint(plan,i/32));if(sweep(previous,next,profile().height)<1){safe=false;break;}previous=next;}
-  if(!safe)continue;
+  const plan={from:targetPosition.clone(),to,t:0,dur:.62,lift:top.point.y-feet+.035,speed:Math.max(3.5,Math.hypot(walkVelocity.x,walkVelocity.z)),lead:T.MathUtils.clamp(topAt-.2-profile().radius,0,.35)};
+  // The take-off lead is a nicety: where it would brush the near face, vault straight up as before.
+  const clear=()=>{let previous=feetPoint();for(let i=1;i<=32;i++){const next=feetPoint(vaultPoint(plan,i/32));if(sweep(previous,next,profile().height)<1)return false;previous=next;}return true;};
+  if(!clear()){if(!plan.lead)continue;plan.lead=0;if(!clear())continue;}
   vault=plan;vaultCount++;slide=null;dive=null;motion.reset();sway.bump(.35,0);footsteps?.step(surfaceAt(targetPosition),6);requestDraw();return true;
  }return false;
 }
@@ -271,7 +273,7 @@ function updateJump(dt){
   const vec=v=>v?.isVector3&&[v.x,v.y,v.z].every(Number.isFinite),numbers=(v,ks)=>ks.every(k=>Number.isFinite(v[k]));
   if(s.slide!==null&&(!s.slide||!['slide','dash'].includes(s.slide.kind)||!vec(s.slide.dir)||!numbers(s.slide,['speed','t','dur'])||s.slide.t<0||s.slide.dur<=0))throw Error('Invalid slide snapshot.');
   if(s.dive!==null&&(!s.dive||!vec(s.dive.dir)||!numbers(s.dive,['t','speed'])||s.dive.t<0))throw Error('Invalid dive snapshot.');
-  if(s.vault!==null&&(!s.vault||!vec(s.vault.from)||!vec(s.vault.to)||!numbers(s.vault,['t','dur','lift','speed'])||s.vault.t<0||s.vault.dur<=0))throw Error('Invalid vault snapshot.');
+  if(s.vault!==null&&(!s.vault||!vec(s.vault.from)||!vec(s.vault.to)||!numbers(s.vault,['t','dur','lift','speed'])||s.vault.lead!==undefined&&!(Number.isFinite(s.vault.lead)&&s.vault.lead>=0&&s.vault.lead<=.5)||s.vault.t<0||s.vault.dur<=0))throw Error('Invalid vault snapshot.');
   if(s.momentum!==undefined&&(!Number.isFinite(s.momentum)||s.momentum<0||s.momentum>1)||s.jumpHold!==undefined&&(!Number.isFinite(s.jumpHold)||s.jumpHold<-1||s.jumpHold>1))throw Error('Invalid momentum snapshot.');
   return s;
  }

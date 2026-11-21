@@ -14,6 +14,6 @@ baked by tools/animation/bake-mixamo.cjs from Adobe Mixamo (https://www.mixamo.c
 Mixamo animations are royalty-free for use in projects; the raw Mixamo files are not redistributed,
 only the baked rotations in clips.json.
 
-Runtime clips.json SHA-256: 8ff10dff6feb6cb6b5ce98c018fa86a14e071b039bef9e73af7b5702622d08db
+Runtime clips.json SHA-256: 0feb44e382ae214d4738300c2cf8c4e4ee5e589ce9ecf08ddc6268a20609e601
 Portable source/build kit is retained separately (not a runtime download):
 animation-build-kit.tar.gz SHA-256 f3160519e8c4085e22b4a0670f82783c1430d0759db5edbab22b421ee1c04899.
