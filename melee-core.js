@@ -62,7 +62,7 @@
   if(!kind)return;
   try{
    audio??=new (root.AudioContext||root.webkitAudioContext)();if(audio.state==='suspended')audio.resume();
-   const t=audio.currentTime,out=audio.createGain();out.gain.value=.32*gain;out.connect(audio.destination);
+   const t=audio.currentTime,out=audio.createGain();out.gain.value=.32*gain;out.connect(globalThis.edenAcoustics?.input(audio)||audio.destination);
    const noise=(duration,filterType,from,to,level,delay=0)=>{const buffer=audio.createBuffer(1,Math.ceil(audio.sampleRate*duration),audio.sampleRate),data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*(1-i/data.length);
     const src=audio.createBufferSource();src.buffer=buffer;const f=audio.createBiquadFilter();f.type=filterType;f.frequency.setValueAtTime(from,t+delay);f.frequency.exponentialRampToValueAtTime(to,t+delay+duration);const g=audio.createGain();g.gain.value=level;src.connect(f).connect(g).connect(out);src.start(t+delay);};
    const tone=(type,from,to,duration,level,delay=0)=>{const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(from,t+delay);o.frequency.exponentialRampToValueAtTime(to,t+delay+duration);g.gain.setValueAtTime(0,t+delay);g.gain.linearRampToValueAtTime(level,t+delay+.012);g.gain.exponentialRampToValueAtTime(.001,t+delay+duration);o.connect(g).connect(out);o.start(t+delay);o.stop(t+delay+duration+.02);};

@@ -16,6 +16,8 @@
   // Unlocking needs a real user gesture.
   const unlock=event=>{if(event.isTrusted)ready();};
   document.addEventListener('pointerdown',unlock,true);document.addEventListener('keydown',unlock,true);
+  // Through the room's acoustics (eden-acoustics.js) when present: steps echo in halls, not on the lawn.
+  const out=ac=>window.edenAcoustics?.input(ac)||ac.destination;
   const SURFACES={
    grass:{freq:900,q:.7,decay:.11,gain:.07,type:'lowpass',click:0},
    stone:{freq:2600,q:1.1,decay:.055,gain:.09,type:'bandpass',click:.05},
@@ -26,8 +28,8 @@
    const s=SURFACES[surface]||SURFACES.grass,src=ac.createBufferSource(),filter=ac.createBiquadFilter(),gain=ac.createGain();
    src.buffer=noise;src.playbackRate.value=.85+Math.random()*.3;filter.type=s.type;filter.frequency.value=s.freq*(.9+Math.random()*.2);filter.Q.value=s.q;
    const peak=s.gain*level,decay=s.decay*length;gain.gain.setValueAtTime(0,when);gain.gain.linearRampToValueAtTime(peak,when+.006);gain.gain.exponentialRampToValueAtTime(.0005,when+decay);
-   src.connect(filter);filter.connect(gain);gain.connect(ac.destination);src.start(when,Math.random()*.25,decay+.05);
-   if(s.click){const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=s.freq*.55;g.gain.setValueAtTime(s.click*level,when);g.gain.exponentialRampToValueAtTime(.0001,when+.025);o.connect(g);g.connect(ac.destination);o.start(when);o.stop(when+.03);}
+   src.connect(filter);filter.connect(gain);gain.connect(out(ac));src.start(when,Math.random()*.25,decay+.05);
+   if(s.click){const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=s.freq*.55;g.gain.setValueAtTime(s.click*level,when);g.gain.exponentialRampToValueAtTime(.0001,when+.025);o.connect(g);g.connect(out(ac));o.start(when);o.stop(when+.03);}
   }
   return {
    // speed in m/s: louder and brighter when running.
@@ -37,7 +39,7 @@
     const ac=ready();if(!ac)return;const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
     o.type='sine';o.frequency.setValueAtTime(95,t);o.frequency.exponentialRampToValueAtTime(42,t+.16);
     g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.32*strength+.08,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.22);
-    o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.25);burst(ac,surface,t,.9+strength,1.6);lastStep=t;
+    o.connect(g);g.connect(out(ac));o.start(t);o.stop(t+.25);burst(ac,surface,t,.9+strength,1.6);lastStep=t;
    },
    // Slides scrape the surface for their whole length.
    slide(surface,duration=.7){const ac=ready();if(!ac)return;burst(ac,surface,ac.currentTime,1.1,duration/.08);},
