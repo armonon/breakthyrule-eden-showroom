@@ -1,7 +1,7 @@
 import * as THREE from 'three/webgpu';
 import {
   Fn, Loop, If, float, vec2, vec3, vec4, uniform, uniformArray, pass, screenUV, screenSize, select, step, exp, abs, length, mix, dot,
-  perspectiveDepthToViewZ, cameraNear, cameraFar,
+  perspectiveDepthToViewZ,
 } from 'three/tsl';
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { lensflare } from 'three/addons/tsl/display/LensflareNode.js';
@@ -26,7 +26,9 @@ export function createPostProcessing({ renderer, scene, camera, preset, enabled 
   const occluders = Array.from({ length: SOURCES }, () => new THREE.Vector4());
   const tints = Array.from({ length: SOURCES }, () => new THREE.Vector3(1, 1, 1));
   const glareNode = uniformArray(glareSources, 'vec4'), occluderNode = uniformArray(occluders, 'vec4'), tintNode = uniformArray(tints, 'vec3');
-  const glareStrength = uniform(3.5), vignette = uniform(.3), grain = uniform(.1);
+  // The player camera's clip planes: inside the pipeline cameraNear/cameraFar are the full-screen quad's camera.
+  const near = uniform(camera.near), far = uniform(camera.far);
+  const glareStrength = uniform(2), occlusion = uniform(1), vignette = uniform(.3), grain = uniform(.1);
   const settings = { level: 'none', bloom: .55, bloomRadius: .45, bloomThreshold: .85, ghosts: .22 };
   let scenePass = null, bloomPass = null, samples = -1;
   const lights = [];
@@ -44,7 +46,7 @@ export function createPostProcessing({ renderer, scene, camera, preset, enabled 
           let visible = float(0);
           for (const [x, y] of TAPS) {
             const q = o.xy.add(vec2(x, y).mul(o.w).mul(vec2(aspect.reciprocal(), 1)));
-            const dist = perspectiveDepthToViewZ(depth.sample(q).r, cameraNear, cameraFar).negate();
+            const dist = perspectiveDepthToViewZ(depth.sample(q).r, near, far).negate();
             const inside = q.x.greaterThan(0).and(q.x.lessThan(1)).and(q.y.greaterThan(0)).and(q.y.lessThan(1));
             visible = visible.add(select(inside, step(o.z, dist), 0));
           }
@@ -54,7 +56,7 @@ export function createPostProcessing({ renderer, scene, camera, preset, enabled 
           const core = tint.mul(exp(d.mul(-10)).mul(.35).add(exp(d.mul(-38)).mul(.6)));
           const streak = pale.mul(exp(d2.y.mul(-110).sub(d2.x.mul(4))).mul(.3));
           const star = pale.mul(exp(d2.x.mul(-190).sub(d2.y.mul(11))).add(exp(d2.y.mul(-190).sub(d2.x.mul(11)))).mul(.12));
-          total.addAssign(core.add(streak).add(star).mul(visible.div(TAPS.length)).mul(s.z));
+          total.addAssign(core.add(streak).add(star).mul(mix(1, visible.div(TAPS.length), occlusion)).mul(s.z));
         });
       });
       return total.mul(glareStrength);
@@ -101,6 +103,7 @@ export function createPostProcessing({ renderer, scene, camera, preset, enabled 
   const picked = [];
   function updateSources() {
     picked.length = 0;
+    near.value = camera.near; far.value = camera.far;
     const projScale = camera.projectionMatrix.elements[5];
     camera.getWorldPosition(cameraPosition);
     for (const light of lights) {
@@ -147,6 +150,7 @@ export function createPostProcessing({ renderer, scene, camera, preset, enabled 
     },
     set(next = {}) {
       if ('glare' in next) glareStrength.value = next.glare;
+      if ('occlusion' in next) occlusion.value = next.occlusion; // 0 ignores the depth test (debugging)
       if ('vignette' in next) vignette.value = next.vignette;
       if ('grain' in next) grain.value = next.grain;
       if (bloomPass) {
