@@ -226,8 +226,10 @@ imageScroll.addEventListener('keydown',event=>{if(event.key==='Enter'){setZoom(z
 $('spawn').disabled=true;$('approach').disabled=true;$('wall-view').disabled=true;$('film-view').disabled=true;$('film-view').hidden=true;
 dialog.addEventListener('click',event=>{if(event.target===dialog){const rect=dialog.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)close();}});
 dialog.addEventListener('keydown',event=>{if(!['INPUT','SELECT','BUTTON'].includes(event.target.tagName)&&event.target!==imageScroll&&event.target!==$('garment-viewer')&&(event.key==='ArrowLeft'||event.key==='ArrowRight')){showSide(state.side==='front'?'back':'front');event.preventDefault();}});
-function fallback(){instagramSlideshow?.destroy();instagramSlideshow=null;wallFilm?.destroy();wallFilm=null;$('film-link').hidden=false;state.ready=false;$('loading').hidden=true;$('fallback').hidden=false;$('scene').hidden=true;$('spawn').disabled=true;$('approach').disabled=true;$('wall-view').disabled=true;$('film-view').disabled=true;$('movement-hint').textContent='EXPLORE THE PRODUCT PHOTOS';$('world-hint').textContent='Select the vault to inspect product photography.';}
-if(!window.THREE){fallback();return;}
+// A failed download (the game host restarting, a dropped request) reloads once instead of leaving the flat fallback up.
+function retryLoad(){try{const key='eden-load-retry',last=Number(sessionStorage.getItem(key))||0;if(Date.now()-last<60000)return false;sessionStorage.setItem(key,String(Date.now()));}catch{return false;}console.warn('Eden failed to load; retrying.');setTimeout(()=>location.reload(),4000);return true;}
+function fallback(retry){if(retry&&retryLoad())return;instagramSlideshow?.destroy();instagramSlideshow=null;wallFilm?.destroy();wallFilm=null;$('film-link').hidden=false;state.ready=false;$('loading').hidden=true;$('fallback').hidden=false;$('scene').hidden=true;$('spawn').disabled=true;$('approach').disabled=true;$('wall-view').disabled=true;$('film-view').disabled=true;$('movement-hint').textContent='EXPLORE THE PRODUCT PHOTOS';$('world-hint').textContent='Select the vault to inspect product photography.';}
+if(!window.THREE){fallback(true);return;}
 const T=THREE,stage=$('scene');let renderer;
 const renderProfile=edenRenderProfile({width:stage.clientWidth}),mobileDevice=renderProfile.mobile;
 // Layout reads belong to resize observers, not to every projected HUD label.
@@ -276,7 +278,7 @@ function setGraphics(level,{save=true}={}){
  if(save){try{localStorage.setItem('eden-graphics',graphics);}catch{}requestDraw();}
 }
 {let saved=null;try{saved=localStorage.getItem('eden-graphics');}catch{}setGraphics(GRAPHICS[saved]?saved:autoGraphics(),{save:false});}
-try{const response=await fetch('/night-layout.json?v=3');if(!response.ok)throw new Error('Night district unavailable');window.nightLayout=await response.json();}catch(error){fallback();return;}
+try{const response=await fetch('/night-layout.json?v=3');if(!response.ok)throw new Error('Night district unavailable');window.nightLayout=await response.json();}catch(error){fallback(true);return;}
 const garden=createEdenGarden(T,scene,{reduced,mobile:mobileDevice,onChange:requestDraw});
 photoreal=window.edenPhotorealGarden=createEdenPhotoreal(T,{renderer,scene,camera,garden,lighting,post,requestDraw});
 // Lens flare and god rays from the sky's sun; glare from the night district's lanterns while it is on screen.
@@ -341,7 +343,7 @@ $('library-view').disabled=false;
 $('open-residents').disabled=false;
 $('amphitheater-view').disabled=false;
 if(pendingMultiplayerSpawn)enterMultiplayer();
-}).catch(fallback);
+}).catch(()=>fallback(true));
 let frame=0,previous=0,drag=null,suppressClickUntil=0;
 const motion=createPlayerMotion(),walkVelocity=new T.Vector3(),sway=createCameraSway(T,{reduced});
 const moveKeys=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright']);
