@@ -71,13 +71,48 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
    const li=document.createElement('li');li.classList.toggle('own',m.userId===user?.id);li.dataset.messageId=m.id;
    const who=document.createElement('strong'),time=document.createElement('time'),text=document.createElement('p');who.textContent=m.name;time.textContent=new Date(m.time*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});text.textContent=m.text;if(m.kind==='wave')text.className='wave-message';li.append(who,time,text);return li;
   }));if(atBottom)log.scrollTop=log.scrollHeight;$('social-empty').hidden=messages.some(m=>!muted.has(m.userId))||$('social-messages').hidden;
+  if(typeof renderFeed==='function')renderFeed();
  }
+ // ---------- On-screen chat: the latest messages over the game, and a quick box (Enter) to answer without the panel ----------
+ // Same messages, mutes, limits and send path as the panel. Messages that arrive while you play show for a few seconds;
+ // the history you join into stays quiet. With the box open the feed shows recent history and scrolls.
+ const FEED_SHOWN=6,FEED_FADE=10000,overlay=document.createElement('div');overlay.className='chat-overlay';overlay.id='chat-overlay';
+ overlay.innerHTML='<ol class="chat-feed" aria-live="polite" aria-label="Garden chat"></ol><form class="chat-quick" hidden><input class="chat-quick-input" maxlength="280" autocomplete="off" enterkeyhint="send" aria-label="Chat message" placeholder="Say something. Enter to send, Esc to close"><p class="chat-quick-note" hidden></p></form><button type="button" class="chat-touch" aria-label="Open chat"><i data-lucide="message-circle"></i></button>';
+ document.body.append(overlay);
+ const feed=overlay.querySelector('.chat-feed'),quick=overlay.querySelector('.chat-quick'),quickInput=quick.querySelector('input'),quickNote=quick.querySelector('.chat-quick-note'),arrived=new Map();
+ let feedTimer=0;
+ function renderFeed(){
+  const open=!quick.hidden,now=Date.now(),list=messages.filter(m=>!muted.has(m.userId)),age=m=>now-(arrived.get(m.id)??-1e12);
+  const shown=open?list.slice(-40):$('social-panel').hidden?list.filter(m=>age(m)<FEED_FADE).slice(-FEED_SHOWN):[];
+  feed.replaceChildren(...shown.map(m=>{const li=document.createElement('li');li.classList.toggle('own',m.userId===user?.id);li.classList.toggle('wave',m.kind==='wave');li.classList.toggle('fading',!open&&age(m)>FEED_FADE-1500);
+   const who=document.createElement('strong'),text=document.createElement('span');who.textContent=m.name;text.textContent=m.text;li.append(who,text);return li;}));
+  if(open)feed.scrollTop=feed.scrollHeight;overlay.classList.toggle('has-feed',shown.length>0);
+  clearTimeout(feedTimer);if(!open&&shown.length)feedTimer=setTimeout(renderFeed,500);
+ }
+ function chatNote(text,action=null){quickNote.textContent=text;quickNote.hidden=!text;quickNote.onclick=action;quickNote.classList.toggle('action',!!action);}
+ function openChat(){
+  if(inExpedition())return false;
+  if(!quick.hidden){if(!quickInput.disabled)quickInput.focus({preventScroll:true});return true;}
+  quick.hidden=false;overlay.classList.add('open');stopMoving();document.exitPointerLock?.();quickInput.placeholder=matchMedia('(pointer:coarse)').matches?'Say something…':'Say something. Enter to send, Esc to close';
+  if(preview){quickInput.disabled=true;chatNote('Chat needs the shared garden server. This public preview has no rooms.');}
+  else if(!canInteract()){quickInput.disabled=true;chatNote(user?'Ghosts can read but not talk: create your character to chat.':'Sign in and create a character to chat.',()=>{closeChat();gate();});}
+  else{quickInput.disabled=false;chatNote('');}
+  renderFeed();if(!quickInput.disabled)quickInput.focus({preventScroll:true});return true;
+ }
+ function closeChat(){if(quick.hidden)return;quick.hidden=true;overlay.classList.remove('open');quickInput.blur();chatNote('');renderFeed();}
+ quick.onsubmit=event=>event.preventDefault();
+ quickInput.addEventListener('keydown',async event=>{event.stopPropagation();if(event.isComposing)return;
+  if(event.key==='Escape'){event.preventDefault();closeChat();}
+  else if(event.key==='Enter'){event.preventDefault();if(!quickInput.value.trim()){closeChat();return;}chatNote('');if(await send('chat',quickInput))closeChat();}});
+ // A box that cannot take text (preview, ghost) still closes from the keyboard.
+ window.addEventListener('keydown',event=>{if(quick.hidden||!quickInput.disabled||!['Escape','Enter'].includes(event.key))return;event.preventDefault();event.stopPropagation();closeChat();},true);
+ overlay.querySelector('.chat-touch').onclick=()=>quick.hidden?openChat():closeChat();
  function snapshot(data){
   selfId=data.selfId;user=data.user;accountUI();
   const signature=JSON.stringify(data.people.map(p=>[p.id,p.name,p.color]));const previous=JSON.stringify(people.map(p=>[p.id,p.name,p.color]));people=data.people;if(signature!==previous)renderPeople();
   const ids=new Set();const zone=getPose()?.zone||'garden';for(const p of people){if(p.id===selfId||(p.zone||'garden')!==zone)continue;ids.add(p.id);let a=avatars.get(p.id);const signature=JSON.stringify([p.ghost,p.character,p.name]);if(a&&a.signature!==signature){destroyAvatar(a);a=null;}if(!a){a=avatar(p);avatars.set(p.id,a);}a.target.set(p.x,.02,p.z);a.yaw=p.yaw;a.wave=p.wave;}
   for(const [id,a] of avatars)if(!ids.has(id)){destroyAvatar(a);avatars.delete(id);}
-  const nextId=data.messages.at(-1)?.id||0;if(JSON.stringify(data.messages)!==JSON.stringify(messages)||firstSnapshot){if(!firstSnapshot&&$('social-panel').hidden)unread+=data.messages.filter(m=>m.id>lastId&&m.userId!==selfId&&!muted.has(m.userId)).length;messages=data.messages;lastId=nextId;firstSnapshot=false;renderMessages();}
+  const nextId=data.messages.at(-1)?.id||0;if(JSON.stringify(data.messages)!==JSON.stringify(messages)||firstSnapshot){if(!firstSnapshot){const now=Date.now();for(const m of data.messages)if(m.id>lastId&&!arrived.has(m.id))arrived.set(m.id,now);for(const id of arrived.keys())if(!data.messages.some(m=>m.id===id))arrived.delete(id);}if(!firstSnapshot&&$('social-panel').hidden)unread+=data.messages.filter(m=>m.id>lastId&&m.userId!==selfId&&!muted.has(m.userId)).length;messages=data.messages;lastId=nextId;firstSnapshot=false;renderMessages();}
   $('social-unread').hidden=!unread;$('social-unread').textContent=String(unread);setConnected(true,'Live room / '+people.length+' online');requestDraw();
  }
  async function poll(){
@@ -95,11 +130,11 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
   if(!spawned){spawned=true;enter();}timer=setTimeout(poll,50);$('social-move').hidden=false;setConnected(false,'Connecting...');
   accountUI();renderMessages();renderPeople();$('social-unread').hidden=true;
  }
- function showPanel(tab='chat'){$('social-panel').hidden=false;unread=0;$('social-unread').hidden=true;switchTab(tab);}
+ function showPanel(tab='chat'){$('social-panel').hidden=false;unread=0;$('social-unread').hidden=true;switchTab(tab);closeChat();renderFeed();}
  function switchTab(tab){const chat=tab==='chat';$('social-messages').hidden=!chat;$('social-people').hidden=chat;$('social-chat-form').hidden=!chat;$('social-chat-tab').setAttribute('aria-selected',String(chat));$('social-people-tab').setAttribute('aria-selected',String(!chat));$('social-empty').hidden=!chat||messages.some(m=>!muted.has(m.userId));if(chat)$('social-messages').scrollTop=$('social-messages').scrollHeight;}
- $('social-launcher').onclick=()=>!$('social-panel').hidden?$('social-panel').hidden=true:showPanel();
+ $('social-launcher').onclick=()=>{if(!$('social-panel').hidden){$('social-panel').hidden=true;renderFeed();}else showPanel();};
  $('character-launcher').onclick=()=>editor.open(user?.character);$('social-gate').onclick=gate;$('social-edit').onclick=gate;
- $('social-close').onclick=()=>{$('social-panel').hidden=true;$('social-launcher').focus();};
+ $('social-close').onclick=()=>{$('social-panel').hidden=true;$('social-launcher').focus();renderFeed();};
  $('social-chat-tab').onclick=()=>switchTab('chat');$('social-people-tab').onclick=()=>switchTab('people');
  $('social-auth-close').onclick=()=>$('social-auth').close();
  let recovering=false;
@@ -116,7 +151,8 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
  $('social-delete').onclick=()=>recovery.remove();
  $('social-auth-form').onsubmit=async event=>{event.preventDefault();$('social-auth-submit').disabled=true;$('social-auth-error').textContent='';try{const result=await api(recovering?'recover':register?'register':'login',{name:$('social-name').value.trim(),password:$('social-password').value,recoveryCode:$('social-recovery-code').value});$('social-password').value='';$('social-recovery-code').value='';const waiting=characterAuth;characterAuth=null;setUser(result.user);$('social-auth').close();if(result.recoveryCode)await recovery.showCode(result.user.name,result.recoveryCode);recovering=false;authMode();if(waiting)waiting.resolve();else if(!result.user.character)editor.open(null);else showPanel();}catch(error){$('social-auth-error').textContent=error.message;}finally{$('social-auth-submit').disabled=false;}};
  $('social-logout').onclick=async()=>{try{await api('logout',{});setUser(null);}catch(error){$('social-error').textContent=error.message;}};
- async function send(kind){if(!canInteract()){gate();return;}const input=$('social-message'),text=input.value.trim();if(kind==='chat'&&!text)return;const button=$(kind==='chat'?'social-send':'social-wave');button.disabled=true;$('social-error').textContent='';const payload=kind==='chat'&&pendingChat?.text===text?pendingChat:{text,nonce:crypto.randomUUID()};if(kind==='chat')pendingChat=payload;try{await api(kind,payload);if(kind==='chat'){pendingChat=null;if(input.value.trim()===text)input.value='';}clearTimeout(timer);await poll();}catch(error){$('social-error').textContent=error.message;}finally{button.disabled=false;}}
+ // input: the panel's box or the quick box. Returns whether the message was posted.
+ async function send(kind,input=$('social-message')){if(!canInteract()){gate();return false;}const text=input.value.trim();if(kind==='chat'&&!text)return false;const quickBox=input===quickInput,button=quickBox?quickInput:$(kind==='chat'?'social-send':'social-wave');button.disabled=true;$('social-error').textContent='';const payload=kind==='chat'&&pendingChat?.text===text?pendingChat:{text,nonce:crypto.randomUUID()};if(kind==='chat')pendingChat=payload;try{await api(kind,payload);if(kind==='chat'){pendingChat=null;if(input.value.trim()===text)input.value='';}clearTimeout(timer);await poll();return true;}catch(error){$('social-error').textContent=error.message;if(quickBox)chatNote(error.message);return false;}finally{button.disabled=false;if(quickBox&&!quick.hidden)quickInput.focus({preventScroll:true});}}
  // Brawling: the server decides who each punch hits and when it knocks them down; play what it says.
  window.addEventListener('eden-punch-thrown',()=>{if(socket?.readyState===1&&canInteract())socket.send(JSON.stringify({t:'punch'}));});
  liveListeners.add(data=>{if(data.t!=='brawl'||!window.GardenCharacterMotion)return;let moved=false;
@@ -134,7 +170,7 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
  window.visualViewport?.addEventListener('resize',fitKeyboard);
  if(preview){setUser(null);clearTimeout(timer);}else api('me').then(result=>setUser(result.user)).catch(()=>{setUser(null);setConnected(false,'Server unavailable');});icons();
  return {
-  update(time,dt){let active=false;for(const a of avatars.values()){
+  update(time,dt){const away=inExpedition();if(overlay.hidden!==away){overlay.hidden=away;if(away)closeChat();}let active=false;for(const a of avatars.values()){
    a.root.visible=!inExpedition();const distance=a.root.position.distanceTo(a.target);active=active||(a.ghost&&!reducedMotion)||distance>.005||Date.now()/1000-a.wave<3;
    a.root.position.lerp(a.target,1-Math.exp(-10*dt));a.root.rotation.y+=Math.atan2(Math.sin(a.yaw-a.root.rotation.y),Math.cos(a.yaw-a.root.rotation.y))*(1-Math.exp(-10*dt));
    a.moving=T.MathUtils.lerp(a.moving,distance>.02?1:0,.18);const stride=Math.sin(time*9)*.35*a.moving;
@@ -148,6 +184,7 @@ window.createGardenMultiplayer=function({T,scene,camera,getPose,enter,lookAt,req
   send(message){if(socket?.readyState!==1)return false;socket.send(JSON.stringify(message));return true;},
   onLive(listener){liveListeners.add(listener);return()=>liveListeners.delete(listener);},
   people:()=>people,selfId:()=>selfId,avatar:id=>avatars.get(id),
+  openChat,closeChat,chatOpen:()=>!quick.hidden,
   canFight:()=>!!(liveUrl&&user?.character),live:()=>socket?.readyState===1,openAccount:gate,
   pick(raycaster,maxDistance=Infinity){const hit=raycaster.intersectObjects([...avatars.values()].map(a=>a.root),true)[0];if(!hit||hit.distance>maxDistance)return false;let n=hit.object;while(n&&!n.userData.visitorId)n=n.parent;if(n){if(!canInteract()){gate();return true;}selected=n.userData.visitorId;showPanel('people');renderPeople();return true;}return false;},
   inspect:()=>({userId:user?.id,selfId,ghost:!canInteract(),character:user?.character,people:people.map(p=>({...p})),avatars:[...avatars.keys()],connected:!preview&&!document.hidden&&!failures&&!firstSnapshot})

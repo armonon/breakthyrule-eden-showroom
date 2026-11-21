@@ -14,7 +14,7 @@
  add('flashlight','Flashlight','f',['KeyF'],['expedition']);add('flare','Fire flare','g',['KeyG','Mouse0'],['expedition']);
  add('reload','Reload','r',['KeyR'],['expedition','combat','battle','walk','horror']);
  add('bail','Bail / get up','b',['KeyB'],['expedition']);add('journal','Page journal','j',['KeyJ'],['expedition']);
- add('chat','Party chat','chat',['Enter'],['expedition']);
+ add('chat','Chat','chat',['Enter'],['walk','combat','fists','expedition']);
  add('useTarget','Use object under cursor','use',['Mouse0'],['walk']);add('ambience','Mute garden ambience','m',['KeyM'],['walk','fists']);
  add('punch','Punch / jab','f',['KeyF','Mouse0'],['fists']);add('haymaker','Haymaker','g',['KeyG'],['fists']);add('block','Block','q',['KeyQ','Mouse2'],['fists']);
  add('gardenPunch','Punch','f',['KeyF'],['walk']);
