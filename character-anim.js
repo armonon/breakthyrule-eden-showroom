@@ -26,7 +26,7 @@
   for(let attempt=0;attempt<2;attempt++){
    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
    try{
-    const response=await fetch('/assets/anim/clips.json?v=20261114-ual-standard',{signal:controller.signal});
+    const response=await fetch('/assets/anim/clips.json?v=20261120-mixamo-parkour',{signal:controller.signal});
     if(!response.ok){const error=Error('Animation library HTTP '+response.status);error.retry=response.status>=500||response.status===429;throw error;}
     return validate(await response.json());
    }catch(error){

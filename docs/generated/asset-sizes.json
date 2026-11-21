@@ -1,0 +1,81 @@
+{
+  "generatedAt": "2026-10-31T20:51:40.300Z",
+  "files": [
+    {
+      "file": "approach-east-lod0.glb",
+      "bytes": 22572,
+      "mebibytes": 0.022
+    },
+    {
+      "file": "approach-east-lod1.glb",
+      "bytes": 8716,
+      "mebibytes": 0.008
+    },
+    {
+      "file": "approach-east-lod2.glb",
+      "bytes": 5432,
+      "mebibytes": 0.005
+    },
+    {
+      "file": "approach-south-lod0.glb",
+      "bytes": 13092,
+      "mebibytes": 0.012
+    },
+    {
+      "file": "approach-south-lod1.glb",
+      "bytes": 7040,
+      "mebibytes": 0.007
+    },
+    {
+      "file": "approach-south-lod2.glb",
+      "bytes": 4472,
+      "mebibytes": 0.004
+    },
+    {
+      "file": "approach-west-lod0.glb",
+      "bytes": 22520,
+      "mebibytes": 0.021
+    },
+    {
+      "file": "approach-west-lod1.glb",
+      "bytes": 8628,
+      "mebibytes": 0.008
+    },
+    {
+      "file": "approach-west-lod2.glb",
+      "bytes": 5440,
+      "mebibytes": 0.005
+    },
+    {
+      "file": "plaza-center-lod0.glb",
+      "bytes": 83668,
+      "mebibytes": 0.08
+    },
+    {
+      "file": "plaza-center-lod1.glb",
+      "bytes": 56104,
+      "mebibytes": 0.054
+    },
+    {
+      "file": "plaza-center-lod2.glb",
+      "bytes": 33904,
+      "mebibytes": 0.032
+    },
+    {
+      "file": "temple-core-lod0.glb",
+      "bytes": 75080,
+      "mebibytes": 0.072
+    },
+    {
+      "file": "temple-core-lod1.glb",
+      "bytes": 22956,
+      "mebibytes": 0.022
+    },
+    {
+      "file": "temple-core-lod2.glb",
+      "bytes": 14436,
+      "mebibytes": 0.014
+    }
+  ],
+  "totalBytes": 384060
+}

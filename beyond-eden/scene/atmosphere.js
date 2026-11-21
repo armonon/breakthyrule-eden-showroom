@@ -78,6 +78,7 @@ export function createNightAtmosphere({ scene, preset, camera = null }) {
   }
 
   return {
+    moonDirection: moonDir,
     update(time) {
       if (camera) sky.position.copy(camera.position);
       for (let i = 0; i < mist.length; i += 1) {

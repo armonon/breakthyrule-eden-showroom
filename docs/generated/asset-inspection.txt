@@ -1,0 +1,1498 @@
+===== approach-east-lod0.glb =====
+OVERVIEW
+ ────────────────────────────────────────────
+┌────────────────────┬────────────────────────────────────────────────┐
+│ key                │ value                                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ version            │ 2.0                                            │
+├────────────────────┼────────────────────────────────────────────────┤
+│ generator          │ glTF-Transform v4.5.1                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsUsed     │ EXT_meshopt_compression, KHR_mesh_quantization │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsRequired │ EXT_meshopt_compression, KHR_mesh_quantization │
+└────────────────────┴────────────────────────────────────────────────┘
+
+
+
+ SCENES
+ ────────────────────────────────────────────
+┌───┬───────┬─────────────────┬────────────────────────┬────────────────────────┬────────────────────┬───────────────────┬────────────────────────┐
+│ # │ name  │ rootName        │ bboxMin                │ bboxMax                │ renderVertexCount¹ │ uploadVertexCount │ uploadNaiveVertexCount │
+├───┼───────┼─────────────────┼────────────────────────┼────────────────────────┼────────────────────┼───────────────────┼────────────────────────┤
+│ 0 │ Scene │ east_paving.001 │ 35, -0.79428, -2.04933 │ 77, 11.19428, 16.59989 │ 2,808              │ 1,872             │ 1,872                  │
+└───┴───────┴─────────────────┴────────────────────────┴────────────────────────┴────────────────────┴───────────────────┴────────────────────────┘
+
+¹ Expected number of vertices processed by the vertex shader for one render
+  pass, without considering the vertex cache.
+
+² Expected number of vertices uploaded to GPU, assuming each Accessor
+  is uploaded only once. Actual number uploaded may be higher, 
+  dependent on the implementation and vertex buffer layout.
+
+³ Expected number of vertices uploaded to GPU, assuming each Primitive
+  is uploaded once, duplicating vertex attributes shared among Primitives.
+
+
+
+ MESHES
+ ────────────────────────────────────────────
+┌───┬───────────┬───────────┬────────────────┬──────────────┬──────────┬─────────┬────────────────────────────────────────────────────┬───────────┬──────────┐
+│ # │ name      │ mode      │ meshPrimitives │ glPrimitives │ vertices │ indices │ attributes                                         │ instances │ size¹    │
+├───┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 0 │ Cube.081  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├───┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 1 │ Cube.082  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├───┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 2 │ Cube.083  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├───┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 3 │ Torus.018 │ TRIANGLES │ 1              │ 612          │ 1,224    │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 19.58 KB │
+└───┴───────────┴───────────┴────────────────┴──────────────┴──────────┴─────────┴────────────────────────────────────────────────────┴───────────┴──────────┘
+
+⁴ size estimates GPU memory required by a mesh, in isolation. If accessors are
+  shared by other mesh primitives, but the meshes themselves are not reused, then
+  the sum of all mesh sizes will overestimate the asset's total size. See "dedup".
+
+
+
+ MATERIALS
+ ────────────────────────────────────────────
+┌───┬─────────────────────┬───────────┬──────────┬───────────┬─────────────┐
+│ # │ name                │ instances │ textures │ alphaMode │ doubleSided │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 0 │ Dark plaza paving   │ 1         │          │ OPAQUE    │ ✓           │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 1 │ Recessed limestone  │ 1         │          │ OPAQUE    │ ✓           │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 2 │ Plaza planter stone │ 1         │          │ OPAQUE    │ ✓           │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 3 │ Baked limestone     │ 1         │          │ OPAQUE    │ ✓           │
+└───┴─────────────────────┴───────────┴──────────┴───────────┴─────────────┘
+
+
+
+ TEXTURES
+ ────────────────────────────────────────────
+No textures found.
+
+
+ ANIMATIONS
+ ────────────────────────────────────────────
+No animations found.
+
+===== approach-east-lod1.glb =====
+OVERVIEW
+ ────────────────────────────────────────────
+┌────────────────────┬────────────────────────────────────────────────┐
+│ key                │ value                                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ version            │ 2.0                                            │
+├────────────────────┼────────────────────────────────────────────────┤
+│ generator          │ glTF-Transform v4.5.1                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsUsed     │ EXT_meshopt_compression, KHR_mesh_quantization │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsRequired │ EXT_meshopt_compression, KHR_mesh_quantization │
+└────────────────────┴────────────────────────────────────────────────┘
+
+
+
+ SCENES
+ ────────────────────────────────────────────
+┌───┬───────┬─────────────────┬───────────────────────┬─────────────────────────────┬────────────────────┬───────────────────┬────────────────────────┐
+│ # │ name  │ rootName        │ bboxMin               │ bboxMax                     │ renderVertexCount¹ │ uploadVertexCount │ uploadNaiveVertexCount │
+├───┼───────┼─────────────────┼───────────────────────┼─────────────────────────────┼────────────────────┼───────────────────┼────────────────────────┤
+│ 0 │ Scene │ east_paving.001 │ 35, -0.22017, -2.0434 │ 76.99121, 2.37825, 16.59535 │ 522                │ 362               │ 362                    │
+└───┴───────┴─────────────────┴───────────────────────┴─────────────────────────────┴────────────────────┴───────────────────┴────────────────────────┘
+
+¹ Expected number of vertices processed by the vertex shader for one render
+  pass, without considering the vertex cache.
+
+² Expected number of vertices uploaded to GPU, assuming each Accessor
+  is uploaded only once. Actual number uploaded may be higher, 
+  dependent on the implementation and vertex buffer layout.
+
+³ Expected number of vertices uploaded to GPU, assuming each Primitive
+  is uploaded once, duplicating vertex attributes shared among Primitives.
+
+
+
+ MESHES
+ ────────────────────────────────────────────
+┌───┬──────────┬───────────┬────────────────┬──────────────┬──────────┬─────────┬────────────────────────────────────────────────────┬───────────┬─────────┐
+│ # │ name     │ mode      │ meshPrimitives │ glPrimitives │ vertices │ indices │ attributes                                         │ instances │ size¹   │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 0 │ Cube.081 │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 1 │ Cube.082 │ TRIANGLES │ 1              │ 58           │ 122      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.93 KB │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 2 │ Cube.083 │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB │
+└───┴──────────┴───────────┴────────────────┴──────────────┴──────────┴─────────┴────────────────────────────────────────────────────┴───────────┴─────────┘
+
+⁴ size estimates GPU memory required by a mesh, in isolation. If accessors are
+  shared by other mesh primitives, but the meshes themselves are not reused, then
+  the sum of all mesh sizes will overestimate the asset's total size. See "dedup".
+
+
+
+ MATERIALS
+ ────────────────────────────────────────────
+┌───┬─────────────────────┬───────────┬──────────┬───────────┬─────────────┐
+│ # │ name                │ instances │ textures │ alphaMode │ doubleSided │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 0 │ Dark plaza paving   │ 1         │          │ OPAQUE    │ ✓           │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 1 │ Recessed limestone  │ 1         │          │ OPAQUE    │ ✓           │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 2 │ Plaza planter stone │ 1         │          │ OPAQUE    │ ✓           │
+└───┴─────────────────────┴───────────┴──────────┴───────────┴─────────────┘
+
+
+
+ TEXTURES
+ ────────────────────────────────────────────
+No textures found.
+
+
+ ANIMATIONS
+ ────────────────────────────────────────────
+No animations found.
+
+===== approach-east-lod2.glb =====
+OVERVIEW
+ ────────────────────────────────────────────
+┌────────────────────┬────────────────────────────────────────────────┐
+│ key                │ value                                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ version            │ 2.0                                            │
+├────────────────────┼────────────────────────────────────────────────┤
+│ generator          │ glTF-Transform v4.5.1                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsUsed     │ EXT_meshopt_compression, KHR_mesh_quantization │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsRequired │ EXT_meshopt_compression, KHR_mesh_quantization │
+└────────────────────┴────────────────────────────────────────────────┘
+
+
+
+ SCENES
+ ────────────────────────────────────────────
+┌───┬───────┬─────────────────┬────────────────────────┬───────────────────────┬────────────────────┬───────────────────┬────────────────────────┐
+│ # │ name  │ rootName        │ bboxMin                │ bboxMax               │ renderVertexCount¹ │ uploadVertexCount │ uploadNaiveVertexCount │
+├───┼───────┼─────────────────┼────────────────────────┼───────────────────────┼────────────────────┼───────────────────┼────────────────────────┤
+│ 0 │ Scene │ east_paving.001 │ 35, -0.14589, -1.68311 │ 77, 2.39938, 16.59989 │ 9                  │ 9                 │ 9                      │
+└───┴───────┴─────────────────┴────────────────────────┴───────────────────────┴────────────────────┴───────────────────┴────────────────────────┘
+
+¹ Expected number of vertices processed by the vertex shader for one render
+  pass, without considering the vertex cache.
+
+² Expected number of vertices uploaded to GPU, assuming each Accessor
+  is uploaded only once. Actual number uploaded may be higher, 
+  dependent on the implementation and vertex buffer layout.
+
+³ Expected number of vertices uploaded to GPU, assuming each Primitive
+  is uploaded once, duplicating vertex attributes shared among Primitives.
+
+
+
+ MESHES
+ ────────────────────────────────────────────
+┌───┬──────────┬───────────┬────────────────┬──────────────┬──────────┬─────────┬────────────────────────────────────────────────────┬───────────┬──────────┐
+│ # │ name     │ mode      │ meshPrimitives │ glPrimitives │ vertices │ indices │ attributes                                         │ instances │ size¹    │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 0 │ Cube.081 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 1 │ Cube.082 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 2 │ Cube.083 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+└───┴──────────┴───────────┴────────────────┴──────────────┴──────────┴─────────┴────────────────────────────────────────────────────┴───────────┴──────────┘
+
+⁴ size estimates GPU memory required by a mesh, in isolation. If accessors are
+  shared by other mesh primitives, but the meshes themselves are not reused, then
+  the sum of all mesh sizes will overestimate the asset's total size. See "dedup".
+
+
+
+ MATERIALS
+ ────────────────────────────────────────────
+┌───┬─────────────────────┬───────────┬──────────┬───────────┬─────────────┐
+│ # │ name                │ instances │ textures │ alphaMode │ doubleSided │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 0 │ Dark plaza paving   │ 1         │          │ OPAQUE    │ ✓           │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 1 │ Recessed limestone  │ 1         │          │ OPAQUE    │ ✓           │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 2 │ Plaza planter stone │ 1         │          │ OPAQUE    │ ✓           │
+└───┴─────────────────────┴───────────┴──────────┴───────────┴─────────────┘
+
+
+
+ TEXTURES
+ ────────────────────────────────────────────
+No textures found.
+
+
+ ANIMATIONS
+ ────────────────────────────────────────────
+No animations found.
+
+===== approach-south-lod0.glb =====
+OVERVIEW
+ ────────────────────────────────────────────
+┌────────────────────┬────────────────────────────────────────────────┐
+│ key                │ value                                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ version            │ 2.0                                            │
+├────────────────────┼────────────────────────────────────────────────┤
+│ generator          │ glTF-Transform v4.5.1                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsUsed     │ EXT_meshopt_compression, KHR_mesh_quantization │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsRequired │ EXT_meshopt_compression, KHR_mesh_quantization │
+└────────────────────┴────────────────────────────────────────────────┘
+
+
+
+ SCENES
+ ────────────────────────────────────────────
+┌───┬───────┬─────────────────────────────┬─────────────────────────┬────────────────────┬────────────────────┬───────────────────┬────────────────────────┐
+│ # │ name  │ rootName                    │ bboxMin                 │ bboxMax            │ renderVertexCount¹ │ uploadVertexCount │ uploadNaiveVertexCount │
+├───┼───────┼─────────────────────────────┼─────────────────────────┼────────────────────┼────────────────────┼───────────────────┼────────────────────────┤
+│ 0 │ Scene │ south_processional_path.001 │ -12.99841, -0.22231, 25 │ 12.99841, 3.7, 105 │ 1,476              │ 480               │ 936                    │
+└───┴───────┴─────────────────────────────┴─────────────────────────┴────────────────────┴────────────────────┴───────────────────┴────────────────────────┘
+
+¹ Expected number of vertices processed by the vertex shader for one render
+  pass, without considering the vertex cache.
+
+² Expected number of vertices uploaded to GPU, assuming each Accessor
+  is uploaded only once. Actual number uploaded may be higher, 
+  dependent on the implementation and vertex buffer layout.
+
+³ Expected number of vertices uploaded to GPU, assuming each Primitive
+  is uploaded once, duplicating vertex attributes shared among Primitives.
+
+
+
+ MESHES
+ ────────────────────────────────────────────
+┌───┬──────────────┬───────────┬────────────────┬──────────────┬──────────┬─────────┬────────────────────────────────────────────────────┬───────────┬───────────┐
+│ # │ name         │ mode      │ meshPrimitives │ glPrimitives │ vertices │ indices │ attributes                                         │ instances │ size¹     │
+├───┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 0 │ Cube.081     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB   │
+├───┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 1 │ Cube.082     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB   │
+├───┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 2 │ Cube.083     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB   │
+├───┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 3 │ Cylinder.012 │ TRIANGLES │ 1              │ 28           │ 48       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 792 Bytes │
+├───┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 4 │ Cylinder.013 │ TRIANGLES │ 1              │ 28           │ 48       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 792 Bytes │
+├───┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 5 │ Cylinder.014 │ TRIANGLES │ 1              │ 28           │ 48       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 792 Bytes │
+├───┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 6 │ Cylinder.015 │ TRIANGLES │ 1              │ 28           │ 48       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 792 Bytes │
+├───┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 7 │ Cylinder.016 │ TRIANGLES │ 1              │ 28           │ 48       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 792 Bytes │
+├───┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 8 │ Cylinder.017 │ TRIANGLES │ 1              │ 28           │ 48       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 792 Bytes │
+└───┴──────────────┴───────────┴────────────────┴──────────────┴──────────┴─────────┴────────────────────────────────────────────────────┴───────────┴───────────┘
+
+⁴ size estimates GPU memory required by a mesh, in isolation. If accessors are
+  shared by other mesh primitives, but the meshes themselves are not reused, then
+  the sum of all mesh sizes will overestimate the asset's total size. See "dedup".
+
+
+
+ MATERIALS
+ ────────────────────────────────────────────
+┌───┬────────────────────────┬───────────┬──────────┬───────────┬─────────────┐
+│ # │ name                   │ instances │ textures │ alphaMode │ doubleSided │
+├───┼────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 0 │ Dark plaza paving      │ 1         │          │ OPAQUE    │ ✓           │
+├───┼────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 1 │ Recessed limestone     │ 2         │          │ OPAQUE    │ ✓           │
+├───┼────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 2 │ Aged ceremonial bronze │ 6         │          │ OPAQUE    │ ✓           │
+└───┴────────────────────────┴───────────┴──────────┴───────────┴─────────────┘
+
+
+
+ TEXTURES
+ ────────────────────────────────────────────
+No textures found.
+
+
+ ANIMATIONS
+ ────────────────────────────────────────────
+No animations found.
+
+===== approach-south-lod1.glb =====
+OVERVIEW
+ ────────────────────────────────────────────
+┌────────────────────┬────────────────────────────────────────────────┐
+│ key                │ value                                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ version            │ 2.0                                            │
+├────────────────────┼────────────────────────────────────────────────┤
+│ generator          │ glTF-Transform v4.5.1                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsUsed     │ EXT_meshopt_compression, KHR_mesh_quantization │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsRequired │ EXT_meshopt_compression, KHR_mesh_quantization │
+└────────────────────┴────────────────────────────────────────────────┘
+
+
+
+ SCENES
+ ────────────────────────────────────────────
+┌───┬───────┬─────────────────────────────┬─────────────────────────┬──────────────────────────────┬────────────────────┬───────────────────┬────────────────────────┐
+│ # │ name  │ rootName                    │ bboxMin                 │ bboxMax                      │ renderVertexCount¹ │ uploadVertexCount │ uploadNaiveVertexCount │
+├───┼───────┼─────────────────────────────┼─────────────────────────┼──────────────────────────────┼────────────────────┼───────────────────┼────────────────────────┤
+│ 0 │ Scene │ south_processional_path.001 │ -12.99812, -0.22227, 25 │ 12.99833, 1.19822, 104.99121 │ 594                │ 266               │ 412                    │
+└───┴───────┴─────────────────────────────┴─────────────────────────┴──────────────────────────────┴────────────────────┴───────────────────┴────────────────────────┘
+
+¹ Expected number of vertices processed by the vertex shader for one render
+  pass, without considering the vertex cache.
+
+² Expected number of vertices uploaded to GPU, assuming each Accessor
+  is uploaded only once. Actual number uploaded may be higher, 
+  dependent on the implementation and vertex buffer layout.
+
+³ Expected number of vertices uploaded to GPU, assuming each Primitive
+  is uploaded once, duplicating vertex attributes shared among Primitives.
+
+
+
+ MESHES
+ ────────────────────────────────────────────
+┌───┬──────────┬───────────┬────────────────┬──────────────┬──────────┬─────────┬────────────────────────────────────────────────────┬───────────┬─────────┐
+│ # │ name     │ mode      │ meshPrimitives │ glPrimitives │ vertices │ indices │ attributes                                         │ instances │ size¹   │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 0 │ Cube.081 │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 1 │ Cube.082 │ TRIANGLES │ 1              │ 70           │ 146      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 2.32 KB │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 2 │ Cube.083 │ TRIANGLES │ 1              │ 70           │ 146      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 2.32 KB │
+└───┴──────────┴───────────┴────────────────┴──────────────┴──────────┴─────────┴────────────────────────────────────────────────────┴───────────┴─────────┘
+
+⁴ size estimates GPU memory required by a mesh, in isolation. If accessors are
+  shared by other mesh primitives, but the meshes themselves are not reused, then
+  the sum of all mesh sizes will overestimate the asset's total size. See "dedup".
+
+
+
+ MATERIALS
+ ────────────────────────────────────────────
+┌───┬────────────────────┬───────────┬──────────┬───────────┬─────────────┐
+│ # │ name               │ instances │ textures │ alphaMode │ doubleSided │
+├───┼────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 0 │ Dark plaza paving  │ 1         │          │ OPAQUE    │ ✓           │
+├───┼────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 1 │ Recessed limestone │ 2         │          │ OPAQUE    │ ✓           │
+└───┴────────────────────┴───────────┴──────────┴───────────┴─────────────┘
+
+
+
+ TEXTURES
+ ────────────────────────────────────────────
+No textures found.
+
+
+ ANIMATIONS
+ ────────────────────────────────────────────
+No animations found.
+
+===== approach-south-lod2.glb =====
+OVERVIEW
+ ────────────────────────────────────────────
+┌────────────────────┬────────────────────────────────────────────────┐
+│ key                │ value                                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ version            │ 2.0                                            │
+├────────────────────┼────────────────────────────────────────────────┤
+│ generator          │ glTF-Transform v4.5.1                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsUsed     │ EXT_meshopt_compression, KHR_mesh_quantization │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsRequired │ EXT_meshopt_compression, KHR_mesh_quantization │
+└────────────────────┴────────────────────────────────────────────────┘
+
+
+
+ SCENES
+ ────────────────────────────────────────────
+┌───┬───────┬─────────────────────────────┬─────────────────────────┬────────────────────────┬────────────────────┬───────────────────┬────────────────────────┐
+│ # │ name  │ rootName                    │ bboxMin                 │ bboxMax                │ renderVertexCount¹ │ uploadVertexCount │ uploadNaiveVertexCount │
+├───┼───────┼─────────────────────────────┼─────────────────────────┼────────────────────────┼────────────────────┼───────────────────┼────────────────────────┤
+│ 0 │ Scene │ south_processional_path.001 │ -12.99841, -0.14906, 25 │ 12.99841, 0.79947, 105 │ 9                  │ 6                 │ 9                      │
+└───┴───────┴─────────────────────────────┴─────────────────────────┴────────────────────────┴────────────────────┴───────────────────┴────────────────────────┘
+
+¹ Expected number of vertices processed by the vertex shader for one render
+  pass, without considering the vertex cache.
+
+² Expected number of vertices uploaded to GPU, assuming each Accessor
+  is uploaded only once. Actual number uploaded may be higher, 
+  dependent on the implementation and vertex buffer layout.
+
+³ Expected number of vertices uploaded to GPU, assuming each Primitive
+  is uploaded once, duplicating vertex attributes shared among Primitives.
+
+
+
+ MESHES
+ ────────────────────────────────────────────
+┌───┬──────────┬───────────┬────────────────┬──────────────┬──────────┬─────────┬────────────────────────────────────────────────────┬───────────┬──────────┐
+│ # │ name     │ mode      │ meshPrimitives │ glPrimitives │ vertices │ indices │ attributes                                         │ instances │ size¹    │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 0 │ Cube.081 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 1 │ Cube.082 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 2 │ Cube.083 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+└───┴──────────┴───────────┴────────────────┴──────────────┴──────────┴─────────┴────────────────────────────────────────────────────┴───────────┴──────────┘
+
+⁴ size estimates GPU memory required by a mesh, in isolation. If accessors are
+  shared by other mesh primitives, but the meshes themselves are not reused, then
+  the sum of all mesh sizes will overestimate the asset's total size. See "dedup".
+
+
+
+ MATERIALS
+ ────────────────────────────────────────────
+┌───┬────────────────────┬───────────┬──────────┬───────────┬─────────────┐
+│ # │ name               │ instances │ textures │ alphaMode │ doubleSided │
+├───┼────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 0 │ Dark plaza paving  │ 1         │          │ OPAQUE    │ ✓           │
+├───┼────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 1 │ Recessed limestone │ 2         │          │ OPAQUE    │ ✓           │
+└───┴────────────────────┴───────────┴──────────┴───────────┴─────────────┘
+
+
+
+ TEXTURES
+ ────────────────────────────────────────────
+No textures found.
+
+
+ ANIMATIONS
+ ────────────────────────────────────────────
+No animations found.
+
+===== approach-west-lod0.glb =====
+OVERVIEW
+ ────────────────────────────────────────────
+┌────────────────────┬────────────────────────────────────────────────┐
+│ key                │ value                                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ version            │ 2.0                                            │
+├────────────────────┼────────────────────────────────────────────────┤
+│ generator          │ glTF-Transform v4.5.1                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsUsed     │ EXT_meshopt_compression, KHR_mesh_quantization │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsRequired │ EXT_meshopt_compression, KHR_mesh_quantization │
+└────────────────────┴────────────────────────────────────────────────┘
+
+
+
+ SCENES
+ ────────────────────────────────────────────
+┌───┬───────┬─────────────────┬─────────────────────────┬─────────────────────────┬────────────────────┬───────────────────┬────────────────────────┐
+│ # │ name  │ rootName        │ bboxMin                 │ bboxMax                 │ renderVertexCount¹ │ uploadVertexCount │ uploadNaiveVertexCount │
+├───┼───────┼─────────────────┼─────────────────────────┼─────────────────────────┼────────────────────┼───────────────────┼────────────────────────┤
+│ 0 │ Scene │ west_paving.001 │ -77, -0.79428, -2.04933 │ -35, 11.19428, 16.59989 │ 2,808              │ 1,872             │ 1,872                  │
+└───┴───────┴─────────────────┴─────────────────────────┴─────────────────────────┴────────────────────┴───────────────────┴────────────────────────┘
+
+¹ Expected number of vertices processed by the vertex shader for one render
+  pass, without considering the vertex cache.
+
+² Expected number of vertices uploaded to GPU, assuming each Accessor
+  is uploaded only once. Actual number uploaded may be higher, 
+  dependent on the implementation and vertex buffer layout.
+
+³ Expected number of vertices uploaded to GPU, assuming each Primitive
+  is uploaded once, duplicating vertex attributes shared among Primitives.
+
+
+
+ MESHES
+ ────────────────────────────────────────────
+┌───┬───────────┬───────────┬────────────────┬──────────────┬──────────┬─────────┬────────────────────────────────────────────────────┬───────────┬──────────┐
+│ # │ name      │ mode      │ meshPrimitives │ glPrimitives │ vertices │ indices │ attributes                                         │ instances │ size¹    │
+├───┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 0 │ Cube.081  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├───┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 1 │ Cube.082  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├───┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 2 │ Cube.083  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├───┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 3 │ Torus.018 │ TRIANGLES │ 1              │ 612          │ 1,224    │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 19.58 KB │
+└───┴───────────┴───────────┴────────────────┴──────────────┴──────────┴─────────┴────────────────────────────────────────────────────┴───────────┴──────────┘
+
+⁴ size estimates GPU memory required by a mesh, in isolation. If accessors are
+  shared by other mesh primitives, but the meshes themselves are not reused, then
+  the sum of all mesh sizes will overestimate the asset's total size. See "dedup".
+
+
+
+ MATERIALS
+ ────────────────────────────────────────────
+┌───┬─────────────────────┬───────────┬──────────┬───────────┬─────────────┐
+│ # │ name                │ instances │ textures │ alphaMode │ doubleSided │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 0 │ Dark plaza paving   │ 1         │          │ OPAQUE    │ ✓           │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 1 │ Recessed limestone  │ 1         │          │ OPAQUE    │ ✓           │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 2 │ Plaza planter stone │ 1         │          │ OPAQUE    │ ✓           │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 3 │ Baked limestone     │ 1         │          │ OPAQUE    │ ✓           │
+└───┴─────────────────────┴───────────┴──────────┴───────────┴─────────────┘
+
+
+
+ TEXTURES
+ ────────────────────────────────────────────
+No textures found.
+
+
+ ANIMATIONS
+ ────────────────────────────────────────────
+No animations found.
+
+===== approach-west-lod1.glb =====
+OVERVIEW
+ ────────────────────────────────────────────
+┌────────────────────┬────────────────────────────────────────────────┐
+│ key                │ value                                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ version            │ 2.0                                            │
+├────────────────────┼────────────────────────────────────────────────┤
+│ generator          │ glTF-Transform v4.5.1                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsUsed     │ EXT_meshopt_compression, KHR_mesh_quantization │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsRequired │ EXT_meshopt_compression, KHR_mesh_quantization │
+└────────────────────┴────────────────────────────────────────────────┘
+
+
+
+ SCENES
+ ────────────────────────────────────────────
+┌───┬───────┬─────────────────┬────────────────────────┬──────────────────────────────┬────────────────────┬───────────────────┬────────────────────────┐
+│ # │ name  │ rootName        │ bboxMin                │ bboxMax                      │ renderVertexCount¹ │ uploadVertexCount │ uploadNaiveVertexCount │
+├───┼───────┼─────────────────┼────────────────────────┼──────────────────────────────┼────────────────────┼───────────────────┼────────────────────────┤
+│ 0 │ Scene │ west_paving.001 │ -77, -0.22017, -2.0434 │ -35.00879, 2.37825, 16.59535 │ 522                │ 362               │ 362                    │
+└───┴───────┴─────────────────┴────────────────────────┴──────────────────────────────┴────────────────────┴───────────────────┴────────────────────────┘
+
+¹ Expected number of vertices processed by the vertex shader for one render
+  pass, without considering the vertex cache.
+
+² Expected number of vertices uploaded to GPU, assuming each Accessor
+  is uploaded only once. Actual number uploaded may be higher, 
+  dependent on the implementation and vertex buffer layout.
+
+³ Expected number of vertices uploaded to GPU, assuming each Primitive
+  is uploaded once, duplicating vertex attributes shared among Primitives.
+
+
+
+ MESHES
+ ────────────────────────────────────────────
+┌───┬──────────┬───────────┬────────────────┬──────────────┬──────────┬─────────┬────────────────────────────────────────────────────┬───────────┬─────────┐
+│ # │ name     │ mode      │ meshPrimitives │ glPrimitives │ vertices │ indices │ attributes                                         │ instances │ size¹   │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 0 │ Cube.081 │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 1 │ Cube.082 │ TRIANGLES │ 1              │ 58           │ 122      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.93 KB │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 2 │ Cube.083 │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB │
+└───┴──────────┴───────────┴────────────────┴──────────────┴──────────┴─────────┴────────────────────────────────────────────────────┴───────────┴─────────┘
+
+⁴ size estimates GPU memory required by a mesh, in isolation. If accessors are
+  shared by other mesh primitives, but the meshes themselves are not reused, then
+  the sum of all mesh sizes will overestimate the asset's total size. See "dedup".
+
+
+
+ MATERIALS
+ ────────────────────────────────────────────
+┌───┬─────────────────────┬───────────┬──────────┬───────────┬─────────────┐
+│ # │ name                │ instances │ textures │ alphaMode │ doubleSided │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 0 │ Dark plaza paving   │ 1         │          │ OPAQUE    │ ✓           │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 1 │ Recessed limestone  │ 1         │          │ OPAQUE    │ ✓           │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 2 │ Plaza planter stone │ 1         │          │ OPAQUE    │ ✓           │
+└───┴─────────────────────┴───────────┴──────────┴───────────┴─────────────┘
+
+
+
+ TEXTURES
+ ────────────────────────────────────────────
+No textures found.
+
+
+ ANIMATIONS
+ ────────────────────────────────────────────
+No animations found.
+
+===== approach-west-lod2.glb =====
+OVERVIEW
+ ────────────────────────────────────────────
+┌────────────────────┬────────────────────────────────────────────────┐
+│ key                │ value                                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ version            │ 2.0                                            │
+├────────────────────┼────────────────────────────────────────────────┤
+│ generator          │ glTF-Transform v4.5.1                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsUsed     │ EXT_meshopt_compression, KHR_mesh_quantization │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsRequired │ EXT_meshopt_compression, KHR_mesh_quantization │
+└────────────────────┴────────────────────────────────────────────────┘
+
+
+
+ SCENES
+ ────────────────────────────────────────────
+┌───┬───────┬─────────────────┬─────────────────────────┬────────────────────────┬────────────────────┬───────────────────┬────────────────────────┐
+│ # │ name  │ rootName        │ bboxMin                 │ bboxMax                │ renderVertexCount¹ │ uploadVertexCount │ uploadNaiveVertexCount │
+├───┼───────┼─────────────────┼─────────────────────────┼────────────────────────┼────────────────────┼───────────────────┼────────────────────────┤
+│ 0 │ Scene │ west_paving.001 │ -77, -0.14589, -1.68311 │ -35, 2.39938, 16.59989 │ 9                  │ 9                 │ 9                      │
+└───┴───────┴─────────────────┴─────────────────────────┴────────────────────────┴────────────────────┴───────────────────┴────────────────────────┘
+
+¹ Expected number of vertices processed by the vertex shader for one render
+  pass, without considering the vertex cache.
+
+² Expected number of vertices uploaded to GPU, assuming each Accessor
+  is uploaded only once. Actual number uploaded may be higher, 
+  dependent on the implementation and vertex buffer layout.
+
+³ Expected number of vertices uploaded to GPU, assuming each Primitive
+  is uploaded once, duplicating vertex attributes shared among Primitives.
+
+
+
+ MESHES
+ ────────────────────────────────────────────
+┌───┬──────────┬───────────┬────────────────┬──────────────┬──────────┬─────────┬────────────────────────────────────────────────────┬───────────┬──────────┐
+│ # │ name     │ mode      │ meshPrimitives │ glPrimitives │ vertices │ indices │ attributes                                         │ instances │ size¹    │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 0 │ Cube.081 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 1 │ Cube.082 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├───┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 2 │ Cube.083 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+└───┴──────────┴───────────┴────────────────┴──────────────┴──────────┴─────────┴────────────────────────────────────────────────────┴───────────┴──────────┘
+
+⁴ size estimates GPU memory required by a mesh, in isolation. If accessors are
+  shared by other mesh primitives, but the meshes themselves are not reused, then
+  the sum of all mesh sizes will overestimate the asset's total size. See "dedup".
+
+
+
+ MATERIALS
+ ────────────────────────────────────────────
+┌───┬─────────────────────┬───────────┬──────────┬───────────┬─────────────┐
+│ # │ name                │ instances │ textures │ alphaMode │ doubleSided │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 0 │ Dark plaza paving   │ 1         │          │ OPAQUE    │ ✓           │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 1 │ Recessed limestone  │ 1         │          │ OPAQUE    │ ✓           │
+├───┼─────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 2 │ Plaza planter stone │ 1         │          │ OPAQUE    │ ✓           │
+└───┴─────────────────────┴───────────┴──────────┴───────────┴─────────────┘
+
+
+
+ TEXTURES
+ ────────────────────────────────────────────
+No textures found.
+
+
+ ANIMATIONS
+ ────────────────────────────────────────────
+No animations found.
+
+===== plaza-center-lod0.glb =====
+OVERVIEW
+ ────────────────────────────────────────────
+┌────────────────────┬────────────────────────────────────────────────────────────────────┐
+│ key                │ value                                                              │
+├────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ version            │ 2.0                                                                │
+├────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ generator          │ glTF-Transform v4.5.1                                              │
+├────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ extensionsUsed     │ EXT_meshopt_compression, KHR_mesh_quantization, KHR_texture_basisu │
+├────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ extensionsRequired │ EXT_meshopt_compression, KHR_mesh_quantization, KHR_texture_basisu │
+└────────────────────┴────────────────────────────────────────────────────────────────────┘
+
+
+
+ SCENES
+ ────────────────────────────────────────────
+┌───┬───────┬──────────────────┬──────────────────────────┬───────────────────────┬────────────────────┬───────────────────┬────────────────────────┐
+│ # │ name  │ rootName         │ bboxMin                  │ bboxMax               │ renderVertexCount¹ │ uploadVertexCount │ uploadNaiveVertexCount │
+├───┼───────┼──────────────────┼──────────────────────────┼───────────────────────┼────────────────────┼───────────────────┼────────────────────────┤
+│ 0 │ Scene │ plaza_paving.001 │ -56, -0.27672, -44.99997 │ 56, 3.90001, 35.17499 │ 12,960             │ 4,164             │ 8,352                  │
+└───┴───────┴──────────────────┴──────────────────────────┴───────────────────────┴────────────────────┴───────────────────┴────────────────────────┘
+
+¹ Expected number of vertices processed by the vertex shader for one render
+  pass, without considering the vertex cache.
+
+² Expected number of vertices uploaded to GPU, assuming each Accessor
+  is uploaded only once. Actual number uploaded may be higher, 
+  dependent on the implementation and vertex buffer layout.
+
+³ Expected number of vertices uploaded to GPU, assuming each Primitive
+  is uploaded once, duplicating vertex attributes shared among Primitives.
+
+
+
+ MESHES
+ ────────────────────────────────────────────
+┌────┬──────────────┬───────────┬────────────────┬──────────────┬──────────┬─────────┬─────────────────────────────────────────────────────────────────────────┬───────────┬─────────┐
+│ #  │ name         │ mode      │ meshPrimitives │ glPrimitives │ vertices │ indices │ attributes                                                              │ instances │ size¹   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 0  │ Cube.081     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 1  │ Cube.082     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 2  │ Cube.083     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 3  │ Cube.084     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 4  │ Cube.085     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 5  │ Cube.086     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 6  │ Cube.087     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 7  │ Cube.088     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 8  │ Cube.089     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 9  │ Cube.090     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 10 │ Cube.091     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 11 │ Cube.092     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 12 │ Cube.093     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 13 │ Cube.094     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 14 │ Cube.095     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 15 │ Cube.096     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 16 │ Cube.097     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 17 │ Cube.098     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 2         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 18 │ Cube.099     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 19 │ Cube.100     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 20 │ Cube.101     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 21 │ Cube.102     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 22 │ Cube.103     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 23 │ Cube.104     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 24 │ Cube.105     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 25 │ Cube.106     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 26 │ Cube.107     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 27 │ Cube.109     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 28 │ Cube.110     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 29 │ Cube.111     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 30 │ Cube.112     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 31 │ Cylinder.012 │ TRIANGLES │ 1              │ 36           │ 60       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 1.24 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 32 │ Cube.113     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 33 │ Cylinder.013 │ TRIANGLES │ 1              │ 36           │ 60       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 1.24 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 34 │ Cube.114     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 35 │ Cylinder.014 │ TRIANGLES │ 1              │ 36           │ 60       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 1.24 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 36 │ Cube.115     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 37 │ Cylinder.015 │ TRIANGLES │ 1              │ 36           │ 60       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 1.24 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 38 │ Cube.116     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 39 │ Cylinder.016 │ TRIANGLES │ 1              │ 36           │ 60       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 1.24 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 40 │ Cube.117     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 41 │ Cylinder.017 │ TRIANGLES │ 1              │ 36           │ 60       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 1.24 KB │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼─────────────────────────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 42 │ Cube.118     │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm, TEXCOORD_0:u16_norm │ 1         │ 4.32 KB │
+└────┴──────────────┴───────────┴────────────────┴──────────────┴──────────┴─────────┴─────────────────────────────────────────────────────────────────────────┴───────────┴─────────┘
+
+⁴ size estimates GPU memory required by a mesh, in isolation. If accessors are
+  shared by other mesh primitives, but the meshes themselves are not reused, then
+  the sum of all mesh sizes will overestimate the asset's total size. See "dedup".
+
+
+
+ MATERIALS
+ ────────────────────────────────────────────
+┌───┬────────────────────┬───────────┬──────────────────┬───────────┬─────────────┐
+│ # │ name               │ instances │ textures         │ alphaMode │ doubleSided │
+├───┼────────────────────┼───────────┼──────────────────┼───────────┼─────────────┤
+│ 0 │ PaletteMaterial001 │ 8         │ baseColorTexture │ OPAQUE    │ ✓           │
+├───┼────────────────────┼───────────┼──────────────────┼───────────┼─────────────┤
+│ 1 │ PaletteMaterial002 │ 15        │ baseColorTexture │ OPAQUE    │ ✓           │
+├───┼────────────────────┼───────────┼──────────────────┼───────────┼─────────────┤
+│ 2 │ PaletteMaterial003 │ 8         │ baseColorTexture │ OPAQUE    │ ✓           │
+├───┼────────────────────┼───────────┼──────────────────┼───────────┼─────────────┤
+│ 3 │ PaletteMaterial004 │ 12        │ baseColorTexture │ OPAQUE    │ ✓           │
+└───┴────────────────────┴───────────┴──────────────────┴───────────┴─────────────┘
+
+
+
+ TEXTURES
+ ────────────────────────────────────────────
+┌───┬──────────────────┬─────┬──────────────────┬───────────┬────────────┬─────────────┬────────────┬───────────┬────────────┐
+│ # │ name             │ uri │ slots            │ instances │ mimeType   │ compression │ resolution │ size      │ gpuSize⁵   │
+├───┼──────────────────┼─────┼──────────────────┼───────────┼────────────┼─────────────┼────────────┼───────────┼────────────┤
+│ 0 │ PaletteBaseColor │     │ baseColorTexture │ 4         │ image/ktx2 │ ETC1S       │ 32x4       │ 678 Bytes │ 87.5 Bytes │
+└───┴──────────────────┴─────┴──────────────────┴───────────┴────────────┴─────────────┴────────────┴───────────┴────────────┘
+
+⁵ gpuSize estimates minimum VRAM memory allocation. Older devices may require
+  additional memory for GPU compression formats.
+
+
+
+ ANIMATIONS
+ ────────────────────────────────────────────
+No animations found.
+
+===== plaza-center-lod1.glb =====
+OVERVIEW
+ ────────────────────────────────────────────
+┌────────────────────┬────────────────────────────────────────────────┐
+│ key                │ value                                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ version            │ 2.0                                            │
+├────────────────────┼────────────────────────────────────────────────┤
+│ generator          │ glTF-Transform v4.5.1                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsUsed     │ EXT_meshopt_compression, KHR_mesh_quantization │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsRequired │ EXT_meshopt_compression, KHR_mesh_quantization │
+└────────────────────┴────────────────────────────────────────────────┘
+
+
+
+ SCENES
+ ────────────────────────────────────────────
+┌───┬───────┬──────────────────┬─────────────────────────┬─────────────────────────┬────────────────────┬───────────────────┬────────────────────────┐
+│ # │ name  │ rootName         │ bboxMin                 │ bboxMax                 │ renderVertexCount¹ │ uploadVertexCount │ uploadNaiveVertexCount │
+├───┼───────┼──────────────────┼─────────────────────────┼─────────────────────────┼────────────────────┼───────────────────┼────────────────────────┤
+│ 0 │ Scene │ plaza_paving.001 │ -56, -0.2767, -44.99956 │ 55.98755, 3.7, 35.10592 │ 4,680              │ 2,194             │ 3,274                  │
+└───┴───────┴──────────────────┴─────────────────────────┴─────────────────────────┴────────────────────┴───────────────────┴────────────────────────┘
+
+¹ Expected number of vertices processed by the vertex shader for one render
+  pass, without considering the vertex cache.
+
+² Expected number of vertices uploaded to GPU, assuming each Accessor
+  is uploaded only once. Actual number uploaded may be higher, 
+  dependent on the implementation and vertex buffer layout.
+
+³ Expected number of vertices uploaded to GPU, assuming each Primitive
+  is uploaded once, duplicating vertex attributes shared among Primitives.
+
+
+
+ MESHES
+ ────────────────────────────────────────────
+┌────┬──────────────┬───────────┬────────────────┬──────────────┬──────────┬─────────┬────────────────────────────────────────────────────┬───────────┬───────────┐
+│ #  │ name         │ mode      │ meshPrimitives │ glPrimitives │ vertices │ indices │ attributes                                         │ instances │ size¹     │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 0  │ Cube.081     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 1  │ Cube.082     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 2  │ Cube.083     │ TRIANGLES │ 1              │ 58           │ 122      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.93 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 3  │ Cube.084     │ TRIANGLES │ 1              │ 70           │ 146      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 2.32 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 4  │ Cube.085     │ TRIANGLES │ 1              │ 70           │ 146      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 2.32 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 5  │ Cube.086     │ TRIANGLES │ 1              │ 70           │ 144      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 2.29 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 6  │ Cube.087     │ TRIANGLES │ 1              │ 70           │ 144      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 2.29 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 7  │ Cube.088     │ TRIANGLES │ 1              │ 58           │ 122      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.93 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 8  │ Cube.089     │ TRIANGLES │ 1              │ 58           │ 122      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.93 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 9  │ Cube.090     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 10 │ Cube.091     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 11 │ Cube.092     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 12 │ Cube.093     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 13 │ Cube.094     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 14 │ Cube.095     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 15 │ Cube.096     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 16 │ Cube.097     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 17 │ Cube.098     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 18 │ Cube.099     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 19 │ Cube.100     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 20 │ Cube.101     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 21 │ Cube.102     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 22 │ Cube.103     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 23 │ Cube.104     │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB   │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 24 │ Cylinder.012 │ TRIANGLES │ 1              │ 20           │ 48       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 744 Bytes │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 25 │ Cylinder.013 │ TRIANGLES │ 1              │ 20           │ 48       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 744 Bytes │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 26 │ Cylinder.014 │ TRIANGLES │ 1              │ 20           │ 48       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 744 Bytes │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 27 │ Cylinder.015 │ TRIANGLES │ 1              │ 20           │ 48       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 744 Bytes │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 28 │ Cylinder.016 │ TRIANGLES │ 1              │ 20           │ 48       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 744 Bytes │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 29 │ Cylinder.017 │ TRIANGLES │ 1              │ 20           │ 48       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 744 Bytes │
+└────┴──────────────┴───────────┴────────────────┴──────────────┴──────────┴─────────┴────────────────────────────────────────────────────┴───────────┴───────────┘
+
+⁴ size estimates GPU memory required by a mesh, in isolation. If accessors are
+  shared by other mesh primitives, but the meshes themselves are not reused, then
+  the sum of all mesh sizes will overestimate the asset's total size. See "dedup".
+
+
+
+ MATERIALS
+ ────────────────────────────────────────────
+┌───┬────────────────────────┬───────────┬──────────┬───────────┬─────────────┐
+│ # │ name                   │ instances │ textures │ alphaMode │ doubleSided │
+├───┼────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 0 │ Dark plaza paving      │ 1         │          │ OPAQUE    │ ✓           │
+├───┼────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 1 │ Baked limestone        │ 15        │          │ OPAQUE    │ ✓           │
+├───┼────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 2 │ Plaza planter stone    │ 8         │          │ OPAQUE    │ ✓           │
+├───┼────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 3 │ Aged ceremonial bronze │ 6         │          │ OPAQUE    │ ✓           │
+└───┴────────────────────────┴───────────┴──────────┴───────────┴─────────────┘
+
+
+
+ TEXTURES
+ ────────────────────────────────────────────
+No textures found.
+
+
+ ANIMATIONS
+ ────────────────────────────────────────────
+No animations found.
+
+===== plaza-center-lod2.glb =====
+OVERVIEW
+ ────────────────────────────────────────────
+┌────────────────────┬────────────────────────────────────────────────┐
+│ key                │ value                                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ version            │ 2.0                                            │
+├────────────────────┼────────────────────────────────────────────────┤
+│ generator          │ glTF-Transform v4.5.1                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsUsed     │ EXT_meshopt_compression, KHR_mesh_quantization │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsRequired │ EXT_meshopt_compression, KHR_mesh_quantization │
+└────────────────────┴────────────────────────────────────────────────┘
+
+
+
+ SCENES
+ ────────────────────────────────────────────
+┌───┬───────┬──────────────────┬──────────────────────────┬───────────────────┬────────────────────┬───────────────────┬────────────────────────┐
+│ # │ name  │ rootName         │ bboxMin                  │ bboxMax           │ renderVertexCount¹ │ uploadVertexCount │ uploadNaiveVertexCount │
+├───┼───────┼──────────────────┼──────────────────────────┼───────────────────┼────────────────────┼───────────────────┼────────────────────────┤
+│ 0 │ Scene │ plaza_paving.001 │ -56, -0.18785, -44.99997 │ 56, 3.7, 35.09076 │ 216                │ 75                │ 213                    │
+└───┴───────┴──────────────────┴──────────────────────────┴───────────────────┴────────────────────┴───────────────────┴────────────────────────┘
+
+¹ Expected number of vertices processed by the vertex shader for one render
+  pass, without considering the vertex cache.
+
+² Expected number of vertices uploaded to GPU, assuming each Accessor
+  is uploaded only once. Actual number uploaded may be higher, 
+  dependent on the implementation and vertex buffer layout.
+
+³ Expected number of vertices uploaded to GPU, assuming each Primitive
+  is uploaded once, duplicating vertex attributes shared among Primitives.
+
+
+
+ MESHES
+ ────────────────────────────────────────────
+┌────┬──────────────┬───────────┬────────────────┬──────────────┬──────────┬─────────┬────────────────────────────────────────────────────┬───────────┬───────────┐
+│ #  │ name         │ mode      │ meshPrimitives │ glPrimitives │ vertices │ indices │ attributes                                         │ instances │ size¹     │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 0  │ Cube.081     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 1  │ Cube.082     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 2  │ Cube.083     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 3  │ Cube.084     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 4  │ Cube.085     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 5  │ Cube.086     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 6  │ Cube.087     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 7  │ Cube.088     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 8  │ Cube.089     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 9  │ Cube.090     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 10 │ Cube.091     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 11 │ Cube.092     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 12 │ Cube.093     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 13 │ Cube.094     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 14 │ Cube.095     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 15 │ Cube.096     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 16 │ Cube.097     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 2         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 17 │ Cube.099     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 18 │ Cube.100     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 19 │ Cube.101     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 20 │ Cube.102     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 21 │ Cube.103     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 22 │ Cube.104     │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes  │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 23 │ Cylinder.012 │ TRIANGLES │ 1              │ 8            │ 24       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 360 Bytes │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 24 │ Cylinder.013 │ TRIANGLES │ 1              │ 8            │ 24       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 360 Bytes │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 25 │ Cylinder.014 │ TRIANGLES │ 1              │ 8            │ 24       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 360 Bytes │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 26 │ Cylinder.015 │ TRIANGLES │ 1              │ 8            │ 24       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 360 Bytes │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 27 │ Cylinder.016 │ TRIANGLES │ 1              │ 8            │ 24       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 360 Bytes │
+├────┼──────────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼───────────┤
+│ 28 │ Cylinder.017 │ TRIANGLES │ 1              │ 8            │ 24       │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 360 Bytes │
+└────┴──────────────┴───────────┴────────────────┴──────────────┴──────────┴─────────┴────────────────────────────────────────────────────┴───────────┴───────────┘
+
+⁴ size estimates GPU memory required by a mesh, in isolation. If accessors are
+  shared by other mesh primitives, but the meshes themselves are not reused, then
+  the sum of all mesh sizes will overestimate the asset's total size. See "dedup".
+
+
+
+ MATERIALS
+ ────────────────────────────────────────────
+┌───┬────────────────────────┬───────────┬──────────┬───────────┬─────────────┐
+│ # │ name                   │ instances │ textures │ alphaMode │ doubleSided │
+├───┼────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 0 │ Dark plaza paving      │ 1         │          │ OPAQUE    │ ✓           │
+├───┼────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 1 │ Baked limestone        │ 15        │          │ OPAQUE    │ ✓           │
+├───┼────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 2 │ Plaza planter stone    │ 7         │          │ OPAQUE    │ ✓           │
+├───┼────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 3 │ Aged ceremonial bronze │ 6         │          │ OPAQUE    │ ✓           │
+└───┴────────────────────────┴───────────┴──────────┴───────────┴─────────────┘
+
+
+
+ TEXTURES
+ ────────────────────────────────────────────
+No textures found.
+
+
+ ANIMATIONS
+ ────────────────────────────────────────────
+No animations found.
+
+===== temple-core-lod0.glb =====
+OVERVIEW
+ ────────────────────────────────────────────
+┌────────────────────┬────────────────────────────────────────────────┐
+│ key                │ value                                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ version            │ 2.0                                            │
+├────────────────────┼────────────────────────────────────────────────┤
+│ generator          │ glTF-Transform v4.5.1                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsUsed     │ EXT_meshopt_compression, KHR_mesh_quantization │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsRequired │ EXT_meshopt_compression, KHR_mesh_quantization │
+└────────────────────┴────────────────────────────────────────────────┘
+
+
+
+ SCENES
+ ────────────────────────────────────────────
+┌───┬───────┬──────────────────────┬─────────────────────────┬─────────────────────────┬────────────────────┬───────────────────┬────────────────────────┐
+│ # │ name  │ rootName             │ bboxMin                 │ bboxMax                 │ renderVertexCount¹ │ uploadVertexCount │ uploadNaiveVertexCount │
+├───┼───────┼──────────────────────┼─────────────────────────┼─────────────────────────┼────────────────────┼───────────────────┼────────────────────────┤
+│ 0 │ Scene │ temple_main_mass.001 │ -50.99954, 0, -58.79879 │ 50.99954, 20.69894, -33 │ 19,776             │ 2,512             │ 12,968                 │
+└───┴───────┴──────────────────────┴─────────────────────────┴─────────────────────────┴────────────────────┴───────────────────┴────────────────────────┘
+
+¹ Expected number of vertices processed by the vertex shader for one render
+  pass, without considering the vertex cache.
+
+² Expected number of vertices uploaded to GPU, assuming each Accessor
+  is uploaded only once. Actual number uploaded may be higher, 
+  dependent on the implementation and vertex buffer layout.
+
+³ Expected number of vertices uploaded to GPU, assuming each Primitive
+  is uploaded once, duplicating vertex attributes shared among Primitives.
+
+
+
+ MESHES
+ ────────────────────────────────────────────
+┌────┬───────────┬───────────┬────────────────┬──────────────┬──────────┬─────────┬────────────────────────────────────────────────────┬───────────┬──────────┐
+│ #  │ name      │ mode      │ meshPrimitives │ glPrimitives │ vertices │ indices │ attributes                                         │ instances │ size¹    │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 0  │ Cube.081  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 1  │ Cube.082  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 2  │ Cube.083  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 3  │ Cube.084  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 4  │ Cube.085  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 5  │ Cube.086  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 6  │ Cube.087  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 2         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 7  │ Cube.088  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 8  │ Torus.018 │ TRIANGLES │ 1              │ 392          │ 784      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 12.54 KB │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 9  │ Cube.089  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 10 │ Cube.090  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 11 │ Torus.019 │ TRIANGLES │ 1              │ 392          │ 784      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 12.54 KB │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 12 │ Cube.091  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 13 │ Cube.092  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 14 │ Torus.020 │ TRIANGLES │ 1              │ 392          │ 784      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 12.54 KB │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 15 │ Cube.093  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 16 │ Cube.094  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 17 │ Torus.021 │ TRIANGLES │ 1              │ 392          │ 784      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 12.54 KB │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 18 │ Cube.096  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 19 │ Torus.022 │ TRIANGLES │ 1              │ 392          │ 784      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 12.54 KB │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 20 │ Cube.097  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 21 │ Cube.098  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 22 │ Torus.023 │ TRIANGLES │ 1              │ 392          │ 784      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 12.54 KB │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 23 │ Cube.099  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 24 │ Cube.100  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 25 │ Torus.024 │ TRIANGLES │ 1              │ 392          │ 784      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 12.54 KB │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 26 │ Cube.101  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 27 │ Cube.102  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 28 │ Torus.025 │ TRIANGLES │ 1              │ 392          │ 784      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 12.54 KB │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 29 │ Cube.103  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 30 │ Cube.104  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 31 │ Cube.105  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 32 │ Cube.106  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 33 │ Cube.107  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 34 │ Cube.108  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 35 │ Cube.109  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 36 │ Cube.110  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 37 │ Cube.111  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+├────┼───────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 38 │ Cube.112  │ TRIANGLES │ 1              │ 108          │ 216      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 3.46 KB  │
+└────┴───────────┴───────────┴────────────────┴──────────────┴──────────┴─────────┴────────────────────────────────────────────────────┴───────────┴──────────┘
+
+⁴ size estimates GPU memory required by a mesh, in isolation. If accessors are
+  shared by other mesh primitives, but the meshes themselves are not reused, then
+  the sum of all mesh sizes will overestimate the asset's total size. See "dedup".
+
+
+
+ MATERIALS
+ ────────────────────────────────────────────
+┌───┬────────────────────────────────┬───────────┬──────────┬───────────┬─────────────┐
+│ # │ name                           │ instances │ textures │ alphaMode │ doubleSided │
+├───┼────────────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 0 │ Baked limestone                │ 18        │          │ OPAQUE    │ ✓           │
+├───┼────────────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 1 │ Recessed limestone             │ 20        │          │ OPAQUE    │ ✓           │
+├───┼────────────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 2 │ Original teal-gold mosaic band │ 1         │          │ OPAQUE    │ ✓           │
+└───┴────────────────────────────────┴───────────┴──────────┴───────────┴─────────────┘
+
+
+
+ TEXTURES
+ ────────────────────────────────────────────
+No textures found.
+
+
+ ANIMATIONS
+ ────────────────────────────────────────────
+No animations found.
+
+===== temple-core-lod1.glb =====
+OVERVIEW
+ ────────────────────────────────────────────
+┌────────────────────┬────────────────────────────────────────────────┐
+│ key                │ value                                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ version            │ 2.0                                            │
+├────────────────────┼────────────────────────────────────────────────┤
+│ generator          │ glTF-Transform v4.5.1                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsUsed     │ EXT_meshopt_compression, KHR_mesh_quantization │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsRequired │ EXT_meshopt_compression, KHR_mesh_quantization │
+└────────────────────┴────────────────────────────────────────────────┘
+
+
+
+ SCENES
+ ────────────────────────────────────────────
+┌───┬───────┬──────────────────────┬────────────────────────────────┬───────────────────────────────┬────────────────────┬───────────────────┬────────────────────────┐
+│ # │ name  │ rootName             │ bboxMin                        │ bboxMax                       │ renderVertexCount¹ │ uploadVertexCount │ uploadNaiveVertexCount │
+├───┼───────┼──────────────────────┼────────────────────────────────┼───────────────────────────────┼────────────────────┼───────────────────┼────────────────────────┤
+│ 0 │ Scene │ temple_main_mass.001 │ -50.99974, -0.00037, -58.79798 │ 50.96967, 20.69883, -33.03567 │ 2,544              │ 768               │ 1,632                  │
+└───┴───────┴──────────────────────┴────────────────────────────────┴───────────────────────────────┴────────────────────┴───────────────────┴────────────────────────┘
+
+¹ Expected number of vertices processed by the vertex shader for one render
+  pass, without considering the vertex cache.
+
+² Expected number of vertices uploaded to GPU, assuming each Accessor
+  is uploaded only once. Actual number uploaded may be higher, 
+  dependent on the implementation and vertex buffer layout.
+
+³ Expected number of vertices uploaded to GPU, assuming each Primitive
+  is uploaded once, duplicating vertex attributes shared among Primitives.
+
+
+
+ MESHES
+ ────────────────────────────────────────────
+┌────┬──────────┬───────────┬────────────────┬──────────────┬──────────┬─────────┬────────────────────────────────────────────────────┬───────────┬─────────┐
+│ #  │ name     │ mode      │ meshPrimitives │ glPrimitives │ vertices │ indices │ attributes                                         │ instances │ size¹   │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 0  │ Cube.081 │ TRIANGLES │ 1              │ 70           │ 144      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 2.29 KB │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 1  │ Cube.082 │ TRIANGLES │ 1              │ 70           │ 144      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 2.29 KB │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 2  │ Cube.083 │ TRIANGLES │ 1              │ 70           │ 144      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 2.29 KB │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 3  │ Cube.084 │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 4  │ Cube.085 │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 5  │ Cube.086 │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 6  │ Cube.087 │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 2         │ 1.91 KB │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 7  │ Cube.088 │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 8  │ Cube.089 │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 9  │ Cube.090 │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 10 │ Cube.092 │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 11 │ Cube.093 │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼─────────┤
+│ 12 │ Cube.094 │ TRIANGLES │ 1              │ 58           │ 120      │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 1.91 KB │
+└────┴──────────┴───────────┴────────────────┴──────────────┴──────────┴─────────┴────────────────────────────────────────────────────┴───────────┴─────────┘
+
+⁴ size estimates GPU memory required by a mesh, in isolation. If accessors are
+  shared by other mesh primitives, but the meshes themselves are not reused, then
+  the sum of all mesh sizes will overestimate the asset's total size. See "dedup".
+
+
+
+ MATERIALS
+ ────────────────────────────────────────────
+┌───┬────────────────────────────────┬───────────┬──────────┬───────────┬─────────────┐
+│ # │ name                           │ instances │ textures │ alphaMode │ doubleSided │
+├───┼────────────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 0 │ Baked limestone                │ 2         │          │ OPAQUE    │ ✓           │
+├───┼────────────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 1 │ Recessed limestone             │ 10        │          │ OPAQUE    │ ✓           │
+├───┼────────────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 2 │ Original teal-gold mosaic band │ 1         │          │ OPAQUE    │ ✓           │
+└───┴────────────────────────────────┴───────────┴──────────┴───────────┴─────────────┘
+
+
+
+ TEXTURES
+ ────────────────────────────────────────────
+No textures found.
+
+
+ ANIMATIONS
+ ────────────────────────────────────────────
+No animations found.
+
+===== temple-core-lod2.glb =====
+OVERVIEW
+ ────────────────────────────────────────────
+┌────────────────────┬────────────────────────────────────────────────┐
+│ key                │ value                                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ version            │ 2.0                                            │
+├────────────────────┼────────────────────────────────────────────────┤
+│ generator          │ glTF-Transform v4.5.1                          │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsUsed     │ EXT_meshopt_compression, KHR_mesh_quantization │
+├────────────────────┼────────────────────────────────────────────────┤
+│ extensionsRequired │ EXT_meshopt_compression, KHR_mesh_quantization │
+└────────────────────┴────────────────────────────────────────────────┘
+
+
+
+ SCENES
+ ────────────────────────────────────────────
+┌───┬───────┬──────────────────────┬───────────────────────────────┬─────────────────────────┬────────────────────┬───────────────────┬────────────────────────┐
+│ # │ name  │ rootName             │ bboxMin                       │ bboxMax                 │ renderVertexCount¹ │ uploadVertexCount │ uploadNaiveVertexCount │
+├───┼───────┼──────────────────────┼───────────────────────────────┼─────────────────────────┼────────────────────┼───────────────────┼────────────────────────┤
+│ 0 │ Scene │ temple_main_mass.001 │ -50.99954, 0.00104, -58.79879 │ 50.99954, 20.43452, -33 │ 42                 │ 18                │ 39                     │
+└───┴───────┴──────────────────────┴───────────────────────────────┴─────────────────────────┴────────────────────┴───────────────────┴────────────────────────┘
+
+¹ Expected number of vertices processed by the vertex shader for one render
+  pass, without considering the vertex cache.
+
+² Expected number of vertices uploaded to GPU, assuming each Accessor
+  is uploaded only once. Actual number uploaded may be higher, 
+  dependent on the implementation and vertex buffer layout.
+
+³ Expected number of vertices uploaded to GPU, assuming each Primitive
+  is uploaded once, duplicating vertex attributes shared among Primitives.
+
+
+
+ MESHES
+ ────────────────────────────────────────────
+┌────┬──────────┬───────────┬────────────────┬──────────────┬──────────┬─────────┬────────────────────────────────────────────────────┬───────────┬──────────┐
+│ #  │ name     │ mode      │ meshPrimitives │ glPrimitives │ vertices │ indices │ attributes                                         │ instances │ size¹    │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 0  │ Cube.081 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 1  │ Cube.082 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 2  │ Cube.083 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 3  │ Cube.084 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 4  │ Cube.085 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 5  │ Cube.086 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 6  │ Cube.087 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 2         │ 45 Bytes │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 7  │ Cube.088 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 8  │ Cube.089 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 9  │ Cube.090 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 10 │ Cube.092 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 11 │ Cube.093 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+├────┼──────────┼───────────┼────────────────┼──────────────┼──────────┼─────────┼────────────────────────────────────────────────────┼───────────┼──────────┤
+│ 12 │ Cube.094 │ TRIANGLES │ 1              │ 1            │ 3        │ u16     │ COLOR_0:u8_norm, NORMAL:i8_norm, POSITION:i16_norm │ 1         │ 45 Bytes │
+└────┴──────────┴───────────┴────────────────┴──────────────┴──────────┴─────────┴────────────────────────────────────────────────────┴───────────┴──────────┘
+
+⁴ size estimates GPU memory required by a mesh, in isolation. If accessors are
+  shared by other mesh primitives, but the meshes themselves are not reused, then
+  the sum of all mesh sizes will overestimate the asset's total size. See "dedup".
+
+
+
+ MATERIALS
+ ────────────────────────────────────────────
+┌───┬────────────────────────────────┬───────────┬──────────┬───────────┬─────────────┐
+│ # │ name                           │ instances │ textures │ alphaMode │ doubleSided │
+├───┼────────────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 0 │ Baked limestone                │ 2         │          │ OPAQUE    │ ✓           │
+├───┼────────────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 1 │ Recessed limestone             │ 10        │          │ OPAQUE    │ ✓           │
+├───┼────────────────────────────────┼───────────┼──────────┼───────────┼─────────────┤
+│ 2 │ Original teal-gold mosaic band │ 1         │          │ OPAQUE    │ ✓           │
+└───┴────────────────────────────────┴───────────┴──────────┴───────────┴─────────────┘
+
+
+
+ TEXTURES
+ ────────────────────────────────────────────
+No textures found.
+
+
+ ANIMATIONS
+ ────────────────────────────────────────────
+No animations found.
+

@@ -149,7 +149,7 @@
    // Authored clips on your own character (character-anim.js through character-motion.js).
    // The character model (the horror chapter dresses it in the free garment).
    model:()=>model,
-   anim(id,opts){return !physicsActive&&model?.motion.play?.(id,opts)||null;},
+   anim(id,opts){if(id==='roll'&&window.GardenAnim?.has?.('pkRoll'))id='pkRoll';return !physicsActive&&model?.motion.play?.(id,opts)||null;},
    stopAnim(id,fade){model?.motion.stop?.(id,fade);},
    animPlaying:id=>!!model?.motion.playing?.(id),
    // What you hold, gripped in both hands and pointed where you look (character-motion.js hold/aimAt).
