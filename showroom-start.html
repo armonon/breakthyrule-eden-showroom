@@ -28,7 +28,6 @@
   .status::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--off)}
   .status[data-state="online"]{color:var(--ok)}
   .status[data-state="online"]::before{background:var(--ok);box-shadow:0 0 8px var(--ok)}
-  .choice[aria-disabled="true"]{opacity:.55;pointer-events:none}
   .note{margin:22px 0 0;font-size:13px;color:var(--muted);max-width:520px}
   @media (max-width:560px){.choices{grid-template-columns:1fr;max-width:340px}}
  </style>
@@ -49,7 +48,7 @@
     <em class="status" id="status" data-state="checking">Checking server…</em>
    </a>
   </div>
-  <p class="note" id="note" hidden>The multiplayer server is offline right now. Solo works as usual — try multiplayer again later.</p>
+  <p class="note" id="note" hidden>We couldn't reach the multiplayer server, so it may be offline. Solo always works.</p>
  </main>
  <script>
   'use strict';
@@ -58,14 +57,14 @@
   document.getElementById('solo').href = '/showroom.html' + q;
   document.getElementById('multi').href = '/play' + q;
   // /play-status redirects to the game host's /deployment.js (netlify.toml). It only counts as online if that script
-  // actually ran and declared the live-multiplayer mode, so a proxy error page or a timeout reads as offline.
-  const status = document.getElementById('status'), multi = document.getElementById('multi');
+  // actually ran and declared the live-multiplayer mode. A failed check is only a hint and never blocks Multiplayer:
+  // devices on the host's own tailnet resolve it to a private address, which browsers may refuse to a public page.
+  const status = document.getElementById('status');
   let settled = false;
   const finish = online => {
    if (settled) return; settled = true;
    if (online) { status.dataset.state = 'online'; status.textContent = 'Server online'; return; }
-   status.dataset.state = 'offline'; status.textContent = 'Offline right now';
-   multi.setAttribute('aria-disabled', 'true'); multi.tabIndex = -1;
+   status.dataset.state = 'offline'; status.textContent = 'May be offline';
    document.getElementById('note').hidden = false;
   };
   const probe = document.createElement('script');
