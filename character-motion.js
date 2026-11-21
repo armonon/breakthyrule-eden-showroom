@@ -175,7 +175,8 @@
     let id=null,loop=false,speed=1,start=0;
     if(kind==='slide'){id=t<.12?'slideStart':'slideLoop';loop=id==='slideLoop';speed=id==='slideStart'?A.duration(id)/.12:1;}
     else if(kind==='dive'||kind==='dash'){id='dash';speed=1.3;}
-    else if(['climb','vault','warp','scramble','pipe'].includes(kind)){id='climbUp';loop=kind==='scramble'||kind==='pipe';speed=duration?A.duration(id)/duration:1;start=Math.min(t*speed,A.duration(id));}
+    else if(kind==='warp'){id='dash';speed=duration?Math.max(.8,A.duration(id)/duration):1.2;start=Math.min(t*speed,A.duration(id)*.9);}// a gap leap reads as a lunge, not a climb
+    else if(['climb','vault','scramble','pipe'].includes(kind)){id='climbUp';loop=kind==='scramble'||kind==='pipe';speed=duration?A.duration(id)/duration:1;start=Math.min(t*speed,A.duration(id));}
     else if(kind==='wallrun'){id='sprint';loop=true;speed=1.15;}
     const managed=['slideStart','slideLoop','climbUp','dash','sprint'];
     const sliding=api.playing('slideStart')||api.playing('slideLoop');
