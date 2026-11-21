@@ -28,7 +28,7 @@
   const codec=()=>root.createMovementStateCodec({T,boxes:()=>{refresh();return boxes;},fields:()=>{refresh();return fields;}});
   // Momentum from player-movement.js (0..1) and the wall-jump chain since the last landing.
   let mom=0,chain=0,bonus=0;const CHAIN_MAX=6;
-  let boxes=[],fields=[],sig='',state=null,cool={wallrun:0,grab:0,walljump:0,grip:0},crouchAt=-9,clock=0,lean=0,fov=0,lift=0,stats={wallruns:0,scrambles:0,grabs:0,climbs:0,hangs:0,leaps:0,drops:0,rolls:0,hard:0,walljumps:0,grips:0};
+  let boxes=[],fields=[],sig='',state=null,cool={wallrun:0,grab:0,walljump:0,grip:0,auto:0},crouchAt=-9,clock=0,lean=0,fov=0,lift=0,stats={wallruns:0,scrambles:0,grabs:0,climbs:0,hangs:0,leaps:0,drops:0,rolls:0,hard:0,walljumps:0,grips:0,auto:0};
 
   const profile=()=>P.bodyDimensions?.()||root.playerBodyProfile?.(root.GardenPlayerCharacter)||{height:1.75,radius:.26,crouch:1.19};
   const clearance=root.createBodyClearance?.({boxes:()=>{refresh();return boxes;},fields:()=>{refresh();return fields;}});
@@ -134,6 +134,18 @@
      if(best.top<=f+1){startWarp(new T.Vector3(q.x,best.top,q.z),{dur:.32+d*.06,arc:Math.max(.9,best.top-f+.9),then:'land'});return true;}
      const ledge=ledgeAhead(P.pos,f,dir,1,REACH+.4,d+.5);if(ledge){startWarp(new T.Vector3(ledge.point.x+ledge.normal.x*.38,hangFeet(ledge.top),ledge.point.z+ledge.normal.z*.38),{dur:.32+d*.06,arc:.7,then:'hang',ledge});return true;}
      break;}}}
+   return false;
+  }
+  /* ---------------------------------------------------------------- free running (one button, AC-style) */
+  function autoRun(){
+   const w=wish();if(w.z<=0)return false;const speed=Math.hypot(P.vel.x,P.vel.z);if(speed<2.2)return false;
+   const f=feetOf(),dir=w.dir.lengthSq()>.01?w.dir.clone().normalize():view().f,go=k=>{cool.auto=clock+k;stats.auto++;return true;};
+   // Something to get over in front, or a drop to leap across: the same moves as pressing jump.
+   const wall=wallAhead(P.pos,f,dir),mid=P.pos.clone().addScaledVector(dir,.9);
+   if((wall&&wall.top>f+STEP+.05||floorAt(mid.x,mid.z,f+STEP)<f-.6)&&onJump())return go(.4);
+   // A tall wall alongside at a run: hop onto it, and air() takes it into a wall-run.
+   if(speed>4.2&&clock>cool.wallrun){const {r}=view();for(const side of [1,-1]){const wb=wallBeside(P.pos,f,r,side);if(!wb)continue;
+    const tan=new T.Vector3(wb.normal.z,0,-wb.normal.x);if(Math.abs(tan.dot(flat(P.vel)))>.6){P.motion.set(.02,4.2);return go(.6);}}}
    return false;
   }
   /* ---------------------------------------------------------------- bars, pipes, ropes (parkour-grips.js) */
@@ -288,6 +300,8 @@
    fov+=((state?.kind==='wallrun'?7:state?.kind==='warp'?5:0)+(Math.hypot(P.vel.x,P.vel.z)>4?mom*6:0)-fov)*(1-Math.exp(-8*dt));
    // First person, the eye rises towards a ledge you hold so your hands on it are in view; it settles again as you climb.
    const wantLift=state?.kind==='hang'?.2:state?.kind==='climb'&&state.ledge?(1-clamp(state.t/state.dur/.6,0,1))*(state.from.y<state.ledge.top-1.4?.2:0):0;lift+=(wantLift-lift)*(1-Math.exp(-12*dt));
+   // Free running: hold sprint and forward, and the ground moves (vault, climb, gap leap, wall-run) fire on their own.
+   if(!state&&P.keys.has('shift')&&clock>cool.auto&&!P.motion.inspect().airborne&&autoRun())return true;
    if(!state)return false;const s=state;s.t+=dt;
    if(s.kind==='wallrun'){
     s.vy-=5.5*(1-.4*mom)*dt;const f=feetOf()+s.vy*dt,nx=P.pos.x+s.tangent.x*s.speed*dt,nz=P.pos.z+s.tangent.z*s.speed*dt;
@@ -352,6 +366,7 @@
    if(s.lastUpdateTick!==null&&(!Number.isSafeInteger(s.lastUpdateTick)||s.lastUpdateTick<0)||s.clock<0||!s.stats||['wallruns','scrambles','grabs','climbs','hangs','leaps','drops','rolls','hard'].some(k=>!Number.isSafeInteger(s.stats[k])||s.stats[k]<0))throw Error('Invalid parkour counters.');
    if(s.mom!==undefined&&(!Number.isFinite(s.mom)||s.mom<0||s.mom>1)||s.chain!==undefined&&(!Number.isSafeInteger(s.chain)||s.chain<0||s.chain>CHAIN_MAX)||s.bonus!==undefined&&(!Number.isFinite(s.bonus)||s.bonus<0||s.bonus>1)||s.cool.walljump!==undefined&&(!Number.isFinite(s.cool.walljump)||s.cool.walljump<0)||s.stats.walljumps!==undefined&&(!Number.isSafeInteger(s.stats.walljumps)||s.stats.walljumps<0))throw Error('Invalid parkour momentum snapshot.');
    if(s.cool.grip!==undefined&&(!Number.isFinite(s.cool.grip)||s.cool.grip<0)||s.stats.grips!==undefined&&(!Number.isSafeInteger(s.stats.grips)||s.stats.grips<0))throw Error('Invalid grip counters.');
+   if(s.cool.auto!==undefined&&(!Number.isFinite(s.cool.auto)||s.cool.auto<0)||s.stats.auto!==undefined&&(!Number.isSafeInteger(s.stats.auto)||s.stats.auto<0))throw Error('Invalid free-run counters.');
    const v=s.state,vec=p=>p?.isVector3&&[p.x,p.y,p.z].every(Number.isFinite),nums=(o,ks)=>ks.every(k=>Number.isFinite(o[k]));
    const ledge=L=>L&&L.box&&vec(L.point)&&vec(L.normal)&&vec(L.stand)&&Number.isFinite(L.top)&&(!L.tangent||vec(L.tangent));
    if(v){if(!Number.isFinite(v.t)||v.t<0)throw Error('Invalid parkour timer.');
@@ -369,7 +384,7 @@
    return s;
   }
   function restoreState(value){const s=validateState(value);
-   ({state,cool,crouchAt,clock,lean,fov,lift,stats,lastUpdateTick}=s);cool.walljump??=0;cool.grip??=0;stats.walljumps??=0;stats.grips??=0;
+   ({state,cool,crouchAt,clock,lean,fov,lift,stats,lastUpdateTick}=s);cool.walljump??=0;cool.grip??=0;cool.auto??=0;stats.walljumps??=0;stats.grips??=0;stats.auto??=0;
    mom=s.mom??0;chain=s.chain??0;bonus=s.bonus??0;
   }
   return {ropePose,setMomentum(v){mom=clamp(+v||0,0,1);},takeMomentumBonus(){const b=bonus;bonus=0;return b;},chain:()=>chain,captureState,restoreState,validateState,updated:tick=>tick!==null&&lastUpdateTick===tick,wallBeside,wallAhead,floorAt,supportAt,solid,ledgeAhead,bodyFits,bodySweep,raycast,update,onJump,air,land,dropToHang,hands,

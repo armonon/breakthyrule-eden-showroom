@@ -661,9 +661,12 @@ if(window.GardenCharacterMotion)GardenCharacterMotion.solid=p=>{const q=garden.c
 // First-person body: your own character under the camera, reaching for walls and things, guarding and punching.
 // Third person: scroll out on foot, or past hip-fire with a gun, and the camera pulls back over your shoulder so you see
 // your own character (holding what you hold); scroll in to come back to first person (and further in to aim).
-const thirdCheck={at:0,near:Infinity,room:9};let thirdSide=1,thirdSideK=1,thirdK=0,thirdOn=false,thirdOffset=null,lastThirdToggle=0,heldWeapon=null;
+const thirdCheck={at:0,near:Infinity,room:9};
+// Free running: the camera swings out behind you while you vault, leap, climb or run a wall (or sprint through the district), then returns to the view you chose.
+const runCam={owned:false,since:0,k:0};
+let thirdSide=1,thirdSideK=1,thirdK=0,thirdOn=false,thirdOffset=null,lastThirdToggle=0,heldWeapon=null;
 const thirdAllowed=()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident&&!arena?.active()&&!fistsEngaged()&&!battle?.dead?.();
-function setThird(on){const t=performance.now();if(on===thirdOn||t-lastThirdToggle<260)return false;if(on&&!thirdAllowed())return false;lastThirdToggle=t;if(on&&!thirdOn){thirdSide=window.edenSettings?.get('shoulder')==='left'?-1:1;}thirdOn=on;if(on)combat?.zoom?.(0);requestDraw();return true;}
+function setThird(on){const t=performance.now();if(on===thirdOn||t-lastThirdToggle<260)return false;if(on&&!thirdAllowed())return false;lastThirdToggle=t;runCam.owned=false;if(on&&!thirdOn){thirdSide=window.edenSettings?.get('shoulder')==='left'?-1:1;}thirdOn=on;if(on)combat?.zoom?.(0);requestDraw();return true;}
 const playerBody=window.createPlayerBody?.({T,scene,camera,pickables,requestDraw,canPunch:()=>!expedition?.active(),enabled:()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident&&!arena?.active()&&(thirdK>.05||parkour?.handsFull()||!battle?.active()&&!combat?.armed()&&!fistsEngaged())});
 let expeditionFlareModel=null;
 function flareModel(){
@@ -695,6 +698,11 @@ if($('night-view'))$('night-view').onclick=()=>{lastThirdToggle=0;setThird(!thir
 window.addEventListener('pagehide',event=>{if(event.persisted)playerBail?.cancel();else{playerBail?.dispose();playerBail=null;}});
 function applyThird(dt){
  if(thirdOn&&!thirdAllowed())thirdOn=false;
+ {const P=pk(),now=performance.now(),run=!!P&&window.edenSettings?.get?.('freeRunCamera')!==false&&(P.active()||keys.has('shift')&&Math.hypot(walkVelocity.x,walkVelocity.z)>4.5);
+  if(run)runCam.since=now;
+  if(run&&!thirdOn&&thirdAllowed()){thirdOn=true;runCam.owned=true;thirdSide=window.edenSettings?.get('shoulder')==='left'?-1:1;combat?.zoom?.(0);}
+  else if(runCam.owned&&thirdOn&&!run&&now-runCam.since>900&&!P?.active()){thirdOn=false;runCam.owned=false;}
+  runCam.k+=((runCam.owned||run&&thirdOn?1:0)-runCam.k)*(1-Math.exp(-4*dt));if(Math.abs(runCam.k-Math.round(runCam.k))>.01)requestDraw();}
  thirdK+=((thirdOn?1:0)-thirdK)*(1-Math.exp(-(reduced?40:9)*dt));thirdSideK+=(thirdSide-thirdSideK)*(1-Math.exp(-10*dt));if(Math.abs(thirdSide-thirdSideK)>.01)requestDraw();if(thirdK<.002&&!thirdOn)thirdK=0;
  if(thirdK>0&&Math.abs((thirdOn?1:0)-thirdK)>.002)requestDraw();else if(thirdOn)thirdK=1;
  if(!playerBail?.active)playerBody?.third?.(thirdK);
@@ -703,7 +711,7 @@ function applyThird(dt){
  if(want!==heldWeapon){heldWeapon=want;playerBody?.hold?.(want==='flare'?flareModel():want?combat.weaponModel(want):null,want==='flare'?'pistol':want);}
  if(!thirdK)return;
  const f=new T.Vector3();camera.getWorldDirection(f);const right=new T.Vector3(-f.z,0,f.x).normalize();
- const offset=f.clone().multiplyScalar(-2.7).addScaledVector(new T.Vector3(0,1,0),.28).addScaledVector(right,.62*thirdSideK).multiplyScalar(thirdK);
+ const offset=f.clone().multiplyScalar(-2.7-.9*runCam.k).addScaledVector(new T.Vector3(0,1,0),.28+.22*runCam.k).addScaledVector(right,.62*thirdSideK).multiplyScalar(thirdK);
  // Keep the camera out of walls and trunks: pull it in front of whatever is between it and your head.
  const len=offset.length(),dir=offset.clone().divideScalar(len||1);
  const t=performance.now(),P=pk();
