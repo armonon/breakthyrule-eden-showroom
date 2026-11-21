@@ -58,17 +58,18 @@ status = 302
 force = true
 
 # /showroom asks Solo or Multiplayer first; Solo opens /showroom.html (the static game, as before).
+# force = true: otherwise Netlify's clean URLs serve showroom.html for /showroom and skip this rule.
 [[redirects]]
 from = "/showroom"
 to = "/showroom-start.html"
 status = 200
-force = false
+force = true
 
 [[redirects]]
 from = "/showroom/"
 to = "/showroom-start.html"
 status = 200
-force = false
+force = true
 
 [[redirects]]
 from = "/gallery"
