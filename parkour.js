@@ -83,6 +83,9 @@
   function wallBeside(p,feet,right,side){refresh();const q=p.clone().addScaledVector(right,side*.62);
    for(const b of boxes)if(b.wall&&inside(b,q.x,q.z)&&b.top>feet+2&&b.bottom<=feet+.3){const n=faceNormal(b,p);if(Math.abs(n.dot(right))>.7)return {box:b,normal:n};}
    for(const F of fields){const h=fieldH(F,q.x,q.z),here=fieldH(F,p.x,p.z);if(h!=null&&h>feet+2&&(here==null||here<feet+.6))return {box:{field:F,top:h,wall:true},normal:snap(right.clone().multiplyScalar(-side))};}return null;}
+  // How far the player stands from the face of the wall they run along (null for terrain walls with no face).
+  function wallGap(s){const b=s.box,n=s.normal;if(!b||b.field||!n||b.minX===undefined)return null;
+   const d=n.x>.5?P.pos.x-b.maxX:n.x<-.5?b.minX-P.pos.x:n.z>.5?P.pos.z-b.maxZ:n.z<-.5?b.minZ-P.pos.z:null;return d===null?null:Math.max(0,d);}
   function wallAhead(p,feet,dir){refresh();const q=p.clone().addScaledVector(dir,.6);for(const b of boxes)if(inside(b,q.x,q.z)&&b.top>feet+STEP&&b.bottom<=feet+1){const n=faceNormal(b,p);if(n.dot(dir)<-.6)return {box:b,normal:n,top:b.top};}
    for(const F of fields){const h=fieldH(F,q.x,q.z),here=fieldH(F,p.x,p.z);if(h!=null&&h>feet+STEP&&(here==null||here<feet+.6))return {box:{field:F,top:h},normal:snap(dir).negate(),top:h};}return null;}
 
@@ -389,7 +392,7 @@
   }
   return {ropePose,setMomentum(v){mom=clamp(+v||0,0,1);},takeMomentumBonus(){const b=bonus;bonus=0;return b;},chain:()=>chain,captureState,restoreState,validateState,updated:tick=>tick!==null&&lastUpdateTick===tick,wallBeside,wallAhead,floorAt,supportAt,solid,ledgeAhead,bodyFits,bodySweep,raycast,update,onJump,air,land,dropToHang,hands,
    crouchPressed(){crouchAt=clock;},active:()=>!!state,busy:()=>['climb','warp','scramble'].includes(state?.kind),kind:()=>state?.kind||null,lean:()=>lean,fov:()=>fov,lift:()=>lift,handsFull:()=>['hang','climb','scramble','bar','pipe','rope'].includes(state?.kind),
-   presentation:()=>state?{kind:state.kind,time:state.t||0,duration:state.dur||0,side:state.side||0,normal:state.kind==='wallrun'&&state.normal?[state.normal.x,state.normal.z]:null,shimmy:state.kind==='hang'?wish().x:0,landing:state.then||null}:null,
+   presentation:()=>state?{kind:state.kind,time:state.t||0,duration:state.dur||0,side:state.side||0,normal:state.kind==='wallrun'&&state.normal?[state.normal.x,state.normal.z]:null,wall:state.kind==='wallrun'?wallGap(state):null,shimmy:state.kind==='hang'?wish().x:0,landing:state.then||null}:null,
    reset(){state=null;},inspect:()=>({state:state?.kind||null,boxes:boxes.length,fields:fields.length,stats:{...stats}})};
  };
 })(window);

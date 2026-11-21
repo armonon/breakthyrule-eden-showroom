@@ -525,18 +525,31 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
   const shoulderUp=at?-at[13]*model.root.scale.y:1.4,riseTo=hands?Math.max(0,Math.min(.7,hands[0].y-.33-(model.root.position.y+shoulderUp))):0;
   handRise+=(riseTo-handRise)*(1-Math.exp(-14*dt));model.root.position.y+=handRise;
   const tr=pose?.traversal,push=natural.hands&&tr?.kind==='climb'&&tr.duration>0&&tr.time/tr.duration>.5,upward=traverseBody.up||(traverseBody.up=new T.Vector3(0,1,0));
+  let wallTouch=false;
   if(hands){const swap=shoulder?.getWorldPosition(probe).distanceToSquared(hands[0])>probe.distanceToSquared(hands[1]);model.motion.touch('L',hands[swap?1:0],push?upward:null,1,push?'press':'grab');model.motion.touch('R',hands[swap?0:1],push?upward:null,1,push?'press':'grab');handsOn=true;}
   else if(natural.hands&&tr?.kind==='wallrun'&&tr.normal){
-   // Wall run: the hand nearest the wall brushes along it at shoulder height.
+   // Wall run: the hand nearest the wall is laid flat on its face. The point is picked on the face where the arm can
+   // reach it from where the shoulder is now (a little below and ahead of it), with the wrist a palm's thickness off the
+   // face so the palm, not the wrist, meets the wall. Terrain walls without a face use an estimated distance.
    const n=probe.set(tr.normal[0],0,tr.normal[1]).normalize(),side=(tr.side||1)>0?'R':'L',other=side==='R'?'L':'R',fw=new T.Vector3(Math.sin(model.root.rotation.y),0,Math.cos(model.root.rotation.y));
-   const at=model.root.getWorldPosition(new T.Vector3()).addScaledVector(n,-.5).addScaledVector(fw,.18);at.y+=1.42*model.root.scale.y;
-   model.motion.touch(side,at,n.clone(),.85,'press');model.motion.touch(other,null,null,0);handsOn=true;}
+   const gap=Number.isFinite(tr.wall)?tr.wall:.45,body=model.root.position.clone();if(model.root.parent)model.root.parent.localToWorld(body);
+   const plane=body.clone().addScaledVector(n,-(gap-.035)),sh=model.byName[`upperarm01.${side}`],el=model.byName[`lowerarm01.${side}`],wr=model.byName[`wrist.${side}`];
+   let at;
+   if(sh&&el&&wr){const S=sh.getWorldPosition(new T.Vector3()),E=el.getWorldPosition(new T.Vector3()),reach=(S.distanceTo(E)+E.distanceTo(wr.getWorldPosition(new T.Vector3())))*.92;
+    // A steady spot at chest height a little ahead, pulled towards the shoulder only as far as the arm needs.
+    at=plane.clone().addScaledVector(fw,.2);at.y+=1.2*model.root.scale.y;
+    const foot=S.clone().addScaledVector(n,-S.clone().sub(plane).dot(n)),far=at.distanceTo(S);
+    if(far>reach){const k=at.clone().sub(foot),room=Math.sqrt(Math.max(0,reach*reach-foot.distanceToSquared(S)));at.copy(foot).addScaledVector(k,Math.min(1,room/Math.max(1e-4,k.length())));}}
+   else{at=plane.clone().addScaledVector(fw,.18);at.y+=1.42*model.root.scale.y;}
+   // The body runs a little closer in, feet near the wall, as the lean builds.
+   model.root.position.addScaledVector(n,-Math.max(0,Math.min(.15,gap-.22))*clamp(Math.abs(model.root.rotation.z)/.18,0,1));
+   wallTouch=true;model.motion.touch(side,at,n.clone(),1,'press');model.motion.touch(other,null,null,0);handsOn=true;}
   else if(handsOn){model.motion.touch('L',null,null,0);model.motion.touch('R',null,null,0);handsOn=false;}
   model.motion.traversal?.(pose?.traversal);
   // The vault clip rises over the obstacle by itself (its hip track); drop the model by the controller's lift so the
   // planted hand lands on the top instead of floating a ledge-height above it.
   if(pose?.traversal?.kind==='vault'&&pose.traversal.lift>0&&root.GardenAnim?.has?.('pkVault'))model.root.position.y-=pose.traversal.lift;
-  const bank=pose?.traversal?.kind==='wallrun'?-(pose.traversal.side||1)*.28:0;
+  const bank=pose?.traversal?.kind==='wallrun'?-(pose.traversal.side||1)*(wallTouch?.18:.28):0;// A hand on the wall leans out less, so the arm reaches.
   model.root.rotation.z+=(bank-model.root.rotation.z)*(1-Math.exp(-12*dt));
   model.root.rotation.order='YXZ';const pitchTo=pose?(pose.dive||0)*1.25-(pose.slide||0)*.32:0;model.root.rotation.x+=(pitchTo-model.root.rotation.x)*(1-Math.exp(-10*dt));if(pose?.dive)model.root.position.y+=.35*pose.dive;
   return {handRise,handsOn};

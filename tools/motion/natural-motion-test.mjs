@@ -102,3 +102,24 @@ test('switched off, the motion matches the original exactly',async()=>{
  walk(a,{seconds:1});walk(b,{seconds:1});
  for(const n of ['foot.L','foot.R','upperarm01.L','spine01'])assert.ok(a.foot(n).distanceTo(b.foot(n))<1e-9,n);
 });
+
+test('wall run: the hand on the wall side lies on the wall face',async()=>{
+ const run=async({natural=true,wall=.41}={})=>{
+  const r=await rig({natural,ground:flat}),model={root:r.group,skeleton:r.skeleton,motion:r.motion,byName:{}};
+  r.skeleton.bones.forEach(b=>model.byName[b.name]=b);r.group.updateMatrixWorld(true);
+  // The wall stands on the side of the right hand, `wall` metres from the body; its normal points back at the body.
+  const sx=Math.sign(r.bone('wrist.R').getWorldPosition(new T.Vector3()).x),face=sx*wall,normal=[-sx,0];
+  let handRise=0,handsOn=false;const gaps=[],ys=[],dt=1/60;
+  for(let t=0;t<1.2;t+=dt){r.group.position.set(0,0,r.group.position.z+6*dt);
+   ({handRise,handsOn}=r.M.traverseBody(T,model,{hands:null,handRise,handsOn,pose:{traversal:{kind:'wallrun',time:t,duration:0,side:1,normal,wall:Number.isFinite(wall)?wall:undefined}},dt}));
+   r.motion.update(dt,{velocity:new T.Vector3(0,0,6)});r.group.updateMatrixWorld(true);
+   if(t>.5){const h=r.bone('wrist.R').getWorldPosition(new T.Vector3());gaps.push(Math.abs(face-h.x));ys.push(h.y);}}
+  run.height=Math.max(...ys)-Math.min(...ys);return gaps.reduce((s,x)=>s+x,0)/gaps.length;
+ };
+ const on=await run(),steady=run.height,off=await run({natural:false}),far=await run({wall:.55});
+ console.log('wall-run wrist to wall face (m):',{on:+on.toFixed(3),off:+off.toFixed(3),widerGap:+far.toFixed(3)});
+ assert.ok(on<.07,`the wrist sits a palm's thickness off the wall, got ${on.toFixed(3)} m`);
+ assert.ok(steady<.2,`the hand stays put on the wall instead of paddling, moved ${steady.toFixed(2)} m`);
+ assert.ok(far<.08,`a wider gap still reaches the wall, got ${far.toFixed(3)} m`);
+ assert.ok(off>on+.15,'with natural hands off the hand does not reach for the wall');
+});
