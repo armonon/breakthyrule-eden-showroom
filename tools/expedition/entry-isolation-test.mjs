@@ -26,7 +26,7 @@ test('woodland-only construction uses original tree/fern geometry without Eden-o
  const {s,T,requests,models}=scope(),root=new T.Group();
  const flora=s.createEdenFlora(T,root,{bark:new T.MeshStandardMaterial(),forestOnly:true});
  assert.equal(root.children.length,0,'no garden orchard or scenery constructed');assert.equal(models.length,0,'no garden model requests');
- assert.deepEqual(requests.sort(),['/assets/eden-textures/foliage/broadleaf-card.webp','/assets/eden-textures/foliage/cypress-card.webp','/assets/eden-textures/foliage/fern-card.webp'].sort());
+ assert.deepEqual(requests.sort(),['/assets/eden-textures/foliage/broadleaf-card.webp','/assets/eden-textures/foliage/cypress-card-v2.webp','/assets/eden-textures/foliage/fern-card.webp'].sort());
  assert.equal(flora.forest.trees.length,3);for(const tree of flora.forest.trees){assert.ok(tree.wood.attributes.position.count>10);assert.ok(tree.foliage.attributes.position.count>10);}assert.ok(flora.forest.fern.geometry.attributes.position.count>10);
 });
 test('real entry scene loads five original landmark GLBs with no showroom assets',async()=>{

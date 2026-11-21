@@ -10,7 +10,7 @@ const difference=(a,b)=>Math.max(...a.map((q,i)=>q.angleTo(b[i])));
 
 async function rig(){
  const scope={console,atob,AbortController,setTimeout,clearTimeout,fetch:async()=>({ok:true,json:async()=>JSON.parse(readFileSync(new URL('assets/anim/clips.json',root),'utf8'))})};scope.window=scope;
- for(const name of ['assets/character-human-base.js','character-anim.js','character-motion.js'])vm.runInNewContext(readFileSync(new URL(name,root),'utf8'),scope);
+ for(const name of ['movement-state.js','assets/character-human-base.js','character-anim.js','character-motion.js'])vm.runInNewContext(readFileSync(new URL(name,root),'utf8'),scope);
  await scope.GardenAnim.load();assert.ok(scope.GardenAnim.ready());
  const data=scope.GardenHumanBase,group=new T.Group(),scale=1.75/16.6589;
  const points=data.bones.map(b=>new T.Vector3(b.position[0],b.position[1]+8.1676,b.position[2]).multiplyScalar(scale));

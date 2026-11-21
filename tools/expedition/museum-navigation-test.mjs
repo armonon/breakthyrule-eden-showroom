@@ -9,7 +9,7 @@ const read=path=>fs.readFileSync(new URL(path,base),'utf8');
 const appSource=read('app.js'),worldSource=read('worlds.js');
 function goSource(source){const at=source.indexOf('function go(view,instant=false){'),end=source.indexOf('\nfunction freeView()',at);assert.ok(at>=0&&end>at);return source.slice(at,end);}
 class Element{
- constructor(){this.style={};this.hidden=false;this.classList={add(){},remove(){},contains(){return false;}};this.nodes=new Map();}
+ constructor(){this.style={};this.hidden=false;const classes=new Set();this.classList={add:(...c)=>c.forEach(x=>classes.add(x)),remove:(...c)=>c.forEach(x=>classes.delete(x)),contains:c=>classes.has(c),toggle:(c,on=!classes.has(c))=>(on?classes.add(c):classes.delete(c),on)};/* real class state: worlds.js hides its loading screen once it carries 'out' */this.nodes=new Map();}
  setAttribute(){}append(){}prepend(){}addEventListener(){}remove(){}
  querySelector(key){if(!this.nodes.has(key))this.nodes.set(key,new Element());return this.nodes.get(key);}
  pause(){}play(){return Promise.resolve();}
@@ -27,7 +27,7 @@ function scope(appSource){
   markView(){marks.push({view:s.state.view,world:s.worlds.world(),visible:museum.visible});}
  };
  s.window=s;vm.createContext(s);vm.runInContext(worldSource,s,{filename:'worlds.js'});
- s.worlds=s.createWorlds({T,scene,renderer:{compileAsync:async()=>{}},camera:new T.PerspectiveCamera(),requestDraw(){}});
+ s.worlds=s.createWorlds({T,scene,renderer:{compileAsync:async()=>{},compile(){},render(){},getRenderTarget:()=>null,setRenderTarget(){},getContext:()=>({finish(){}}),shadowMap:{needsUpdate:false}},camera:new T.PerspectiveCamera(),requestDraw(){}});
  vm.runInContext('let edenNavigation=0;\n'+goSource(appSource),s,{filename:'app-go.js'});
  return {s,museum,beyond,marks};
 }
