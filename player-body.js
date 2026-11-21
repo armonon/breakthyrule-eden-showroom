@@ -137,6 +137,8 @@
     if(heldMesh)heldMesh.visible=thirdView>.15&&!hands&&model.root.visible;
    },
    // Click on something within reach: the hand gets there first, then the caller opens it.
+   // The body's own vertical bob for the first-person camera, or null when the body is not what the camera rides.
+   bob:()=>model&&model.root.visible&&!physicsActive&&model.motion.downAmount()===0&&root.GardenCharacterMotion.natural?.camera?model.motion.bob?.()??null:null,
    getModel:()=>model,
    bodyDimensions:()=>root.playerBodyProfile?.(bodyAppearance)||{height:1.75,radius:.26,crouch:1.19},
    getAppearance:()=>bodyAppearance,

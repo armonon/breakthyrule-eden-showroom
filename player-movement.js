@@ -77,6 +77,10 @@ function moveStep(dt,tick=null){
  if(!slide){const air=motion.inspect().airborne;
   // In the air nothing slows you unless you steer against it: letting go of a key or of sprint keeps the run-up's speed.
   if(air&&wish.lengthSq())wish.setLength(Math.max(wish.length(),Math.hypot(walkVelocity.x,walkVelocity.z)));
+  // At a run the body cannot turn on a coin: the heading swings round at a limited rate, widest at a full sprint.
+  const run=Math.hypot(walkVelocity.x,walkVelocity.z);
+  if(!air&&run>4.2&&wish.lengthSq()){const now=Math.atan2(walkVelocity.x,walkVelocity.z),want=Math.atan2(wish.x,wish.z),d=Math.atan2(Math.sin(want-now),Math.cos(want-now)),limit=dt*T.MathUtils.lerp(9,3.4,T.MathUtils.smoothstep(run,4.2,6.4));
+   if(Math.abs(d)>limit&&Math.abs(d)<2.2){const a=now+Math.sign(d)*limit,len=wish.length();wish.set(Math.sin(a)*len,0,Math.cos(a)*len);}}
   walkVelocity.lerp(wish,1-Math.exp(-(air?(wish.lengthSq()?1.5:.2):wish.lengthSq()?9:11)*dt));}
  if(walkVelocity.lengthSq()<1e-4){walkVelocity.set(0,0,0);return;}
  if(x||z)prepareWalking();
