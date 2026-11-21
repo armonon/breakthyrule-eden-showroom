@@ -1,13 +1,14 @@
 'use strict';
 // PvP arena (client). A walled sand arena 300 m from the garden, built the first time someone enters. The server
 // (server/arena.mjs) decides every hit; this file only sends what the player does and shows what happened.
-// Controls: click to lock the mouse, move to aim, left click attack, right click (hold) block with the sword,
+// Controls: click to lock the mouse, move to aim, left click attack (hold for a heavy lunge), right click (hold) block with the sword,
 // 1 / 2 or Q to switch sword / crossbow, Tab for scores. Needs the local live server and a character.
-window.createArena=function({T,scene,camera,renderer,player,multiplayer,requestDraw,stopMoving}){
+window.createArena=function({T,scene,camera,renderer,player,multiplayer,requestDraw,stopMoving,hitStop=()=>{}}){
  const $=id=>document.getElementById(id);
  let layout=null,root=null,active=false,weapon='sword',blocking=false,locked=false,yaw=0,pitch=0;
+ let swingCooldown=0,swingHeavy=false,swordHold=null;
  let lastSwing=0,lastShot=0,swingStart=-1,recoilStart=-1,dead=false,respawnIn=0,me=null,shake=0,hurt=0,hitMarker=0;
- const bolts=[],seenEvents=new Set(),remoteSwings=new Map(),feed=[];
+ const bolts=[],seenEvents=new Set(),remoteSwings=new Map(),remoteHeavy=new Map(),feed=[];
  const center=new T.Vector3();
 
  // ---------- materials and weapon models (low-poly, PS2-era proportions) ----------
@@ -106,7 +107,7 @@ window.createArena=function({T,scene,camera,renderer,player,multiplayer,requestD
  document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===canvas;q('.arena-lock').hidden=locked||!active;if(!locked)blocking=false;});
  document.addEventListener('mousemove',event=>{if(!active||!locked||dead)return;yaw-=event.movementX*.0024;pitch=T.MathUtils.clamp(pitch-event.movementY*.0024,-1.2,1.2);aimFromAngles();requestDraw();});
  canvas.addEventListener('mousedown',event=>{if(window.edenControls||!active||!locked)return;if(event.button===0)attack();else if(event.button===2&&weapon==='sword')blocking=true;});
- document.addEventListener('mouseup',event=>{if(!window.edenControls&&event.button===2)blocking=false;});
+ document.addEventListener('mouseup',event=>{if(!window.edenControls&&event.button===2)blocking=false;if(!window.edenControls&&event.button===0)releaseAttack();});
  canvas.addEventListener('contextmenu',event=>{if(active)event.preventDefault();});
  document.addEventListener('keydown',event=>{
   if(!active||event.repeat||(window.edenControls?.blockedModifiers(event)??(event.ctrlKey||event.metaKey||event.altKey||event.isComposing))||event.target?.isContentEditable||event.target.closest?.('input,textarea,select,button,a,[contenteditable]')||(window.edenControls?.modalOpen?.()??!!document.querySelector('dialog[open]')))return;
@@ -116,17 +117,41 @@ window.createArena=function({T,scene,camera,renderer,player,multiplayer,requestD
   if(key==='1')setWeapon('sword');else if(key==='2')setWeapon('crossbow');else if(key==='q')setWeapon(weapon==='sword'?'crossbow':'sword');
   else if(key==='tab'){event.preventDefault();q('.arena-scores').hidden=false;renderScores();}
  });
- document.addEventListener('keyup',event=>{const key=window.edenControls?.key(event)??event.key.toLowerCase();if(key==='aim')blocking=false;if(key==='tab')q('.arena-scores').hidden=true;});
+ document.addEventListener('keyup',event=>{const key=window.edenControls?.key(event)??event.key.toLowerCase();if(key==='fire')releaseAttack();if(key==='aim')blocking=false;if(key==='tab')q('.arena-scores').hidden=true;});
  const releaseInputs=()=>{blocking=false;q('.arena-scores').hidden=true;};
- const refreshHints=()=>{const hint=(id,fallback)=>window.edenControls?.hint(id)||fallback;q('.arena-weapon small').textContent=hint('weapon1','1')+' sword · '+hint('weapon2','2')+' crossbow · '+hint('swap','Q')+' swap · '+hint('aim','Right mouse')+' block · '+hint('scores','Tab')+' scores';q('.arena-lock small').textContent='Mouse aims · '+hint('fire','Left mouse')+' attacks · Esc frees the mouse';};
+ const refreshHints=()=>{const hint=(id,fallback)=>window.edenControls?.hint(id)||fallback;q('.arena-weapon small').textContent=hint('weapon1','1')+' sword · '+hint('weapon2','2')+' crossbow · '+hint('swap','Q')+' swap · '+hint('aim','Right mouse')+' block · '+hint('scores','Tab')+' scores';q('.arena-lock small').textContent='Mouse aims · '+hint('fire','Left mouse')+' attacks (hold to lunge) · Esc frees the mouse';};
  refreshHints();window.addEventListener('blur',releaseInputs);document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseInputs();});window.edenControls?.onChange(()=>{releaseInputs();refreshHints();});
  function setWeapon(next){if(next===weapon)return;weapon=next;blocking=false;swingStart=-1;q('.arena-weapon-name').textContent=next==='sword'?'Sword':'Crossbow';requestDraw();}
  function aimFromAngles(){player.aim.copy(player.position).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));}
+ // The sword follows the shared melee rule (melee-core.js): tap to slash, hold to wind up a heavy lunge. The swing is
+ // sent once its windup has played, so it lands on the same beat as every other melee blow; the server decides the hit.
  function attack(){
   if(dead)return;const now=performance.now();
-  if(weapon==='sword'){if(now-lastSwing<layout.rules.sword.cooldownMs||blocking)return;lastSwing=now;swingStart=now;multiplayer.send({t:'attack'});}
+  if(weapon==='sword'){swordHold??=window.EdenMelee?.charge({light:()=>swing(false),heavy:()=>swing(true)})||null;if(swordHold)swordHold.down();else swing(false);}
   else{if(now-lastShot<layout.rules.crossbow.cooldownMs)return;lastShot=now;recoilStart=now;const dir=new T.Vector3();camera.getWorldDirection(dir);multiplayer.send({t:'shoot',dir:[dir.x,dir.y,dir.z]});}
   requestDraw();
+ }
+
+ function releaseAttack(){swordHold?.up();}
+ function swing(heavy){
+  const now=performance.now(),rules=layout.rules.sword,move=window.EdenMelee?.move(heavy?'lunge':'slash');
+  if(dead||weapon!=='sword'||now-lastSwing<swingCooldown||blocking)return;
+  lastSwing=now;swingCooldown=heavy?rules.heavyCooldownMs??rules.cooldownMs:rules.cooldownMs;swingStart=now;swingHeavy=heavy;
+  window.EdenMelee?.sound(heavy?'swoosh':'whoosh',.8);
+  setTimeout(()=>{if(active&&!dead&&weapon==='sword')multiplayer.send(heavy?{t:'attack',heavy:true}:{t:'attack'});},(move?.windup??0)*1000);
+  requestDraw();
+ }
+ // A sword blow, felt the same as every other melee hit: the shared sound, freeze, shake, combo and word.
+ function swordFeel(e,self){
+  const M=window.EdenMelee;if(!M||!e.weapon?.startsWith('sword'))return;
+  const tier={'sword-blocked':'blocked','sword-parried':'parried','sword-guardbreak':'broken'}[e.weapon]||(e.health===0?'ko':e.weapon==='sword-heavy'?'heavy':'light');
+  // Your parry opens a counter; being parried throws you off (you can't swing for a moment) and breaks your combo.
+  if(e.target===self)M.land(tier==='ko'?'heavy':tier,{hitStop,combo:false,pop:tier==='parried'||tier==='broken'});
+  else if(e.attacker===self){if(tier==='parried'){M.sound('block');M.combo.reset();M.pop('PARRIED','block');shake=Math.max(shake,.3);lastSwing=performance.now()+(layout.rules.guard?.parryStunMs??700);}
+   else M.land(tier,{hitStop,shake:v=>{shake=Math.max(shake,v*1.5);},label:tier==='heavy'?'LUNGE':null});}
+  // The one who was hit reels back from the one who hit them.
+  const target=e.target===self?null:multiplayer.avatar(e.target),from=e.attacker===self?player.position:multiplayer.avatar(e.attacker)?.root.position;
+  if(target?.motion?.hit&&from&&tier!=='blocked'&&tier!=='parried'){const dir=target.root.position.clone().sub(from).setY(0);if(dir.lengthSq()>1e-4)target.motion.hit(dir.normalize(),tier==='light'?.9:1.8);}
  }
 
  // ---------- events from the server ----------
@@ -136,9 +161,9 @@ window.createArena=function({T,scene,camera,renderer,player,multiplayer,requestD
   for(const e of message.events){
    if(seenEvents.has(e.id))continue;seenEvents.add(e.id);if(seenEvents.size>400)seenEvents.delete(seenEvents.values().next().value);
    const self=multiplayer.selfId();
-   if(e.type==='swing'&&e.attacker!==self)remoteSwings.set(e.attacker,performance.now());
+   if(e.type==='swing'&&e.attacker!==self){remoteSwings.set(e.attacker,performance.now());remoteHeavy.set(e.attacker,!!e.heavy);}
    else if(e.type==='shot')launchBolt(e);
-   else if(e.type==='hit'){if(e.target===self){hurt=1;shake=.6;}if(e.attacker===self&&e.target!==self)hitMarker=performance.now();}
+   else if(e.type==='hit'){if(e.target===self){hurt=1;shake=.6;}if(e.attacker===self&&e.target!==self)hitMarker=performance.now();swordFeel(e,self);}
    else if(e.type==='kill'){feed.unshift({text:`${nameOf(e.attacker)} ${e.weapon.startsWith('crossbow')?'shot':'cut down'} ${nameOf(e.target)}`,time:performance.now()});feed.length=Math.min(feed.length,5);renderFeed();}
    else if(e.type==='respawn'&&e.target===self)spawn(e.spawn);
   }
@@ -175,7 +200,7 @@ window.createArena=function({T,scene,camera,renderer,player,multiplayer,requestD
    if(!holder){holder=new T.Group();const s=a.root.scale;holder.scale.set(1/s.x,1/s.y,1/s.z);holder.userData.sword=makeSword();holder.userData.bow=makeCrossbow();holder.add(holder.userData.sword,holder.userData.bow);holder.traverse(n=>{if(n.isMesh)n.castShadow=true;});a.root.add(holder);a.root.userData.arenaHolder=holder;}
    const sword=holder.userData.sword,bow=holder.userData.bow,height=(p.character?.height||175)/100;
    sword.visible=p.arena.weapon!=='crossbow';bow.visible=!sword.visible;
-   const swingT=Math.min(1,(now-(remoteSwings.get(p.id)??-1e9))/260);
+   const swingT=Math.min(1,(now-(remoteSwings.get(p.id)??-1e9))/(remoteHeavy.get(p.id)?340:260));
    if(sword.visible){
     if(p.arena.blocking){sword.position.set(0,height*.62,.38);sword.rotation.set(0,0,Math.PI/2);}
     else{sword.position.set(.3,height*.5,.22);sword.rotation.set(-.4-(swingT<1?Math.sin(swingT*Math.PI)*1.6:0),0,-.25+(swingT<1?swingT*1.2:0));}
@@ -188,9 +213,10 @@ window.createArena=function({T,scene,camera,renderer,player,multiplayer,requestD
  function updateView(now){
   view.visible=active&&!dead;viewSword.visible=weapon==='sword';viewBow.visible=weapon==='crossbow';
   if(weapon==='sword'){
-   const s=swingStart<0?1:Math.min(1,(now-swingStart)/260),arc=s<1?Math.sin(s*Math.PI):0;
+   // A heavy lunge first draws the blade back over its windup, then drives it through.
+   const wind=swingHeavy?.48:0,s=swingStart<0?1:Math.min(1,(now-swingStart)/(swingHeavy?500:260)),strike=s<wind?0:(s-wind)/(1-wind),arc=s<1&&s>=wind?Math.sin(strike*Math.PI):0,pull=swingHeavy&&s<1?(s<wind?s/wind:1-strike):0;
    if(blocking){viewSword.position.set(0,-.2,-.5);viewSword.rotation.set(0,0,Math.PI/2.2);}
-   else{viewSword.position.set(.3-arc*.35,-.32+arc*.1,-.55);viewSword.rotation.set(-.5-arc*1.4,.2,-.35+s*.9*(s<1?1:0));}
+   else{viewSword.position.set(.3-arc*.35+pull*.08,-.32+arc*.1+pull*.1,-.55+pull*.12-arc*(swingHeavy?.18:0));viewSword.rotation.set(-.5-arc*1.4+pull*.9,.2,-.35+(s<1&&s>=wind?strike*.9:0));}
   }else{
    const r=recoilStart<0?1:Math.min(1,(now-recoilStart)/180),kick=r<1?Math.sin(r*Math.PI)*.06:0;
    viewBow.position.set(.16,-.2+kick*.5,-.45+kick);viewBow.rotation.set(kick*2,0,0);
