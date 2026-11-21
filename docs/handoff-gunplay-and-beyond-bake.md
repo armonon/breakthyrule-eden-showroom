@@ -1,5 +1,13 @@
 # Prompt: finish AAA gunplay, bake Beyond Eden's lighting, and close out performance
 
+> **Status, 2026-11-21.** Task 1 (Beyond Eden bake) and most of Task 2 (recorded CC0 audio with pooling, near
+> misses, casings, aim-assist setting, location hit reactions and ragdoll knockdowns, ADS breathing, wall clipping)
+> landed in `8ecf92e`. Task 3 follow-ups since: shaders now all compile behind the doorway loading screen (0 programs
+> compiled during the first 25 s of play), bot pathfinding reuses one grid (no more ~24 MB / 6 s of garbage), the
+> garden parts behind the sky-box walls are off the render layers in Beyond Eden (~90k fewer triangles), and the
+> perf overlay reads `performance.memory` at most once a second while hidden. Still open: a real-hardware Beyond Eden
+> report, LODs for distant buildings and bots, and the remaining character-animation allocations.
+
 Copy everything below the line into a new agent session (Codex or Claude) on a machine that has **Blender 4.x**,
 **Node 20+** and **Chrome**, with this repository checked out.
 

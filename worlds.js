@@ -38,7 +38,19 @@
    window.edenBaked?.setWorld(world);
    for(const c of hidden)if(c.parent===scene)c.visible=true;hidden.clear();
    for(const c of scene.children){const k=classify(c);if(['Garden of Eden','Beyond Eden / the old civilization','Parkour grips','Pyramid at the end of the road'].includes(c.name))window.edenBaked?.registerStatic(c);if(k==='shared'||k===world)continue;if(c.visible){c.visible=false;hidden.add(c);}}
-   syncLights(true);stats.hiddenLast=hidden.size;
+   syncLights(true);splitGarden();stats.hiddenLast=hidden.size;stats.gardenHidden=gardenHidden.size;
+  }
+  // The garden root is shared (it carries the road and the terrain that runs under both worlds), but in Beyond Eden
+  // its parts that lie wholly on the garden side of the door are behind the sky-box walls: hidden too, like the other
+  // Eden roots, so the GPU does not draw ~200k unseen triangles whenever the player looks back.
+  const gardenSide=new WeakMap(),gardenHidden=new Map(),gardenBox=new T.Box3();
+  function splitGarden(){
+   // Off the render layers rather than invisible: the garden's own code sets .visible on its foliage every frame.
+   for(const [o,mask] of gardenHidden)o.layers.mask=mask;gardenHidden.clear();if(world!=='beyond')return;
+   const g=scene.getObjectByName('Garden of Eden');if(!g)return;
+   for(const c of g.children){if(c.isLight)continue;let side=gardenSide.get(c);
+    if(side===undefined){c.updateMatrixWorld(true);gardenBox.setFromObject(c);side=!gardenBox.isEmpty()&&gardenBox.min.z>-19.5;gardenSide.set(c,side);}
+    if(side)c.traverse(o=>{if(!o.isLight&&!gardenHidden.has(o)){gardenHidden.set(o,o.layers.mask);o.layers.mask=0;}});}
   }
   // Loading screen.
   const el=document.createElement('div');el.id='world-loading';el.hidden=true;el.setAttribute('role','status');el.setAttribute('aria-live','polite');
