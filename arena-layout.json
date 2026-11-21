@@ -22,5 +22,6 @@
   "sword": {"damage": 35, "blockedDamage": 8, "range": 2.4, "arcDegrees": 55, "cooldownMs": 550,
             "heavyDamage": 55, "heavyBlockedDamage": 18, "heavyRange": 2.9, "heavyCooldownMs": 1150},
   "crossbow": {"damage": 50, "speed": 45, "gravity": 9.8, "maxFlightSeconds": 1.4, "cooldownMs": 1300},
+  "guard": {"parryMs": 220, "parryStunMs": 700, "costLight": 15, "costHeavy": 45, "regenPerSecond": 20},
   "eyeHeight": 1.6, "bodyRadius": 0.42, "bodyHeight": 1.85, "blockArcDegrees": 75}
 }

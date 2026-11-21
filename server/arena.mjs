@@ -36,6 +36,17 @@ export function createArena({root, presence, emit}) {
 
   // heavy: a held, wound-up lunge (the client's shared melee rule): more damage and reach, a longer cooldown, and it
   // pushes more through a block. The cooldown that applies is the previous swing's; 60 ms of slack absorbs network jitter.
+  // A blow meeting a raised guard (rules.guard): raised within parryMs it is parried (no damage, the attacker can't
+  // swing for parryStunMs); otherwise the guard spends stamina (heavies far more), recovering over time, and an empty
+  // guard breaks: that blow lands in full.
+  function guardOutcome(t, heavy, now) {
+    const g = rules.guard, a = t.arena; if (!g) return 'blocked';
+    if (now - (a.blockStart ?? 0) < g.parryMs) return 'parried';
+    a.guard = Math.min(100, (a.guard ?? 100) + (now - (a.guardAt ?? now)) / 1000 * g.regenPerSecond); a.guardAt = now;
+    a.guard -= heavy ? g.costHeavy : g.costLight;
+    if (a.guard <= 0) { a.guard = 100; return 'broken'; }
+    return 'blocked';
+  }
   function swing(id, p, heavy = false) {
     const a = p.arena, now = Date.now(), s = rules.sword;
     if (a.dead || now - a.lastSwing < (a.swingCooldown ?? s.cooldownMs) - 60 || p.weapon !== 'sword') return;
@@ -50,8 +61,11 @@ export function createArena({root, presence, emit}) {
       // blocked if the target is blocking and the attacker is in front of the target
       const tfx = Math.sin(t.pose.yaw), tfz = Math.cos(t.pose.yaw);
       const blocked = t.blocking && t.weapon === 'sword' && (-dx * tfx - dz * tfz) / dist > Math.cos(rules.blockArcDegrees * Math.PI / 180);
-      const amount = blocked ? (heavy ? s.heavyBlockedDamage ?? s.blockedDamage : s.blockedDamage) : (heavy ? s.heavyDamage ?? s.damage : s.damage);
-      events.push(...damage(id, p, tid, t, amount, blocked ? 'sword-blocked' : heavy ? 'sword-heavy' : 'sword'));
+      const guard = blocked ? guardOutcome(t, heavy, now) : 'open';
+      if (guard === 'parried') { a.lastSwing = now + (rules.guard?.parryStunMs ?? 700); events.push(...damage(id, p, tid, t, 0, 'sword-parried')); continue; }
+      const held = guard === 'blocked';
+      const amount = held ? (heavy ? s.heavyBlockedDamage ?? s.blockedDamage : s.blockedDamage) : (heavy ? s.heavyDamage ?? s.damage : s.damage);
+      events.push(...damage(id, p, tid, t, amount, held ? 'sword-blocked' : guard === 'broken' ? 'sword-guardbreak' : heavy ? 'sword-heavy' : 'sword'));
     }
     emit(events);
   }
@@ -109,7 +123,9 @@ export function createArena({root, presence, emit}) {
       if (zone === 'arena' && (!p.userId || !inside(message.x, message.z))) return; // must be signed in and inside
       if (zone !== p.zone) { p.zone = zone; if (zone === 'arena') enter(p); }
       p.weapon = message.weapon === 'crossbow' ? 'crossbow' : 'sword';
-      p.blocking = !!message.blocking && p.weapon === 'sword';
+      const blocking = !!message.blocking && p.weapon === 'sword';
+      if (blocking && !p.blocking && p.arena) p.arena.blockStart = Date.now();
+      p.blocking = blocking;
       p.y = Number.isFinite(message.y) ? Math.max(0, Math.min(2, message.y)) : 0;
       p.pitch = Number.isFinite(message.pitch) ? Math.max(-1.5, Math.min(1.5, message.pitch)) : 0;
     },

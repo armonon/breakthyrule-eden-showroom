@@ -168,8 +168,9 @@
     const aimPoint=head||camera.position.clone().addScaledVector(forward,.75).add(new T.Vector3(0,-.12,0));
     const land=model.motion.punch(aimPoint);guardUntil=clock+2.2;requestDraw();
     if(!target)setTimeout(()=>M?.whiff(),land*1000);
-    if(target)setTimeout(()=>{if(!target.root.parent)return;const p=target.root.getWorldPosition(new T.Vector3());if(Math.hypot(p.x-camera.position.x,p.z-camera.position.z)<reach+.1){const direction=p.sub(camera.position).setY(0).normalize(),result=target.motion.hit(direction,heavy?2.4:1.2);
-     M?.land(result==='down'?'ko':heavy?'heavy':'light',{hitStop,label:result==='down'?null:heavy?'HAYMAKER':null});
+    if(target)setTimeout(()=>{if(!target.root.parent)return;const p=target.root.getWorldPosition(new T.Vector3());if(Math.hypot(p.x-camera.position.x,p.z-camera.position.z)<reach+.1){const direction=p.sub(camera.position).setY(0).normalize(),finisher=!!M?.wouldFinish(heavy?'heavy':'light'),result=target.motion.hit(direction,finisher?3:heavy?2.4:1.2);
+     if(finisher)M.sound('finisher');
+     M?.land(finisher?'finisher':result==='down'?'ko':heavy?'heavy':'light',{hitStop,label:result==='down'?null:heavy?'HAYMAKER':null});
      // Tell the room: multiplayer can relay this so everyone sees the same hit or knockdown.
      if(target.root.userData.visitorId)root.dispatchEvent?.(new CustomEvent('eden-punch',{detail:{visitorId:target.root.userData.visitorId,direction:{x:direction.x,z:direction.z},knockdown:result==='down'}}));}
     requestDraw();},land*1000);

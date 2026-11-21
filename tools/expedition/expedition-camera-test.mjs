@@ -21,9 +21,9 @@ test('actual app C/Shift handlers support repeated toggle and hold releases thro
   for(const [code,read] of inputs){dispatch('keydown',code);assert.equal(read(),true,code+' holds');dispatch('keyup',code);assert.equal(read(),false,code+' releases');}
  }
  const crouched=()=>scope.movement.crouchHeld,sprinting=()=>scope.keys.has('shift');exercise([['KeyC',crouched],['ShiftLeft',sprinting]]);
- assert.equal(scope.edenControls.set('crouch',0,'KeyZ').ok,true);assert.equal(scope.edenControls.set('sprint',0,'KeyL').ok,true);
+ assert.equal(scope.edenControls.set('crouch',0,'KeyY').ok,true);assert.equal(scope.edenControls.set('sprint',0,'KeyL').ok,true);
  for(const code of ['KeyC','ShiftLeft']){dispatch('keydown',code);dispatch('keyup',code);}assert.equal(crouched(),false,'old crouch key is inactive');assert.equal(sprinting(),false,'old primary sprint key is inactive');
- exercise([['KeyZ',crouched],['KeyL',sprinting]]);
+ exercise([['KeyY',crouched],['KeyL',sprinting]]);
  let jumps=0;scope.movement.jump=()=>jumps++;dispatch('keydown','Space');dispatch('keydown','Space',true);dispatch('keydown','Space');assert.equal(jumps,1,'held/repeated jump launches once');assert.equal(scope.keys.has('space'),true);dispatch('keyup','Space');assert.equal(scope.keys.has('space'),false,'native jump releases');assert.equal(scope.edenControls.set('jump',0,'KeyU').ok,true);dispatch('keydown','KeyU');assert.equal(jumps,2);dispatch('keyup','KeyU');assert.equal(scope.keys.has('space'),false,'remapped jump releases');
 });
 test('host passes per-view sensitivity, effects and explicit optional aim flag',()=>{assert.ok(app.includes("effects:expeditionPrefs()"));assert.ok(app.includes("expeditionPreferences?.isBailKey(event)"));assert.ok(app.match(/firstSensitivity/g).length>=2,'mouse and touch sensitivity');assert.ok(app.includes("thirdOn?'thirdSensitivity':'firstSensitivity'"));assert.ok(app.includes('!expeditionPrefs().speedFov'));const expedition=readFileSync(new URL('expedition.js',base),'utf8');assert.ok(expedition.includes('aimAssist:preferences()?.aimAssist===true'));});

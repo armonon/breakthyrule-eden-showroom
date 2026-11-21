@@ -100,6 +100,12 @@ body.combat-armed #scene canvas{cursor:crosshair}
 .ch-mag{display:block;height:3px;width:120px;margin-left:auto;background:rgba(255,255,255,.18);border-radius:2px;overflow:hidden}
 .ch-mag i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#f4f1ea,#fff);transition:width .12s}
 .ch-mag.low i{background:linear-gradient(90deg,#ff5a4a,#ff9c8a)}
+/* Guard stamina (melee-core.js): shows while the block is up or recovering; blue held up, red when broken. */
+.ch-guard{display:block;height:4px;width:120px;margin:5px 0 0 auto;background:rgba(255,255,255,.14);border-radius:2px;overflow:hidden;opacity:0;transition:opacity .2s}
+.ch-guard.show{opacity:1}
+.ch-guard i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#8fc8ff,#d8ecff);transition:width .1s}
+.ch-guard.up i{background:linear-gradient(90deg,#4aa3ff,#bfe7ff);box-shadow:0 0 8px #4aa3ff99}
+.ch-guard.broken i{background:linear-gradient(90deg,#ff5a4a,#ff9c8a)}
 .ch-slots button{border-radius:3px;transition:transform .12s,background .12s}
 .ch-slots button.active{transform:translateY(-3px);box-shadow:0 6px 18px rgba(0,0,0,.35)}
 

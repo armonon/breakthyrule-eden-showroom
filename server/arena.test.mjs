@@ -49,7 +49,31 @@ test('a heavy swing keeps its longer cooldown; a blocked heavy pushes more throu
   assert.equal(s.hits().length, 1, 'still recovering from the heavy');
   s.a.arena.lastSwing -= s.rules.heavyCooldownMs;
   s.arena.pose(s.b, {zone: 'arena', x: s.b.pose.x, z: s.b.pose.z, weapon: 'sword', blocking: true});
+  s.b.arena.blockStart -= 1000;                             // raised long ago: a block, not a parry
   s.arena.action('a', s.a, {t: 'attack', heavy: true});
   assert.equal(s.hits()[1].weapon, 'sword-blocked');
   assert.equal(s.hits()[1].amount, s.rules.heavyBlockedDamage);
+});
+
+test('a guard raised just before the blow parries it and stuns the attacker', t => {
+  const s = setup();
+  t.after(stopTimers);
+  s.arena.pose(s.b, {zone: 'arena', x: s.b.pose.x, z: s.b.pose.z, weapon: 'sword', blocking: true});
+  s.arena.action('a', s.a, {t: 'attack', heavy: true});
+  assert.equal(s.hits()[0].weapon, 'sword-parried');
+  assert.equal(s.hits()[0].amount, 0);
+  s.a.arena.lastSwing -= s.rules.heavyCooldownMs;           // the cooldown has passed, but the parry stun has not
+  s.arena.action('a', s.a, {t: 'attack'});
+  assert.equal(s.hits().length, 1);
+});
+
+test('blocking heavies drains the guard until it breaks and the blow lands in full', t => {
+  const s = setup(), g = s.arena.layout.rules.guard;
+  t.after(stopTimers);
+  s.arena.pose(s.b, {zone: 'arena', x: s.b.pose.x, z: s.b.pose.z, weapon: 'sword', blocking: true});
+  s.b.arena.blockStart -= 1000;
+  const blows = Math.ceil(100 / g.costHeavy);
+  for (let i = 0; i < blows; i++) { s.a.arena.lastSwing -= 5000; s.b.arena.guardAt = Date.now(); s.arena.action('a', s.a, {t: 'attack', heavy: true}); }
+  assert.deepEqual(s.hits().map(h => h.weapon), [...Array(blows - 1).fill('sword-blocked'), 'sword-guardbreak']);
+  assert.equal(s.hits().at(-1).amount, s.rules.heavyDamage);
 });

@@ -144,12 +144,14 @@ window.createArena=function({T,scene,camera,renderer,player,multiplayer,requestD
  // A sword blow, felt the same as every other melee hit: the shared sound, freeze, shake, combo and word.
  function swordFeel(e,self){
   const M=window.EdenMelee;if(!M||!e.weapon?.startsWith('sword'))return;
-  const tier=e.weapon==='sword-blocked'?'blocked':e.health===0?'ko':e.weapon==='sword-heavy'?'heavy':'light';
-  if(e.target===self)M.land(tier==='ko'?'heavy':tier,{hitStop,combo:false,pop:false});
-  else if(e.attacker===self)M.land(tier,{hitStop,shake:v=>{shake=Math.max(shake,v*1.5);},label:tier==='heavy'?'LUNGE':null});
+  const tier={'sword-blocked':'blocked','sword-parried':'parried','sword-guardbreak':'broken'}[e.weapon]||(e.health===0?'ko':e.weapon==='sword-heavy'?'heavy':'light');
+  // Your parry opens a counter; being parried throws you off (you can't swing for a moment) and breaks your combo.
+  if(e.target===self)M.land(tier==='ko'?'heavy':tier,{hitStop,combo:false,pop:tier==='parried'||tier==='broken'});
+  else if(e.attacker===self){if(tier==='parried'){M.sound('block');M.combo.reset();M.pop('PARRIED','block');shake=Math.max(shake,.3);lastSwing=performance.now()+(layout.rules.guard?.parryStunMs??700);}
+   else M.land(tier,{hitStop,shake:v=>{shake=Math.max(shake,v*1.5);},label:tier==='heavy'?'LUNGE':null});}
   // The one who was hit reels back from the one who hit them.
   const target=e.target===self?null:multiplayer.avatar(e.target),from=e.attacker===self?player.position:multiplayer.avatar(e.attacker)?.root.position;
-  if(target?.motion?.hit&&from&&tier!=='blocked'){const dir=target.root.position.clone().sub(from).setY(0);if(dir.lengthSq()>1e-4)target.motion.hit(dir.normalize(),tier==='light'?.9:1.8);}
+  if(target?.motion?.hit&&from&&tier!=='blocked'&&tier!=='parried'){const dir=target.root.position.clone().sub(from).setY(0);if(dir.lengthSq()>1e-4)target.motion.hit(dir.normalize(),tier==='light'?.9:1.8);}
  }
 
  // ---------- events from the server ----------

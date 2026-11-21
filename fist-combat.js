@@ -105,7 +105,9 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
  }
  const fHold=M?M.charge({light:()=>punch(player.nextHand?'cross':'jab'),heavy:()=>punch('power')}):{down:()=>punch(player.nextHand?'cross':'jab'),up(){},cancel(){}};
  function punch(kind){
-  const t=now();if(!canAct()||player.down||t<player.readyAt)return false;
+  const t=now();if(!canAct()||player.down)return false;
+  // Input buffer: a punch pressed in the last 0.3 s of recovery is thrown the moment it can be.
+  if(t<player.readyAt){if(player.readyAt-t<.3&&!player.queued){player.queued=true;setTimeout(()=>{player.queued=false;punch(kind);},(player.readyAt-t)*1000+10);}return false;}
   if(player.attack&&!player.attack.resolved){player.attack.resolved=true;resolve(player.attack);}
   const spec=PUNCHES[kind],hand=kind==='jab'?0:1;player.nextHand=kind==='jab'?1:0;
   const tired=!spend(spec.stamina??{jab:10,cross:14,power:28}[kind]);
@@ -144,7 +146,9 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
   const direction=tmp.set(hit.at.x-feet.x,0,hit.at.z-feet.z);if(direction.lengthSq()<1e-4)direction.copy(forward);direction.normalize();
   const contact=new T.Vector3(hit.at.x,(p.position.y-1.75)+1.45,hit.at.z).addScaledVector(direction,-.35);
   let outcome='hit';
-  if(hit.type==='jester')outcome=jester.takeHit({damage,direction:direction.clone(),kind:attack.kind,power:attack.spec.power,contact});
+  // Combo finisher: a heavy ending a chain of three hits lands half again as hard and knocks him over in slow motion.
+  const finisher=!!M?.wouldFinish(attack.spec.tier||'light');
+  if(hit.type==='jester'){outcome=jester.takeHit({damage:finisher?Math.round(damage*1.5):damage,direction:direction.clone(),kind:attack.kind,power:attack.spec.power,contact});if(finisher&&outcome==='hit')jester.knockdown(direction.clone(),contact);}
   else if(!hit.ko){network.hit({target:hit.id,kind:attack.kind,damage,direction:[direction.x,direction.z]});}
   else outcome='ragdoll';
   stats.landed++;stats.last={type:hit.type,outcome,damage};
@@ -153,7 +157,7 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
   player.combo++;player.comboUntil=t+1.15;attack.landed=true;attack.freeze=attack.kind==='power'||outcome==='ko'?.11:.065;player.landedAt=t;
   flash(contact,attack.kind==='power');
   // Impact: a short frame hold scaled to the blow, and a jolt through your own view (the shared melee tiers).
-  if(M){const landed=M.land(outcome==='ko'?'ko':attack.spec.tier||'light',{hitStop,shake,label:countered?'COUNTER!':attack.spec.label});player.combo=landed.combo;}
+  if(M){if(finisher)M.sound('finisher');const landed=M.land(finisher?'finisher':outcome==='ko'?'ko':attack.spec.tier||'light',{hitStop,shake,label:countered?'COUNTER!':attack.spec.label});player.combo=landed.combo;}
   else{sfx(attack.kind==='power'||outcome==='ko'?'heavy':'hit');hitStop(outcome==='ko'?170:{jab:45,cross:65,power:110}[attack.kind]||50);shake(attack.kind==='power'||outcome==='ko'?.3:.14);
    shout(outcome==='ko'?'K.O.!':countered?'COUNTER!':player.combo>2?player.combo+' HIT COMBO':attack.spec.label,outcome==='ko'?'ko':'hit');}emit('landed',{kind:attack.kind,damage,outcome,target:hit.type});
  }
@@ -167,7 +171,12 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
   if(player.blocking&&kind!=='tackle'&&facing&&t-player.blockStart<.25){player.counterUntil=t+1.3;player.shake=.08;if(M)M.land('parried',{hitStop});else{sfx('block');shout('PARRY!','block');hitStop(60);}if(from==='jester')jester.parried();emit('parry',{from});return 'parried';}
   player.lastHurt=t;
   const heavyBlow=kind==='uppercut'||kind==='power'||kind==='tackle';
-  if(player.blocking&&kind!=='tackle'&&facing){damage*=.2;player.stamina=Math.max(0,player.stamina-8);player.shake=.12;if(M)M.land('blocked',{combo:false});else{sfx('block');shout('BLOCKED','block');}}
+  // Guard break: every blocked blow spends stamina (heavies far more); a guard with nothing left gives way.
+  let broken=false;
+  if(player.blocking&&kind!=='tackle'&&facing){const cost=M?M.GUARD.cost[heavyBlow?'heavy':'light']:8;player.stamina=Math.max(0,player.stamina-cost);
+   if(M&&player.stamina<=0){broken=true;player.blocking=false;player.tiredUntil=t+1.2;M.sound('guardbreak');}}
+  if(player.blocking&&kind!=='tackle'&&facing&&!broken){damage*=.2;player.shake=.12;if(M)M.land('blocked',{combo:false});else{sfx('block');shout('BLOCKED','block');}}
+  else if(broken){player.flash=1;player.shake=.6;M.land('broken',{hitStop,combo:false});}
   else{player.flash=1;player.shake=heavyBlow?.65:.38;if(M)M.land(heavyBlow?'heavy':'light',{hitStop,combo:false,pop:false,sound:kind==='tackle'?'thud':undefined});else{sfx(kind==='tackle'?'thud':'hit');hitStop(heavyBlow?120:70);}}
   player.hp=Math.max(0,player.hp-damage);
   knockPlayer({direction,distance:kind==='tackle'?1.4:kind==='uppercut'||kind==='power'?.8:.3});
@@ -181,7 +190,10 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
  }
  // ---------- The Violet Trickster's fight brain ----------
  const jester={entry:null,ragdoll:null,hp:100,mode:'path',since:0,layers:new Map(),current:'',lastProvoked:-99,attackReady:0,tackleReady:0,koUntil:0,afterKo:false,tackle:null,attack:null,push:new T.Vector3(),danceRound:-1,
-  takeHit,onPlayerDown,parried(){if(['engage','attack'].includes(jester.mode)){setMode('hit');play('Hit',{fade:.05});jester.push.set(0,0,0);if(Math.random()<.5)say('Whoa—!',true);}},bout:false};
+  takeHit,onPlayerDown,
+  // Knocked over without being knocked out (a combo finisher): he tumbles, then gets up on guard.
+  knockdown(direction,contact){if(!jester.ragdoll||jester.ragdoll.active)return;jester.ragdoll.start({impulse:direction.clone().multiplyScalar(4.4),lift:2.6,at:contact,spin:rand(-1.5,1.5)});setMode('tumble');jester.koUntil=now()+1.8;say('hurt',true);},
+  parried(){if(['engage','attack'].includes(jester.mode)){setMode('hit');play('Hit',{fade:.05});jester.push.set(0,0,0);if(Math.random()<.5)say('Whoa—!',true);}},bout:false};
  function ensureJester(){
   if(jester.entry?.root)return true;const entry=residents.get(jesterId);if(!entry?.root||!entry.moves)return false;
   jester.entry=entry;entry.controller={active:false,mode:'path',animation:''};
@@ -226,7 +238,11 @@ window.createFistCombat=function({T,scene,camera,residents,jesterId='violet-tric
   if(jester.ragdoll?.active){jester.ragdoll.push('spine',direction.clone().multiplyScalar(power*1.4).setY(1.2));if(Math.random()<.4)say('hurt');return 'ragdoll';}
   if(jester.mode==='getup')return 'blocked';
   const fresh=jester.mode==='path'||t-jester.lastProvoked>12;activate();jester.lastProvoked=t;
-  if(['engage','attack'].includes(jester.mode)&&!fresh&&kind!=='power'&&Math.random()<.2){play('Guard',{fade:.06});say('blocked');jester.hp-=Math.round(damage*.25);return 'blocked';}
+  // The jester's guard wears down too: each block costs a third of it, and once broken he can't block for a moment.
+  if(['engage','attack'].includes(jester.mode)&&!fresh&&kind!=='power'&&t>(jester.guardBrokenUntil||0)&&Math.random()<.2){
+   jester.guard=(jester.guard??100)-34;
+   if(jester.guard>0){play('Guard',{fade:.06});say('blocked');jester.hp-=Math.round(damage*.25);return 'blocked';}
+   jester.guard=100;jester.guardBrokenUntil=t+2.5;window.EdenMelee?.land('broken',{hitStop});say('Whoa—!',true);}
   jester.hp-=damage;updateHud();
   if(jester.hp<=0){
    jester.hp=0;jester.afterKo=true;

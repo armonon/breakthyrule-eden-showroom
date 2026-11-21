@@ -14,7 +14,7 @@
    <button type="button" class="tc-fire" aria-label="Fire">FIRE</button><button type="button" class="tc-aim" aria-label="Aim">AIM</button>
    <button type="button" class="tc-jump" aria-label="Jump">JUMP</button><button type="button" class="tc-slide" aria-label="Hold to crouch or slide while running">CROUCH</button>
    <button type="button" class="tc-use" aria-label="Interact">USE</button><button type="button" class="tc-reload" aria-label="Reload">RELOAD</button>
-   <button type="button" class="tc-swap" aria-label="Next weapon">SWAP</button><button type="button" class="tc-melee" aria-label="Melee">HIT</button>
+   <button type="button" class="tc-swap" aria-label="Next weapon">SWAP</button><button type="button" class="tc-melee" aria-label="Melee (hold for a slam)">HIT</button><button type="button" class="tc-guard" aria-label="Block (tap just before a hit to parry)">BLOCK</button>
    <button type="button" class="tc-third" aria-label="Switch camera view">VIEW</button><button type="button" class="tc-leave" aria-label="Leave arena and return to Eden" hidden>EDEN</button>`;
   (host||document.body).append(el);const q=s=>el.querySelector(s),stick=q('.tc-stick'),nub=stick.querySelector('i'),pad=q('.tc-look');
   let disposed=false,shown=false,sid=null,lid=null,origin=null,lastLook=null,held=new Set(),slot=0,lastMode=null;
@@ -50,7 +50,9 @@
   hold('.tc-slide',()=>{if(crouch){crouch(true);return()=>crouch(false);}return heldKey('c');});
   hold('.tc-use',()=>heldKey(expedition()?'e':'f'));
   hold('.tc-reload',()=>heldKey('r'));
-  hold('.tc-melee',()=>{combat()?.touchMelee?.();});
+  // HIT follows the keyboard melee rule: tap to bash, hold to slam. BLOCK raises the guard while held.
+  hold('.tc-melee',()=>{const c=combat();if(c?.touchMeleeDown){c.touchMeleeDown();return()=>c.touchMeleeUp();}c?.touchMelee?.();});
+  hold('.tc-guard',()=>{const c=combat();if(!c?.touchGuard)return;c.touchGuard(true);return()=>c.touchGuard(false);});
   hold('.tc-third',()=>{third();});
   hold('.tc-leave',()=>{reset();leave?.();});
   hold('.tc-swap',()=>{const c=combat(),ids=c?.arsenal?.inspect?.()?.owned||['axe','pistol'],guns=ids.length?ids:['pistol'];slot=(slot+1)%(guns.length+1);if(slot===guns.length){if(c?.armed())heldKey('x')();}else heldKey(String(slot+1))();});

@@ -350,7 +350,7 @@ function perfFrame(raw){if(!perfOn||!raw)return;perf.n++;perf.sum+=raw;perf.wors
 document.addEventListener('keydown',e=>{if(e.key!=='F9')return;e.preventDefault();perfOn=!perfOn;if(!perfBox){perfBox=document.createElement('div');perfBox.id='perf-hud';perfBox.style.cssText='position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:80;background:rgba(0,0,0,.6);color:#9effa8;font:600 11px monospace;padding:4px 10px;pointer-events:none;letter-spacing:.04em';document.body.append(perfBox);}perfBox.hidden=!perfOn;perfBox.textContent='measuring…';requestDraw();});
 // ?slowmo=0.25 runs the whole game clock at a quarter speed, for checking animations frame by frame.
 const SLOWMO=Math.min(1,Math.max(.05,+new URLSearchParams(location.search).get('slowmo')||1));
-function draw(time){frame=0;if(!pageActive()){previous=0;quality.pause();return;}if(!state.ready)return;if(lookLocked&&modalOpen())document.exitPointerLock?.();if(worlds?.loading())quality.pause();else quality.frame(time,!!previous);const raw=Math.min((time-(previous||time))/1000,.25)*SLOWMO,dt=Math.min(raw,.05);previous=time;perfFrame(raw);
+function draw(time){frame=0;if(!pageActive()){previous=0;quality.pause();return;}if(!state.ready)return;if(lookLocked&&modalOpen())document.exitPointerLock?.();if(worlds?.loading())quality.pause();else quality.frame(time,!!previous);const melee=window.EdenMelee?.timeScale?.()??1,raw=Math.min((time-(previous||time))/1000,.25)*SLOWMO*melee,dt=Math.min(raw,.05);previous=time;if(melee<1)requestDraw();perfFrame(raw);
  // Movement and the match run in steps of at most 50 ms, so a long frame catches up instead of slowing the game down
  // and snapping back (what reads as rubber banding when the frame rate dips).
  const steps=Math.max(1,Math.ceil(raw/.05-1e-6)),sdt=(raw||.016)/steps;
@@ -788,6 +788,7 @@ battle=window.createBattleArena?.({T,scene,camera,combat,garden,playerAnchor:()=
  setNight(v){if(v!=null)garden.district;garden.nightRoad?.setOverride(v);},
  onDeath(){sway.bump(1.5,Math.random()<.5?-1:1);hitStop(160);requestDraw();},
  dodging:()=>movement.slide?.kind==='dash'||!!movement.dive||!!movement.vault,
+ onGuardBroken(){sway.bump(1.1,Math.random()<.5?-1:1);playerBody?.anim?.('hitChest',{fade:.05,mask:'upper'});requestDraw();},
  onTackled(dir){playerBody?.anim?.('knockback',{fade:.05});movement.proneT=1;movement.slide=null;movement.dive=null;walkVelocity.copy(dir).setY(0).multiplyScalar(4.5);sway.bump(1.4,Math.random()<.5?-1:1);hitStop(90);footsteps?.land(surfaceAt(targetPosition),1);requestDraw();},
  onPagesComplete(fresh){garden.pyramid.setPages(8);if(fresh)worlds?.card('THE OFFICE IS OPEN','ALL EIGHT PAGES ARE IN · FOLLOW THE BRICK ROAD TO THE PYRAMID','EIGHT PAGES',3600);},
  onSoul(on){document.body.classList.toggle('soul-taken',!!on);requestDraw();},
