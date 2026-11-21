@@ -50,17 +50,26 @@ to = "https://lillypads-macbook-air.tail4736c7.ts.net:10000/showroom"
 status = 302
 force = true
 
+# Lets showroom-start.html check whether the game host is up before offering multiplayer.
+[[redirects]]
+from = "/play-status"
+to = "https://lillypads-macbook-air.tail4736c7.ts.net:10000/deployment.js"
+status = 302
+force = true
+
+# /showroom asks Solo or Multiplayer first; Solo opens /showroom.html (the static game, as before).
+# force = true: otherwise Netlify's clean URLs serve showroom.html for /showroom and skip this rule.
 [[redirects]]
 from = "/showroom"
-to = "/showroom.html"
+to = "/showroom-start.html"
 status = 200
-force = false
+force = true
 
 [[redirects]]
 from = "/showroom/"
-to = "/showroom.html"
+to = "/showroom-start.html"
 status = 200
-force = false
+force = true
 
 [[redirects]]
 from = "/gallery"
