@@ -17,6 +17,10 @@ const SOURCES={
  ual:{bone:{root:'pelvis',spine03:'spine_01',spine02:'spine_02',spine01:'spine_03',neck01:'neck_01',head:'Head',
    ...Object.fromEntries([...'LR'].flatMap(s=>{const l=s.toLowerCase();return [[`clavicle.${s}`,`clavicle_${l}`],[`upperarm01.${s}`,`upperarm_${l}`],[`lowerarm01.${s}`,`lowerarm_${l}`],[`wrist.${s}`,`hand_${l}`],[`upperleg01.${s}`,`thigh_${l}`],[`lowerleg01.${s}`,`calf_${l}`],[`foot.${s}`,`foot_${l}`],[`toes.${s}`,`ball_${l}`]];}))},
   end:{...Object.fromEntries([...'LR'].flatMap(s=>{const l=s.toLowerCase();return [[`wrist.${s}`,`middle_01_${l}`],[`toes.${s}`,`ball_leaf_${l}`]];}))}},
+ // Mixamo (FBX "without skin"; the loader drops the colon, and key() drops the mixamorig prefix).
+ mixamo:{bone:{root:'Hips',spine03:'Spine',spine02:'Spine1',spine01:'Spine2',neck01:'Neck',head:'Head',
+   ...Object.fromEntries([['L','Left'],['R','Right']].flatMap(([s,n])=>[[`clavicle.${s}`,`${n}Shoulder`],[`upperarm01.${s}`,`${n}Arm`],[`lowerarm01.${s}`,`${n}ForeArm`],[`wrist.${s}`,`${n}Hand`],[`upperleg01.${s}`,`${n}UpLeg`],[`lowerleg01.${s}`,`${n}Leg`],[`foot.${s}`,`${n}Foot`],[`toes.${s}`,`${n}ToeBase`]]))},
+  end:{head:'HeadTop_End',...Object.fromEntries([['L','Left'],['R','Right']].flatMap(([s,n])=>[[`wrist.${s}`,`${n}HandMiddle1`],[`toes.${s}`,`${n}Toe_End`]]))}},
  rb:{bone:{root:'Bip01 Pelvis',spine03:'Bip01 Spine',spine02:'Bip01 Spine1',spine01:'Bip01 Spine2',neck01:'Bip01 Neck',head:'Bip01 Head',
    ...Object.fromEntries([...'LR'].flatMap(s=>[[`clavicle.${s}`,`Bip01 ${s} Clavicle`],[`upperarm01.${s}`,`Bip01 ${s} UpperArm`],[`lowerarm01.${s}`,`Bip01 ${s} Forearm`],[`wrist.${s}`,`Bip01 ${s} Hand`],[`upperleg01.${s}`,`Bip01 ${s} Thigh`],[`lowerleg01.${s}`,`Bip01 ${s} Calf`],[`foot.${s}`,`Bip01 ${s} Foot`],[`toes.${s}`,`Bip01 ${s} Toe0`]]))},
   end:{head:'Bip01 HeadNub',...Object.fromEntries([...'LR'].flatMap(s=>[[`wrist.${s}`,`Bip01 ${s} Finger2`],[`toes.${s}`,`Bip01 ${s} Toe0Nub`]]))}}
@@ -25,7 +29,7 @@ const SOURCES={
 const CHILD={root:'spine03',spine03:'spine02',spine02:'spine01',spine01:'neck01',neck01:'head'};
 for(const s of 'LR')Object.assign(CHILD,{[`clavicle.${s}`]:`upperarm01.${s}`,[`upperarm01.${s}`]:`lowerarm01.${s}`,[`lowerarm01.${s}`]:`wrist.${s}`,[`upperleg01.${s}`]:`lowerleg01.${s}`,[`lowerleg01.${s}`]:`foot.${s}`,[`foot.${s}`]:`toes.${s}`});
 
-const key=n=>n.replace(/[_\s]+/g,' ').trim().toLowerCase();
+const key=n=>n.replace(/^mixamorig\d*[:_]?/i,'').replace(/[_\s]+/g,' ').trim().toLowerCase();
 async function load(url){if(url.endsWith('.fbx'))return await new FBXLoader().loadAsync(url);const g=await new GLTFLoader().loadAsync(url);g.scene.animations=g.animations;return g.scene;}
 function bonesByName(scene){const m=new Map();scene.traverse(o=>{if(o.isBone||o.type==='Object3D'||o.isObject3D)m.set(key(o.name),o);});return m;}
 function restPose(scene){scene.traverse(o=>{if(o.isSkinnedMesh)o.skeleton.pose();});scene.updateMatrixWorld(true);}
@@ -73,7 +77,7 @@ window.bake=async(jobs,restUrls,fps=30)=>{
  for(const j of jobs){
   if(!rests[j.src]){const r=restUrls[j.src]?await scene(restUrls[j.src]):await scene(j.url);rests[j.src]=measureRest(r,j.src);out.sources[j.src]={dirs:rests[j.src].dirs};}
   const s=await scene(j.url),clip=j.clip?s.animations.find(a=>a.name===j.clip):s.animations[0];if(!clip)throw new Error('no clip '+j.clip+' in '+j.url);
-  out.clips[j.id]={src:j.src,loop:!!j.loop,...sample(s,clip,rests[j.src],j.src,j.fps||fps,j.src==='rb',j.maxDur||0)};
+  out.clips[j.id]={src:j.src,loop:!!j.loop,...sample(s,clip,rests[j.src],j.src,j.fps||fps,j.src==='rb'||j.src==='mixamo',j.maxDur||0)};
  }
  return out;
 };

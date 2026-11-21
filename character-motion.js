@@ -175,10 +175,16 @@
     let id=null,loop=false,speed=1,start=0;
     if(kind==='slide'){id=t<.12?'slideStart':'slideLoop';loop=id==='slideLoop';speed=id==='slideStart'?A.duration(id)/.12:1;}
     else if(kind==='dive'||kind==='dash'){id='dash';speed=1.3;}
-    else if(kind==='warp'){id='dash';speed=duration?Math.max(.8,A.duration(id)/duration):1.2;start=Math.min(t*speed,A.duration(id)*.9);}// a gap leap reads as a lunge, not a climb
-    else if(['climb','vault','scramble','pipe'].includes(kind)){id='climbUp';loop=kind==='scramble'||kind==='pipe';speed=duration?A.duration(id)/duration:1;start=Math.min(t*speed,A.duration(id));}
-    else if(kind==='wallrun'){id='sprint';loop=true;speed=1.15;}
-    const managed=['slideStart','slideLoop','climbUp','dash','sprint'];
+    // Mixamo parkour clips (tools/animation/bake-mixamo.cjs) where they are baked; the older clips otherwise.
+    const pick=(...ids)=>ids.find(i=>A.has(i)),timed=(i,lp=false)=>{id=i;loop=lp;speed=duration&&!lp?A.duration(i)/duration:1;start=lp?0:Math.min(t*speed,A.duration(i)*.98);};
+    if(kind==='warp'){const leap=pick('pkLeap');if(leap)timed(leap);else{id='dash';speed=duration?Math.max(.8,A.duration(id)/duration):1.2;start=Math.min(t*speed,A.duration(id)*.9);}}// a gap leap reads as a lunge, not a climb
+    else if(kind==='vault')timed(pick('pkVault','climbUp'));
+    else if(kind==='climb')timed(pick('pkClimb','climbUp'));
+    else if(kind==='scramble')timed(pick('pkScramble','climbUp'),true);
+    else if(kind==='pipe')timed('climbUp',true);
+    else if(kind==='hang'){const sh=move.shimmy||0,c=sh<0?pick('pkShimmyL'):sh>0?pick('pkShimmyR'):null;const h=c||pick('pkHang');if(h){id=h;loop=true;}}
+    else if(kind==='wallrun'){id=pick('pkWallRun','sprint');loop=true;speed=id==='sprint'?1.15:1;}
+    const managed=['slideStart','slideLoop','climbUp','dash','sprint','pkLeap','pkVault','pkClimb','pkScramble','pkHang','pkShimmyL','pkShimmyR','pkWallRun'];
     const sliding=api.playing('slideStart')||api.playing('slideLoop');
     for(const clip of managed)if(clip!==id)api.stop(clip,.12);
     if(id){api.stop('slideExit',.14);api.stop('jumpStart',.14);if(!api.playing(id))api.play(id,{fade:.16,mask:'full',weight:.85,loop,speed,start,hold:!loop});}
@@ -221,7 +227,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     const shot=shotLayer&&shotLayer.t<.22?Math.sin(shotLayer.t/.22*Math.PI)*shotLayer.w:0,reload=reloadLayer?Math.sin(clamp(reloadLayer.t/reloadLayer.dur,0,1)*Math.PI)*reloadLayer.w:0,reach=reachLayer?Math.sin(clamp(reachLayer.t/reachLayer.dur,0,1)*Math.PI)*reachLayer.w:0;
     const viewEase=1-Math.exp(-10*dt);view.first+=(view.firstTarget-view.first)*viewEase;view.sprint+=(view.sprintTarget-view.sprint)*viewEase;view.yaw+=(view.yawTarget-view.yaw)*viewEase;view.pitch+=(view.pitchTarget-view.pitch)*viewEase;
     // Airborne legs can use the authored tuck; grounded contact is restored below.
-    if(state.airborne!==wasFlying){api.stop(state.airborne?'jumpLand':'jumpStart',.1);if(state.airborne||!api.playing('jumpLand')&&!api.playing('roll'))api.play(state.airborne?'jumpStart':'jumpLand',{fade:.08,speed:2.2,mask:'full',weight:.85});wasFlying=state.airborne;}
+    if(state.airborne!==wasFlying){api.stop(state.airborne?'jumpLand':'jumpStart',.1);if(state.airborne||!api.playing('jumpLand')&&!api.playing('roll')&&!api.playing('pkRoll'))api.play(state.airborne?'jumpStart':'jumpLand',{fade:.08,speed:2.2,mask:'full',weight:.85});wasFlying=state.airborne;}
     pelvis.position.copy(pelvisRest);for(const b of model.skeleton.bones)b.quaternion.identity();
     // Pelvis: drop on each footfall, shift over the planted foot, twist with the stride. Springs keep it heavy.
     const ph=state.phase*Math.PI*2,bob=-(.018+.03*run)*w*(.5+.5*Math.cos(2*ph)),sway=.02*w*(1-run)*Math.sin(ph);
@@ -364,7 +370,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
      // Cosmetic torso/clip layers must not detach solved world contacts. Reuse
      // this frame's targets; do not advance gait, springs or action time twice.
      group.updateMatrixWorld(true);
-     const freeLegs=state.layers.some(L=>L.mask==='full'&&L.w>.01&&['roll','getUp','slideStart','slideLoop','slideExit','climbUp','dash','sprint'].includes(L.id));
+     const freeLegs=state.layers.some(L=>L.mask==='full'&&L.w>.01&&['roll','pkRoll','getUp','slideStart','slideLoop','slideExit','climbUp','dash','sprint','pkLeap','pkVault','pkClimb','pkScramble','pkHang','pkShimmyL','pkShimmyR','pkWallRun'].includes(L.id));
      for(const [i,s] of sides.entries()){
       if(!state.airborne&&!freeLegs){
        // Keep planted feet fixed, but retain the clip's knee lift on the swing.

@@ -389,7 +389,7 @@
   }
   return {ropePose,setMomentum(v){mom=clamp(+v||0,0,1);},takeMomentumBonus(){const b=bonus;bonus=0;return b;},chain:()=>chain,captureState,restoreState,validateState,updated:tick=>tick!==null&&lastUpdateTick===tick,wallBeside,wallAhead,floorAt,supportAt,solid,ledgeAhead,bodyFits,bodySweep,raycast,update,onJump,air,land,dropToHang,hands,
    crouchPressed(){crouchAt=clock;},active:()=>!!state,busy:()=>['climb','warp','scramble'].includes(state?.kind),kind:()=>state?.kind||null,lean:()=>lean,fov:()=>fov,lift:()=>lift,handsFull:()=>['hang','climb','scramble','bar','pipe','rope'].includes(state?.kind),
-   presentation:()=>state?{kind:state.kind,time:state.t||0,duration:state.dur||0,side:state.side||0}:null,
+   presentation:()=>state?{kind:state.kind,time:state.t||0,duration:state.dur||0,side:state.side||0,shimmy:state.kind==='hang'?wish().x:0,landing:state.then||null}:null,
    reset(){state=null;},inspect:()=>({state:state?.kind||null,boxes:boxes.length,fields:fields.length,stats:{...stats}})};
  };
 })(window);
