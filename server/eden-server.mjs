@@ -12,6 +12,7 @@
 import http from 'node:http';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import zlib from 'node:zlib';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createArena} from './arena.mjs';
@@ -317,6 +318,35 @@ const TYPES = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
   '.mp4': 'video/mp4', '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8', '.webmanifest': 'application/manifest+json'};
 // Production pages get the same headers netlify.toml sets for the static site.
 const SECURITY_HEADERS = PRODUCTION ? {'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'X-Frame-Options': 'SAMEORIGIN', 'Content-Security-Policy': "frame-ancestors 'self'", 'Strict-Transport-Security': 'max-age=31536000'} : {};
+// Static caching for a host far from its players (one round trip per file adds up over ~300 files):
+// pages and data revalidate so a new deploy shows at once; files whose URL carries a content hash (?v=<16 hex>,
+// written by tools/ship.sh) never change, so browsers keep them; other files are reused for an hour and refreshed
+// in the background after that.
+function cachePolicy(file, url) {
+  const ext = path.extname(file).toLowerCase();
+  if (ext === '.html' || ext === '.json' || ext === '.webmanifest') return 'no-cache';
+  if (/^[0-9a-f]{16}$/.test(url.searchParams.get('v') || '')) return 'public, max-age=31536000, immutable';
+  return 'public, max-age=3600, stale-while-revalidate=604800';
+}
+// Text, data and models compress well; images, audio and video are already compressed. Each file is compressed
+// once per version and kept in memory (bounded).
+const COMPRESSIBLE = /^(text\/|application\/(javascript|json|xml|wasm)|image\/svg|model\/gltf)/;
+const packedCache = new Map(); let packedBytes = 0;
+function compressed(file, etag, size, type, accept = '') {
+  if (size < 1024 || size > 8e6 || !COMPRESSIBLE.test(type) || /\.(ktx2|basis|drc|mp4|webm|mp3|ogg|m4a|woff2?|zip|gz|br)$/i.test(file)) return null;
+  const encoding = /\bbr\b/.test(accept) ? 'br' : /\bgzip\b/.test(accept) ? 'gzip' : null;
+  if (!encoding) return null;
+  const key = encoding + ' ' + file + ' ' + etag;
+  let hit = packedCache.get(key);
+  if (!hit) {
+    const raw = fs.readFileSync(file);
+    const body = encoding === 'br' ? zlib.brotliCompressSync(raw, {params: {[zlib.constants.BROTLI_PARAM_QUALITY]: 6, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: raw.length}}) : zlib.gzipSync(raw, {level: 6});
+    hit = body.length < raw.length * 0.9 ? {encoding, body} : {encoding: null};
+    packedCache.set(key, hit); packedBytes += hit.body?.length || 0;
+    while (packedBytes > 256e6 && packedCache.size) { const [k, v] = packedCache.entries().next().value; packedCache.delete(k); packedBytes -= v.body?.length || 0; }
+  }
+  return hit.encoding ? hit : null;
+}
 function send(res, status, body, headers = {}) { res.writeHead(status, {'Cache-Control': 'no-store', ...SECURITY_HEADERS, ...headers}); res.end(body); }
 const trustedOrigins=new Set((process.env.EDEN_ALLOWED_ORIGINS||'').split(',').map(s=>s.trim()).filter(Boolean));
 if(PRODUCTION)trustedOrigins.add(PUBLIC_ORIGIN);
@@ -402,10 +432,12 @@ const server = http.createServer(async (req, res) => {
     if (!fs.existsSync(file)) throw new HttpError(404, 'Not found.');
     const stat = fs.statSync(file), type = TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream';
     if (!PRODUCTION) res.writeHead(200, {'Content-Type': type, 'Cache-Control': 'no-store', 'Content-Length': stat.size});
-    else { // revalidate every time (a new deploy shows at once) but skip re-downloading unchanged models and textures
-      const etag = `W/"${stat.size.toString(36)}-${Math.floor(stat.mtimeMs).toString(36)}"`;
-      if (req.headers['if-none-match'] === etag) { res.writeHead(304, {ETag: etag, 'Cache-Control': 'no-cache', ...SECURITY_HEADERS}); return res.end(); }
-      res.writeHead(200, {'Content-Type': type, 'Cache-Control': 'no-cache', ETag: etag, 'Content-Length': stat.size, ...SECURITY_HEADERS});
+    else {
+      const etag = `W/"${stat.size.toString(36)}-${Math.floor(stat.mtimeMs).toString(36)}"`, cache = cachePolicy(file, url);
+      if (req.headers['if-none-match'] === etag) { res.writeHead(304, {ETag: etag, 'Cache-Control': cache, ...SECURITY_HEADERS}); return res.end(); }
+      const packed = compressed(file, etag, stat.size, type, req.headers['accept-encoding']);
+      res.writeHead(200, {'Content-Type': type, 'Cache-Control': cache, ETag: etag, Vary: 'Accept-Encoding', ...(packed ? {'Content-Encoding': packed.encoding, 'Content-Length': packed.body.length} : {'Content-Length': stat.size}), ...SECURITY_HEADERS});
+      if (packed) return res.end(req.method === 'HEAD' ? undefined : packed.body);
     }
     if (req.method === 'HEAD') return res.end();
     fs.createReadStream(file).pipe(res);
