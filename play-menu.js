@@ -8,7 +8,7 @@
 //                                      onOpen, onClose})
 // Settings shared by app.js and combat.js (read live, saved on this device).
 window.edenSettings=(()=>{
- const DEFAULTS={sens:1,adsSens:1,fov:70,invertY:false,shoulder:'right',aim:'wheel',aimAssist:'high'};let v={...DEFAULTS};
+ const DEFAULTS={touchSens:1,sens:1,adsSens:1,fov:70,invertY:false,shoulder:'right',aim:'wheel',aimAssist:'high'};let v={...DEFAULTS};
  try{Object.assign(v,JSON.parse(localStorage.getItem('eden-settings')||'{}'));}catch{}
  const subs=new Set();
  return {DEFAULTS,get:k=>v[k],all:()=>({...v}),set(k,val){v[k]=val;try{localStorage.setItem('eden-settings',JSON.stringify(v));}catch{}subs.forEach(f=>f(k,val));},reset(){v={...DEFAULTS};try{localStorage.removeItem('eden-settings');}catch{}subs.forEach(f=>f());},on(f){subs.add(f);}};
@@ -50,19 +50,24 @@ window.createPlayMenu=function({nav,after,stage,items,graphics=null,context=()=>
   const row=(label,input,out)=>{const l=document.createElement('label');l.className='ps-row';const t=document.createElement('span');t.textContent=label;l.append(t,input);if(out)l.append(out);box.append(l);};
   const range=(key,label,min,max,step,fmt)=>{const i=document.createElement('input');i.type='range';i.min=min;i.max=max;i.step=step;i.value=S.get(key);const o=document.createElement('output');o.textContent=fmt(S.get(key));i.oninput=()=>{S.set(key,+i.value);o.textContent=fmt(+i.value);};row(label,i,o);};
   const choice=(key,label,opts)=>{const g=document.createElement('div');g.className='ps-choice';for(const [val,txt] of opts){const b=document.createElement('button');b.type='button';b.textContent=txt;b.setAttribute('aria-pressed',String(S.get(key)===val));b.onclick=e=>{e.preventDefault();S.set(key,val);renderSettings();};g.append(b);}row(label,g);};
+  // Phones get their own look speed (touch-controls.js multiplies every touch look by it).
+  const coarse=matchMedia('(pointer:coarse)').matches&&!matchMedia('(any-pointer:fine)').matches;
+  if(coarse)range('touchSens','TOUCH LOOK SENSITIVITY',.4,2.5,.05,v=>v.toFixed(2)+'×');
   range('sens','LOOK SENSITIVITY',.3,2.5,.05,v=>v.toFixed(2)+'×');
   range('adsSens','AIMING SENSITIVITY',.3,2,.05,v=>v.toFixed(2)+'×');
   range('fov','FIELD OF VIEW',60,100,1,v=>v+'°');
   choice('invertY','INVERT Y',[[false,'OFF'],[true,'ON']]);
   choice('shoulder','THIRD-PERSON SHOULDER',[['right','RIGHT'],['left','LEFT']]);
   choice('aimAssist','AIM ASSIST',[['off','OFF'],['low','LOW'],['medium','MEDIUM'],['high','HIGH']]);
-  choice('aim','AIM WITH',[['wheel','WHEEL / PINCH'],['hold','HOLD RIGHT MOUSE']]);
+  if(!coarse)choice('aim','AIM WITH',[['wheel','WHEEL / PINCH'],['hold','HOLD RIGHT MOUSE']]);
   const reset=document.createElement('button');reset.type='button';reset.className='ps-reset';reset.textContent='RESET';reset.onclick=()=>{S.reset();renderSettings();};box.append(reset);
-  const note=document.createElement('small');note.textContent=S.get('aim')==='hold'?'Hold right mouse to aim; B is melee.':'Wheel or pinch to aim; right mouse is melee.';box.append(note);
+  const note=document.createElement('small');note.textContent=coarse?'Touch look sensitivity sets how far a swipe turns; aim assist only steers while you fire or aim.':S.get('aim')==='hold'?'Hold right mouse to aim; B is melee.':'Wheel or pinch to aim; right mouse is melee.';box.append(note);
  }
- function open(){render();renderGraphics();renderSettings();if(!menu.open){onOpen();menu.showModal();button.setAttribute('aria-expanded','true');}}
- menu.addEventListener('close',()=>{button.setAttribute('aria-expanded','false');onClose();});
- menu.addEventListener('click',event=>{if(event.target===menu)menu.close();});
+ let openedAt=-1e9;
+ function open(){render();renderGraphics();renderSettings();if(!menu.open){openedAt=performance.now();onOpen();menu.showModal();button.setAttribute('aria-expanded','true');}}
+ menu.addEventListener('close',()=>{menu.classList.remove('settings-only');menu.querySelector('#play-menu-title').textContent='Play';button.setAttribute('aria-expanded','false');onClose();});
+ // A tap that opened the menu (touch gear) is followed by a click at the same spot: not a tap outside to close.
+ menu.addEventListener('click',event=>{if(event.target===menu&&performance.now()-openedAt>450)menu.close();});
  menu.querySelector('.play-close').onclick=()=>menu.close();
  button.onclick=open;
 
@@ -107,5 +112,7 @@ window.createPlayMenu=function({nav,after,stage,items,graphics=null,context=()=>
   try{const seen=JSON.parse(localStorage.getItem('play-tips')||'{}');if(seen[key]>=2)return;seen[key]=(seen[key]||0)+1;localStorage.setItem('play-tips',JSON.stringify(seen));}catch{}
   tip.textContent=text;tip.hidden=false;clearTimeout(tipTimer);tipTimer=setTimeout(()=>{tip.hidden=true;},ms);
  }
- return {open,openControls,hint,isOpen:()=>menu.open||card.open,button};
+ // Straight to the settings (the touch gear button): open the menu and bring the settings into view.
+ function openSettings(){menu.classList.add('settings-only');menu.querySelector('.play-settings').open=true;menu.querySelector('#play-menu-title').textContent='Settings';open();}
+ return {open,openSettings,openControls,hint,isOpen:()=>menu.open||card.open,button};
 };

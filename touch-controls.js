@@ -1,7 +1,7 @@
 'use strict';
 // One owner per finger; every held action has a matching release, including interruption.
 (function(root){
- root.createTouchControls=function({host=null,look,combat,third,visible,armed,expedition=()=>false,arena=()=>false,leave=null,actions=()=>({}),move,jump,jumpUp=null,crouch,onReset}){
+ root.createTouchControls=function({host=null,look,combat,third,visible,armed,expedition=()=>false,arena=()=>false,leave=null,settings=null,actions=()=>({}),move,jump,jumpUp=null,crouch,onReset}){
   const media=matchMedia('(pointer:coarse), (any-pointer:coarse)');
   if(!media.matches&&!('ontouchstart'in root))return null;
   const abort=new AbortController(),listen=(node,type,fn,options={})=>node.addEventListener(type,fn,{...options,signal:abort.signal});
@@ -15,7 +15,7 @@
    <button type="button" class="tc-jump" aria-label="Jump">JUMP</button><button type="button" class="tc-slide" aria-label="Hold to crouch or slide while running">CROUCH</button>
    <button type="button" class="tc-use" aria-label="Interact">USE</button><button type="button" class="tc-reload" aria-label="Reload">RELOAD</button>
    <button type="button" class="tc-swap" aria-label="Next weapon">SWAP</button><button type="button" class="tc-melee" aria-label="Melee (hold for a slam)">HIT</button><button type="button" class="tc-guard" aria-label="Block (tap just before a hit to parry)">BLOCK</button>
-   <button type="button" class="tc-third" aria-label="Switch camera view">VIEW</button><button type="button" class="tc-leave" aria-label="Leave arena and return to Eden" hidden>EDEN</button>`;
+   <button type="button" class="tc-third" aria-label="Switch camera view">VIEW</button><button type="button" class="tc-leave" aria-label="Leave arena and return to Eden" hidden>EDEN</button><button type="button" class="tc-settings" aria-label="Settings: look sensitivity, aim assist, graphics" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.4 2.9a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.4-2.9a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg></button>`;
   (host||document.body).append(el);const q=s=>el.querySelector(s),stick=q('.tc-stick'),nub=stick.querySelector('i'),pad=q('.tc-look');
   let disposed=false,shown=false,sid=null,lid=null,origin=null,lastLook=null,held=new Set(),slot=0,lastMode=null;
   const releases=new Map(),blocked=()=>!!document.querySelector('dialog[open],#night-chat:not([hidden]),#social-panel:not([hidden])');
@@ -37,12 +37,12 @@
   // Phone look: a touch pixel is worth more than a mouse pixel, and fast swipes turn further
   // (gentle acceleration) so one thumb can turn around while slow drags stay precise.
   // A small dead zone keeps a tap from nudging the view; the movement past it is kept.
-  const LOOK_GAIN=1.7,LOOK_DEAD=5;
+  const LOOK_GAIN=1.7,LOOK_DEAD=5,touchSens=()=>{const v=+root.edenSettings?.get?.('touchSens');return Number.isFinite(v)&&v>0?v:1;};
   const lookFrom=(e,from)=>{const now=e.timeStamp||performance.now();return {x:e.clientX,y:e.clientY,t:now,live:from?.live??false,sx:from?.sx??e.clientX,sy:from?.sy??e.clientY,speed:from?.speed??0};};
   function lookMove(e,state){let dx=e.clientX-state.x,dy=e.clientY-state.y;const next=lookFrom(e,state);
    if(!state.live){if(Math.hypot(e.clientX-state.sx,e.clientY-state.sy)<LOOK_DEAD)return state;next.live=true;const d=Math.hypot(dx,dy)||1,keep=Math.max(0,d-LOOK_DEAD)/d;dx*=keep;dy*=keep;}
    const dt=Math.max(4,Math.min(50,next.t-state.t)),v=Math.hypot(dx,dy)/dt;next.speed=state.speed*.6+v*.4;
-   const gain=LOOK_GAIN*(1+Math.min(1.1,Math.max(0,next.speed-.35)*.7));if(dx||dy)look(dx*gain,dy*gain);return next;}
+   const gain=LOOK_GAIN*touchSens()*(1+Math.min(1.1,Math.max(0,next.speed-.35)*.7));if(dx||dy)look(dx*gain,dy*gain);return next;}
   // A new finger always takes over looking, so a look finger iOS never released cannot block it.
   listen(pad,'pointerdown',e=>{if(!begin(e))return;if(lid!==null)endLook();lid=e.pointerId;lastLook=lookFrom(e);cap(pad,lid);});
   listen(pad,'pointermove',e=>{if(e.pointerId!==lid||!lastLook)return;if(!canInput()||(e.pointerType==='mouse'&&!(e.buttons&1))){endLook();return;}e.preventDefault();lastLook=lookMove(e,lastLook);},{passive:false});
@@ -67,6 +67,7 @@
   hold('.tc-guard',()=>{const c=combat();if(!c?.touchGuard)return;c.touchGuard(true);return()=>c.touchGuard(false);},{dragLook:true});
   hold('.tc-third',()=>{third();});
   hold('.tc-leave',()=>{reset();leave?.();});
+  hold('.tc-settings',()=>{reset();settings?.();});
   hold('.tc-swap',()=>{const c=combat(),ids=c?.arsenal?.inspect?.()?.owned||['axe','pistol'],guns=ids.length?ids:['pistol'];slot=(slot+1)%(guns.length+1);if(slot===guns.length){if(c?.armed())heldKey('x')();}else heldKey(String(slot+1))();});
   function sync(){if(disposed)return;const on=!!canInput(),isExpedition=!!expedition(),mode=isExpedition?'expedition':armed()?'armed':'unarmed';
    // Holstering or drawing changes the buttons, not the fingers: release button holds only,
@@ -75,7 +76,7 @@
    if(on!==shown){shown=on;el.hidden=!on;document.body.classList.toggle('touch-play',on);if(!on)reset();}
    el.classList.toggle('armed',mode!=='unarmed');el.classList.toggle('tc-expedition',isExpedition);el.classList.toggle('tc-arena',arena());document.body.classList.toggle('touch-arena',on&&arena());
    const hide=(selector,hidden)=>{const button=q(selector);if(hidden)releases.get(button)?.();button.hidden=hidden;};
-   hide('.tc-leave',!arena()||!leave);
+   hide('.tc-leave',!arena()||!leave);hide('.tc-settings',!settings);
    for(const selector of ['.tc-aim','.tc-melee'])hide(selector,mode!=='armed');hide('.tc-swap',isExpedition);
    const available=actions();hide('.tc-fire',isExpedition&&available.fire===false);hide('.tc-reload',mode==='unarmed'||isExpedition&&available.reload===false);
    q('.tc-fire').textContent=isExpedition?'FLARE':mode==='armed'?'FIRE':'PUNCH';q('.tc-fire').setAttribute('aria-label',isExpedition?'Fire nonlethal flare':mode==='armed'?'Fire':'Punch');

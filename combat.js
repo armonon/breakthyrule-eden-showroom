@@ -393,7 +393,7 @@
    raycaster.set(groundFrom.set(x,from,z),groundDown);raycaster.near=.02;raycaster.far=40;const hit=raycaster.intersectObjects(list,false)[0];
    y=hit?hit.point.y:0;if(groundCache.size>20000)groundCache.clear();groundCache.set(key,y);return y;
   }
-  let wallPull=0,wallTarget=0,wallAt=-1e9;const wallEye=new T.Vector3(),wallDir=new T.Vector3();
+  let touchAway=-1e9,wallPull=0,wallTarget=0,wallAt=-1e9;const wallEye=new T.Vector3(),wallDir=new T.Vector3();
   function updateWallPull(dt){if(lastTime-wallAt>.06){wallAt=lastTime;camera.getWorldPosition(wallEye);camera.getWorldDirection(wallDir);raycaster.set(wallEye,wallDir);raycaster.near=.02;raycaster.far=.85;const hit=sceneryQuery.hit(raycaster,groundMeshes());wallTarget=hit?clamp((.85-hit.distance)/.65,0,1):0;}wallPull+=(wallTarget-wallPull)*(1-Math.exp(-dt*20));}
   function targetOf(object){let v=object;while(v){if(v.userData.target)return v.userData.target;v=v.parent;}return null;}
 
@@ -1235,7 +1235,9 @@
   function requestFrame(){o.requestDraw();}
 
   function update(time,dt){
-   if(armed){assistScan();if((locked||touchMode)&&o.canAct()&&(touchMode||adsBlend>.1||buttons.left||speedSmoothed>1.2)&&assist.target&&assist.angle>.004){asTo.copy(assist.point).sub(camera.getWorldPosition(asEye)).normalize();const ty=Math.atan2(asTo.x,-asTo.z),tp=Math.asin(clamp(asTo.y,-1,1));let dy=ty-yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));const k=1-Math.exp(-ASSIST.pull*dt*(touchMode?1:.55));yaw+=clamp(dy*k,-dt*.55,dt*.55);pitch=clamp(pitch+clamp((tp-pitch)*k,-dt*.4,dt*.4),-1.35,1.35);}}
+   if(armed){assistScan();// On touch the pull only helps while you shoot or aim down sights, and pauses for half a second after your thumb
+   // swipes away from the target: it used to run constantly, dragging the view back onto any bot you ran past.
+   if((locked||touchMode)&&o.canAct()&&(touchMode?(buttons.left||adsBlend>.1)&&lastTime-touchAway>.5:(adsBlend>.1||buttons.left||speedSmoothed>1.2))&&assist.target&&assist.angle>.004){asTo.copy(assist.point).sub(camera.getWorldPosition(asEye)).normalize();const ty=Math.atan2(asTo.x,-asTo.z),tp=Math.asin(clamp(asTo.y,-1,1));let dy=ty-yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));const k=1-Math.exp(-ASSIST.pull*dt*(touchMode?1:.55));yaw+=clamp(dy*k,-dt*.55,dt*.55);pitch=clamp(pitch+clamp((tp-pitch)*k,-dt*.4,dt*.4),-1.35,1.35);}}
    // Walking back into the garden or far off down the road ends the range.
    if(rangeOn&&(camera.position.z>-21||Math.hypot(camera.position.x-11.7,camera.position.z+40)>45))setRange(false);
    lastTime=time;
@@ -1485,7 +1487,11 @@
    worldHits:(o2,d,f)=>{build();return worldHits(o2,d,f);},groundAt:(x,z,y)=>{build();return groundAt(x,z,y);},
    // Touch screens (touch-controls.js): no pointer lock; look, fire, melee and zoom come from on-screen controls.
    setTouch(on){touchMode=!!on;hud?.update();},
-   touchLook(dx,dy){if(!armed||!o.canAct())return;const z=ZOOM[current?.id]||1,sens=.0042*lerp(1,Math.min(.7,1.35/z),adsBlend)*lookScale()*assist.friction;yaw+=dx*sens;pitch=clamp(pitch-dy*sens*ySign(),-1.35,1.35);anim.swayX.kick(-dx*.02);anim.swayY.kick(dy*.02);requestFrame();},
+   touchLook(dx,dy){if(!armed||!o.canAct())return;
+    // A swipe away from the assisted target hands control back to the thumb (see the pull above).
+    if(assist.target&&dx){camera.getWorldPosition(asEye);asTo.copy(assist.point).sub(asEye);const ty=Math.atan2(asTo.x,-asTo.z);let off=ty-yaw;off=Math.atan2(Math.sin(off),Math.cos(off));if(Math.sign(dx)!==Math.sign(off)&&Math.abs(dx)>2)touchAway=lastTime;}
+    // Friction slows fine aiming over a target; a quick swipe turns at full speed.
+    const friction=lerp(assist.friction,1,Math.min(1,Math.hypot(dx,dy)/14)),z=ZOOM[current?.id]||1,sens=.0042*lerp(1,Math.min(.7,1.35/z),adsBlend)*lookScale()*friction;yaw+=dx*sens;pitch=clamp(pitch-dy*sens*ySign(),-1.35,1.35);anim.swayX.kick(-dx*.02);anim.swayY.kick(dy*.02);requestFrame();},
    touchFire(on){if(!armed)return;buttons.left=!!on;if(on)pendingFire=true;requestFrame();},
    touchMelee(){if(!armed)return;if(current?.id==='c4')detonate();else bash();},
    // Phones: the HIT button follows the keyboard (tap to bash, hold to slam); BLOCK raises the guard while held.

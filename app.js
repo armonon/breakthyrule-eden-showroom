@@ -890,7 +890,7 @@ battle=window.createBattleArena?.({T,scene,camera,combat,garden,playerAnchor:()=
 // The horror chapter after the eight pages (horror-chapter.js): the office, the showdown, keys, the cube's lab.
 const horror=window.createHorrorChapter?.({T,scene,camera,garden,pockets,worlds:()=>worlds,battle:()=>battle,playerBody,requestDraw,thirdPerson:on=>{lastThirdToggle=0;setThird(!!on);}});
 const touch=window.createTouchControls?.({host:stage.parentElement,combat:()=>combat,third:()=>{lastThirdToggle=0;setThird(!thirdOn);},armed:()=>!!combat?.armed(),expedition:()=>!!expedition?.active(),
- arena:()=>!!battle?.active(),leave:()=>battle?.exit(),
+ arena:()=>!!battle?.active(),leave:()=>battle?.exit(),settings:()=>play?.openSettings?.(),
  visible:()=>state.ready&&state.view==='free'&&!modalOpen()&&!worlds?.loading()&&!arena?.active()&&(!!expedition?.active()||!!battle?.active()||!!combat?.armed()),
  look(dx,dy){if(combat?.armed()){combat.touchLook(dx,dy);return;}const d=targetAim.clone().sub(targetPosition).normalize(),sens=.0042*(expeditionPrefs()?.[thirdOn?'thirdSensitivity':'firstSensitivity']??window.edenSettings?.get('sens')??1),yaw=Math.atan2(d.x,-d.z)+dx*sens,pitch=T.MathUtils.clamp(Math.asin(T.MathUtils.clamp(d.y,-1,1))-dy*sens*(window.edenSettings?.get('invertY')?-1:1),-1.35,1.35);freeView();targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));requestDraw();}});
 const edenMobile=window.createEdenMobile?.({host:stage.parentElement,ready:()=>state.ready,

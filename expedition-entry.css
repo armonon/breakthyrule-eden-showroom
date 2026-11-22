@@ -47,4 +47,4 @@ body.entry-touch{overscroll-behavior:none;padding:0}
 .entry-touch .entry-header>div span{display:none}
 .entry-touch #return-eden{white-space:nowrap}
 @media(max-height:500px) and (orientation:landscape){.entry-touch #night-hud{left:calc(80px + env(safe-area-inset-left));max-width:300px}.entry-touch #night-event{-webkit-line-clamp:1}}
-@media(orientation:portrait){.entry-touch #controls-help{top:12px;right:max(12px,env(safe-area-inset-right))}}
+@media(orientation:portrait){.entry-touch #controls-help{top:12px;left:auto;right:max(12px,env(safe-area-inset-right))}}

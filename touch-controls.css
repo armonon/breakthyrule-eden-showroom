@@ -113,3 +113,11 @@ body.touch-arena #battle-hud .ar-heals kbd{display:none}
    page squares, and announcements sit below the corner panels instead of on top of them. */
 body.touch-arena .ar-zone{display:block;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(orientation:portrait){body.touch-arena .ar-announce{top:35%;font-size:18px}body.touch-arena .ar-feed{max-height:58px}}
+/* Settings gear: opens look sensitivity, aim assist and graphics. Beside EDEN in a match, top centre otherwise. */
+#touch-controls .tc-settings{left:50%;top:calc(18px + env(safe-area-inset-top));transform:translateX(-50%);width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center}
+#touch-controls .tc-settings[hidden]{display:none}
+#touch-controls .tc-settings svg{width:22px;height:22px}
+#touch-controls.tc-arena .tc-settings{transform:translateX(calc(-50% - 62px))}
+#touch-controls.tc-expedition .tc-settings{left:auto;transform:none;right:max(12px,env(safe-area-inset-right));top:64px}
+@media(max-height:500px) and (orientation:landscape){#touch-controls.tc-expedition .tc-settings{right:auto;left:calc(18px + env(safe-area-inset-left));top:60px}}
+@media(orientation:portrait){#touch-controls.tc-arena .tc-settings{left:calc(18px + env(safe-area-inset-left));top:auto;bottom:calc(240px + env(safe-area-inset-bottom));transform:none}}

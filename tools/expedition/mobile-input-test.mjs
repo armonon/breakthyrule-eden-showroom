@@ -60,3 +60,9 @@ test('a new finger takes over looking, taps do not nudge the view, and mode chan
  f.emit(pad,'pointermove',{pointerId:2,clientX:130,clientY:100});assert.equal(f.looks.length,1,'the new finger looks');
  f.set({expedition:false,armed:true});f.tick();f.emit(pad,'pointermove',{pointerId:2,clientX:150,clientY:100});assert.equal(f.looks.length,2,'look survives a mode change');assert.equal(f.controls.inspect().look,true);
 });
+// The settings gear appears only when the host can open settings, and the touch look sensitivity scales every swipe.
+test('the settings gear needs a host hook and touch look sensitivity scales touch look',()=>{
+ const f=shared();f.tick();assert.equal(f.q('.tc-settings').hidden,true,'no settings hook, no gear');
+ const swipe=(g,sens)=>{g.root.edenSettings={get:k=>k==='touchSens'?sens:undefined};const pad=g.q('.tc-look');g.emit(pad,'pointerdown',{pointerId:7,clientX:0,clientY:0});g.emit(pad,'pointermove',{pointerId:7,clientX:40,clientY:0});g.emit(pad,'pointerup',{pointerId:7});return g.looks.at(-1)[0];};
+ const one=swipe(shared(),1),two=swipe(shared(),2);assert.ok(Math.abs(two/one-2)<1e-9,'2x sensitivity doubles the turn');
+});

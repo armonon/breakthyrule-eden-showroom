@@ -64,3 +64,7 @@ body.look-locked.combat-armed #look-dot,body.look-locked.in-arena #look-dot,body
 .ps-reset{justify-self:start;border:1px solid var(--line);background:#fff;padding:7px 14px;font-size:10px;letter-spacing:.12em;cursor:pointer}
 .play-settings-grid small{font-size:11px;color:var(--secondary)}
 @media (max-width:560px){.ps-row{grid-template-columns:1fr auto}.ps-row input[type=range]{grid-column:1/-1}}
+
+/* Opened from the touch gear: just the settings and graphics, no game list. */
+#play-menu.settings-only :is(.play-items,footer,.play-settings>summary){display:none}
+#play-menu.settings-only .play-settings{margin-top:0}
