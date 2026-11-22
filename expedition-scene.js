@@ -36,7 +36,10 @@ window.createExpeditionScene=function(T,scene,{layout,reduced=false,mobile=false
  }
  const pyramid=window.createRoadPyramid(T,scene,{roadX,roadEnd,stone,onChange,reduced});
  const district=window.createNightDistrict(T,scene,{stone,leafMat,layout,reduced,prepareModel});
- const requiredLandmarks=['temple','observatory','playhouse','hotel','gardens'];const warmupLandmarks=layout.landmarks.map(s=>s.id);district.prepare(warmupLandmarks);
+ const requiredLandmarks=['temple','observatory','playhouse','hotel','gardens'];// Phones keep only a ring of landmarks resident (night-district.js), so the entry waits for the required ones and those
+ // near the spawn; the rest stream in as the player walks.
+ const ringPhone=!!window.edenRenderProfile?.().mobile,[spawnX,spawnZ]=[layout.spawn?.[0]??11.7,layout.spawn?.[2]??layout.spawn?.[1]??-24];
+ const warmupLandmarks=layout.landmarks.filter(s=>!ringPhone||requiredLandmarks.includes(s.id)||Math.hypot(s.x-spawnX,s.z-spawnZ)<60).map(s=>s.id);district.prepare(warmupLandmarks);
  const nightRoad=window.createNightRoad(T,scene,{sections,roadX,roadStart,nightStart:-21.5,roadLength,clearingStart:-120,district,sky,bark,forest:flora.forest,stone,roadMaterial,vergeMaterial,clouds:[],mobile});nightRoad.setOverride(1);
  const authority=window.createExpeditionWorld({layout,roofs:window.edenRoofs});
  const constrain=window.createExpeditionConstraints({layout,unlocked:()=>pyramid.inspect().unlocked});

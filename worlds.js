@@ -15,6 +15,20 @@
   const BEYOND=new Set(['Arena','Pyramid at the end of the road','Beyond Eden / the old civilization','The Attendant','Eden combat range','Parkour grips']);
   const SHARED=new Set(['Garden of Eden','Eden sky box','Player body','Combat effects','Prewarm stand-ins','Pyramid lighting']);
   const classify=c=>c.isLight||c.isCamera||c.isSprite||(c.type==='Object3D'&&!c.children.length)||SHARED.has(c.name)?'shared':BEYOND.has(c.name)?'beyond':'eden';
+  // Phones (eden-quality.js profile) are short of memory exactly while a world loads, so there the loading screen shows
+  // the film's still poster instead of a second WebGL renderer decoding video, and the hidden Eden roots give their
+  // textures back to the GPU while the player is in Beyond Eden (and Beyond's do the same back in Eden). three.js keeps each image and uploads it again the
+  // next time it is drawn: the return trip's warm-up render (compile below) does that under the loading screen.
+  const phone=!!root.edenRenderProfile?.().mobile;
+  function releaseHidden(){
+   if(!phone)return 0;const keep=new Set(),drop=new Set();
+   const each=(o,fn)=>{for(const m of [].concat(o.material||[])){for(const v of Object.values(m))if(v?.isTexture)fn(v);for(const u of Object.values(m.uniforms||{}))if(u?.value?.isTexture)fn(u.value);}};
+   // The other world's roots, whether hidden here or by their own code (the district hides itself away from Beyond).
+   const away=scene.children.filter(c=>!c.visible&&!c.isLight&&classify(c)!=='shared'&&classify(c)!==world);
+   for(const c of scene.children)if(!away.includes(c))c.traverse(o=>each(o,t=>keep.add(t)));
+   for(const c of away)c.traverse(o=>each(o,t=>{if(!keep.has(t)&&!t.isRenderTargetTexture&&!t.isVideoTexture&&!t.isCanvasTexture)drop.add(t);}));
+   for(const t of drop)t.dispose();stats.released=(stats.released||0)+drop.size;return drop.size;
+  }
   let world='eden',busy=false,hidden=new Set(),manifest=null,loadedScripts=new Map(),stats={switches:0,hiddenLast:0};
   // A fixed pool keeps world switches from changing light-count defines without
   // paying for every remote lamp in every fragment. Sources still own animation.
@@ -83,7 +97,8 @@
     if(on||dis<.985)raf=requestAnimationFrame(tick);else{last=0;cv.classList.remove('on');}
    }
    return {
-    async start(){if(failed){el.classList.add('wl-still');return;}on=true;target=0;dis=Math.max(dis,.85);await init();if(!on||!r)return;size();if(!still.matches)video.play().catch(()=>{});if(!raf)raf=requestAnimationFrame(tick);},
+    async start(){if(phone&&!poster){poster=new Image();poster.decoding='async';poster.className='wl-poster';poster.alt='';poster.src=A('hero-film-poster.jpg');el.prepend(poster);}
+     if(failed||phone){el.classList.add('wl-still');return;}on=true;target=0;dis=Math.max(dis,.85);await init();if(!on||!r)return;size();if(!still.matches)video.play().catch(()=>{});if(!raf)raf=requestAnimationFrame(tick);},
     stop(){on=false;target=1;video?.pause();if(r&&!raf)raf=requestAnimationFrame(tick);},
     inspect:()=>({ready:!!r,failed,playing:!!video&&!video.paused,dissolve:+dis.toFixed(2)})};
   })();
@@ -108,7 +123,7 @@
    if(busy||next===world)return;busy=true;const t0=performance.now();
    try{
     if(title)show(title,sub,kicker);await frame();await frame();
-    world=next;apply();stats.switches++;
+    world=next;apply();releaseHidden();stats.switches++;
     for(let i=0;i<steps.length;i++){await steps[i]();progress((i+1)/(steps.length+1));await frame();}
     await compile();progress(1);apply();requestDraw();
     const left=min-(performance.now()-t0);if(title&&left>0)await new Promise(r=>setTimeout(r,left));

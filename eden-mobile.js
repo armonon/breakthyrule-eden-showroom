@@ -19,8 +19,9 @@ root.createEdenMobile=function({host,ready,active,blocked,look,move,jump,jumpUp=
  const releaseCapture=(node,id)=>{try{if(id!==null&&node.hasPointerCapture(id))node.releasePointerCapture(id);}catch{}};
  function inform(text){feedback.textContent=text;feedback.hidden=false;clearTimeout(feedbackTimer);feedbackTimer=setTimeout(()=>feedback.hidden=true,2200);}
  function dismissTip(){if(hintDismissed)return;hintDismissed=true;clearTimeout(hintTimer);hintTimer=setTimeout(()=>q('.em-tip').hidden=true,2500);}
+ // Re-sent while the finger moves, so a key the game refused (not ready yet, a menu closing) is picked up again.
  function setMovement(x,y,sprint=false){const next=new Set();if(y<-.23)next.add('w');if(y>.23)next.add('s');if(x<-.23)next.add('a');if(x>.23)next.add('d');if(sprint&&next.size)next.add('shift');
-  for(const k of held)if(!next.has(k))move(k,false);for(const k of next)if(!held.has(k))move(k,true);held=next;stick.classList.toggle('running',next.has('shift'));stick.querySelector('.em-stick-label').textContent=next.has('shift')?'SPRINTING':'MOVE';
+  for(const k of held)if(!next.has(k))move(k,false);for(const k of next)move(k,true);const was=held.has('shift');held=next;if(was!==next.has('shift')){stick.classList.toggle('running',next.has('shift'));stick.querySelector('.em-stick-label').textContent=next.has('shift')?'SPRINTING':'MOVE';}
  }
  function releaseStick(){const id=stickId;stickId=null;origin=null;nub.style.transform='';setMovement(0,0);stick.classList.remove('engaged');releaseCapture(stick,id);}
  function releaseLook(){const id=lookId;lookId=null;lookPoint=null;releaseCapture(pad,id);}
@@ -28,8 +29,11 @@ root.createEdenMobile=function({host,ready,active,blocked,look,move,jump,jumpUp=
  function reset(){releaseFight();releaseStick();releaseLook();for(const release of [...releases.values()])release();releases.clear();for(const tap of [...pendingTaps.values()])tap.cancel();crouch(false);stop();}
  function canInput(){return !disposed&&playing&&media.matches&&ready()&&active()&&!blocked()&&!sheet.open&&!document.hidden;}
  function begin(){if(!canInput()){reset();return false;}dismissTip();return true;}
- listen(stick,'pointerdown',e=>{if(stickId!==null||e.button!==0||!begin())return;e.preventDefault();stickId=e.pointerId;const rect=stick.getBoundingClientRect();origin={x:rect.left+rect.width/2,y:rect.top+rect.height/2,r:rect.width*.36,sprintRadius:rect.width/2};stick.classList.add('engaged');capture(stick,e.pointerId);updateStick(e);});
- function updateStick(e){if(e.pointerId!==stickId||!origin)return;if(!canInput()||(e.pointerType==='mouse'&&!(e.buttons&1))){releaseStick();return;}e.preventDefault();let x=e.clientX-origin.x,y=e.clientY-origin.y;const r=Math.hypot(x,y);if(r>origin.r){x*=origin.r/r;y*=origin.r/r;}nub.style.transform=`translate(${x}px,${y}px)`;setMovement(x/origin.r,y/origin.r,r>origin.sprintRadius);}
+ listen(stick,'pointerdown',e=>{if(stickId!==null||e.button!==0||!begin())return;e.preventDefault();stickId=e.pointerId;const rect=stick.getBoundingClientRect();origin=stickOrigin();stick.classList.add('engaged');capture(stick,e.pointerId);updateStick(e);});
+ // Sprint starts once the finger leaves the circle and holds until it comes clearly back inside (hysteresis), so a
+ // thumb resting on the edge does not flicker between walk and sprint.
+ function stickOrigin(){const rect=stick.getBoundingClientRect();return {x:rect.left+rect.width/2,y:rect.top+rect.height/2,r:rect.width*.36,sprintRadius:rect.width/2,walkRadius:rect.width*.42};}
+ function updateStick(e){if(e.pointerId!==stickId||!origin)return;if(!canInput()||(e.pointerType==='mouse'&&!(e.buttons&1))){releaseStick();return;}e.preventDefault();let x=e.clientX-origin.x,y=e.clientY-origin.y;const r=Math.hypot(x,y),sprint=r>(held.has('shift')?origin.walkRadius:origin.sprintRadius);if(r>origin.r){x*=origin.r/r;y*=origin.r/r;}nub.style.transform=`translate(${x}px,${y}px)`;setMovement(x/origin.r,y/origin.r,sprint);}
  listen(stick,'pointermove',updateStick);for(const event of ['pointerup','pointercancel','lostpointercapture'])listen(stick,event,e=>{if(e.pointerId===stickId)releaseStick();});
  listen(pad,'pointerdown',e=>{if(lookId!==null||e.button!==0||!begin())return;e.preventDefault();lookId=e.pointerId;lookPoint={x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,time:performance.now(),dragged:false};capture(pad,e.pointerId);});
  listen(pad,'pointermove',e=>{if(e.pointerId!==lookId||!lookPoint)return;if(!canInput()||(e.pointerType==='mouse'&&!(e.buttons&1))){releaseLook();return;}e.preventDefault();const p=lookPoint,dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;if(Math.hypot(p.x-p.startX,p.y-p.startY)>7)p.dragged=true;if(p.dragged)look(dx,dy);});
@@ -75,8 +79,10 @@ root.createEdenMobile=function({host,ready,active,blocked,look,move,jump,jumpUp=
   ui.classList.toggle('is-blocked',!nextPlaying);q('[data-command="shop"]').disabled=!ready();
   const title=document.querySelector('.world-caption h1')?.textContent||'Garden of Eden';if(q('.em-place').textContent!==title)q('.em-place').textContent=title;updateView();
  }
- listen(document,'visibilitychange',()=>{reset();sync();});listen(window,'blur',reset);listen(window,'pagehide',reset);listen(window,'orientationchange',reset);listen(window,'resize',reset);listen(document,'btr:page-visibility',()=>{reset();sync();});listen(media,'change',()=>{reset();sync();});
- if(root.visualViewport)listen(root.visualViewport,'resize',reset);
+ listen(document,'visibilitychange',()=>{reset();sync();});listen(window,'blur',reset);listen(window,'pagehide',reset);listen(window,'orientationchange',reset);
+ // iOS resizes the viewport when its address bar slides during play: keep the held finger, just re-measure the stick.
+ const remeasure=()=>{if(stickId!==null)origin=stickOrigin();};listen(window,'resize',remeasure);listen(document,'btr:page-visibility',()=>{reset();sync();});listen(media,'change',()=>{reset();sync();});
+ if(root.visualViewport)listen(root.visualViewport,'resize',remeasure);
  // Menus and chat release movement immediately, including a finger held offscreen.
  const observer=new MutationObserver(()=>{if((blocked()||sheet.open)&&playing){playing=false;reset();controls.hidden=true;pad.hidden=true;q('.em-reticle').hidden=true;ui.classList.add('is-blocked');}});
  observer.observe(document.body,{subtree:true,attributes:true,attributeFilter:['open']});const socialPanel=document.getElementById('social-panel');if(socialPanel)observer.observe(socialPanel,{attributes:true,attributeFilter:['hidden']});

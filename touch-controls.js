@@ -22,14 +22,16 @@
   const canInput=()=>!disposed&&!document.hidden&&visible()&&!blocked();
   function setKeys(x,y,sprint=false){const want=new Set();if(y<-.25)want.add('w');if(y>.25)want.add('s');if(x<-.25)want.add('a');if(x>.25)want.add('d');if(sprint&&want.size)want.add('Shift');
    for(const k of held)if(!want.has(k))movementKey(k,false);for(const k of want)if(!held.has(k))movementKey(k,true);held=want;
-   stick.classList.toggle('running',want.has('Shift'));stick.querySelector('.tc-stick-label').textContent=want.has('Shift')?'SPRINTING':'MOVE';
+   if(stick.classList.contains('running')!==want.has('Shift')){stick.classList.toggle('running',want.has('Shift'));stick.querySelector('.tc-stick-label').textContent=want.has('Shift')?'SPRINTING':'MOVE';}
   }
   function endStick(){const id=sid;sid=null;origin=null;nub.style.transform='';setKeys(0,0);uncap(stick,id);}
   function endLook(){const id=lid;lid=null;lastLook=null;uncap(pad,id);}
   function reset(){endStick();endLook();for(const end of [...releases.values()])end();combat()?.touchFire?.(false);onReset?.();}
   function begin(e){if(e.button!==0||!canInput())return false;e.preventDefault();return true;}
-  function updateStick(e){if(e.pointerId!==sid||!origin)return;if(!canInput()||(e.pointerType==='mouse'&&!(e.buttons&1))){endStick();return;}e.preventDefault();let dx=e.clientX-origin.x,dy=e.clientY-origin.y;const r=Math.hypot(dx,dy),max=origin.r;if(r>max){dx*=max/r;dy*=max/r;}nub.style.transform=`translate(${dx}px,${dy}px)`;setKeys(dx/max,dy/max,r>origin.sprintRadius);}
-  listen(stick,'pointerdown',e=>{if(sid!==null||!begin(e))return;sid=e.pointerId;const r=stick.getBoundingClientRect();origin={x:r.x+r.width/2,y:r.y+r.height/2,r:r.width*.36,sprintRadius:r.width/2};cap(stick,sid);updateStick(e);});
+  function updateStick(e){if(e.pointerId!==sid||!origin)return;if(!canInput()||(e.pointerType==='mouse'&&!(e.buttons&1))){endStick();return;}e.preventDefault();let dx=e.clientX-origin.x,dy=e.clientY-origin.y;const r=Math.hypot(dx,dy),max=origin.r,sprint=r>(held.has('Shift')?origin.walkRadius:origin.sprintRadius);if(r>max){dx*=max/r;dy*=max/r;}nub.style.transform=`translate(${dx}px,${dy}px)`;setKeys(dx/max,dy/max,sprint);}
+  // Sprint holds until the finger is clearly back inside the circle, so resting on the edge does not flicker.
+  const stickOrigin=()=>{const r=stick.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,r:r.width*.36,sprintRadius:r.width/2,walkRadius:r.width*.42};};
+  listen(stick,'pointerdown',e=>{if(sid!==null||!begin(e))return;sid=e.pointerId;origin=stickOrigin();cap(stick,sid);updateStick(e);});
   listen(stick,'pointermove',updateStick,{passive:false});
   for(const type of ['pointerup','pointercancel','lostpointercapture'])listen(stick,type,e=>{if(e.pointerId===sid)endStick();});
   listen(pad,'pointerdown',e=>{if(lid!==null||!begin(e))return;lid=e.pointerId;lastLook={x:e.clientX,y:e.clientY};cap(pad,lid);});
@@ -70,8 +72,9 @@
   const timer=setInterval(sync,180),observer=new MutationObserver(()=>{if(blocked()&&shown){reset();sync();}});
   observer.observe(document.body,{subtree:true,attributes:true,attributeFilter:['open']});
   for(const id of ['night-chat','social-panel']){const panel=document.getElementById(id);if(panel)observer.observe(panel,{attributes:true,attributeFilter:['hidden']});}
-  for(const type of ['blur','pagehide','resize','orientationchange'])listen(root,type,reset);
-  if(root.visualViewport)listen(root.visualViewport,'resize',reset);
+  for(const type of ['blur','pagehide','orientationchange'])listen(root,type,reset);
+  // iOS resizes the viewport as its address bar slides: keep held fingers, re-measure the stick.
+  const remeasure=()=>{if(sid!==null)origin=stickOrigin();};listen(root,'resize',remeasure);if(root.visualViewport)listen(root.visualViewport,'resize',remeasure);
   listen(document,'visibilitychange',()=>{reset();sync();});listen(document,'btr:page-visibility',()=>{reset();sync();});
   if(document.body.classList.contains('expedition-entry'))document.body.classList.add('entry-touch');sync();
   return {element:el,reset,dispose(){if(disposed)return;disposed=true;clearInterval(timer);observer.disconnect();abort.abort();reset();combat()?.setTouch?.(false);document.body.classList.remove('touch-play','touch-arena','entry-touch');el.remove();},inspect:()=>({shown,keys:[...held],stick:sid!==null,look:lid!==null,actions:releases.size,mode:lastMode})};

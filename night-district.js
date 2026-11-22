@@ -112,16 +112,20 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
  // distant landmarks use the original architectural shells instead of being
  // decoded again on every return. Unprepared streams can still release at 130 m.
  const loadedModels=new Map(),priorityModels=new Set();let modelInFlight=false,disposed=false,lodEnabled=true,retainPrepared=false;
+ // Phones keep a smaller ring of landmarks resident (load within 60 m, release past 95 m) and shrink each model's
+ // maps on arrival (colour 512 px, detail maps 256 px): all fourteen at full size were ~400 MB of textures, enough
+ // for iOS to kill the tab on the way through the door. Desktop keeps every prepared landmark at full size.
+ const phone=!!window.edenRenderProfile?.().mobile,LOAD_WITHIN=phone?60:75,RELEASE_PAST=phone?95:130;
  const renderer=window.breakThyRuleShowroom?.renderer?.(),camera=window.edenCamera;const warmup=!prepareModel&&renderer&&camera&&window.createRenderWarmup?.(renderer,camera,scene);
  function releaseModel(scene){window.edenBaked?.unregisterStatic(scene);scene.traverse(o=>{if(!o.isMesh)return;o.geometry.dispose();for(const m of [].concat(o.material)){for(const v of Object.values(m))if(v?.isTexture)v.dispose();m.dispose();}});}
  function streamModels(viewer){
   if(disposed)return;
   const distance=s=>Math.hypot(viewer.position.x-s.x,viewer.position.z-s.z);
-  for(const [id,entry] of loadedModels)if(!retainPrepared&&distance(entry.s)>130){
+  for(const [id,entry] of loadedModels)if(!retainPrepared&&distance(entry.s)>RELEASE_PAST){
    root.remove(entry.scene);releaseModel(entry.scene);entry.shell.visible=true;root.add(entry.shell);loadedModels.delete(id);modelState[id]='waiting';pendingModels.push(entry);}
   for(const entry of loadedModels.values()){const d=distance(entry.s),high=!lodEnabled||d<(entry.scene.visible?82:72);entry.scene.visible=high;entry.shell.visible=!high;}
   if(modelInFlight)return;
-  let next=pendingModels.findIndex(p=>priorityModels.has(p.s.id)),nearest=75;
+  let next=pendingModels.findIndex(p=>priorityModels.has(p.s.id)),nearest=LOAD_WITHIN;
   if(next<0)pendingModels.forEach((p,i)=>{const d=distance(p.s);if(d<nearest){nearest=d;next=i;}});
   if(next<0)return;
   const [p]=pendingModels.splice(next,1);priorityModels.delete(p.s.id);fetchModel(p.s,p.model,p.shell);
@@ -132,6 +136,7 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
    if(disposed){releaseModel(gltf.scene);return;}
    const scene=gltf.scene;scene.name=s.name+' (modelled)';scene.userData.landmarkModel=true;scene.position.set(s.x,0,s.z);
    scene.traverse(o=>{if(!o.isMesh)return;o.receiveShadow=true;o.castShadow=!/bulb|sign|relief|glass/.test(o.name+o.material?.name);});
+   if(phone)window.shrinkModelTextures?.(scene,{maxTextureSize:512,detailSize:256});
    window.edenBaked?.registerStatic(scene);if(prepareModel)await prepareModel(scene);else if(warmup)await warmup.prepare(scene);if(disposed){releaseModel(scene);return;}
    shell.visible=false;root.add(scene);modelState[s.id]='model';loadedModels.set(s.id,{s,model,shell,scene});
   }).catch(error=>{if(disposed)return;modelState[s.id]='fallback';console.warn(s.name+' model unavailable; keeping the procedural building',error);})
@@ -184,7 +189,7 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
  box(watcher,brass,0,2.3,.245,.04,.75,.035);const sigil=mesh(watcher,new T.TorusGeometry(.12,.018,6,24),brass,0,2.61,.24);
  let snapshot=null;
  // The host registers the static root after its geometry-merging pass.
- return {root,watcher,walls,lamps,routes:authority?.routes||[],setPages,setLOD(on){lodEnabled=!!on;},prepare(ids){if(disposed)return;if(ids.length>=layout.landmarks.length)retainPrepared=true;for(const id of ids)if(modelState[id]==='waiting')priorityModels.add(id);},dispose(){disposed=true;snapshot=null;pendingModels.length=0;priorityModels.clear();for(const entry of loadedModels.values())releaseModel(entry.scene);loadedModels.clear();window.edenBaked?.unregisterStatic(root);for(const light of lightPool)scene.remove(light);},setState(value){if(disposed)return;if(value&&value.code!==snapshot?.code)watcher.position.set(value.watcher.x,value.watcher.y||0,value.watcher.z);snapshot=value;watcher.visible=!!value&&value.phase==='playing'&&value.huntStarted!==false;if(value)setPages(value.pages,value.collected);else pageRoot.visible=false;},
+ return {root,watcher,walls,lamps,routes:authority?.routes||[],setPages,setLOD(on){lodEnabled=!!on;},prepare(ids){if(disposed)return;if(ids.length>=layout.landmarks.length&&!phone)retainPrepared=true;for(const id of ids)if(modelState[id]==='waiting')priorityModels.add(id);},dispose(){disposed=true;snapshot=null;pendingModels.length=0;priorityModels.clear();for(const entry of loadedModels.values())releaseModel(entry.scene);loadedModels.clear();window.edenBaked?.unregisterStatic(root);for(const light of lightPool)scene.remove(light);},setState(value){if(disposed)return;if(value&&value.code!==snapshot?.code)watcher.position.set(value.watcher.x,value.watcher.y||0,value.watcher.z);snapshot=value;watcher.visible=!!value&&value.phase==='playing'&&value.huntStarted!==false;if(value)setPages(value.pages,value.collected);else pageRoot.visible=false;},
   // feet: the height of the player's feet, when known: walls lower than a step up from there do not block.
   // Same answer as testing every wall, through a 4 m grid of them (rebuilt when walls are added): called for every step.
   blocks(p,feet=null){const g=wallGrid();const list=g.cells.get(Math.floor(p.x/4)+','+Math.floor(p.z/4));if(!list)return false;for(let i=0;i<list.length;i++){const W=list[i],h=W[4]??99;if(Math.abs(p.x-W[0])<W[2]/2+.3&&Math.abs(p.z-W[1])<W[3]/2+.3&&(feet==null||h>feet+.45))return true;}return false;},surfaces,climbs,
