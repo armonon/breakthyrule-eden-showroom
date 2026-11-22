@@ -226,8 +226,10 @@ imageScroll.addEventListener('keydown',event=>{if(event.key==='Enter'){setZoom(z
 $('spawn').disabled=true;$('approach').disabled=true;$('wall-view').disabled=true;$('film-view').disabled=true;$('film-view').hidden=true;
 dialog.addEventListener('click',event=>{if(event.target===dialog){const rect=dialog.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)close();}});
 dialog.addEventListener('keydown',event=>{if(!['INPUT','SELECT','BUTTON'].includes(event.target.tagName)&&event.target!==imageScroll&&event.target!==$('garment-viewer')&&(event.key==='ArrowLeft'||event.key==='ArrowRight')){showSide(state.side==='front'?'back':'front');event.preventDefault();}});
-function fallback(){instagramSlideshow?.destroy();instagramSlideshow=null;wallFilm?.destroy();wallFilm=null;$('film-link').hidden=false;state.ready=false;$('loading').hidden=true;$('fallback').hidden=false;$('scene').hidden=true;$('spawn').disabled=true;$('approach').disabled=true;$('wall-view').disabled=true;$('film-view').disabled=true;$('movement-hint').textContent='EXPLORE THE PRODUCT PHOTOS';$('world-hint').textContent='Select the vault to inspect product photography.';}
-if(!window.THREE){fallback();return;}
+// A failed download (the game host restarting, a dropped request) reloads once instead of leaving the flat fallback up.
+function retryLoad(){try{const key='eden-load-retry',last=Number(sessionStorage.getItem(key))||0;if(Date.now()-last<60000)return false;sessionStorage.setItem(key,String(Date.now()));}catch{return false;}console.warn('Eden failed to load; retrying.');setTimeout(()=>location.reload(),4000);return true;}
+function fallback(retry){if(retry&&retryLoad())return;instagramSlideshow?.destroy();instagramSlideshow=null;wallFilm?.destroy();wallFilm=null;$('film-link').hidden=false;state.ready=false;$('loading').hidden=true;$('fallback').hidden=false;$('scene').hidden=true;$('spawn').disabled=true;$('approach').disabled=true;$('wall-view').disabled=true;$('film-view').disabled=true;$('movement-hint').textContent='EXPLORE THE PRODUCT PHOTOS';$('world-hint').textContent='Select the vault to inspect product photography.';}
+if(!window.THREE){fallback(true);return;}
 const T=THREE,stage=$('scene');let renderer;
 const renderProfile=edenRenderProfile({width:stage.clientWidth}),mobileDevice=renderProfile.mobile;
 // Layout reads belong to resize observers, not to every projected HUD label.
@@ -276,7 +278,7 @@ function setGraphics(level,{save=true}={}){
  if(save){try{localStorage.setItem('eden-graphics',graphics);}catch{}requestDraw();}
 }
 {let saved=null;try{saved=localStorage.getItem('eden-graphics');}catch{}setGraphics(GRAPHICS[saved]?saved:autoGraphics(),{save:false});}
-try{const response=await fetch('/night-layout.json?v=3');if(!response.ok)throw new Error('Night district unavailable');window.nightLayout=await response.json();}catch(error){fallback();return;}
+try{const response=await fetch('/night-layout.json?v=3');if(!response.ok)throw new Error('Night district unavailable');window.nightLayout=await response.json();}catch(error){fallback(true);return;}
 const garden=createEdenGarden(T,scene,{reduced,mobile:mobileDevice,onChange:requestDraw});
 photoreal=window.edenPhotorealGarden=createEdenPhotoreal(T,{renderer,scene,camera,garden,lighting,post,requestDraw});
 // Lens flare and god rays from the sky's sun; glare from the night district's lanterns while it is on screen.
@@ -341,7 +343,7 @@ $('library-view').disabled=false;
 $('open-residents').disabled=false;
 $('amphitheater-view').disabled=false;
 if(pendingMultiplayerSpawn)enterMultiplayer();
-}).catch(fallback);
+}).catch(()=>fallback(true));
 let frame=0,previous=0,drag=null,suppressClickUntil=0;
 const motion=createPlayerMotion(),walkVelocity=new T.Vector3(),sway=createCameraSway(T,{reduced});
 const moveKeys=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright']);
@@ -819,7 +821,7 @@ combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,
  onAction(action,weapon,duration){const B=playerBody;if(!B)return;if(action==='holster'){B.stopAnim('pistolReload',.12);return;}const id=action==='shoot'?'pistolShoot':action==='reload'?'pistolReload':action==='swing'?'swingA':action==='throw'?'throw':null;if(id)B.anim(id,{fade:.12,mask:'upper',arms:true,weight:.8,speed:duration?(window.GardenAnim?.duration(id)||duration)/duration:1});},
  // Eden is a safe zone: weapons come out only beyond the hidden door (the open match and the firing range).
  canAct:()=>state.ready&&!modalOpen()&&!expedition?.active()&&!arena?.active()&&!pockets?.inside(camera.position)&&targetPosition.z<garden.road.door&&(battle?.canAct()??true),
- shotHook:(...a)=>horror?.shotHook?.(...a)||battle?.shotHook(...a),onExplosion:(...a)=>battle?.onExplosion(...a),
+ shotHook:(...a)=>horror?.shotHook?.(...a)||battle?.shotHook(...a),heldStrike:(...a)=>battle?.heldStrike?.(...a),onExplosion:(...a)=>battle?.onExplosion(...a),
  // The range is on the brick road beyond the door, where night falls: keep it in daylight while it is in use.
  onRange(on){if(on)garden.district;garden.nightRoad?.setOverride(on?0:null);},
  getLook(){const d=targetAim.clone().sub(targetPosition).normalize();return {yaw:Math.atan2(d.x,-d.z),pitch:Math.asin(T.MathUtils.clamp(d.y,-1,1))};},
@@ -834,6 +836,16 @@ combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,
 battle=window.createBattleArena?.({T,scene,camera,combat,garden,playerAnchor:()=>targetPosition,hitStop:ms=>hitStop(ms),
  movement:()=>({airborne:motion.inspect().airborne,momentum:movement.momentum(),velocity:walkVelocity}),
  onPlayerAction(id){playerBody?.anim?.(id,{fade:.16,mask:'upper',arms:true,weight:.65,speed:1.4});},
+ // Ground hold (battle-arena.js): settle onto the one you tackled, crouched over them; each blow is an IK punch at
+ // their head (character-motion.js punch) with a jolt through the view, the axe finisher a full swing.
+ mount:shove,
+ onHold(on){movement.crouchHeld=!!on;if(on){walkVelocity.set(0,0,0);sway.bump(.6,0);hitStop(40);}requestDraw();},
+ onHoldStrike({kind,point,hand=1,killed=false}){
+  if(kind==='punch'){playerBody?.strikeAt?.(point);sway.bump(.25,hand);}
+  else if(kind==='punchLand'){sway.bump(killed?1:.55,-hand);}
+  else if(kind==='axe'){playerBody?.anim?.('swingA',{fade:.06,mask:'upper',arms:true,weight:.9,speed:1.2});sway.bump(.4,0);}
+  else if(kind==='axeLand'){sway.bump(1.4,0);footsteps?.land(surfaceAt(targetPosition),1);}
+  requestDraw();},
  onRunTackle(){sway.bump(.7,0);hitStop(45);playerBody?.anim?.('push',{fade:.12,loop:false,speed:2.2,mask:'upper',weight:.7});walkVelocity.multiplyScalar(.7);requestDraw();},
  onMomentumLanding(){sway.bump(.85,0);hitStop(65);playerBody?.anim?.('jumpLand',{fade:.05,speed:2});footsteps?.land(surfaceAt(targetPosition),.9);requestDraw();},
  terrainY:(x,z)=>groundHeight(new T.Vector3(x,0,z)),layout:window.nightLayout,requestDraw,hudHost:stage.parentElement,

@@ -1111,8 +1111,17 @@
   function inputKey(e){return root.edenControls?.key(e)??e.key?.toLowerCase()??'';}
   function controlHint(action,fallback){return root.edenControls?.hint(action)||fallback;}
   function inputBlocked(e){return (window.edenControls?.blockedModifiers(e)??(e.ctrlKey||e.metaKey||e.altKey||e.isComposing))||e.target?.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target?.tagName)||(window.edenControls?.modalOpen?.()??!!document.querySelector('dialog[open]'));}
+  // A ground hold (battle-arena.js, a tackle you stayed on) takes melee input first: 'swing' plays the axe swing for
+  // its finisher without this file's own hit test, 'bash' the bash kick for a punch thrown with a gun in hand.
+  function heldInput(input){
+   const r=o.heldStrike?.(input,current?.id||null);if(!r)return false;
+   if(r==='swing'&&current?.id==='axe'){if(!state.axe.action){startAction('swing',meleeMove('cleave').recover,{heavy:true,hit:true});sfx.whoosh(true);}}
+   else if(r==='bash'){anim.posZ.kick(-5);anim.rotX.kick(-8);anim.rotY.kick(5);anim.rotZ.kick(-3);look.kickPitch.kick(-.5);}
+   requestFrame();return true;
+  }
   function pressButton(key){
    if(!armed||!(locked||touchMode)||!o.canAct())return;
+   if((key==='fire'||key==='aim')&&heldInput(key))return;
    if(key==='fire'){buttons.left=true;pendingFire=true;}
    if(key==='aim'){buttons.right=true;if(current?.id==='c4')detonate();else if(setting('aim','wheel')==='hold'&&zoomable()){zoomTarget=1;o.setThird?.(false);}else bash();}
    requestFrame();
@@ -1135,7 +1144,7 @@
    if(!armed||!o.canAct())return;
    if(k==='q'){e.preventDefault();if(previous)equip(previous);}
    if(k==='r'){e.preventDefault();reload();}
-   if(k==='b'){e.preventDefault();if(current?.id==='c4')detonate();else bashHold.down();}
+   if(k==='b'){e.preventDefault();if(heldInput('b'))return;if(current?.id==='c4')detonate();else bashHold.down();}
    if(k==='z'&&typeof guardInput==='function'){e.preventDefault();guardInput(true);}
    if(k==='x'){e.preventDefault();holster();}
   }
@@ -1480,7 +1489,7 @@
    touchFire(on){if(!armed)return;buttons.left=!!on;if(on)pendingFire=true;requestFrame();},
    touchMelee(){if(!armed)return;if(current?.id==='c4')detonate();else bash();},
    // Phones: the HIT button follows the keyboard (tap to bash, hold to slam); BLOCK raises the guard while held.
-   touchMeleeDown(){if(!armed)return;if(current?.id==='c4')detonate();else bashHold.down();},
+   touchMeleeDown(){if(!armed)return;if(heldInput('b'))return;if(current?.id==='c4')detonate();else bashHold.down();},
    touchMeleeUp(){bashHold.up();},
    touchGuard(down){guardInput(down);},
    guard:()=>guard,
