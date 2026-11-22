@@ -265,10 +265,26 @@
    if(meta.knockdown||meta.finisher){b.stagger=null;b.stunT=0;motion?.knockdown?.(dir,meta.finisher?2.8:2.1);return;}
    const heavy=meta.tier==='heavy';
    stagger(b,dir,heavy?.95:.35,heavy?.45:.22);
-   motion?.hit?.(dir,heavy?1.5:.8,{zone:meta.zone||(Math.abs(side)>.6?'arm':'chest')});
+   const zone=meta.zone||(Math.abs(side)>.6?'arm':'chest');
+   if(physicalHit(b,dir,heavy?1.9:.95,zone))motion?.hit?.(dir,heavy?1:.6,{zone});else motion?.hit?.(dir,heavy?1.5:.8,{zone});
    const clip=Math.abs(side)>.6?'hitChest':along<-.3?(heavy?'knockback':'hitChest'):'hitHead';
    motion?.play?.(clip,clip==='knockback'?{fade:.05,speed:1.15}:{mask:'upper',fade:.04,speed:1.2});
    if(heavy){b.stunT=Math.max(b.stunT||0,.7);b.lunge=null;}
+  }
+  // Physical hit reactions (jolt-hit-reactions.js, loaded with the arena): the body takes the blow as an active ragdoll
+  // whose motors pull it back to the animated pose, and falls for real if the blow beats them. The procedural flinch in
+  // character-motion.js still layers on the pose the motors chase. Light hits push at most every 0.22 s, so a spray
+  // jostles rather than topples. Returns false (the caller keeps the procedural reaction) when it is unavailable.
+  let reactions=null;
+  function physicalHit(b,dir,strength,zone){
+   if(!reactions||(strength<1.2&&clock-(b.lastPhysical??-9)<.22))return false;
+   if(!reactions.hit(b.model,{direction:dir,strength,zone,velocity:b.vel}))return false;
+   b.lastPhysical=clock;return true;
+  }
+  function loadReactions(){
+   if(loadReactions.started)return;loadReactions.started=true;
+   import('/jolt-hit-reactions.js?v=20261121-hit10').then(m=>m.createHitReactions({T,groundY,walls,onFall:model=>{const b=bots.find(x=>x.model===model);if(b){b.stagger=null;b.stunT=0;b.lunge=null;}}}))
+    .then(r=>{reactions=r;}).catch(error=>console.warn('Physical hit reactions unavailable; keeping procedural ones.',error));
   }
   function stagger(b,dir,distance,duration){b.stagger={dir:dir.clone().setY(0).normalize(),distance,duration,t:0};}
   // Bot melee: before the blow lands the bot telegraphs it (an amber glow, a glint at its weapon, a ring you can
@@ -340,7 +356,8 @@
     if(target.hp>0&&meta.kind!=='zone'&&!meta.pinned){const heavy=meta.tier?meta.tier!=='light':meta.blast||['sniper','axe','melee'].includes(meta.weapon)||(meta.weapon==='pump'&&amount>=30)||amount>=45;
      const dir=blowDirection(target,attacker,meta);
      if(meta.tier)meleeReaction(target,dir,meta);
-     else if(heavy){target.model.motion?.hit?.(dir,2.2);}else if(clock-target.lastFlinch>.7){target.lastFlinch=clock;target.model.motion?.hit?.(dir,meta.head?1.2:.7,{zone:meta.zone});target.model.motion?.play?.(meta.head?'hitHead':'hitChest',{mask:'upper',fade:.04,speed:1.2});}
+     else if(heavy){const force=meta.blast?2.8:meta.weapon==='sniper'?2.6:meta.weapon==='pump'?2.1:2;if(physicalHit(target,dir,force,meta.zone))target.model.motion?.hit?.(dir,1.1,{zone:meta.zone});else target.model.motion?.hit?.(dir,2.2);}
+     else{physicalHit(target,dir,meta.head?.9:.6,meta.zone);if(clock-target.lastFlinch>.7){target.lastFlinch=clock;target.model.motion?.hit?.(dir,meta.head?1.2:.7,{zone:meta.zone});target.model.motion?.play?.(meta.head?'hitHead':'hitChest',{mask:'upper',fade:.04,speed:1.2});}}
      target.dodgeT=.38;target.strafe=Math.random()<.5?1:-1;}}
    else{combat.hurt(attacker&&attacker!==target?eyeOf(attacker):null,a+(amount-a)*.4+shielded*.55);if(meta.kind==='zone')combat.hurt(null,a*.4);hud.update();}
    if(target.hp<=0){kill(target,attacker,meta);return {killed:true};}
@@ -466,7 +483,7 @@
   // Animation level of detail: bots far away or behind the camera pose every 2nd to 4th frame (the rig works out its
   // own elapsed time, so the motion is unchanged, just sampled less often). Simulation and aim stay every frame.
   const lodTo=new T.Vector3(),lodFwd=new T.Vector3();
-  function animateNow(b){lodTo.copy(b.root.position).sub(camera.position);const d=lodTo.length();camera.getWorldDirection(lodFwd);
+  function animateNow(b){if(reactions?.reacting(b.model))return true;lodTo.copy(b.root.position).sub(camera.position);const d=lodTo.length();camera.getWorldDirection(lodFwd);
    const every=lodTo.dot(lodFwd)<-2&&d>4?4:d>40?3:d>20?2:1;b.animTick=(b.animTick||0)+1;return b.animTick%every===0;}
   function updateBot(b,dt){
    const nearShadow=!window.edenBaked?.dynamicShadowOnly()||b.root.position.distanceToSquared(camera.position)<22*22;
@@ -1122,7 +1139,7 @@
 
   /* ---------------------------------------------------------------- lifecycle */
   async function build(){
-   if(built)return;built=true;
+   if(built)return;built=true;loadReactions();
    root=new T.Group();root.name='Arena';scene.add(root);
    if(!window.GardenCharacterSchema){try{const r=await fetch('/character-schema.json?v=4');if(r.ok)window.GardenCharacterSchema=await r.json();}catch{}}
    buildGrid();
@@ -1162,7 +1179,7 @@
    }finally{entering=false;}
   }
   function suspend(){
-   if(!active)return;endHold(null);if(player){player.runPoint=null;player.ramUntil=0;player.impactPoint=null;player.impactAir=false;player.impactCharge=false;}active=false;suspended=true;savedArsenal=combat.arsenal.inspect();
+   if(!active)return;endHold(null);reactions?.clear();if(player){player.runPoint=null;player.ramUntil=0;player.impactPoint=null;player.impactAir=false;player.impactCharge=false;}active=false;suspended=true;savedArsenal=combat.arsenal.inspect();
    document.body.classList.remove('battle-on');hud?.el.classList.remove('on');o.setNight(null);combat.holster();if(garden.district?.watcher)garden.district.watcher.visible=false;combat.arsenal.set(null);combat.setHudMode('');
   }
   function resume(){
@@ -1185,7 +1202,8 @@
    if(player&&!player.alive&&player.respawnAt!=null){const left=player.respawnAt-clock;if(left<=0)respawnPlayer();else hud.count(Math.ceil(left));}
    updateRunTackle(dt);
    updateHold();
-   for(const b of bots)updateBot(b,dt);
+   for(const b of bots){updateBot(b,dt);const p=b.root.position;if(dt>0)(b.vel??=new T.Vector3()).set((p.x-(b.px??p.x))/dt,0,(p.z-(b.pz??p.z))/dt);b.px=p.x;b.pz=p.z;}
+   if(reactions)try{reactions.update(dt);}catch(error){console.warn('Physical hit reactions stopped; keeping procedural ones.',error);try{reactions.clear();}catch{}reactions=null;}
    updateGlints(dt);
    if(player)updatePlayer(dt);
    // Loot physics + idle motion
@@ -1224,7 +1242,7 @@
    // Something outside the match hurts you (the office crowd): ordinary damage, shields first.
    hurtPlayer(amount,from=null){if(!active||!player?.alive)return;const dir=from?posOf(player).clone().sub(from).setY(0).normalize():null;damage(player,amount,null,{weapon:'melee',...(dir?{dir}:{})});},
    fallDamage(d){if(active&&player?.alive&&d>0)damage(player,d,null,{kind:'fall'});},
-   tackle,heldStrike,hold:()=>player?.hold?{name:player.hold.b.name,t:+player.hold.t.toFixed(2),punches:player.hold.punches,finishing:player.hold.finishing,pinned:!!player.hold.b.model.motion?.pinned?.()}:null,releaseHold:()=>endHold('released'),holdEnded:()=>player?.holdEnded||null,doors:()=>doors.map(d=>({x:d.x,z:d.z,open:+Math.max(...d.leaves.map(l=>Math.abs(l.a))).toFixed(2),broken:d.leaves.every(l=>l.gone)})),smashDoor:i=>smashDoor(doors[i],new T.Vector3(0,0,1)),
+   tackle,heldStrike,hold:()=>player?.hold?{name:player.hold.b.name,t:+player.hold.t.toFixed(2),punches:player.hold.punches,finishing:player.hold.finishing,pinned:!!player.hold.b.model.motion?.pinned?.()}:null,releaseHold:()=>endHold('released'),reactions:()=>reactions?.inspect()||null,holdEnded:()=>player?.holdEnded||null,doors:()=>doors.map(d=>({x:d.x,z:d.z,open:+Math.max(...d.leaves.map(l=>Math.abs(l.a))).toFixed(2),broken:d.leaves.every(l=>l.gone)})),smashDoor:i=>smashDoor(doors[i],new T.Vector3(0,0,1)),
    onExplosion(p,radius,dmg){if(!active)return;
     // The blast throws loot and jolts chests.
     for(const l of loot){if(l.item.type==='page')continue;const d=l.group.position.distanceTo(p);if(d<radius*1.3){const out=l.group.position.clone().sub(p).setY(0);if(out.lengthSq()<1e-4)out.set(rand(-1,1),0,rand(-1,1));out.normalize().multiplyScalar(6*(1-d/(radius*1.3))+1);l.vel=out.add(new T.Vector3(0,4+rand(0,2),0));l.y+=.05;}}
@@ -1233,7 +1251,7 @@
    inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,event:event&&{kind:event.kind,label:event.label},night:+nightLevel().toFixed(2),attendant:attendant&&{x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1),stunned:clock<attendant.stunUntil},pages:player?pagesOf(player):0,power:player?.power||0,pageState:pages.map(pg=>pg.state),delivered:pages.filter(pg=>pg.state==='delivered').length,pinged:pinged?nameOf(pinged):null,watcher:attendant&&{mode:attendant.mode,page:attendant.page?attendant.page.i:null,x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1)},templeOpen:templeOpen(),soul:!!player?.soul,nextEvent:+(nextEventAt-clock).toFixed(1),pads:pads.length,player:player&&{alive:player.alive,stomps:player.stomps||0,rams:player.rams||0,score:player.score||0,deaths:player.deaths||0,hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
     bots:bots.map(b=>({name:b.name,score:b.score||0,kills:b.kills||0,alive:b.alive,hp:Math.round(b.hp),shield:Math.round(b.shield),down:+(b.model.motion?.downAmount?.()||0).toFixed(2),state:b.state,weapon:b.weapon,armor:b.armor,x:+b.root.position.x.toFixed(1),z:+b.root.position.z.toFixed(1)})),
     zone:zone&&{phase:zone.phase,state:zone.state,r:+zone.r.toFixed(1),x:+zone.center.x.toFixed(1),z:+zone.center.z.toFixed(1)},chests:chests.filter(c=>c.open).length+'/'+chests.length,loot:loot.length,arsenal:combat.arsenal.inspect()}),
-   _debug:{get bots(){return bots;},get player(){return player;},get loot(){return loot;},get chests(){return chests;},interact,damage,god(v=true){godMode=v;},place:(x,z,lx,lz,dp=0)=>{o.placePlayer(x,z,lx,lz);combat.syncLook(dp);},skip(t){countdown=0;clock+=t||0;},setZone(r){if(zone){zone.r=r;}},get pages(){return pages;},get watcher(){return attendant;},dropPages,deliver,placePage,setPower,night(){const total=CYCLE.day+CYCLE.dusk+CYCLE.night+CYCLE.dawn;worldOffset+=CYCLE.day+CYCLE.dusk+1-worldClock()%total;},blood(v){bloodHit=v;}}
+   _debug:{get bots(){return bots;},get reactions(){return reactions;},get player(){return player;},get loot(){return loot;},get chests(){return chests;},interact,damage,god(v=true){godMode=v;},place:(x,z,lx,lz,dp=0)=>{o.placePlayer(x,z,lx,lz);combat.syncLook(dp);},skip(t){countdown=0;clock+=t||0;},setZone(r){if(zone){zone.r=r;}},get pages(){return pages;},get watcher(){return attendant;},dropPages,deliver,placePage,setPower,night(){const total=CYCLE.day+CYCLE.dusk+CYCLE.night+CYCLE.dawn;worldOffset+=CYCLE.day+CYCLE.dusk+1-worldClock()%total;},blood(v){bloodHit=v;}}
   };
  }
  root.createBattleArena=createArena;
