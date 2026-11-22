@@ -128,10 +128,10 @@
    if(event.key==='Escape'){stop();if(!modalOpen())expedition.open();return;}if(!ready||modalOpen()||bail?.active)return;const key=window.edenControls?window.edenControls.key(event):event.key.toLowerCase(),p=preferences.get();
    if(key===' '){event.preventDefault();if(!event.repeat)movement.jump();keys.add('space');}
    else if(key==='c'){event.preventDefault();if(!event.repeat){movement.crouchHeld=p.crouchMode==='toggle'?!movement.crouchHeld:true;parkour.crouchPressed();if(movement.crouchHeld)movement.startSlide();}}
-   else if(key==='shift'&&p.sprintMode==='toggle'){if(!event.repeat){if(keys.has('shift'))keys.delete('shift');else keys.add('shift');}}
+   else if(key==='shift'&&p.sprintMode==='toggle'&&!event.edenTouchAction){if(!event.repeat){if(keys.has('shift'))keys.delete('shift');else keys.add('shift');}}
    else if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift'].includes(key)){event.preventDefault();keys.add(key);}
    else if(key==='view'&&!event.repeat){setThird(!third);}else if(key==='menu'&&!event.repeat){stop();play.open();}else if(key==='v'&&!event.repeat){thirdSide*=-1;}else if(key==='t'&&!event.repeat){body?.anim('wave',{fade:.15});}requestDraw();});
-  listen(document,'keyup',event=>{const key=window.edenControls?window.edenControls.key(event):event.key.toLowerCase(),p=preferences.get();if(key==='c'&&p.crouchMode==='hold')movement.crouchHeld=false;if(!(key==='shift'&&p.sprintMode==='toggle'))keys.delete(key===' '?'space':key);});
+  listen(document,'keyup',event=>{const key=window.edenControls?window.edenControls.key(event):event.key.toLowerCase(),p=preferences.get();if(key==='c'&&p.crouchMode==='hold')movement.crouchHeld=false;if(!(key==='shift'&&p.sprintMode==='toggle'&&!event.edenTouchAction))keys.delete(key===' '?'space':key);});
   listen(renderer.domElement,'click',()=>{if(ready&&!modalOpen())renderer.domElement.requestPointerLock?.()?.catch?.(()=>{});});
   listen(document,'mousemove',event=>{if(document.pointerLockElement===renderer.domElement)look(event.movementX,event.movementY);});
   listen(renderer.domElement,'wheel',event=>{if(!ready||modalOpen())return;event.preventDefault();setThird(event.deltaY>0);},{passive:false});

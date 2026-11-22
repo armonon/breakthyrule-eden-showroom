@@ -54,6 +54,17 @@ for(const file of ['eden-mobile.js','touch-controls.js']){
   else{f.setExpedition(true);f.sync();assert.deepEqual(f.keys(),[],'switching gameplay mode releases movement');const use=f.ui.querySelector('.tc-use');use.fire('pointerdown');use.fire('pointerup');assert.ok(f.keyboard.some(e=>e.type==='keydown'&&e.key==='e'),'solo interaction uses E');f.setExpedition(false);f.sync();use.fire('pointerdown');use.fire('pointerup');assert.ok(f.keyboard.some(e=>e.type==='keydown'&&e.key==='f'),'story/open-match interaction uses F');}
   f.api.dispose();
  });
+ test(file+': sprint holds near the circle edge and survives the address bar resizing the page',()=>{
+  const f=setup(file),s=f.stick;
+  s.fire('pointerdown');s.fire('pointermove',{clientY:-10});assert.ok(f.keys().includes('shift'),'outside the circle sprints');
+  s.fire('pointermove',{clientY:5});assert.ok(f.keys().includes('shift'),'a thumb resting just inside the edge keeps sprinting');
+  s.fire('pointermove',{clientY:10});assert.ok(f.keys().includes('w'));assert.ok(!f.keys().includes('shift'),'clearly inside walks');
+  s.fire('pointermove',{clientY:5});assert.ok(!f.keys().includes('shift'),'walking does not start sprinting until outside the circle');
+  s.fire('pointermove',{clientY:-10});f.win.fire('resize');assert.ok(f.keys().includes('shift')&&f.keys().includes('w'),'a viewport resize keeps the held finger');
+  s.fire('pointermove',{clientY:25});assert.ok(f.keys().includes('w')&&!f.keys().includes('shift'),'the stick still answers after a resize');
+  f.win.fire('orientationchange');assert.deepEqual(f.keys(),[],'rotating the phone releases the stick');
+  f.api.dispose();
+ });
  test(file+': jump remains held until the owning finger releases or input is interrupted',()=>{
   const f=setup(file),jump=f.ui.querySelector(file==='eden-mobile.js'?'.em-jump':'.tc-jump');
   jump.fire('pointerdown');assert.deepEqual(f.jumps,[true]);
@@ -85,6 +96,13 @@ test('actual solo entry touch callback holds Space and releases without a second
  const f=setup('touch-controls.js',{jumpHandler:scope.actions.jump}),jump=f.ui.querySelector('.tc-jump');
  jump.fire('pointerdown');assert.equal(jumps,1);assert.ok(keys.has('space'));blocked=true;jump.fire('pointerup');assert.equal(jumps,1);assert.equal(keys.has('space'),false,'release works even if a modal opened');
  blocked=false;jump.fire('pointerdown');assert.equal(jumps,2);f.win.fire('blur');assert.equal(jumps,2);assert.equal(keys.has('space'),false);f.api.dispose();
+});
+test('touch sprint is held, never toggled, and touch strafing never fires a dodge',()=>{
+ const app=fs.readFileSync(new URL('app.js',repo),'utf8'),entry=fs.readFileSync(new URL('expedition-entry.js',repo),'utf8');
+ assert.match(app,/key==='shift'&&source!=='touch'&&expeditionPrefs\(\)\?\.sprintMode==='toggle'/,'Eden sprint toggle ignores touch');
+ assert.match(app,/move:\(key,pressed\)=>setMovement\(key,pressed,'touch'\)/,'Eden stick moves as touch');
+ assert.match(app,/!event\.edenTouchAction&&!arena\?\.active\(\)\)movement\.tapDodge/,'stick strafes cannot double-tap dodge');
+ assert.match(entry,/p\.sprintMode==='toggle'&&!event\.edenTouchAction/,'Beyond Eden sprint toggle ignores touch');
 });
 test('mobile controls retain translucent glass styles',()=>{
  const css=fs.readFileSync(new URL('eden-mobile.css',repo),'utf8')+fs.readFileSync(new URL('touch-controls.css',repo),'utf8');
