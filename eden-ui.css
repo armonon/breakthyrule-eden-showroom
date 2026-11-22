@@ -1,0 +1,182 @@
+/* Eden UI: one type system and one surface for the showroom's menus (Play, Library, Shop, 3D inspect,
+   controls). Loaded last on showroom.html, so it refines the older layers instead of rewriting them.
+   Type: Cormorant Garamond (titles, the Codex's book face), Courier Prime (labels, the site header's
+   typewriter) and DM Sans (reading text). Fonts load without blocking the first frame. */
+:root{
+ --e-display:'Cormorant Garamond','Cormorant',Georgia,'Times New Roman',serif;
+ --e-mono:'Courier Prime','Courier New',ui-monospace,monospace;
+ --e-sans:'DM Sans',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+ --e-ink:#161b16;--e-ink-2:#454d46;--e-ink-3:#6f766e;
+ --e-paper:#f6f3ea;--e-card:#fffdf7;--e-line:#e4dfd1;--e-line-2:#cdc6b3;
+ --e-moss:#2a4a38;--e-moss-2:#3b6450;--e-night:#0b0e0a;--e-apple:#8c2f2b;
+ --e-radius:8px;--e-radius-sm:5px;
+ --e-shadow:0 40px 90px -30px rgb(8 14 10 / .55),0 12px 30px -12px rgb(8 14 10 / .3);
+}
+
+/* ---------- Header: full bleed in the showroom, no white gutters, safe areas respected ---------- */
+body[data-shared-page="showroom"]{background:var(--e-night)}
+html body[data-shared-page="showroom"] header#btr-site-header.btr-about-header[data-shared-header="about"]{
+ width:100%!important;max-width:none!important;margin:0!important;
+ height:calc(62px + env(safe-area-inset-top))!important;min-height:calc(62px + env(safe-area-inset-top))!important;
+ padding:env(safe-area-inset-top) max(28px,env(safe-area-inset-right)) 0 max(28px,env(safe-area-inset-left))!important;
+ border-bottom:1px solid #2c3428!important;
+ box-shadow:0 1px 0 rgb(255 255 255 / .04)!important;
+}
+body[data-shared-page="showroom"]{--btr-header-height:calc(62px + env(safe-area-inset-top))}
+@media (max-width:760px){
+ html body[data-shared-page="showroom"] header#btr-site-header.btr-about-header[data-shared-header="about"]{
+  height:calc(77px + env(safe-area-inset-top))!important;min-height:calc(77px + env(safe-area-inset-top))!important;
+  padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right))!important;
+ }
+ body[data-shared-page="showroom"]{--btr-header-height:calc(77px + env(safe-area-inset-top))}
+}
+/* The Eden toolbar under the header: one legible strip over the sky instead of loose white text. */
+body[data-shared-page="showroom"] .btr-world-tools{top:calc(var(--btr-header-height,62px) + 10px)!important;left:auto!important;right:max(20px,env(safe-area-inset-right))!important;width:auto!important;display:flex;justify-content:flex-end;pointer-events:none}
+body[data-shared-page="showroom"] .btr-world-tools .header-actions{pointer-events:auto;gap:4px!important;padding:4px;border:1px solid rgb(255 255 255 / .16);border-radius:999px;background:rgb(12 17 13 / .42);backdrop-filter:blur(12px) saturate(1.2);-webkit-backdrop-filter:blur(12px) saturate(1.2);text-shadow:none}
+body[data-shared-page="showroom"] .btr-world-tools .header-actions>:is(a,button){display:inline-flex;align-items:center;gap:6px;min-height:34px;margin:0!important;padding:0 14px!important;border:0!important;border-radius:999px!important;background:transparent!important;color:#f5f1e6!important;font:700 12px/1 var(--e-mono)!important;letter-spacing:.04em!important;box-shadow:none!important;transition:background .15s}
+body[data-shared-page="showroom"] .btr-world-tools .header-actions>.icon-button{width:34px;padding:0!important;justify-content:center}
+body[data-shared-page="showroom"] .btr-world-tools .header-actions>:is(a,button):hover:not(:disabled){background:rgb(255 255 255 / .14)!important}
+body[data-shared-page="showroom"] .btr-world-tools .header-actions>:is(a,button):disabled{opacity:.45}
+body[data-shared-page="showroom"] .btr-world-tools .header-actions svg{width:16px;height:16px}
+
+/* ---------- Shared dialog surface ---------- */
+:is(#play-menu,#controls-card,#book-dialog,#shop-dialog,#product-dialog,#upload-dialog){
+ background:var(--e-paper);color:var(--e-ink);border:1px solid rgb(255 255 255 / .5);border-radius:var(--e-radius);
+ box-shadow:var(--e-shadow);font-family:var(--e-sans);
+}
+:is(#play-menu,#controls-card,#book-dialog,#shop-dialog,#product-dialog,#upload-dialog)::backdrop{background:radial-gradient(120% 90% at 50% 40%,rgb(10 16 12 / .38),rgb(6 10 7 / .68));backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+:is(#play-menu,#controls-card,#book-dialog,#shop-dialog,#product-dialog)[open]{animation:eden-dialog-in .22s cubic-bezier(.2,.8,.2,1)}
+@keyframes eden-dialog-in{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+/* Kickers and titles */
+:is(#play-menu,#controls-card) small,.shop-heading small{display:block;font:700 11px/1.3 var(--e-mono);letter-spacing:.08em;color:var(--e-ink-3);text-transform:uppercase}
+:is(#play-menu,#controls-card) h2,.shop-heading h2{font:600 clamp(30px,3.2vw,40px)/1 var(--e-display);letter-spacing:-.005em;color:var(--e-ink)}
+/* Square icon buttons inside menus */
+:is(#play-menu,#controls-card,#book-dialog,#shop-dialog) .icon-button{display:grid;place-items:center;width:42px;height:42px;min-height:42px;padding:0;border:1px solid var(--e-line-2);border-radius:var(--e-radius-sm);background:var(--e-card);color:var(--e-ink);font:400 22px/1 var(--e-sans);cursor:pointer;transition:border-color .15s,background .15s}
+:is(#play-menu,#controls-card,#book-dialog,#shop-dialog) .icon-button:hover{border-color:var(--e-moss);background:#f2f0e6}
+:is(#play-menu,#controls-card,#book-dialog,#shop-dialog) .icon-button svg{width:19px;height:19px}
+:is(#play-menu,#controls-card,#book-dialog,#shop-dialog,#product-dialog) :focus-visible{outline:2px solid var(--e-moss);outline-offset:2px}
+:is(#play-menu,#controls-card,#book-dialog,#shop-dialog,#product-dialog) kbd{border-color:var(--e-line-2);background:var(--e-card);font:700 11px var(--e-mono);color:var(--e-ink)}
+
+/* ---------- Play ---------- */
+#play-menu,#controls-card{width:min(720px,calc(100vw - 28px));max-height:calc(100dvh - 40px);padding:28px 30px 24px}
+#play-menu header,#controls-card header{align-items:flex-start;margin-bottom:22px}
+#play-menu h2,#controls-card h2{margin:6px 0 0}
+.play-items{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;counter-reset:play}
+.play-item{position:relative;gap:8px;min-height:150px;padding:18px 18px 16px;background:var(--e-card);border:1px solid var(--e-line);border-radius:var(--e-radius);box-shadow:0 1px 0 rgb(255 255 255 / .8) inset,0 1px 2px rgb(20 30 20 / .04);counter-increment:play;transition:border-color .15s,transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s}
+.play-item::before{content:counter(play,decimal-leading-zero);position:absolute;top:16px;right:16px;font:700 11px var(--e-mono);color:var(--e-line-2)}
+.play-item strong{padding-right:28px;font:600 24px/1.05 var(--e-display);letter-spacing:0;color:var(--e-ink)}
+.play-text{font:14px/1.5 var(--e-sans);color:var(--e-ink-2)}
+.play-keys{display:block;margin-top:auto;padding-top:10px;border-top:1px dashed var(--e-line);width:100%;font:700 10.5px/1.5 var(--e-mono);letter-spacing:.02em;color:var(--e-moss)}
+.play-keys:empty{display:none}
+.play-item:hover:not(:disabled),.play-item:focus-visible{border-color:var(--e-moss);transform:translateY(-2px);box-shadow:0 14px 28px -18px rgb(20 40 28 / .55)}
+.play-item:hover:not(:disabled)::before{color:var(--e-moss)}
+.play-item:disabled{opacity:1;min-height:0;background:transparent;border-style:dashed;box-shadow:none}
+.play-item:disabled :is(strong,.play-text){color:var(--e-ink-3)}
+.play-settings,.play-graphics{margin-top:18px;padding-top:16px;border-top:1px solid var(--e-line)}
+.play-settings summary{display:flex;align-items:center;gap:8px;font:700 12px var(--e-mono);letter-spacing:.06em;list-style:none}
+.play-settings summary::-webkit-details-marker{display:none}
+.play-settings summary::before{content:'+';display:grid;place-items:center;width:20px;height:20px;border:1px solid var(--e-line-2);border-radius:4px;font:700 13px/1 var(--e-mono)}
+.play-settings[open] summary::before{content:'−'}
+.ps-row{font:700 10.5px var(--e-mono);letter-spacing:.04em;color:var(--e-ink-2)}
+.play-graphics{font:700 12px var(--e-mono);letter-spacing:.06em}
+.play-graphics small,.play-settings-grid small{font:13px var(--e-sans);letter-spacing:0;color:var(--e-ink-3)}
+:is(.play-graphics-options,.ps-choice){padding:3px;gap:2px;border:1px solid var(--e-line-2);border-radius:999px;background:var(--e-card)}
+:is(.play-graphics-options,.ps-choice) button{border-radius:999px;background:transparent;padding:7px 14px;font:700 11px var(--e-mono);letter-spacing:.03em;color:var(--e-ink-2)}
+:is(.play-graphics-options,.ps-choice) button:hover{background:#efece1}
+:is(.play-graphics-options,.ps-choice) button[aria-pressed="true"]{background:var(--e-moss);color:#fff}
+.ps-reset,.play-controls{border:1px solid var(--e-line-2);border-radius:var(--e-radius-sm);background:var(--e-card);font:700 11px var(--e-mono);letter-spacing:.04em;color:var(--e-ink)}
+.play-controls{display:inline-flex;align-items:center;gap:8px;min-height:38px}
+.play-controls:hover,.ps-reset:hover{border-color:var(--e-moss)}
+#play-menu footer,#controls-card footer{margin-top:20px;padding-top:16px;border-top:1px solid var(--e-line);font:13px var(--e-sans);color:var(--e-ink-3)}
+.controls-grid section{background:var(--e-card);border-color:var(--e-line);border-radius:var(--e-radius)}
+.controls-grid h3{font:700 11px var(--e-mono);letter-spacing:.06em}
+.controls-grid dt{font:700 12px var(--e-mono)}
+.controls-grid dd{color:var(--e-ink-2)}
+
+/* ---------- Library ---------- */
+#book-dialog{width:min(1140px,calc(100vw - 40px));height:min(800px,calc(100dvh - 40px));max-height:none;margin:auto}
+#book-dialog .product-header{height:68px;padding:0 14px 0 26px;gap:10px;border-bottom:1px solid var(--e-line);background:var(--e-card)}
+#library-title{margin-right:auto;font:700 12px/1.3 var(--e-mono);letter-spacing:.06em;color:var(--e-ink-2)}
+#book-dialog .product-header .text-button{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 14px;border:1px solid var(--e-line-2);border-radius:var(--e-radius-sm);background:var(--e-card);font:700 12px var(--e-mono);letter-spacing:.03em;color:var(--e-ink)}
+#book-dialog .product-header .text-button:hover{border-color:var(--e-moss)}
+#book-dialog #close-library{width:42px;padding:0;justify-content:center;font-size:0}
+#book-dialog #close-library span{font:400 24px/1 var(--e-sans)}
+.library-layout{height:calc(100% - 68px);grid-template-columns:300px minmax(0,1fr)}
+#book-list{padding:10px;background:#efebdf;border-right:1px solid var(--e-line)}
+#book-list button{gap:14px;min-height:88px;padding:12px;border-bottom:1px solid var(--e-line);border-radius:var(--e-radius-sm);transition:background .15s}
+#book-list button:hover{background:#e6e1d2}
+#book-list button[aria-pressed=true]{background:var(--e-card);box-shadow:inset 3px 0 var(--e-moss),0 1px 3px rgb(20 30 20 / .08)}
+#book-list img{border-radius:2px;box-shadow:0 2px 6px rgb(20 20 10 / .18)}
+#book-list strong{font:600 14px/1.3 var(--e-sans);color:var(--e-ink)}
+#book-list small{font:11px/1.4 var(--e-mono);color:var(--e-ink-3)}
+.book-detail{padding:44px clamp(24px,4vw,56px);gap:clamp(24px,4vw,52px);background:radial-gradient(80% 70% at 30% 45%,#fffdf6,var(--e-paper))}
+.book-cover-wrap img{border-radius:2px;filter:drop-shadow(0 22px 26px rgb(20 26 18 / .28))}
+.book-info .edition{font:700 11px var(--e-mono);letter-spacing:.08em;color:var(--e-moss)}
+.book-info h2{margin:10px 0 12px;font:600 clamp(34px,3.6vw,48px)/1 var(--e-display);letter-spacing:-.005em;color:var(--e-ink)}
+#book-author{margin:0;font:italic 500 22px/1.25 var(--e-display);color:var(--e-ink-2)}
+#book-format{margin:14px 0 0;font:12px var(--e-mono);color:var(--e-ink-3)}
+.read-book{min-height:52px;margin-top:24px;padding:14px 20px;border-radius:var(--e-radius-sm);background:var(--e-moss);font:700 13px var(--e-mono);letter-spacing:.06em;box-shadow:0 10px 22px -14px rgb(20 50 32 / .9);transition:background .15s,transform .15s}
+.read-book:hover{background:var(--e-moss-2);transform:translateY(-1px)}
+.archive-source{display:inline-block;margin-top:14px;font:12px var(--e-mono);color:var(--e-ink-2)}
+#library-shared-status{font:13px/1.55 var(--e-sans);color:var(--e-ink-3)}
+.book-paging{margin-top:18px;gap:12px}
+.book-paging button{border:1px solid var(--e-line-2);border-radius:var(--e-radius-sm);background:var(--e-card);color:var(--e-ink)}
+.book-paging button:hover:not(:disabled){border-color:var(--e-moss)}
+.book-paging button:disabled{opacity:.4}
+.book-paging span{font:700 12px var(--e-mono)}
+
+/* ---------- 3D inspect (opened from the shop's "View in 3D" and from the vault) ---------- */
+#product-dialog .product-header{background:var(--e-card);border-bottom:1px solid var(--e-line);font:700 12px var(--e-mono);letter-spacing:.06em}
+#product-dialog #close-product{font:700 12px var(--e-mono);letter-spacing:.04em}
+#product-dialog .product-info{background:var(--e-paper)}
+#product-dialog .edition{font:700 11px var(--e-mono);letter-spacing:.08em;color:var(--e-apple)}
+#product-dialog .collection-label{font:700 11px var(--e-mono);letter-spacing:.04em}
+#product-dialog #collection-select{border-color:var(--e-line-2);border-radius:var(--e-radius-sm);background-color:var(--e-card);font:600 14px var(--e-sans)}
+#product-dialog #product-title{margin:22px 0 16px;text-transform:none;font:600 clamp(32px,3.4vw,46px)/1.02 var(--e-display);letter-spacing:-.005em;overflow-wrap:anywhere}
+#product-dialog .product-description{font:15px/1.7 var(--e-sans);color:var(--e-ink-2)}
+#product-dialog .image-annotation{font:11px var(--e-mono);letter-spacing:.04em}
+#product-dialog .side-switch button{letter-spacing:.02em;font:700 12px var(--e-mono)}
+#product-dialog .return-button{border-radius:var(--e-radius-sm);font:700 12px var(--e-mono);letter-spacing:.04em}
+
+/* ---------- Bottom bar ---------- */
+.world-footer .view-nav button{font-family:var(--e-mono)!important;font-weight:700;letter-spacing:.04em}
+.world-footer .control-hint,.world-footer .footer-note{font-family:var(--e-mono)}
+
+/* ---------- Phone menu sheet (eden-mobile.js): same type, flush to the bottom edge ---------- */
+#eden-mobile-menu{margin-bottom:0;padding-bottom:env(safe-area-inset-bottom);background:var(--e-paper);box-shadow:var(--e-shadow)}
+#eden-mobile-menu header{background:rgb(246 243 234 / .96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--e-line)}
+#eden-mobile-menu header small{font:700 10px var(--e-mono);letter-spacing:.08em;color:var(--e-ink-3)}
+#eden-mobile-menu h2{font:600 32px/1 var(--e-display);letter-spacing:0;color:var(--e-ink)}
+#eden-mobile-menu h3{font:700 11px var(--e-mono);letter-spacing:.08em;color:var(--e-ink-3)}
+#eden-mobile-menu .em-menu-body>section:first-child h3{margin-top:18px}
+#eden-mobile-menu .em-close{background:var(--e-card);border-color:var(--e-line-2);color:var(--e-ink)}
+.em-brand strong{font:600 21px/1 var(--e-display);letter-spacing:.08em}
+
+/* ---------- Phones ---------- */
+@media (max-width:650px){
+ :is(#play-menu,#controls-card){width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;margin:0;border:0;border-radius:0;padding:calc(18px + env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
+ #play-menu header,#controls-card header{position:sticky;top:calc(-18px - env(safe-area-inset-top));z-index:2;margin:calc(-18px - env(safe-area-inset-top)) calc(-1 * max(18px,env(safe-area-inset-left))) 16px;padding:calc(14px + env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) 12px max(18px,env(safe-area-inset-left));background:rgb(246 243 234 / .94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--e-line)}
+ :is(#play-menu,#controls-card) h2{font-size:32px}
+ .play-items{grid-template-columns:1fr;gap:10px}
+ .play-item{min-height:0;padding:16px}
+ .play-item strong{font-size:22px}
+ #play-menu footer{flex-wrap:wrap}
+ #book-dialog{width:100vw;height:100dvh;max-height:100dvh;margin:0;border:0;border-radius:0}
+ #book-dialog .product-header{height:calc(60px + env(safe-area-inset-top));padding:env(safe-area-inset-top) max(10px,env(safe-area-inset-right)) 0 max(14px,env(safe-area-inset-left));gap:6px}
+ #library-title{max-width:none;font-size:10px}
+ #book-dialog .product-header .text-button{padding:0 10px;font-size:10px}
+ #book-dialog #ask-from-books{max-width:none;line-height:1.2}
+ .library-layout{height:calc(100% - 60px - env(safe-area-inset-top))}
+ #book-list{flex-basis:128px;gap:6px;padding:8px max(8px,env(safe-area-inset-left))}
+ #book-list button{flex-basis:84px;border:0}
+ #book-list button[aria-pressed=true]{box-shadow:inset 0 -3px var(--e-moss),0 1px 3px rgb(20 30 20 / .08)}
+ #book-list strong{font-size:10px;line-height:1.2}
+ .book-detail{padding:24px max(18px,env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
+ .book-info h2{font-size:36px}
+ #product-dialog .image-toolbar{flex-wrap:wrap}
+ #product-dialog #product-title{font-size:32px}
+}
+@media (prefers-reduced-motion:reduce){
+ :is(#play-menu,#controls-card,#book-dialog,#shop-dialog,#product-dialog)[open]{animation:none}
+ .play-item,.read-book{transition:none}
+}

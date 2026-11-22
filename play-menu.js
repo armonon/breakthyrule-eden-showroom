@@ -25,11 +25,17 @@ window.createPlayMenu=function({nav,after,stage,items,graphics=null,context=()=>
   <footer><button type="button" class="play-controls">CONTROLS <kbd>?</kbd></button><span>Press <kbd>Esc</kbd> to leave any game.</span></footer>`;
  document.body.append(menu);
  const list=menu.querySelector('.play-items');
+ // Titles are written in capitals; the menu sets them in the book face as title case.
+ const small=new Set(['a','an','and','at','by','for','in','of','on','or','the','to','vs']);
+ function displayTitle(title=''){
+  if(title!==title.toUpperCase())return title;
+  return title.toLowerCase().split(' ').map((w,i)=>i&&small.has(w)?w:w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+ }
  function render(){
   list.replaceChildren(...items.map(item=>{
    const ok=item.available?.()??true,card=document.createElement('button');card.type='button';card.className='play-item';card.dataset.id=item.id;card.disabled=!ok;
    card.innerHTML=`<strong></strong><span class="play-text"></span><span class="play-keys"></span>`;
-   card.querySelector('strong').textContent=item.title;card.querySelector('.play-text').textContent=ok?item.text:(item.note||item.text);card.querySelector('.play-keys').textContent=ok?item.keys||'':'';
+   card.querySelector('strong').textContent=displayTitle(item.title);card.querySelector('.play-text').textContent=ok?item.text:(item.note||item.text);card.querySelector('.play-keys').textContent=ok?item.keys||'':'';
    card.onclick=()=>{menu.close();item.run();};return card;
   }));
  }

@@ -1,0 +1,14 @@
+/* The product page inside the Eden shop (site/eden-embed.js adds html.eden-embed).
+   Eden draws its own toolbar (back, title, bag, close), so the site chrome goes. */
+html.eden-embed{scroll-padding-top:12px;-webkit-text-size-adjust:100%}
+html.eden-embed body{min-height:0!important;padding:0!important}
+html.eden-embed :is(.site-top,.site-foot,.product-back-nav,.studio-trail,.ad-break),
+html.eden-embed body header#btr-site-header.btr-about-header[data-shared-header]{display:none!important}
+html.eden-embed body.silkroad-product main{max-width:1280px;padding:clamp(12px,2.4vw,28px) clamp(12px,2.4vw,28px) 40px!important}
+html.eden-embed .product-page{min-height:0!important;margin-top:0!important}
+html.eden-embed .product-page .viewer{max-height:min(78vh,760px)}
+html.eden-embed .hero-actions a.ghost[href="/showroom"]{cursor:pointer}
+@media (max-width:760px){
+ html.eden-embed body.silkroad-product main{padding:0 0 32px!important}
+ html.eden-embed .product-page .viewer{max-height:62vh}
+}
