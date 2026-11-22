@@ -74,8 +74,13 @@
    const bind={};
    const capture=()=>{order.forEach((b,i)=>{P[i]=b.getWorldPosition(new T.Vector3());});for(const [b,t] of tips)P[t.index]=tipWorld(b);};
    let stayDown=false;
+   // Pinned (a tackle turned into a ground hold): the body keeps simulating but does not get up until released.
+   // While pinned it is an active ragdoll: springs pull the wrists up over the face (a guard that weakens with each
+   // blow), the hips buck a little, and each strike is an impulse on the particles it lands on, so blows read as
+   // physics rather than a canned flinch. All of it runs on simulation time only (the server shares this file).
+   let pinned=false,guard=0;
    // stay: a death; the body never gets back up (and stops simulating once it has settled).
-   function start(impulse,strength,stay=false){stayDown=stay;
+   function start(impulse,strength,stay=false){stayDown=stay;pinned=false;guard=0;
     group.updateMatrixWorld(true);capture();Q.length=0;
     const up=new T.Vector3(0,1,0);P.forEach((p,i)=>{const h=clamp((p.y-group.getWorldPosition(v2).y)/1.6,0,1);Q[i]=p.clone().addScaledVector(impulse,-(.007+.02*h)*strength).addScaledVector(up,-.008*strength*h);});
     links.length=0;stops.length=0;const add=(a,b,list=links)=>{if(a>=0&&b>=0)list.push([a,b,P[a].distanceTo(P[b])]);};
@@ -92,12 +97,32 @@
      for(let k=0;k<10;k++){
       for(const [a,b,len] of links){const d=v1.subVectors(P[b],P[a]),l=d.length()||1e-6,c=(l-len)/l*.5;P[a].addScaledVector(d,c);P[b].addScaledVector(d,-c);}
       for(const [a,b,min] of stops){const d=v1.subVectors(P[b],P[a]),l=d.length()||1e-6;if(l<min){const c=(l-min)/l*.5;P[a].addScaledVector(d,c);P[b].addScaledVector(d,-c);}}
+      if(pinned&&k===0)activeHold(h);
       P.forEach((p,i)=>{const floor=ground+.05;if(p.y<floor){p.y=floor;Q[i].x+=(p.x-Q[i].x)*.35;Q[i].z+=(p.z-Q[i].z)*.35;}});
      }
      // Walls and props: a joint that would enter something solid stays where it was across the floor plan.
      const solid=root.GardenCharacterMotion.solid;
      if(solid)P.forEach((p,i)=>{if(p.y<ground+2.2&&solid(p)&&!solid(Q[i])){p.x=Q[i].x;p.z=Q[i].z;}});
     }
+   }
+   // The pinned body fights back: hands come up to cover the face, the hips twist under the weight.
+   function activeHold(h){
+    const hd=pick('head'),root=pick('root');if(hd<0)return;
+    if(guard>0)for(const name of ['wrist.L','wrist.R']){const w=pick(name);if(w<0)continue;const side=name.endsWith('L')?1:-1;
+     v1.copy(P[hd]).sub(root>=0?P[root]:P[hd]).setY(0);const len=v1.length()||1;
+     // Over the face, a hand's width off the centre line and up off the ground.
+     v2.set(P[hd].x+(-v1.z/len)*side*.09,P[hd].y+.16,P[hd].z+(v1.x/len)*side*.09);
+     P[w].lerp(v2,.045*guard);}
+    if(root>=0){const buck=Math.sin(clock*6.3)*Math.max(0,Math.sin(clock*1.7))*.0009;P[root].y+=Math.max(0,buck);}
+   }
+   // A blow on the pinned (or any ragdolled) body: an impulse on the named joint and a share on its neighbours.
+   function strike(name,impulse){
+    // The joint is shoved at once (a snap the eye can catch) and carries on with the impulse's velocity; the tip of a
+    // leaf bone (the face) is struck harder so the head turns rather than just slides.
+    const i=pick(name);if(i<0)return;const add=(index,k)=>{if(index<0||!Q[index])return;P[index].addScaledVector(impulse,.022*k);Q[index].copy(P[index]).addScaledVector(impulse,-k/90);};
+    add(i,1);const tip=tips.get(order[i]);if(tip)add(tip.index,1.7);
+    if(name==='head'){add(pick('neck01'),.45);add(pick('spine01'),.18);}else{add(pick('spine02'),.5);add(pick('root'),.25);}
+    guard=Math.max(0,guard-.24);clock=Math.min(clock,1.2);
    }
    // Pelvis and chest take their full orientation from a left-right pair and an up direction; limbs just aim.
    const basisFrom=(xa,xb,ya,yb)=>basis(P[xa].clone().sub(P[xb]),P[ya].clone().sub(P[yb]));
@@ -117,12 +142,15 @@
     for(const s of sides)for(const f of s.fingers)f.chain.forEach((b,j)=>b.quaternion.setFromAxisAngle(f.axis,.5*(f.thumb?.4:1)));
    }
    return {
-    get active(){return active;},get recovering(){return recover>0;},start,reset(){active=false;recover=0;clock=0;acc=0;stayDown=false;snapshot=null;},
+    get active(){return active;},get recovering(){return recover>0;},get pinned(){return pinned;},start,strike,reset(){active=false;recover=0;clock=0;acc=0;stayDown=false;pinned=false;guard=0;snapshot=null;},
+    // Hold the body down (on) or let it go: released, it gets up within about half a second.
+    pin(on){if(!active||stayDown)return false;pinned=!!on;guard=on?1:0;if(!on)clock=Math.max(clock,3.9);return true;},
+    point(name){const i=pick(name);return i>=0&&P[i]?P[i].clone():null;},
     update(dt){if(stayDown&&clock>6)return; // a settled corpse keeps its last pose
      step(dt);pose();
      // Lie still for a moment, then get up: the procedural pose takes over from the ragdoll over about a second.
      const still=Q.every((q,i)=>q.distanceToSquared(P[i])<1e-7);
-     if(!stayDown&&clock>2.2&&(still||clock>4.5)){active=false;recover=1;snapshot=model.skeleton.bones.map(b=>b.quaternion.clone());snapPelvis.copy(order[0].position);}},
+     if(!stayDown&&!pinned&&clock>2.2&&(still||clock>4.5)){active=false;recover=1;snapshot=model.skeleton.bones.map(b=>b.quaternion.clone());snapPelvis.copy(order[0].position);}},
     blend(dt){recover=Math.max(0,recover-dt/1.1);const k=smooth(0,1,1-recover);model.skeleton.bones.forEach((b,i)=>b.quaternion.slerpQuaternions(snapshot[i],b.quaternion.clone(),k));order[0].position.lerpVectors(snapPelvis,order[0].position.clone(),k);},
     get recoverLeft(){return recover;},
     inspect:()=>active?'down':recover>0?'getting up':'standing'
@@ -209,6 +237,12 @@
    // Knocked down: an explicit call, a hard hit, or the third hit in quick succession.
    // 1 while knocked down, falling to 0 as the character gets up; 0 when standing.
    downAmount:()=>ragdoll.active?1:ragdoll.recovering?ragdoll.recoverLeft:0,
+   // Ground hold (a tackle you stay on): pin(true) keeps a knocked-down body down; strike() lands a blow on it.
+   pin(on=true){return !canonical&&ragdoll.pin(on);},
+   pinned:()=>ragdoll.active&&ragdoll.pinned,
+   strike(part,impulse){if(!canonical&&ragdoll.active)ragdoll.strike(part,impulse);},
+   // Where a joint of the ragdolled body is in the world (null while standing).
+   ragdollPoint:name=>ragdoll.active?ragdoll.point(name):null,
    knockdown(direction,strength=1.5,{stay=false}={}){if(canonical)throw Error('Canonical knockdown belongs to the authoritative physics actor.');if(ragdoll.active&&!stay)return;const d=direction.clone().setY(0);if(d.lengthSq()<1e-6)d.set(0,0,-1);d.normalize();ragdoll.start(d,strength,stay);},
    update(dt,options={}){
     dt=clamp(dt||0,0,1/20);

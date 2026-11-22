@@ -321,7 +321,7 @@
    if(!target.bot&&godMode)return {killed:false};
    if(target===player&&clock<(player.protectUntil||0))return {killed:false};
    // Finisher: melee on a bot that is down (tackled, knocked over) hits twice as hard.
-   const finisher=target.bot&&attacker===player&&['melee','axe'].includes(meta.weapon)&&(target.model.motion?.downAmount?.()||0)>.3;if(finisher){amount*=2;meta={...meta,finisher:true};window.EdenMelee?.pop('FINISHER','ko');}
+   const finisher=!meta.pinned&&target.bot&&attacker===player&&['melee','axe'].includes(meta.weapon)&&(target.model.motion?.downAmount?.()||0)>.3;if(finisher){amount*=2;meta={...meta,finisher:true};window.EdenMelee?.pop('FINISHER','ko');}
    // A bot's melee blow lands on you with the same weight as yours land on them (melee-core.js), and breaks your combo.
    if(target===player&&attacker?.bot&&['melee','axe'].includes(meta.weapon)&&!meta.guarded)window.EdenMelee?.land(meta.tier||'heavy',{hitStop:ms=>o.hitStop?.(ms),combo:false,pop:false});
    if(attacker&&attacker!==target&&attacker.power)amount*=1+POWER_DMG*Math.min(POWER_MAX,attacker.power);
@@ -337,7 +337,7 @@
     // Hit reactions: heavy blows knock the bot down into a ragdoll (it gets back up); light ones flinch it, at most
     // every 0.7 s so a spray cannot pin it down. Either way it side-steps out of the line of fire.
     // Melee blows say their own tier (a quick axe chop only flinches; a bash, slam or cleave knocks the bot down).
-    if(target.hp>0&&meta.kind!=='zone'){const heavy=meta.tier?meta.tier!=='light':meta.blast||['sniper','axe','melee'].includes(meta.weapon)||(meta.weapon==='pump'&&amount>=30)||amount>=45;
+    if(target.hp>0&&meta.kind!=='zone'&&!meta.pinned){const heavy=meta.tier?meta.tier!=='light':meta.blast||['sniper','axe','melee'].includes(meta.weapon)||(meta.weapon==='pump'&&amount>=30)||amount>=45;
      const dir=blowDirection(target,attacker,meta);
      if(meta.tier)meleeReaction(target,dir,meta);
      else if(heavy){target.model.motion?.hit?.(dir,2.2);}else if(clock-target.lastFlinch>.7){target.lastFlinch=clock;target.model.motion?.hit?.(dir,meta.head?1.2:.7,{zone:meta.zone});target.model.motion?.play?.(meta.head?'hitHead':'hitChest',{mask:'upper',fade:.04,speed:1.2});}
@@ -375,7 +375,7 @@
     for(const [type,n] of Object.entries(target.reserve)){if(n>0&&type!=='c4'){const [x,z]=spot();dropItem({type:'ammo',ammo:type,count:n,rarity:'common',label:AMMO_LABEL[type]+' AMMO ×'+n},x,z);}}
     if(target.garment){const [x,z]=spot();dropItem({type:'armor',armor:target.garment.armor,garment:target.garment,rarity:target.garment.rarity,label:target.garment.name.toUpperCase()+' · '+target.garment.armor+' ARMOR'},x,z);}
     target.hand.clear();target.model.motion?.hold?.(null);
-    target.model.motion?.knockdown?.(blowDirection(target,attacker,meta),meta.kind==='zone'?1.3:(FORCE[meta.weapon]||(meta.kind==='attendant'?5.2:2.4))*(meta.head?1.15:1),{stay:true});
+    target.model.motion?.knockdown?.(blowDirection(target,attacker,meta),meta.kind==='zone'?1.3:meta.pinned?.8:(FORCE[meta.weapon]||(meta.kind==='attendant'?5.2:2.4))*(meta.head?1.15:1),{stay:true});
    }else{
     combat.holster();hud?.prompt(null);player.focus=null;player.killedBy=attacker&&attacker!==target?nameOf(attacker):null;
     // Die at night and your soul is taken to the Gathering inside the pyramid; you rise again at its gate, a long
@@ -629,6 +629,7 @@
    // A gun in the air within reach can be caught.
    for(const l of loot){if(!l.vel||l.item.type==='page')continue;const g=l.group.position;const d=Math.hypot(g.x-p.x,g.z-p.z);if(d<2.4&&g.y>p.y+.4){const s=4+(2.4-d);if(s>bs){bs=s;best={loot:l,catch:true};}}}
    for(const l of loot){if(l.vel||Math.abs(l.pos.y-p.y)>1.4)continue;const d=Math.hypot(l.pos.x-p.x,l.pos.z-p.z);if(d<2){const s=(2-d)+Math.max(0,fwd.dot(l.pos.clone().sub(camera.position).normalize()))*1.2;if(s>bs){bs=s;best={loot:l};}}}
+   if(player.hold){player.focus=null;hud.prompt(holdPrompt(),'epic');return;}
    player.focus=best;hud.prompt(best?.catch?'CATCH '+best.loot.item.label:best?best.chest?'OPEN CHEST':(best.loot.item.type==='weapon'&&combat.arsenal.inspect().owned.filter(id=>!['axe','c4'].includes(id)).length>=2&&!combat.arsenal.inspect().owned.includes(best.loot.item.weapon)?'SWAP FOR ':'PICK UP ')+best.loot.item.label:null,best?.loot?.item.rarity);
   }
   function interact(){
@@ -959,7 +960,7 @@
    for(const b of bots){if(!b.alive||clock<(b.tackledUntil||0))continue;const q=b.root.position,to=q.clone().sub(feet).setY(0),d=to.length();
     if(d>1.35||d<1e-3||to.normalize().dot(dir)<.25)continue;
     b.tackledUntil=clock+2.5;b.model.motion?.knockdown?.(dir.clone(),1.6+speed*.12);
-    const lost=disarm(b,dir);damage(b,12,player,{weapon:'melee',dir:dir.clone()});
+    const lost=disarm(b,dir);damage(b,12,player,{weapon:'melee',dir:dir.clone()});tackledBot(b);
     b.state='fight';b.target=player;b.aimT=b.reaction+1.2;b.fireT=Math.max(b.fireT,1.4);
     announce(lost?`TACKLED ${b.name} · ${W(lost)?.name||lost.toUpperCase()} DROPPED`:`TACKLED ${b.name}`);chime([140,98],.12,.05);
     return {name:b.name,dropped:lost};}
@@ -989,7 +990,7 @@
      player.impactUsed=true;player.stomps=(player.stomps||0)+1;b.tackledUntil=clock+2.5;
      const dir=m.velocity.clone().setY(0).normalize();
      damage(b,24,player,{weapon:'stomp',dir:dir.clone()});
-     if(b.alive)b.model.motion?.knockdown?.(dir,2.4);
+     if(b.alive){b.model.motion?.knockdown?.(dir,2.4);tackledBot(b);}
      const lost=disarm(b,dir);b.aimT=b.reaction+1.2;b.fireT=Math.max(b.fireT,1.6);
      o.onMomentumLanding?.();announce('MOMENTUM TAKEDOWN · '+b.name+(lost?' · WEAPON DROPPED':''));chime([180,90],.12,.07);
      break; // one victim per jump, no repeated damage while overlapping
@@ -1015,12 +1016,108 @@
      if(Math.hypot(q.x-last.x-dx*t,q.z-last.z-dz*t)>1.15||(q.x-p.x)*dir.x+(q.z-p.z)*dir.z<-.3)continue;
      if(!los(p.clone().add(new T.Vector3(0,1.1,0)),q.clone().add(new T.Vector3(0,1.1,0))))continue;
      player.ramUntil=clock+1.1;player.rams=(player.rams||0)+1;b.tackledUntil=clock+2.5;
-     damage(b,28,player,{weapon:'ram',dir:dir.clone()});if(b.alive)b.model.motion?.knockdown?.(dir,2.6);
+     damage(b,28,player,{weapon:'ram',dir:dir.clone()});if(b.alive){b.model.motion?.knockdown?.(dir,2.6);tackledBot(b);}
      const lost=disarm(b,dir);b.aimT=b.reaction+1.2;b.fireT=Math.max(b.fireT,1.6);
      o.onRunTackle?.();announce('SPRINT TACKLE · '+b.name+(lost?' · WEAPON DROPPED':''));chime([160,85],.12,.07);break;
     }
    }
    (player.runPoint??=new T.Vector3()).copy(p);
+  }
+
+  // ---------- Ground hold: a tackle you stay on ----------
+  // Land a tackle (slide or dive, sprint shoulder, momentum landing) and stop moving within HOLD.window seconds while
+  // the one you knocked down lies close: you keep hold of them, mounted on their chest, and they stay pinned. Punches
+  // then land without aiming (F, or fire with empty hands, B or right click with a gun) and beat them down in a few
+  // blows. With the axe out, the strike is a finisher instead. Walking off, jumping, or HOLD.max seconds (they throw
+  // you off) ends the hold. The victim is an active ragdoll while pinned (character-motion.js pin/strike): it covers
+  // its face, bucks, and every blow is an impulse on the joint it lands on.
+  const HOLD={window:1.3,stop:1.8,reach:2.8,leave:1.2,max:6,punch:22,every:.28,punchLands:.11,finisherLands:.34};
+  function tackledBot(b){if(player)player.tackleHold={b,at:clock};}
+  function bodyPoint(b,name){return b.model.motion?.ragdollPoint?.(name)||b.root.position.clone().add(new T.Vector3(0,name==='head'?.25:.2,0));}
+  function heldWeapon(){return combat.armed?.()?combat.inspect().weapon:null;}
+  function startHold(b){
+   if(!b.model.motion?.pin?.(true))return false;
+   player.tackleHold=null;
+   player.hold={b,t:0,start:clock,nextAt:clock+.1,hand:1,punches:0,anchor:null,pending:null,finishing:false};mountStep(player.hold,.6);
+   b.state='fight';b.target=player;b.fireT=Math.max(b.fireT,HOLD.max);
+   o.onHold?.(true,{point:bodyPoint(b,'head')});
+   announce(`HOLDING ${b.name}`);chime([110,82],.1,.05);
+   return true;
+  }
+  // Mount: settle astride the chest (the body may still be sliding from the tackle, so this eases in over the first
+  // moments of the hold). The spot the player settles on becomes the anchor that walking away is measured from.
+  function mountStep(h,k){
+   const chest=bodyPoint(h.b,'spine01'),p=posOf(player),off=new T.Vector3(p.x-chest.x,0,p.z-chest.z);if(off.lengthSq()<1e-4)off.set(0,0,1);off.normalize();
+   const move=new T.Vector3(chest.x+off.x*.28-p.x,0,chest.z+off.z*.28-p.z),dist=move.length()*k;
+   if(dist>.01)o.mount?.({direction:move.normalize(),distance:dist});
+   h.anchor=posOf(player);
+  }
+  function endHold(reason){
+   const h=player?.hold;if(!h)return;player.hold=null;player.tackleHold=null;player.holdEnded={reason,t:+(clock-h.start).toFixed(2),punches:h.punches};
+   if(h.b.alive){h.b.model.motion?.pin?.(false);h.b.tackledUntil=clock+1.6;h.b.fireT=Math.max(1.2,Math.min(h.b.fireT,1.2));if(reason==='escaped')announce(`${h.b.name} BROKE FREE`);}
+   o.onHold?.(false,{reason});
+  }
+  // A strike pressed during a hold. input: 'f', 'fire', 'aim' or 'b'; weapon: what is drawn (null for empty hands).
+  // Returns false when the hold does not take the input (a gun still shoots), 'swing' for the axe finisher (combat.js
+  // plays the swing without its own hit test), 'bash' for a punch thrown with a gun in hand, or true.
+  function heldStrike(input,weapon=heldWeapon()){
+   const h=player?.hold;if(!h||!h.b.alive||phase!=='live'||!player.alive)return false;
+   if(weapon&&weapon!=='axe'&&input==='fire')return false;
+   if(weapon==='c4')return false;
+   if(h.finishing||h.pending)return weapon==='axe'?'swing':true;
+   const head=bodyPoint(h.b,'head');
+   if(weapon==='axe'){
+    h.finishing=true;h.pending={kind:'axe',at:clock+HOLD.finisherLands};
+    window.EdenMelee?.sound('swoosh');window.EdenMelee?.slowMo(1.1,.3);
+    o.onHoldStrike?.({kind:'axe',point:head});return 'swing';
+   }
+   if(clock<h.nextAt)return true;
+   h.hand=-h.hand;h.nextAt=clock+HOLD.every;h.pending={kind:'punch',at:clock+HOLD.punchLands,hand:h.hand};
+   window.EdenMelee?.sound('whoosh',.6);
+   o.onHoldStrike?.({kind:'punch',point:head,hand:h.hand});
+   return weapon?'bash':true;
+  }
+  function landHeldStrike(h){
+   const b=h.b,s=h.pending;h.pending=null;if(!b.alive)return;
+   const p=posOf(player),head=bodyPoint(b,'head'),toward=new T.Vector3(head.x-p.x,0,head.z-p.z);if(toward.lengthSq()<1e-4)toward.set(0,0,1);toward.normalize();
+   const side=new T.Vector3(toward.z,0,-toward.x),M=window.EdenMelee,hitStop=ms=>o.hitStop?.(ms);
+   if(s.kind==='axe'){
+    b.model.motion?.strike?.('head',toward.clone().multiplyScalar(1.2).add(new T.Vector3(0,-6,0)));
+    M?.sound('finisher');
+    const res=damage(b,999,player,{weapon:'axe',pinned:true,finisher:true,head:true,tier:'heavy',dir:toward.clone()});
+    M?.land('finisher',{hitStop,pop:false});M?.pop('AXE FINISHER','ko');
+    if(res.killed)announce(`AXE FINISHER · ${b.name}`);
+    o.onHoldStrike?.({kind:'axeLand',point:head});
+    return;
+   }
+   // Hooks from alternating sides: the head snaps away from the fist and the body takes some of it.
+   h.punches++;
+   b.model.motion?.strike?.(h.punches%3===0?'spine01':'head',side.clone().multiplyScalar(-s.hand*2.8).addScaledVector(toward,.5).add(new T.Vector3(0,-1.1,0)));
+   const res=damage(b,HOLD.punch,player,{weapon:'fist',pinned:true,dir:toward.clone()});
+   M?.land(res.killed?'ko':h.punches%3===0?'heavy':'light',{hitStop,label:'GROUND & POUND'});
+   o.onHoldStrike?.({kind:'punchLand',point:head,hand:s.hand,killed:res.killed});
+   if(res.killed)announce(`BEATEN DOWN · ${b.name}`);
+  }
+  function updateHold(){
+   if(!player)return;
+   if(!player.alive||phase!=='live'){endHold(null);player.tackleHold=null;return;}
+   const m=o.movement?.(),p=posOf(player),speed=m?Math.hypot(m.velocity.x,m.velocity.z):player.speed||0,t=player.tackleHold;
+   if(!player.hold&&t){
+    if(clock-t.at>HOLD.window||!t.b.alive)player.tackleHold=null;
+    else if(speed<HOLD.stop&&!m?.airborne&&(t.b.model.motion?.downAmount?.()||0)>=1){const pelvis=bodyPoint(t.b,'root');if(Math.hypot(pelvis.x-p.x,pelvis.z-p.z)<HOLD.reach&&Math.abs(pelvis.y-p.y)<1.3)startHold(t.b);}
+   }
+   const h=player.hold;if(!h)return;
+   h.t=clock-h.start;
+   if(h.t<.6&&h.b.alive)mountStep(h,.35);
+   if(h.pending&&clock>=h.pending.at)landHeldStrike(h);
+   if(!h.b.alive){if(!h.pending){player.hold=null;o.onHold?.(false,{reason:'done'});}return;}
+   if(m?.airborne||Math.hypot(p.x-h.anchor.x,p.z-h.anchor.z)>HOLD.leave)endHold('released');
+   else if(h.t>HOLD.max&&!h.finishing)endHold('escaped');
+  }
+  function holdPrompt(){
+   const h=player.hold,w=heldWeapon(),hint=(a,f)=>window.edenControls?.hint(a)||f;
+   if(w==='axe')return `${h.b.name} PINNED · ${hint('fire','CLICK')} AXE FINISHER`;
+   return `${h.b.name} PINNED · ${w?hint('bash','B'):hint('fire','CLICK')} / ${hint('loot','F')} PUNCH`;
   }
 
   /* ---------------------------------------------------------------- lifecycle */
@@ -1030,7 +1127,7 @@
    if(!window.GardenCharacterSchema){try{const r=await fetch('/character-schema.json?v=4');if(r.ok)window.GardenCharacterSchema=await r.json();}catch{}}
    buildGrid();
    hud=buildHud();
-   document.addEventListener('keydown',e=>{if(!active||e.repeat||(window.edenControls?.blockedModifiers(e)??(e.ctrlKey||e.metaKey||e.altKey||e.isComposing))||e.target?.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target?.tagName)||(window.edenControls?.modalOpen?.()??!!document.querySelector('dialog[open]')))return;const k=window.edenControls?.key(e)??e.key.toLowerCase();if(k==='f'){e.preventDefault();interact();}if(k==='h'){e.preventDefault();useHeal();}if(k==='tab'){e.preventDefault();const b=hud.el.querySelector('.ar-board');b.hidden=false;hud.update();}});
+   document.addEventListener('keydown',e=>{if(!active||e.repeat||(window.edenControls?.blockedModifiers(e)??(e.ctrlKey||e.metaKey||e.altKey||e.isComposing))||e.target?.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target?.tagName)||(window.edenControls?.modalOpen?.()??!!document.querySelector('dialog[open]')))return;const k=window.edenControls?.key(e)??e.key.toLowerCase();if(k==='f'){e.preventDefault();if(!heldStrike('f'))interact();}if(['fire','aim','b'].includes(k)&&player?.hold&&!combat.armed?.()){e.preventDefault();heldStrike(k,null);}if(k==='h'){e.preventDefault();useHeal();}if(k==='tab'){e.preventDefault();const b=hud.el.querySelector('.ar-board');b.hidden=false;hud.update();}});
    document.addEventListener('keyup',e=>{if((window.edenControls?.key(e)??e.key.toLowerCase())==='tab'&&hud)hud.el.querySelector('.ar-board').hidden=true;});
    const hideScores=()=>{if(hud)hud.el.querySelector('.ar-board').hidden=true;};window.addEventListener('blur',hideScores);document.addEventListener('visibilitychange',()=>{if(document.hidden)hideScores();});window.edenControls?.onChange(hideScores);
   }
@@ -1065,7 +1162,7 @@
    }finally{entering=false;}
   }
   function suspend(){
-   if(!active)return;if(player){player.runPoint=null;player.ramUntil=0;player.impactPoint=null;player.impactAir=false;player.impactCharge=false;}active=false;suspended=true;savedArsenal=combat.arsenal.inspect();
+   if(!active)return;endHold(null);if(player){player.runPoint=null;player.ramUntil=0;player.impactPoint=null;player.impactAir=false;player.impactCharge=false;}active=false;suspended=true;savedArsenal=combat.arsenal.inspect();
    document.body.classList.remove('battle-on');hud?.el.classList.remove('on');o.setNight(null);combat.holster();if(garden.district?.watcher)garden.district.watcher.visible=false;combat.arsenal.set(null);combat.setHudMode('');
   }
   function resume(){
@@ -1087,6 +1184,7 @@
    if(Math.floor(clock)!==Math.floor(clock-dt))restock();
    if(player&&!player.alive&&player.respawnAt!=null){const left=player.respawnAt-clock;if(left<=0)respawnPlayer();else hud.count(Math.ceil(left));}
    updateRunTackle(dt);
+   updateHold();
    for(const b of bots)updateBot(b,dt);
    updateGlints(dt);
    if(player)updatePlayer(dt);
@@ -1126,7 +1224,7 @@
    // Something outside the match hurts you (the office crowd): ordinary damage, shields first.
    hurtPlayer(amount,from=null){if(!active||!player?.alive)return;const dir=from?posOf(player).clone().sub(from).setY(0).normalize():null;damage(player,amount,null,{weapon:'melee',...(dir?{dir}:{})});},
    fallDamage(d){if(active&&player?.alive&&d>0)damage(player,d,null,{kind:'fall'});},
-   tackle,doors:()=>doors.map(d=>({x:d.x,z:d.z,open:+Math.max(...d.leaves.map(l=>Math.abs(l.a))).toFixed(2),broken:d.leaves.every(l=>l.gone)})),smashDoor:i=>smashDoor(doors[i],new T.Vector3(0,0,1)),
+   tackle,heldStrike,hold:()=>player?.hold?{name:player.hold.b.name,t:+player.hold.t.toFixed(2),punches:player.hold.punches,finishing:player.hold.finishing,pinned:!!player.hold.b.model.motion?.pinned?.()}:null,releaseHold:()=>endHold('released'),holdEnded:()=>player?.holdEnded||null,doors:()=>doors.map(d=>({x:d.x,z:d.z,open:+Math.max(...d.leaves.map(l=>Math.abs(l.a))).toFixed(2),broken:d.leaves.every(l=>l.gone)})),smashDoor:i=>smashDoor(doors[i],new T.Vector3(0,0,1)),
    onExplosion(p,radius,dmg){if(!active)return;
     // The blast throws loot and jolts chests.
     for(const l of loot){if(l.item.type==='page')continue;const d=l.group.position.distanceTo(p);if(d<radius*1.3){const out=l.group.position.clone().sub(p).setY(0);if(out.lengthSq()<1e-4)out.set(rand(-1,1),0,rand(-1,1));out.normalize().multiplyScalar(6*(1-d/(radius*1.3))+1);l.vel=out.add(new T.Vector3(0,4+rand(0,2),0));l.y+=.05;}}

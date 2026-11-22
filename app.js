@@ -819,7 +819,7 @@ combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,
  onAction(action,weapon,duration){const B=playerBody;if(!B)return;if(action==='holster'){B.stopAnim('pistolReload',.12);return;}const id=action==='shoot'?'pistolShoot':action==='reload'?'pistolReload':action==='swing'?'swingA':action==='throw'?'throw':null;if(id)B.anim(id,{fade:.12,mask:'upper',arms:true,weight:.8,speed:duration?(window.GardenAnim?.duration(id)||duration)/duration:1});},
  // Eden is a safe zone: weapons come out only beyond the hidden door (the open match and the firing range).
  canAct:()=>state.ready&&!modalOpen()&&!expedition?.active()&&!arena?.active()&&!pockets?.inside(camera.position)&&targetPosition.z<garden.road.door&&(battle?.canAct()??true),
- shotHook:(...a)=>horror?.shotHook?.(...a)||battle?.shotHook(...a),onExplosion:(...a)=>battle?.onExplosion(...a),
+ shotHook:(...a)=>horror?.shotHook?.(...a)||battle?.shotHook(...a),heldStrike:(...a)=>battle?.heldStrike?.(...a),onExplosion:(...a)=>battle?.onExplosion(...a),
  // The range is on the brick road beyond the door, where night falls: keep it in daylight while it is in use.
  onRange(on){if(on)garden.district;garden.nightRoad?.setOverride(on?0:null);},
  getLook(){const d=targetAim.clone().sub(targetPosition).normalize();return {yaw:Math.atan2(d.x,-d.z),pitch:Math.asin(T.MathUtils.clamp(d.y,-1,1))};},
@@ -834,6 +834,16 @@ combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,
 battle=window.createBattleArena?.({T,scene,camera,combat,garden,playerAnchor:()=>targetPosition,hitStop:ms=>hitStop(ms),
  movement:()=>({airborne:motion.inspect().airborne,momentum:movement.momentum(),velocity:walkVelocity}),
  onPlayerAction(id){playerBody?.anim?.(id,{fade:.16,mask:'upper',arms:true,weight:.65,speed:1.4});},
+ // Ground hold (battle-arena.js): settle onto the one you tackled, crouched over them; each blow is an IK punch at
+ // their head (character-motion.js punch) with a jolt through the view, the axe finisher a full swing.
+ mount:shove,
+ onHold(on){movement.crouchHeld=!!on;if(on){walkVelocity.set(0,0,0);sway.bump(.6,0);hitStop(40);}requestDraw();},
+ onHoldStrike({kind,point,hand=1,killed=false}){
+  if(kind==='punch'){playerBody?.strikeAt?.(point);sway.bump(.25,hand);}
+  else if(kind==='punchLand'){sway.bump(killed?1:.55,-hand);}
+  else if(kind==='axe'){playerBody?.anim?.('swingA',{fade:.06,mask:'upper',arms:true,weight:.9,speed:1.2});sway.bump(.4,0);}
+  else if(kind==='axeLand'){sway.bump(1.4,0);footsteps?.land(surfaceAt(targetPosition),1);}
+  requestDraw();},
  onRunTackle(){sway.bump(.7,0);hitStop(45);playerBody?.anim?.('push',{fade:.12,loop:false,speed:2.2,mask:'upper',weight:.7});walkVelocity.multiplyScalar(.7);requestDraw();},
  onMomentumLanding(){sway.bump(.85,0);hitStop(65);playerBody?.anim?.('jumpLand',{fade:.05,speed:2});footsteps?.land(surfaceAt(targetPosition),.9);requestDraw();},
  terrainY:(x,z)=>groundHeight(new T.Vector3(x,0,z)),layout:window.nightLayout,requestDraw,hudHost:stage.parentElement,

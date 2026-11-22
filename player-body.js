@@ -160,6 +160,8 @@
    // What you hold, gripped in both hands and pointed where you look (character-motion.js hold/aimAt).
    hold(mesh,id){heldMesh=mesh;heldId=id;if(model)model.motion.hold?.(mesh,id);requestDraw();},
    grab(point){if(!model?.root.visible||!point||point.distanceTo(camera.position)>1.6)return 0;grabPoint=point.clone();grabUntil=clock+.55;requestDraw();return 230;},
+   // A blow at a point (the ground hold's punches): the arm reaches it by IK; returns the seconds until it lands.
+   strikeAt(point){if(!model||physicsActive||!point)return 0;guardUntil=0;const land=model.motion.punch(point);requestDraw();return land;},
    press(down){if(!punchHold){if(down)api.punch();return;}if(down)punchHold.down();else punchHold.up();},
    // heavy: a held punch that hits twice as hard and knocks people over more often.
    punch(heavy=false){
