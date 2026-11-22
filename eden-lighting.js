@@ -9,7 +9,8 @@ window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=fals
 // camera turns crossed that), over a slightly larger area so coverage near the player is unchanged, and never more
 // often than every 120 ms. That is about a fifth of the shadow passes.
 const SHADOW_STEP=2.5,SHADOW_GAP=120;let shadowAt=-1e9,shadowPending=false;
-const maxSize=Math.min(4096,renderer.capabilities.maxTextureSize),dayHalf=mobile?20:25;let half=dayHalf,size=mobile?2048:maxSize,texel=2*half/size,step=texel*Math.max(1,Math.round(SHADOW_STEP/texel));
+// The GPU's own limit: phones lower capabilities.maxTextureSize to shrink image uploads (app.js), not shadow maps.
+const maxSize=Math.min(4096,(()=>{try{const gl=renderer.getContext();return gl.getParameter(gl.MAX_TEXTURE_SIZE)||renderer.capabilities.maxTextureSize;}catch{return renderer.capabilities.maxTextureSize;}})()),dayHalf=mobile?20:25;let half=dayHalf,size=mobile?2048:maxSize,texel=2*half/size,step=texel*Math.max(1,Math.round(SHADOW_STEP/texel));
  const offset=original.position.clone(),look=new T.Matrix4().lookAt(offset,new T.Vector3(),new T.Vector3(0,1,0)),toLight=look.clone().invert();
  const forward=new T.Vector3(),centre=new T.Vector3();
  scene.add(sun.target);
