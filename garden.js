@@ -157,13 +157,17 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  const snake=window.createTreeSnake(T,scene,{bark,reduced,model:heroModel,viper:viperModel,onChange});assetJobs.push(snake.ready);
  // The night section (pyramid court, district, night woodland) is built only when the viewer heads for the road
  // entrance or an expedition starts, one piece per frame so the build never lands as a single long stall.
- let pyramid=null,district=null,nightSteps=null,lastViewer=null,skyMoving=false,lastTime=0;
+ let pyramid=null,district=null,castle=null,nightSteps=null,lastViewer=null,skyMoving=false,lastTime=0;
  // The garden is enclosed in a painted sky box (eden-skybox.js); a hidden door behind the "where is god ?" sign opens
  // onto the brick road. Its south and west walls stand beyond the black-box valley (black-box.js) so the valley stays inside.
  const skybox=window.createEdenSkybox(T,scene,{sky,roadX,reduced,bounds:{minX:-28,maxX:23,minZ:-21.5,maxZ:59}});
  const nightBuilders=[
   ()=>{pyramid=window.createRoadPyramid(T,scene,{roadX,roadEnd,stone,onChange,reduced});},
-  ()=>{district=window.createNightDistrict(T,scene,{stone,leafMat,layout:window.nightLayout,reduced});window.mergeStaticMeshes?.(T,district.root,{skip:o=>o.name.startsWith('Lost page')||o.userData.landmarkModel});},
+  ()=>{district=window.createNightDistrict(T,scene,{stone,leafMat,layout:window.nightLayout,reduced});window.mergeStaticMeshes?.(T,district.root,{skip:o=>o.name.startsWith('Lost page')||o.userData.landmarkModel})
+   // The castle (castle.js) stands in the district's empty south-east corner. Its collision joins the district's, so
+   // walking and parkour treat its floors, stairs and walls like any other building; scenery keeps off its footprint.
+   castle=window.createCastle?.(T,district.root,{x:87,z:-93})||null;
+   if(castle){district.walls.push(...castle.walls);district.surfaces.push(...castle.surfaces);const clear=district.clearGround;district.clearGround=(x,z)=>castle.covers(x,z,4)||clear(x,z);}},
   ()=>{nightRoad=window.createNightRoad(T,scene,{sections:roadSections,roadX,roadStart,nightStart:skybox.door.z,roadLength,clearingStart:-120,district,sky,bark,forest:flora.forest,stone,roadMaterial,vergeMaterial,clouds:garden.children.filter(node=>node.isSprite),reduced,mobile});roadFirst=-1;if(lastViewer)updateRoad(lastViewer.position);onChange();}
  ];
  // Back in the garden the night section is hidden again, exactly as before it was first built.
@@ -172,7 +176,7 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  const nightNear=p=>p.z<doorZ+6;
  function buildNight(all=false){nightSteps??=[...nightBuilders];while(nightSteps.length){nightSteps.shift()();if(!all)break;}}
  const nightBuilt=()=>!!nightRoad;
- return {snake,skybox,get nightRoad(){return nightRoad;},get pyramid(){buildNight(true);return pyramid;},get district(){buildNight(true);return district;},nightBuilt,
+ return {snake,skybox,get castle(){return castle;},get nightRoad(){return nightRoad;},get pyramid(){buildNight(true);return pyramid;},get district(){buildNight(true);return district;},nightBuilt,
   // prewarm.js: one Beyond Eden build step per call, in idle time, so its lights exist before its shaders compile.
   warmNight(){buildNight();return !!nightSteps&&!nightSteps.length;},
   ready:Promise.allSettled(assetJobs),constrain(position,previous,feet=null,body=null){
@@ -183,7 +187,7 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
   if(position.z>26&&!window.edenValley.reaches(position.x,position.z)){if(previous.z>26)position.copy(previous);else position.z=26;}
   return position;
  },road:{x:roadX,start:roadStart,end:roadEnd,door:skybox.door.z,inspect:()=>({first:roadFirst,sections:roadSections.length,near:roadStart-roadFirst*roadLength,far:Math.max(roadEnd,roadStart-(roadFirst+roadSections.length)*roadLength)})},update(time,viewer,active=true){
-  if(viewer){lastViewer=viewer;if(activeGrass.update(viewer.position))onChange();flora.setVisible(viewer.position.z>-45);flora.lod(viewer.position,viewer);if(!nightBuilt()&&(nightSteps||nightNear(viewer.position))){buildNight();onChange();}updateRoad(viewer.position);sky.position.copy(viewer.position);skyMoving=skybox.update(time,viewer,Math.min(.05,Math.max(0,time-lastTime)));lastTime=time;snake.update(time,viewer,active);if(nightBuilt()){const near=nightNear(viewer.position);nightRoad.setEnabled(near);district.root.visible=near;nightRoad.update(time,viewer,active);pyramid.update(viewer,time);if(near)district.update(time,viewer,nightRoad.amount);}}
+  if(viewer){lastViewer=viewer;if(activeGrass.update(viewer.position))onChange();flora.setVisible(viewer.position.z>-45);flora.lod(viewer.position,viewer);if(!nightBuilt()&&(nightSteps||nightNear(viewer.position))){buildNight();onChange();}updateRoad(viewer.position);sky.position.copy(viewer.position);skyMoving=skybox.update(time,viewer,Math.min(.05,Math.max(0,time-lastTime)));lastTime=time;snake.update(time,viewer,active);if(nightBuilt()){const near=nightNear(viewer.position);nightRoad.setEnabled(near);district.root.visible=near;nightRoad.update(time,viewer,active);pyramid.update(viewer,time);if(near){district.update(time,viewer,nightRoad.amount);castle?.update(viewer);}}}
   if(reduced)return;wind.value=time;flora.update(time);waterUniforms.time.value=time;dust.rotation.y=Math.sin(time*.025)*.07;
  },get animating(){return skyMoving;},foliage:flora.leaves,flora,sky,get grassMesh(){return activeGrass.mesh;},pond:{water,lilies,time:waterUniforms.time,bed:groundLitter},stones,stoneSpots,
   // Photoreal: a denser, taller field of the same scanned blades, built the first time it is asked for.

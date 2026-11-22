@@ -1,0 +1,6 @@
+Castle textures, Poly Haven, CC0 1.0 (public domain), downloaded 2026-11-21 (1k diffuse and OpenGL normal, re-saved as WebP):
+wall = castle_wall_varriation, inner = castle_wall_slates, planks = brown_planks_05, cobble = cobblestone_floor_06.
+https://polyhaven.com/textures
+props/*.glb: made on this Mac by the Break Thy Rule asset workshop (Draw Things SDXL image -> Modly Hunyuan3D-2 Mini
+Turbo mesh -> Blender cleanup), architecture catalog jobs of 2026-11-21: plain-bronze-suit-of-armour,
+old-wood-four-poster-bed, old-granite-chimney-stack (each v001).
