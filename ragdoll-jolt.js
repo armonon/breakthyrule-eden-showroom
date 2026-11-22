@@ -178,10 +178,13 @@ export function createRagdoll(world, T, model, {groupId=null}={}) {
       setMotors(active, active ? .35 : 1);
     },
     // Active mode: drive joints toward the rig's current procedural pose, with the pelvis pulled to its target.
-    drive(k) {
+    // targetVelocity (optional): how fast the animated pelvis is moving, so a running body is damped toward its run
+    // rather than toward standing still (damping absolute velocity makes a moving target lag a metre behind).
+    drive(k, targetVelocity = null) {
       loadPose(); setMotors(true, k); ragdoll.DriveToPoseUsingMotors(pose); ragdoll.Activate();
       const pelvis = ids[0], at = posOf(pelvis), vel = velOf(pelvis), wn = spinOf(pelvis), rot = rotOf(pelvis);
       const off = tmpV.copy(P[0]).sub(at), stiffness = 90 * k, damping = 2 * Math.sqrt(stiffness);
+      if (targetVelocity) vel.sub(targetVelocity);
       jv.Set(totalMass * (stiffness * off.x - damping * vel.x), totalMass * (stiffness * off.y + 9.81 * k - damping * vel.y), totalMass * (stiffness * off.z - damping * vel.z));
       bodies.AddForce(pelvis, jv);
       const distance = off.length(), err = tmpQ.copy(Q[0]).multiply(rot.invert()); if (err.w < 0) err.set(-err.x, -err.y, -err.z, -err.w);
@@ -191,6 +194,12 @@ export function createRagdoll(world, T, model, {groupId=null}={}) {
       return distance;
     },
     limp() { setMotors(false); },
+    // Another blow while already simulating: add impulse(y) to each body's velocity, y above the feet.
+    push(impulse) {
+      if (!inWorld) return false; const base = group.getWorldPosition(new T.Vector3()).y;
+      ids.forEach(id => { const v = velOf(id).add(impulse(posOf(id).y - base)); jv.Set(v.x, v.y, v.z); bodies.SetLinearVelocity(id, jv); });
+      ragdoll.Activate(); return true;
+    },
     // Bodies back onto the bones. Unmapped bones (spine03, clavicles, wrists, head, toes) ride rigidly with their parents.
     apply() {
       group.updateWorldMatrix(true, false); group.getWorldQuaternion(groupQ); invGroup.copy(groupQ).invert();
