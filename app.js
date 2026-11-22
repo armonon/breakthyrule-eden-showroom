@@ -232,12 +232,20 @@ function fallback(retry){if(retry&&retryLoad())return;instagramSlideshow?.destro
 if(!window.THREE){fallback(true);return;}
 const T=THREE,stage=$('scene');let renderer;
 const renderProfile=edenRenderProfile({width:stage.clientWidth}),mobileDevice=renderProfile.mobile;
+// After a lost graphics context (see webglcontextlost below) the reloaded page draws a little lighter for a while.
+const recoveringGL=(()=>{try{return Date.now()-(Number(sessionStorage.getItem('eden-gl-lost'))||0)<10*60000;}catch{return false;}})();
+if(recoveringGL&&mobileDevice)renderProfile.max=Math.min(renderProfile.max,.75);
 // Layout reads belong to resize observers, not to every projected HUD label.
 const viewport={width:stage.clientWidth,height:stage.clientHeight};let shelfWidth=160;
 new ResizeObserver(entries=>{const entry=entries[0];if(entry.contentRect.width>0)shelfWidth=entry.contentRect.width;}).observe($('shelf-actions'));
 try{renderer=new T.WebGLRenderer({alpha:true,antialias:renderProfile.antialias,powerPreference:'high-performance'});}catch{fallback();return;}
 renderer.setPixelRatio(renderProfile.max);renderer.setSize(stage.clientWidth,stage.clientHeight);renderer.setClearColor(0xc7d9b8,0);renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.AgXToneMapping;renderer.toneMappingExposure=1.5;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;stage.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Garden of Eden with a sunlit fruit tree, wildflowers, a reflective pond, stone paths and the Break Thy Rule collection in an open garden pavilion.');renderer.domElement.setAttribute('role','img');
 window.showroomEnableKTX2(renderer);
+// Phones: three.js shrinks any image texture larger than maxTextureSize as it uploads it. At a phone's 1x drawing
+// ratio a 512 px map is about screen-sized, and every texture here is uncompressed RGBA (about 1.4 MB at 512 px with
+// mips, 5.6 MB at 1024, 22 MB at 2048). Eden alone was ~650 MB of WebGL memory and Beyond Eden ~2 GB, far past what
+// iOS Safari allows a tab; this cap is the largest single saving. Shadow maps are sized separately and unaffected.
+if(mobileDevice)renderer.capabilities.maxTextureSize=Math.min(renderer.capabilities.maxTextureSize,512);
 window.edenBaked=window.createEdenBakedLight(T,{onShadowChange:()=>{renderer.shadowMap.needsUpdate=true;}}); // before any material compiles
 const scene=new T.Scene();scene.background=null;
 const camera=new T.PerspectiveCamera(44,stage.clientWidth/stage.clientHeight,.05,220),aim=new T.Vector3(0,1.2,-1.4),targetAim=aim.clone(),targetPosition=new T.Vector3();
@@ -274,7 +282,7 @@ let graphics='high',photoreal=null,atmosphere=null,realism={clouds:0,dof:0},real
 function setGraphics(level,{save=true}={}){
  const q=GRAPHICS[level]||GRAPHICS.medium;graphics=GRAPHICS[level]?level:'medium';postStep=0;
  post.set({enabled:q.post,samples:q.samples,ao:q.ao,bloom:q.bloom,rays:q.rays,flare:q.flare,glare:q.glare,exposure:q.exposure,haze:q.haze,wet:q.wet,motionBlur:reduced?0:q.motionBlur});realism={clouds:q.clouds,dof:q.dof};atmosphere?.set({dust:q.air,fireflies:q.air,cones:q.air,life:q.air});
- quality.setMax(Math.min(devicePixelRatio,q.ratio));lighting.set({shadowSize:q.shadow});renderer.shadowMap.needsUpdate=true;photoreal?.set(q.photo||false);
+ quality.setMax(Math.min(devicePixelRatio,q.ratio,mobileDevice?renderProfile.max:Infinity));lighting.set({shadowSize:q.shadow});renderer.shadowMap.needsUpdate=true;photoreal?.set(q.photo||false);
  if(save){try{localStorage.setItem('eden-graphics',graphics);}catch{}requestDraw();}
 }
 {let saved=null;try{saved=localStorage.getItem('eden-graphics');}catch{}setGraphics(GRAPHICS[saved]?saved:autoGraphics(),{save:false});}
@@ -548,7 +556,9 @@ function updateMatchGate(){
  if(worlds&&!worlds.loading()&&!pockets?.inside(camera.position)){
   const there=targetPosition.z<garden.road.door-.8,home=targetPosition.z>garden.road.door+.3;
   if(there&&worlds.world()==='eden'){walkVelocity.set(0,0,0);worlds.enter('beyond',{title:'BEYOND EDEN',sub:'THE OLD CIVILIZATION · EIGHT PAGES ARE WAITING',kicker:'THROUGH THE HIDDEN DOOR',
-   steps:[async()=>{garden.district;garden.pyramid;await (window.edenBaked?.loadBeyond?.()??window.edenBaked?.beyondReady);const d=garden.district;d.prepare(nightLayout.landmarks.map(s=>s.id));const start=performance.now();while(Object.values(d.inspect().models).some(s=>s==='waiting'||s==='loading')){if(performance.now()-start>90000)break;d.update(performance.now()/1000,camera,0);await new Promise(r=>setTimeout(r,50));}},async()=>{if(!battle.busy()&&!expedition?.active()&&!combat?.inRange()&&!arena?.active()&&state.view==='free')await battle.enter();}]});return;}
+   steps:[async()=>{garden.district;garden.pyramid;await (window.edenBaked?.loadBeyond?.()??window.edenBaked?.beyondReady);const d=garden.district,ids=nightLayout.landmarks.filter(s=>!mobileDevice||Math.hypot(s.x-garden.road.x,s.z-garden.road.door)<60).map(s=>s.id);d.prepare(ids);const start=performance.now();
+    // Phones only wait for the landmarks near the door; the rest stream in (and out) as the player walks (night-district.js).
+    while(ids.some(id=>['waiting','loading'].includes(d.inspect().models[id]))){if(performance.now()-start>90000)break;d.update(performance.now()/1000,camera,0);await new Promise(r=>setTimeout(r,50));}},async()=>{if(!battle.busy()&&!expedition?.active()&&!combat?.inRange()&&!arena?.active()&&state.view==='free')await battle.enter();}]});return;}
   if(home&&worlds.world()==='beyond'){if(battle.active())battle.suspend();worlds.enter('eden',{title:'GARDEN OF EDEN',sub:'IN THE BEGINNING',kicker:'BACK THROUGH THE DOOR',min:500});return;}
  }
  // The office: once the eight pages are in, walking into the pyramid starts the office (locked for good).
@@ -605,19 +615,21 @@ function updateFeel(dt){
  const diveDrop=movement.dive?Math.min(1,movement.dive.t*5)*.55:0,prone=movement.proneT>0?Math.min(1,movement.proneT/.25)*.75:0;
  return {drop:movement.crouchAmount*.55+(movement.slide?.kind==='slide'&&!movement.slide.belly?.16*(1-movement.slide.t/movement.slide.dur):0)+Math.max(diveDrop,prone)+deathDrop-(thirdK<.05?parkour?.lift()||0:0),fov:expeditionPrefs()&&(!expeditionPrefs().cameraEffects||!expeditionPrefs().speedFov)?0:fovKick,speed,lean:lean+deathDrop*.25+(movement.dive?.04:0)+(parkour?.lean()||0),slide:Math.max(slideK,movement.dive?.35:0),sprint:sprinting?1:0,weight:combat?.weight?.()||0,ads:combat?.ads?.()||0};
 }
-function setMovement(key,pressed){
+// source 'touch': a touch stick holds sprint like a key held down, whatever the keyboard sprint mode (a toggle there
+// flipped sprint on every crossing of the stick's edge and ignored the release, so it stuck on or off).
+function setMovement(key,pressed,source){
  if(pressed&&(!state.ready||modalOpen()||expedition&&!expedition.canMove()))return;
  if(key===' ')key='space';
  // Space stays held while pressed (player-movement.js: the longer it is held, the higher the jump).
  if(key==='space'){if(pressed){if(!keys.has(key)){keys.add(key);movement.jump();}}else keys.delete(key);if(state.ready)requestDraw();return;}
  if(!moveKeys.has(key)&&key!=='shift')return;
- if(pressed&&moveKeys.has(key))renderer.domElement.focus({preventScroll:true});
- if(key==='shift'&&expeditionPrefs()?.sprintMode==='toggle'){if(pressed){if(keys.has(key))keys.delete(key);else keys.add(key);}requestDraw();return;}
+ if(pressed&&moveKeys.has(key)&&source!=='touch'&&document.activeElement!==renderer.domElement)renderer.domElement.focus({preventScroll:true});
+ if(key==='shift'&&source!=='touch'&&expeditionPrefs()?.sprintMode==='toggle'){if(pressed){if(keys.has(key))keys.delete(key);else keys.add(key);}requestDraw();return;}
  if(pressed)keys.add(key);else keys.delete(key);
  if(state.ready)requestDraw();
 }
-document.addEventListener('keydown',event=>{if(modalOpen()||(window.edenControls?.blockedModifiers(event)??(event.ctrlKey||event.metaKey||event.altKey||event.isComposing))||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;const mapped=window.edenControls?window.edenControls.key(event):(event.code==='Space'?' ':event.key.toLowerCase()),key=mapped===' '?'space':mapped;if(key==='chat'&&!event.repeat&&!expedition?.active()&&multiplayer?.openChat?.()){event.preventDefault();keys.clear();walkVelocity.set(0,0,0);return;}if(key==='view'&&!event.repeat){event.preventDefault();lastThirdToggle=0;setThird(!thirdOn);return;}if(key==='use'&&!event.repeat){event.preventDefault();const r=stage.getBoundingClientRect();interactWithScene({clientX:r.left+r.width/2,clientY:r.top+r.height/2,pointerType:'mouse'});return;}if((['f','g','q'].includes(key)&&fistsEngaged())||(['f','g'].includes(key)&&!event.repeat&&fistsReady()&&fists.nearby?.())){event.preventDefault();event.stopImmediatePropagation();fists.key(key,true,event.repeat);requestDraw();return;}if((key==='a'||key==='d')&&state.ready&&!event.repeat&&!arena?.active())movement.tapDodge(key);if(key==='t'&&!event.repeat&&!combat?.armed()){event.preventDefault();playEmote();return;}if(key==='v'&&thirdOn&&!event.repeat){event.preventDefault();thirdSide*=-1;requestDraw();return;}if(key==='c'&&!event.repeat)parkour?.crouchPressed();if(key==='c'&&state.ready&&!arena?.active()&&(!expedition?.active()||expedition.canMove())&&!playerBail?.active){event.preventDefault();if(!event.repeat){movement.crouchHeld=expeditionPrefs()?.crouchMode==='toggle'?!movement.crouchHeld:true;if(movement.crouchHeld)movement.startSlide();}return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&garden.skybox.distance(targetPosition)<3.8){event.preventDefault();toggleDoor();return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&!battle?.active()&&secrets?.interact()){event.preventDefault();return;}if(state.ready&&key==='m'&&!event.repeat&&ambience){ambience.setMuted(!ambience.muted);secrets?.notify(ambience.muted?'Garden ambience muted (M)':'Garden ambience on (M)');return;}if((moveKeys.has(key)||key==='shift'||key==='space')&&state.ready){if(key==='space'&&['BUTTON','A'].includes(event.target.tagName))return;event.preventDefault();if(!event.repeat)setMovement(key,true);}});
-document.addEventListener('keyup',event=>{const mapped=window.edenControls?window.edenControls.key(event):(event.code==='Space'?' ':event.key.toLowerCase()),key=mapped===' '?'space':mapped;if(key==='c'&&expeditionPrefs()?.crouchMode!=='toggle')movement.crouchHeld=false;if(fists&&['f','g','q'].includes(key))fists.key(key,false);setMovement(key,false);});
+document.addEventListener('keydown',event=>{if(modalOpen()||(window.edenControls?.blockedModifiers(event)??(event.ctrlKey||event.metaKey||event.altKey||event.isComposing))||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;const mapped=window.edenControls?window.edenControls.key(event):(event.code==='Space'?' ':event.key.toLowerCase()),key=mapped===' '?'space':mapped;if(key==='chat'&&!event.repeat&&!expedition?.active()&&multiplayer?.openChat?.()){event.preventDefault();keys.clear();walkVelocity.set(0,0,0);return;}if(key==='view'&&!event.repeat){event.preventDefault();lastThirdToggle=0;setThird(!thirdOn);return;}if(key==='use'&&!event.repeat){event.preventDefault();const r=stage.getBoundingClientRect();interactWithScene({clientX:r.left+r.width/2,clientY:r.top+r.height/2,pointerType:'mouse'});return;}if((['f','g','q'].includes(key)&&fistsEngaged())||(['f','g'].includes(key)&&!event.repeat&&fistsReady()&&fists.nearby?.())){event.preventDefault();event.stopImmediatePropagation();fists.key(key,true,event.repeat);requestDraw();return;}if((key==='a'||key==='d')&&state.ready&&!event.repeat&&!event.edenTouchAction&&!arena?.active())movement.tapDodge(key);if(key==='t'&&!event.repeat&&!combat?.armed()){event.preventDefault();playEmote();return;}if(key==='v'&&thirdOn&&!event.repeat){event.preventDefault();thirdSide*=-1;requestDraw();return;}if(key==='c'&&!event.repeat)parkour?.crouchPressed();if(key==='c'&&state.ready&&!arena?.active()&&(!expedition?.active()||expedition.canMove())&&!playerBail?.active){event.preventDefault();if(!event.repeat){movement.crouchHeld=expeditionPrefs()?.crouchMode==='toggle'?!movement.crouchHeld:true;if(movement.crouchHeld)movement.startSlide();}return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&garden.skybox.distance(targetPosition)<3.8){event.preventDefault();toggleDoor();return;}if(state.ready&&key==='e'&&!event.repeat&&!expedition?.active()&&!battle?.active()&&secrets?.interact()){event.preventDefault();return;}if(state.ready&&key==='m'&&!event.repeat&&ambience){ambience.setMuted(!ambience.muted);secrets?.notify(ambience.muted?'Garden ambience muted (M)':'Garden ambience on (M)');return;}if((moveKeys.has(key)||key==='shift'||key==='space')&&state.ready){if(key==='space'&&['BUTTON','A'].includes(event.target.tagName))return;event.preventDefault();if(!event.repeat)setMovement(key,true,event.edenTouchAction?'touch':undefined);}});
+document.addEventListener('keyup',event=>{const mapped=window.edenControls?window.edenControls.key(event):(event.code==='Space'?' ':event.key.toLowerCase()),key=mapped===' '?'space':mapped;if(key==='c'&&expeditionPrefs()?.crouchMode!=='toggle')movement.crouchHeld=false;if(fists&&['f','g','q'].includes(key))fists.key(key,false);setMovement(key,false,event.edenTouchAction?'touch':undefined);});
 for(const button of $('social-move').querySelectorAll('button')){button.onpointerdown=event=>{if(event.button!==0)return;event.preventDefault();button.setPointerCapture(event.pointerId);setMovement(button.dataset.key,true);};button.onpointerup=button.onpointercancel=button.onlostpointercapture=()=>setMovement(button.dataset.key,false);}
 document.addEventListener('focusin',event=>{if(modalOpen()||event.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName)){keys.clear();if(state.ready)requestDraw();}});
 window.addEventListener('blur',()=>{keys.clear();drag=null;movement.crouchHeld=false;fists?.key('q',false);if(state.ready)requestDraw();});
@@ -671,7 +683,18 @@ new ResizeObserver(()=>{viewport.width=stage.clientWidth;viewport.height=stage.c
 function pageVisibilityChanged(){keys.clear();drag=null;previous=0;quality.pause();if(!pageActive()){cancelAnimationFrame(frame);frame=0;}else requestDraw();}
 document.addEventListener('visibilitychange',pageVisibilityChanged);
 document.addEventListener('btr:page-visibility',pageVisibilityChanged);
-renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();fallback();});
+// iOS drops the WebGL context under memory pressure (or when the tab was backgrounded too long). three.js cannot rebuild
+// every texture and program in place, so: say what happened, remember it, and reload once into a lighter Eden instead
+// of leaving the flat fallback up. A second loss within a minute keeps the fallback (something is wrong on this device).
+renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();
+ let last=0;try{last=Number(sessionStorage.getItem('eden-gl-lost'))||0;sessionStorage.setItem('eden-gl-lost',String(Date.now()));}catch{}
+ console.warn('Eden lost its graphics context',{world:worlds?.world?.()});
+ if(Date.now()-last<60000){fallback();return;}
+ state.ready=false;cancelAnimationFrame(frame);frame=0;keys.clear();
+ const note=document.createElement('div');note.id='eden-gl-recover';note.setAttribute('role','status');note.textContent='Graphics memory ran out · reloading Eden…';
+ note.style.cssText='position:fixed;inset:0;z-index:100000;display:grid;place-items:center;background:#0b0f0c;color:#e8eadf;font:600 13px/1.4 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:24px';
+ document.body.append(note);setTimeout(()=>location.reload(),900);
+});
 function enterMultiplayer(){if(expedition?.active())return;if(!state.ready){pendingMultiplayerSpawn=true;return;}pendingMultiplayerSpawn=false;motion.reset();freeView();targetPosition.set(-2+Math.random()*4,1.7,11+Math.random()*3);targetAim.copy(targetPosition).add(new T.Vector3(0,-.15,-5));camera.position.copy(targetPosition);aim.copy(targetAim);requestDraw();}
 function focusVisitor(p){
  freeView();keys.clear();motion.reset();
@@ -871,7 +894,7 @@ const touch=window.createTouchControls?.({host:stage.parentElement,combat:()=>co
 const edenMobile=window.createEdenMobile?.({host:stage.parentElement,ready:()=>state.ready,
  active:()=>(worlds?.world()??'eden')==='eden'&&!expedition?.active()&&!battle?.active()&&!combat?.armed()&&!arena?.active(),
  blocked:()=>modalOpen()||worlds?.loading()||!$('social-panel').hidden,
- move:(key,pressed)=>setMovement(key,pressed),jump(pressed=true){if(pressed)freeView();setMovement('space',pressed);return pressed?()=>setMovement('space',false):undefined;},jumpUp(){setMovement('space',false);},
+ move:(key,pressed)=>setMovement(key,pressed,'touch'),jump(pressed=true){if(pressed)freeView();setMovement('space',pressed);return pressed?()=>setMovement('space',false):undefined;},jumpUp(){setMovement('space',false);},
  crouch(held){if(held){parkour?.crouchPressed();freeView();movement.crouchHeld=true;movement.startSlide();}else movement.crouchHeld=false;if(state.ready)requestDraw();},
  view(){freeView();lastThirdToggle=0;setThird(!thirdOn);},isThird:()=>thirdOn,tap:event=>horror?.interact?.()||interactWithScene(event),
  stop(){keys.clear();walkVelocity.set(0,0,0);movement.crouchHeld=false;drag=null;if(state.ready)requestDraw();},

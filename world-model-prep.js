@@ -2,11 +2,14 @@
 // Prepare newly decoded display models before revealing them in the world.
 // Geometry is untouched; product inspection uses its own full-resolution load.
 (function(root){
- root.prepareWorldModel=async function(T,model,{renderer,camera,scene,maxTextureSize=1024}={}){
-  const sources=new Map(),textures=new Set();
-  model.traverse(o=>{for(const material of [].concat(o.material||[]))for(const value of Object.values(material))if(value?.isTexture&&!value.isCompressedTexture&&!value.isDataTexture&&!value.isRenderTargetTexture){textures.add(value);const image=value.image;if(image&&!sources.has(image))sources.set(image,[]);sources.get(image)?.push(value);}});
-  for(const [image,maps]of sources){
-   const w=image.width||image.naturalWidth,h=image.height||image.naturalHeight,k=maxTextureSize/Math.max(w,h);
+ // Shrink a freshly decoded model's images to display size. `detailSize` (optional) caps the maps that only add
+ // surface detail (normal, roughness, metalness, AO, bump) harder than colour maps; phones use it to keep
+ // Beyond Eden's landmarks within their memory budget. Returns the set of textures it looked at.
+ root.shrinkModelTextures=function(model,{maxTextureSize=1024,detailSize=maxTextureSize}={}){
+  const sources=new Map(),textures=new Set(),DETAIL=/^(normalMap|roughnessMap|metalnessMap|aoMap|bumpMap|displacementMap|clearcoatNormalMap)$/;
+  model.traverse(o=>{for(const material of [].concat(o.material||[]))for(const [slot,value] of Object.entries(material))if(value?.isTexture&&!value.isCompressedTexture&&!value.isDataTexture&&!value.isRenderTargetTexture){textures.add(value);const image=value.image;if(!image)continue;let entry=sources.get(image);if(!entry)sources.set(image,entry={maps:[],max:0});entry.maps.push(value);entry.max=Math.max(entry.max,DETAIL.test(slot)?detailSize:maxTextureSize);}});
+  for(const [image,{maps,max}]of sources){
+   const w=image.width||image.naturalWidth,h=image.height||image.naturalHeight,k=max/Math.max(w,h);
    if(!(k<1)||!root.document?.createElement)continue;
    try{
     // A canvas can be uploaded directly by WebGL. createImageBitmap(canvas)
@@ -20,6 +23,10 @@
     image.close?.();
    }catch{/* Keep the original texture if a device cannot resize it. */}
   }
+  return textures;
+ };
+ root.prepareWorldModel=async function(T,model,{renderer,camera,scene,maxTextureSize=1024}={}){
+  const textures=root.shrinkModelTextures(model,{maxTextureSize});
   // Serialize uploads and yield between them, rather than attaching several
   // garments and paying every upload during one visible render.
   for(const texture of textures){await new Promise(r=>setTimeout(r,0));renderer.initTexture?.(texture);}
