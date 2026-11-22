@@ -7,9 +7,11 @@ const librarianDialog=$('librarian-dialog');
 const uploadDialog=$('upload-dialog');
 const residentDialog=$('resident-dialog');
 function pageActive(){return window.showroomPageActive?.()??!document.hidden;}
-// Asked many times a frame; the document query runs at most once every 8 ms.
-let modalAnswer=false,modalAsked=-1e9;
-function modalOpen(){const t=performance.now();if(t-modalAsked<8)return modalAnswer;modalAsked=t;return modalAnswer=!pageActive()||!!document.querySelector('dialog[open]');}
+// Asked many times a frame. The document query reruns only when a dialog opens or closes
+// (watched below), with a half-second safety refresh, instead of every few milliseconds.
+let modalAnswer=false,modalAsked=-1e9,modalDirty=true;
+new MutationObserver(()=>{modalDirty=true;}).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['open']});
+function modalOpen(){if(!pageActive())return true;const t=performance.now();if(modalDirty||t-modalAsked>500){modalDirty=false;modalAsked=t;modalAnswer=!!document.querySelector('dialog[open]');}return modalAnswer;}
 let posterTurns=0,currentPoster=null;
 const posterView=posterDialog.querySelector('.poster-view');
 function fitPoster(){

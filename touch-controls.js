@@ -34,32 +34,44 @@
   listen(stick,'pointerdown',e=>{if(sid!==null||!begin(e))return;sid=e.pointerId;origin=stickOrigin();cap(stick,sid);updateStick(e);});
   listen(stick,'pointermove',updateStick,{passive:false});
   for(const type of ['pointerup','pointercancel','lostpointercapture'])listen(stick,type,e=>{if(e.pointerId===sid)endStick();});
-  listen(pad,'pointerdown',e=>{if(lid!==null||!begin(e))return;lid=e.pointerId;lastLook={x:e.clientX,y:e.clientY};cap(pad,lid);});
-  listen(pad,'pointermove',e=>{if(e.pointerId!==lid||!lastLook)return;if(!canInput()||(e.pointerType==='mouse'&&!(e.buttons&1))){endLook();return;}e.preventDefault();const dx=e.clientX-lastLook.x,dy=e.clientY-lastLook.y;lastLook={x:e.clientX,y:e.clientY};look(dx,dy);},{passive:false});
+  // Phone look: a touch pixel is worth more than a mouse pixel, and fast swipes turn further
+  // (gentle acceleration) so one thumb can turn around while slow drags stay precise.
+  // A small dead zone keeps a tap from nudging the view; the movement past it is kept.
+  const LOOK_GAIN=1.7,LOOK_DEAD=5;
+  const lookFrom=(e,from)=>{const now=e.timeStamp||performance.now();return {x:e.clientX,y:e.clientY,t:now,live:from?.live??false,sx:from?.sx??e.clientX,sy:from?.sy??e.clientY,speed:from?.speed??0};};
+  function lookMove(e,state){let dx=e.clientX-state.x,dy=e.clientY-state.y;const next=lookFrom(e,state);
+   if(!state.live){if(Math.hypot(e.clientX-state.sx,e.clientY-state.sy)<LOOK_DEAD)return state;next.live=true;const d=Math.hypot(dx,dy)||1,keep=Math.max(0,d-LOOK_DEAD)/d;dx*=keep;dy*=keep;}
+   const dt=Math.max(4,Math.min(50,next.t-state.t)),v=Math.hypot(dx,dy)/dt;next.speed=state.speed*.6+v*.4;
+   const gain=LOOK_GAIN*(1+Math.min(1.1,Math.max(0,next.speed-.35)*.7));if(dx||dy)look(dx*gain,dy*gain);return next;}
+  // A new finger always takes over looking, so a look finger iOS never released cannot block it.
+  listen(pad,'pointerdown',e=>{if(!begin(e))return;if(lid!==null)endLook();lid=e.pointerId;lastLook=lookFrom(e);cap(pad,lid);});
+  listen(pad,'pointermove',e=>{if(e.pointerId!==lid||!lastLook)return;if(!canInput()||(e.pointerType==='mouse'&&!(e.buttons&1))){endLook();return;}e.preventDefault();lastLook=lookMove(e,lastLook);},{passive:false});
   for(const type of ['pointerup','pointercancel','lostpointercapture'])listen(pad,type,e=>{if(e.pointerId===lid)endLook();});
   // The release callback is captured at press time; switching modes cannot strand a key.
   function hold(selector,start,{dragLook=false}={}){const b=q(selector);let pointer=null,last=null,release=null;
    const end=()=>{if(pointer===null)return;const id=pointer;pointer=null;last=null;b.classList.remove('on');releases.delete(b);const finish=release;release=null;finish?.();uncap(b,id);};
-   listen(b,'pointerdown',e=>{if(pointer!==null||!begin(e))return;pointer=e.pointerId;last={x:e.clientX,y:e.clientY};cap(b,pointer);b.classList.add('on');releases.set(b,end);release=start();});
-   listen(b,'pointermove',e=>{if(e.pointerId!==pointer)return;if(!canInput()||(e.pointerType==='mouse'&&!(e.buttons&1))){end();return;}e.preventDefault();if(dragLook&&last){look(e.clientX-last.x,e.clientY-last.y);last={x:e.clientX,y:e.clientY};}},{passive:false});
+   listen(b,'pointerdown',e=>{if(pointer!==null||!begin(e))return;pointer=e.pointerId;last=lookFrom(e);cap(b,pointer);b.classList.add('on');releases.set(b,end);release=start();});
+   listen(b,'pointermove',e=>{if(e.pointerId!==pointer)return;if(!canInput()||(e.pointerType==='mouse'&&!(e.buttons&1))){end();return;}e.preventDefault();if(dragLook&&last)last=lookMove(e,last);},{passive:false});
    for(const type of ['pointerup','pointercancel','lostpointercapture'])listen(b,type,e=>{if(e.pointerId===pointer)end();});
    listen(b,'click',e=>{if(e.detail===0&&canInput()){const finish=start();finish?.();}});
   }
   const heldKey=k=>{key(k,true);return()=>key(k,false);};
   hold('.tc-fire',()=>{const c=combat();if(expedition())return heldKey('g');if(c?.armed()){c.touchFire(true);return()=>c.touchFire(false);}return heldKey('f');},{dragLook:true});
-  hold('.tc-aim',()=>{combat()?.toggleZoom?.();});
-  hold('.tc-jump',()=>{if(jump){const release=jump(true);return typeof release==='function'?release:jumpUp||(()=>jump(false));}return heldKey(' ');});
-  hold('.tc-slide',()=>{if(crouch){crouch(true);return()=>crouch(false);}return heldKey('c');});
+  hold('.tc-aim',()=>{combat()?.toggleZoom?.();},{dragLook:true});
+  hold('.tc-jump',()=>{if(jump){const release=jump(true);return typeof release==='function'?release:jumpUp||(()=>jump(false));}return heldKey(' ');},{dragLook:true});
+  hold('.tc-slide',()=>{if(crouch){crouch(true);return()=>crouch(false);}return heldKey('c');},{dragLook:true});
   hold('.tc-use',()=>heldKey(expedition()?'e':'f'));
   hold('.tc-reload',()=>heldKey('r'));
   // HIT follows the keyboard melee rule: tap to bash, hold to slam. BLOCK raises the guard while held.
-  hold('.tc-melee',()=>{const c=combat();if(c?.touchMeleeDown){c.touchMeleeDown();return()=>c.touchMeleeUp();}c?.touchMelee?.();});
-  hold('.tc-guard',()=>{const c=combat();if(!c?.touchGuard)return;c.touchGuard(true);return()=>c.touchGuard(false);});
+  hold('.tc-melee',()=>{const c=combat();if(c?.touchMeleeDown){c.touchMeleeDown();return()=>c.touchMeleeUp();}c?.touchMelee?.();},{dragLook:true});
+  hold('.tc-guard',()=>{const c=combat();if(!c?.touchGuard)return;c.touchGuard(true);return()=>c.touchGuard(false);},{dragLook:true});
   hold('.tc-third',()=>{third();});
   hold('.tc-leave',()=>{reset();leave?.();});
   hold('.tc-swap',()=>{const c=combat(),ids=c?.arsenal?.inspect?.()?.owned||['axe','pistol'],guns=ids.length?ids:['pistol'];slot=(slot+1)%(guns.length+1);if(slot===guns.length){if(c?.armed())heldKey('x')();}else heldKey(String(slot+1))();});
   function sync(){if(disposed)return;const on=!!canInput(),isExpedition=!!expedition(),mode=isExpedition?'expedition':armed()?'armed':'unarmed';
-   if(lastMode!==mode){reset();lastMode=mode;}
+   // Holstering or drawing changes the buttons, not the fingers: release button holds only,
+   // so the move thumb and the look thumb keep working through SWAP.
+   if(lastMode!==mode){for(const end of [...releases.values()])end();combat()?.touchFire?.(false);lastMode=mode;}
    if(on!==shown){shown=on;el.hidden=!on;document.body.classList.toggle('touch-play',on);if(!on)reset();}
    el.classList.toggle('armed',mode!=='unarmed');el.classList.toggle('tc-expedition',isExpedition);el.classList.toggle('tc-arena',arena());document.body.classList.toggle('touch-arena',on&&arena());
    const hide=(selector,hidden)=>{const button=q(selector);if(hidden)releases.get(button)?.();button.hidden=hidden;};

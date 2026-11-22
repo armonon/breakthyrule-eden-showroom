@@ -34,3 +34,17 @@ body.entry-touch{overscroll-behavior:none;padding:0}
  box-shadow:inset 0 1px 0 #ffffff40,0 3px 12px #0000001f;text-shadow:0 1px 3px #0009;
 }
 .entry-touch .night-tools button:active,.entry-touch .entry-header .view-nav button:active{background-color:#294c3e52;border-color:#ffffffc7}
+/* Phones: a compact status block whose buttons sit above the full-screen look layer
+   (#touch-controls is z 30; the text itself stays click-through so you can look behind it). */
+.entry-touch #night-hud{z-index:31}
+.entry-touch #night-action,.entry-touch #controls-help{z-index:31}
+.entry-touch #night-hud .night-kicker{font-size:9px}
+.entry-touch #night-count{font-size:22px!important;line-height:1.05}
+.entry-touch #night-location{display:block;font-size:13px;margin-top:1px}
+.entry-touch #night-event{font-size:11px;line-height:1.3;margin:4px 0 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.entry-touch .night-tools{flex-wrap:wrap;overflow:visible;margin-top:8px}
+.entry-touch .night-tools :is(#night-bail,#night-reset){min-width:0;padding:0 12px}
+.entry-touch .entry-header>div span{display:none}
+.entry-touch #return-eden{white-space:nowrap}
+@media(max-height:500px) and (orientation:landscape){.entry-touch #night-hud{left:calc(80px + env(safe-area-inset-left));max-width:300px}.entry-touch #night-event{-webkit-line-clamp:1}}
+@media(orientation:portrait){.entry-touch #controls-help{top:12px;right:max(12px,env(safe-area-inset-right))}}

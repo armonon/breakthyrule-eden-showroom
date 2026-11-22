@@ -51,7 +51,7 @@ for(const file of ['eden-mobile.js','touch-controls.js']){
   s.fire('pointerdown');s.fire('pointermove',{clientY:-10});f.document.hidden=true;f.document.fire('visibilitychange');assert.deepEqual(f.keys(),[],'hidden document clears held input');f.document.hidden=false;f.document.fire('visibilitychange');
   s.fire('pointerdown');s.fire('pointermove',{clientY:-10});
   if(file==='eden-mobile.js'){f.setBlocked(true);f.sync();assert.deepEqual(f.keys(),[],'menu/modal interruption releases movement');}
-  else{f.setExpedition(true);f.sync();assert.deepEqual(f.keys(),[],'switching gameplay mode releases movement');const use=f.ui.querySelector('.tc-use');use.fire('pointerdown');use.fire('pointerup');assert.ok(f.keyboard.some(e=>e.type==='keydown'&&e.key==='e'),'solo interaction uses E');f.setExpedition(false);f.sync();use.fire('pointerdown');use.fire('pointerup');assert.ok(f.keyboard.some(e=>e.type==='keydown'&&e.key==='f'),'story/open-match interaction uses F');}
+  else{f.setExpedition(true);f.sync();assert.ok(f.keys().includes('w'),'switching gameplay mode (e.g. SWAP to holster) keeps the move thumb');s.fire('pointerup');assert.deepEqual(f.keys(),[],'lifting the thumb releases movement');const use=f.ui.querySelector('.tc-use');use.fire('pointerdown');use.fire('pointerup');assert.ok(f.keyboard.some(e=>e.type==='keydown'&&e.key==='e'),'solo interaction uses E');f.setExpedition(false);f.sync();use.fire('pointerdown');use.fire('pointerup');assert.ok(f.keyboard.some(e=>e.type==='keydown'&&e.key==='f'),'story/open-match interaction uses F');}
   f.api.dispose();
  });
  test(file+': sprint holds near the circle edge and survives the address bar resizing the page',()=>{

@@ -11,7 +11,7 @@ function eden(){const f=mobileFixture('eden-mobile.js'),events=[],moves=[],looks
 test('separate fingers can move, look and crouch; unrelated pointer releases cannot steal ownership',()=>{
  const f=shared(),stick=f.q('.tc-stick'),pad=f.q('.tc-look'),crouch=f.q('.tc-slide');
  f.emit(stick,'pointerdown',{pointerId:1,clientY:-8});f.emit(pad,'pointerdown',{pointerId:2});f.emit(crouch,'pointerdown',{pointerId:3});f.emit(pad,'pointermove',{pointerId:2,clientX:76,clientY:46});
- assert.equal(f.controls.inspect().keys.includes('w'),true);assert.equal(f.controls.inspect().keys.includes('Shift'),true);assert.deepEqual(f.looks,[[20,-10]]);assert.equal(f.crouches.at(-1),true);
+ assert.equal(f.controls.inspect().keys.includes('w'),true);assert.equal(f.controls.inspect().keys.includes('Shift'),true);assert.equal(f.looks.length,1);{const [dx,dy]=f.looks[0];assert.ok(Math.abs(dx/dy+2)<1e-9,'look keeps the drag direction');assert.ok(Math.hypot(dx,dy)>Math.hypot(20,10)&&Math.hypot(dx,dy)<Math.hypot(20,10)*4,'touch look is amplified within bounds');}assert.equal(f.crouches.at(-1),true);
  f.emit(stick,'pointerup',{pointerId:9});assert.equal(f.controls.inspect().stick,true);
  f.emit(stick,'pointercancel',{pointerId:1});f.emit(pad,'lostpointercapture',{pointerId:2});f.emit(crouch,'pointerup',{pointerId:3});assert.deepEqual([...f.controls.inspect().keys],[]);assert.equal(f.controls.inspect().look,false);assert.equal(f.controls.inspect().actions,0);assert.equal(f.crouches.at(-1),false);assert.equal(stick.captures.size,0);
 });
@@ -50,4 +50,13 @@ test('shared held Jump release callback runs exactly once on release or interrup
 test('Eden held Jump calls jumpUp exactly once on release or interruption',()=>{
  for(const end of ['pointerup','pointercancel','lostpointercapture','blur','dispose']){const f=eden(),button=f.q('.em-jump');f.emit(button,'pointerdown',{pointerId:4});assert.deepEqual(f.events.filter(e=>typeof e==='string'&&e.startsWith('jump')),['jump']);if(end==='dispose')f.controls.dispose();else f.emit(end==='blur'?f.root:button,end,{pointerId:4});f.emit(button,'pointerup',{pointerId:4});assert.deepEqual(f.events.filter(e=>typeof e==='string'&&e.startsWith('jump')),['jump','jumpUp'],end);}
  const f=eden();f.emit(f.q('.em-jump'),'click',{detail:0});assert.deepEqual(f.events.filter(e=>typeof e==='string'&&e.startsWith('jump')),['jump','jumpUp']);
+});
+// Phones: a new finger takes over looking (a look finger iOS never released cannot block it), a tap inside the dead
+// zone does not move the view, and holstering (a mode change) keeps the look finger alive.
+test('a new finger takes over looking, taps do not nudge the view, and mode changes keep the look finger',()=>{
+ const f=shared(),pad=f.q('.tc-look');
+ f.emit(pad,'pointerdown',{pointerId:1,clientX:50,clientY:50});f.emit(pad,'pointermove',{pointerId:1,clientX:52,clientY:51});assert.equal(f.looks.length,0,'inside the dead zone');
+ f.emit(pad,'pointerdown',{pointerId:2,clientX:100,clientY:100});f.emit(pad,'pointermove',{pointerId:1,clientX:90,clientY:50});assert.equal(f.looks.length,0,'the old finger no longer looks');
+ f.emit(pad,'pointermove',{pointerId:2,clientX:130,clientY:100});assert.equal(f.looks.length,1,'the new finger looks');
+ f.set({expedition:false,armed:true});f.tick();f.emit(pad,'pointermove',{pointerId:2,clientX:150,clientY:100});assert.equal(f.looks.length,2,'look survives a mode change');assert.equal(f.controls.inspect().look,true);
 });

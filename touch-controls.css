@@ -2,7 +2,8 @@
 #touch-controls{position:fixed;inset:0;z-index:30;pointer-events:none;touch-action:none;user-select:none;-webkit-user-select:none}
 #touch-controls[hidden]{display:none}
 #touch-controls>*{pointer-events:auto;touch-action:none}
-.tc-look{position:absolute;right:0;top:0;width:55%;height:100%;background:transparent}
+/* Look anywhere that is not a control: the whole screen behind the stick and buttons. */
+.tc-look{position:absolute;inset:0;background:transparent}
 .tc-stick{position:absolute;left:28px;bottom:34px;width:132px;height:132px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.08),rgba(255,255,255,.02));border:1.5px solid rgba(255,255,255,.35);backdrop-filter:blur(4px)}
 .tc-stick i{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(244,241,234,.85);box-shadow:0 4px 14px rgba(0,0,0,.4);transition:transform .05s}
 #touch-controls button{position:absolute;border-radius:50%;border:1.5px solid rgba(255,255,255,.4);background:rgba(10,12,10,.4);backdrop-filter:blur(6px);color:#f4f1ea;font:600 11px 'DM Sans',Arial,sans-serif;letter-spacing:.1em;width:58px;height:58px;padding:0}
@@ -99,8 +100,16 @@ body.touch-arena #battle-hud .ar-heals kbd{display:none}
  body.touch-arena .ar-zone{white-space:nowrap;font-size:7px}
  body.touch-arena .ar-vitals{top:68px;width:150px;scale:.8;transform-origin:top left}
  body.touch-arena .ar-pages{top:44px;left:180px;max-width:180px}
- body.touch-arena .ch-ammo{top:130px;left:18px;scale:.6}
+ /* Ammo sits beside the vitals so it clears SWAP/VIEW; everything respects the notch side. */
+ body.touch-arena .ch-ammo{top:62px;left:calc(max(16px,env(safe-area-inset-left)) + 132px);scale:.5}
+ body.touch-arena .ar-map{width:96px;height:84px}
+ /* BLOCK moves off the minimap to the free space left of AIM. */
+ #touch-controls.tc-arena .tc-guard{right:calc(180px + env(safe-area-inset-right));bottom:calc(112px + env(safe-area-inset-bottom))}
  body.touch-arena .ar-feed{display:none}
  body.touch-arena .ar-announce{top:22%;max-width:45%}
  #touch-controls.tc-arena .tc-swap,#touch-controls.tc-arena .tc-third{bottom:146px}
 }
+/* Portrait phones: the zone line stays on one line (timer first) so it cannot run into the
+   page squares, and announcements sit below the corner panels instead of on top of them. */
+body.touch-arena .ar-zone{display:block;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(orientation:portrait){body.touch-arena .ar-announce{top:35%;font-size:18px}body.touch-arena .ar-feed{max-height:58px}}
