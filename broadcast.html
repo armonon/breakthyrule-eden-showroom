@@ -1239,7 +1239,7 @@ Object.defineProperty(window, 'createCoverTitle', {configurable:true, get:()=>cr
   for(const x of v.slice(0,shown)){
    const card=document.createElement('article');card.className='card';
    const thumb=document.createElement('button');thumb.className='thumb';thumb.type='button';thumb.setAttribute('aria-label','Play '+x.title);
-   const img=document.createElement('img');img.loading='lazy';img.alt='';img.src=`https://i.ytimg.com/vi/${x.id}/mqdefault.jpg`;thumb.appendChild(img);
+   const img=document.createElement('img');img.loading='lazy';img.alt='';img.onerror=()=>card.remove();/* a video removed from YouTube has no thumbnail: drop its card */img.src=`https://i.ytimg.com/vi/${x.id}/mqdefault.jpg`;thumb.appendChild(img);
    if(x.dur){const len=document.createElement('span');len.className='len';len.textContent=time(x.dur);thumb.appendChild(len);}
    thumb.onclick=()=>{thumb.innerHTML=`<iframe src="https://www.youtube-nocookie.com/embed/${x.id}?autoplay=1&rel=0" title="${x.title.replace(/"/g,'&quot;')}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;};
    const meta=document.createElement('div');meta.className='meta';

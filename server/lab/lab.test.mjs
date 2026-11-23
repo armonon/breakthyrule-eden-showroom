@@ -25,23 +25,23 @@ const SECRET = 'x'.repeat(40);
 
 // ---------------- Pricing ----------------
 test('every Canvas price is exact', () => {
-  const want = { tee: 6000, hoodie: 8000, sweatpants: 8000, crewneck: 8000, shorts: 8000 };
+  const want = { tee: 5000, hoodie: 7000, sweatpants: 7000, crewneck: 6000, longsleeve: 5500, shorts: 7000 };
   assert.deepEqual(Object.keys(OFFERINGS.canvas).sort(), Object.keys(want).sort());
   for (const [g, cents] of Object.entries(want)) assert.equal(price(garment({ garment: g })).unitCents, cents, g);
 });
 test('every Cut & Sew price is exact', () => {
-  const want = { tee: 8000, hoodie: 18000, sweatpants: 18000, crewneck: 15000, longsleeve: 12000, shorts: 15000 };
+  const want = { tee: 8500, hoodie: 18000, sweatpants: 18000, crewneck: 15000, longsleeve: 12000, shorts: 15000 };
   assert.deepEqual(Object.keys(OFFERINGS['cut-sew']).sort(), Object.keys(want).sort());
   for (const [g, cents] of Object.entries(want)) assert.equal(price(garment({ construction: 'cut-sew', garment: g, fit: 'regular' })).unitCents, cents, g);
 });
 test('custom color adds exactly $40; black, white and random are free', () => {
-  assert.equal(price(garment({ color: 'custom', customColor: 'Oxblood' })).unitCents, 6000 + 4000);
+  assert.equal(price(garment({ color: 'custom', customColor: 'Oxblood' })).unitCents, 5000 + 4000);
   assert.equal(price(garment({ construction: 'cut-sew', garment: 'hoodie', fit: 'oversized', color: 'custom', customColor: 'Moss green' })).unitCents, 18000 + 4000);
-  for (const color of ['black', 'white', 'random']) assert.equal(price(garment({ color })).unitCents, 6000, color);
+  for (const color of ['black', 'white', 'random']) assert.equal(price(garment({ color })).unitCents, 5000, color);
 });
 test('every artwork direction is free, including random', () => {
-  for (const artwork of ['artists-choice', 'minimal', 'expressive']) assert.equal(price(garment({ artwork })).unitCents, 6000);
-  assert.equal(price(garment({ artwork: 'random-experimental', seed: 12345 })).unitCents, 6000);
+  for (const artwork of ['artists-choice', 'minimal', 'expressive']) assert.equal(price(garment({ artwork })).unitCents, 5000);
+  assert.equal(price(garment({ artwork: 'random-experimental', seed: 12345 })).unitCents, 5000);
   for (const seed of [999, 31337, 4242]) { // chaos may change the garment, but never adds a fee on top of it
     const n = normalizeItem(garment({ chaos: true, seed }), { artworkPool: POOL });
     assert.equal(priceItem(n.item).unitCents, OFFERINGS.canvas[n.item.garment].priceCents);
@@ -55,11 +55,11 @@ test('The Relic Box is $120 and The Trinity is one $60 bundle of three', () => {
 });
 test('browser-sent prices are ignored', () => {
   const r = priceCart([{ ...garment(), priceCents: 1, unitCents: 1, totalCents: 1 }], { artworkPool: POOL });
-  assert.equal(r.subtotalCents, 6000);
+  assert.equal(r.subtotalCents, 5000);
 });
 test('invalid selections are rejected', () => {
   const bad = c => assert.equal(normalizeItem(c, { artworkPool: POOL }).ok, false, JSON.stringify(c));
-  bad(garment({ garment: 'longsleeve' })); // not offered as Canvas
+  bad(garment({ garment: 'jacket' })); // not offered (Canvas now includes the long sleeve)
   bad(garment({ size: 'XXXXL' }));
   bad(garment({ color: 'custom' }));       // custom needs a name
   bad(garment({ color: 'gold' }));
@@ -76,7 +76,7 @@ test('print placement is optional, clamped, free, and written into the spec for 
   assert.deepEqual(plain.print, { x: 0, y: 0, scale: 1 });
   const moved = normalizeItem(garment({ print: { x: .12, y: -2, scale: 99 }, unitCents: 1 }), { artworkPool: POOL }).item;
   assert.deepEqual(moved.print, { x: .12, y: -.25, scale: 1.6 });
-  assert.equal(priceItem(moved).unitCents, 6000);
+  assert.equal(priceItem(moved).unitCents, 5000);
   assert.match(describeItem(moved).spec.join(' | '), /Print: 160% size, 25% lower, 12% to the wearer's left/);
   assert.ok(!describeItem(plain).spec.some(s => s.startsWith('Print:')));
   assert.deepEqual(normalizeItem(garment({ print: 'junk' }), { artworkPool: POOL }).item.print, { x: 0, y: 0, scale: 1 });
@@ -92,7 +92,7 @@ test('picked graphics: validated against the archive, front up to 3, one big bac
   const n = normalizeItem(garment({ artwork: 'pick', picks: { front: [a, b, c, d, 'not-a-graphic'], back: [e, a] } }), { artworkPool: POOL });
   assert.ok(n.ok);
   assert.deepEqual(n.item.picks, { front: [a, b, c], back: [e] });
-  assert.equal(priceItem(n.item).unitCents, 6000);
+  assert.equal(priceItem(n.item).unitCents, 5000);
   const spec = describeItem(n.item).spec.join(' | ');
   assert.match(spec, /Front: .+, .+, .+/); assert.match(spec, /Back: .+ — full back, 16 × 20 in on every size/);
   const med = normalizeItem(garment({ artwork: 'pick', picks: { back: [e] }, backSize: 'medium' }), { artworkPool: POOL }).item;
@@ -136,12 +136,12 @@ test('cart: add, edit, quantity, remove, persist, totals', () => {
   const st = memStorage(), cart = createCart(st, { artworkPool: POOL });
   const a = cart.add(garment()); assert.ok(a.ok);
   const b = cart.add({ product: 'trinity', size: 'M', variant: 'curated' }); assert.ok(b.ok);
-  assert.equal(cart.view().subtotalCents, 12000);
-  assert.ok(cart.setQuantity(b.id, 3).ok); assert.equal(cart.view().subtotalCents, 6000 + 18000);
+  assert.equal(cart.view().subtotalCents, 5000 + 6000);
+  assert.ok(cart.setQuantity(b.id, 3).ok); assert.equal(cart.view().subtotalCents, 5000 + 18000);
   assert.ok(cart.replace(a.id, garment({ color: 'custom', customColor: 'Rust' })).ok);
-  assert.equal(cart.view().lines[0].unitCents, 10000);
+  assert.equal(cart.view().lines[0].unitCents, 9000);
   const again = createCart(st, { artworkPool: POOL }); // persisted
-  assert.equal(again.view().subtotalCents, 10000 + 18000);
+  assert.equal(again.view().subtotalCents, 9000 + 18000);
   again.remove(b.id); assert.equal(again.view().count, 1);
   assert.equal(cart.add(garment({ size: 'nope' })).ok, false);
   assert.ok(!st.m.get('btr-lab-cart-v1').includes('Cents'), 'no prices are stored');
@@ -176,10 +176,10 @@ test('checkout: server prices go to Stripe; payment confirms the order and commi
   const { lab, stripe, owner } = await setup();
   const r = await lab.checkout({ items: [{ ...garment(), unitCents: 1 }, { product: 'trinity', size: 'M', variant: 'curated', priceCents: 1 }], idempotencyKey: key(), origin: 'https://x.test' });
   const p = stripe.calls[0].params;
-  assert.deepEqual(p.line_items.map(l => l.price_data.unit_amount), [6000, 6000]);
+  assert.deepEqual(p.line_items.map(l => l.price_data.unit_amount), [5000, 6000]);
   assert.equal(p.metadata.order_id, r.orderId);
   let o = await lab.getOrder(owner, r.orderId);
-  assert.equal(o.payment.status, 'pending'); assert.equal(o.subtotalCents, 12000);
+  assert.equal(o.payment.status, 'pending'); assert.equal(o.subtotalCents, 11000);
   assert.equal((await lab.stock(owner)).skus.find(s => s.sku === 'trinity:curated:M').reserved, 1);
   await lab.handleEvent(paidEvent(o, o.payment.sessionId));
   o = await lab.getOrder(owner, r.orderId);
