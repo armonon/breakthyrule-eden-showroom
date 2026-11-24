@@ -1,0 +1,1 @@
+Generated locally by the Breakthyrule asset workshop (Draw Things image, Hunyuan3D mesh, Blender bake); web copies: gltf-transform optimize, meshopt, 512 px WebP, simplified. Placement: tools/world/build-props-layout.py.

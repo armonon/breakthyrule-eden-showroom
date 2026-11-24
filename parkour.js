@@ -36,22 +36,27 @@
   const bodySweep=(a,b,height=profile().height,radius=profile().radius)=>clearance?clearance.fraction(a,b,height,radius):(bodyFits(b,height,radius)?1:0);
   const raycast=(o,d,n)=>clearance?.ray(o,d,n)||null;
   /* ---------------------------------------------------------------- world */
+  let cells=new Map();const NONE=[];
+  const boxesAt=(x,z,m)=>m>1?boxes:cells.get(Math.floor(x/4)*65536+Math.floor(z/4))||NONE;
   function refresh(){
    const w=walls()||[],s=surfaces()||[],gb=root.parkourGrips?.boxes||[],k=String(revision()??'legacy')+':'+w.length+':'+s.length+(gb.length?':g'+gb.length:'');if(k===sig)return;sig=k;
    boxes=w.map(([x,z,bw,bd,h=99])=>({minX:x-bw/2,maxX:x+bw/2,minZ:z-bd/2,maxZ:z+bd/2,top:h,bottom:-1,wall:true}))
     .concat(s.filter(b=>!b.field).map(b=>({...b})),gb.map(b=>({...b})));
    // Measured rooftops of the building models (assets/roof-heights.js): 1 m height maps.
    fields=s.filter(b=>b.field).map(b=>({...b.field,foot:b.foot||null}));
+   // A 4 m grid of the boxes (each listed 1 m beyond its edges), in their original order, for queries at a point.
+   cells=new Map();for(const b of boxes){const x0=Math.floor((b.minX-1)/4),x1=Math.floor((b.maxX+1)/4),z0=Math.floor((b.minZ-1)/4),z1=Math.floor((b.maxZ+1)/4);
+    for(let cx=x0;cx<=x1;cx++)for(let cz=z0;cz<=z1;cz++){const k=cx*65536+cz,list=cells.get(k);if(list)list.push(b);else cells.set(k,[b]);}}
   }
   function fieldH(F,x,z){const c=Math.floor((x-F.minX)/F.cell),r=Math.floor((z-F.minZ)/F.cell);if(c<0||r<0||c>=F.cols||r>=F.rows)return null;return F.h[r*F.cols+c];}
   const snap=d=>Math.abs(d.x)>Math.abs(d.z)?new T.Vector3(Math.sign(d.x),0,0):new T.Vector3(0,0,Math.sign(d.z));
   const inside=(b,x,z,m=0)=>x>b.minX-m&&x<b.maxX+m&&z>b.minZ-m&&z<b.maxZ+m;
   // Highest walkable top under (x, z) no higher than maxTop (the terrain counts too).
-  function floorAt(x,z,maxTop=Infinity,m=.08){refresh();let f=ground(x,z);for(const b of boxes)if(b.top<=maxTop+1e-4&&b.top>f&&inside(b,x,z,m))f=b.top;
+  function floorAt(x,z,maxTop=Infinity,m=.08){refresh();let f=ground(x,z);for(const b of boxesAt(x,z,m))if(b.top<=maxTop+1e-4&&b.top>f&&inside(b,x,z,m))f=b.top;
    for(const F of fields){const h=fieldH(F,x,z);if(h!=null&&h>0&&h<=maxTop+1e-4&&h>f)f=h;}return f;}
   function supportAt(x,z,maxTop=Infinity,radius=profile().radius){let h=floorAt(x,z,maxTop);for(const dx of [-radius,0,radius])for(const dz of [-radius,0,radius])h=Math.max(h,floorAt(x+dx,z+dz,maxTop));return h;}
   // Is there something solid at (x, z) between feet and head (anything taller than a step)?
-  function solid(x,z,feet,head,m=.25){refresh();for(const b of boxes)if(inside(b,x,z,m)&&b.top>feet+STEP&&b.bottom<head)return b;
+  function solid(x,z,feet,head,m=.25){refresh();for(const b of boxesAt(x,z,m))if(inside(b,x,z,m)&&b.top>feet+STEP&&b.bottom<head)return b;
    // Once you are off the ground (on crates, walls or roofs) the measured building is solid wherever it stands taller
    // than you: its facade, and towers and domes up on the roof. At street level the layout walls keep doing the job,
    // so porches and doorways stay open.
