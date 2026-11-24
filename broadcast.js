@@ -127,6 +127,48 @@ window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camer
  }
  plaque('The Broadcast Room','three channels · endless loop',{o:new T.Vector3(room.x1,0,door.z0),along:new T.Vector3(0,0,1),facing:new T.Vector3(-1,0,0),length:door.z1-door.z0},door.h+.5);
 
+ // ---------------------------------------------------------------- the exhibition: a lit sign between the two sets
+ // facing the door, and on a stand before it the archive that goes with the room (assets/broadcast/archive, read in
+ // the museum's own reader).
+ const exhibit=new T.Group();exhibit.name='Broadcast Room exhibition';exhibit.position.set(room.x0,0,(room.z0+room.z1)/2);exhibit.rotation.y=Math.PI/2;parent.add(exhibit); // local +z faces the door
+ const lit=(g,options,x,y,z,tilt=0)=>{const mesh=new T.Mesh(g,new T.MeshBasicMaterial({toneMapped:false,fog:false,...options}));mesh.position.set(x,y,z);mesh.rotation.x=tilt;exhibit.add(mesh);return mesh;};
+ const SIGN_TEXT=['Six televisions play three YouTube channels in an endless loop,','each in its creators’ own words.','',
+   'On the stand is the archive: The World in Photographs.','Sixty-four images, 1838 to 1952: early cities, lost landscapes,','ordinary lives, war and reconstruction.','',
+   'Listen to the stories, then look at the pictures.','A photograph is evidence of what the camera recorded,','not by itself proof of when a structure was built.'];
+ function signTexture(){
+  const c=document.createElement('canvas');c.width=1360;c.height=1080;const g=c.getContext('2d');
+  const lamp=g.createRadialGradient(680,500,80,680,540,900);lamp.addColorStop(0,'#fffdf2');lamp.addColorStop(.7,'#fff1cf');lamp.addColorStop(1,'#f3d9a0');g.fillStyle=lamp;g.fillRect(0,0,1360,1080);
+  g.fillStyle='#1b1712';g.textAlign='center';g.textBaseline='alphabetic';
+  const line=(text,y,font,spacing='0px')=>{g.font=font;g.letterSpacing=spacing;g.fillText(text,680,y,1260);};
+  line('THE BROADCAST ROOM',120,'600 74px Georgia, serif','9px');line('THE WORLD, RECORDED BEFORE IT CHANGED',186,'600 30px Georgia, serif','6px');
+  g.fillRect(480,222,400,3);
+  const body=SIGN_TEXT;
+  body.forEach((text,i)=>line(text,300+i*61,(i>6?'italic ':'')+'42px Georgia, serif'));
+  g.fillRect(480,920,400,3);line('PRESS THE BOOK TO READ  ·  PRESS A TELEVISION TO LISTEN',992,'600 31px Georgia, serif','3px');
+  const texture=new T.CanvasTexture(c);texture.colorSpace=T.SRGBColorSpace;texture.anisotropy=8;return texture;
+ }
+ lit(new T.BoxGeometry(2.02,1.62,.14),{color:0x17130f},0,2.02,.14);
+ const sign=lit(new T.PlaneGeometry(1.9,1.509),{map:signTexture()},0,2.02,.215);sign.name='Broadcast Room sign';pickables.push(sign);
+ const haloCanvas=document.createElement('canvas');haloCanvas.width=haloCanvas.height=128;
+ {const g=haloCanvas.getContext('2d'),r=g.createRadialGradient(64,64,10,64,64,64);r.addColorStop(0,'rgba(255,214,140,1)');r.addColorStop(1,'rgba(255,214,140,0)');g.fillStyle=r;g.fillRect(0,0,128,128);}
+ const haloMap=new T.CanvasTexture(haloCanvas),halos=[],halo=(w,h,x,y,z,tilt,strength)=>{const mesh=lit(new T.PlaneGeometry(w,h),{map:haloMap,transparent:true,opacity:0,depthWrite:false,blending:T.AdditiveBlending},x,y,z,tilt);halos.push({material:mesh.material,strength});};
+ halo(4.6,3.6,0,2.02,.03,0,.5);halo(4.4,3.4,0,.012,1.3,-Math.PI/2,.26); // the sign's light on the wall and the floor
+ lit(new T.BoxGeometry(.5,.78,.34),{color:0x1d1813},0,.39,1.35);lit(new T.BoxGeometry(.74,.05,.92),{color:0x2b221a},0,.88,1.35,.6);
+ const book=lit(new T.PlaneGeometry(.62,.8),{color:0xb9ab8c},0,.915,1.385,.6-Math.PI/2);book.name='The World in Photographs';pickables.push(book);
+ let cover=false,reading=null,archive=null;
+ function loadCover(){if(cover)return;cover=true;new T.TextureLoader().load('/assets/broadcast/archive/cover.webp',t=>{t.colorSpace=T.SRGBColorSpace;t.anisotropy=4;book.material.map=t;book.material.color.set(0xffffff);book.material.needsUpdate=true;onChange();},undefined,()=>{cover=false;});}
+ function read(){
+  document.exitPointerLock?.();
+  reading||=Promise.all([import('/museum-reader.js'),fetch('/assets/broadcast/archive/catalog.json').then(r=>{if(!r.ok)throw Error('Archive catalog '+r.status);return r.json();})])
+   .then(([module,catalog])=>{archive=module.createMuseumReader({onClose:onChange});return catalog;}).catch(error=>{reading=null;throw error;});
+  reading.then(catalog=>{if(!inRoom)return;archive.open({kicker:'The Broadcast Room / archive',title:catalog.title,
+   description:SIGN_TEXT.filter(Boolean).join(' ')+' Use Next to turn the page; open the original for the full PDF with its source links.',
+   sources:catalog.pages.map(([page,title])=>({page,title,kind:'Archive',image:`/assets/broadcast/archive/pages/p${String(page).padStart(2,'0')}.webp`,url:catalog.pdf+'#page='+page,credit:'as captioned; see the image sources at the end of the volume. Rights vary by holding archive.'}))});})
+   .catch(error=>console.warn('Broadcast Room archive unavailable:',error.message));
+ }
+ book.userData.onPick=sign.userData.onPick=read; // the sign opens the same text at reading size, for small screens
+ const solids=[[room.x0+.95,room.x0+1.95,exhibit.position.z-.55,exhibit.position.z+.55]]; // the stand
+
  // ---------------------------------------------------------------- live players over the best-placed screens
  const overlay=document.createElement('div');overlay.className='broadcast-overlay';
  overlay.style.cssText='position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1;display:none';
@@ -141,14 +183,16 @@ window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camer
   .broadcast-tv.zoomed::after{background:repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0 1px,transparent 1px 3px),radial-gradient(ellipse at center,transparent 62%,rgba(0,0,0,.45) 100%)}
   .broadcast-backdrop{position:absolute;inset:0;z-index:1;background:rgba(0,0,0,.78);opacity:0;pointer-events:none;transition:opacity .4s}
   .broadcast-backdrop.on{opacity:1;pointer-events:auto;cursor:zoom-out}
-  .broadcast-hud [data-zoom]{display:none}.broadcast-hud.zoomed [data-zoom]{display:inline-block}.broadcast-hud.zoomed [data-room]{display:none}
-  .broadcast-hud{position:fixed;right:24px;bottom:120px;z-index:30;display:none;gap:8px}
+  .broadcast-hud [data-zoom]{display:none}.broadcast-hud.zoomed [data-zoom]{display:inline-block}.broadcast-hud.zoomed [data-room],.broadcast-hud.zoomed [data-archive]{display:none}
+  .broadcast-hud{position:fixed;right:24px;bottom:164px;z-index:30;display:none;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100vw - 48px)}
+  @media (pointer:coarse),(max-width:700px){.broadcast-hud{top:112px;bottom:auto;right:16px;max-width:calc(100vw - 32px)}}
   .broadcast-hud button,.broadcast-hud a{font:600 12px/1 system-ui,sans-serif;letter-spacing:.12em;padding:10px 14px;border:1px solid #2b2c29;
    background:#f4f3ef;color:#2b2c29;text-decoration:none;cursor:pointer}`;
  document.head.appendChild(style);
  const hud=document.createElement('div');hud.className='broadcast-hud';
- hud.innerHTML='<button type="button" data-zoom="back">← BACK</button><button type="button" data-zoom="next">NEXT VIDEO ▸</button><button type="button" data-room aria-pressed="false">SOUND OFF</button><a href="/broadcast.html" target="_blank" rel="noopener">VIDEO INDEX ↗</a>';
+ hud.innerHTML='<button type="button" data-zoom="back">← BACK</button><button type="button" data-zoom="next">NEXT VIDEO ▸</button><button type="button" data-room aria-pressed="false">SOUND OFF</button><button type="button" data-archive>READ THE ARCHIVE</button><a href="/broadcast.html" target="_blank" rel="noopener">VIDEO INDEX ↗</a>';
  document.body.appendChild(hud);
+ hud.querySelector('[data-archive]').addEventListener('click',read);
  const soundButton=hud.querySelector('[data-room]');let soundOn=false,loud=null;
  soundButton.addEventListener('click',()=>{soundOn=!soundOn;soundButton.textContent=soundOn?'SOUND ON':'SOUND OFF';soundButton.setAttribute('aria-pressed',soundOn);loud=null;onChange();});
 
@@ -216,9 +260,9 @@ window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camer
   // the lights go down over a second and a half once you are through the doorway, and come back up when you leave
   darkTarget=l&&l.x>room.x0&&l.x<room.x1-.25&&l.z>room.z0&&l.z<room.z1?1:0;
   if(dark!==darkTarget){const dt=Math.min(.1,lastTick?(now-lastTick)/1000:0);dark=darkTarget>dark?Math.min(1,dark+dt/1.5):Math.max(0,dark-dt/1.2);
-   darkness.value=dark*dark*(3-2*dark);for(const m of plaques)m.color.copy(ink).lerp(glow,darkness.value);onChange();}
+   darkness.value=dark*dark*(3-2*dark);for(const m of plaques)m.color.copy(ink).lerp(glow,darkness.value);for(const h of halos)h.material.opacity=h.strength*darkness.value;onChange();}
   lastTick=now;
-  inRoom=!!here;
+  inRoom=!!here;if(here)loadCover();
   if(!here&&zoomed){zoomed=null;backdrop.classList.remove('on');hud.classList.remove('zoomed');}
   if(!here){for(const [set,e] of live){command(e,'destroy');e.el.remove();live.delete(set);}loud=null;return;}
   camera.updateMatrixWorld();const rect=stage.getBoundingClientRect(),ranked=[];
@@ -252,5 +296,5 @@ window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camer
   const target=zoomed&&!zoomed.closing?live.get(zoomed.set)||null:centred?live.get(centred.set):null;
   if(target!==loud){if(loud)command(loud,'mute');if(target){command(target,'unMute');command(target,'setVolume',[100]);}loud=target;}
  }
- return {update,sets,pickables,zoom,unzoom,inspect:()=>({sets:sets.length,live:live.size,zoomed:!!zoomed,channels:channels.map(c=>c.title+' '+c.videos.length)})};
+ return {update,sets,pickables,solids,read,zoom,unzoom,inspect:()=>({sets:sets.length,live:live.size,zoomed:!!zoomed,channels:channels.map(c=>c.title+' '+c.videos.length)})};
 };

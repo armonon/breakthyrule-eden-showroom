@@ -73,6 +73,7 @@ window.createMuseum=function createMuseum(T,pockets,{onChange=()=>{},camera=null
  there.room(galleryTwo.x0,galleryTwo.x1,galleryTwo.z0,galleryTwo.z1,galleryTwo.h,[{side:'w',from:galleryTwo.z0,to:galleryTwo.z1}]);
  there.finish(); // the Broadcast Room builds its own shell (broadcast.js), so it can go dark
  if(camera&&stage&&window.createBroadcastRoom)broadcast=window.createBroadcastRoom(T,{place,room:broadcastRoom,door:broadcastDoor,camera,stage,fade:pockets.surface.uniforms,onChange});
+ for(const area of broadcast?.solids||[])solids.push(rect(...area));
 
  // The art wall and garment rack move in from the old pavilion: Hall A is that pavilion, turned so the art wall faces
  // the door and the rack lines the north wall. The pavilion's camera views follow them.
