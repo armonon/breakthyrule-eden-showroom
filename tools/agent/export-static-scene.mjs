@@ -87,7 +87,7 @@ await page.evaluate(`(()=>{
 if(world==='beyond'){
  // Every workshop model in the district, wherever the player stands: loaded, measured and released four at a time.
  const props=await page.evaluate(`(async()=>{const T=THREE,list=(window.worldPropsLayout?.props||[]).filter(p=>p.p[2]<-21);let next=0,done=0,failed=[];
-  async function one(){for(;;){const p=list[next++];if(!p)return;try{const s=(await window.showroomAssets.model('/assets/world-props/'+p.f+'.glb?v=1',{priority:'low'})).scene;
+  async function one(){for(;;){const p=list[next++];if(!p)return;try{const s=(await window.showroomAssets.model((p.f.startsWith('scan:')?'/assets/beyond-eden/scan/models/'+p.f.slice(5):'/assets/world-props/'+p.f)+'.glb?v=1',{priority:'low'})).scene;
     s.position.set(...p.p);s.rotation.y=p.a??p.r*Math.PI/2;s.updateMatrixWorld(true);s.traverse(o=>{if(o.isMesh&&!o.isSkinnedMesh&&o.geometry?.attributes?.position)window.__bake.add(o,true);});
     s.traverse(o=>{if(!o.isMesh)return;o.geometry.dispose();for(const m of [].concat(o.material)){for(const v of Object.values(m))if(v?.isTexture){v.dispose();v.image?.close?.();}m.dispose();}});done++;}catch(e){failed.push(p.f+': '+e);}}}
   await Promise.all([one(),one(),one(),one()]);return {wanted:list.length,done,failed};})()`);

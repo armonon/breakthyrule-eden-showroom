@@ -396,9 +396,9 @@
    raycaster.set(groundFrom.set(x,from,z),groundDown);raycaster.near=.02;raycaster.far=40;const hit=raycaster.intersectObjects(list,false)[0];
    y=hit?hit.point.y:0;if(groundCache.size>20000)groundCache.clear();groundCache.set(key,y);return y;
   }
-  let touchAway=-1e9;function awayFrom(dx){if(!assist.target||Math.abs(dx)<=2)return;camera.getWorldPosition(asEye);asTo.copy(assist.point).sub(asEye);let off=Math.atan2(asTo.x,-asTo.z)-yaw;off=Math.atan2(Math.sin(off),Math.cos(off));if(Math.sign(dx)!==Math.sign(off))touchAway=lastTime;}
+  let touchAway=-1e9;function awayFrom(dx){if(!assist.target||Math.abs(dx)<=2)return;lensPosition(asEye);asTo.copy(assist.point).sub(asEye);let off=Math.atan2(asTo.x,-asTo.z)-yaw;off=Math.atan2(Math.sin(off),Math.cos(off));if(Math.sign(dx)!==Math.sign(off))touchAway=lastTime;}
   let wallPull=0,wallTarget=0,wallAt=-1e9;const wallEye=new T.Vector3(),wallDir=new T.Vector3();
-  function updateWallPull(dt){if(lastTime-wallAt>.06){wallAt=lastTime;camera.getWorldPosition(wallEye);camera.getWorldDirection(wallDir);raycaster.set(wallEye,wallDir);raycaster.near=.02;raycaster.far=.85;const hit=sceneryQuery.hit(raycaster,groundMeshes());wallTarget=hit?clamp((.85-hit.distance)/.65,0,1):0;}wallPull+=(wallTarget-wallPull)*(1-Math.exp(-dt*20));}
+  function updateWallPull(dt){if(lastTime-wallAt>.06){wallAt=lastTime;lensPosition(wallEye);camera.getWorldDirection(wallDir);raycaster.set(wallEye,wallDir);raycaster.near=.02;raycaster.far=.85;const hit=sceneryQuery.hit(raycaster,groundMeshes());wallTarget=hit?clamp((.85-hit.distance)/.65,0,1):0;}wallPull+=(wallTarget-wallPull)*(1-Math.exp(-dt*20));}
   function targetOf(object){let v=object;while(v){if(v.userData.target)return v.userData.target;v=v.parent;}return null;}
 
   let rangeOn=false,rangeRoot=null;
@@ -537,8 +537,8 @@
    if(charges.filter(c=>!c.done).length>=WEAPONS[3].mag){hud.toast('Detonate before placing more · '+controlHint('detonate','G'));return false;}
    if(arsenal){if(!(arsenal.reserve.c4>0)){hud.toast('NO CHARGES LEFT');return false;}arsenal.reserve.c4--;}
    const g=buildC4Block();g.traverse(x=>x.userData.noHit=true);world.add(g);
-   const start=camera.localToWorld(new T.Vector3(.15,-.12,-.45));
-   const dir=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+   const start=viewToWorld(new T.Vector3(.15,-.12,-.45));start.y-=o.lensDrop?.()||0;
+   const dir=aimForward();
    g.position.copy(start);
    const c={group:g,vel:dir.multiplyScalar(8.5).add(new T.Vector3(0,2.2,0)),spin:new T.Vector3(rand(-9,9),rand(-6,6),rand(-9,9)),stuck:false,done:false,age:0,led:g.userData.led};
    charges.push(c);sfx.throw();return true;
@@ -849,7 +849,9 @@
   }
   function freeUpdate(dt,sprinting){
    const on=armed&&!!o.freeAim?.()&&!((o.thirdPerson?.()||0)>.35);
-   if(on!==free.on){free.on=on;document.body.classList.toggle('bodycam-aim',on);if(!on){yaw+=free.x;pitch=clamp(pitch+free.y,-1.35,1.35);free.x=free.y=0;}}
+   if(on!==free.on){free.on=on;document.body.classList.toggle('bodycam-aim',on);if(!on){if(armed){free.endX=free.x;free.endY=free.y;}else{yaw+=free.x;pitch=clamp(pitch+free.y,-1.35,1.35);}free.x=free.y=0;}else{free.endX=free.endY=0;}}
+   // The view comes round to where the muzzle was instead of jumping there.
+   if(free.endX||free.endY){const k=armed?1-Math.exp(-16*dt):1,dx=free.endX*k,dy=free.endY*k;yaw+=dx;pitch=clamp(pitch+dy,-1.35,1.35);free.endX-=dx;free.endY-=dy;if(Math.hypot(free.endX,free.endY)<.0005)free.endX=free.endY=0;}
    if(!on)return;
    // Sprinting, or hands on a ledge: the weapon comes back to the middle of the body, and the view comes round to where it pointed.
    if(sprinting||handsBusy){const k=Math.exp(-4*dt),nx=free.x*k,ny=free.y*k;yaw+=free.x-nx;pitch=clamp(pitch+free.y-ny,-1.35,1.35);free.x=nx;free.y=ny;}
@@ -872,6 +874,8 @@
    fistArms?.aim?.(free.local);
    if(hud?.el){const h=stage.clientHeight*.5,w=stage.clientWidth*.5,x=(free.screen.x*w).toFixed(0),y=(-free.screen.y*h).toFixed(0),key=x+','+y;if(key!==free.shown){free.shown=key;hud.el.style.setProperty('--aim-x',x+'px');hud.el.style.setProperty('--aim-y',y+'px');}}
   }
+  // Where the picture is taken from: the chest lens in Beyond Eden sits below the eyes the camera rests at between frames.
+  function lensPosition(v){camera.getWorldPosition(v);v.y-=o.lensDrop?.()||0;return v;}
   const viewToWorld=v=>camera.localToWorld(v.applyQuaternion(free.view));
   // Rifle and SMG recoil you can learn while aiming: the muzzle climbs, then walks right, left and right again.
   const SPRAY=[0,.2,.45,.6,.35,-.1,-.5,-.75,-.55,-.1,.35,.7,.8,.5,.1,-.3,-.6,-.6,-.3,0];
@@ -915,7 +919,7 @@
   function assistScan(){
    const previous=assist.target?.c;assist.target=null;assist.angle=Infinity;assist.friction=1;let best=Infinity;
    const list=armed&&zoomable()&&assistStrength?o.aimTargets?.():null;if(!list?.length)return;
-   camera.getWorldPosition(asEye);aimForward(asFwd);const far=Math.min(ASSIST.range,current?.range||160);
+   lensPosition(asEye);aimForward(asFwd);const far=Math.min(ASSIST.range,current?.range||160);
    for(const t of list)for(let pointIndex=0;pointIndex<2;pointIndex++){const p=pointIndex?t.head:t.chest;if(!p)continue;asTo.copy(p).sub(asEye);const d=asTo.length();if(d<.65||d>far)continue;asTo.divideScalar(d);const a=Math.acos(clamp(asTo.dot(asFwd),-1,1)),score=a*(previous&&previous===t.c? .8:1)*(pointIndex?1.12:1);
     if(a>ASSIST.frictionCone||score>=best)continue;
     const obstacle=worldHits(asEye,asTo,d);if(obstacle&&obstacle.distance<d-.25)continue;
@@ -937,7 +941,7 @@
    if(s.ammo<=0){sfx.dry();s.lastFire=lastTime;if(!w.auto||!s.dryWarned){hud.toast(reserveOf(w)>0?'EMPTY · PRESS R':'NO '+w.ammo.toUpperCase()+' AMMO');s.dryWarned=true;}return;}
    const isTrue=inWindow();
    s.ammo--;s.lastFire=lastTime;stats.shots++;o.onAction?.('shoot',w.id,.25);
-   const origin=camera.getWorldPosition(new T.Vector3()),forward=aimForward();
+   const origin=lensPosition(new T.Vector3()),forward=aimForward();
    const right=aimRight(),up=aimUp();
    const spread=isTrue?(w.id==='pump'?.022:0):currentSpread();if(w.heat)s.heat=Math.min(1,(s.heat||0)+.12);
    const pellets=w.id==='pump'?9:1;
@@ -1112,7 +1116,7 @@
   // A target just past reach: step into it as the blow goes out.
   function meleeLunge(id){
    const M=root.EdenMelee,list=o.aimTargets?.();if(!M||!list?.length||!o.lunge)return;
-   const p=camera.getWorldPosition(new T.Vector3()),f=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion).setY(0).normalize();
+   const p=lensPosition(new T.Vector3()),f=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion).setY(0).normalize();
    const step=M.lunge(p,f,list.map(t=>t.chest).filter(Boolean),meleeMove(id));if(step)o.lunge({direction:new T.Vector3(step.x,0,step.z),distance:step.distance});
   }
   // Fists (fist-viewmodel.js draws them): click for a left and right by turns, right click or B for the haymaker.
@@ -1152,7 +1156,7 @@
    setTimeout(()=>{if(armed)bashStrike(move);},move.windup*1000);
   }
   function bashStrike(move=meleeMove('bash'),seek=false){
-   const origin=camera.getWorldPosition(new T.Vector3()),body=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion),f=aimForward(),r=aimRight();
+   const origin=lensPosition(new T.Vector3()),body=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion),f=aimForward(),r=aimRight();
    // Fists go to whoever is in front of you (shoulder width, any height), not only to what is dead under the crosshair.
    const sought=[];if(seek)for(const t of o.aimTargets?.()||[])for(const p of [t.head,t.chest]){if(!p)continue;const d=p.clone().sub(origin),flat=Math.hypot(d.x,d.z);if(flat>move.reach)continue;const along=(d.x*body.x+d.z*body.z)/(flat*Math.hypot(body.x,body.z)||1);if(along>.8){d.normalize();sought.push(d);}}
    for(const off of [0,-.22,.22,...sought]){const d=off.isVector3?off:f.clone().addScaledVector(r,off).normalize();const ch=o.shotHook?.(origin,d,move.reach,{weapon:'melee',player:true});
@@ -1161,7 +1165,7 @@
    root.EdenMelee?.whiff();return false;
   }
   function meleeHit(heavy){
-   const origin=camera.getWorldPosition(new T.Vector3()),f=aimForward(),r=aimRight();
+   const origin=lensPosition(new T.Vector3()),f=aimForward(),r=aimRight();
    for(const off of [0,-.2,.2]){const d=f.clone().addScaledVector(r,off).normalize();const move=meleeMove(heavy?'cleave':'chop');const ch=o.shotHook?.(origin,d,move.reach,{weapon:'axe',player:true});if(ch){const boost=meleeBoost(move);const res=ch.apply(move.damage*boost.scale*(ch.head?1.4:1),{head:ch.head,isTrue:heavy,weapon:'axe',melee:true,tier:move.tier,knockdown:move.knockdown||boost.finisher,finisher:boost.finisher,dir:f.clone().setY(0).normalize()});bloodPuff(ch.point,d);hud.hitmarker(heavy,res?.killed);state.hitStop=.07;meleeLand(move,res?.killed,boost);anim.posZ.kick(1.2);sfx.wood(ch.point,.7);return;}}
    let hit=null;for(const off of [0,-.18,.18,-.35,.35]){const d=f.clone().addScaledVector(r,off).normalize();const h=worldHits(origin,d,2.1);if(h&&(!hit||targetOf(h.object)&&!targetOf(hit.object)))hit=h;if(hit&&targetOf(hit.object))break;}
    if(!hit){root.EdenMelee?.whiff();return;}
@@ -1310,7 +1314,7 @@
   function update(time,dt){
    if(armed){assistScan();// The pull only helps while you shoot or aim down sights, and pauses for half a second after the thumb or mouse
    // moves away from the target. It used to run whenever you moved (or always, on touch), dragging the view back onto any bot you ran past.
-   if((locked||touchMode)&&o.canAct()&&(buttons.left||adsBlend>.1)&&lastTime-touchAway>.5&&assist.target&&assist.angle>.004){asTo.copy(assist.point).sub(camera.getWorldPosition(asEye)).normalize();const ty=Math.atan2(asTo.x,-asTo.z),tp=Math.asin(clamp(asTo.y,-1,1));let dy=ty-yaw-free.x;dy=Math.atan2(Math.sin(dy),Math.cos(dy));const k=1-Math.exp(-ASSIST.pull*dt*(touchMode?1:.55));yaw+=clamp(dy*k,-dt*.55,dt*.55);pitch=clamp(pitch+clamp((tp-pitch-free.y)*k,-dt*.4,dt*.4),-1.35,1.35);}}
+   if((locked||touchMode)&&o.canAct()&&(buttons.left||adsBlend>.1)&&lastTime-touchAway>.5&&assist.target&&assist.angle>.004){asTo.copy(assist.point).sub(lensPosition(asEye)).normalize();const ty=Math.atan2(asTo.x,-asTo.z),tp=Math.asin(clamp(asTo.y,-1,1));let dy=ty-yaw-free.x;dy=Math.atan2(Math.sin(dy),Math.cos(dy));const k=1-Math.exp(-ASSIST.pull*dt*(touchMode?1:.55));yaw+=clamp(dy*k,-dt*.55,dt*.55);pitch=clamp(pitch+clamp((tp-pitch-free.y)*k,-dt*.4,dt*.4),-1.35,1.35);}}
    // Walking back into the garden or far off down the road ends the range.
    if(rangeOn&&(camera.position.z>-21||Math.hypot(camera.position.x-11.7,camera.position.z+40)>45))setRange(false);
    lastTime=time;

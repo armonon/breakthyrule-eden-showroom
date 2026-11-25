@@ -217,15 +217,15 @@
   // Ground under the listener: the injected surfaceAt(x,z) when there is one, else a guess from the surroundings
   // (indoors concrete, a raised deck metal, between facades asphalt, the open court paving, off the map grass).
   function groundKind(hint){
-   let k=null;try{k=surfaceQuery?.(L.x,L.z,L.y)||null;}catch{}
+   if(mix.indoor>.5)return L.y>3.2&&surfaces?deck():'concrete';let k=null;try{k=surfaceQuery?.(L.x,L.z,L.y)||null;}catch{}
    if(k&&typeof k==='object')k=k.kind||k.type||k.surface||null;
    if(typeof k==='string'){k=k.toLowerCase();k=ALIAS[k]||k;if(STEP[k])return k;}
-   if(mix.indoor>.5)return 'concrete';
-   if(surfaces&&L.y>3.2){const feet=L.y-1.75;for(const s of surfaces)if(!s.field&&!s.wall&&s.top!=null&&Math.abs(s.top-feet)<.35&&L.x>=s.minX&&L.x<=s.maxX&&L.z>=s.minZ&&L.z<=s.maxZ)return s.route?'metal':'concrete';return 'concrete';}
+   if(surfaces&&L.y>3.2)return deck();
    if(hint==='brick'||hint==='stone')return 'paving';
    if(mix.street>.45)return 'asphalt';
    let open=0;for(const r of rays)if(r.d>=RAY_MAX)open++;return open>=RAYS-1&&nW>0?'grass':'paving';
   }
+  function deck(){const feet=L.y-1.75;for(const s of surfaces)if(!s.field&&!s.wall&&s.top!=null&&Math.abs(s.top-feet)<.35&&L.x>=s.minX&&L.x<=s.maxX&&L.z>=s.minZ&&L.z<=s.maxZ)return s.route?'metal':'concrete';return 'concrete';}
   function step(hint,speed=3.4,{host=true}={}){
    if(!ready())return false;const t=rig.ctx.currentTime;if(t-body.lastStep<.16)return true;body.lastStep=t;if(host)body.lastHostStep=t;
    const kind=body.surface=groundKind(hint),level=clamp(.5+speed*.1,.4,1.35);
@@ -241,7 +241,12 @@
    if(!ready())return false;const t=rig.ctx.currentTime,b=rig.body,kind=body.surface=groundKind(hint);
    oneShot(pick(rig.steps[kind]),{gain:.3,rate:.6,send:.2});b.rub.gain.cancelScheduledValues(t);b.rub.gain.setTargetAtTime(.22,t,.03);b.rub.gain.setTargetAtTime(0,t+duration*.8,.08);body.lastParams=t+duration;return true;
   }
-  function ready(){if(!active||!rig||rig.ctx.state!=='running')return false;ensureBody();return true;}
+  // The garden's sound-effects mute covers the body too; hiding the page stops the frames that steer its loops, so they stop with it.
+  let quietAt=-1e9,quiet=false;
+  function muted(){const n=performance.now();if(n-quietAt>400){quietAt=n;try{quiet=root.localStorage?.getItem('eden-effects-muted')==='1';}catch{quiet=false;}}return quiet;}
+  function hush(){const b=rig?.body;if(!b)return;const t=rig.ctx.currentTime;for(const g of [b.cloth.gain,b.rub.gain,b.breath.gain]){g.cancelScheduledValues(t);g.setTargetAtTime(0,t,.04);}}
+  root.document?.addEventListener?.('visibilitychange',()=>{if(root.document.hidden)hush();});
+  function ready(){if(!active||!rig||rig.ctx.state!=='running')return false;if(muted()){hush();return false;}ensureBody();return true;}
   function updateBody(dt,state,now){
    const cam=state?.camera||camera||root.edenCamera,q=cam?.quaternion;
    // turning: the angle the lens swept this frame

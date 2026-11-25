@@ -282,7 +282,7 @@ function autoGraphics(){
 const pushFeet=new T.Vector3(),ambienceFacing=new T.Vector3(),ambienceFlock=new T.Vector3();
 let graphics='high',photoreal=null,atmosphere=null,realism={clouds:0,dof:0},realismShown='';
 function setGraphics(level,{save=true}={}){
- const q=GRAPHICS[level]||GRAPHICS.medium;graphics=GRAPHICS[level]?level:'medium';postStep=0;
+ const q=GRAPHICS[level]||GRAPHICS.medium;graphics=GRAPHICS[level]?level:'medium';postStep=0;realismShown='';
  post.set({enabled:q.post,samples:q.samples,ao:q.ao,bloom:q.bloom,rays:q.rays,flare:q.flare,glare:q.glare,exposure:q.exposure,haze:q.haze,wet:q.wet,motionBlur:reduced?0:q.motionBlur});realism={clouds:q.clouds,dof:q.dof};atmosphere?.set({dust:q.air,fireflies:q.air,cones:q.air,life:q.air});
  quality.setMax(Math.min(devicePixelRatio,q.ratio,mobileDevice?renderProfile.max:Infinity));lighting.set({shadowSize:q.shadow});renderer.shadowMap.needsUpdate=true;photoreal?.set(q.photo||false);
  if(save){try{localStorage.setItem('eden-graphics',graphics);}catch{}requestDraw();}
@@ -538,7 +538,7 @@ const expeditionPrefs=()=>expedition?.active()?expeditionPreferences?.get():null
 function makeParkour(){if(parkour||!window.createParkour)return parkour;parkour=window.createParkour({T,walls:()=>garden.nightBuilt()?garden.district.walls:[],surfaces:()=>garden.nightBuilt()?garden.district.surfaces:[],ground:(x,z)=>groundHeight(new T.Vector3(x,0,z)),
  player:{pos:targetPosition,aim:targetAim,vel:walkVelocity,motion,keys,bodyDimensions:()=>playerBody?.bodyDimensions()||window.playerBodyProfile(),crouchHeld:()=>movement.crouchHeld,sway,footsteps:window.createFootsteps?{step:(...a)=>footsteps?.step(...a),land:(...a)=>footsteps?.land(...a)}:null,surface:()=>surfaceAt(targetPosition),requestDraw,onFall:d=>battle?.fallDamage?.(d)}});return parkour;}
 const pk=()=>parkourOn()?makeParkour():null;
-const baseSteps=window.createFootsteps?.(),footsteps=window.beyondAudio?.wrapFootsteps(baseSteps)||baseSteps;window.beyondAudio?.setSurfaceQuery((x,z)=>({earth:'dirt',stone:'paving',brick:'paving'})[window.edenMatrix?.groundType(x,z)]||window.edenMatrix?.groundType(x,z)||null);
+const baseSteps=window.createFootsteps?.(),footsteps=window.beyondAudio?.wrapFootsteps(baseSteps)||baseSteps;window.beyondAudio?.setSurfaceQuery((x,z,y)=>y>2.6?null:({earth:'dirt',stone:'paving',brick:'paving'})[window.edenMatrix?.groundType(x,z)]||window.edenMatrix?.groundType(x,z)||null);
 let fovKick=0;
 const movement=window.createPlayerMovement({momentumEnabled:()=>!!battle?.active()||!!arena?.active(),bodyDimensions:()=>playerBody?.bodyDimensions()||window.playerBodyProfile(),T,targetPosition,targetAim,walkVelocity,motion,keys,sway,footsteps,surfaceAt,puff,hitStop,requestDraw,obstacle,groundHeight,prepareWalking,shiftHeight,kick:n=>{fovKick+=n;},state,modalOpen,fistsEngaged,parkour:()=>parkour,pk,parkourOn,
  get garden(){return garden;},get combat(){return combat;},get battle(){return battle;},get fists(){return fists;},get expedition(){return expedition;},get arena(){return arena;},get pockets(){return pockets;},get playerBody(){return playerBody;}});
@@ -872,7 +872,7 @@ combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,
  onAction(action,weapon,duration){const B=playerBody;if(!B)return;if(action==='holster'){B.stopAnim('pistolReload',.12);return;}const id=action==='shoot'?'pistolShoot':action==='reload'?'pistolReload':action==='swing'?'swingA':action==='throw'?'throw':action==='punch'?'push':null;if(id)B.anim(id,{fade:.12,mask:'upper',arms:true,weight:.8,speed:duration?(window.GardenAnim?.duration(id)||duration)/duration:1});},
  // Eden is a safe zone: weapons come out only beyond the hidden door (the open match and the firing range).
  canAct:()=>state.ready&&!modalOpen()&&!expedition?.active()&&!arena?.active()&&!pockets?.inside(camera.position)&&targetPosition.z<garden.road.door&&(battle?.canAct()??true),
- shotHook:(...a)=>horror?.shotHook?.(...a)||battle?.shotHook(...a),heldStrike:(...a)=>battle?.heldStrike?.(...a),holding:()=>!!battle?.hold?.(),onExplosion:(...a)=>battle?.onExplosion(...a),
+ shotHook:(...a)=>horror?.shotHook?.(...a)||battle?.shotHook(...a),heldStrike:(...a)=>battle?.heldStrike?.(...a),lensDrop:()=>sway.lensDrop(),holding:()=>!!battle?.hold?.(),onExplosion:(...a)=>battle?.onExplosion(...a),
  // The range is on the brick road beyond the door, where night falls: keep it in daylight while it is in use.
  onRange(on){if(on)garden.district;garden.nightRoad?.setOverride(on?0:null);},
  getLook(){const d=targetAim.clone().sub(targetPosition).normalize();return {yaw:Math.atan2(d.x,-d.z),pitch:Math.asin(T.MathUtils.clamp(d.y,-1,1))};},

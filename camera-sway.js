@@ -6,12 +6,14 @@
   const offset=new T.Vector3(),applied=new T.Vector3(),right=new T.Vector3(),forward=new T.Vector3(),up=new T.Vector3(0,1,0),look=new T.Vector3();
   let slideK=0,sprintK=0,phase=0,intensity=0,roll=0,clock=0,landing=0,landingVelocity=0,wasAirborne=false,lastYaw=null,turn=0,shake=0,rollKick=0,rollKickV=0,perspectiveK=0,strafeK=0,bodyK=0;
   // Chest-mounted camera (Beyond Eden): the lens rides the sternum, so it takes each footfall, breathes, and follows the look a beat late.
-  let chestK=0,jolt=0,joltV=0,nod=0,nodV=0,stepRoll=0,stepRollV=0,stepSide=1,exert=0,breathPhase=0,lagYaw=null,lagPitch=0,lagErr=0;const lagDir=new T.Vector3();
+  let chestK=0,jolt=0,joltV=0,nod=0,nodV=0,stepRoll=0,stepRollV=0,stepSide=1,exert=0,breathPhase=0,lagYaw=null,lagPitch=0,lagErr=0,drop=0,placed=false;const lagDir=new T.Vector3();
   const spring=(dt)=>{const n=Math.max(1,Math.ceil(dt*120)),h=dt/n;for(let i=0;i<n;i++){landingVelocity+=(-landing*140-landingVelocity*16)*h;landing+=landingVelocity*h;rollKickV+=(-rollKick*160-rollKickV*14)*h;rollKick+=rollKickV*h;
    if(chestK>0||jolt||nod||stepRoll){joltV+=(-jolt*520-joltV*30)*h;jolt+=joltV*h;nodV+=(-nod*420-nodV*26)*h;nod+=nodV*h;stepRollV+=(-stepRoll*300-stepRollV*20)*h;stepRoll+=stepRollV*h;}}};
   return {
    // A teleport or camera-mode owner may replace the pose between frames.
-   remove(camera){if(camera.position.equals(applied))camera.position.sub(offset);offset.set(0,0,0);},
+   // How far below the eyes the chest lens sits, while the camera is back at the eyes (between remove and apply): aim starts at the lens.
+   lensDrop:()=>placed?0:drop,
+   remove(camera){placed=false;if(camera.position.equals(applied))camera.position.sub(offset);offset.set(0,0,0);},
    bump(strength=1,side=0){landingVelocity-=.55*strength;rollKickV+=side*1.4*strength;shake=Math.min(1,shake+.55*strength);},
    // perspective: 0 first person, 1 shoulder camera. Controls isolate each effect.
    // bodyBob: the visible body's own stride and landing bob (metres); when given, the view rides it instead of its own.
@@ -22,7 +24,7 @@
     // Comfort preferences affect visuals, not the sound cadence or movement.
     const footstep=!airborne&&speed>.6&&Math.floor(phase/Math.PI)!==before;
     if((effects?!effects.cameraEffects:reduced)||!dt){
-     chestK=chest?1:0;jolt=joltV=nod=nodV=stepRoll=stepRollV=0;lagYaw=null;lagErr=0;
+     placed=true;drop=chest?chestDrop*(1-T.MathUtils.clamp(perspective,0,1)):0;chestK=chest?1:0;jolt=joltV=nod=nodV=stepRoll=stepRollV=0;lagYaw=null;lagErr=0;
      offset.set(0,-crouch-(chest?chestDrop*(1-T.MathUtils.clamp(perspective,0,1)):0),0);camera.position.add(offset);applied.copy(camera.position);camera.lookAt(look.copy(aim).add(offset));
      landing=landingVelocity=roll=rollKick=rollKickV=shake=turn=strafeK=0;lastYaw=null;wasAirborne=airborne;return footstep;
     }
@@ -36,7 +38,7 @@
     perspectiveK+=(T.MathUtils.clamp(perspective,0,1)-perspectiveK)*(1-Math.exp(-12*dt));
     strafeK+=(strafe-strafeK)*(1-Math.exp(-7*dt));
     chestK+=((chest?1:0)-chestK)*(1-Math.exp(-6*dt));if(!chest&&chestK<.002){chestK=0;jolt=joltV=nod=nodV=stepRoll=stepRollV=0;lagYaw=null;lagErr=0;}
-    const cw=chestK*(1-perspectiveK);
+    const cw=chestK*(1-perspectiveK),steady=1-T.MathUtils.clamp(ads,0,1);drop=chestDrop*cw;placed=true; // down the sights the lens looks exactly where the shot goes
     if(cw>0){
      // A footfall arrives through the body: a short drop, a nod forward and a tip toward the planted foot.
      if(footstep){stepSide=-stepSide;const hard=(.32+.34*sprintK)*Math.min(1.3,intensity+.3)*(1-slideK);joltV-=hard;nodV-=hard*.75;stepRollV+=stepSide*hard*.5;}
@@ -66,8 +68,8 @@
      else{let d=Math.atan2(Math.sin(wantYaw-lagYaw),Math.cos(wantYaw-lagYaw));if(Math.abs(d)>1){lagYaw=wantYaw;lagPitch=wantPitch;d=0;}
       const k=1-Math.exp(-15*dt);lagYaw+=d*k;lagPitch+=(wantPitch-lagPitch)*k;
       const m=.13;d=Math.atan2(Math.sin(wantYaw-lagYaw),Math.cos(wantYaw-lagYaw));if(Math.abs(d)>m)lagYaw=wantYaw-Math.sign(d)*m;if(Math.abs(wantPitch-lagPitch)>m)lagPitch=wantPitch-Math.sign(wantPitch-lagPitch)*m;}
-     const w=cw*T.MathUtils.clamp(turnLag,0,1),dy=Math.atan2(Math.sin(lagYaw-wantYaw),Math.cos(lagYaw-wantYaw))*w,dp=(lagPitch-wantPitch)*w;lagErr=Math.hypot(dy,dp);
-     const yaw=wantYaw+dy+Math.sin(phase)*.0055*intensity*(1-slideK)*cw,pitch=T.MathUtils.clamp(wantPitch+dp+(Math.sin(breathPhase+.7)*(.002+.004*exert)+nod*.9)*cw,-1.5,1.5);
+     const w=cw*steady*T.MathUtils.clamp(turnLag,0,1),dy=Math.atan2(Math.sin(lagYaw-wantYaw),Math.cos(lagYaw-wantYaw))*w,dp=(lagPitch-wantPitch)*w;lagErr=Math.hypot(dy,dp);
+     const yaw=wantYaw+dy+Math.sin(phase)*.0055*intensity*(1-slideK)*cw*steady,pitch=T.MathUtils.clamp(wantPitch+dp+(Math.sin(breathPhase+.7)*(.002+.004*exert)+nod*.9)*cw*steady,-1.5,1.5);
      look.set(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(reach).add(camera.position);
     }else lagErr=0;
     camera.lookAt(look);

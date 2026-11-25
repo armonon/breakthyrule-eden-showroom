@@ -62,7 +62,7 @@ window.createPlayMenu=function({nav,after,stage,items,graphics=null,context=()=>
   choice('bodycamAim','BEYOND EDEN: FREE AIM',[[true,'ON'],[false,'OFF']]);
   if(window.beyondAudio){const g=document.createElement('div');g.className='ps-choice';for(const [val,txt] of [[true,'ON'],[false,'OFF']]){const b=document.createElement('button');b.type='button';b.textContent=txt;b.setAttribute('aria-pressed',String(!!window.beyondAudio.mic===val));b.onclick=e=>{e.preventDefault();window.beyondAudio.setMic(val);renderSettings();};g.append(b);}row('BEYOND EDEN: BODY-CAM SOUND',g);}
   if(!coarse)choice('aim','AIM WITH',[['wheel','WHEEL / PINCH'],['hold','HOLD RIGHT MOUSE']]);
-  const reset=document.createElement('button');reset.type='button';reset.className='ps-reset';reset.textContent='RESET';reset.onclick=()=>{S.reset();renderSettings();};box.append(reset);
+  const reset=document.createElement('button');reset.type='button';reset.className='ps-reset';reset.textContent='RESET';reset.onclick=()=>{S.reset();window.beyondAudio?.setMic(true);renderSettings();};box.append(reset);
   const note=document.createElement('small');note.textContent=coarse?'Touch look sensitivity sets how far a swipe turns; aim assist only steers while you fire or aim.':S.get('aim')==='hold'?'Hold right mouse to aim; B is melee.':'Wheel or pinch to aim; right mouse is melee.';box.append(note);
  }
  let openedAt=-1e9;
