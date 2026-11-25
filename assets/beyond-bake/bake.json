@@ -2,7 +2,7 @@
  "format": 3,
  "world": "beyond",
  "gamma": 3.0,
- "scale": 2.090142011642456,
+ "scale": 2.080674648284912,
  "bounds": [
   -82,
   102,
@@ -122,9 +122,9 @@
    "ground": 96,
    "moonShadow": 48,
    "lampShadow": 384,
-   "probes": 48
+   "probes": 32
   },
-  "seconds": 685,
+  "seconds": 498,
   "blender": "5.0.1"
  },
  "lighting": {
@@ -565,7 +565,7 @@
      0.7681511472425809,
      0.43415363616478553
     ],
-    "intensity": 34,
+    "intensity": 24,
     "distance": 17,
     "decay": 1.6
    }
@@ -695,8 +695,8 @@
   "unit": "game meters, Y up"
  },
  "assets": {
-  "lightmap.jpg": "8373df3b9589f84fd6a2e1e0b3fb1f8051f2cdb3a1375b489722680f36a61cf2",
-  "sun.jpg": "92a3578596d34fe9accc60dc60d2835cda14f780ca1457b9689a3e3d9e13d015",
-  "probes.bin": "b3ad67d2e6d0f5c3962600af36c0a43072661f26563aafac7425a43aef827aa1"
+  "lightmap.jpg": "4977fba60c4406d9500e560f7c1bcc32c6a397959ad4b7a09261eecfbef63ca4",
+  "sun.jpg": "db2227a6ea7818ca6bb694bf014e4d20905fd9ab215b04c832c794d13410284d",
+  "probes.bin": "c8fae836a5e8ff740cead8d01d50a165882406695be390f3773f34a78a6406bf"
  }
 }
