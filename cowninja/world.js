@@ -6,7 +6,7 @@
 // gate planks and the red lever. Units are metres; +x east, -z north (the way out).
 import * as THREE from 'three/webgpu';
 
-export function createWorld({ scene, physics, assets }) {
+export function createWorld({ scene, physics, assets, shadows = 7 }) {
   const data = assets.siteData, P = data.points;
   const root = new THREE.Group(); root.name = 'COWNinja site'; scene.add(root);
   const walls2d = [], solids = [], dynamic = [], lights = [];
@@ -21,6 +21,7 @@ export function createWorld({ scene, physics, assets }) {
       o.castShadow = !/terrain|ground|road|apron|floor|carpark|pad|backyard|killtile|drain|straw/i.test(o.name); o.receiveShadow = true;
       for (const m of [].concat(o.material)) {
         if (m.map) m.map.anisotropy = 8;
+        { const wet = { killtile: .38, floor: .55, apron: .8 }[m.name] ?? (m.name?.startsWith('blood_') ? .6 : null); if (wet !== null && !m.userData.wet) { m.userData.wet = true; m.roughness *= wet; } }
         if (/^(gravel|apron|grass)$/.test(m.name) && !m.userData.toned) { m.userData.toned = true; m.color.multiplyScalar(m.name === 'gravel' ? .38 : m.name === 'grass' ? .42 : .7); }
         if (m.transparent) { m.depthWrite = false; m.side = THREE.DoubleSide; }
         if (lm && (o.userData.lightmap || o.parent?.userData?.lightmap) && o.geometry.attributes.uv1) {
@@ -68,14 +69,20 @@ export function createWorld({ scene, physics, assets }) {
     const item = { mesh: m, body, home: [...center] }; dynamic.push(item); return item;
   }
   // Many copies of one model (or one of its parts) in a single draw call per mesh.
-  function instanced(node, placements, { cast = true } = {}) {
+  // Copies are split into 48 m tiles so each tile is culled on its own (one batch spanning the whole map would be
+  // drawn in full for every camera and every shadow).
+  function instanced(node, placements, { cast = true, tile = 48 } = {}) {
     if (!node || !placements.length) return;
     node.updateMatrixWorld(true);
+    const tiles = new Map(), pos = new THREE.Vector3();
+    for (const p of placements) { pos.setFromMatrixPosition(p); const k = Math.floor(pos.x / tile) + ':' + Math.floor(pos.z / tile); if (!tiles.has(k)) tiles.set(k, []); tiles.get(k).push(p); }
     node.traverse(m => {
       if (!m.isMesh) return;
-      const im = new THREE.InstancedMesh(m.geometry, m.material, placements.length);
-      placements.forEach((p, i) => im.setMatrixAt(i, tmp.multiplyMatrices(p, m.matrixWorld)));
-      im.castShadow = cast; im.receiveShadow = true; im.computeBoundingSphere(); root.add(im);
+      for (const list of tiles.values()) {
+        const im = new THREE.InstancedMesh(m.geometry, m.material, list.length);
+        list.forEach((p, i) => im.setMatrixAt(i, tmp.multiplyMatrices(p, m.matrixWorld)));
+        im.castShadow = cast; im.receiveShadow = true; im.computeBoundingSphere(); root.add(im);
+      }
     });
   }
   // The named variants inside a model (Poly Haven packs several clumps or shrubs in one file).
@@ -91,7 +98,7 @@ export function createWorld({ scene, physics, assets }) {
     for (const [v, ps] of groups) {
       const node = assets.clone(name, v); if (!node) continue;
       node.position.set(0, 0, 0);
-      instanced(node, ps.map(([x, y, z, yaw, s]) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(s, s, s))), { cast: !/grass|nettle|weed|shrub/.test(name) });
+      instanced(node, ps.map(([x, y, z, yaw, s]) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(s, s, s))), { cast: false });   // plants: no shadow casting (they are outdoors at night; casting would redraw them per shadow)
     }
   }
 
@@ -135,8 +142,15 @@ export function createWorld({ scene, physics, assets }) {
   moon.shadow.mapSize.set(2048, 2048); Object.assign(moon.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 10, far: 190 }); moon.shadow.bias = -.0003; moon.shadow.normalBias = .04;
   const moonOffset = new THREE.Vector3(-38, 60, -30); moon.position.copy(moonOffset); scene.add(moon, moon.target);
   const glow = new THREE.BoxGeometry(1, 1, 1);
+  // Ceiling tubes indoors are spotlights pointing down that cast shadows (rails, chains, carcasses, people throw real
+  // shadows on the floor); the rest are point lights. `shadows` is how many may cast (0 on slow devices).
+  let shadowBudget = shadows;
   for (const L of data.lights) {
-    const l = new THREE.PointLight(L.c, L.i, L.d, 1.8); l.position.set(...L.p); scene.add(l);
+    const tube = L.b && L.b[0] > 1 && indoors(L.p[0], L.p[2]);
+    const l = tube ? new THREE.SpotLight(L.c, L.i * 1.6, L.d * 1.3, 1.25, .85, 1.6) : new THREE.PointLight(L.c, L.i, L.d, 1.8);
+    l.position.set(...L.p); scene.add(l);
+    if (tube) { l.target.position.set(L.p[0], 0, L.p[2]); scene.add(l.target);
+      if (shadowBudget-- > 0) { l.castShadow = true; l.shadow.mapSize.set(1024, 1024); l.shadow.bias = -.0006; l.shadow.normalBias = .03; l.shadow.camera.near = .2; l.shadow.camera.far = L.d * 1.3; } }
     const bulb = new THREE.Mesh(glow, new THREE.MeshBasicMaterial({ color: L.c })); bulb.position.set(...L.p); bulb.scale.set(...(L.b || [.28, .08, .28])); root.add(bulb);
     lights.push({ light: l, bulb, base: L.i, flicker: L.f, phase: Math.random() * 10 });
   }
@@ -157,7 +171,7 @@ export function createWorld({ scene, physics, assets }) {
   const solidAt = (x, y, z, pad = .15) => { for (const b of solids) if (x > b.minX - pad && x < b.maxX + pad && z > b.minZ - pad && z < b.maxZ + pad && y < b.top + pad && y > b.bottom - pad) return true; return false; };
   // The lowest ceiling over a point (Infinity outdoors), and whether a point is under a roof.
   const ceilingAt = (x, z) => { let y = Infinity; for (const c of data.ceilings) if (x > c[0] && x < c[1] && z > c[2] && z < c[3]) y = Math.min(y, c[4]); return y; };
-  const indoors = (x, z) => data.interiors.some(c => x > c[0] && x < c[1] && z > c[2] && z < c[3]);
+  function indoors(x, z) { return data.interiors.some(c => x > c[0] && x < c[1] && z > c[2] && z < c[3]); }
 
   function update(time, focus = null) {
     for (const d of dynamic) { const t = d.body.read(); d.mesh.position.set(t.p[0], t.p[1], t.p[2]); d.mesh.quaternion.set(t.q[0], t.q[1], t.q[2], t.q[3]); }

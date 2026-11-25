@@ -55,7 +55,9 @@ export async function loadAssets({ renderer, onProgress } = {}) {
   }).catch(() => {}), name + '-' + kind);
   const jobs = [load('cow', BASE + 'cow.glb'), load('site', BASE + 'site.glb', true)];
   let siteData = null, lightmap = null;
-  jobs.push(track(fetch(BASE + 'site.json').then(r => { if (!r.ok) throw Error('site.json ' + r.status); return r.json(); }).then(d => { siteData = d; }), 'site.json', true));
+  jobs.push(track(fetch(BASE + 'site.json').then(r => { if (!r.ok) throw Error('site.json ' + r.status); return r.json(); }).then(d => { siteData = d;
+    // The generated hero pieces the site places (assets/cowninja/modly/*.glb).
+    for (const name of d.modly || []) jobs.push(load('modly:' + name, `${BASE}modly/${name}.glb`)); }), 'site.json', true));
   jobs.push(track(textures.loadAsync(BASE + 'site-lightmap.webp').then(t => { t.channel = 1; t.colorSpace = THREE.SRGBColorSpace; t.flipY = false; lightmap = t; }).catch(() => {}), 'lightmap'));
   for (const name of PROPS) jobs.push(load(name, `${BASE}props/${name}.glb`));
   for (const name of GAME_PROPS) jobs.push(load(name, `/assets/world-props/${name}.glb`));
@@ -66,7 +68,7 @@ export async function loadAssets({ renderer, onProgress } = {}) {
     const d = t.image.data, half = d instanceof Uint16Array, cap = 2.5;
     for (let i = 0; i < d.length; i++) { if ((i & 3) === 3) continue; const v = half ? THREE.DataUtils.fromHalfFloat(d[i]) : d[i]; if (v > cap) d[i] = half ? THREE.DataUtils.toHalfFloat(cap) : cap; }
     t.needsUpdate = true; t.mapping = THREE.EquirectangularReflectionMapping; sky = t; }).catch(error => console.warn('[cowninja] sky missing', error?.message || error)), 'sky'));
-  await Promise.all(jobs);
+  await Promise.all(jobs); await Promise.all(jobs);   // twice: site.json adds the generated pieces to the list once it arrives
 
   // A PBR surface that repeats every `size` metres. Box and plane UVs run 0..1, so the repeat is set per use.
   const surfaceCache = new Map();

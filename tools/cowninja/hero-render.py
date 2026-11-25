@@ -47,7 +47,7 @@ for m in bpy.data.materials:
 
 # Props and loose items, placed as the game places them.
 def place(name, x, y, z, yaw, scale, part):
-    path = f'{A}/props/{name.lower()}.glb'
+    path = f'{A}/modly/{name[6:]}.glb' if name.startswith('modly:') else f'{A}/props/{name.lower()}.glb'
     # The main game's props are meshopt-compressed, which this Blender build cannot read: decoded copies live in
     # <output>/../wpdec (made with: npx @gltf-transform/cli copy in.glb out.glb).
     if not os.path.exists(path): path = os.path.join(os.path.dirname(OUT.rstrip('/')), 'wpdec', f'{name}.glb')

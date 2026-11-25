@@ -13,7 +13,7 @@ def bounds(objs):
             for i in range(3): lo[i] = min(lo[i], w[i]); hi[i] = max(hi[i], w[i])
     return lo, hi
 PLANTS = ('tree', 'shrub', 'grass', 'plant', 'sapling', 'nettle', 'weed', 'boulder', 'stump', 'trunk')
-LIMITS = {'pine_tree_01': 26000, 'fir_tree_01': 26000, 'grass_medium_01': 3000, 'grass_medium_02': 3000, 'nettle_plant': 3000, 'weed_plant_02': 3000, 'shrub_02': 6000, 'shrub_04': 6000, 'fir_sapling': 6000, 'boulder_01': 3000, 'tree_stump_01': 3000, 'dead_tree_trunk': 5000, 'modular_electricity_poles': 9000}
+LIMITS = {'pine_tree_01': 26000, 'fir_tree_01': 26000, 'grass_medium_01': 1200, 'grass_medium_02': 1200, 'nettle_plant': 1500, 'weed_plant_02': 1500, 'shrub_02': 2400, 'shrub_04': 1800, 'fir_sapling': 3000, 'boulder_01': 1200, 'tree_stump_01': 1500, 'dead_tree_trunk': 3000, 'modular_electricity_poles': 9000, 'modular_chainlink_fence': 5000, 'wooden_crate_02': 1600, 'street_lamp_01': 4000, 'security_camera_01': 2500, 'concrete_road_barrier': 4000, 'metal_jerrycan': 3000, 'cardboard_box_01': 1500}
 def export(name, limit=14000):
     limit = LIMITS.get(name, limit)
     bpy.context.view_layer.update()

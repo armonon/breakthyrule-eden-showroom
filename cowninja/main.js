@@ -23,7 +23,7 @@ const STEP = 1 / 60;
 async function boot() {
   const container = $('scene'), status = $('cn-status');
   const renderer = new THREE.WebGPURenderer({ antialias: false, forceWebGL: query.get('webgl') === '1', powerPreference: 'high-performance' });
-  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
+  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.AgXToneMapping; renderer.toneMappingExposure = 1.35;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5)); renderer.setSize(container.clientWidth, container.clientHeight, false);
   container.append(renderer.domElement); await renderer.init();
@@ -46,7 +46,7 @@ async function boot() {
     // (never allowed to hold the page: after 30 s the game starts and they appear when they arrive)
     Promise.race([Promise.all([...['harbor', 'boulevard', 'coast', 'midnight'].map(id => window.GardenCharacterRocketbox?.load(id).catch(() => {})), Promise.resolve(window.GardenAnim?.load?.()).catch(() => {})]), new Promise(r => setTimeout(r, 30000))]).catch(() => {}),
   ]);
-  const world = createWorld({ scene, physics, assets });
+  const world = createWorld({ scene, physics, assets, shadows: query.has('sh') ? Number(query.get('sh')) : matchMedia?.('(pointer: coarse)').matches ? 2 : 7 });
   const blood = createBlood({ scene });
   const audio = createAudio({ camera });
   const stats = { knockouts: 0, herdKnockouts: 0, flips: 0, hits: 0, start: 0, time: 0 };
@@ -81,7 +81,9 @@ async function boot() {
   const farmers = createFarmers({ scene, physics, world, cow, blood, onEvent, target: actor });
   const truck = createTruck({ scene, physics, world, cow, blood, onEvent, assets, target: actor });
   const herd = createHerd({ scene, world, cow, farmers, assets });
-  let quality = Number(query.get('q') ?? 0), post = createGrimPost({ renderer, scene, camera, occlusion: query.get('ao') !== '0' && quality < 2 });
+  // Phones and tablets start without reflections and occlusion; desktops get everything and step down if slow.
+  const handheld = matchMedia?.('(pointer: coarse)').matches;
+  let quality = Number(query.get('q') ?? (handheld ? 2 : 0)), post = createGrimPost({ renderer, scene, camera, level: quality, occlusion: query.get('ao') !== '0' });
 
   // Input. `keys` holds what is held; E (use) and Q (whistle) are single presses.
   const keys = new Set(), map = { KeyW: 'w', ArrowUp: 'w', KeyS: 's', ArrowDown: 's', KeyA: 'a', ArrowLeft: 'a', KeyD: 'd', ArrowRight: 'd', ShiftLeft: 'shift', ShiftRight: 'shift', Space: 'space', KeyC: 'crouch', ControlLeft: 'crouch' };
@@ -185,9 +187,10 @@ async function boot() {
     const average = slow / measured; slow = 0; measured = 0;
     if (average < .03) return;
     quality++; measureFrom = now + 1500;
-    if (quality === 1) renderer.setPixelRatio(1);
-    else if (quality === 2) { post.dispose(); post = createGrimPost({ renderer, scene, camera, occlusion: false }); }
-    else { renderer.setPixelRatio(.75); scene.traverse(o => { if (o.isLight && o.castShadow && o.shadow.mapSize.x > 1024) { o.shadow.mapSize.set(1024, 1024); o.shadow.map?.dispose(); o.shadow.map = null; } }); } // shadows stay: without the moon's, it shines through the roof
+    // 1: no reflections · 2: also no occlusion, pixel ratio 1 · 3: also no temporal AA, pixel ratio .75, smaller shadows.
+    post.dispose(); post = createGrimPost({ renderer, scene, camera, level: quality });
+    if (quality === 2) renderer.setPixelRatio(1);
+    if (quality === 3) { renderer.setPixelRatio(.75); scene.traverse(o => { if (o.isLight && o.castShadow && o.shadow.mapSize.x > 512 && !o.isDirectionalLight) { o.shadow.mapSize.set(512, 512); o.shadow.map?.dispose(); o.shadow.map = null; } }); }
     renderer.setSize(container.clientWidth, container.clientHeight, false);
   }
 

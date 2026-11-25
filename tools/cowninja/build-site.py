@@ -16,6 +16,8 @@ from mathutils import Vector
 args = sys.argv[sys.argv.index('--') + 1:]
 WORK, OUT = args[0], args[1]
 BAKE = '--no-bake' not in args
+# Generated hero pieces (docs/cowninja-modly-library.md) that are in the repo replace the scripted stand-ins.
+MODLY = {f[:-4] for f in os.listdir(f'{OUT}/modly') if f.endswith('.glb')} if os.path.isdir(f'{OUT}/modly') else set()
 SAMPLES = int(args[args.index('--samples') + 1]) if '--samples' in args else 40
 LM_SIZE = 2048
 random.seed(11)
@@ -417,10 +419,13 @@ CEILINGS.append([CX0, CX1, CZ0, CZ1, CH]); INTERIORS.append([CX0, CX1, CZ0, CZ1]
 for i in range(15): box('curtain', (-14.45 + i * .233, .05, CZ0 - .12 + (i % 2) * .03), (-14.24 + i * .233, 2.98, CZ0 - .1 + (i % 2) * .03), 'curtain', group='kit', solid=False)
 # Kill floor: the knocking box at the pen gate, the bleed rail with shackles and chains, a hoist, a splitting
 # platform with steps, the drain, hose reels, a catwalk along the north wall up to the office roof.
-box('knockbox-base', (2, 0, 19.6), (5.4, .25, 23.4), 'plate')
-for z in (19.6, 23.2): box('knockbox-side', (2, .25, z), (5.4, 1.9, z + .2), 'plate')
-box('knockbox-back', (5.2, .25, 19.6), (5.4, 1.9, 23.4), 'plate')
-cyl('knockbox-rail', (2, 1.9, 19.7), (2, 1.9, 23.3), .05, 'steel', 8)
+if 'knocking-box' in MODLY:
+    for mn, mx in (((2, 0, 19.6), (5.4, .25, 23.4)), ((2, .25, 19.6), (5.4, 1.9, 19.8)), ((2, .25, 23.2), (5.4, 1.9, 23.4)), ((5.2, .25, 19.6), (5.4, 1.9, 23.4))): solid_only(mn, mx)
+else:
+    box('knockbox-base', (2, 0, 19.6), (5.4, .25, 23.4), 'plate')
+    for z in (19.6, 23.2): box('knockbox-side', (2, .25, z), (5.4, 1.9, z + .2), 'plate')
+    box('knockbox-back', (5.2, .25, 19.6), (5.4, 1.9, 23.4), 'plate')
+    cyl('knockbox-rail', (2, 1.9, 19.7), (2, 1.9, 23.3), .05, 'steel', 8)
 RAIL_Y = 4.9    # bleeding rail height for cattle (~4.9 m); the dressing rail runs beside it at ~3.4 m
 rails = [((2, RAIL_Y, 21.5), (-12, RAIL_Y, 21.5)), ((-12, RAIL_Y, 6), (-12, RAIL_Y, 35.4)), ((-12, 3.4, 35.4), (-12, 3.4, 46.6)), ((-17.5, 3.4, 8), (-17.5, 3.4, 35.4))]
 for z in (39, 42, 45): rails.append(((-24.6, 3.3, z), (-7, 3.3, z)))
@@ -445,7 +450,7 @@ for i, z in enumerate(range(8, 35, 2)):
     o = bpy.data.objects.new('shackle', chain_obj.data); scene.collection.objects.link(o); o.location = B((-12, RAIL_Y - .05, z)); OBJS['kit'].append(o)
 for x in range(-10, 2, 2):
     o = bpy.data.objects.new('shackle', chain_obj.data); scene.collection.objects.link(o); o.location = B((x, RAIL_Y - .05, 21.5)); OBJS['kit'].append(o)
-box('hoist', (-12.3, RAIL_Y + .1, 5.6), (-11.7, RAIL_Y + .6, 6.4), 'yellow', group='kit', solid=False)
+if 'chain-hoist' not in MODLY: box('hoist', (-12.3, RAIL_Y + .1, 5.6), (-11.7, RAIL_Y + .6, 6.4), 'yellow', group='kit', solid=False)
 # Splitting platform with steps: a climbable stage in the middle of the floor.
 box('platform', (-17, 1.6, 25), (-14, 1.75, 30), 'grate')
 for x in (-17, -14):
@@ -475,7 +480,9 @@ LX0, LX1, LZ0, LZ1 = 30, 50, 4, 44
 rail_fence(LX0, LZ0, LX1, LZ0); rail_fence(LX1, LZ0, LX1, LZ1); rail_fence(LX0, LZ1, LX1, LZ1)
 rail_fence(LX0, LZ0, LX0, 29.6); rail_fence(LX0, 33, LX0, LZ1)
 for z in (14, 24, 34): rail_fence(LX0, z, LX1 - 4, z)
-rail_fence(BX1 + .2, 29.6, LX0, 29.6, 1.6); rail_fence(BX1 + .2, 33, LX0, 33, 1.6)   # the race
+if 'cattle-race-panel' in MODLY:   # the race: solid generated panels (collision here, the models placed below)
+    for z in (29.6, 33): solid_only((BX1 + .2, 0, z - .1), (LX0, 1.6, z + .1), surface=False)
+else: rail_fence(BX1 + .2, 29.6, LX0, 29.6, 1.6); rail_fence(BX1 + .2, 33, LX0, 33, 1.6)   # the race
 for x in (34, 44): box('trough', (x, 0, LZ0 + .3), (x + 2.4, .6, LZ0 + .9), 'concrete')
 for i, (x, z) in enumerate([(47, 8), (47.5, 18), (46.8, 28), (47.3, 38)]):
     cyl('hay', (x - .6, .7, z), (x + .6, .7, z), .7, 'hay', 18)
@@ -583,6 +590,23 @@ for (x, z) in [(-20, 42), (-11, 42)]: lamp((x, 3.9, z), 0xbfe6ff, 26, 14, .2, [1
 lamp((16, 3.0, 6), 0xfff0d8, 30, 14, 0, [1.2, .05, .3])           # office
 lamp((16, 5.6, 36), 0xd8f0e6, 30, 22, .5, [1.9, .05, .12])        # pen
 
+# Generated hero pieces, placed by the game: [name, x, y, z, yaw, scale, part] with the name 'modly:<file>'.
+def modly(name, x, y, z, yaw=0.0, scale=1.0):
+    if name in MODLY: PROPS.append(['modly:' + name, x, y, z, yaw, scale, None])
+for z in (12, 14.5, 17, 25, 27.5, 31):                                   # sides on the bleed rail (bar along the rail)
+    modly('beef-half-carcass', -12, RAIL_Y - 2.42, z, math.pi / 2 + random.uniform(-.06, .06), random.uniform(.95, 1.03))
+for zz in (39, 42, 45):                                                  # the chiller: rows of sides
+    for x in [-23.3 + i * 2.5 for i in range(7)]:
+        if random.random() < .12: continue
+        modly('beef-half-carcass', x + random.uniform(-.15, .15), 3.3 - 2.42, zz, random.uniform(-.08, .08) + (math.pi if random.random() < .5 else 0), random.uniform(.95, 1.04))
+modly('knocking-box', 3.7, 0, 21.5, 0, 1.12)
+modly('chain-hoist', -12, RAIL_Y - 1.0, 6.2, math.pi / 2, 1.0)
+modly('chiller-door', CX1 + .15, 0, 41, math.pi / 2, 1.0); modly('chiller-door', -19, 0, BZ1 - T / 2 - .2, 0, 1.0)
+for z in (29.6, 33):
+    for x in (27.45, 29.35): modly('cattle-race-panel', x, 0, z, math.pi / 2, 1.0)
+for z in (14, 24, 34): modly('cattle-gate', LX1 - 2, 0, z, 0, 1.25)
+modly('old-pickup', -40, 0, -46, .35, .86)
+
 POINTS = {
     'spawn': {'x': 0, 'z': -78, 'yaw': 0}, 'cowSpawn': {'x': 16, 'z': 40, 'yaw': -math.pi / 2},
     'exit': {'x': 0, 'z': -72, 'radius': 9}, 'gateZ': FZ0, 'bounds': [-150, 150, -340, 160],
@@ -625,7 +649,7 @@ F = .05   # kill-floor tile top
 for z in (8, 10.5, 13, 15.5, 18, 21.5, 24, 27, 30, 33): decal('pool', -12 + rg.uniform(-.5, .5), F + .004, z, rg.uniform(2.2, 3.6), rg.uniform(2.2, 3.6), rg.uniform(0, 6.28))
 for x in (-1, -4, -7, -10): decal('smear', x, F + .006, 21.5 + rg.uniform(-.4, .4), 3.4, 1.4, rg.uniform(-.15, .15))
 for z in (7, 12, 17, 22, 27, 32): decal('smear', -12.8, F + .006, z, 4.2, 1.2, math.pi / 2 + rg.uniform(-.2, .2))
-decal('pool', 3.7, .255, 21.5, 2.8, 3.2, .4)                                        # inside the knocking box
+decal('pool', 3.7, .255 if 'knocking-box' not in MODLY else .06, 21.5, 2.8, 3.2, .4)   # in (or under) the knocking box
 for i in range(5): decal('smear', 1.0 - i * .4, F + .007, 20.5 + i * .5, 2.5, .9, rg.uniform(-.6, .6))
 decal('pool', -15.5, 1.756, 27.5, 2.6, 4, 0); decal('drip', -14.0, 0, 27.5, 4, 1.7, face=('x', '+'))   # splitting platform
 for i in range(18): decal('smear', -15.5 + rg.uniform(-3, 3), F + .008, 27.5 + rg.uniform(-4, 4), rg.uniform(1, 3), rg.uniform(.6, 1.4), rg.uniform(0, 6.28))
@@ -635,7 +659,7 @@ for z in range(5, 35, 2):
     if rg.random() < .55: decal('drip', BX0 + T / 2 + .008, rg.uniform(.2, 1.4), z + rg.uniform(-.8, .8), rg.uniform(.8, 1.6), rg.uniform(1.2, 2.4), face=('x', '+'))
 for x in (-20, -15, -9, -4): decal('spray', x, .2, BZ0 + T / 2 + .006, 2.2, 2.0, face=('z', '+'))
 for z in (2, 4, 7, 10): decal('spray', OX0 - .09, .1, z, 1.6, 1.3, face=('x', '-'))
-decal('spray', 5.19, .3, 21.5, 3.6, 1.5, face=('x', '-')); decal('drip', 2.01, .3, 21.5, 3.4, 1.5, face=('x', '-'))
+if 'knocking-box' not in MODLY: decal('spray', 5.19, .3, 21.5, 3.6, 1.5, face=('x', '-')); decal('drip', 2.01, .3, 21.5, 3.4, 1.5, face=('x', '-'))
 # Floor everywhere on the kill floor: dried trails, spray, boot-tracked smears, pink wash water running to the drain.
 for i in range(70):
     x, z = rg.uniform(BX0 + 1, 5), rg.uniform(1, 35)
@@ -719,7 +743,7 @@ pipe_run([(-30.2, 3.0, 57), (-30.2, 3.0, BZ1 + .8), (24, 3.0, BZ1 + .8)], .07, '
 # ---------------------------------------------------------------------------------------------------- hanging halves
 def halves():
     cow = f'{OUT}/cow.glb'
-    if not os.path.exists(cow): return
+    if not os.path.exists(cow) or 'beef-half-carcass' in MODLY: return
     before = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=cow)
     new = [o for o in bpy.data.objects if o not in before]; body = next((o for o in new if o.type == 'MESH' and o.name.startswith('cow') and 'eye' not in o.name), None)
     if not body: return
@@ -849,7 +873,7 @@ for o in bpy.data.objects:
 bpy.ops.object.select_all(action='DESELECT')
 bpy.ops.export_scene.gltf(filepath=f'{OUT}/site.glb', export_format='GLB', export_image_format='WEBP', export_image_quality=80, export_extras=True,
                           export_apply=True, export_animations=False, export_yup=True, export_lights=False, export_cameras=False)
-data = {'version': 1, 'solids': SOLIDS, 'ceilings': CEILINGS, 'interiors': INTERIORS, 'ramps': RAMPS, 'lights': LIGHTS, 'props': PROPS, 'loose': LOOSE, 'scatter': SCATTER, 'points': POINTS}
+data = {'version': 1, 'modly': sorted(MODLY), 'solids': SOLIDS, 'ceilings': CEILINGS, 'interiors': INTERIORS, 'ramps': RAMPS, 'lights': LIGHTS, 'props': PROPS, 'loose': LOOSE, 'scatter': SCATTER, 'points': POINTS}
 json.dump(data, open(f'{OUT}/site.json', 'w'), separators=(',', ':'))
 tris = sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in bpy.data.objects if o.type == 'MESH')
 print('SITE', os.path.getsize(f'{OUT}/site.glb') // 1024, 'KB', tris, 'tris', len(SOLIDS), 'solids', sum(len(v) for v in SCATTER.values()), 'scattered', flush=True)

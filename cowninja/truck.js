@@ -7,9 +7,13 @@ const HALF = [1.02, .78, 2.05], MASS = 1500, REST = .8, TOP = 14.5, ACCEL = 6, T
 
 export function createTruck({ scene, physics, world, cow, blood, onEvent, assets, target = null }) {
   const group = new THREE.Group(), cube = new THREE.BoxGeometry(1, 1, 1);
-  // The pickup model (assets/cowninja/props/pickup.glb): body, four wheels that turn, headlights that die in a wreck.
-  const model = assets?.clone('pickup'), wheels = [], beams = [];
-  if (model) {
+  // The generated old pickup when it is there (no separate wheels), else the low-poly one with turning wheels.
+  const generated = assets?.clone('modly:old-pickup'), model = generated || assets?.clone('pickup'), wheels = [], beams = [];
+  if (generated) {
+    const fit = new THREE.Box3().setFromObject(generated), size = fit.getSize(new THREE.Vector3()), k = 4.3 / Math.max(size.x, size.z);
+    generated.scale.setScalar(k); generated.rotation.y = size.z > size.x ? Math.PI : Math.PI / 2;   // nose to -z
+    generated.position.set(0, -REST - fit.min.y * k, 0); group.add(generated);
+  } else if (model) {
     model.position.y = -REST; group.add(model);
     model.traverse(o => { if (/^wheel-/.test(o.name)) { o.rotation.order = 'YXZ'; wheels.push(o); } if (o.isMesh && /headlights/.test(o.material.name)) { o.material = o.material.clone(); beams.push(o); } });
   } else {
