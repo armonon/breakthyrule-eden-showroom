@@ -279,8 +279,8 @@
   // jostles rather than topples. Returns false (the caller keeps the procedural reaction) when it is unavailable.
   let reactions=null;
   function physicalHit(b,dir,strength,zone){
-   if(strength<1.2)strength*=1.35; // a body that is shot gives
-   if(!reactions||(strength<1.2&&clock-(b.lastPhysical??-9)<.22))return false;
+   const light=strength<1.2;if(light)strength=Math.min(1.19,strength*1.35); // a body that is shot gives
+   if(!reactions||(light&&clock-(b.lastPhysical??-9)<.22))return false;
    if(!reactions.hit(b.model,{direction:dir,strength,zone,velocity:b.vel}))return false;
    b.lastPhysical=clock;return true;
   }
@@ -294,8 +294,8 @@
   function wound(b,dir,meta,through){
    if(!b.bot||through<=0)return;
    if(clock-(b.lastStep??-9)>.3&&!b.stagger){b.lastStep=clock;stagger(b,dir,.14+Math.min(.16,through/160),.22);}
-   if(meta.zone==='leg')b.limpT=Math.max(b.limpT||0,1.1);
-   if(meta.zone==='arm'){b.fireT=Math.max(b.fireT,.3);b.aimT=Math.max(b.aimT,.18);}
+   if(meta.zone==='leg'&&clock-(b.lastLeg??-9)>1.6){b.lastLeg=clock;b.limpT=Math.max(b.limpT||0,1.1);}
+   if(meta.zone==='arm'&&clock-(b.lastArm??-9)>.9){b.lastArm=clock;b.fireT=Math.max(b.fireT,.3);b.aimT=Math.max(b.aimT,.18);}
    b.hurtSum=(clock-(b.hurtAt??-9)<1.1?b.hurtSum||0:0)+through;b.hurtAt=clock;
    if(b.hurtSum>42&&clock-(b.lastFold??-9)>2.6){b.lastFold=clock;b.hurtSum=0;b.stunT=Math.max(b.stunT||0,.35);b.model.motion?.play?.('hitChest',{mask:'upper',fade:.05,speed:.85});b.model.motion?.hit?.(dir,1,{zone:'leg'});}
   }
@@ -779,7 +779,7 @@
   function kitPlayer(){combat.arsenal.set({owned:['axe','pistol'],reserve:{pistol:24},loaded:{pistol:12}});combat.equip('pistol');}
   function respawnBot(b){
    const spot=farSpawn();b.model.motion?.revive?.();b.root.position.set(spot.x,groundY(spot.x,spot.z),spot.z);b.root.rotation.set(0,rand(0,TAU),0);
-   Object.assign(b,{stagger:null,stunT:0,limpT:0,hurtSum:0,lastFold:-9,lastStep:-9,hp:100,shield:SHIELD_BOT,shieldMax:SHIELD_BOT,armor:0,armorMax:0,garment:null,alive:true,respawnAt:0,lastHurt:-9,lastFlinch:-9,flinchT:0,dodgeT:0,bashT:0,deathT:0,target:null,goal:null,seen:null,healing:null,healT:0,fireT:0,reloadT:0,aimT:0,think:rand(0,.3),repath:0,strafeT:0,stride:0,heading:b.root.rotation.y,heals:{bandage:0,medkit:0},state:'roam'});
+   Object.assign(b,{stagger:null,stunT:0,limpT:0,hurtSum:0,lastFold:-9,lastStep:-9,lastLeg:-9,lastArm:-9,hp:100,shield:SHIELD_BOT,shieldMax:SHIELD_BOT,armor:0,armorMax:0,garment:null,alive:true,respawnAt:0,lastHurt:-9,lastFlinch:-9,flinchT:0,dodgeT:0,bashT:0,deathT:0,target:null,goal:null,seen:null,healing:null,healT:0,fireT:0,reloadT:0,aimT:0,think:rand(0,.3),repath:0,strafeT:0,stride:0,heading:b.root.rotation.y,heals:{bandage:0,medkit:0},state:'roam'});
    b.path.length=0;kitBot(b);formBot(b);rendererShadowDirty();
   }
   function rendererShadowDirty(){const r=window.breakThyRuleShowroom?.renderer?.();if(r)r.shadowMap.needsUpdate=true;}

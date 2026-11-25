@@ -480,7 +480,7 @@
   }
   let chipNext=0;
   function chip(pos,vel,color,size,{flat=1,float=0,life=2.6}={}){
-   if(!chips)return;const i=chipNext++%chipList.length,c=chipList[i];c.alive=true;c.t=0;c.life=life;c.float=float;c.p.copy(pos);c.v.copy(vel);c.r.set(rand(0,TAU),rand(0,TAU),rand(0,TAU));c.w.set(rand(-22,22),rand(-22,22),rand(-22,22));c.s.set(size*rand(.6,1.3),size*flat*rand(.6,1.2),size*rand(.6,1.3));c.floor=null;
+   if(!chips)return;const i=chipNext++%chipList.length,c=chipList[i];c.alive=true;c.t=0;c.life=life;c.float=float;c.p.copy(pos);c.v.copy(vel);c.r.set(rand(0,TAU),rand(0,TAU),rand(0,TAU));c.w.set(rand(-22,22),rand(-22,22),rand(-22,22));c.s.set(size*rand(.6,1.3),size*flat*rand(.6,1.2),size*rand(.6,1.3));c.floor=null;c.still=false;
    chips.setColorAt(i,chipC.copy(color).multiplyScalar(rand(.7,1.15)));chips.instanceColor.needsUpdate=true;
   }
   function updateChips(dt){
@@ -489,19 +489,19 @@
     if(c.t>=c.life){c.alive=false;chips.setMatrixAt(i,chipM.makeScale(0,0,0));continue;}
     if(c.float){c.v.y+=(-.7-c.v.y)*(1-Math.exp(-4*dt));c.v.x*=Math.exp(-2*dt);c.v.z*=Math.exp(-2*dt);}else c.v.y-=9.81*dt;
     if(!c.still){c.p.addScaledVector(c.v,dt);c.r.addScaledVector(c.w,dt*(c.float?.3:1));}
-    if(c.floor===null||c.p.y<c.floor+.1)c.floor=groundAt(c.p.x,c.p.z,c.p.y+.3);
-    if(c.p.y<c.floor+c.s.y*.5){c.p.y=c.floor+c.s.y*.5;c.v.y=Math.abs(c.v.y)>.5&&!c.float?-c.v.y*.28:0;c.v.x*=.5;c.v.z*=.5;c.w.multiplyScalar(.35);}
+    if(!c.still&&(c.floor===null||c.p.y<c.floor+.1))c.floor=groundAt(c.p.x,c.p.z,c.p.y+.3);
+    if(c.p.y<c.floor+c.s.y*.5){c.p.y=c.floor+c.s.y*.5;c.v.y=Math.abs(c.v.y)>.5&&!c.float?-c.v.y*.28:0;c.v.x*=.5;c.v.z*=.5;c.w.multiplyScalar(.35);if(c.v.y===0&&c.v.lengthSq()<.004)c.still=true;}
     const end=Math.min(1,(c.life-c.t)/.35);chips.setMatrixAt(i,chipM.compose(c.p,chipQ.setFromEuler(chipE.set(c.r.x,c.r.y,c.r.z)),chipS.copy(c.s).multiplyScalar(end)));}
    if(any)chips.instanceMatrix.needsUpdate=true;
   }
   // What a bullet met, for the footage look: the ground's own kind where it is ground, else what the thing is called or made of.
   function kindOf(hit,n,mat){
    const name=(hit.object.name||'')+' '+(mat?.name||'')+' '+(hit.object.parent?.name||'');
-   if(/leaf|foliage|flower|fern|grass|shrub|hedge|ivy|plant/i.test(name))return 'leaf';
+   if(/sandbag|terracotta|\bpots?\b|amphora|planter/i.test(name))return 'clay';
+   if(/leaf|leaves|foliage|flower|fern|grass|shrub|hedge|\bivy|\bplants?\b/i.test(name))return 'leaf';
    if(/glass|window/i.test(name))return 'glass';
    if(/wood|crate|timber|plank|bark|cart|barrel-wood|signpost|barricade|bench|door/i.test(name))return 'wood';
-   if(/iron|steel|bronze|metal|barrel|hydrant|lamp|gate|portcullis|chandelier|anvil|container|drum/i.test(name)||mat?.metalness>.5)return 'metal';
-   if(/sandbag|terracotta|pot|amphora|planter/i.test(name))return 'clay';
+   if(/\biron\b|steel|bronze|metal|barrel|hydrant|\blamp|\bgate\b|portcullis|chandelier|anvil|container|drum/i.test(name)||mat?.metalness>.5)return 'metal';
    if(n.y>.7&&hit.point.y<.12&&hit.point.z<-20){const g=root.edenMatrix?.ground?.(hit.point.x,hit.point.z);if(g?.wet)return 'water';if(g?.type==='earth')return 'earth';if(g?.type==='asphalt')return 'asphalt';}
    const c=mat?.color;return c&&c.r-c.b>.12?'plaster':'stone';
   }
@@ -585,7 +585,7 @@
    s.spin.set(rand(-20,20),rand(-30,30),rand(-20,20));s.ground=groundAt(pos.x,pos.z,pos.y+.3);s.bounces=0;s.age=0;s.real=real();s.rest=false;s.wall=null;
    // Brass to the calibre, carrying your own movement; the one wall it could reach on the way down is found once, now.
    s.mesh.scale.setScalar(s.real&&type==='pistol'?({rifle:1.55,sniper:2.1,smg:1.15}[current.id]||1):1);s.size=s.mesh.scale.x;
-   if(s.real){s.vel.add(bodyVel);shellDir.copy(s.vel).setY(0);const reach=shellDir.length();if(reach>.3){shellDir.divideScalar(reach);const h=worldHits(pos,shellDir,2.2);if(h&&h.face){s.wall=(s.wallN||=new T.Vector3()).copy(h.face.normal).transformDirection(h.object.matrixWorld).setY(0);s.wallAt=(s.wallP||=new T.Vector3()).copy(h.point);if(s.wall.lengthSq()<.2)s.wall=null;else s.wall.normalize();}}}
+   if(s.real){s.vel.add(bodyVel);shellDir.copy(s.vel).setY(0);const reach=shellDir.length();if(reach>.3&&!mobile){shellDir.divideScalar(reach);const h=worldHits(pos,shellDir,2.2);if(h&&h.face&&!h.object.isInstancedMesh){s.wall=(s.wallN||=new T.Vector3()).copy(h.face.normal).transformDirection(h.object.matrixWorld).setY(0);s.wallAt=(s.wallP||=new T.Vector3()).copy(h.point);if(s.wall.lengthSq()<.2)s.wall=null;else s.wall.normalize();}}}
   }
   // Beyond Eden's footage look (app.js bodycam): everything here that is only for it asks this.
   const real=()=>!!root.bodycam?.active?.();
@@ -596,7 +596,7 @@
   function shellStep(s,dt){
    const p=s.mesh.position;s.vel.y-=9.81*dt;s.vel.multiplyScalar(Math.exp(-.12*dt));p.addScaledVector(s.vel,dt);
    s.mesh.rotation.x+=s.spin.x*dt;s.mesh.rotation.y+=s.spin.y*dt;s.mesh.rotation.z+=s.spin.z*dt;
-   if(s.wall){const d=(p.x-s.wallAt.x)*s.wall.x+(p.z-s.wallAt.z)*s.wall.z,v=s.vel.dot(s.wall);if(d<.012&&v<0){p.addScaledVector(s.wall,.012-d);s.vel.addScaledVector(s.wall,-1.45*v);s.spin.multiplyScalar(-.7);if(s.bounces<2)sfx.tink(s.kind,p,.7);}}
+   if(s.wall&&Math.hypot(p.x-s.wallAt.x,p.z-s.wallAt.z)<.35&&Math.abs(p.y-s.wallAt.y)<1.6){const d=(p.x-s.wallAt.x)*s.wall.x+(p.z-s.wallAt.z)*s.wall.z,v=s.vel.dot(s.wall);if(d<.012&&v<0){p.addScaledVector(s.wall,.012-d);s.vel.addScaledVector(s.wall,-1.45*v);s.spin.multiplyScalar(-.7);if(s.bounces<2)sfx.tink(s.kind,p,.7);}}
    const floor=s.ground+.0055*s.size;
    if(p.y>floor)return;
    // Off an edge or onto a step: look again under where it has got to.
@@ -1083,7 +1083,7 @@
   // lighter when the magazine drops, and is knocked up and settles when the new one is driven home. Timing is untouched.
   let wasRunning=false;
   function reloadWeight(w,a,out){
-   if(a.name!=='reload'||!real())return;const h=1+(WEIGHT[w.id]||0)*1.1,away=clamp(a.leftAway||0,0,1),t=a.t;
+   if(a.name!=='reload'||!real())return;const h=1+(WEIGHT[w.id]||0)*1.1,away=clamp(w.id==='pump'?a.leftAway==null?0:1-a.leftAway:a.leftAway||0,0,1),t=a.t;
    out.y-=.010*away*h;out.rx-=.045*away*h;out.rz+=.02*Math.sin(t*5.2)*away;out.x+=.0035*Math.sin(t*3.7+1)*away;out.ry+=.015*Math.sin(t*2.9)*away;
    if(o.reduced)return;
    if((a.dropped||a.out)&&!a.felt){a.felt=true;anim.posY.kick(-.7);anim.rotX.kick(.9);}
@@ -1538,7 +1538,7 @@
   // one probe to the next. Directions are world directions, turned into the view.
   const viewQ=new T.Quaternion(),lightNow={sky:new T.Color(),ground:new T.Color(),key:new T.Color(),rim:new T.Color(),keyDir:new T.Vector3(0,1,0),rimDir:new T.Vector3(0,1,0),env:0},lightTo={sky:new T.Color(),ground:new T.Color(),key:new T.Color(),rim:new T.Color(),keyDir:new T.Vector3(0,1,0),rimDir:new T.Vector3(0,1,0),env:0};let lightAt=0;
   // Weapon materials carry the studio map themselves, at full strength: dim it with the place.
-  const studio=new Map();let studioAt=0,studioNow=1;
+  const studio=new Map(),weaponSkins=new Map();let studioAt=0,studioNow=1;
   function dimStudio(k){const now=performance.now();if(k!==1&&now-studioAt>1000||k!==studioNow&&!studio.size){studioAt=now;viewScene.traverse(x=>{if(x.isMesh)for(const m of [].concat(x.material))if(m?.envMap&&!studio.has(m))studio.set(m,m.envMapIntensity);});}
    if(k===1&&studioNow===1)return;studioNow=k;for(const [m,base] of studio)m.envMapIntensity=base*k;}
   function viewLight(){
@@ -1719,7 +1719,7 @@
    primeView(){build();ensureViewFlash();const hidden=[];viewScene.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}});const auto=renderer.autoClear,wasArmed=armed;try{renderer.autoClear=false;renderer.render(viewScene,viewCamera);armed=true;warmPost();}finally{armed=wasArmed;renderer.autoClear=auto;for(const o of hidden)o.visible=false;}},
    prewarmShaders(){build();sfx.init();ensureViewFlash();warmPost();const hidden=[];viewScene.traverse(x=>{if(!x.visible&&!x.isLight){hidden.push(x);x.visible=true;}});try{const job=renderer.compileAsync?renderer.compileAsync(viewScene,viewCamera):renderer.compile(viewScene,viewCamera);job?.catch?.(()=>{});}catch(e){console.warn('Weapon prewarm failed',e);}finally{for(const x of hidden)x.visible=false;}return hidden.length;},
    ready(){build();return armsRig?armsRig.ready.then(()=>true,()=>false):Promise.resolve(false);},
-   weaponModel(id){build();if(id==='c4'){const g=buildC4Block();return g;}const w=armsRig?.weapons[id];if(!w)return null;const c=w.model.clone(true),own=new Map();/* its own materials: the ones in your hands are dimmed with the place you stand in */c.traverse(x=>{x.visible=true;if(x.isMesh&&!Array.isArray(x.material)&&x.material){let m=own.get(x.material);if(!m){m=x.material.clone();m.onBeforeCompile=x.material.onBeforeCompile;m.customProgramCacheKey=x.material.customProgramCacheKey;m.envMapIntensity=studio.get(x.material)??x.material.envMapIntensity;own.set(x.material,m);}x.material=m;}});return c;},
+   weaponModel(id){build();if(id==='c4'){const g=buildC4Block();return g;}const w=armsRig?.weapons[id];if(!w)return null;const c=w.model.clone(true),own=weaponSkins;/* its own materials: the ones in your hands are dimmed with the place you stand in */c.traverse(x=>{x.visible=true;if(x.isMesh&&!Array.isArray(x.material)&&x.material){let m=own.get(x.material);if(!m){m=x.material.clone();m.onBeforeCompile=x.material.onBeforeCompile;m.customProgramCacheKey=x.material.customProgramCacheKey;m.envMapIntensity=studio.get(x.material)??x.material.envMapIntensity;own.set(x.material,m);}x.material=m;}});return c;},
    setHudMode(mode){build();hud.el.dataset.mode=mode||'';},
    armed:()=>armed,
    weapon:()=>current&&current.id!=='fists'?current.id:null,
