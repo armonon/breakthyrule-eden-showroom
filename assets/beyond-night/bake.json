@@ -2,7 +2,7 @@
  "format": 3,
  "world": "beyond",
  "gamma": 3.0,
- "scale": 2.273426055908203,
+ "scale": 2.2774388790130615,
  "bounds": [
   -82,
   102,
@@ -110,7 +110,7 @@
  ],
  "unit": "linear irradiance; RGB=(irradiance/scale)^(1/gamma); probe A alpha=lamp/altar visibility, probe B alpha=moon visibility; sun.jpg R=moon visibility G=lamp/altar visibility B=contact occlusion",
  "weights": {
-  "sky": 2.2,
+  "sky": 3.0,
   "lamps": 0.5,
   "uplight": 0.7,
   "moon": 1.5,
@@ -695,8 +695,8 @@
   "unit": "game meters, Y up"
  },
  "assets": {
-  "lightmap.jpg": "80d9ed403dd03e5d88d20bd1e0e3a8ff2b8821c3f02813cb12059bf170066545",
+  "lightmap.jpg": "c97ceb09dab742488497450d1ba03771772444b80e0c98329490519da72d1c3d",
   "sun.jpg": "86991579c1ce0f072a9f6baceda16c9c5c2645b35b2801981fef2a7981f39a2e",
-  "probes.bin": "15f3f097c6cfad9d127bd2a4a2ec86fa4af116eb8c58a6251cd519d0e46f69db"
+  "probes.bin": "9545723c3d20c4e5e8c1c132226c6a77cb2a11e2df876ffc46f7c63bb5162a7b"
  }
 }
