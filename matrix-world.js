@@ -13,7 +13,7 @@
  const time={value:0},strength={value:0},kit={value:null},program={value:null},scanA={value:null},scanB={value:null},detail={value:null};
  // The scans, one layer each of two texture arrays (a lit material here is at the GPU's 16 samplers, so no surface may
  // cost more than it did): A rgb albedo + a height, B rg normal + b roughness. SCALE is tiles per metre of each scan.
- const LAYERS=['asphalt','concrete','paving','plaster','brick','rust'],SCALE=['.25','.5','.556','.556','.667','.5'];let kitData=null;
+ const LAYERS=['asphalt','concrete','paving','plaster','brick','rust','eden'],SCALE=['.25','.5','.556','.556','.667','.5','.36'];let kitData=null;
  const phone=()=>!!root.edenRenderProfile?.().mobile,still=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
  // What the binary says, eight bits to a letter, top to bottom down each column.
  const VERSES='IN THE BEGINNING WAS THE WORD · I AM THE ALPHA AND THE OMEGA · THE LIGHT SHINES IN THE DARKNESS AND THE DARKNESS HAS NOT OVERCOME IT · JESUS IS LORD · BE STILL AND KNOW THAT I AM GOD · '.replace(/·/g,'+');
@@ -38,6 +38,9 @@
  }
  // The scans are fetched when the first material that reads them is patched (the expedition page never asks for the
  // arrays). Phones: the three ground scans only, albedo and height, 512 px. Layers fill in as their files arrive.
+ // Eden's side of the door keeps the cobble it always had: layer 'eden' is A its colour, B.rg its normal, B.ba the normal of
+ // the old paving (so it costs no extra sampler).
+ const EDEN=['/assets/castle/cobble.webp?v=1','/assets/castle/cobble-nor.webp?v=1','/assets/eden-textures/monastery_stone_floor_nor.jpg'];
  const files=new Map();let pane=null;
  function scans(T,a,b){
   if((!a||scanA.value)&&(!b||scanB.value))return;
@@ -45,14 +48,14 @@
   const n=phone()?3:LAYERS.length,S=phone()||low?512:1024,make=(fill,srgb)=>{const d=new Uint8Array(S*S*4*n);for(let i=0;i<d.length;i+=4){d[i]=fill[0];d[i+1]=fill[1];d[i+2]=fill[2];d[i+3]=fill[3];}
    const t=new T.DataArrayTexture(d,S,S,n);t.format=T.RGBAFormat;t.type=T.UnsignedByteType;t.wrapS=t.wrapT=T.RepeatWrapping;t.magFilter=T.LinearFilter;t.minFilter=T.LinearMipmapLinearFilter;t.generateMipmaps=true;t.anisotropy=phone()?2:8;if(srgb)t.colorSpace=T.SRGBColorSpace;t.onUpdate=()=>{t.userData.sent=true;};t.needsUpdate=true;return t;};
   if(!pane){const cv=document.createElement('canvas');cv.width=S;cv.height=S*2;pane=cv.getContext('2d',{willReadFrequently:true});}
-  const image=u=>files.get(u)||files.set(u,new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src='/assets/beyond-eden/scan/'+u+'.webp?v=1';})).get(u);
+  const image=u=>files.get(u)||files.set(u,new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=u[0]==='/'?u:'/assets/beyond-eden/scan/'+u+'.webp?v=1';})).get(u);
   // Rows bottom first, like any other texture here, so a wall's scan stands the right way up. -m is roughness above
   // height; turned over, height is the first S rows and roughness the rest.
   const pixels=(img,h)=>{pane.setTransform(1,0,0,-1,0,h);pane.drawImage(img,0,0,S,h);pane.setTransform(1,0,0,1,0,0);return pane.getImageData(0,0,S,h).data;};
   const sent=(t,i)=>{if(t.userData.sent)t.addLayerUpdate(i);t.needsUpdate=true;},e=S*S;
-  if(a&&!scanA.value){const t=scanA.value=make([120,112,100,128],true);LAYERS.slice(0,n).forEach(async(name,i)=>{try{
+  if(a&&!scanA.value){const t=scanA.value=make([120,112,100,128],true);LAYERS.slice(0,n).forEach(async(name,i)=>{try{if(name==='eden'){t.image.data.set(pixels(await image(EDEN[0]),S),i*e*4);sent(t,i);return;}
    const [d,m]=await Promise.all([image(name+'-d'),image(name+'-m')]);const A=t.image.data,o=i*e*4;A.set(pixels(d,S),o);const mp=pixels(m,S*2);for(let k=0;k<e;k++)A[o+k*4+3]=mp[k*4];sent(t,i);}catch{}});}
-  if(b&&!scanB.value){const t=scanB.value=make([128,128,215,255],false);LAYERS.slice(0,n).forEach(async(name,i)=>{try{
+  if(b&&!scanB.value){const t=scanB.value=make([128,128,215,255],false);LAYERS.slice(0,n).forEach(async(name,i)=>{try{if(name==='eden'){const B=t.image.data,o=i*e*4,c=pixels(await image(EDEN[1]),S),p=pixels(await image(EDEN[2]),S);for(let k=0;k<e;k++){B[o+k*4]=c[k*4];B[o+k*4+1]=c[k*4+1];B[o+k*4+2]=p[k*4];B[o+k*4+3]=p[k*4+1];}sent(t,i);return;}
    const [nor,m]=await Promise.all([image(name+'-n'),image(name+'-m')]);const B=t.image.data,o=i*e*4,np=pixels(nor,S),mp=pixels(m,S*2);for(let k=0;k<e;k++){B[o+k*4]=np[k*4];B[o+k*4+1]=np[k*4+1];B[o+k*4+2]=mp[(e+k)*4];}sent(t,i);}catch{}});}
  }
  const HASH='\nfloat mxHash(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}\n';
@@ -119,9 +122,9 @@
   const form={value:new T.Vector4(1,0,1,0)},own=material.onBeforeCompile,key=material.customProgramCacheKey.bind(material);
   patched.set(material,form);
   const ground=kind==='ground',road=kind==='road',wall=kind==='stone'||kind==='concrete',metal=kind==='metal',model=kind==='model';
-  const lean=model&&!!(material.aoMap||material.lightMap||material.emissiveMap),useA=ground||road||wall||metal,useB=!lite&&useA,useD=model&&!lean;scans(T,useA,useB);
-  // A model keeps its own textures; close to, the scanned plaster's grain is laid over its normals.
-  if(useD&&!detail.value){const t=detail.value=new T.TextureLoader().load('/assets/beyond-eden/scan/plaster-n.webp?v=1');t.wrapS=t.wrapT=T.RepeatWrapping;t.anisotropy=8;}
+  const lean=model&&!!(material.aoMap||material.lightMap||material.emissiveMap),useA=ground||road||wall||metal,useB=!lite&&useA,useD=(model&&!lean)||road&&!lite;scans(T,useA,useB);
+  // A model keeps its own textures; close to, the stone grain is laid over its normals (the same one Eden and the expedition have always had).
+  if(useD&&!detail.value){const t=detail.value=new T.TextureLoader().load('/assets/castle/wall-nor.webp?v=1');t.wrapS=t.wrapT=T.RepeatWrapping;t.anisotropy=8;}
   material.onBeforeCompile=(sh,r)=>{own.call(material,sh,r);
    Object.assign(sh.uniforms,{mxForm:form,mxTime:time,mxOn:strength,mxKit:kit});
    if(useA)sh.uniforms.mxScanA=scanA;if(useB)sh.uniforms.mxScanB=scanB;if(useD)sh.uniforms.mxNorA=detail;
@@ -164,12 +167,13 @@
     float mxSlab=smoothstep(.46,.56,mxBroad+.12*(mxFine-.5)+.24*mxIn*(1.-smoothstep(16.,30.,length(vMx.xz-vec2(12.,-62.)))));
     float mxL=mxIn*mxPlaza>.5?2.:(mxIn*mxRoad>.5?0.:1.),mxS=mxL>1.5?${SCALE[2]}:(mxL>.5?${SCALE[1]}:${SCALE[0]});vec4 mxT=mxA4(vMx.xz,mxL,mxS);${MID}
     mxPave=max(mxPlaza,mxRoad)*mxIn;float mxCover=smoothstep(.36,.64,max(mxPave,mxSlab)+(mxT.a-mxMid)*.9);
-    vec3 mxG=diffuseColor.rgb*vec3(.50,.62,.40)*(.55+.7*mxFine),mxC=mxT.rgb*mix(vec3(.17,.185,.19),mxL>1.5?vec3(.39,.39,.38):(mxL>.5?vec3(.28):vec3(.48)),mxIn)*(.8+.4*mxBroad)*${CREVICE};
+    vec3 mxG=diffuseColor.rgb*vec3(.50,.62,.40)*(.55+.7*mxFine),mxC=mxT.rgb*(mxL>1.5?vec3(.39,.39,.38):(mxL>.5?vec3(.28):vec3(.48)))*(.8+.4*mxBroad)*${CREVICE};
     float mxMoss=smoothstep(.45,.6,mxFine)*smoothstep(.4,.6,mxBroad)*smoothstep(-.02,.12,mxMid-mxT.a);mxC=mix(mxC,mxG*.9,mxMoss*.45*mxIn);
-    diffuseColor.rgb=mix(mxG,mxC,mxCover*mix(.85,1.,mxIn));
-    mxDamp=smoothstep(.45,.62,mxBroad)*(.45+.55*max(mxPave,mxCover*mxIn));mxWet=${WET}*mxCover*mxIn;
-    diffuseColor.rgb*=(1.-.45*mxDamp)*(1.-.35*mxWet);mxPave=max(mxPave,mxCover*.8);
-    ${useB?`vec4 mxN=mxB4(vMx.xz,mxL,mxS);mxBump=(mxN.xy*2.-1.)*mxCover;mxRough=mix(1.,mxN.b,mxCover*mxIn);`:''}`:road?`
+    float mxEarth=smoothstep(.50,.62,mxBroad+.12*(mxFine-.5));vec3 mxWas=${lite?'diffuseColor.rgb':`mix(mxG,mxA4(vMx.xz,6.,.36).rgb*vec3(.52,.55,.5)*.8,mxEarth*.85)`};
+    diffuseColor.rgb=mix(mxWas,mix(mxG,mxC,mxCover),mxIn);
+    mxDamp=smoothstep(.45,.62,mxBroad)*(.45+.55*max(mxPave,mxCover*mxIn))*${lite?'mxIn':'1.'};mxWet=${WET}*mxCover*mxIn;
+    diffuseColor.rgb*=(1.-.45*mxDamp)*(1.-.35*mxWet);mxPave=max(mxPave,mix(mxEarth,mxCover,mxIn)*.8);
+    ${useB?`vec4 mxN=mxB4(vMx.xz,mxL,mxS);mxBump=(mxN.xy*2.-1.)*mxCover;if(mxIn<1.){vec2 mxOld=mxPave<.5?mxB4(vMx.xz,6.,.36).xy:mxB4(vMx.xz,6.,.27).zw;mxBump=mix(mxOld*2.-1.,mxBump,mxIn);}mxRough=mix(1.,mxN.b,mxCover*mxIn);`:''}`:road?`
     ${lite?'':`diffuseColor.rgb*=mix(1.,.55+.95*texture2D(mxKit,mxUv*1.7).b,.6*mxNear);${GRIME}`}
     mxIn=1.-smoothstep(-24.,-20.,vMx.z);${ZONES}
     float mxL=mxPlaza>.5?2.:0.,mxS=mxL>1.5?${SCALE[2]}:${SCALE[0]};vec4 mxT=mxA4(vMx.xz,mxL,mxS);${MID}mxWet=${WET}*mxIn;mxPave=mxL*.5;
@@ -198,7 +202,7 @@
     // Detail normals in world space on the dominant plane. The road loses Eden's embossed bricks where it turns to asphalt.
     const NORMAL='#include <normal_fragment_maps>';
     if(useB||useD)f=f.replace(NORMAL,`${NORMAL}
-    {vec3 mxA=abs(mxWn);vec2 mxB=${model?`(texture2D(mxNorA,mxUv*.9).xy*2.-1.)*.35*mxNear`:ground?`mxBump*.9*mix(.25,1.,mxPave)*(1.-.6*mxDamp)*(1.-mxWet)`:road?`mxBump*mix(.35*mxNear,.9*(1.-mxWet),mxIn)`:`mxBump*.9`};
+    {vec3 mxA=abs(mxWn);vec2 mxB=${model?`(texture2D(mxNorA,mxUv*.9).xy*2.-1.)*.35*mxNear`:ground?`mxBump*mix(1.,.9,mxIn)*mix(.25,1.,mxPave)*(1.-.6*mxDamp)*(1.-mxWet)`:road?lite?'mxBump':`mix((texture2D(mxNorA,mxUv*.9).xy*2.-1.)*.35*mxNear,mxBump*.9*(1.-mxWet),mxIn)`:`mxBump*.9`};
      vec3 mxT=mxA.y>max(mxA.x,mxA.z)?vec3(mxB.x,0.,mxB.y):(mxA.x>mxA.z?vec3(0.,mxB.y,mxB.x):vec3(mxB.x,mxB.y,0.));normal=normalize(normal+(viewMatrix*vec4(mxT,0.)).xyz);}`);
     if(road)f=f.replace(NORMAL,`mxN0=normal;
     ${NORMAL}
@@ -215,7 +219,7 @@
      if(mxCh>.972){float mxLen=26.,mxDrop=mod(mxCell.y+mxTime*(2.+mxCh*3.)*1.6+mxCh*997.,90.),mxTail=mxDrop<mxLen?exp(-mxDrop*.15):0.;
       if(mxTail>.01){float mxId=step(.5,mxBit(-mxCell.y+mxCell.x*64.));vec2 mxF=clamp(fract(mxP),.08,.92);float mxG=texture2D(mxKit,(vec2(mxId,0.)+vec2(mxF.x,1.-mxF.y))/8.).r;totalEmissiveRadiance+=${GREEN}*mxG*mxTail*.5*mxOn;}}}}`:''));
    sh.fragmentShader=f;};
-  material.customProgramCacheKey=()=>key()+'|mx8'+kind+lean+wash+lite+(own&&own!==T.Material.prototype.onBeforeCompile?String(own).length:'');
+  material.customProgramCacheKey=()=>key()+'|mx9'+kind+lean+wash+lite+(own&&own!==T.Material.prototype.onBeforeCompile?String(own).length:'');
   material.needsUpdate=true;return form;
  }
  function surface(T,object,{kind='model',skip=null,wash=false}={}){

@@ -8,7 +8,7 @@
 //                                      onOpen, onClose})
 // Settings shared by app.js and combat.js (read live, saved on this device).
 window.edenSettings=(()=>{
- const DEFAULTS={touchSens:1,sens:1,adsSens:1,fov:70,invertY:false,shoulder:'right',aim:'wheel',aimAssist:'high'};let v={...DEFAULTS};
+ const DEFAULTS={touchSens:1,sens:1,adsSens:1,fov:70,invertY:false,shoulder:'right',aim:'wheel',aimAssist:'high',bodycamAim:true};let v={...DEFAULTS};
  try{Object.assign(v,JSON.parse(localStorage.getItem('eden-settings')||'{}'));}catch{}
  const subs=new Set();
  return {DEFAULTS,get:k=>v[k],all:()=>({...v}),set(k,val){v[k]=val;try{localStorage.setItem('eden-settings',JSON.stringify(v));}catch{}subs.forEach(f=>f(k,val));},reset(){v={...DEFAULTS};try{localStorage.removeItem('eden-settings');}catch{}subs.forEach(f=>f());},on(f){subs.add(f);}};
@@ -59,6 +59,8 @@ window.createPlayMenu=function({nav,after,stage,items,graphics=null,context=()=>
   choice('invertY','INVERT Y',[[false,'OFF'],[true,'ON']]);
   choice('shoulder','THIRD-PERSON SHOULDER',[['right','RIGHT'],['left','LEFT']]);
   choice('aimAssist','AIM ASSIST',[['off','OFF'],['low','LOW'],['medium','MEDIUM'],['high','HIGH']]);
+  choice('bodycamAim','BEYOND EDEN: FREE AIM',[[true,'ON'],[false,'OFF']]);
+  if(window.beyondAudio){const g=document.createElement('div');g.className='ps-choice';for(const [val,txt] of [[true,'ON'],[false,'OFF']]){const b=document.createElement('button');b.type='button';b.textContent=txt;b.setAttribute('aria-pressed',String(!!window.beyondAudio.mic===val));b.onclick=e=>{e.preventDefault();window.beyondAudio.setMic(val);renderSettings();};g.append(b);}row('BEYOND EDEN: BODY-CAM SOUND',g);}
   if(!coarse)choice('aim','AIM WITH',[['wheel','WHEEL / PINCH'],['hold','HOLD RIGHT MOUSE']]);
   const reset=document.createElement('button');reset.type='button';reset.className='ps-reset';reset.textContent='RESET';reset.onclick=()=>{S.reset();renderSettings();};box.append(reset);
   const note=document.createElement('small');note.textContent=coarse?'Touch look sensitivity sets how far a swipe turns; aim assist only steers while you fire or aim.':S.get('aim')==='hold'?'Hold right mouse to aim; B is melee.':'Wheel or pinch to aim; right mouse is melee.';box.append(note);
