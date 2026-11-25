@@ -171,6 +171,38 @@ def decal_material(key, tex, rough, metal=0.0):
     b.inputs['Roughness'].default_value = rough; b.inputs['Metallic'].default_value = metal; b.inputs['Specular IOR Level'].default_value = .6
     m.surface_render_method = 'BLENDED'; MATS[key] = (m, 1.0); return m
 for k, r in (('pool', .2), ('smear', .3), ('spray', .35), ('drip', .25), ('dry', .75), ('wash', .25)): decal_material('blood_' + k, 'blood_' + k, r)
+# Grime and wear (generated RGBA): dirt banked at the foot of walls, rust runs down cladding, water stains, floor dirt.
+def grime_textures():
+    from PIL import Image, ImageDraw, ImageFilter
+    rnd = random.Random(31); S = 512
+    def finish(name, alpha, col, rough_noise=30):
+        rgb = Image.new('RGB', (S, S), col); n = Image.effect_noise((S, S), rough_noise).convert('L')
+        rgb = Image.composite(rgb, Image.new('RGB', (S, S), tuple(int(c * .6) for c in col)), n.point(lambda v: 255 if v > 125 else 90))
+        rgb.putalpha(alpha); rgb.save(f'{WORK}/tex/{name}-diff.png')
+    if not os.path.exists(f'{WORK}/tex/grime_base-diff.png'):
+        a = Image.new('L', (S, S), 0); px = a.load(); n = Image.effect_noise((S, S), 60).filter(ImageFilter.GaussianBlur(6)).load()
+        for y in range(S):
+            for x in range(S):
+                t = y / S; edge = (1 - t) ** 2.2 * 255 + (n[x, y] - 128) * 1.2 * (1 - t); px[x, S - 1 - y] = max(0, min(235, int(edge)))
+        finish('grime_base', a.transpose(Image.FLIP_TOP_BOTTOM), (46, 40, 32))
+        a = Image.new('L', (S, S), 0); d = ImageDraw.Draw(a)
+        for _ in range(34):
+            x = rnd.uniform(0, S); L = rnd.uniform(S * .25, S); w = rnd.uniform(4, 22)
+            for k in range(int(L / 3)): t = k / (L / 3); d.ellipse([x - w / 2 * (1 - t * .6), k * 3, x + w / 2 * (1 - t * .6), k * 3 + 6], fill=int(200 * (1 - t) ** 1.3))
+        finish('grime_rust', a.filter(ImageFilter.GaussianBlur(3)), (112, 54, 24))
+        a = Image.new('L', (S, S), 0); d = ImageDraw.Draw(a)
+        for _ in range(9):
+            cx, cy, r = rnd.uniform(S * .2, S * .8), rnd.uniform(S * .2, S * .8), rnd.uniform(40, 150)
+            for k in range(5): rr = r * (1 - k * .16); d.ellipse([cx - rr, cy - rr * .8, cx + rr, cy + rr * .8], outline=110 - k * 15, width=int(rnd.uniform(3, 10)))
+            d.ellipse([cx - r * .6, cy - r * .5, cx + r * .6, cy + r * .5], fill=50)
+        finish('grime_stain', a.filter(ImageFilter.GaussianBlur(5)), (64, 58, 46))
+grime_textures()
+for k, r in (('grime_base', .8), ('grime_rust', .7), ('grime_stain', .75)): decal_material(k, k, r)
+material('pipe_green', None, color=(.16, .28, .2), rough=.45, metal=.35)
+material('pipe_grey', None, color=(.34, .35, .36), rough=.5, metal=.4)
+material('pipe_red', None, color=(.42, .05, .04), rough=.45, metal=.3)
+material('lagging', None, color=(.62, .6, .55), rough=.9)
+material('junction', None, color=(.55, .56, .54), rough=.5, metal=.5)
 material('meat', 'meat', .7, rough=.5)
 
 # ---------------------------------------------------------------------------------------------------- geometry
@@ -586,7 +618,7 @@ def decal(kind, x, y, z, w, h, yaw=0.0, face=None):
     f = bm.faces.new(vs)
     for l, uv in zip(f.loops, ((0, 0), (1, 0), (1, 1), (0, 1))): l[uvl].uv = uv
     me = bpy.data.meshes.new('decal'); bm.to_mesh(me); bm.free(); me.uv_layers[0].name = 'UVMap'
-    o = bpy.data.objects.new('decal', me); scene.collection.objects.link(o); me.materials.append(MATS['blood_' + kind][0]); OBJS['kit'].append(o)
+    o = bpy.data.objects.new('decal', me); scene.collection.objects.link(o); me.materials.append(MATS[kind if kind in MATS else 'blood_' + kind][0]); OBJS['kit'].append(o)
 rg = random.Random(77)
 F = .05   # kill-floor tile top
 # Under the bleed rail: the sticking point and long pools draining to the channel, drag smears along the rails.
@@ -626,6 +658,64 @@ for z in (10, 19, 28):
     box('steriliser', (BX0 + .2, 1.0, z), (BX0 + .5, 1.4, z + .5), 'stainless', group='kit', solid=False)
     box('basin', (BX0 + .2, .8, z + .9), (BX0 + .7, 1.0, z + 1.6), 'stainless', group='kit', solid=False)
 
+# ---------------------------------------------------------------------------------------------------- wear and services
+rw = random.Random(91)
+# Dirt banked along the foot of every inside wall (and outside along the cladding).
+for (ax, at, sign, a0, a1) in (('x', BX0 + T / 2 + .01, '+', 0.3, 47.7), ('x', BX1 - T / 2 - .01, '-', 0.3, 47.7), ('z', BZ0 + T / 2 + .01, '+', BX0 + .3, BX1 - .3), ('z', BZ1 - T / 2 - .01, '-', BX0 + .3, BX1 - .3),
+                                ('x', BX0 - T / 2 - .03, '-', 0, 48), ('x', BX1 + T / 2 + .03, '+', 0, 48), ('z', BZ0 - T / 2 - .03, '-', BX0, BX1), ('z', BZ1 + T / 2 + .03, '+', BX0, BX1)):
+    pos = a0
+    while pos < a1 - .5:
+        w = min(4.2, a1 - pos); c = pos + w / 2
+        if ax == 'x': decal('grime_base', at, .0, c, w + .3, rw.uniform(.6, 1.2), face=('x', sign))
+        else: decal('grime_base', c, .0, at, w + .3, rw.uniform(.6, 1.2), face=('z', sign))
+        pos += w
+# Rust running down the outside cladding from the eaves, water stains high on the inside walls.
+for i in range(44):
+    side = rw.randrange(4); h = rw.uniform(2, 4.5)
+    if side == 0: decal('grime_rust', rw.uniform(BX0 + 1, BX1 - 1), H - h, BZ0 - T / 2 - .04, rw.uniform(1, 2.4), h, face=('z', '-'))
+    elif side == 1: decal('grime_rust', rw.uniform(BX0 + 1, BX1 - 1), H - h, BZ1 + T / 2 + .04, rw.uniform(1, 2.4), h, face=('z', '+'))
+    elif side == 2: decal('grime_rust', BX0 - T / 2 - .04, H - h, rw.uniform(1, 47), rw.uniform(1, 2.4), h, face=('x', '-'))
+    else: decal('grime_rust', BX1 + T / 2 + .04, H - h, rw.uniform(1, 47), rw.uniform(1, 2.4), h, face=('x', '+'))
+for i in range(30):
+    side = rw.randrange(3); y = rw.uniform(2.6, 5.4); sz = rw.uniform(1.2, 2.8)
+    if side == 0: decal('grime_stain', BX0 + T / 2 + .012, y, rw.uniform(1, 35), sz, sz * .8, face=('x', '+'))
+    elif side == 1: decal('grime_stain', rw.uniform(BX0 + 1, 5), y, BZ0 + T / 2 + .012, sz, sz * .8, face=('z', '+'))
+    else: decal('grime_stain', BX1 - T / 2 - .012, y, rw.uniform(13, 47), sz, sz * .8, face=('x', '-'))
+for i in range(50): decal('grime_stain', rw.uniform(BX0 + 1, BX1 - 1), .036 + rw.random() * .002, rw.uniform(1, 47), rw.uniform(1.2, 3.5), rw.uniform(1, 3), rw.uniform(0, 6.28))
+for i in range(40): decal('grime_stain', rw.uniform(-28, 28), .022, rw.uniform(-22, -1), rw.uniform(2, 5), rw.uniform(2, 4), rw.uniform(0, 6.28))
+
+# Services: pipe runs along the walls with brackets and drops, lagged steam pipes, cable trays and conduit, a duct.
+def pipe_run(points, r, key, brackets=None, seg=8):
+    bm = bmesh.new()
+    for a, b in zip(points, points[1:]): bm_cyl(bm, a, b, r, seg)
+    for p in points[1:-1]: bm_cyl(bm, (p[0], p[1] - r * 1.3, p[2]), (p[0], p[1] + r * 1.3, p[2]), r * 1.25, seg)  # fittings at the bends
+    emit('pipe', bm, key, 'kit')
+    if brackets:
+        bm = bmesh.new()
+        for a, b in zip(points, points[1:]):
+            L = math.dist(a, b); n = int(L / brackets)
+            for i in range(1, n + 1):
+                t = i / (n + 1); p = [a[k] + (b[k] - a[k]) * t for k in range(3)]; bm_box(bm, p, (r * 1.6, r * 1.6, r * 1.6))
+        emit('bracket', bm, 'junction', 'kit')
+WX = BX0 + T / 2
+for k, (y, off, key, r) in enumerate([(4.6, .18, 'pipe_green', .06), (4.95, .2, 'pipe_grey', .05), (5.3, .3, 'lagging', .11), (2.9, .06, 'junction', .015)]):
+    pipe_run([(WX + off, y, .6), (WX + off, y, 35.6)], r, key, brackets=2.2)
+    pipe_run([(BX1 - T / 2 - off, y + .2, 12.5), (BX1 - T / 2 - off, y + .2, 47.4)], r, key, brackets=2.2)
+    pipe_run([(BX0 + .6, y + .5, BZ0 + T / 2 + off), (BX1 - .6, y + .5, BZ0 + T / 2 + off)], r, key, brackets=2.2)
+for z in (8, 10, 19, 26, 28): pipe_run([(WX + .18, 4.6, z), (WX + .18, 1.5, z)], .03, 'pipe_red' if z in (8, 26) else 'pipe_green')
+for z in range(4, 34, 6):
+    box('junction-box', (WX + .01, 2.7, z), (WX + .12, 3.1, z + .3), 'junction', group='kit', solid=False); pipe_run([(WX + .06, 2.7, z + .15), (WX + .06, 1.3, z + .15)], .012, 'junction')
+    box('switch', (WX + .01, 1.15, z + .07), (WX + .07, 1.32, z + .23), 'yellow', group='kit', solid=False)
+for x in (-8, 8):  # cable trays under the trusses, each with a bundle of cables
+    box('tray', (x - .25, 6.3, .5), (x + .25, 6.34, 47.5), 'galv', group='kit', solid=False)
+    for i in range(4): pipe_run([(x - .18 + i * .12, 6.38, .5), (x - .18 + i * .12, 6.38, 47.5)], .022, 'blackrubber', seg=6)
+    for z in range(3, 48, 6): box('tray-hanger', (x - .01, 6.34, z), (x + .01, H - .1, z + .02), 'steel', group='kit', solid=False)
+box('duct', (-20.3, 5.75, 1), (-19.7, 6.15, 35), 'galv', group='kit', solid=False)
+for z in range(4, 35, 5): box('duct-vent', (-20.25, 5.6, z), (-19.75, 5.75, z + .5), 'grate', group='kit', solid=False)
+# Outside: a lagged steam main from the boiler house along the south wall, with drops.
+pipe_run([(-34, 3.6, 57), (-30, 3.6, 57), (-30, 3.6, BZ1 + .5), (20, 3.6, BZ1 + .5)], .14, 'lagging', brackets=3)
+pipe_run([(-30.2, 3.0, 57), (-30.2, 3.0, BZ1 + .8), (24, 3.0, BZ1 + .8)], .07, 'pipe_red', brackets=3)
+
 # ---------------------------------------------------------------------------------------------------- hanging halves
 def halves():
     cow = f'{OUT}/cow.glb'
@@ -641,6 +731,12 @@ def halves():
     from mathutils import Matrix
     bmesh.ops.rotate(bm, verts=bm.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(-math.pi / 2, 3, 'X'))
     res = bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=(0, 0, 0), plane_no=(1, 0, 0), clear_outer=True)
+    edges = [e for e in res['geom_cut'] if isinstance(e, bmesh.types.BMEdge)]
+    try: bmesh.ops.holes_fill(bm, edges=edges, sides=0)
+    except Exception: pass
+    bottom = min(v.co.z for v in bm.verts); top = max(v.co.z for v in bm.verts)
+    cut = bottom + (top - bottom) * .3          # a dressed side ends at the neck: no head, no fore-shanks
+    res = bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=(0, 0, cut), plane_no=(0, 0, 1), clear_inner=True)
     edges = [e for e in res['geom_cut'] if isinstance(e, bmesh.types.BMEdge)]
     try: bmesh.ops.holes_fill(bm, edges=edges, sides=0)
     except Exception: pass

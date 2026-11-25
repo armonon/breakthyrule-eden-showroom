@@ -15,7 +15,18 @@ data = json.load(open(f'{A}/site.json'))
 bpy.ops.wm.read_factory_settings(use_empty=True)
 sc = bpy.context.scene
 
+def decoded(path):
+    # The game's GLBs are meshopt-compressed (tools/cowninja/compress.sh), which this Blender build cannot read:
+    # import a decoded copy, made once with gltf-transform and kept beside the renders.
+    if b'EXT_meshopt_compression' not in open(path, 'rb').read(4096 * 16): return path
+    import subprocess, hashlib
+    cache = os.path.join(os.path.dirname(OUT.rstrip('/')), 'decoded'); os.makedirs(cache, exist_ok=True)
+    out = os.path.join(cache, hashlib.md5(path.encode()).hexdigest()[:10] + '-' + os.path.basename(path))
+    if not os.path.exists(out) or os.path.getmtime(out) < os.path.getmtime(path):
+        subprocess.run(['npx', '-y', '@gltf-transform/cli@4', 'copy', path, out], check=True, capture_output=True)
+    return out
 def imp(path):
+    path = decoded(path)
     before = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=path)
     return [o for o in bpy.data.objects if o not in before]
 
@@ -71,8 +82,11 @@ for i, (x, z, yaw) in enumerate([(12, 30, .5), (16.5, 33, 2.2), (20, 38, -1), (1
 
 # Light: the night sky (moon clamped by strength), a moon key, and every lamp of the site as a soft light.
 w = bpy.data.worlds.new('night'); sc.world = w; w.use_nodes = True; nt = w.node_tree; bg = nt.nodes['Background']
-env = nt.nodes.new('ShaderNodeTexEnvironment'); env.image = bpy.data.images.load(f'{A}/night-sky.hdr'); nt.links.new(env.outputs['Color'], bg.inputs['Color'])
-bg.inputs['Strength'].default_value = .5
+env = nt.nodes.new('ShaderNodeTexEnvironment'); env.image = bpy.data.images.load(f'{A}/night-sky.hdr')
+# The moon in the sky image is thousands of times brighter than the sky: clamp it, as the game does, or it is day.
+cap = nt.nodes.new('ShaderNodeVectorMath'); cap.operation = 'MINIMUM'; cap.inputs[1].default_value = (1.2, 1.2, 1.2)
+nt.links.new(env.outputs['Color'], cap.inputs[0]); nt.links.new(cap.outputs['Vector'], bg.inputs['Color'])
+bg.inputs['Strength'].default_value = .18
 moon = bpy.data.objects.new('moon', bpy.data.lights.new('moon', 'SUN')); moon.data.energy = .25; moon.data.color = (.72, .8, .92); moon.data.angle = .01
 d = B(38, -60, 30).normalized(); moon.rotation_euler = (-d).to_track_quat('-Z', 'Y').to_euler(); sc.collection.objects.link(moon)
 for L in data['lights']:
@@ -100,7 +114,7 @@ def volume(name, mn, mx, density, aniso):
     v = nt.nodes.new('ShaderNodeVolumePrincipled'); v.inputs['Density'].default_value = density; v.inputs['Anisotropy'].default_value = aniso; v.inputs['Color'].default_value = (.9, .92, .95, 1)
     nt.links.new(v.outputs['Volume'], nt.nodes['Material Output'].inputs['Volume']); me.materials.append(m)
 volume('haze-hall', (-25.8, .02, .2), (25.8, 9.8, 47.8), .007, .45)
-volume('mist-yard', (-120, 0, -200), (120, 14, 120), .0035, .2)
+volume('mist-yard', (-120, 0, -200), (120, 14, 120), .0018, .3)
 
 # Cameras.
 SH = {
@@ -120,6 +134,6 @@ sc.view_settings.view_transform = 'AgX'; sc.view_settings.look = 'AgX - Punchy' 
 for name in SHOTS:
     pos, look, lens = SH[name]; cam.location = B(*pos); cam.rotation_euler = (B(*look) - cam.location).to_track_quat('-Z', 'Y').to_euler(); cam.data.lens = lens
     cam.data.dof.use_dof = not PREVIEW; cam.data.dof.focus_distance = 6 if name != 'front' else 20; cam.data.dof.aperture_fstop = 2.8
-    sc.view_settings.exposure = {'kill': .8, 'rail': .8, 'chiller': .4, 'front': 1.6}[name]
+    sc.view_settings.exposure = {'kill': .8, 'rail': .8, 'chiller': .4, 'front': .9}[name]
     r.filepath = f'{OUT}/{name}{"-preview" if PREVIEW else ""}.png'
     print('RENDER', name, flush=True); bpy.ops.render.render(write_still=True); print('DONE', name, flush=True)
