@@ -24,6 +24,12 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
  // Eye adaptation state, ping-ponged 1x1: r = adapted scene luminance, g = exposure factor, b = focus distance (m).
  const lum=[0,1].map(()=>new T.WebGLRenderTarget(1,1,{type:T.HalfFloatType,depthBuffer:false,minFilter:T.NearestFilter,magFilter:T.NearestFilter}));let lumIndex=0,lumValid=false,lastTime=0;
  const wetRT=target(),lensRT=target();
+ // Something drawn in front of the lens but seen by the same sensor (the weapon in hand): it gets the frame's exposure, grade,
+ // noise and compression instead of being pasted over them. Its own depth, clear alpha, tone-mapped like the scene.
+ let overlayDraw=null,viewRT=null;
+ const overlayTarget=()=>{if(!viewRT){viewRT=new T.WebGLRenderTarget(size.x||1,size.y||1,{type:T.HalfFloatType,samples:Math.min(4,sceneRT.samples)});viewRT.texture.colorSpace=T.SRGBColorSpace;viewRT.isXRRenderTarget=true;}
+  if(viewRT.width!==size.x||viewRT.height!==size.y)viewRT.setSize(size.x,size.y);if(viewRT.samples!==Math.min(4,sceneRT.samples)){viewRT.samples=Math.min(4,sceneRT.samples);viewRT.dispose();}return viewRT;};
+ const overlayClear=new T.Color();
  // Tileable value-noise (4 octaves): drifting cloud shadows and, at a finer scale, where puddles lie.
  const NOISE=128,noiseData=new Uint8Array(NOISE*NOISE*4);{
   const lattice=n=>{const g=new Float32Array(n*n);let seed=1013;for(let i=0;i<g.length;i++){seed=(seed*1664525+1013904223)>>>0;g[i]=seed/4294967296;}return g;};
@@ -33,7 +39,7 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
     v+=amp*((at(ix,iy)*(1-tx)+at(ix+1,iy)*tx)*(1-ty)+(at(ix,iy+1)*(1-tx)+at(ix+1,iy+1)*tx)*ty);total+=amp;amp*=.5;}
    const b=Math.round(v/total*255),k=(y*NOISE+x)*4;noiseData[k]=noiseData[k+1]=noiseData[k+2]=b;noiseData[k+3]=255;}}
  const noise=new T.DataTexture(noiseData,NOISE,NOISE);noise.wrapS=noise.wrapT=T.RepeatWrapping;noise.magFilter=noise.minFilter=T.LinearFilter;noise.needsUpdate=true;
- const NIGHT_AIR=new T.Color(.016,.040,.029),HAZE_NIGHT=new T.Color(.05,.07,.085),airNear=[];
+ const NIGHT_AIR=new T.Color(.022,.028,.036),HAZE_NIGHT=new T.Color(.05,.07,.085),airNear=[];
  const tmpMatrix=new T.Matrix4(),camRot=new T.Matrix3(),camPos=new T.Vector3(),cloudOffset=new T.Vector2(),hazeColor=new T.Color(),moveReproject=new T.Matrix4(),prevCamPos=new T.Vector3(),moveMatrix=new T.Matrix4();let moveSpeed=0;
  const prevView=new T.Matrix4(),prevQuat=new T.Quaternion(),camQuat=new T.Quaternion();let turnSpeed=0,turnK=0,flashNow=0,flashDip=0,prevViewValid=false;
  // Light sources for the lens effects: the sky's sun disc, the night district's lanterns and any flashlights
@@ -159,7 +165,8 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
  vec3 lampGlare(){vec3 g=vec3(0.);
   for(int i=0;i<${LAMPS};i++){vec4 l=lamps[i];if(l.z<=0.)continue;float v=texture2D(tVisible,vec2((float(i)+1.5)/${LAMPS+1}.,.5)).r*l.z;if(v<=0.)continue;
    vec2 q=abs((vUv-l.xy)*vec2(aspect,1.))/l.w;float d=length(q);vec3 tint=lampColors[i],pale=mix(tint,vec3(1.),.4);
-   g+=v*(tint*(exp(-d*10.)*.35+exp(-d*38.)*.6)+pale*exp(-q.y*110.-q.x*4.)*.3+pale*(exp(-q.x*190.-q.y*11.)+exp(-q.y*190.-q.x*11.))*.12);}
+   // The body camera's small lens only blooms a little: no streak and no star.
+   g+=v*(tint*(exp(-d*10.)*.35+exp(-d*38.)*.6)*(1.-.45*grade)+(pale*exp(-q.y*110.-q.x*4.)*.3+pale*(exp(-q.x*190.-q.y*11.)+exp(-q.y*190.-q.x*11.))*.12)*(1.-grade));}
   return g;}
  void main(){vec4 s=texture2D(tScene,vUv);
   if(view>.5){gl_FragColor=vec4(view<1.5?vec3(texture2D(tAO,vUv).x):view<2.5?texture2D(tBloom,vUv).rgb:view<3.5?vec3(s.a):view<4.5?texture2D(tRays,vUv).rgb*4.:texture2D(tWet,vUv).rgb*3.,1.);return;}vec3 c=clamp(s.rgb,0.,1.)*mix(1.,texture2D(tAO,vUv).x,ao);
@@ -182,8 +189,8 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   // Film-like grade: a gentle S-curve for contrast, cool shadows and warm highlights (split toning).
   {float l=dot(c,vec3(.2126,.7152,.0722));vec3 s=c*c*(3.-2.*clamp(c,0.,1.));c=mix(c,s,contrast);
    c+=split*(mix(vec3(-.35,.05,.45),vec3(.5,.18,-.4),smoothstep(.15,.75,l)))*(1.-abs(l*2.-1.)*.5);}
-  // Night grade: green-black shadows, skin and flame kept warm, a filmic shoulder.
-  if(grade>0.){float l=dot(c,vec3(.2126,.7152,.0722));vec3 g=c*mix(vec3(.86,1.06,.95),vec3(1.04,1.,.95),smoothstep(.06,.5,l));g=g*(1.+g*.22)/(1.+g*.30);g=mix(vec3(l),g,.94);c=mix(c,g,grade);}
+  // Night grade: cool neutral shadows, skin and flame kept warm, a filmic shoulder.
+  if(grade>0.){float l=dot(c,vec3(.2126,.7152,.0722));vec3 g=c*mix(vec3(.95,.99,1.04),vec3(1.04,1.,.95),smoothstep(.06,.5,l));g=g*(1.+g*.22)/(1.+g*.30);g=mix(vec3(l),g,.94);c=mix(c,g,grade);}
   vec2 q=vUv-.5;c*=1.-vignette*dot(q,q)*2.;
   gl_FragColor=vec4(clamp(c,0.,1.),s.a);
  }`});
@@ -239,6 +246,22 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   if(sensor>0.){float dk=dark<0.?1.-smoothstep(.03,.3,texture2D(tLum,vec2(.5)).r):dark;vec2 p=gl_FragCoord.xy+seed*1.7,p2=floor(gl_FragCoord.xy*.5)+seed*2.3;
    float y=(hash(p)-.5)*.65+(hash(p2)-.5)*.35;vec3 cn=vec3(hash(p2+11.),hash(p+23.),hash(p2+37.))-.5;c+=(vec3(y)+cn*.45)*sensor*(.3+1.7*dk)*(1.-l*.55);}
   gl_FragColor=vec4(c,1.);}`,{tSrc:{value:null},tLut:{value:lut},texel:{value:new T.Vector2()},sharpen:{value:0},grain:{value:0},lutMix:{value:1},seed:{value:0},lens:{value:0},chroma:{value:0},aspect:{value:1},tLum:{value:lum[0].texture},sensor:{value:0},dark:{value:.5},block:{value:0},blockPx:{value:8},smear:{value:0},flash:{value:0},dip:{value:0}});
+ const merge=raw(`varying vec2 vUv;uniform sampler2D tBase,tView,tLum;uniform float gain,vignette,grade,split,saturation,contrast,warmth;
+ void main(){vec4 v=texture2D(tView,vUv);vec3 b=texture2D(tBase,vUv).rgb;if(v.a<=0.&&dot(v.rgb,vec3(1.))<=0.){gl_FragColor=vec4(b,1.);return;}
+  float a=clamp(v.a,0.,1.);vec3 c=clamp(v.rgb,0.,1.);if(gain>0.)c*=texture2D(tLum,vec2(.5)).g;c*=vec3(1.+warmth,1.,1.-warmth);
+  c=max(mix(vec3(dot(c,vec3(.2126,.7152,.0722))),c,saturation),0.);
+  // The same film grade as the frame (composite). Premultiplied: light with no cover (a muzzle flash) only adds.
+  float l=dot(c,vec3(.2126,.7152,.0722));c=mix(c,c*c*(3.-2.*clamp(c,0.,1.)),contrast*a);c=max(c+a*split*(mix(vec3(-.35,.05,.45),vec3(.5,.18,-.4),smoothstep(.15,.75,l)))*(1.-abs(l*2.-1.)*.5),0.);
+  l=dot(c,vec3(.2126,.7152,.0722));vec3 g=c*mix(vec3(.95,.99,1.04),vec3(1.04,1.,.95),smoothstep(.06,.5,l));g=g*(1.+g*.22)/(1.+g*.30);c=mix(c,mix(vec3(l),g,.94),grade);
+  vec2 q=vUv-.5;c*=1.-vignette*dot(q,q)*2.;gl_FragColor=vec4(min(b*(1.-a)+c,1.),1.);}`,{tBase:{value:null},tView:{value:null},tLum:{value:lum[0].texture},gain:{value:0},vignette:{value:0},grade:{value:0},split:{value:0},saturation:{value:1},contrast:{value:0},warmth:{value:0}});
+ const mergeRT=target();
+ function drawOverlay(color){
+  const v=overlayTarget(),alpha=renderer.getClearAlpha();renderer.getClearColor(overlayClear);renderer.setRenderTarget(v);renderer.setClearColor(0x000000,0);renderer.clear(true,true,false);
+  let drew=false;try{drew=overlayDraw()!==false;}finally{renderer.setClearColor(overlayClear,alpha);}
+  if(!drew)return color;
+  const u=merge.uniforms;u.tBase.value=color;u.tView.value=v.texture;u.tLum.value=composite.uniforms.tLum.value;u.gain.value=composite.uniforms.exposure.value;u.vignette.value=settings.vignette;u.saturation.value=settings.saturation;u.contrast.value=settings.contrast;u.grade.value=settings.grade;u.split.value=settings.split;u.warmth.value=settings.warmth;
+  if(mergeRT.width!==size.x||mergeRT.height!==size.y)mergeRT.setSize(size.x,size.y);pass(merge,mergeRT);return mergeRT.texture;
+ }
  function resize(){
   renderer.getDrawingBufferSize(size);if(size.equals(last))return;last.copy(size);
   const w=size.x,h=size.y,hw=Math.max(1,w>>1),hh=Math.max(1,h>>1);
@@ -348,6 +371,7 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   else if(blur){moveMatrix.copy(camera.matrixWorld).setPosition(prevCamPos).invert();moveReproject.multiplyMatrices(camera.projectionMatrix,moveMatrix).multiply(tmpMatrix.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse).invert());}
   prevCamPos.copy(camPos);prevView.copy(camera.matrixWorldInverse);prevViewValid=true;
   if(settings.dof>0||blur||turnAmount>0){const u=lensMaterial.uniforms;u.tSrc.value=color;u.projInv.value.copy(camera.projectionMatrixInverse);u.dof.value=settings.dof;u.motion.value=Math.max(turnAmount,moveAmount);u.reach.value=turnAmount>0?48:32;u.dither.value=turnAmount>0?1:0;pass(lensMaterial,lensRT);color=lensRT.texture;}
+  if(overlayDraw)color=drawOverlay(color);
   const f=finish.uniforms;f.sensor.value=settings.sensor;f.dark.value=lumValid?-1:.5;f.tLum.value=composite.uniforms.tLum.value;f.block.value=settings.block;f.blockPx.value=Math.max(6,Math.round(size.y/110));f.smear.value=turnK;
   f.flash.value=flashNow*settings.flashClip;f.dip.value=flashDip*(1-flashNow)*.24*settings.flashClip;flashNow*=Math.exp(-dt*24);if(flashNow<.01)flashNow=0;flashDip*=Math.exp(-dt*5.5);if(flashDip<.01)flashDip=0;
   f.tSrc.value=color;f.sharpen.value=settings.sharpen;f.grain.value=settings.grain;f.lutMix.value=settings.lut;f.lens.value=settings.lens;f.chroma.value=settings.chroma;f.seed.value=(taaIndex%64)*7.13;pass(finish,previous);
@@ -357,7 +381,7 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   render,
   dispose(){
    if(disposed)return;disposed=true;
-   for(const resource of [sceneRT,aoA,aoB,...down,...up,rayA,rayB,visible,...lum,wetRT,lensRT,noise,lumMaterial,wetMaterial,lensMaterial,taaCurrent,...taaHistory,lut,quad.geometry,aoMaterial,blurMaterial,brightMaterial,downMaterial,upMaterial,visibleMaterial,rayMaskMaterial,rayBlurMaterial,composite,resolve,finish])resource.dispose();
+   for(const resource of [...(viewRT?[viewRT]:[]),mergeRT,merge,sceneRT,aoA,aoB,...down,...up,rayA,rayB,visible,...lum,wetRT,lensRT,noise,lumMaterial,wetMaterial,lensMaterial,taaCurrent,...taaHistory,lut,quad.geometry,aoMaterial,blurMaterial,brightMaterial,downMaterial,upMaterial,visibleMaterial,rayMaskMaterial,rayBlurMaterial,composite,resolve,finish])resource.dispose();
    lights={sky:null,lamps:()=>null,torches:()=>null};lampList.length=0;
   },
   // Still scenes need a few more frames for the temporal filter to converge (reduced-motion idle stops the loop).
@@ -366,6 +390,8 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   // sky: garden.js's sky dome (its sun disc and night fade); lamps: () => world positions of lit lanterns, or null;
   // torches: () => [{position, direction, strength}] flashlights, or null.
   setLights(next){lights={...lights,...next};},
+  // draw(): renders into the bound target, or returns false. null: nothing in front of the lens.
+  setOverlay(draw){if(!draw&&overlayDraw&&viewRT){viewRT.dispose();mergeRT.dispose();}overlayDraw=draw;},get overlays(){return settings.enabled&&composite.uniforms.view.value===0&&!!overlayDraw;},
   // A muzzle flash (0..1) in front of the lens: clips the frame for a few frames where flashClip is set (Beyond Eden).
   flash(strength=1){if(!(settings.flashClip>0))return;flashNow=Math.max(flashNow,Math.min(1,strength));flashDip=Math.max(flashDip,flashNow);},
   // Development aid: the adapted luminance and the exposure factor as the sensor holds them now (reads one pixel).

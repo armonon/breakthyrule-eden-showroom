@@ -3,7 +3,7 @@
  * First-person arms and realistic weapon models for the Eden combat system.
  *
  * Assets (see models/combat/CREDITS.md):
- *   arms_military.glb  Microsoft Rocketbox avatar arms (MIT)
+ *   arms_tactical.glb (arms_military.glb refined by tools/combat/refine-arms.py)  Microsoft Rocketbox avatar arms (MIT)
  *   pistol.glb         Poly Haven "Service Pistol" (CC0)
  *   shotgun.glb        3D Model Haven Mossberg 500 (CC0)
  *   hatchet/           Poly Haven "Hatchet" (CC0)
@@ -55,6 +55,34 @@
   }
  };
 
+
+ // Cloth and leather that hold up at arm's length: the scan's camouflage is dyed dark, its folds kept, and a weave (sleeves)
+ // or grain (gloves) is laid over it, both fading out with distance before they can shimmer.
+ function dress(material){
+  const own=material.onBeforeCompile;material.roughness=1;material.metalness=0;material.normalScale?.setScalar(.8);
+  material.onBeforeCompile=(sh,r)=>{own?.call(material,sh,r);
+   sh.fragmentShader=sh.fragmentShader.replace('#include <common>',`#include <common>
+   float armH=0.,armGlove=0.;float armHash(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
+   float armNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(armHash(i),armHash(i+vec2(1.,0.)),f.x),mix(armHash(i+vec2(0.,1.)),armHash(i+1.),f.x),f.y);}`)
+   .replace('#include <map_fragment>',`#include <map_fragment>
+   {float l=dot(diffuseColor.rgb,vec3(.2126,.7152,.0722)),bare=smoothstep(.12,.3,diffuseColor.r-diffuseColor.b),skin=0.;l*=mix(1.,.45,bare); /* the sleeves run to the gloves: a bare forearm is dyed as cloth too */armGlove=smoothstep(.69,.71,vMapUv.y);
+    vec2 t=vMapUv*760.;float fade=1.-smoothstep(.25,.8,max(fwidth(t.x),fwidth(t.y)));
+    float twill=abs(fract((t.x+t.y)*.5)-.5)*2.,cross=abs(fract(t.x-t.y*.5)-.5)*2.;float weave=mix(twill,cross,.3);
+    vec2 g=vMapUv*420.;float grain=armNoise(g)*.6+armNoise(g*2.3)*.4,gf=1.-smoothstep(.4,1.2,max(fwidth(g.x),fwidth(g.y)));
+    float broad=armNoise(vMapUv*22.)*.6+armNoise(vMapUv*61.)*.4;
+    vec3 cloth=mix(vec3(.044,.048,.046),vec3(.100,.104,.096),clamp(l*2.4,0.,1.))*(.72+.55*broad)*(1.-.35*fade*(1.-weave));
+    vec3 leather=mix(vec3(.018,.018,.020),vec3(.070,.068,.066),clamp(l*3.2,0.,1.))*(.75+.5*broad)*(1.-.3*gf*(1.-grain));
+    diffuseColor.rgb=mix(mix(cloth,leather,armGlove),diffuseColor.rgb,skin);
+    armH=mix(weave*fade*.00012,grain*gf*.0002,armGlove)*(1.-skin);}`)
+   .replace('#include <roughnessmap_fragment>',`float roughnessFactor=mix(.94,.62,armGlove)-.12*armGlove*smoothstep(.3,.7,armNoise(vMapUv*90.));`)
+   .replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
+   {vec3 sx=dFdx(-vViewPosition),sy=dFdy(-vViewPosition);vec3 r1=cross(sy,normal),r2=cross(normal,sx);float det=dot(sx,r1)*faceDirection;vec3 gr=sign(det)*(dFdx(armH)*r1+dFdy(armH)*r2);normal=normalize(abs(det)*normal-gr*.8);}`);};
+  material.customProgramCacheKey=()=>'arms-cloth-3';material.needsUpdate=true;
+ }
+ // Gun steel: blued rather than bare, so a grey scan stops glowing at night; the scan's bright edges stay as worn metal.
+ const STEEL=`#include <map_fragment>
+  {float l=dot(diffuseColor.rgb,vec3(.2126,.7152,.0722)),grey=1.-smoothstep(.02,.10,max(max(diffuseColor.r,diffuseColor.g),diffuseColor.b)-min(min(diffuseColor.r,diffuseColor.g),diffuseColor.b));
+   float worn=smoothstep(.34,.62,l);diffuseColor.rgb=mix(diffuseColor.rgb,mix(vec3(l)*vec3(.54,.55,.58),vec3(l)*.8,worn),grey);}`;
  function createCombatArms(T,{env,base='/models/combat/'}={}){
   const v=(a)=>new T.Vector3().fromArray(a);
   const tmpM=new T.Matrix4(),tmpQ=new T.Quaternion(),tmpQ2=new T.Quaternion();
@@ -63,14 +91,14 @@
   function setWorldQ(bone,q){bone.parent.getWorldQuaternion(tmpQ).invert();bone.quaternion.copy(tmpQ.multiply(q));bone.updateMatrixWorld(true);}
   // minRough keeps near-mirror texels from blowing out to white under direct sun.
   function prep(scene,{metalBoost=1,minRough=0}={}){scene.traverse(o=>{if(!o.isMesh)return;o.castShadow=false;o.frustumCulled=false;const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats){if(env){m.envMap=env;m.envMapIntensity=metalBoost;}
-   if(minRough&&m.roughnessMap){m.onBeforeCompile=sh=>{sh.fragmentShader=sh.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\n\troughnessFactor = max( roughnessFactor, '+minRough.toFixed(2)+' );');};m.customProgramCacheKey=()=>'minRough'+minRough;}
+   if(minRough&&m.roughnessMap){m.onBeforeCompile=sh=>{sh.fragmentShader=sh.fragmentShader.replace('#include <map_fragment>',STEEL);sh.fragmentShader=sh.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\n\troughnessFactor = max( roughnessFactor, '+minRough.toFixed(2)+' );');};m.customProgramCacheKey=()=>'steel1minRough'+minRough;}
    m.needsUpdate=true;}});return scene;}
 
   /* ---------------- arms */
   let arms=null;
   function setupArms(gltf){
    const group=new T.Group();group.name='First-person arms';
-   const scene=prep(gltf.scene,{metalBoost:.6});
+   const scene=prep(gltf.scene,{metalBoost:.6});scene.traverse(q=>{if(q.isMesh)for(const m of [].concat(q.material))dress(m);});
    // Model faces +Z with its right arm on -X: turn it to face the view (-Z) and drop the shoulders below the eye.
    scene.rotation.y=Math.PI;scene.position.set(0,-.25,.11);group.add(scene);
    group.updateMatrixWorld(true);
@@ -176,7 +204,7 @@
 
   const ready=(async()=>{
    const load=url=>window.showroomAssets.model(base+url);
-   const [a,p,s,h,smg,rifle,sniper]=await Promise.allSettled([load('arms_military.glb'),load('pistol.glb'),load('shotgun.glb'),load('hatchet/hatchet_1k.gltf'),load('smg.glb'),load('rifle_ak.glb'),load('sniper.glb')]);
+   const [a,p,s,h,smg,rifle,sniper]=await Promise.allSettled([load(root.edenRenderProfile?.().mobile?'arms_tactical_lite.glb':'arms_tactical.glb'),load('pistol.glb'),load('shotgun.glb'),load('hatchet/hatchet_1k.gltf'),load('smg.glb'),load('rifle_ak.glb'),load('sniper.glb')]);
    for(const [id,r] of [['smg',smg],['rifle',rifle],['sniper',sniper]])if(r.status==='fulfilled')setupGun(id,r.value);
    if(a.status==='fulfilled')setupArms(a.value);else console.warn('Combat arms unavailable',a.reason);
    if(p.status==='fulfilled')setupPistol(p.value);

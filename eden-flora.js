@@ -31,6 +31,16 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
    if(through)shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
    totalEmissiveRadiance+=diffuseColor.rgb*vec3(1.,1.05,.55)*${through.toFixed(2)}*max(edenBake.x,0.);`);
    window.edenTranslucency?.(shader,glow);
+   // Beyond Eden's night (beyondBake, eden-baked-light.js; nothing here runs in Eden): leaves lose most of their colour in
+   // the dark, lamplight comes through them from behind, and a card about to fill the lens is thinned away.
+   if(!document.body?.classList.contains('expedition-entry'))shader.fragmentShader=shader.fragmentShader.replace('#include <alphatest_fragment>',`if(beyondBake.x>0.){float edenD=length(vViewPosition);if(edenD<1.3&&fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(.06711056,.00583715))))>smoothstep(.45,1.3,edenD))discard;
+     float edenL=dot(diffuseColor.rgb,vec3(.2126,.7152,.0722));diffuseColor.rgb=mix(diffuseColor.rgb,mix(vec3(edenL)*vec3(.98,1.,.80),diffuseColor.rgb,.5)*.66,beyondBake.x);}
+   #include <alphatest_fragment>`).replace('#include <aomap_fragment>',`#if NUM_POINT_LIGHTS > 0
+   if(beyondBake.x>0.){vec3 edenP=-vViewPosition;for(int i=0;i<NUM_POINT_LIGHTS;i++){vec3 edenT=pointLights[i].position-edenP;float edenR=length(edenT);if(edenR>15.)continue;edenT/=edenR;
+     float edenThin=.35*max(-dot(normal,edenT),0.)+.5*pow(max(dot(normalize(edenP),edenT),0.),6.);
+     reflectedLight.directDiffuse+=diffuseColor.rgb*vec3(.5,.52,.16)*pointLights[i].color*getDistanceAttenuation(edenR,pointLights[i].distance,pointLights[i].decay)*edenThin*beyondBake.x;}}
+   #endif
+   #include <aomap_fragment>`);
    // Low plants part around the visitor (eden-grass.js); trees and shrubs share materials, so they never bend.
    if(bend&&window.edenBend)window.edenBend(T,shader,bend);
   };

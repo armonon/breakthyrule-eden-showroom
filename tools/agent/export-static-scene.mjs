@@ -26,7 +26,7 @@ const lighting=await page.evaluate(`(()=>{const S=breakThyRuleShowroom,s=S.scene
  return {world:${JSON.stringify(world)},bounds:window.nightLayout?[nightLayout.bounds[0],nightLayout.bounds[1],-190,nightLayout.bounds[3]]:null,lamps:built?g.district.lamps.map(p=>p.toArray()):[],moon:{direction:d.toArray(),color:sun.color.toArray(),intensity:sun.intensity},lamp:{color:new THREE.Color(0xffc68c).toArray(),intensity:10,decay:1.7,distance:13},
   live,candles:altar?altar.candles.map(p=>p.toArray()):[],candle:{color:new THREE.Color(0xffb060).toArray(),intensity:.12,decay:2,distance:3}, // a flame beside a street lamp's 10: a glow on what it stands on, no more
   // matrix-world.js's wash on walls: emitted radiance = albedo * tint * (1-|n.y|) * pool * (near*exp(-y*nearFall) + far*exp(-y*farFall)) + albedo*(top*max(n.y,0) + glow)
-  uplight:{tint:[1,.62,.30],pool:.55,near:.5,nearFall:.42,far:.13,farFall:.16,top:[.0256,.048,.0432],glow:[.03,.06,.048]},
+  uplight:{tint:[1,.66,.36],pool:.306,near:.34,nearFall:.55,far:.06,farFall:.22,top:[.032,.04,.0512],glow:[.028,.034,.042]},
   courtyard:plan?{x:plan.x,z:plan.z,r:plan.r}:null,altar:altar?{x:nightLayout.arena.x,z:nightLayout.arena.z}:null,
   // eden-lighting.js's moonlit environment (linear radiance before its strength)
   sky:{horizon:[.030,.066,.050],zenith:[.010,.022,.022],strength:.7},models:built?g.district.inspect().models:{},unit:'game meters, Y up'};})()`);
