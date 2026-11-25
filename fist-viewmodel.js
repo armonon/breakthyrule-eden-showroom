@@ -176,6 +176,8 @@
   setSkin('#c68e6a');
   return {
    update,setSkin,
+   // Free aim (combat.js): the guard and the punches turn with where the hands point, inside the frame.
+   aim(q){if(q)rig.quaternion.copy(q);else if(rig.quaternion.w!==1)rig.quaternion.identity();},
    setWraps(on){wrapsOn=!!on;for(const a of arms)a.wraps.visible=wrapsOn;},
    camera:()=>({yaw:reduced?0:twist,roll:reduced?0:-twist*.35,pitch:reduced?0:-lean,lunge:reduced?0:lunge}),
    inspect:()=>({visible:rig.visible,model:'makehuman-arm',wraps:wrapsOn,hands:arms.map(a=>({side:a.side,position:a.pos.toArray().map(v=>+v.toFixed(3)),clench:+a.clench.toFixed(2)}))})
