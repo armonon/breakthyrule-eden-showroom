@@ -15,40 +15,86 @@ const TUNE = {
   chargeBuild: .5, chargeFade: .9,           // per second, the 0..1 charge meter
 };
 
-function hide(color) { return new THREE.MeshStandardMaterial({ color, roughness: .85 }); }
+// The cow model: the rigged GLB (assets/cowninja/cow.glb) with a procedural gait written straight onto its bones, so
+// one function carries it from a walk to a flat-out gallop at any speed. Falls back to nothing visible if the model
+// is missing (the physics still runs).
+const STILL = new THREE.Vector3();
+const LEGS = [ // name prefix, phase offset at a walk (lateral sequence), at a gallop (transverse), front?
+  ['bl', 'L', 0, 0, false], ['fl', 'L', .25, .52, true], ['bl', 'R', .5, .1, false], ['fl', 'R', .75, .62, true],
+];
+const X = new THREE.Vector3(1, 0, 0), Y = new THREE.Vector3(0, 1, 0), Z = new THREE.Vector3(0, 0, 1), qa = new THREE.Quaternion(), qb = new THREE.Quaternion();
 
-// A box cow: barrel, neck and head with horns, four legs that gallop, a tail, black patches, and the rider.
-function buildCow() {
-  const g = new THREE.Group(), cube = new THREE.BoxGeometry(1, 1, 1), white = hide(0xe9e4da), black = hide(0x1b1a19), pink = hide(0xc9938c), horn = hide(0xd8cfb4), cloth = hide(0x0d0d0f);
-  const part = (parent, mat, x, y, z, sx, sy, sz) => { const m = new THREE.Mesh(cube, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; parent.add(m); return m; };
-  const body = new THREE.Group(); g.add(body);
-  part(body, white, 0, .98, 0, .78, .82, 1.9);
-  part(body, black, .3, 1.12, .32, .22, .5, .7); part(body, black, -.33, 1.0, -.45, .16, .46, .6); part(body, black, 0, 1.36, -.1, .5, .08, .8);
-  const neck = new THREE.Group(); neck.position.set(0, 1.18, -.95); body.add(neck);
-  part(neck, white, 0, .06, -.2, .42, .5, .55);
-  const head = new THREE.Group(); head.position.set(0, .16, -.5); neck.add(head);
-  part(head, white, 0, 0, -.18, .4, .42, .56); part(head, pink, 0, -.08, -.5, .32, .24, .14); part(head, black, 0, .12, -.1, .42, .2, .3);
-  for (const s of [-1, 1]) { part(head, horn, s * .26, .28, -.06, .08, .26, .08).rotation.z = -s * .5; part(head, white, s * .28, .1, .04, .16, .1, .06); }
-  const legs = [];
-  for (const [x, z] of [[-.27, -.7], [.27, -.7], [-.27, .72], [.27, .72]]) {
-    const hip = new THREE.Group(); hip.position.set(x, .62, z); body.add(hip);
-    part(hip, white, 0, -.3, 0, .17, .62, .17); part(hip, black, 0, -.6, 0, .19, .1, .2); legs.push(hip);
+function buildCow(assets, { tint = null } = {}) {
+  const group = new THREE.Group(), body = new THREE.Group(); group.add(body);
+  const model = assets?.skinned('cow'), bones = new Map();
+  if (model) {
+    body.add(model); model.updateMatrixWorld(true);
+    model.traverse(o => {
+      if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; if (tint && !/eye/i.test(o.material.name)) { o.material = o.material.clone(); o.material.color.set(tint); } }
+      if (o.isBone) {
+        // Rotations are given about the cow's own axes (x across, y up, z back); each bone keeps those axes as seen
+        // from its parent at rest, which stay right while the chain above it only swings fore and aft.
+        const parent = o.parent.getWorldQuaternion(new THREE.Quaternion()).invert();
+        bones.set(o.name, { bone: o, rest: o.quaternion.clone(), x: X.clone().applyQuaternion(parent), y: Y.clone().applyQuaternion(parent), z: Z.clone().applyQuaternion(parent) });
+      }
+    });
   }
-  const tail = new THREE.Group(); tail.position.set(0, 1.3, .96); body.add(tail); part(tail, white, 0, -.3, .04, .06, .6, .06); part(tail, black, 0, -.64, .04, .1, .14, .1);
-  // The ninja: seated, leaning forward, a red headband as the one saturated thing on him.
-  const rider = new THREE.Group(); rider.position.set(0, 1.42, .05); body.add(rider);
-  part(rider, cloth, 0, .3, 0, .36, .56, .26); part(rider, cloth, 0, .72, -.04, .24, .24, .24);
-  part(rider, new THREE.MeshStandardMaterial({ color: 0xb3140f, roughness: .6 }), 0, .76, -.04, .26, .06, .26);
-  for (const s of [-1, 1]) { part(rider, cloth, s * .26, .02, -.1, .14, .16, .5); part(rider, cloth, s * .24, .34, -.22, .1, .1, .44); }
-  return { group: g, body, neck, head, legs, tail, rider };
+  // Swing a bone: rx forward/up (+), ry to its left (+), rz roll.
+  function pose(name, rx = 0, ry = 0, rz = 0) {
+    const b = bones.get(name); if (!b) return;
+    qa.setFromAxisAngle(b.x, rx); if (ry) qa.multiply(qb.setFromAxisAngle(b.y, ry)); if (rz) qa.multiply(qb.setFromAxisAngle(b.z, rz));
+    b.bone.quaternion.copy(qa).multiply(b.rest);
+  }
+  return { group, body, model, bones, pose };
 }
 
-export function createCow({ scene, physics, spawn }) {
-  const model = buildCow(); scene.add(model.group);
+// Write one frame of gait. run 0..1 (how close to a flat-out charge), gait in cycles, extras optional.
+export function animateCow(cow, { gait = 0, run = 0, moving = 1, airborne = false, charge = 0, turn = 0, time = 0, graze = 0 } = {}) {
+  const { pose } = cow, swing = (.3 + run * .5) * moving, fold = (.45 + run * .75) * moving, gallop = Math.min(1, Math.max(0, (run - .3) / .35));
+  for (const [end, side, walkAt, gallopAt, front] of LEGS) {
+    const phase = (gait + walkAt + (gallopAt - walkAt) * gallop) * Math.PI * 2, s = Math.sin(phase), lift = Math.max(0, Math.cos(phase)) * fold;
+    if (airborne) {
+      if (front) { pose(`fl-shoulder${side}`, .75); pose(`fl-fore${side}`, .35); pose(`fl-cannon${side}`, -1.25); pose(`fl-hoof${side}`, -.3); }
+      else { pose(`bl-thigh${side}`, -.7); pose(`bl-gaskin${side}`, -.1); pose(`bl-cannon${side}`, .5); pose(`bl-hoof${side}`, -.4); }
+    } else if (front) {
+      pose(`fl-shoulder${side}`, s * swing - lift * .15); pose(`fl-fore${side}`, lift * .45); pose(`fl-cannon${side}`, -lift * 1.35); pose(`fl-hoof${side}`, -lift * .5 + Math.max(0, -s) * swing * .5);
+    } else {
+      pose(`bl-thigh${side}`, s * swing + lift * .3); pose(`bl-gaskin${side}`, -lift * .85); pose(`bl-cannon${side}`, lift * 1.05); pose(`bl-hoof${side}`, -lift * .55 + Math.max(0, -s) * swing * .5);
+    }
+  }
+  const beat = gait * Math.PI * 2;
+  // The barrel flexes with the gallop; the head drives down in a charge and nods at a walk; the tail streams.
+  pose('chest', Math.sin(beat + .6) * .05 * gallop * moving, turn * .12); pose('pelvis', -Math.sin(beat + .6) * .07 * gallop * moving, -turn * .1);
+  pose('neck', -charge * .55 - graze * .9 + Math.sin(beat * (gallop > .5 ? 1 : 2)) * (.05 + run * .06) * moving, turn * .35 + Math.sin(time * .5) * .12 * (1 - moving));
+  pose('head', -charge * .25 - graze * .35 + Math.sin(beat * 2 + 1) * .03 * moving, turn * .2);
+  pose('tail1', -(.12 + run * .95) + Math.sin(time * 2.3) * .08, Math.sin(time * 3.1 + gait) * (.18 + run * .1)); pose('tail2', -run * .5, Math.sin(time * 3.1 + gait + .8) * .25); pose('tail3', -run * .35, Math.sin(time * 3.1 + gait + 1.6) * .3);
+}
+
+// The ninja: one of the main game's people (same rig and animation as every visitor in Eden), dressed in black with
+// the red headband, seated on the cow's back.
+function buildRider(cow) {
+  const C = window.GardenCharacter; if (!C || !window.GardenCharacterRocketbox) return null;
+  let person = null;
+  try { person = C.create(THREE, { version: 1, character: 'midnight', height: 176, weight: 70, build: .4, shoulders: 1, waist: 1, hips: 1, legLength: 1 }); } catch (error) { console.warn('[cowninja] rider', error); return null; }
+  const seat = new THREE.Group(); seat.position.set(0, .93, .08); seat.rotation.y = Math.PI; seat.add(person.root); cow.body.add(seat);
+  const cloth = new THREE.Color(0xa0a0aa), band = new THREE.Mesh(new THREE.TorusGeometry(.098, .017, 6, 20), new THREE.MeshStandardMaterial({ color: 0xc4130d, roughness: .55, emissive: 0x3a0503 }));
+  let dressed = null;
+  function dress() {
+    if (dressed === person.skeleton || !person.skeleton) return; dressed = person.skeleton;
+    person.root.traverse(o => { if (o.isSkinnedMesh) { o.castShadow = true; o.frustumCulled = false; const dark = m => { const c = m.clone(); c.color.multiply(cloth); return c; }; o.material = Array.isArray(o.material) ? o.material.map(dark) : dark(o.material); } });
+    const head = person.byName.head; if (head) { band.rotation.x = Math.PI / 2 - .12; band.position.set(0, .075, .012); head.add(band); }
+  }
+  let seated = false;
+  const sit = () => { if (!seated && person.skeleton) seated = !!person.motion.play?.('sitIdle', { loop: true, fade: 0, mask: 'full' }); return seated; };
+  return { person, seat, dress, sit };
+}
+
+export function createCow({ scene, physics, spawn, assets }) {
+  const model = buildCow(assets), rider = buildRider(model); scene.add(model.group);
   const body = physics.dynamicBox([spawn.x, TUNE.rest + .1, spawn.z], TUNE.half, {
     mass: TUNE.mass, friction: 0, restitution: 0, linearDamping: 0, angularDamping: 0, dofs: physics.DOF.upright,
   });
-  let yaw = spawn.yaw, charge = 0, speed = 0, lateral = 0, skid = 0, airborne = false, gait = 0, lean = 0, pitch = 0, bump = 0, lastVy = 0;
+  let yaw = spawn.yaw, charge = 0, speed = 0, lateral = 0, skid = 0, airborne = false, gait = 0, clock = 0, lean = 0, pitch = 0, bump = 0, lastVy = 0;
   const state = { x: spawn.x, y: 0, z: spawn.z, yaw, speed: 0, charge: 0, charging: false, skid: 0, airborne: false, forward: new THREE.Vector3(), velocity: new THREE.Vector3() };
 
   // One physics tick of control. keys: Set of 'w','a','s','d','shift','space'.
@@ -89,17 +135,19 @@ export function createCow({ scene, physics, spawn }) {
     state.charging = charge > .35 && speed > TUNE.trot * .9; state.skid = skid; state.airborne = airborne;
     state.forward.set(Math.sin(yaw), 0, -Math.cos(yaw)); state.velocity.set(v[0], v[1], v[2]);
     model.group.position.set(t.p[0], t.p[1] - TUNE.rest, t.p[2]); model.group.rotation.y = -yaw;
-    const run = Math.min(1, Math.abs(speed) / TUNE.charge);
-    gait += dt * (2.5 + Math.abs(speed) * 1.25);
-    // Gallop: front and back pairs out of phase, a rocking barrel, head down in a charge, body leaning into turns.
-    model.legs.forEach((leg, i) => { const front = i < 2, phase = gait + (front ? 0 : Math.PI * .9) + (i % 2 ? .5 : 0); leg.rotation.x = airborne ? (front ? -.9 : .8) : Math.sin(phase) * (.25 + run * .75); });
+    const run = Math.min(1, Math.abs(speed) / TUNE.charge), moving = Math.min(1, Math.abs(speed) / 1.2);
+    gait += dt * (.5 + Math.abs(speed) * .19) * moving; clock += dt;
     bump = Math.max(0, bump - dt * 2.5);
-    model.body.position.y = airborne ? 0 : Math.abs(Math.sin(gait)) * .07 * run - bump * .25;
-    pitch += ((airborne ? -v[1] * .03 : Math.sin(gait + 1) * .05 * run) - pitch) * Math.min(1, dt * 10); model.body.rotation.x = pitch;
+    // The barrel rises twice a stride at a walk and once at a gallop, rocks, and leans into turns.
+    model.body.position.y = airborne ? 0 : Math.abs(Math.sin(gait * Math.PI * 2)) * .06 * run - bump * .25;
+    pitch += ((airborne ? -v[1] * .03 : Math.sin(gait * Math.PI * 2 + 1) * .05 * run) - pitch) * Math.min(1, dt * 10); model.body.rotation.x = pitch;
     const turning = (lateral * -.05) + skid * Math.sign(lateral || 1) * -.12; lean += (turning - lean) * Math.min(1, dt * 6); model.body.rotation.z = Math.max(-.35, Math.min(.35, lean));
-    model.neck.rotation.x = -charge * .55 + Math.sin(gait) * .06 * run; model.head.rotation.x = -charge * .35;
-    model.tail.rotation.x = .25 + run * .9 + Math.sin(gait * 1.7) * .2;
-    model.rider.rotation.x = -.15 - charge * .35; model.rider.position.y = 1.42 + Math.abs(Math.sin(gait + .6)) * .05 * run;
+    animateCow(model, { gait, run, moving, airborne, charge, turn: Math.max(-1, Math.min(1, -lean * 4)), time: clock });
+    if (rider) {
+      rider.dress(); rider.sit(); rider.person.motion.update(dt, { velocity: STILL }); // carried, not walking
+      // He rides the cow's back: forward over the neck in a charge, rising and falling a beat behind it.
+      rider.seat.rotation.x = .1 + charge * .32; rider.seat.position.y = .93 + Math.abs(Math.sin(gait * Math.PI * 2 + .6)) * .04 * run;
+    }
   }
 
   // Shove from a hit (a truck, a pitchfork): an impulse in mass units, and the charge is knocked out of you.
@@ -110,5 +158,6 @@ export function createCow({ scene, physics, spawn }) {
   return { state, control, update, hit, reset, teleport, body, model, TUNE };
 }
 
-// A herd cow: no physics, just a box cow that follows. Used by herd.js.
-export function buildHerdCow() { const c = buildCow(); c.rider.visible = false; return c; }
+// A herd cow: no physics and no rider, a coat of its own. Used by herd.js.
+const COATS = [null, 0x8f8478, 0x5c5450, 0xd9c7ae, 0x7b6a5c, null, 0x4a4442, 0xb7a892];
+export function buildHerdCow(assets, i = 0) { return buildCow(assets, { tint: COATS[i % COATS.length] }); }

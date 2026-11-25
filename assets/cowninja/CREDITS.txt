@@ -1,0 +1,18 @@
+COWNinja assets. Everything here is CC0 (public domain); no attribution is required, it is recorded so the sources
+can be found again. Rebuild with tools/cowninja/ (fetch-polyhaven.py, pack-props.py, build-cow.py).
+
+cow.glb             "Realtime Ranchers" cow by Iconoclast, opengameart.org/content/realtime-ranchers-3d-model-pack (CC0).
+                    Rescaled, given a new 23-bone skeleton with automatic weights, textures reduced to 1k WebP.
+props/pickup.glb    Pickup from "Free Low Poly Vehicles Pack" by Raphael Gonçalves (Rgsdev),
+                    opengameart.org/content/free-low-poly-vehicles-pack (CC0). Repainted, bevelled, wheels separated.
+props/*.glb (rest)  Poly Haven models, polyhaven.com (CC0): barrel_01, barrel_03, bull_head, caged_hanging_light,
+                    cement_bag, concrete_road_barrier, large_iron_gate, metal_trash_can, modular_chainlink_fence,
+                    modular_industrial_pipes_01, mounted_fluorescent_lights, old_tyre, propane_tank,
+                    rollershutter_door, street_lamp_01, trashbag, utility_box_01, wooden_crate_02.
+                    Decimated to at most 14k triangles, textures 1k WebP.
+tex/*.webp          Poly Haven textures (CC0): muddy_tracks, concrete_floor_worn_001, dirty_tiles, factory_wall,
+                    rusty_corrugated_iron, rusty_metal_02, asphalt_02, long_white_tiles (diffuse, GL normal, AO/rough/metal).
+night-sky.hdr       Poly Haven HDRI "Rogland Moonlit Night" (CC0), 1k.
+
+People, their animation and ragdoll, the troughs, gurneys, tables, carts and barricades come from the main game
+(character-*.js, ragdoll-jolt.js, assets/world-props); see their own credits.

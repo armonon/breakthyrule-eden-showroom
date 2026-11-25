@@ -3,6 +3,7 @@
 // the rest of the game. Debug handle: window.cowNinja.
 import * as THREE from 'three/webgpu';
 import { createPhysics } from '/cowninja/physics.js';
+import { loadAssets } from '/cowninja/assets.js';
 import { createWorld } from '/cowninja/world.js';
 import { createCow } from '/cowninja/cow.js';
 import { createFarmers } from '/cowninja/farmers.js';
@@ -18,23 +19,30 @@ const STEP = 1 / 60;
 async function boot() {
   const container = $('scene'), status = $('cn-status');
   const renderer = new THREE.WebGPURenderer({ antialias: false, forceWebGL: query.get('webgl') === '1', powerPreference: 'high-performance' });
-  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.4;
+  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5)); renderer.setSize(container.clientWidth, container.clientHeight, false);
   container.append(renderer.domElement); await renderer.init();
   $('cn-backend').textContent = renderer.backend?.isWebGPUBackend ? 'WEBGPU' : 'WEBGL2';
 
-  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x10151a); scene.fog = new THREE.FogExp2(0x161c21, .012);
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x10151a); scene.fog = new THREE.FogExp2(0x12171c, .011);
   const camera = new THREE.PerspectiveCamera(62, container.clientWidth / container.clientHeight, .1, 320);
-  status.textContent = 'Starting physics…';
-  const physics = await createPhysics();
-  const world = createWorld({ scene, physics });
+  // The main game's character scripts take three as an argument; some of its helpers also look for the global.
+  window.THREE ||= THREE;
+  status.textContent = 'Loading the yard…';
+  const [physics, assets] = await Promise.all([
+    createPhysics(),
+    loadAssets({ renderer, onProgress: (done, total) => { status.textContent = `Loading the yard… ${Math.round(done / total * 100)}%`; } }),
+    // People: the Rocketbox meshes the farmers and the rider use, and the shared animation clips.
+    Promise.all([...['harbor', 'boulevard', 'coast', 'midnight'].map(id => window.GardenCharacterRocketbox?.load(id).catch(() => {})), window.GardenAnim?.load?.()]).catch(() => {}),
+  ]);
+  const world = createWorld({ scene, physics, assets });
   const blood = createBlood({ scene });
   const stats = { knockouts: 0, herdKnockouts: 0, flips: 0, hits: 0, start: 0, time: 0 };
   let health = 100, hurtFlash = 0, shake = 0, phase = 'intro', message = '', messageUntil = 0, alarm = false;
   const say = (text, seconds = 2.6) => { message = text; messageUntil = performance.now() + seconds * 1000; $('cn-toast').textContent = text; $('cn-toast').classList.add('show'); };
 
-  const cow = createCow({ scene, physics, spawn: world.spawn });
+  const cow = createCow({ scene, physics, spawn: world.spawn, assets });
   function damage(amount, dx, dz, push) {
     if (phase !== 'play') return; health = Math.max(0, health - amount); stats.hits++; hurtFlash = 1; shake = Math.max(shake, .5);
     cow.hit(dx, dz, push); blood.burst(cow.state.x, 1.2, cow.state.z, dx * 4, dz * 4, 6);
@@ -52,9 +60,9 @@ async function boot() {
     else if (e.type === 'truck-coming') say('THEY CALLED THE TRUCK', 2.4);
   }
   const farmers = createFarmers({ scene, physics, world, cow, blood, onEvent });
-  const truck = createTruck({ scene, physics, world, cow, blood, onEvent });
-  const herd = createHerd({ scene, world, cow, farmers });
-  const post = createGrimPost({ renderer, scene, camera });
+  const truck = createTruck({ scene, physics, world, cow, blood, onEvent, assets });
+  const herd = createHerd({ scene, world, cow, farmers, assets });
+  const post = createGrimPost({ renderer, scene, camera, occlusion: query.get('ao') !== '0' });
 
   // Input.
   const keys = new Set(), map = { KeyW: 'w', ArrowUp: 'w', KeyS: 's', ArrowDown: 's', KeyA: 'a', ArrowLeft: 'a', KeyD: 'd', ArrowRight: 'd', ShiftLeft: 'shift', ShiftRight: 'shift', Space: 'space' };
@@ -77,6 +85,8 @@ async function boot() {
   // Camera: behind and above, swinging wider and lower with speed, shaken by impacts.
   const camPos = new THREE.Vector3(world.spawn.x, 6, world.spawn.z - 9), camAim = new THREE.Vector3(), want = new THREE.Vector3();
   function updateCamera(dt) {
+    const free = window.cowNinja?.freeCam; // debug: [x, y, z, lookX, lookY, lookZ] pins the camera for screenshots
+    if (free) { camera.position.set(free[0], free[1], free[2]); camera.lookAt(free[3], free[4], free[5]); return; }
     const c = cow.state, fast = Math.min(1, Math.abs(c.speed) / cow.TUNE.charge), back = 6.2 + fast * 2.6, up = 3.3 - fast * .9;
     want.set(c.x - c.forward.x * back, c.y + up, c.z - c.forward.z * back);
     camPos.lerp(want, 1 - Math.exp(-(3.2 + fast * 2) * dt)); if (camPos.y < .6) camPos.y = .6;
@@ -96,7 +106,7 @@ async function boot() {
     while (acc >= STEP && steps < 4) { cow.control(STEP, keys, !live); physics.step(STEP); acc -= STEP; steps++; }
     if (steps === 4) acc = 0;
     const time = now / 1000;
-    cow.update(dt); world.update(time); farmers.update(dt, time, live); truck.update(dt, live); herd.update(dt, time); blood.update(dt);
+    cow.update(dt); world.update(time, cow.state); farmers.update(dt, time, live); truck.update(dt, live); herd.update(dt, time); blood.update(dt);
     if (live) {
       if (!herd.free && world.gateBroken()) { herd.release(); raiseAlarm(); say('THE GATE IS DOWN · LEAD THEM NORTH', 3.5); }
       // Won: the rider is out past the north gate and at least half the herd has followed.
@@ -115,7 +125,7 @@ async function boot() {
   addEventListener('resize', () => { renderer.setSize(container.clientWidth, container.clientHeight, false); camera.aspect = container.clientWidth / container.clientHeight; camera.updateProjectionMatrix(); });
   status.hidden = true; $('cn-gate').hidden = false;
   renderer.setAnimationLoop(frame);
-  window.cowNinja = { cow, farmers, truck, herd, blood, world, physics, post, keys, stats, state: () => ({ phase, health, alarm, cow: { ...cow.state, forward: cow.state.forward.toArray(), velocity: cow.state.velocity.toArray() }, out: farmers.out(), flips: stats.flips, herdFree: herd.free, saved: herd.saved, blood: blood.inspect(), truckFlipped: truck.flipped }),
+  window.cowNinja = { assets, renderer, scene, camera, cow, farmers, truck, herd, blood, world, physics, post, keys, stats, state: () => ({ phase, health, alarm, cow: { ...cow.state, forward: cow.state.forward.toArray(), velocity: cow.state.velocity.toArray() }, out: farmers.out(), flips: stats.flips, herdFree: herd.free, saved: herd.saved, blood: blood.inspect(), truckFlipped: truck.flipped }),
     begin: () => $('cn-enter').click(), step(n = 1, held = []) { for (const k of held) keys.add(k); for (let i = 0; i < n; i++) { cow.control(STEP, keys, phase !== 'play'); physics.step(STEP); cow.update(STEP); farmers.update(STEP, performance.now() / 1000, phase === 'play'); truck.update(STEP, phase === 'play'); herd.update(STEP, performance.now() / 1000); blood.update(STEP); world.update(0); } for (const k of held) keys.delete(k); return window.cowNinja.state(); } };
 }
 

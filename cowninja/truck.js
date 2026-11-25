@@ -3,22 +3,25 @@
 // square and how fast you hit, puts it on its roof.
 import * as THREE from 'three/webgpu';
 
-const HALF = [.98, .72, 2.3], MASS = 1500, REST = .74, TOP = 14.5, ACCEL = 6, TURN = 1.25, FLIP_SPEED = 8.5, SQUARE = .62;
+const HALF = [1.02, .78, 2.05], MASS = 1500, REST = .8, TOP = 14.5, ACCEL = 6, TURN = 1.25, FLIP_SPEED = 8.5, SQUARE = .62;
 
-export function createTruck({ scene, physics, world, cow, blood, onEvent }) {
+export function createTruck({ scene, physics, world, cow, blood, onEvent, assets }) {
   const group = new THREE.Group(), cube = new THREE.BoxGeometry(1, 1, 1);
-  const paint = new THREE.MeshStandardMaterial({ color: 0x5b1f1a, roughness: .5, metalness: .4 }), dark = new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: .7 }), glass = new THREE.MeshStandardMaterial({ color: 0x1c2a33, roughness: .1, metalness: .6 });
-  const part = (mat, x, y, z, sx, sy, sz) => { const m = new THREE.Mesh(cube, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; group.add(m); return m; };
-  part(paint, 0, -.1, 0, 1.96, .7, 4.6); part(paint, 0, .5, -.5, 1.8, .62, 1.7); part(glass, 0, .52, -1.36, 1.6, .5, .04); part(dark, 0, .28, 1.3, 1.7, .1, 1.9);
-  for (const [x, z] of [[-.98, -1.5], [.98, -1.5], [-.98, 1.5], [.98, 1.5]]) part(dark, x, -.44, z, .26, .62, .62);
-  const beams = [];
-  for (const x of [-.7, .7]) { const b = new THREE.Mesh(cube, new THREE.MeshBasicMaterial({ color: 0xfff1c9 })); b.position.set(x, -.02, -2.31); b.scale.set(.28, .16, .04); group.add(b); beams.push(b); }
-  const lamp = new THREE.SpotLight(0xfff1c9, 0, 46, .5, .5, 1.4); lamp.position.set(0, .1, -2.3); lamp.target.position.set(0, -.5, -14); group.add(lamp, lamp.target);
+  // The pickup model (assets/cowninja/props/pickup.glb): body, four wheels that turn, headlights that die in a wreck.
+  const model = assets?.clone('pickup'), wheels = [], beams = [];
+  if (model) {
+    model.position.y = -REST; group.add(model);
+    model.traverse(o => { if (/^wheel-/.test(o.name)) { o.rotation.order = 'YXZ'; wheels.push(o); } if (o.isMesh && /headlights/.test(o.material.name)) { o.material = o.material.clone(); beams.push(o); } });
+  } else {
+    const paint = new THREE.MeshStandardMaterial({ color: 0x5b1f1a, roughness: .5, metalness: .4 }), part = (mat, x, y, z, sx, sy, sz) => { const m = new THREE.Mesh(cube, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; group.add(m); };
+    part(paint, 0, -.1, 0, 1.96, .7, 4.1); part(paint, 0, .5, -.5, 1.8, .62, 1.7);
+  }
+  const lamp = new THREE.SpotLight(0xfff1c9, 0, 46, .5, .5, 1.4); lamp.position.set(0, -.05, -2.0); lamp.target.position.set(0, -.5, -14); group.add(lamp, lamp.target);
   scene.add(group);
   const s = world.truckStart;
   const body = physics.dynamicBox([s.x, REST + .05, s.z], HALF, { mass: MASS, friction: .85, restitution: .05, linearDamping: .02, angularDamping: .25, com: [0, -.42, 0] });
   const q = new THREE.Quaternion(), up = new THREE.Vector3(), fwd = new THREE.Vector3(), right = new THREE.Vector3(), tmp = new THREE.Vector3(), local = new THREE.Vector3();
-  let active = false, flipped = false, hitCool = 0, speed = 0, wreck = 0;
+  let steerShown = 0, active = false, flipped = false, hitCool = 0, speed = 0, wreck = 0;
   { const start = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -s.yaw); body.place(s.x, REST + .05, s.z, start.x, start.y, start.z, start.w); }
 
   function update(dt, live) {
@@ -26,8 +29,9 @@ export function createTruck({ scene, physics, world, cow, blood, onEvent }) {
     up.set(0, 1, 0).applyQuaternion(q); fwd.set(0, 0, -1).applyQuaternion(q); right.set(1, 0, 0).applyQuaternion(q);
     const c = cow.state, upright = up.y > .72;
     hitCool = Math.max(0, hitCool - dt);
-    if (!flipped && up.y < .2) { flipped = true; wreck = 0; lamp.intensity = 0; for (const b of beams) b.material.color.setScalar(.15); onEvent?.({ type: 'flipped' }); }
+    if (!flipped && up.y < .2) { flipped = true; wreck = 0; lamp.intensity = 0; for (const b of beams) { b.material.emissiveIntensity = 0; b.material.color.setScalar(.15); } onEvent?.({ type: 'flipped' }); }
     if (flipped) { wreck += dt; return; }
+    { const v = body.velocity(), roll = (v[0] * fwd.x + v[2] * fwd.z) * dt / .33; for (const w of wheels) { w.rotation.x -= roll; if (w.name.startsWith('wheel-f')) w.rotation.y = steerShown; } }
     lamp.intensity = active ? 900 : 0;
     // Drive: steer the nose at the cow, throttle up, written through the velocity so collisions still slow it.
     // (not for a moment after any hit: the driver has lost it, and physics alone decides whether it rolls)
@@ -36,7 +40,7 @@ export function createTruck({ scene, physics, world, cow, blood, onEvent }) {
       speed = v[0] * fx + v[2] * fz; const lat = v[0] * -fz + v[2] * fx;
       const dx = c.x - t.p[0], dz = c.z - t.p[2], dist = Math.hypot(dx, dz) || 1, cross = fx * dz - fz * dx, ahead = (fx * dx + fz * dz) / dist;
       const steer = Math.max(-1, Math.min(1, cross / dist * 2.2)) * (ahead < -.2 ? 1.6 : 1);
-      const target = ahead > .3 ? TOP : 6.5;
+      const target = ahead > .3 ? TOP : 6.5; steerShown += (-steer * .45 - steerShown) * Math.min(1, dt * 8);
       speed += Math.max(-ACCEL * 1.6 * dt, Math.min(ACCEL * dt, target - speed));
       const yawRate = steer * TURN * Math.min(1, Math.abs(speed) / 4);
       const nfx = fx * Math.cos(yawRate * dt) - fz * Math.sin(yawRate * dt), nfz = fx * Math.sin(yawRate * dt) + fz * Math.cos(yawRate * dt), keep = Math.exp(-5 * dt);

@@ -2,12 +2,12 @@
 // steers for a slot behind the leader, keeps its distance from the others, and slides along walls. A cow at a run
 // flattens any farmer in its way, so the stampede clears its own path.
 import * as THREE from 'three/webgpu';
-import { buildHerdCow } from '/cowninja/cow.js';
+import { buildHerdCow, animateCow } from '/cowninja/cow.js';
 
-export function createHerd({ scene, world, cow, farmers, count = 8 }) {
+export function createHerd({ scene, world, cow, farmers, assets, count = 8 }) {
   const cows = [], pen = world.pen;
   for (let i = 0; i < count; i++) {
-    const model = buildHerdCow(); scene.add(model.group);
+    const model = buildHerdCow(assets, i); scene.add(model.group); model.group.scale.setScalar(.92 + (i * 37 % 10) * .014);
     const c = { model, p: { x: pen.minX + 1.5 + (i % 3) * 3.6, z: pen.minZ + 1.6 + Math.floor(i / 3) * 4 }, yaw: Math.random() * 6.28, speed: 0, gait: i, slot: i, stage: 0, wander: Math.random() * 6.28 };
     cows.push(c);
   }
@@ -42,10 +42,11 @@ export function createHerd({ scene, world, cow, farmers, count = 8 }) {
       else world.walk(c.p, vx * dt, vz * dt, .6);
       // Stampede: a cow at a run knocks down a farmer it reaches.
       if (free && c.speed > 5) for (const f of farmers.standing()) if (Math.hypot(f.p.x - c.p.x, f.p.z - c.p.z) < 1.2) farmers.knock(f, vx, vz, 'herd');
-      c.gait += dt * (2.5 + c.speed * 1.25); const run = Math.min(1, c.speed / 15);
-      c.model.group.position.set(c.p.x, Math.abs(Math.sin(c.gait)) * .06 * run, c.p.z); c.model.group.rotation.y = -c.yaw;
-      c.model.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(c.gait + (i < 2 ? 0 : 2.8) + (i % 2 ? .5 : 0)) * (.2 + run * .8); });
-      c.model.neck.rotation.x = free ? -run * .4 : Math.sin(time * .6 + c.slot) * .25 - .2; c.model.tail.rotation.x = .25 + run;
+      const run = Math.min(1, c.speed / 15), moving = Math.min(1, c.speed / 1.2);
+      c.gait += dt * (.5 + c.speed * .19) * moving;
+      c.model.group.position.set(c.p.x, Math.abs(Math.sin(c.gait * Math.PI * 2)) * .05 * run, c.p.z); c.model.group.rotation.y = -c.yaw;
+      // Penned, they stand and feed in turns; loose, they run with their heads up.
+      animateCow(c.model, { gait: c.gait, run, moving, time: time + c.slot * 1.7, graze: free ? 0 : Math.max(0, Math.sin(time * .25 + c.slot * 1.3)) * (1 - moving) });
       if (free && Math.hypot(c.p.x - world.exit.x, c.p.z - world.exit.z) < world.exit.radius) { c.saved = true; saved++; c.model.group.visible = false; }
     }
   }
