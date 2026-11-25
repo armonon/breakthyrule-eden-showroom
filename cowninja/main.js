@@ -146,14 +146,14 @@ async function boot() {
     if (mode === 'foot') {
       const p = foot.state, eye = p.y + (p.crouched ? 1.05 : 1.5), cp = Math.cos(camPitch), dx = Math.sin(camYaw) * cp, dy = Math.sin(camPitch), dz = Math.cos(camYaw) * cp;
       let reach = 3.7; for (let d = .5; d <= 3.7; d += .25) if (world.solidAt(p.x - dx * d, eye - dy * d + .25, p.z - dz * d, .2)) { reach = Math.max(.5, d - .3); break; }
-      want.set(p.x - dx * reach, Math.max(.35, eye - dy * reach + .3), p.z - dz * reach);
+      want.set(p.x - dx * reach, Math.max(.35, eye - dy * reach + .3), p.z - dz * reach); { const ceiling = Math.min(world.ceilingAt(want.x, want.z), world.ceilingAt(p.x, p.z)); if (p.y < ceiling - .5 && want.y > ceiling - .35) want.y = ceiling - .35; }
       camPos.lerp(want, 1 - Math.exp(-18 * dt)); camAim.set(p.x + dx * 4, eye + dy * 4 + .1, p.z + dz * 4); fov = 64 + Math.min(10, p.speed * 1.2);
     } else {
       const c = cow.state, fast = Math.min(1, Math.abs(c.speed) / cow.TUNE.charge), back = 6.2 + fast * 2.6, up = 3.3 - fast * .9;
       want.set(c.x - c.forward.x * back, c.y + up, c.z - c.forward.z * back);
       camPos.lerp(want, 1 - Math.exp(-(3.2 + fast * 2) * dt)); if (camPos.y < .6) camPos.y = .6;
       // Under the roof the high chase view would sit above the ceiling: keep it below.
-      if (world.solidAt(camPos.x, camPos.y + .4, camPos.z, .3) || (camPos.z > 9.4 && camPos.z < 46.6 && Math.abs(camPos.x) < 24.6 && camPos.y > 5.9)) camPos.y = Math.min(camPos.y, 5.6);
+      { const ceiling = world.ceilingAt(camPos.x, camPos.z), under = world.ceilingAt(c.x, c.z); if (Math.min(ceiling, under) < Infinity) camPos.y = Math.min(camPos.y, Math.min(ceiling, under) - .45); }
       camAim.set(c.x + c.forward.x * (2.5 + fast * 4), c.y + 1.35, c.z + c.forward.z * (2.5 + fast * 4)); fov = 62 + fast * 16 + c.charge * 5;
     }
     shake = Math.max(0, shake - dt * 2.4);
@@ -181,7 +181,7 @@ async function boot() {
     quality++; measureFrom = now + 1500;
     if (quality === 1) renderer.setPixelRatio(1);
     else if (quality === 2) { post.dispose(); post = createGrimPost({ renderer, scene, camera, occlusion: false }); }
-    else { renderer.setPixelRatio(.75); renderer.shadowMap.enabled = false; scene.traverse(o => { if (o.isLight && o.castShadow) o.castShadow = false; }); }
+    else { renderer.setPixelRatio(.75); scene.traverse(o => { if (o.isLight && o.castShadow && o.shadow.mapSize.x > 1024) { o.shadow.mapSize.set(1024, 1024); o.shadow.map?.dispose(); o.shadow.map = null; } }); } // shadows stay: without the moon's, it shines through the roof
     renderer.setSize(container.clientWidth, container.clientHeight, false);
   }
 
@@ -198,7 +198,7 @@ async function boot() {
     cow.update(dt); world.update(time, a); farmers.update(dt, time, live); truck.update(dt, live); herd.update(dt, time); blood.update(dt);
     if (calling > 0) { calling -= dt; if (Math.hypot(cow.state.x - foot.state.x, cow.state.z - foot.state.z) < 3) calling = 0; }
     // Hooves: four beats a stride, louder and harder the faster it goes.
-    { const b = Math.floor(cow.state.gait * 4); if (b !== beat) { beat = b; const v = Math.abs(cow.state.speed); if (v > .6 && !cow.state.airborne) { const d = Math.hypot(cow.state.x - a.x, cow.state.z - a.z); if (d < 30) audio.hoof(Math.abs(cow.state.z - 28) < 18 && Math.abs(cow.state.x) < 24 ? 'stone' : 'grass', Math.min(6, 2 + v * .3)); } } }
+    { const b = Math.floor(cow.state.gait * 4); if (b !== beat) { beat = b; const v = Math.abs(cow.state.speed); if (v > .6 && !cow.state.airborne) { const d = Math.hypot(cow.state.x - a.x, cow.state.z - a.z); if (d < 30) audio.hoof(world.indoors(cow.state.x, cow.state.z) ? 'stone' : 'grass', Math.min(6, 2 + v * .3)); } } }
     { const t = truck.body.read().p; audio.truck(truck.speed, Math.hypot(t[0] - a.x, t[2] - a.z), truck.active && !truck.flipped); }
     if (live) {
       const broken = world.gateBroken();
@@ -206,7 +206,7 @@ async function boot() {
       lastGate = broken;
       if (alarmAt && now > alarmAt) { if (farmers.alerted()) raiseAlarm(); else alarmAt = 0; }
       // Won: you are out past the north gate and at least half the herd has followed.
-      if (herd.free && a.z < -51 && herd.saved >= Math.ceil(herd.count / 2)) end(true);
+      if (herd.free && a.z < world.gateZ - 2 && herd.saved >= Math.ceil(herd.count / 2)) end(true);
     }
     hurtFlash = Math.max(0, hurtFlash - dt * 1.6); post.set({ hurt: hurtFlash * .9 + (health < 30 && live ? .18 : 0) });
     updateCamera(dt); tune(dt, now);

@@ -11,7 +11,9 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 const BASE = '/assets/cowninja/';
-export const PROPS = ['barrel_01', 'barrel_03', 'bull_head', 'caged_hanging_light', 'cement_bag', 'concrete_road_barrier', 'large_iron_gate', 'metal_trash_can',
+export const PROPS = ['barrel_02', 'modular_airduct_rectangular_01', 'covered_car', 'security_camera_01', 'fire_hydrant', 'water_manhole_cover', 'wooden_ladder',
+  'metal_office_desk', 'metal_stool_01', 'tool_cart', 'metal_jerrycan', 'wooden_bucket_01', 'cardboard_box_01', 'dead_tree_trunk', 'boulder_01',
+  'shrub_02', 'shrub_04', 'grass_medium_01', 'grass_medium_02', 'fir_sapling', 'tree_stump_01', 'nettle_plant', 'weed_plant_02', 'barrel_01', 'barrel_03', 'bull_head', 'caged_hanging_light', 'cement_bag', 'concrete_road_barrier', 'large_iron_gate', 'metal_trash_can',
   'modular_chainlink_fence', 'modular_industrial_pipes_01', 'mounted_fluorescent_lights', 'old_tyre', 'propane_tank', 'rollershutter_door', 'street_lamp_01',
   'trashbag', 'utility_box_01', 'wooden_crate_02', 'pickup'];
 export const GAME_PROPS = ['chipped-granite-trough-v001', 'plain-limestone-trough-v001', 'plain-iron-gurney-v001', 'worn-iron-gurney-v002', 'plain-iron-operating-table-v001',
@@ -41,12 +43,19 @@ export async function loadAssets({ renderer, onProgress } = {}) {
   const map = (name, kind, colour) => track(textures.loadAsync(`${BASE}tex/${name}-${kind}.webp`).then(t => {
     t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = anisotropy; if (colour) t.colorSpace = THREE.SRGBColorSpace; maps.set(name + kind, t);
   }).catch(() => {}));
-  const jobs = [load('cow', BASE + 'cow.glb')];
+  const jobs = [load('cow', BASE + 'cow.glb'), load('site', BASE + 'site.glb')];
+  let siteData = null, lightmap = null;
+  jobs.push(track(fetch(BASE + 'site.json').then(r => r.json()).then(d => { siteData = d; })));
+  jobs.push(track(textures.loadAsync(BASE + 'site-lightmap.webp').then(t => { t.channel = 1; t.colorSpace = THREE.SRGBColorSpace; t.flipY = false; lightmap = t; }).catch(() => {})));
   for (const name of PROPS) jobs.push(load(name, `${BASE}props/${name}.glb`));
   for (const name of GAME_PROPS) jobs.push(load(name, `/assets/world-props/${name}.glb`));
   for (const name of SURFACES) jobs.push(map(name, 'diff', true), map(name, 'nor'), map(name, 'arm'));
   let sky = null;
-  jobs.push(track(new HDRLoader().loadAsync(BASE + 'night-sky.hdr').then(t => { t.mapping = THREE.EquirectangularReflectionMapping; sky = t; }).catch(error => console.warn('[cowninja] sky missing', error?.message || error))));
+  jobs.push(track(new HDRLoader().loadAsync(BASE + 'night-sky.hdr').then(t => {
+    // The moon is thousands of times brighter than the rest of the sky: clamp it, or it floods the bloom and lights everything.
+    const d = t.image.data, half = d instanceof Uint16Array, cap = 2.5;
+    for (let i = 0; i < d.length; i++) { if ((i & 3) === 3) continue; const v = half ? THREE.DataUtils.fromHalfFloat(d[i]) : d[i]; if (v > cap) d[i] = half ? THREE.DataUtils.toHalfFloat(cap) : cap; }
+    t.needsUpdate = true; t.mapping = THREE.EquirectangularReflectionMapping; sky = t; }).catch(error => console.warn('[cowninja] sky missing', error?.message || error))));
   await Promise.all(jobs);
 
   // A PBR surface that repeats every `size` metres. Box and plane UVs run 0..1, so the repeat is set per use.
@@ -68,5 +77,7 @@ export async function loadAssets({ renderer, onProgress } = {}) {
   }
   const skinned = name => { const source = models.get(name); return source ? SkeletonUtils.clone(source) : null; };
   const size = (object) => new THREE.Box3().setFromObject(object).getSize(new THREE.Vector3());
-  return { models, maps, sky, surface, clone, skinned, has, size };
+  // Barrel_02 is listed under its Poly Haven name in site.json.
+  if (models.has('barrel_02')) models.set('Barrel_02', models.get('barrel_02'));
+  return { models, maps, sky, surface, clone, skinned, has, size, site: models.get('site') || null, siteData, lightmap };
 }

@@ -552,5 +552,1359 @@
     1.319
    ]
   }
+ },
+ "modular_electricity_poles": {
+  "tris": 9000,
+  "min": [
+   -7.35,
+   -0.0,
+   -1.531
+  ],
+  "max": [
+   5.769,
+   7.0,
+   0.426
+  ],
+  "parts": {
+   "bolt_large": [
+    -1.0,
+    2.1,
+    -0.08
+   ],
+   "bolt_small": [
+    -1.0,
+    2.0,
+    0.0
+   ],
+   "cap": [
+    0.0,
+    4.9,
+    -0.0
+   ],
+   "connection_large_01": [
+    2.7,
+    5.1,
+    -0.0
+   ],
+   "connection_large_02": [
+    2.7,
+    4.3,
+    -0.0
+   ],
+   "connection_large_offset_01": [
+    1.4,
+    5.1,
+    -0.0
+   ],
+   "connection_large_offset_02": [
+    1.4,
+    4.3,
+    -0.0
+   ],
+   "connection_single_01": [
+    0.0,
+    3.8,
+    -0.0
+   ],
+   "connection_single_02": [
+    0.0,
+    4.1,
+    -0.0
+   ],
+   "connection_single_03": [
+    0.0,
+    3.4,
+    -0.0
+   ],
+   "connection_small_01": [
+    4.0,
+    5.1,
+    -0.0
+   ],
+   "connection_small_02": [
+    4.0,
+    4.3,
+    -0.0
+   ],
+   "fastener": [
+    -0.09,
+    3.083,
+    -0.0
+   ],
+   "fastener_bolt": [
+    -1.0,
+    1.9,
+    -0.025
+   ],
+   "fastener_connection": [
+    0.0,
+    3.08,
+    -0.0
+   ],
+   "fastener_loop": [
+    -1.508,
+    0.001,
+    -0.0
+   ],
+   "fastener_nut": [
+    -1.0,
+    1.9,
+    -0.025
+   ],
+   "fuse_01": [
+    -1.0,
+    4.3,
+    -0.0
+   ],
+   "fuse_02": [
+    -1.0,
+    5.1,
+    -0.0
+   ],
+   "insulator_01": [
+    1.45,
+    1.8,
+    -0.0
+   ],
+   "insulator_02": [
+    1.1,
+    1.8,
+    -0.0
+   ],
+   "insulator_03": [
+    0.7,
+    1.8,
+    -0.0
+   ],
+   "insulator_cable_01": [
+    1.45,
+    1.8,
+    -0.0
+   ],
+   "insulator_cable_02": [
+    1.1,
+    1.8,
+    -0.0
+   ],
+   "insulator_cable_03": [
+    0.7,
+    1.8,
+    -0.0
+   ],
+   "insulators_large": [
+    2.7,
+    1.8,
+    -0.0
+   ],
+   "insulators_small": [
+    4.0,
+    1.8,
+    -0.0
+   ],
+   "nail": [
+    -1.0,
+    2.2,
+    -0.0
+   ],
+   "nail_bent": [
+    -1.0,
+    2.3,
+    -0.0
+   ],
+   "nut": [
+    -1.0,
+    2.1,
+    -0.08
+   ],
+   "pole": [
+    5.2,
+    0.0,
+    -0.0
+   ],
+   "pole_large": [
+    5.7,
+    0.0,
+    -0.0
+   ],
+   "pole_small": [
+    4.7,
+    0.0,
+    -0.0
+   ],
+   "preset_01_bolt_small_01": [
+    -2.5,
+    1.59,
+    -0.005
+   ],
+   "preset_01_bolt_small_02": [
+    -2.5,
+    2.02,
+    -0.005
+   ],
+   "preset_01_bolt_small_03": [
+    -2.5,
+    2.46,
+    -0.005
+   ],
+   "preset_01_bolt_small_04": [
+    -2.5,
+    2.89,
+    -0.005
+   ],
+   "preset_01_bolt_small_05": [
+    -2.5,
+    3.19,
+    -0.005
+   ],
+   "preset_01_bolt_small_06": [
+    -2.5,
+    3.49,
+    -0.005
+   ],
+   "preset_01_bolt_small_07": [
+    -2.5,
+    3.89,
+    -0.005
+   ],
+   "preset_01_bolt_small_08": [
+    -2.5,
+    4.19,
+    -0.005
+   ],
+   "preset_01_bolt_small_09": [
+    -2.5,
+    4.79,
+    -0.005
+   ],
+   "preset_01_cap": [
+    -2.5,
+    5.9,
+    -0.0
+   ],
+   "preset_01_connection_large_02": [
+    -2.5,
+    5.7,
+    -0.0
+   ],
+   "preset_01_connection_single_01": [
+    -2.5,
+    3.85,
+    -0.0
+   ],
+   "preset_01_connection_small_02": [
+    -2.5,
+    4.6,
+    -0.0
+   ],
+   "preset_01_fastener": [
+    -2.5,
+    3.083,
+    -0.09
+   ],
+   "preset_01_fastener_connection": [
+    -2.5,
+    3.08,
+    -0.0
+   ],
+   "preset_01_fastener_loop": [
+    -2.5,
+    0.001,
+    -1.508
+   ],
+   "preset_01_fuse_01": [
+    -2.5,
+    4.6,
+    -0.0
+   ],
+   "preset_01_fuse_02": [
+    -2.5,
+    5.7,
+    -0.0
+   ],
+   "preset_01_nail_bent": [
+    -2.5,
+    1.1,
+    -0.0
+   ],
+   "preset_01_pole": [
+    -2.5,
+    0.0,
+    -0.0
+   ],
+   "preset_01_ring_large": [
+    -2.5,
+    0.02,
+    -0.0
+   ],
+   "preset_01_ring_small": [
+    -2.5,
+    1.8,
+    -0.0
+   ],
+   "preset_01_ring_small_01": [
+    -2.5,
+    1.7,
+    -0.0
+   ],
+   "preset_01_ring_small_02": [
+    -2.5,
+    3.6,
+    -0.0
+   ],
+   "preset_01_ring_small_03": [
+    -2.5,
+    4.74,
+    -0.0
+   ],
+   "preset_01_transformer_01": [
+    -2.5,
+    3.844,
+    -0.0
+   ],
+   "preset_01_transformer_02": [
+    -2.5,
+    4.99,
+    -0.0
+   ],
+   "preset_02_cap": [
+    -4.5,
+    5.9,
+    -0.0
+   ],
+   "preset_02_connection_large_01": [
+    -4.5,
+    5.7,
+    -0.0
+   ],
+   "preset_02_connection_single_01": [
+    -4.5,
+    3.834,
+    -0.0
+   ],
+   "preset_02_connection_single_01_02": [
+    -4.5,
+    3.865,
+    -0.0
+   ],
+   "preset_02_connection_small_01": [
+    -4.5,
+    4.6,
+    -0.0
+   ],
+   "preset_02_pole": [
+    -4.5,
+    0.0,
+    -0.0
+   ],
+   "preset_02_ring_large": [
+    -4.5,
+    0.02,
+    -0.0
+   ],
+   "preset_02_ring_large_02": [
+    -4.5,
+    5.22,
+    -0.0
+   ],
+   "preset_02_ring_small_01": [
+    -4.5,
+    1.69,
+    -0.0
+   ],
+   "preset_02_ring_small_02": [
+    -4.5,
+    1.82,
+    -0.0
+   ],
+   "preset_02_ring_small_03": [
+    -4.5,
+    3.68,
+    -0.0
+   ],
+   "preset_02_ring_small_04": [
+    -4.5,
+    4.18,
+    -0.0
+   ],
+   "preset_02_ring_small_05": [
+    -4.5,
+    4.74,
+    -0.0
+   ],
+   "preset_03_bolt_small_01": [
+    -6.5,
+    1.59,
+    -0.005
+   ],
+   "preset_03_bolt_small_02": [
+    -6.5,
+    1.972,
+    -0.005
+   ],
+   "preset_03_bolt_small_03": [
+    -6.5,
+    2.485,
+    -0.005
+   ],
+   "preset_03_bolt_small_04": [
+    -6.5,
+    2.903,
+    -0.005
+   ],
+   "preset_03_bolt_small_05": [
+    -6.5,
+    3.174,
+    -0.005
+   ],
+   "preset_03_bolt_small_06": [
+    -6.5,
+    3.427,
+    -0.005
+   ],
+   "preset_03_cap": [
+    -6.5,
+    5.9,
+    -0.0
+   ],
+   "preset_03_connection_large_offset_01": [
+    -6.5,
+    5.7,
+    -0.0
+   ],
+   "preset_03_connection_single_01": [
+    -6.5,
+    3.85,
+    -0.0
+   ],
+   "preset_03_connection_small_01_02": [
+    -6.5,
+    4.6,
+    -0.0
+   ],
+   "preset_03_fuse_01": [
+    -6.5,
+    4.6,
+    -0.0
+   ],
+   "preset_03_nail_bent": [
+    -6.5,
+    1.1,
+    -0.0
+   ],
+   "preset_03_pole": [
+    -6.5,
+    0.0,
+    -0.0
+   ],
+   "preset_03_ring_large_01": [
+    -6.5,
+    0.02,
+    -0.0
+   ],
+   "preset_03_ring_large_02": [
+    -6.5,
+    5.22,
+    -0.0
+   ],
+   "preset_03_ring_small_01": [
+    -6.5,
+    1.7,
+    -0.0
+   ],
+   "preset_03_ring_small_02": [
+    -6.5,
+    1.8,
+    -0.0
+   ],
+   "preset_03_ring_small_03": [
+    -6.5,
+    3.6,
+    -0.0
+   ],
+   "preset_03_ring_small_04": [
+    -6.5,
+    4.74,
+    -0.0
+   ],
+   "preset_03_transformer_01": [
+    -6.5,
+    3.844,
+    -0.0
+   ],
+   "ring_large": [
+    -1.0,
+    1.7,
+    -0.0
+   ],
+   "ring_small": [
+    -1.0,
+    1.8,
+    -0.0
+   ],
+   "support_large_01": [
+    2.7,
+    3.4,
+    -0.0
+   ],
+   "support_large_02": [
+    2.7,
+    2.6,
+    -0.0
+   ],
+   "support_large_offset_01": [
+    1.4,
+    3.4,
+    -0.0
+   ],
+   "support_large_offset_02": [
+    1.4,
+    2.6,
+    -0.0
+   ],
+   "support_small_01": [
+    4.0,
+    3.4,
+    -0.0
+   ],
+   "support_small_02": [
+    4.0,
+    2.6,
+    -0.0
+   ],
+   "transformer_01": [
+    -1.0,
+    2.924,
+    -0.0
+   ],
+   "transformer_02": [
+    -1.0,
+    3.57,
+    -0.0
+   ]
+  }
+ },
+ "modular_airduct_rectangular_01": {
+  "tris": 14000,
+  "min": [
+   -3.332,
+   -0.706,
+   -1.05
+  ],
+  "max": [
+   4.331,
+   0.55,
+   1.537
+  ],
+  "parts": {
+   "modular_airduct_rectangular_01_bend_01": [
+    0.999,
+    0.0,
+    0.45
+   ],
+   "modular_airduct_rectangular_01_bend_02": [
+    3.999,
+    0.0,
+    -1.05
+   ],
+   "modular_airduct_rectangular_01_brace_01": [
+    -1.001,
+    0.0,
+    0.95
+   ],
+   "modular_airduct_rectangular_01_brace_wire_01": [
+    -1.001,
+    0.0,
+    0.95
+   ],
+   "modular_airduct_rectangular_01_connector_01": [
+    -3.001,
+    0.0,
+    0.95
+   ],
+   "modular_airduct_rectangular_01_corner_01": [
+    -0.001,
+    0.0,
+    0.45
+   ],
+   "modular_airduct_rectangular_01_corner_02": [
+    0.999,
+    0.0,
+    -1.05
+   ],
+   "modular_airduct_rectangular_01_double_01": [
+    -2.001,
+    0.0,
+    -1.05
+   ],
+   "modular_airduct_rectangular_01_fastener_01.025": [
+    -3.001,
+    0.0,
+    1.45
+   ],
+   "modular_airduct_rectangular_01_half_01": [
+    -3.001,
+    0.0,
+    -1.05
+   ],
+   "modular_airduct_rectangular_01_single_01": [
+    -3.001,
+    0.0,
+    -0.05
+   ],
+   "modular_airduct_rectangular_01_splitter_01": [
+    -0.001,
+    0.0,
+    -1.05
+   ],
+   "modular_airduct_rectangular_01_transition_double_01": [
+    1.999,
+    0.0,
+    -1.05
+   ],
+   "modular_airduct_rectangular_01_transition_double_02": [
+    2.999,
+    0.0,
+    -1.05
+   ],
+   "modular_airduct_rectangular_01_tripple_01": [
+    -1.001,
+    0.0,
+    -1.05
+   ],
+   "modular_airduct_rectangular_01_vent_01": [
+    -2.001,
+    0.0,
+    1.45
+   ],
+   "modular_airduct_rectangular_01_vent_02": [
+    -2.001,
+    0.0,
+    0.95
+   ],
+   "modular_airduct_rectangular_01_vent_closed_01": [
+    -2.001,
+    0.0,
+    0.45
+   ]
+  }
+ },
+ "covered_car": {
+  "tris": 12592,
+  "min": [
+   -0.847,
+   0.0,
+   -2.166
+  ],
+  "max": [
+   0.942,
+   1.411,
+   2.214
+  ],
+  "parts": {
+   "covered_car": [
+    0.038,
+    0.0,
+    0.038
+   ],
+   "covered_car_wheel_01": [
+    0.758,
+    0.3,
+    1.281
+   ],
+   "covered_car_wheel_02": [
+    -0.682,
+    0.3,
+    1.281
+   ],
+   "covered_car_wheel_03": [
+    -0.672,
+    0.3,
+    -1.299
+   ],
+   "covered_car_wheel_04": [
+    0.748,
+    0.3,
+    -1.299
+   ]
+  }
+ },
+ "security_camera_01": {
+  "tris": 13571,
+  "min": [
+   -0.085,
+   -0.025,
+   -0.303
+  ],
+  "max": [
+   0.085,
+   0.261,
+   0.25
+  ],
+  "parts": {}
+ },
+ "fire_hydrant": {
+  "tris": 14000,
+  "min": [
+   -0.442,
+   -0.0,
+   -0.127
+  ],
+  "max": [
+   0.433,
+   0.799,
+   0.191
+  ],
+  "parts": {
+   "fire_hydrant": [
+    -0.3,
+    0.0,
+    -0.0
+   ],
+   "fire_hydrant_aged": [
+    0.3,
+    0.0,
+    -0.0
+   ],
+   "fire_hydrant_cap_01": [
+    -0.3,
+    0.0,
+    -0.0
+   ],
+   "fire_hydrant_cap_01_aged": [
+    0.3,
+    0.0,
+    -0.0
+   ],
+   "fire_hydrant_cap_02": [
+    -0.3,
+    0.0,
+    -0.0
+   ],
+   "fire_hydrant_cap_02_aged": [
+    0.3,
+    0.0,
+    -0.0
+   ],
+   "fire_hydrant_cap_03": [
+    -0.3,
+    0.0,
+    -0.0
+   ],
+   "fire_hydrant_cap_03_aged": [
+    0.3,
+    0.0,
+    -0.0
+   ],
+   "fire_hydrant_chain": [
+    -0.3,
+    0.0,
+    -0.0
+   ],
+   "fire_hydrant_chain_aged": [
+    0.3,
+    0.0,
+    -0.0
+   ]
+  }
+ },
+ "water_manhole_cover": {
+  "tris": 6301,
+  "min": [
+   -0.345,
+   -0.029,
+   -0.345
+  ],
+  "max": [
+   0.345,
+   0.039,
+   0.345
+  ],
+  "parts": {
+   "water_manhole_cover": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "water_manhole_cover_frame": [
+    0.0,
+    0.0,
+    -0.0
+   ]
+  }
+ },
+ "wooden_ladder": {
+  "tris": 8492,
+  "min": [
+   -0.485,
+   0.0,
+   -0.25
+  ],
+  "max": [
+   0.474,
+   1.335,
+   0.25
+  ],
+  "parts": {
+   "wooden_ladder_steps": [
+    0.0,
+    1.105,
+    -0.0
+   ],
+   "wooden_ladder_supports": [
+    0.0,
+    1.105,
+    -0.0
+   ]
+  }
+ },
+ "metal_office_desk": {
+  "tris": 6898,
+  "min": [
+   -1.0,
+   0.0,
+   -0.469
+  ],
+  "max": [
+   1.0,
+   0.788,
+   0.478
+  ],
+  "parts": {
+   "metal_office_desk": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "metal_office_desk_drawer_01": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "metal_office_desk_drawer_02": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "metal_office_desk_drawer_03": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "metal_office_desk_drawer_04": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "metal_office_desk_drawer_05": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "metal_office_desk_drawer_06": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "metal_office_desk_tray_01": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "metal_office_desk_tray_02": [
+    0.0,
+    0.0,
+    -0.0
+   ]
+  }
+ },
+ "metal_stool_01": {
+  "tris": 8334,
+  "min": [
+   -0.176,
+   0.0,
+   -0.177
+  ],
+  "max": [
+   0.176,
+   0.883,
+   0.177
+  ],
+  "parts": {}
+ },
+ "steel_frame_shelves_01": {
+  "tris": 4348,
+  "min": [
+   -5.487,
+   -0.011,
+   -2.511
+  ],
+  "max": [
+   5.487,
+   21.394,
+   2.511
+  ],
+  "parts": {}
+ },
+ "portable_generator": {
+  "tris": 14000,
+  "min": [
+   -0.415,
+   0.0,
+   -0.282
+  ],
+  "max": [
+   0.404,
+   0.577,
+   0.282
+  ],
+  "parts": {
+   "portable_generator": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "portable_generator_dial": [
+    0.092,
+    0.416,
+    0.24
+   ],
+   "portable_generator_switch": [
+    -0.26,
+    0.438,
+    0.238
+   ],
+   "portable_generator_toggle": [
+    0.012,
+    0.429,
+    0.234
+   ]
+  }
+ },
+ "tool_cart": {
+  "tris": 14000,
+  "min": [
+   -0.658,
+   -0.004,
+   -0.385
+  ],
+  "max": [
+   0.616,
+   0.961,
+   0.369
+  ],
+  "parts": {}
+ },
+ "barrel_02": {
+  "tris": 2688,
+  "min": [
+   -0.244,
+   0.005,
+   -0.242
+  ],
+  "max": [
+   0.244,
+   0.885,
+   0.242
+  ],
+  "parts": {}
+ },
+ "metal_jerrycan": {
+  "tris": 14000,
+  "min": [
+   -0.17,
+   0.0,
+   -0.089
+  ],
+  "max": [
+   0.18,
+   0.455,
+   0.083
+  ],
+  "parts": {}
+ },
+ "wooden_bucket_01": {
+  "tris": 5116,
+  "min": [
+   -0.184,
+   0.0,
+   -0.17
+  ],
+  "max": [
+   0.183,
+   0.55,
+   0.172
+  ],
+  "parts": {
+   "wooden_bucket_01": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "wooden_bucket_01_handle": [
+    0.0,
+    0.321,
+    0.0
+   ]
+  }
+ },
+ "cardboard_box_01": {
+  "tris": 14000,
+  "min": [
+   -0.193,
+   -0.007,
+   -0.225
+  ],
+  "max": [
+   0.195,
+   0.335,
+   0.291
+  ],
+  "parts": {}
+ },
+ "dead_tree_trunk": {
+  "tris": 5000,
+  "min": [
+   -1.539,
+   -0.028,
+   -0.171
+  ],
+  "max": [
+   1.512,
+   0.263,
+   0.107
+  ],
+  "parts": {}
+ },
+ "boulder_01": {
+  "tris": 3000,
+  "min": [
+   -0.748,
+   -0.074,
+   -0.948
+  ],
+  "max": [
+   0.524,
+   0.93,
+   0.882
+  ],
+  "parts": {}
+ },
+ "shrub_02": {
+  "tris": 6000,
+  "min": [
+   -2.309,
+   -0.606,
+   -1.191
+  ],
+  "max": [
+   4.264,
+   1.942,
+   1.345
+  ],
+  "parts": {
+   "shrub_02_a": [
+    -1.548,
+    -0.005,
+    -0.021
+   ],
+   "shrub_02_b": [
+    0.001,
+    -0.006,
+    -0.017
+   ],
+   "shrub_02_c": [
+    1.556,
+    -0.005,
+    -0.006
+   ],
+   "shrub_02_d": [
+    3.259,
+    -0.005,
+    -0.005
+   ]
+  }
+ },
+ "shrub_04": {
+  "tris": 6000,
+  "min": [
+   -0.024,
+   -0.006,
+   -0.075
+  ],
+  "max": [
+   0.559,
+   0.213,
+   0.071
+  ],
+  "parts": {}
+ },
+ "grass_medium_01": {
+  "tris": 3000,
+  "min": [
+   -2.553,
+   -0.026,
+   -0.158
+  ],
+  "max": [
+   3.052,
+   0.317,
+   0.169
+  ],
+  "parts": {
+   "grass_medium_01_large_a_LOD0": [
+    -2.4,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_01_large_b_LOD0": [
+    -2.0,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_01_large_c_LOD0": [
+    -1.6,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_01_mid_a_LOD0": [
+    -1.2,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_01_mid_b_LOD0": [
+    -0.8,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_01_mid_c_LOD0": [
+    -0.4,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_01_small_a_LOD0": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_01_small_b_LOD0": [
+    0.4,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_01_tall_a_LOD0": [
+    0.8,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_01_tall_b_LOD0": [
+    1.2,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_01_tall_c_LOD0": [
+    1.6,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_01_tiny_a_LOD0": [
+    2.0,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_01_tiny_b_LOD0": [
+    2.2,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_01_tiny_c_LOD0": [
+    2.4,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_01_tiny_d_LOD0": [
+    2.6,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_01_tiny_e_LOD0": [
+    2.8,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_01_tiny_f_LOD0": [
+    3.0,
+    0.0,
+    -0.0
+   ]
+  }
+ },
+ "grass_medium_02": {
+  "tris": 3000,
+  "min": [
+   -0.056,
+   -0.006,
+   -0.175
+  ],
+  "max": [
+   1.255,
+   0.4,
+   0.258
+  ],
+  "parts": {
+   "grass_medium_02_a": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_02_b": [
+    0.206,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_02_c": [
+    0.488,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_02_d": [
+    0.79,
+    0.0,
+    -0.0
+   ],
+   "grass_medium_02_e": [
+    1.113,
+    0.0,
+    -0.0
+   ]
+  }
+ },
+ "fir_sapling": {
+  "tris": 6000,
+  "min": [
+   -0.437,
+   -0.008,
+   -0.43
+  ],
+  "max": [
+   2.306,
+   1.293,
+   0.396
+  ],
+  "parts": {
+   "fir_sapling_a": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "fir_sapling_b": [
+    1.0,
+    0.0,
+    -0.0
+   ],
+   "fir_sapling_c": [
+    2.0,
+    0.0,
+    -0.0
+   ]
+  }
+ },
+ "tree_stump_01": {
+  "tris": 3000,
+  "min": [
+   -0.784,
+   -0.193,
+   -0.76
+  ],
+  "max": [
+   0.641,
+   0.38,
+   0.83
+  ],
+  "parts": {}
+ },
+ "nettle_plant": {
+  "tris": 3000,
+  "min": [
+   -0.053,
+   -0.006,
+   -0.049
+  ],
+  "max": [
+   1.03,
+   0.213,
+   0.046
+  ],
+  "parts": {
+   "nettle_plant_medium_a_LOD0": [
+    0.4,
+    0.0,
+    -0.0
+   ],
+   "nettle_plant_medium_b_LOD0": [
+    0.6,
+    0.0,
+    -0.0
+   ],
+   "nettle_plant_small_a_LOD0": [
+    0.8,
+    0.0,
+    -0.0
+   ],
+   "nettle_plant_small_b_LOD0": [
+    1.0,
+    0.0,
+    -0.0
+   ],
+   "nettle_plant_tall_a_LOD0": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "nettle_plant_tall_b_LOD0": [
+    0.2,
+    0.0,
+    -0.0
+   ]
+  }
+ },
+ "weed_plant_02": {
+  "tris": 3000,
+  "min": [
+   -0.086,
+   -0.009,
+   -0.111
+  ],
+  "max": [
+   2.04,
+   0.067,
+   0.18
+  ],
+  "parts": {
+   "weed_plant_02_a_LOD0": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "weed_plant_02_b_LOD0": [
+    0.5,
+    0.0,
+    -0.0
+   ],
+   "weed_plant_02_c_LOD0": [
+    1.0,
+    0.0,
+    -0.0
+   ],
+   "weed_plant_02_d_LOD0": [
+    1.5,
+    0.0,
+    -0.0
+   ],
+   "weed_plant_02_e_LOD0": [
+    2.0,
+    0.0,
+    -0.0
+   ]
+  }
  }
 }

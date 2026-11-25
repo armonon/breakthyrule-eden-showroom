@@ -14,10 +14,10 @@ export function createFoot({ scene, world, onEffect }) {
   // This yard has no pyramid: movement is only held inside the map's edge.
   G.createExpeditionConstraints = ({ layout }) => (next) => { const [a, b, c, d] = layout.bounds; next.x = Math.max(a, Math.min(b, next.x)); next.z = Math.max(c, Math.min(d, next.z)); return next; };
   const walls = world.solids.filter(b => !b.roof && b.bottom < .5).map(b => [(b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2, b.maxX - b.minX, b.maxZ - b.minZ, b.top]);
-  const surfaces = world.solids.map(b => ({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ, top: b.top, bottom: b.bottom }));
+  const surfaces = world.solids.filter(b => b.surface !== false || b.bottom < .5).map(b => ({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ, top: b.top, bottom: b.bottom }));
   let controller = null;
   if (ready) try {
-    controller = G.createExpeditionController({ T: THREE, world: { walls, surfaces }, layout: { spawn: [world.spawn.x, world.spawn.z], bounds: [-108, 108, -108, 108] }, character: { height: 176, shoulders: 1 },
+    controller = G.createExpeditionController({ T: THREE, world: { walls, surfaces }, layout: { spawn: [world.spawn.x, world.spawn.z], bounds: world.bounds || [-150, 150, -340, 160] }, character: { height: 176, shoulders: 1 },
       worldRevision: 'cowninja-yard-1', momentumEnabled: true, effect: e => onEffect?.(e) });
   } catch (error) { console.warn('[cowninja] on-foot movement unavailable:', error); }
   const ninja = createNinja(), holder = ninja?.person.root || new THREE.Group(); holder.visible = false; scene.add(holder);

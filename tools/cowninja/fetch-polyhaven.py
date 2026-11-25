@@ -9,6 +9,16 @@ MODELS = ['modular_chainlink_fence', 'concrete_road_barrier', 'Barrel_01', 'barr
           'utility_box_01', 'trashbag', 'propane_tank', 'bull_head', 'modular_industrial_pipes_01', 'cement_bag']
 TEXTURES = ['muddy_tracks', 'concrete_floor_worn_001', 'dirty_tiles', 'factory_wall', 'rusty_corrugated_iron', 'rusty_metal_02', 'asphalt_02', 'long_white_tiles']
 SKY = 'rogland_moonlit_night'
+# For the site built in Blender (build-site.py): kept in the work folder only; the site GLB embeds what it uses.
+SITE_TEXTURES = ['corrugated_iron_02', 'painted_concrete', 'concrete_wall_008', 'metal_grate_rusty', 'metal_plate', 'green_metal_rust',
+                 'weathered_planks', 'gravel_floor_02', 'brown_mud_leaves_01', 'forest_ground_04', 'sparse_grass', 'red_brick_03',
+                 'anti_skid_tiles', 'white_plaster_02', 'rusty_metal_sheet', 'hangar_concrete_floor', 'withered_grass', 'rock_ground_02']
+SITE_MODELS = ['modular_electricity_poles', 'modular_airduct_rectangular_01', 'covered_car', 'security_camera_01', 'fire_hydrant',
+               'water_manhole_cover', 'wooden_ladder', 'metal_office_desk', 'metal_stool_01', 'steel_frame_shelves_01', 'hanging_industrial_lamp',
+               'pine_tree_01', 'fir_tree_01', 'dead_tree_trunk', 'tree_stump_01', 'boulder_01', 'rock_moss_set_01', 'shrub_01', 'shrub_02',
+               'shrub_04', 'grass_medium_01', 'grass_medium_02', 'nettle_plant', 'weed_plant_02', 'wooden_bucket_01', 'metal_jerrycan',
+               'portable_generator', 'cardboard_box_01', 'Barrel_02', 'namaqualand_boulder_02', 'fir_sapling', 'pine_sapling_medium',
+               'dry_branches_medium_01', 'tool_cart', 'wooden_crate_01']
 def get(url, path):
     if os.path.exists(path) and os.path.getsize(path): return
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -16,7 +26,7 @@ def get(url, path):
     with urllib.request.urlopen(req, timeout=120) as r, open(path, 'wb') as f: f.write(r.read())
 def files(name):
     with urllib.request.urlopen(urllib.request.Request('https://api.polyhaven.com/files/' + name, headers={'User-Agent': 'asset-fetch'}), timeout=60) as r: return json.load(r)
-for name in MODELS:
+for name in MODELS + SITE_MODELS:
     try:
         g = files(name)['gltf']['1k']['gltf']; base = os.path.join(WORK, 'models', name)
         get(g['url'], os.path.join(base, name + '.gltf'))
@@ -32,6 +42,12 @@ for name in TEXTURES:
             Image.open(src).convert('RGB').save(os.path.join(ROOT, 'tex', f'{name}-{kind}.webp'), quality=82 if kind == 'diff' else 78, method=6)
         print('texture', name)
     except Exception as e: print('FAILED texture', name, e)
+for name in SITE_TEXTURES:
+    try:
+        f = files(name)
+        for kind, key in (('diff', 'Diffuse'), ('nor', 'nor_gl'), ('arm', 'arm')): get(f[key]['1k']['jpg']['url'], os.path.join(WORK, 'tex', f'{name}-{kind}.jpg'))
+        print('site texture', name)
+    except Exception as e: print('FAILED site texture', name, e)
 try:
     get(files(SKY)['hdri']['1k']['hdr']['url'], os.path.join(ROOT, 'night-sky.hdr')); print('sky', SKY)
 except Exception as e: print('FAILED sky', e)

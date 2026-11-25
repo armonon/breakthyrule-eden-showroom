@@ -12,18 +12,37 @@ def bounds(objs):
             w = o.matrix_world @ mathutils.Vector(c)
             for i in range(3): lo[i] = min(lo[i], w[i]); hi[i] = max(hi[i], w[i])
     return lo, hi
+PLANTS = ('tree', 'shrub', 'grass', 'plant', 'sapling', 'nettle', 'weed', 'boulder', 'stump', 'trunk')
+LIMITS = {'pine_tree_01': 26000, 'fir_tree_01': 26000, 'grass_medium_01': 3000, 'grass_medium_02': 3000, 'nettle_plant': 3000, 'weed_plant_02': 3000, 'shrub_02': 6000, 'shrub_04': 6000, 'fir_sapling': 6000, 'boulder_01': 3000, 'tree_stump_01': 3000, 'dead_tree_trunk': 5000, 'modular_electricity_poles': 9000}
 def export(name, limit=14000):
+    limit = LIMITS.get(name, limit)
     bpy.context.view_layer.update()
     meshes = [o for o in bpy.data.objects if o.type == 'MESH']
     tris = sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in meshes)
     if tris > limit:
         for o in meshes:
             m = o.modifiers.new('lighter', 'DECIMATE'); m.ratio = limit / tris
+    if any(k in name for k in PLANTS):
+        # Plants: textures to 512 px, and single-channel masks copied into RGBA so they can be written as WebP.
+        for img in list(bpy.data.images):
+            if not img.has_data:
+                try: img.pixels[0]
+                except Exception: continue
+            if img.size[0] > 512: img.scale(512, max(1, int(512 * img.size[1] / img.size[0])))
+            if img.channels < 3:
+                rgba = bpy.data.images.new(img.name + '-rgba', img.size[0], img.size[1], alpha=True); px = list(img.pixels); c = img.channels
+                out = []
+                for i in range(0, len(px), c): v = px[i]; out += [v, v, v, 1.0]
+                rgba.pixels = out; rgba.colorspace_settings.name = img.colorspace_settings.name
+                for m in bpy.data.materials:
+                    if m.node_tree:
+                        for n in m.node_tree.nodes:
+                            if n.type == 'TEX_IMAGE' and n.image == img: n.image = rgba
     lo, hi = bounds(meshes)
     # glTF axes: x right, y up, z toward the viewer (Blender's -y)
     index[name] = {'tris': min(tris, limit), 'min': [round(lo[0], 3), round(lo[2], 3), round(-hi[1], 3)], 'max': [round(hi[0], 3), round(hi[2], 3), round(-lo[1], 3)],
                    'parts': {o.name: [round(v, 3) for v in (o.matrix_world.translation.x, o.matrix_world.translation.z, -o.matrix_world.translation.y)] for o in meshes} if len(meshes) > 1 else {}}
-    bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, name + '.glb'), export_format='GLB', export_image_format='WEBP', export_image_quality=78, export_apply=True, export_animations=False, export_yup=True)
+    bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, name + '.glb'), export_format='GLB', export_image_format='WEBP', export_image_quality=76, export_apply=True, export_animations=False, export_yup=True)
 ONLY = args[2].split(',') if len(args) > 2 else None   # optional: just these (e.g. "pickup")
 for name in sorted(os.listdir(os.path.join(WORK, 'models'))):
     if ONLY and name.lower() not in ONLY: continue
