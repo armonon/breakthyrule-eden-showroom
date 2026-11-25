@@ -82,7 +82,9 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
   // the tight live moon map. Lamps and altar lights take their own baked shadow, the chest light a touch of contact
   // occlusion so things sit on the ground it lights, the moon its baked visibility.
   #ifdef BEYOND_SPLIT
-   reflectedLight.directDiffuse=beyondPointD*mix(1.,local,amount)+(beyondLocalD-beyondPointD)*mix(1.,contact,amount*.6)+(reflectedLight.directDiffuse-beyondLocalD)*mix(1.,vis,amount);
+   // .55: the lamps' own light is already in the bake, and the altar's lights used to be cut by the moon's shadow (about .4
+   // across the courtyard); the live point lights add shape and highlights on top, not the whole amount again.
+   reflectedLight.directDiffuse=beyondPointD*mix(1.,local*.55,amount)+(beyondLocalD-beyondPointD)*mix(1.,contact,amount*.6)+(reflectedLight.directDiffuse-beyondLocalD)*mix(1.,vis,amount);
    reflectedLight.directSpecular=beyondPointS*mix(1.,local,amount)+(beyondLocalS-beyondPointS)+(reflectedLight.directSpecular-beyondLocalS)*mix(1.,vis,amount);
   #else
    reflectedLight.directDiffuse*=mix(1.,vis,amount);
@@ -112,8 +114,9 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
    const [bin,ground,sun]=await Promise.all([fetch(file('probes.bin')).then(r=>{if(!r.ok)throw Error(r.status);return r.arrayBuffer();}),new T.TextureLoader().loadAsync(file('lightmap.jpg')),new T.TextureLoader().loadAsync(file('sun.jpg'))]);
    const [nx,ny,nz]=meta.atlas,n=nx*ny*nz,bytes=new Uint8Array(bin);if(bytes.length!==n*8)throw Error('Invalid Beyond probe data');
    const a=new Uint8Array(n*4),b=new Uint8Array(n*4);for(let i=0;i<n;i++){a.set(bytes.subarray(i*8,i*8+4),i*4);b.set(bytes.subarray(i*8+4,i*8+8),i*4);}
-   for(const [texture,data] of [[beyondA,a],[beyondB,b]]){texture.image={data,width:nx,height:ny,depth:nz};texture.needsUpdate=true;}
-   for(const [texture,loaded] of [[beyondGround,ground],[beyondSun,sun]]){texture.isDataTexture=false;texture.image=loaded.image;texture.colorSpace=T.NoColorSpace;texture.flipY=true;texture.generateMipmaps=true;texture.minFilter=T.LinearMipmapLinearFilter;texture.magFilter=T.LinearFilter;texture.anisotropy=4;texture.needsUpdate=true;loaded.dispose();}
+   // The placeholders are already on the GPU at 1x1x1 with fixed storage: release that, or the real volume cannot be uploaded into it.
+   for(const [texture,data] of [[beyondA,a],[beyondB,b]]){texture.dispose();texture.image={data,width:nx,height:ny,depth:nz};texture.needsUpdate=true;}
+   for(const [texture,loaded] of [[beyondGround,ground],[beyondSun,sun]]){texture.dispose();texture.isDataTexture=false;texture.image=loaded.image;texture.colorSpace=T.NoColorSpace;texture.flipY=true;texture.generateMipmaps=true;texture.minFilter=T.LinearMipmapLinearFilter;texture.magFilter=T.LinearFilter;texture.anisotropy=4;texture.needsUpdate=true;loaded.dispose();}
    // Voxel centres: texel 0 sits half a texel inside each grid's box.
    const coarse=meta.grids.coarse,detail=meta.grids.detail;beyondAtlas.set(nx,ny,nz);
    beyondMin.set(...coarse.min.map((v,i)=>v-coarse.step[i]/2));beyondSize.set(...coarse.dims.map((k,i)=>k*coarse.step[i]));beyondGridC.set(...coarse.dims);
