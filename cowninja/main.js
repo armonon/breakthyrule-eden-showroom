@@ -54,7 +54,7 @@ async function boot() {
   const say = (text, seconds = 2.6) => { message = text; messageUntil = performance.now() + seconds * 1000; $('cn-toast').textContent = text; $('cn-toast').classList.toggle('long', text.length > 20); $('cn-toast').classList.add('show'); };
 
   const cow = createCow({ scene, physics, spawn: world.cowSpawn, assets }); cow.setRider(false);
-  const foot = createFoot({ scene, world, onEffect: e => { if (e.kind === 'footstep:step') audio.hoof(...e.args); else if (e.kind === 'footstep:land') audio.land(...e.args); } });
+  const foot = createFoot({ scene, world, onEffect: e => { if (e.kind === 'footstep:step') audio.hoof(...e.args); else if (e.kind === 'footstep:land') audio.land(...e.args); else if (e.kind === 'leap-of-faith') { say('LEAP OF FAITH', 1.4); audio.land('grass', 1); } } });
   // Whoever the yard is reacting to: the cow while you ride it, the ninja while you are on foot.
   const actor = () => mode === 'foot' ? foot.state : cow.state;
   function damage(amount, dx, dz, push) {
@@ -205,6 +205,11 @@ async function boot() {
     if (steps === 4) acc = 0;
     const time = now / 1000, a = actor();
     cow.update(dt); world.update(time, a); farmers.update(dt, time, live); truck.update(dt, live); herd.update(dt, time); blood.update(dt);
+    // Air takedown: come down on a farmer from above and he is out, silently.
+    if (live && mode === 'foot' && foot.state.airborne && foot.state.velocity.y < -2.5 && foot.state.y < 2.8) {
+      const below = farmers.nearest(foot.state.x, foot.state.z, 1.35);
+      if (below) { farmers.knock(below.farmer, foot.state.velocity.x * .3, foot.state.velocity.z * .3, 'takedown'); say('AIR TAKEDOWN', 1.3); shake = Math.max(shake, .3); }
+    }
     if (calling > 0) { calling -= dt; if (Math.hypot(cow.state.x - foot.state.x, cow.state.z - foot.state.z) < 3) calling = 0; }
     // Hooves: four beats a stride, louder and harder the faster it goes.
     { const b = Math.floor(cow.state.gait * 4); if (b !== beat) { beat = b; const v = Math.abs(cow.state.speed); if (v > .6 && !cow.state.airborne) { const d = Math.hypot(cow.state.x - a.x, cow.state.z - a.z); if (d < 30) audio.hoof(world.indoors(cow.state.x, cow.state.z) ? 'stone' : 'grass', Math.min(6, 2 + v * .3)); } } }
@@ -231,7 +236,7 @@ async function boot() {
       hud.health.style.transform = `scaleX(${(health / 100).toFixed(2)})`;
       hud.goal.textContent = phase === 'intro' ? '' : !herd.free ? (mode === 'foot' ? 'PULL THE RED LEVER BY THE PEN' : 'BREAK THE PEN GATE') : mode === 'foot' ? 'GET ON A COW (E) · Q CALLS ONE' : `LEAD THE HERD OUT THE NORTH GATE · ${herd.saved}/${herd.count} OUT`;
       hud.count.textContent = `${farmers.out()} DOWN · ${stats.flips} FLIPPED`;
-      hud.seen.style.transform = `scaleX(${level.toFixed(2)})`; hud.stealth.textContent = alarm ? 'ALARM' : level >= 1 ? 'SPOTTED' : level > .3 ? 'SUSPICIOUS' : 'HIDDEN'; hud.stealth.parentElement.dataset.state = alarm || level >= 1 ? 'hot' : level > .3 ? 'warm' : 'cold';
+      hud.seen.style.transform = `scaleX(${level.toFixed(2)})`; hud.stealth.textContent = mode === 'foot' && foot.state.hidden ? 'IN THE HAY' : alarm ? 'ALARM' : level >= 1 ? 'SPOTTED' : level > .3 ? 'SUSPICIOUS' : 'HIDDEN'; hud.stealth.parentElement.dataset.state = alarm || level >= 1 ? 'hot' : level > .3 ? 'warm' : 'cold';
       hud.prompt.textContent = o ? (o.kind === 'none' ? o.label : `${touch.active ? 'USE' : 'E'} · ${o.label}`) : ''; hud.prompt.classList.toggle('show', !!o);
       if (hud.keys.dataset.mode !== mode) hud.keys.dataset.mode = mode;
       if (message && now > messageUntil) { message = ''; $('cn-toast').classList.remove('show'); } }

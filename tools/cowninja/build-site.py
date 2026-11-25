@@ -380,7 +380,22 @@ for s in (-1, 1):
     for (za, zb) in ((-.6, 8), (11, 20), (23, 32), (35, 44), (47, 48.6)):
         obox('roof', (s * (BX1 + .6) / 2, (H + RIDGE) / 2 + .1, (za + zb) / 2), (run / 2, .06, (zb - za) / 2), rot_z(-s * pitch), 'roof', group='arch')
     for (za, zb) in ((8, 11), (20, 23), (32, 35), (44, 47)):
-        obox('skylight', (s * (BX1 + .6) / 2, (H + RIDGE) / 2 + .1, (za + zb) / 2), (run / 2, .03, (zb - za) / 2), rot_z(-s * pitch), 'skylight')
+        # One pane is missing over the office (east slope, x 8..14): the way in from the roof.
+        spans = ((0, 8), (14, BX1 + .6)) if (s == 1 and za == 8) else ((0, BX1 + .6),)
+        for xa, xb in spans:
+            xc = (xa + xb) / 2; yc = RIDGE - xc / (BX1 + .6) * (RIDGE - H) + .1
+            obox('skylight', (s * xc, yc, (za + zb) / 2), ((xb - xa) / 2 / math.cos(pitch), .03, (zb - za) / 2), rot_z(-s * pitch), 'skylight')
+# The roof as the ninja walks it: terraces following the pitch (movement works in boxes), with the open pane left out.
+ROOF_STEPS = []
+NT = 8
+for s in (-1, 1):
+    for i in range(NT):
+        xa, xb = (BX1 + .6) * i / NT, (BX1 + .6) * (i + 1) / NT; top = RIDGE - (xa + xb) / 2 / (BX1 + .6) * (RIDGE - H) + .16
+        x0, x1 = (xa, xb) if s == 1 else (-xb, -xa)
+        for z0, z1 in (((-.6, 8), (11, 48.6)) if (s == 1 and x1 > 8 and x0 < 14) else ((-.6, 48.6),)): ROOF_STEPS.append([round(x0, 2), round(x1, 2), z0, z1, round(top, 3), round(top - .3, 3)])
+        if s == 1 and x1 > 8 and x0 < 14:
+            if x0 < 8: ROOF_STEPS.append([round(x0, 2), 8, 8, 11, round(top, 3), round(top - .3, 3)])
+            if x1 > 14: ROOF_STEPS.append([14, round(x1, 2), 8, 11, round(top, 3), round(top - .3, 3)])
 for z in (BZ0, BZ1):
     bm = bmesh.new(); zz = z
     vs = [bm.verts.new(B(p)) for p in ((BX0, H, zz), (BX1, H, zz), (0, RIDGE, zz))]; bm.faces.new(vs)
@@ -606,6 +621,34 @@ for z in (29.6, 33):
     for x in (27.45, 29.35): modly('cattle-race-panel', x, 0, z, math.pi / 2, 1.0)
 for z in (14, 24, 34): modly('cattle-gate', LX1 - 2, 0, z, 0, 1.25)
 modly('old-pickup', -40, 0, -46, .35, .86)
+
+# Freerunning: drainpipes to the eaves on every side, a rope from the trusses, bars across the yard; hay to leap into
+# and hide in. parkour.js reads GRIPS (the same format as parkour-grips.js).
+GRIPS = [
+    # (standing just outside the eave, which overhangs the wall by 0.6 m, and rising past it so you step onto the roof)
+    {'type': 'pipe', 'x': BX0 - .82, 'z': 32, 'y0': .2, 'y1': H + 1.35, 'n': [-1, 0]},
+    {'type': 'pipe', 'x': BX1 + .82, 'z': 40, 'y0': .2, 'y1': H + 1.35, 'n': [1, 0]},
+    {'type': 'pipe', 'x': -22, 'z': BZ0 - .82, 'y0': .2, 'y1': H + 1.35, 'n': [0, -1]},
+    {'type': 'pipe', 'x': 10, 'z': BZ1 + .82, 'y0': .2, 'y1': H + 1.35, 'n': [0, 1]},
+    {'type': 'pipe', 'x': OX0 - .3, 'z': 7, 'y0': .2, 'y1': OH + .3, 'n': [-1, 0]},          # kill floor up to the office roof
+    {'type': 'rope', 'x': -6, 'z': 30, 'top': H - .2, 'len': 5.6},
+    {'type': 'rope', 'x': 0, 'z': 14, 'top': H - .2, 'len': 5.6},
+    {'type': 'bar', 'a': [26.6, 3.0, -14], 'b': [29.4, 3.0, -14]}, {'type': 'bar', 'a': [26.6, 3.0, -17], 'b': [29.4, 3.0, -17]},
+]
+for g in GRIPS:
+    if g['type'] == 'pipe':
+        cyl('grip-pipe', (g['x'], 0, g['z']), (g['x'], g['y1'] + .1, g['z']), .06, 'pipe_grey', 10)
+        for y in range(1, int(g['y1']), 2):   # stand-off arms back to the wall
+            cyl('grip-arm', (g['x'], y, g['z']), (g['x'] - g['n'][0] * .7, y, g['z'] - g['n'][1] * .7), .025, 'junction', 6)
+    elif g['type'] == 'rope': cyl('grip-rope', (g['x'], g['top'], g['z']), (g['x'], g['top'] - g['len'], g['z']), .022, 'planks', 6)
+    else:
+        cyl('grip-bar', g['a'], g['b'], .035, 'stainless', 8)
+        for p in (g['a'], g['b']): box('grip-post', (p[0] - .06, 0, p[2] - .06), (p[0] + .06, p[1] + .1, p[2] + .06), 'steel', group='kit')
+HAY = [[28.8, 19, 1.9], [-38.5, 31, 1.9], [9.5, -3.4, 1.7], [15, 44.5, 1.7], [-28.8, 40, 1.7], [36, 50, 1.8]]
+for hx, hz, hr in HAY:
+    bm = bmesh.new(); bmesh.ops.create_uvsphere(bm, u_segments=16, v_segments=8, radius=1)
+    for v in bm.verts: v.co = Vector((hx + v.co.x * hr, -(hz + v.co.y * hr), max(0, v.co.z * .75 + .12) * 1.1))
+    emit('haypile', bm, 'hay', 'kit')
 
 POINTS = {
     'spawn': {'x': 0, 'z': -78, 'yaw': 0}, 'cowSpawn': {'x': 16, 'z': 40, 'yaw': -math.pi / 2},
@@ -873,7 +916,7 @@ for o in bpy.data.objects:
 bpy.ops.object.select_all(action='DESELECT')
 bpy.ops.export_scene.gltf(filepath=f'{OUT}/site.glb', export_format='GLB', export_image_format='WEBP', export_image_quality=80, export_extras=True,
                           export_apply=True, export_animations=False, export_yup=True, export_lights=False, export_cameras=False)
-data = {'version': 1, 'modly': sorted(MODLY), 'solids': SOLIDS, 'ceilings': CEILINGS, 'interiors': INTERIORS, 'ramps': RAMPS, 'lights': LIGHTS, 'props': PROPS, 'loose': LOOSE, 'scatter': SCATTER, 'points': POINTS}
+data = {'version': 1, 'grips': GRIPS, 'hay': HAY, 'roofSteps': ROOF_STEPS, 'modly': sorted(MODLY), 'solids': SOLIDS, 'ceilings': CEILINGS, 'interiors': INTERIORS, 'ramps': RAMPS, 'lights': LIGHTS, 'props': PROPS, 'loose': LOOSE, 'scatter': SCATTER, 'points': POINTS}
 json.dump(data, open(f'{OUT}/site.json', 'w'), separators=(',', ':'))
 tris = sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in bpy.data.objects if o.type == 'MESH')
 print('SITE', os.path.getsize(f'{OUT}/site.glb') // 1024, 'KB', tris, 'tris', len(SOLIDS), 'solids', sum(len(v) for v in SCATTER.values()), 'scattered', flush=True)

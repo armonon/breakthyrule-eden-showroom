@@ -185,6 +185,8 @@ export function createWorld({ scene, physics, assets, shadows = 7 }) {
 
   return {
     root, mat, blocked, walk, update, gateBroken, openGate, solids, solidAt, sightBlocked, ceilingAt, indoors, walls2d, dynamic, loose, looseModel, place,
+    grips: data.grips || [], hay: data.hay || [], roofSteps: data.roofSteps || [],
+    inHay: (x, z) => (data.hay || []).some(h => Math.hypot(x - h[0], z - h[1]) < h[2] * .85),
     gatePost: P.lever, spawn: P.spawn, cowSpawn: P.cowSpawn, exit: P.exit, gateZ: P.gateZ, bounds: P.bounds, pen: P.pen, escape: P.escape, truckStart: P.truckStart, patrols: P.patrols,
   };
 }

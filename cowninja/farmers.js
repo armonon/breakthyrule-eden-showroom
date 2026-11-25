@@ -63,9 +63,9 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
       const facing = (Math.sin(f.yaw) * dx - Math.cos(f.yaw) * dz) / (dist || 1);
       // On foot the ninja is a small dark shape: seen from less far (less still when crouched), heard only by how he moves.
       const range = foot ? SEE * (c.crouched ? .5 : .8) : SEE;
-      const sees = live && dist < range && facing > SEE_COS && !(foot && world.sightBlocked?.(f.p.x, f.p.z, c.x, c.z));
-      const hears = live && (foot ? dist < HEAR * 1.25 * (c.noise || 0) : dist < HEAR * (c.charging || c.skid > .4 ? 1.6 : Math.abs(c.speed) > 6 ? 1 : .45));
-      if (sees || hears) { f.alert = Math.min(1, f.alert + dt * (sees ? (foot ? (c.crouched ? .55 : 1) * (1.7 - dist / range) : 1.8) : .9)); f.seenAt = time; } else if (time - f.seenAt > 4) f.alert = Math.max(0, f.alert - dt * .3);
+      const sees = live && !c.hidden && dist < range && facing > SEE_COS && !(foot && world.sightBlocked?.(f.p.x, f.p.z, c.x, c.z));
+      const hears = live && !c.hidden && (foot ? dist < HEAR * 1.25 * (c.noise || 0) : dist < HEAR * (c.charging || c.skid > .4 ? 1.6 : Math.abs(c.speed) > 6 ? 1 : .45));
+      if (sees || hears) { f.alert = Math.min(1, f.alert + dt * (sees ? (foot ? (c.crouched ? .55 : 1) * (1.7 - dist / range) : 1.8) : .9)); f.seenAt = time; } else if (time - f.seenAt > (c.hidden ? 1.5 : 4)) f.alert = Math.max(0, f.alert - dt * (c.hidden ? .6 : .3));
       if (f.state === 'patrol' && f.alert >= 1) { f.state = 'chase'; onEvent?.({ type: 'spotted', farmer: f }); }
       if (f.state === 'chase' && f.alert <= 0) f.state = 'patrol';
       // Move: along the route, or straight at the cow.
