@@ -51,10 +51,16 @@ html,body{margin:0;height:100%;background:#0b0e10;color:var(--cn-ink);font-famil
 #cn-prompt.show{opacity:1;transform:translate(-50%,0)}
 #cn-touch{position:fixed;inset:0;pointer-events:none;z-index:3}
 #cn-touch>*{pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none}
-.cn-stick{position:absolute;left:calc(22px + env(safe-area-inset-left));bottom:calc(96px + env(safe-area-inset-bottom));width:124px;height:124px;border-radius:50%;border:1px solid rgba(232,230,224,.35);background:rgba(8,10,12,.3)}
+.cn-stick{position:absolute;left:calc(22px + env(safe-area-inset-left));bottom:calc(30px + env(safe-area-inset-bottom));width:124px;height:124px;border-radius:50%;border:1px solid rgba(232,230,224,.35);background:rgba(8,10,12,.3)}
 .cn-stick i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px;border-radius:50%;background:rgba(232,230,224,.55)}
-.cn-pad{position:absolute;right:calc(16px + env(safe-area-inset-right));bottom:calc(92px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,64px);gap:10px;justify-items:center}
+.cn-pad{position:absolute;right:calc(16px + env(safe-area-inset-right));bottom:calc(26px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,64px);gap:10px;justify-items:center}
 .cn-pad button{width:64px;height:64px;border-radius:50%;border:1px solid rgba(232,230,224,.4);background:rgba(8,10,12,.4);color:#e8e6e0;font:700 11px/1 'Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.12em}
 .cn-pad button.on{background:rgba(197,20,14,.75)}
 @media (prefers-reduced-motion:reduce){#cn-prompt{transition:none}}
 #cn-toast.long{font-size:clamp(13px,2vw,21px);letter-spacing:.16em;max-width:92vw;line-height:1.3}
+/* Touch layout: the stick and buttons own the bottom corners, so the status moves up under the title. */
+.cn-touching .cn-keys{display:none}
+.cn-touching .cn-hud{top:calc(58px + env(safe-area-inset-top));bottom:auto;left:calc(16px + env(safe-area-inset-left));width:min(250px,38vw);gap:5px}
+.cn-touching .cn-top h1{font-size:18px}
+.cn-touching #cn-goal{font-size:9px;margin:0}
+.cn-touching #cn-prompt{bottom:auto;top:30%}

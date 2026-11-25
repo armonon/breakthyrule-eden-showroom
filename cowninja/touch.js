@@ -3,7 +3,7 @@
 export function createTouch({ root, keys, onAct, onWhistle, onLook }) {
   const coarse = matchMedia?.('(pointer: coarse)').matches || 'ontouchstart' in window;
   if (!coarse || !root) return { active: false };
-  root.hidden = false;
+  root.hidden = false; document.getElementById('cn-app')?.classList.add('cn-touching');
   root.innerHTML = `<div class="cn-stick" data-stick><i></i></div>
     <div class="cn-pad"><button data-key="shift">RUN</button><button data-tap="act">USE</button><button data-key="space">JUMP</button><button data-key="crouch">LOW</button><button data-tap="whistle">CALL</button></div>`;
   const stick = root.querySelector('[data-stick]'), knob = stick.firstElementChild;
