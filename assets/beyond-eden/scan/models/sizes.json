@@ -1,0 +1,167 @@
+{
+ "road-barrier": {
+  "source": "concrete_road_barrier_02",
+  "size": [
+   1.563,
+   1.111,
+   0.442
+  ],
+  "triangles": 2600,
+  "from": 23822,
+  "bytes": 463668
+ },
+ "trash-can": {
+  "source": "metal_trash_can",
+  "size": [
+   0.772,
+   0.906,
+   0.548
+  ],
+  "triangles": 2600,
+  "from": 7532,
+  "bytes": 177860
+ },
+ "trash-bag": {
+  "source": "trashbag",
+  "size": [
+   0.528,
+   0.575,
+   0.463
+  ],
+  "triangles": 1800,
+  "from": 4482,
+  "bytes": 110492
+ },
+ "wooden-crate": {
+  "source": "wooden_crate_02",
+  "size": [
+   0.529,
+   0.464,
+   1.166
+  ],
+  "triangles": 1799,
+  "from": 5176,
+  "bytes": 115376
+ },
+ "plastic-crate": {
+  "source": "plastic_crate_01",
+  "size": [
+   0.298,
+   0.264,
+   0.408
+  ],
+  "triangles": 10278,
+  "from": 18320,
+  "bytes": 291344
+ },
+ "old-tyre": {
+  "source": "old_tyre",
+  "size": [
+   0.6,
+   0.165,
+   0.6
+  ],
+  "triangles": 1800,
+  "from": 2880,
+  "bytes": 116752
+ },
+ "cement-bag": {
+  "source": "cement_bag",
+  "size": [
+   0.462,
+   0.18,
+   0.7
+  ],
+  "triangles": 844,
+  "from": 844,
+  "bytes": 51348
+ },
+ "cardboard-box": {
+  "source": "cardboard_box_01",
+  "size": [
+   0.387,
+   0.342,
+   0.516
+  ],
+  "triangles": 1600,
+  "from": 16952,
+  "bytes": 91252
+ },
+ "oil-barrel": {
+  "source": "barrel_03",
+  "size": [
+   0.634,
+   0.93,
+   0.639
+  ],
+  "triangles": 1473,
+  "from": 1473,
+  "bytes": 96520
+ },
+ "wheel-rim": {
+  "source": "rusted_wheel_rim_01",
+  "size": [
+   0.404,
+   0.15,
+   0.404
+  ],
+  "triangles": 2200,
+  "from": 16440,
+  "bytes": 116664
+ },
+ "utility-box": {
+  "source": "utility_box_01",
+  "size": [
+   0.52,
+   1.119,
+   0.432
+  ],
+  "triangles": 2200,
+  "from": 4404,
+  "bytes": 94336
+ },
+ "fire-hydrant": {
+  "source": "fire_hydrant",
+  "size": [
+   0.273,
+   0.799,
+   0.317
+  ],
+  "triangles": 2906,
+  "from": 43158,
+  "bytes": 129568
+ },
+ "manhole-cover": {
+  "source": "water_manhole_cover",
+  "size": [
+   0.691,
+   0.068,
+   0.691
+  ],
+  "triangles": 1199,
+  "from": 6301,
+  "bytes": 121776
+ },
+ "rubble-stones": {
+  "source": "namaqualand_stones_01",
+  "size": [
+   1.637,
+   0.431,
+   1.794
+  ],
+  "triangles": 3600,
+  "from": 243678,
+  "bytes": 524892
+ },
+ "pipes": {
+  "source": "modular_industrial_pipes_01",
+  "size": [
+   1.207,
+   0.207,
+   1.955
+  ],
+  "triangles": 2232,
+  "from": 2232,
+  "bytes": 296080
+ }
+}

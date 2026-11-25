@@ -19,7 +19,8 @@ window.createWorldProps=function(T,parent,{props,onChange=()=>{},warmup=null}={}
  async function load(p){
   const entry={scene:null};live.set(p,entry);loading++;
   try{
-   const s=(await window.showroomAssets.model('/assets/world-props/'+p.f+'.glb?v=1',{priority:'low'})).scene;
+   // 'scan:name' is one of Beyond Eden's photo-scanned street props (assets/beyond-eden/scan, CC0).
+   const s=(await window.showroomAssets.model((p.f.startsWith('scan:')?'/assets/beyond-eden/scan/models/'+p.f.slice(5):'/assets/world-props/'+p.f)+'.glb?v=1',{priority:'low'})).scene;
    if(disposed||live.get(p)!==entry){free(s);return;}
    s.name='Workshop model '+p.n+' '+p.k;s.position.set(...p.p);s.rotation.y=p.a??p.r*Math.PI/2;
    const tall=Math.max(...p.s)>1.1;
