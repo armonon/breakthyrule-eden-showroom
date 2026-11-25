@@ -65,24 +65,24 @@
    float armH=0.,armGlove=0.;float armHash(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
    float armNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(armHash(i),armHash(i+vec2(1.,0.)),f.x),mix(armHash(i+vec2(0.,1.)),armHash(i+1.),f.x),f.y);}`)
    .replace('#include <map_fragment>',`#include <map_fragment>
-   {float l=dot(diffuseColor.rgb,vec3(.2126,.7152,.0722)),skin=smoothstep(.12,.3,diffuseColor.r-diffuseColor.b);armGlove=smoothstep(.69,.71,vMapUv.y);
+   {float l=dot(diffuseColor.rgb,vec3(.2126,.7152,.0722)),bare=smoothstep(.12,.3,diffuseColor.r-diffuseColor.b),skin=0.;l*=mix(1.,.45,bare); /* the sleeves run to the gloves: a bare forearm is dyed as cloth too */armGlove=smoothstep(.69,.71,vMapUv.y);
     vec2 t=vMapUv*760.;float fade=1.-smoothstep(.25,.8,max(fwidth(t.x),fwidth(t.y)));
     float twill=abs(fract((t.x+t.y)*.5)-.5)*2.,cross=abs(fract(t.x-t.y*.5)-.5)*2.;float weave=mix(twill,cross,.3);
     vec2 g=vMapUv*420.;float grain=armNoise(g)*.6+armNoise(g*2.3)*.4,gf=1.-smoothstep(.4,1.2,max(fwidth(g.x),fwidth(g.y)));
     float broad=armNoise(vMapUv*22.)*.6+armNoise(vMapUv*61.)*.4;
-    vec3 cloth=mix(vec3(.060,.064,.056),vec3(.150,.150,.128),clamp(l*2.4,0.,1.))*(.72+.55*broad)*(1.-.35*fade*(1.-weave));
-    vec3 leather=mix(vec3(.024,.024,.026),vec3(.100,.096,.090),clamp(l*3.2,0.,1.))*(.75+.5*broad)*(1.-.3*gf*(1.-grain));
+    vec3 cloth=mix(vec3(.044,.048,.046),vec3(.100,.104,.096),clamp(l*2.4,0.,1.))*(.72+.55*broad)*(1.-.35*fade*(1.-weave));
+    vec3 leather=mix(vec3(.018,.018,.020),vec3(.070,.068,.066),clamp(l*3.2,0.,1.))*(.75+.5*broad)*(1.-.3*gf*(1.-grain));
     diffuseColor.rgb=mix(mix(cloth,leather,armGlove),diffuseColor.rgb,skin);
     armH=mix(weave*fade*.00012,grain*gf*.0002,armGlove)*(1.-skin);}`)
    .replace('#include <roughnessmap_fragment>',`float roughnessFactor=mix(.94,.62,armGlove)-.12*armGlove*smoothstep(.3,.7,armNoise(vMapUv*90.));`)
    .replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
    {vec3 sx=dFdx(-vViewPosition),sy=dFdy(-vViewPosition);vec3 r1=cross(sy,normal),r2=cross(normal,sx);float det=dot(sx,r1)*faceDirection;vec3 gr=sign(det)*(dFdx(armH)*r1+dFdy(armH)*r2);normal=normalize(abs(det)*normal-gr*.8);}`);};
-  material.customProgramCacheKey=()=>'arms-cloth-1';material.needsUpdate=true;
+  material.customProgramCacheKey=()=>'arms-cloth-3';material.needsUpdate=true;
  }
  // Gun steel: blued rather than bare, so a grey scan stops glowing at night; the scan's bright edges stay as worn metal.
  const STEEL=`#include <map_fragment>
   {float l=dot(diffuseColor.rgb,vec3(.2126,.7152,.0722)),grey=1.-smoothstep(.02,.10,max(max(diffuseColor.r,diffuseColor.g),diffuseColor.b)-min(min(diffuseColor.r,diffuseColor.g),diffuseColor.b));
-   float worn=smoothstep(.34,.62,l);diffuseColor.rgb=mix(diffuseColor.rgb,mix(vec3(l)*vec3(.42,.43,.46),vec3(l)*.8,worn),grey);}`;
+   float worn=smoothstep(.34,.62,l);diffuseColor.rgb=mix(diffuseColor.rgb,mix(vec3(l)*vec3(.54,.55,.58),vec3(l)*.8,worn),grey);}`;
  function createCombatArms(T,{env,base='/models/combat/'}={}){
   const v=(a)=>new T.Vector3().fromArray(a);
   const tmpM=new T.Matrix4(),tmpQ=new T.Quaternion(),tmpQ2=new T.Quaternion();
