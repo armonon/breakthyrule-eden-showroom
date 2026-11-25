@@ -83,7 +83,7 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
   // the tight live moon map. Lamps and altar lights take their own baked shadow, the chest light a touch of contact
   // occlusion so things sit on the ground it lights, the moon its baked visibility.
   #ifdef BEYOND_SPLIT
-   reflectedLight.directDiffuse=beyondPointD*mix(1.,local,amount)+(beyondLocalD-beyondPointD)*mix(1.,contact,amount*.6)+(reflectedLight.directDiffuse-beyondLocalD)*mix(1.,vis,amount);
+   reflectedLight.directDiffuse=beyondPointD*mix(1.,local*.55,amount)+(beyondLocalD-beyondPointD)*mix(1.,contact,amount*.6)+(reflectedLight.directDiffuse-beyondLocalD)*mix(1.,vis,amount);
    reflectedLight.directSpecular=beyondPointS*mix(1.,local,amount)+(beyondLocalS-beyondPointS)+(reflectedLight.directSpecular-beyondLocalS)*mix(1.,vis,amount);
   #else
    reflectedLight.directDiffuse*=mix(1.,vis,amount);

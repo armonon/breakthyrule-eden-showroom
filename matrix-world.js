@@ -300,7 +300,7 @@
    vertexShader:'varying vec3 vW,vN;varying vec2 vUv;void main(){vUv=uv;vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*w;}',
    fragmentShader:'uniform float time;uniform sampler2D kit;varying vec3 vW,vN;varying vec2 vUv;void main(){float e=pow(abs(dot(normalize(vN),normalize(cameraPosition-vW))),2.2);float n=texture2D(kit,vec2(vUv.x*3.+time*.006,vUv.y*.25-time*.012)).g;float a=e*(.35+.9*smoothstep(.35,.7,n))*smoothstep(0.,.25,vUv.y)*smoothstep(1.,.45,vUv.y)*.16*smoothstep(1.,6.,distance(cameraPosition,vW));gl_FragColor=vec4(vec3(1.,.86,.58)*a,1.);}'}));
   shaft.position.set(0,12.6,-.4);shaft.renderOrder=5;shaft.raycast=()=>{};shaft.userData.noHit=true;g.add(shaft);
-  const warm=new T.PointLight(0xffb868,15,17,1.55);warm.position.set(0,2.5,2.5);warm.name='Altar light';g.add(warm);
+  const warm=new T.PointLight(0xffb868,20,17,1.55);warm.position.set(0,2.5,2.5);warm.name='Altar light';g.add(warm);
   const high=new T.PointLight(0xffe3b0,24,17,1.6);high.position.set(0,6.6,3.2);high.name='Altar light';g.add(high);
   surface(T,g,{kind:'concrete',skip:o=>o.material===wood||o.material===linen||o.material===gold||o.material===wax||Array.isArray(o.material)});for(const m of [wood,linen,gold,wax,thorn])patch(T,m,'form');
   g.updateMatrixWorld(true);g.traverse(o=>{o.matrixAutoUpdate=false;});
@@ -310,7 +310,7 @@
   const walls=[[x,z+.55,2.6,1.35,1.56],[x,z-.75,1.5,1.1,1.03],[x,z-.75,.5,.4,7]];
   return {group:g,surfaces,walls,candles,flames,air:[{position:new T.Vector3(x,2.2,z+1.2),color:new T.Color(1,.66,.3),power:.016},{position:new T.Vector3(x,6.2,z-.5),color:new T.Color(1,.85,.55),power:.016}],lights:[warm,high],
    covers:(px,pz,m=0)=>Math.hypot(px-x,pz-z)<5+m,
-   update(t){const k=still()?1:1+.07*Math.sin(t*9.)+.05*Math.sin(t*23.7);warm.intensity=15*k;if(still())return;flames.forEach((f,i)=>{f.scale.y=2.1+.35*Math.sin(t*11.+i*1.7);f.updateMatrix();});}};
+   update(t){const k=still()?1:1+.07*Math.sin(t*9.)+.05*Math.sin(t*23.7);warm.intensity=20*k;if(still())return;flames.forEach((f,i)=>{f.scale.y=2.1+.35*Math.sin(t*11.+i*1.7);f.updateMatrix();});}};
  }
  // ---- what is underfoot (for footsteps, splashes, decals): the same zones the ground shader draws, from the same noise.
  function noise(u,v,ch){const N=512,x=(u-Math.floor(u))*N-.5,y=(v-Math.floor(v))*N-.5,x0=Math.floor(x),y0=Math.floor(y),tx=x-x0,ty=y-y0,at=(i,j)=>kitData[(((j+N)%N)*N+(i+N)%N)*4+ch]/255;return(at(x0,y0)*(1-tx)+at(x0+1,y0)*tx)*(1-ty)+(at(x0,y0+1)*(1-tx)+at(x0+1,y0+1)*tx)*ty;}

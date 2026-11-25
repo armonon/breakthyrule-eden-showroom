@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Encode the Beyond Cycles bake (tools/blender/bake_beyond_light.py) into assets/beyond-bake, format 3.
 
-  python3 tools/pipeline/encode-beyond-light.py BAKE_DIR assets/beyond-bake [--weights sky=1,lamps=1,uplight=1,moon=1,live=1]
+  python3 tools/pipeline/encode-beyond-light.py BAKE_DIR assets/beyond-bake [--weights sky=1,lamps=.45,uplight=1,moon=1,live=.6]
 
 Runtime irradiance = Cycles DIFFUSE bake * pi. What the files hold (eden-baked-light.js reads them):
   lightmap.jpg  ground irradiance, RGB = cbrt(irradiance / scale)
@@ -23,7 +23,9 @@ ap.add_argument('--weights', default='')
 ap.add_argument('--quality', type=int, default=90)
 args = ap.parse_args()
 src, out = args.src, args.out; out.mkdir(parents=True, exist_ok=True)
-weights = dict(sky=1.0, lamps=1.0, uplight=1.0, moon=1.0, live=1.0)
+# Tuned by eye against the live lights: the nearest lamps and the altar's lights also run live (at .55 of their diffuse,
+# eden-baked-light.js), so their baked share is held back or walls a metre from a lamp burn out.
+weights = dict(sky=1.0, lamps=.45, uplight=1.0, moon=1.0, live=.6)
 for item in filter(None, args.weights.split(',')):
     k, v = item.split('='); assert k in weights, k; weights[k] = float(v)
 meta = json.loads((src / 'probes.json').read_text()); lighting = json.loads((src / 'lighting.json').read_text())
