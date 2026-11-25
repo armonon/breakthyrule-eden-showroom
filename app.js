@@ -248,7 +248,7 @@ window.showroomEnableKTX2(renderer);
 // mips, 5.6 MB at 1024, 22 MB at 2048). Eden alone was ~650 MB of WebGL memory and Beyond Eden ~2 GB, far past what
 // iOS Safari allows a tab; this cap is the largest single saving. Shadow maps are sized separately and unaffected.
 if(mobileDevice)renderer.capabilities.maxTextureSize=Math.min(renderer.capabilities.maxTextureSize,512);
-window.edenBaked=window.createEdenBakedLight(T,{onShadowChange:()=>{renderer.shadowMap.needsUpdate=true;}}); // before any material compiles
+window.edenBaked=window.createEdenBakedLight(T,{beyondUrl:'/assets/beyond-night/',onShadowChange:()=>{renderer.shadowMap.needsUpdate=true;}}); // before any material compiles
 const scene=new T.Scene();scene.background=null;
 const camera=new T.PerspectiveCamera(44,stage.clientWidth/stage.clientHeight,.05,220),aim=new T.Vector3(0,1.2,-1.4),targetAim=aim.clone(),targetPosition=new T.Vector3();
 renderer.domElement.tabIndex=-1;
@@ -400,13 +400,13 @@ const bodyLight=(()=>{const l=new T.SpotLight(0xe9f2ff,0,34,.5,.75,.5),aimAt=new
  return {update(active){if(!active||!on){l.intensity=0;return;}l.intensity=mobileDevice?4.2:5.2;camera.getWorldDirection(dir);held.lerp(dir,.22).normalize();l.position.copy(camera.position).addScaledVector(held,.75);l.position.y-=.22; /* ahead of your own hands, which would glare */ aimAt.copy(l.position).addScaledVector(held,8);l.target.position.copy(aimAt);l.target.updateMatrixWorld();},get on(){return on;}};})();
 // What lights the weapon in your hands in Beyond Eden: the bake at the hands (sky and bounce), the lamps and altar lights near
 // them behind the bake's own shadow, the moon, and a little of the chest light coming back off whatever is ahead.
-const viewLight=(()=>{const at=new T.Vector3(),probe={color:new T.Color(),direction:new T.Vector3(),lamps:1,moon:1},to=new T.Vector3(),key=new T.Vector3(),sum=new T.Vector3(),LAMP=new T.Color(0xffc68c),c=new T.Color();
+const viewLight=(()=>{const at=new T.Vector3(),probe={color:new T.Color(),direction:new T.Vector3(),lamps:1,moon:1},to=new T.Vector3(),key=new T.Vector3(),sum=new T.Vector3(),lampAt=new T.Vector3(),LAMP=new T.Color(0xffc68c),c=new T.Color();
  return out=>{if(!bodycam.active())return false;camera.getWorldDirection(key);at.copy(camera.position).addScaledVector(key,.35);at.y-=.2;
   if(!window.edenBaked?.sampleBeyond?.(at,probe))return false;
   sum.set(0,0,0);out.key.setRGB(0,0,0);out.sky.copy(probe.color);out.ground.copy(probe.color).multiplyScalar(.45);let total=0;
-  const add=(p,color,intensity,reach,decay)=>{to.copy(p).sub(at);const d=Math.max(.6,to.length());if(d>reach)return;const w=1-(d/reach)**4,e=intensity*d**-decay*w*w*probe.lamps;if(e<.002)return;sum.addScaledVector(to,e/d);out.key.r+=color.r*e;out.key.g+=color.g*e;out.key.b+=color.b*e;total+=e;};
+  const add=(p,color,intensity,reach,decay)=>{to.copy(p).sub(at);const d=Math.max(1.4,to.length());if(d>reach)return;const w=1-(d/reach)**4,e=intensity*d**-decay*w*w*probe.lamps;if(e<.002)return;sum.addScaledVector(to,e/d);out.key.r+=color.r*e;out.key.g+=color.g*e;out.key.b+=color.b*e;total+=e;};
   if(garden.nightBuilt())for(const p of garden.district.lamps)if(Math.abs(p.x-at.x)<13&&Math.abs(p.z-at.z)<13)add(p,LAMP,14.3,13,1.7);
-  if(garden.altar?.group.visible)for(const l of garden.altar.lights)add(l.getWorldPosition(to.clone()),l.color,l.intensity,l.distance,l.decay);
+  if(garden.altar?.group.visible)for(const l of garden.altar.lights)add(l.getWorldPosition(lampAt),l.color,l.intensity,l.distance,l.decay);
   // Lamps on opposite sides cancel: what does not add up to a direction is soft light from all round.
   const whole=sum.length(),part=total>0?whole/total:0;if(total>0){c.copy(out.key).multiplyScalar(1-part);out.sky.add(c);out.ground.add(c.multiplyScalar(.5));out.key.multiplyScalar(part);out.keyDir.copy(sum).normalize();}
   to.copy(light.position).sub(light.target.position).normalize();out.rimDir.copy(to);out.rim.copy(light.color).multiplyScalar(light.intensity*probe.moon*.5);

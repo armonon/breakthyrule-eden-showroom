@@ -246,17 +246,20 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   if(sensor>0.){float dk=dark<0.?1.-smoothstep(.03,.3,texture2D(tLum,vec2(.5)).r):dark;vec2 p=gl_FragCoord.xy+seed*1.7,p2=floor(gl_FragCoord.xy*.5)+seed*2.3;
    float y=(hash(p)-.5)*.65+(hash(p2)-.5)*.35;vec3 cn=vec3(hash(p2+11.),hash(p+23.),hash(p2+37.))-.5;c+=(vec3(y)+cn*.45)*sensor*(.3+1.7*dk)*(1.-l*.55);}
   gl_FragColor=vec4(c,1.);}`,{tSrc:{value:null},tLut:{value:lut},texel:{value:new T.Vector2()},sharpen:{value:0},grain:{value:0},lutMix:{value:1},seed:{value:0},lens:{value:0},chroma:{value:0},aspect:{value:1},tLum:{value:lum[0].texture},sensor:{value:0},dark:{value:.5},block:{value:0},blockPx:{value:8},smear:{value:0},flash:{value:0},dip:{value:0}});
- const merge=raw(`varying vec2 vUv;uniform sampler2D tBase,tView,tLum;uniform float gain,vignette,grade,saturation,contrast,warmth;
+ const merge=raw(`varying vec2 vUv;uniform sampler2D tBase,tView,tLum;uniform float gain,vignette,grade,split,saturation,contrast,warmth;
  void main(){vec4 v=texture2D(tView,vUv);vec3 b=texture2D(tBase,vUv).rgb;if(v.a<=0.&&dot(v.rgb,vec3(1.))<=0.){gl_FragColor=vec4(b,1.);return;}
-  vec3 c=clamp(v.rgb/max(v.a,1e-3),0.,1.);if(gain>0.)c*=texture2D(tLum,vec2(.5)).g;c*=vec3(1.+warmth,1.,1.-warmth);
-  c=max(mix(vec3(dot(c,vec3(.2126,.7152,.0722))),c,saturation),0.);c=mix(c,c*c*(3.-2.*clamp(c,0.,1.)),contrast);
-  vec2 q=vUv-.5;c*=1.-vignette*dot(q,q)*2.;gl_FragColor=vec4(mix(b,clamp(c,0.,1.),clamp(v.a,0.,1.)),1.);}`,{tBase:{value:null},tView:{value:null},tLum:{value:lum[0].texture},gain:{value:0},vignette:{value:0},grade:{value:0},saturation:{value:1},contrast:{value:0},warmth:{value:0}});
+  float a=clamp(v.a,0.,1.);vec3 c=clamp(v.rgb,0.,1.);if(gain>0.)c*=texture2D(tLum,vec2(.5)).g;c*=vec3(1.+warmth,1.,1.-warmth);
+  c=max(mix(vec3(dot(c,vec3(.2126,.7152,.0722))),c,saturation),0.);
+  // The same film grade as the frame (composite). Premultiplied: light with no cover (a muzzle flash) only adds.
+  float l=dot(c,vec3(.2126,.7152,.0722));c=mix(c,c*c*(3.-2.*clamp(c,0.,1.)),contrast*a);c=max(c+a*split*(mix(vec3(-.35,.05,.45),vec3(.5,.18,-.4),smoothstep(.15,.75,l)))*(1.-abs(l*2.-1.)*.5),0.);
+  l=dot(c,vec3(.2126,.7152,.0722));vec3 g=c*mix(vec3(.95,.99,1.04),vec3(1.04,1.,.95),smoothstep(.06,.5,l));g=g*(1.+g*.22)/(1.+g*.30);c=mix(c,mix(vec3(l),g,.94),grade);
+  vec2 q=vUv-.5;c*=1.-vignette*dot(q,q)*2.;gl_FragColor=vec4(min(b*(1.-a)+c,1.),1.);}`,{tBase:{value:null},tView:{value:null},tLum:{value:lum[0].texture},gain:{value:0},vignette:{value:0},grade:{value:0},split:{value:0},saturation:{value:1},contrast:{value:0},warmth:{value:0}});
  const mergeRT=target();
  function drawOverlay(color){
   const v=overlayTarget(),alpha=renderer.getClearAlpha();renderer.getClearColor(overlayClear);renderer.setRenderTarget(v);renderer.setClearColor(0x000000,0);renderer.clear(true,true,false);
   let drew=false;try{drew=overlayDraw()!==false;}finally{renderer.setClearColor(overlayClear,alpha);}
   if(!drew)return color;
-  const u=merge.uniforms;u.tBase.value=color;u.tView.value=v.texture;u.tLum.value=composite.uniforms.tLum.value;u.gain.value=composite.uniforms.exposure.value;u.vignette.value=settings.vignette;u.saturation.value=settings.saturation;u.contrast.value=settings.contrast;u.warmth.value=settings.warmth;
+  const u=merge.uniforms;u.tBase.value=color;u.tView.value=v.texture;u.tLum.value=composite.uniforms.tLum.value;u.gain.value=composite.uniforms.exposure.value;u.vignette.value=settings.vignette;u.saturation.value=settings.saturation;u.contrast.value=settings.contrast;u.grade.value=settings.grade;u.split.value=settings.split;u.warmth.value=settings.warmth;
   if(mergeRT.width!==size.x||mergeRT.height!==size.y)mergeRT.setSize(size.x,size.y);pass(merge,mergeRT);return mergeRT.texture;
  }
  function resize(){
@@ -388,7 +391,7 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   // torches: () => [{position, direction, strength}] flashlights, or null.
   setLights(next){lights={...lights,...next};},
   // draw(): renders into the bound target, or returns false. null: nothing in front of the lens.
-  setOverlay(draw){overlayDraw=draw;},get overlays(){return settings.enabled&&composite.uniforms.view.value===0&&!!overlayDraw;},
+  setOverlay(draw){if(!draw&&overlayDraw&&viewRT){viewRT.dispose();mergeRT.dispose();}overlayDraw=draw;},get overlays(){return settings.enabled&&composite.uniforms.view.value===0&&!!overlayDraw;},
   // A muzzle flash (0..1) in front of the lens: clips the frame for a few frames where flashClip is set (Beyond Eden).
   flash(strength=1){if(!(settings.flashClip>0))return;flashNow=Math.max(flashNow,Math.min(1,strength));flashDip=Math.max(flashDip,flashNow);},
   // Development aid: the adapted luminance and the exposure factor as the sensor holds them now (reads one pixel).

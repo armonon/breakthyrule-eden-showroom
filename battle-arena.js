@@ -251,7 +251,8 @@
   function chime(freqs,gain=.08,step=.07){try{const ac=chime.ac||=new (window.AudioContext||window.webkitAudioContext)();if(ac.state!=='running')return;const t=ac.currentTime;
    freqs.forEach((f,i)=>{const o2=ac.createOscillator(),g=ac.createGain();o2.type='triangle';o2.frequency.value=f;g.gain.setValueAtTime(0,t+i*step);g.gain.linearRampToValueAtTime(gain,t+i*step+.01);g.gain.exponentialRampToValueAtTime(.0001,t+i*step+.22);o2.connect(g);g.connect(ac.destination);o2.start(t+i*step);o2.stop(t+i*step+.25);});}catch{}}
   // How hard a killing or heavy blow throws a body, by weapon.
-  const FORCE={sniper:4.6,pump:4,rifle:2.6,smg:2.2,pistol:2.2,axe:3.4,melee:3.1,c4:6.2};
+  // Small arms drop a body where it stands; only the shotgun, the sniper and a blast throw one.
+  const FORCE={sniper:3.9,pump:4,rifle:2,smg:1.6,pistol:1.5,axe:3.4,melee:3.1,c4:6.2};
   function blowDirection(target,attacker,meta){if(meta.dir)return meta.dir.clone().setY(0).normalize();const from=attacker&&attacker!==target?posOf(attacker):null;const d=from?posOf(target).clone().sub(from).setY(0):new T.Vector3(0,0,1);return d.lengthSq()>1e-6?d.normalize():new T.Vector3(0,0,1);}
   // Bots flash when hit: cyan off the shield, white on the body.
   const FLASH={shield:new T.Color(0x45d6ff),body:new T.Color(0xffffff),warn:new T.Color(0xff9a2e)};
@@ -278,6 +279,7 @@
   // jostles rather than topples. Returns false (the caller keeps the procedural reaction) when it is unavailable.
   let reactions=null;
   function physicalHit(b,dir,strength,zone){
+   if(strength<1.2)strength*=1.35; // a body that is shot gives
    if(!reactions||(strength<1.2&&clock-(b.lastPhysical??-9)<.22))return false;
    if(!reactions.hit(b.model,{direction:dir,strength,zone,velocity:b.vel}))return false;
    b.lastPhysical=clock;return true;
@@ -286,6 +288,16 @@
    if(loadReactions.started)return;loadReactions.started=true;
    import('/jolt-hit-reactions.js?v=20261121-hit10').then(m=>m.createHitReactions({T,groundY,walls,onFall:model=>{const b=bots.find(x=>x.model===model);if(b){b.stagger=null;b.stunT=0;b.lunge=null;}}}))
     .then(r=>{reactions=r;}).catch(error=>console.warn('Physical hit reactions unavailable; keeping procedural ones.',error));
+  }
+  // A bullet that gets through the shield: a step back with it, a leg that gives for a moment, an arm whose aim is thrown off,
+  // and, when several land close together, a moment folded over. Each has its own rest, so a spray cannot hold a bot still.
+  function wound(b,dir,meta,through){
+   if(!b.bot||through<=0)return;
+   if(clock-(b.lastStep??-9)>.3&&!b.stagger){b.lastStep=clock;stagger(b,dir,.14+Math.min(.16,through/160),.22);}
+   if(meta.zone==='leg')b.limpT=Math.max(b.limpT||0,1.1);
+   if(meta.zone==='arm'){b.fireT=Math.max(b.fireT,.3);b.aimT=Math.max(b.aimT,.18);}
+   b.hurtSum=(clock-(b.hurtAt??-9)<1.1?b.hurtSum||0:0)+through;b.hurtAt=clock;
+   if(b.hurtSum>42&&clock-(b.lastFold??-9)>2.6){b.lastFold=clock;b.hurtSum=0;b.stunT=Math.max(b.stunT||0,.35);b.model.motion?.play?.('hitChest',{mask:'upper',fade:.05,speed:.85});b.model.motion?.hit?.(dir,1,{zone:'leg'});}
   }
   function stagger(b,dir,distance,duration){b.stagger={dir:dir.clone().setY(0).normalize(),distance,duration,t:0};}
   // Bot melee: before the blow lands the bot telegraphs it (an amber glow, a glint at its weapon, a ring you can
@@ -358,7 +370,7 @@
      const dir=blowDirection(target,attacker,meta);
      if(meta.tier)meleeReaction(target,dir,meta);
      else if(heavy){const force=meta.blast?2.8:meta.weapon==='sniper'?2.6:meta.weapon==='pump'?2.1:2;if(physicalHit(target,dir,force,meta.zone))target.model.motion?.hit?.(dir,1.1,{zone:meta.zone});else target.model.motion?.hit?.(dir,2.2);}
-     else{physicalHit(target,dir,meta.head?.9:.6,meta.zone);if(clock-target.lastFlinch>.7){target.lastFlinch=clock;target.model.motion?.hit?.(dir,meta.head?1.2:.7,{zone:meta.zone});target.model.motion?.play?.(meta.head?'hitHead':'hitChest',{mask:'upper',fade:.04,speed:1.2});}}
+     else{wound(target,dir,meta,a);physicalHit(target,dir,meta.head?.9:.6,meta.zone);if(clock-target.lastFlinch>.7){target.lastFlinch=clock;target.model.motion?.hit?.(dir,meta.head?1.2:.7,{zone:meta.zone});target.model.motion?.play?.(meta.head?'hitHead':'hitChest',{mask:'upper',fade:.04,speed:1.2});}}
      target.dodgeT=.38;target.strafe=Math.random()<.5?1:-1;}}
    else{combat.hurt(attacker&&attacker!==target?eyeOf(attacker):null,a+(amount-a)*.4+shielded*.55);if(meta.kind==='zone')combat.hurt(null,a*.4);hud.update();}
    if(target.hp<=0){kill(target,attacker,meta);return {killed:true};}
@@ -493,7 +505,7 @@
    if(nearShadow!==b.shadowNear){b.shadowNear=nearShadow;b.root.traverse(n=>{if(n.isMesh)n.castShadow=nearShadow;});b.model.motion?.held()?.mesh?.traverse(n=>{if(n.isMesh)n.castShadow=nearShadow;});}
 
    updateFlash(b,dt);
-   if(b.alive&&(b.flinchT||0)>0){b.flinchT=Math.max(0,b.flinchT-dt);b.root.rotation.x=-Math.sin(Math.min(1,b.flinchT/.22)*Math.PI)*.12;if(!b.flinchT)b.root.rotation.x=0;}
+   if(b.alive&&(b.flinchT||0)>0){b.flinchT=Math.max(0,b.flinchT-dt);b.root.rotation.x=-Math.sin(Math.min(1,b.flinchT/.22)*Math.PI)*.15;if(!b.flinchT)b.root.rotation.x=0;}
    const p=b.root.position;
    if(!b.alive){if(b.respawnAt&&clock>=b.respawnAt){respawnBot(b);return;}if(b.model.motion?.downAmount?.()>0){b.model.animate?.(clock,0);return;}const k=clamp((clock-b.deathT)/.6,0,1);b.root.rotation.x=-k*k*Math.PI/2*.96;b.root.position.y=groundY(p.x,p.z)+k*.15;return;}
    if(b.frozen){b.model.animate?.(clock,0);return;}
@@ -585,6 +597,7 @@
    // Walking into a bot shoulders it aside; running into it staggers it.
    if(player?.alive){const q=posOf(player),dx=p.x-q.x,dz=p.z-q.z,d=Math.hypot(dx,dz);if(Math.abs(p.y-q.y)<1&&d<.9&&d>1e-4){const push=(.9-d)*(1+(player.speed||0)*.4);const np=p.clone();np.x+=dx/d*push*dt*6;np.z+=dz/d*push*dt*6;if(!blocked(np)){p.x=np.x;p.z=np.z;}
     if((player.speed||0)>4.8&&clock-b.lastFlinch>.9){b.lastFlinch=clock;b.model.motion?.hit?.(new T.Vector3(dx/d,0,dz/d),.9);}}}
+   if((b.limpT||0)>0){b.limpT-=dt;speed*=.62;} // a leg that was shot
    if(move.lengthSq()>0){move.normalize().multiplyScalar(speed*dt);const next=p.clone().add(move);
     if(!blocked(next)&&next.x>B[0]+1&&next.x<B[1]-1&&next.z>B[2]+1&&next.z<B[3]-1){p.x=next.x;p.z=next.z;}
     else if(b.goal&&b.repath<=0){b.repath=1.5;b.path=findPath(p,b.goal);}
@@ -766,7 +779,7 @@
   function kitPlayer(){combat.arsenal.set({owned:['axe','pistol'],reserve:{pistol:24},loaded:{pistol:12}});combat.equip('pistol');}
   function respawnBot(b){
    const spot=farSpawn();b.model.motion?.revive?.();b.root.position.set(spot.x,groundY(spot.x,spot.z),spot.z);b.root.rotation.set(0,rand(0,TAU),0);
-   Object.assign(b,{stagger:null,stunT:0,hp:100,shield:SHIELD_BOT,shieldMax:SHIELD_BOT,armor:0,armorMax:0,garment:null,alive:true,respawnAt:0,lastHurt:-9,lastFlinch:-9,flinchT:0,dodgeT:0,bashT:0,deathT:0,target:null,goal:null,seen:null,healing:null,healT:0,fireT:0,reloadT:0,aimT:0,think:rand(0,.3),repath:0,strafeT:0,stride:0,heading:b.root.rotation.y,heals:{bandage:0,medkit:0},state:'roam'});
+   Object.assign(b,{stagger:null,stunT:0,limpT:0,hurtSum:0,lastFold:-9,lastStep:-9,hp:100,shield:SHIELD_BOT,shieldMax:SHIELD_BOT,armor:0,armorMax:0,garment:null,alive:true,respawnAt:0,lastHurt:-9,lastFlinch:-9,flinchT:0,dodgeT:0,bashT:0,deathT:0,target:null,goal:null,seen:null,healing:null,healT:0,fireT:0,reloadT:0,aimT:0,think:rand(0,.3),repath:0,strafeT:0,stride:0,heading:b.root.rotation.y,heals:{bandage:0,medkit:0},state:'roam'});
    b.path.length=0;kitBot(b);formBot(b);rendererShadowDirty();
   }
   function rendererShadowDirty(){const r=window.breakThyRuleShowroom?.renderer?.();if(r)r.shadowMap.needsUpdate=true;}

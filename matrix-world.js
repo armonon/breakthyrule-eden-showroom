@@ -9,6 +9,8 @@
 //  ground(x,z)     what is underfoot at a world position: {type:'asphalt'|'paving'|'concrete'|'earth'|'stone'|'brick', wet, damp}
 // Desktop gets all of it; phones keep the sky, the altar, the forming effect and the scanned ground (albedo only, 512 px).
 (function(root){
+ // The expedition's own page keeps the sky and walls it was built with.
+ const OLD=!!document.body?.classList.contains('expedition-entry');
  const GREEN='vec3(.16,1.,.42)';
  const time={value:0},strength={value:0},kit={value:null},program={value:null},scanA={value:null},scanB={value:null},detail={value:null};
  // The scans, one layer each of two texture arrays (a lit material here is at the GPU's 16 samplers, so no surface may
@@ -83,12 +85,12 @@
     return mix(${GREEN}*.75,vec3(.78,1.,.86)*1.25,head)*g*tail;}
    void main(){vec3 d=normalize(vDir);float el=asin(clamp(d.y,-1.,1.))/(PI*.5),az=atan(d.x,-d.z)/(2.*PI)+.5;
     float up=max(d.y,0.),cloud=texture2D(kit,d.xz/(up+.28)*.085+time*.0011).g,wisps=texture2D(kit,d.xz/(up+.2)*.21-time*.0017).b;
-    vec3 c=mix(vec3(.018,.024,.032),vec3(.003,.005,.008),pow(up,.42));
-    c+=vec3(.020,.030,.034)*exp(-up*7.)*(.5+.5*texture2D(kit,vec2(az*3.,.3)).g);
-    float veil=smoothstep(.42,.75,cloud*.7+wisps*.3);c+=vec3(.014,.018,.024)*veil;
+    vec3 c=${OLD?'mix(vec3(.010,.034,.024),vec3(.0015,.006,.006),pow(up,.42))':'mix(vec3(.018,.024,.032),vec3(.003,.005,.008),pow(up,.42))'};
+    c+=${OLD?'vec3(.018,.09,.05)':'vec3(.020,.030,.034)'}*exp(-up*7.)*(.5+.5*texture2D(kit,vec2(az*3.,.3)).g);
+    float veil=smoothstep(.42,.75,cloud*.7+wisps*.3);c+=${OLD?'vec3(.008,.03,.021)':'vec3(.014,.018,.024)'}*veil;
     // A soft break in the clouds above the altar's end of the sky: the light the program is about.
     float glory=pow(max(dot(d,normalize(vec3(.0,.82,-.57))),0.),14.);c+=vec3(.10,.085,.045)*glory*(.6+.4*wisps);
-    float fade=smoothstep(.05,.16,el)*(1.-smoothstep(.62,.86,el));
+    float fade=${OLD?'smoothstep(-.02,.06,el)':'smoothstep(.05,.16,el)'}*(1.-smoothstep(.62,.86,el));
     if(fade>0.){vec3 r=rain(az,el,170.,5.5,.72,1.)+rain(az+.0013,el,340.,7.,.8,5.)*.55+rain(az+.004,el,74.,3.4,.26,9.)*.6;
      // the program: lines written left to right on panels of the sky, read and then erased
      vec2 q=vec2(az*9.,(el-.10)*17.);vec2 panel=floor(q),pf=fract(q);float ph=mxHash(panel+31.),t=time*.07+ph*9.,cyc=floor(t),tt=fract(t);
@@ -98,9 +100,9 @@
       r*=1.-.85*step(w.x,typed)*(1.-gone)*.7;r+=mix(vec3(.45,1.,.62),vec3(1.,.9,.6),step(.8,ph))*s*lit*.85;
       r+=vec3(.6,1.,.75)*step(abs(w.x-typed),.006)*(1.-gone)*step(typed,.995);}}
      // Far off and faint: something in the weather rather than a screen over the street.
-     c+=r*fade*(1.-.6*veil)*.30;}
+     c+=r*fade*${OLD?'(1.-.45*veil)':'(1.-.6*veil)*.30'};}
     // stars where the rain thins out overhead
-    vec2 sp=d.xz/(up+.15)*38.;vec2 sc=floor(sp);float st=mxHash(sc);c+=vec3(.75,.82,.95)*step(.985,st)*smoothstep(.22,.0,length(fract(sp)-.5))*smoothstep(.45,.8,up)*(.5+.5*sin(time*2.+st*90.));
+    vec2 sp=d.xz/(up+.15)*38.;vec2 sc=floor(sp);float st=mxHash(sc);c+=${OLD?'vec3(.6,.9,.75)':'vec3(.75,.82,.95)'}*step(.985,st)*smoothstep(.22,.0,length(fract(sp)-.5))*smoothstep(.45,.8,up)*(.5+.5*sin(time*2.+st*90.));
     gl_FragColor=vec4(c,strength);}`}));
   dome.name='Matrix sky';dome.frustumCulled=false;dome.renderOrder=-5;dome.visible=false;dome.raycast=()=>{};
   return dome;
@@ -149,13 +151,14 @@
    // leaves. Drawn in world space, faded out before it can shimmer.
    const street=!(ground||road)?'':`vec3 mxStreet(vec3 c,vec2 p,float edge,float wheels,float litter,inout float wet,inout float dirt){
     float near=1.-smoothstep(9.,26.,length(vMx-cameraPosition)),n1=texture2D(mxKit,p*.047).g,n2=texture2D(mxKit,p*.61).b,n3=texture2D(mxKit,p*.13+n2*.012).g;
-    float crack=(1.-smoothstep(.002,.013,abs(n3-.5+(n2-.5)*.06)))*smoothstep(.42,.6,n1)+(1.-smoothstep(.0015,.008,abs(texture2D(mxKit,p*.29+n2*.02).g-.46)))*smoothstep(.5,.66,n1)*.8;
+    vec2 dq=fwidth(p);
+    float crack=(1.-smoothstep(.002,.013,abs(n3-.5+(n2-.5)*.06)))*smoothstep(.42,.6,n1)${lite?'':'+(1.-smoothstep(.0015,.008,abs(texture2D(mxKit,p*.29+n2*.02).g-.46)))*smoothstep(.5,.66,n1)*.8'};
     c*=1.-.62*clamp(crack,0.,1.)*near;
     float w=wheels*(.55+.45*n1);c*=1.-.24*w;dirt=edge*smoothstep(.3,.62,n2+.45*edge);
     c=mix(c,vec3(.052,.043,.032)*(.6+.8*n2),dirt*.75);wet*=1.-.6*dirt;
-    if(litter*near>0.){for(int k=0;k<2;k++){vec2 q=p*(k==0?5.5:8.3)+float(k)*17.,id=floor(q),f=fract(q)-.5;float h=mxHash(id),a=h*41.;if(h>litter*(.35+.9*n1))continue;f+=(vec2(mxHash(id+3.),mxHash(id+7.))-.5)*.45;
-     f=mat2(cos(a),-sin(a),sin(a),cos(a))*f;float L=.17+.14*mxHash(id+13.),d=abs(f.y)-(.42*L)*(1.-pow(abs(f.x)/L,2.));float m=(1.-smoothstep(-.012,.02+fwidth(q.x),d))*step(abs(f.x),L)*near;
-     vec3 leaf=mix(vec3(.085,.060,.026),vec3(.048,.046,.022),mxHash(id+19.))*(.55+.7*mxHash(id+23.))*(1.-.4*(1.-smoothstep(.0,.012,abs(f.y))));c=mix(c,leaf,m);wet*=1.-m*.8;dirt=max(dirt,m);}}
+    ${lite?'':`if(litter*near>0.){for(int k=0;k<2;k++){vec2 q=p*(k==0?5.5:8.3)+float(k)*17.,id=floor(q),f=fract(q)-.5;float h=mxHash(id),a=h*41.;if(h>litter*(.35+.9*n1))continue;f+=(vec2(mxHash(id+3.),mxHash(id+7.))-.5)*.45;
+     f=mat2(cos(a),-sin(a),sin(a),cos(a))*f;float L=.17+.14*mxHash(id+13.),d=abs(f.y)-(.42*L)*(1.-pow(abs(f.x)/L,2.));float m=(1.-smoothstep(-.012,.02+(k==0?5.5:8.3)*max(dq.x,dq.y),d))*step(abs(f.x),L)*near;
+     vec3 leaf=mix(vec3(.085,.060,.026),vec3(.048,.046,.022),mxHash(id+19.))*(.55+.7*mxHash(id+23.))*(1.-.4*(1.-smoothstep(.0,.012,abs(f.y))));c=mix(c,leaf,m);wet*=1.-m*.8;dirt=max(dirt,m);}}`}
     return c;}\n`;
    let f=sh.fragmentShader;
    f=head+HASH+street+f.replace('#include <clipping_planes_fragment>',`#include <clipping_planes_fragment>
@@ -168,7 +171,7 @@
     diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.45,.56,.40),clamp(mxDamp,0.,1.)*.75);`;
    // Standing water: in the broad damp patches, where the scan's height says the surface is low.
    // MID is each ground scan's mean height: cracks and joints lie well below it, so they fill first and read darker.
-   const WET=`smoothstep(0.,.1,(mxBroad-.55)+(mxMid-mxT.a)*.9+(mxFine-.5)*.08)`,MID=`float mxMid=mxL>1.5?.545:(mxL>.5?.51:.40);`,CREVICE=`(1.-.5*smoothstep(.04,.25,mxMid-mxT.a))`;
+   const WET=`smoothstep(0.,.1,(mxBroad-${OLD?'.6':'.55'})+(mxMid-mxT.a)*.9+(mxFine-.5)*.08)`,MID=`float mxMid=mxL>1.5?.545:(mxL>.5?.51:.40);`,CREVICE=`(1.-.5*smoothstep(.04,.25,mxMid-mxT.a))`;
    f=f.replace('#include <map_fragment>',`#include <map_fragment>
     diffuseColor.rgb*=1.-mxGlow*.9;`+(kind==='form'?'':`
     {vec3 mxD=vMx-cameraPosition;mxNear=1.-smoothstep(14.,42.,length(mxD));mxWn=normalize(cross(dFdx(vMx),dFdy(vMx)));vec3 mxA=abs(mxWn);
@@ -185,14 +188,14 @@
     float mxEarth=smoothstep(.50,.62,mxBroad+.12*(mxFine-.5));vec3 mxWas=${lite?'diffuseColor.rgb':`mix(mxG,mxA4(vMx.xz,6.,.36).rgb*vec3(.52,.55,.5)*.8,mxEarth*.85)`};
     diffuseColor.rgb=mix(mxWas,mix(mxG,mxC,mxCover),mxIn);
     mxDamp=smoothstep(.45,.62,mxBroad)*(.45+.55*max(mxPave,mxCover*mxIn))*${lite?'mxIn':'1.'};mxWet=${WET}*mxCover*mxIn;
-    if(mxIn>0.){float mxDirt=0.,mxDry=mxWet;vec3 mxS2=mxStreet(diffuseColor.rgb,vMx.xz,.35*(1.-mxCover),0.,.38*mxIn,mxDry,mxDirt);diffuseColor.rgb=mix(diffuseColor.rgb,mxS2,mxIn);mxWet=mix(mxWet,mxDry,mxIn);mxLit=mxDirt*mxIn;}
+    if(${OLD?'false':'true'}){float mxDirt=0.,mxDry=mxWet;vec3 mxS2=mxStreet(diffuseColor.rgb,vMx.xz,.35*(1.-mxCover),0.,.38*mxIn,mxDry,mxDirt);diffuseColor.rgb=mix(diffuseColor.rgb,mxS2,mxIn);mxWet=mix(mxWet,mxDry,mxIn);mxLit=mxDirt*mxIn;}
     diffuseColor.rgb*=(1.-.45*mxDamp)*(1.-.35*mxWet);mxPave=max(mxPave,mix(mxEarth,mxCover,mxIn)*.8);
     ${useB?`vec4 mxN=mxB4(vMx.xz,mxL,mxS);mxBump=(mxN.xy*2.-1.)*mxCover;if(mxIn<1.){vec2 mxOld=mxPave<.5?mxB4(vMx.xz,6.,.36).xy:mxB4(vMx.xz,6.,.27).zw;mxBump=mix(mxOld*2.-1.,mxBump,mxIn);}mxRough=mix(1.,mxN.b,mxCover*mxIn);`:''}`:road?`
     ${lite?'':`diffuseColor.rgb*=mix(1.,.55+.95*texture2D(mxKit,mxUv*1.7).b,.6*mxNear);${GRIME}`}
     mxIn=1.-smoothstep(-24.,-20.,vMx.z);${ZONES}
     float mxL=mxPlaza>.5?2.:0.,mxS=mxL>1.5?${SCALE[2]}:${SCALE[0]};vec4 mxT=mxA4(vMx.xz,mxL,mxS);${MID}mxWet=${WET}*mxIn;mxPave=mxL*.5;
     diffuseColor.rgb=mix(diffuseColor.rgb,mxT.rgb*(mxL>1.5?vec3(.39,.39,.38):vec3(.48))*(.8+.4*mxBroad)*${CREVICE}*(1.-.45*smoothstep(.45,.62,mxBroad))*(1.-.35*mxWet),mxIn);
-    if(mxIn>0.){float mxX=abs(vMx.x-11.7),mxDirt=0.,mxDry=mxWet;vec3 mxS2=mxStreet(diffuseColor.rgb,vMx.xz,smoothstep(1.25,2.,mxX+mxFine*.5-.2),(1.-smoothstep(.1,.34,abs(mxX-.78)))*(1.-mxPave),mix(.10,.42,smoothstep(.7,1.9,mxX)),mxDry,mxDirt);diffuseColor.rgb=mix(diffuseColor.rgb,mxS2,mxIn);mxWet=mix(mxWet,mxDry,mxIn);mxLit=mxDirt*mxIn;}
+    if(${OLD?'false':'true'}){float mxX=abs(vMx.x-11.7),mxDirt=0.,mxDry=mxWet;vec3 mxS2=mxStreet(diffuseColor.rgb,vMx.xz,smoothstep(1.25,2.,mxX+mxFine*.5-.2),(1.-smoothstep(.1,.34,abs(mxX-.78)))*(1.-mxPave),mix(.10,.42,smoothstep(.7,1.9,mxX)),mxDry,mxDirt);diffuseColor.rgb=mix(diffuseColor.rgb,mxS2,mxIn);mxWet=mix(mxWet,mxDry,mxIn);mxLit=mxDirt*mxIn;}
     ${useB?`vec4 mxN=mxB4(vMx.xz,mxL,mxS);mxBump=mxN.xy*2.-1.;mxRough=mxN.b;`:''}`:wall?`
     ${kind==='concrete'?`float mxL=1.,mxS=${SCALE[1]},mxBr=-1.;`:`
     // Warm-coloured walls are brick under their plaster; any wall shows brick in patches, more of it near the ground.
@@ -211,7 +214,7 @@
     // The scan's own roughness, then damp (duller, darker) and standing water (a mirror for the lamps).
     f=f.replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
     {float mxR=roughnessFactor;${ground||road?`if(mxRough>=0.)mxR=mix(mxR,min(1.,mxRough*(.74+.5*mxFine2)),mxIn);`:wall?`if(mxRough>=0.)mxR=clamp(mxR*(.45+.75*mxRough)*(.78+.4*mxFine2),.2,1.);`:metal?`if(mxRough>=0.)mxR=mix(mxR*(.7+.6*mxRough),.88,mxPave);`:''}
-    roughnessFactor=clamp(mix(mix(mxR,${ground||road?'.22':'.3'},clamp(mxDamp,0.,1.)*(1.-.8*mxLit)*${ground?'(.12+.5*mxPave)':'.62'}),.05,mxWet),${ground||road?'.07':'.14'},1.);}`);
+    roughnessFactor=clamp(mix(mix(mxR,${(ground||road)&&!OLD?'mix(.3,.22,mxIn)':'.3'},clamp(mxDamp,0.,1.)*(1.-.8*mxLit)*${ground?'(.12+.5*mxPave)':'.62'}),.05,mxWet),${ground||road?'.07':'.14'},1.);}`);
     if(metal)f=f.replace('#include <metalnessmap_fragment>',`#include <metalnessmap_fragment>
     metalnessFactor*=1.-.85*mxPave;`);
     // Detail normals in world space on the dominant plane. The road loses Eden's embossed bricks where it turns to asphalt.
@@ -228,7 +231,11 @@
      float mxG=texture2D(mxKit,(vec2(mod(mxId,8.),floor(mxId/8.))+vec2(mxF.x,1.-mxF.y))/8.).r;vec2 mxEdge=abs(fract(mxP*.5)-.5);
      totalEmissiveRadiance+=${GREEN}*mxGlow*(mxG*.62+.018+smoothstep(.44,.5,max(mxEdge.x,mxEdge.y))*.16+pow(mxGlow,8.)*.25);}`+(model||wall||metal?`
     ${wash?`{ // Architectural uplights: pools of warm light climbing the walls between the piers, cool moonlight on what faces up.
-     float mxPool=.08+.92*pow(.5+.5*cos(mxUv.x*1.05),5.);totalEmissiveRadiance+=diffuseColor.rgb*mxOn*(vec3(1.,.66,.36)*(1.-abs(mxWn.y))*mxPool*(exp(-max(vMx.y,0.)*.55)*.34+exp(-max(vMx.y,0.)*.22)*.06)+vec3(.20,.25,.32)*max(mxWn.y,0.)*.16+vec3(.028,.034,.042));}`:''}`:''));
+${OLD?`     float mxPool=.35+.65*pow(.5+.5*cos(mxUv.x*1.05),3.);totalEmissiveRadiance+=diffuseColor.rgb*mxOn*(vec3(1.,.62,.30)*(1.-abs(mxWn.y))*mxPool*(exp(-max(vMx.y,0.)*.42)*.5+exp(-max(vMx.y,0.)*.16)*.13)+vec3(.16,.30,.27)*max(mxWn.y,0.)*.16+vec3(.03,.06,.048));`:`     float mxPool=.08+.92*pow(.5+.5*cos(mxUv.x*1.05),5.);totalEmissiveRadiance+=diffuseColor.rgb*mxOn*(vec3(1.,.66,.36)*(1.-abs(mxWn.y))*mxPool*(exp(-max(vMx.y,0.)*.55)*.34+exp(-max(vMx.y,0.)*.22)*.06)+vec3(.20,.25,.32)*max(mxWn.y,0.)*.16+vec3(.028,.034,.042));`}}`:''}${OLD?`
+    {float mxWall=1.-smoothstep(.3,.5,abs(mxWn.y));if(mxWall*mxOn>0.){vec2 mxP=vec2(mxUv.x*3.6,vMx.y*3.6),mxCell=floor(mxP);float mxCh=mxHash(vec2(mxCell.x,11.));
+     // A column here and there down a wall still shows the program running.
+     if(mxCh>.972){float mxLen=26.,mxDrop=mod(mxCell.y+mxTime*(2.+mxCh*3.)*1.6+mxCh*997.,90.),mxTail=mxDrop<mxLen?exp(-mxDrop*.15):0.;
+      if(mxTail>.01){float mxId=step(.5,mxBit(-mxCell.y+mxCell.x*64.));vec2 mxF=clamp(fract(mxP),.08,.92);float mxG=texture2D(mxKit,(vec2(mxId,0.)+vec2(mxF.x,1.-mxF.y))/8.).r;totalEmissiveRadiance+=${GREEN}*mxG*mxTail*.5*mxOn;}}}}`:''}`:''));
    sh.fragmentShader=f;};
   material.customProgramCacheKey=()=>key()+'|mx10'+kind+lean+wash+lite+(own&&own!==T.Material.prototype.onBeforeCompile?String(own).length:'');
   material.needsUpdate=true;return form;
@@ -333,11 +340,12 @@
   const onRoad=Math.abs(x-11.7)<1.97;if(z>-22)return {type:onRoad?'brick':null,wet:false,damp:0};
   const A=root.nightLayout?.arena||{x:12,z:-62},d=Math.hypot(x-A.x,z-A.z);if(d<4.1)return {type:'stone',wet:false,damp:0};
   if(!kitData)return {type:onRoad?'asphalt':'earth',wet:false,damp:0};
-  const broad=noise(x*.023,z*.023,1),fine=noise(x*.19,z*.19,2),damp=smooth(.45,.62,broad),puddle=(broad-.55)+(fine-.5)*.08>.05;
+  const broad=noise(x*.023,z*.023,1),fine=noise(x*.19,z*.19,2),damp=smooth(.45,.62,broad),puddle=(broad-(OLD?.6:.55))+(fine-.5)*.08>.05;
   const plaza=Math.max(1-smooth(8.2,9.8,d+broad*2-1),(1-smooth(1.8,3.4,Math.abs(z+63.5)+fine*1.6-.8))*(1-smooth(26,32,Math.abs(x-12)))),road=1-smooth(2.6,4.4,Math.abs(x-11.7)+fine*2-1);
   const slab=smooth(.46,.56,broad+.12*(fine-.5)+.24*(1-smooth(16,30,d)));
   const type=plaza>.5?'paving':onRoad||road>.5?'asphalt':slab>.5?'concrete':'earth';
-  return {type,wet:type!=='earth'&&puddle,damp:type==='earth'?damp*.45:damp};
+  const edge=onRoad&&!OLD?smooth(1.25,2,Math.abs(x-11.7)+fine*.5-.2):0,dirt=edge*smooth(.3,.62,noise(x*.61,z*.61,2)+.45*edge);
+  return {type,wet:type!=='earth'&&puddle&&dirt<.6,damp:type==='earth'?damp*.45:damp};
  }
  root.edenMatrix={sky,update,patch,surface,form,wave,altar,build,ground,groundType:(x,z)=>ground(x,z).type,layers:LAYERS,strength,time,verses:VERSES,lines:LINES,inspect:()=>({strength:strength.value,forming:forming.length,clouds:up.length})};
 })(window);

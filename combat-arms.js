@@ -3,7 +3,7 @@
  * First-person arms and realistic weapon models for the Eden combat system.
  *
  * Assets (see models/combat/CREDITS.md):
- *   arms_military.glb  Microsoft Rocketbox avatar arms (MIT)
+ *   arms_tactical.glb (arms_military.glb refined by tools/combat/refine-arms.py)  Microsoft Rocketbox avatar arms (MIT)
  *   pistol.glb         Poly Haven "Service Pistol" (CC0)
  *   shotgun.glb        3D Model Haven Mossberg 500 (CC0)
  *   hatchet/           Poly Haven "Hatchet" (CC0)

@@ -446,6 +446,7 @@
    if(poolsReady)return;
    for(const [map,additive,count]of [[tx.soft,false,120],[tx.puff,false,128],[tx.soft,true,128],[tx.flash,true,24]])for(let i=0;i<count;i++)spawn({map,additive,pos:effectZero,life:1,size:[.1,.1]});
    for(const p of particles){p.alive=false;p.sprite.visible=false;}
+   buildChips();
    for(let i=0;i<32;i++)tracer(effectZero,effectUp,false);for(const t of tracers){t.alive=false;t.mesh.visible=false;}
    const plane=new T.PlaneGeometry(1,1);
    for(let i=0;i<90;i++){const d=new T.Mesh(plane,new T.MeshStandardMaterial({map:tx.hole,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,roughness:.9,envMap:env}));d.userData.noHit=true;d.visible=false;world.add(d);decals.push(d);}
@@ -454,6 +455,7 @@
    for(const f of flips){f.alive=false;f.mesh.visible=false;}poolsReady=true;
   }
   function updateParticles(dt){
+   updateChips(dt);
    for(const p of particles){if(!p.alive)continue;p.t+=dt;const k=p.t/p.life;if(k>=1){p.alive=false;p.sprite.visible=false;continue;}
     p.vel.y-=p.gravity*dt;p.vel.multiplyScalar(Math.exp(-p.drag*dt));p.sprite.position.addScaledVector(p.vel,dt);
     const s=lerp(p.s0,p.s1,easeOut(k));p.sprite.scale.set(s,s,s);p.sprite.material.rotation+=p.spin*dt;
@@ -469,6 +471,63 @@
    if(!hit.object.isInstancedMesh&&!hit.object.isSkinnedMesh)hit.object.attach(d);
   }
 
+  // Chips: small solid pieces knocked off what was hit, thrown, bounced and left for a moment. One draw call.
+  let chips=null;const chipList=[],chipM=new T.Matrix4(),chipQ=new T.Quaternion(),chipE=new T.Euler(),chipS=new T.Vector3(),chipC=new T.Color();
+  function buildChips(){
+   const n=mobile?32:96,g=new T.TetrahedronGeometry(1,0);chips=new T.InstancedMesh(g,new T.MeshStandardMaterial({roughness:.95,flatShading:true}),n);chips.name='Impact chips';chips.frustumCulled=false;chips.userData.noHit=true;chips.raycast=()=>{};chips.castShadow=false;chips.receiveShadow=true;
+   for(let i=0;i<n;i++){chips.setMatrixAt(i,chipM.makeScale(0,0,0));chips.setColorAt(i,chipC.set(0xffffff));chipList.push({alive:false,p:new T.Vector3(),v:new T.Vector3(),r:new T.Vector3(),w:new T.Vector3(),s:new T.Vector3()});}
+   world.add(chips);
+  }
+  let chipNext=0;
+  function chip(pos,vel,color,size,{flat=1,float=0,life=2.6}={}){
+   if(!chips)return;const i=chipNext++%chipList.length,c=chipList[i];c.alive=true;c.t=0;c.life=life;c.float=float;c.p.copy(pos);c.v.copy(vel);c.r.set(rand(0,TAU),rand(0,TAU),rand(0,TAU));c.w.set(rand(-22,22),rand(-22,22),rand(-22,22));c.s.set(size*rand(.6,1.3),size*flat*rand(.6,1.2),size*rand(.6,1.3));c.floor=null;
+   chips.setColorAt(i,chipC.copy(color).multiplyScalar(rand(.7,1.15)));chips.instanceColor.needsUpdate=true;
+  }
+  function updateChips(dt){
+   if(!chips)return;let any=false;
+   for(let i=0;i<chipList.length;i++){const c=chipList[i];if(!c.alive)continue;any=true;c.t+=dt;
+    if(c.t>=c.life){c.alive=false;chips.setMatrixAt(i,chipM.makeScale(0,0,0));continue;}
+    if(c.float){c.v.y+=(-.7-c.v.y)*(1-Math.exp(-4*dt));c.v.x*=Math.exp(-2*dt);c.v.z*=Math.exp(-2*dt);}else c.v.y-=9.81*dt;
+    if(!c.still){c.p.addScaledVector(c.v,dt);c.r.addScaledVector(c.w,dt*(c.float?.3:1));}
+    if(c.floor===null||c.p.y<c.floor+.1)c.floor=groundAt(c.p.x,c.p.z,c.p.y+.3);
+    if(c.p.y<c.floor+c.s.y*.5){c.p.y=c.floor+c.s.y*.5;c.v.y=Math.abs(c.v.y)>.5&&!c.float?-c.v.y*.28:0;c.v.x*=.5;c.v.z*=.5;c.w.multiplyScalar(.35);}
+    const end=Math.min(1,(c.life-c.t)/.35);chips.setMatrixAt(i,chipM.compose(c.p,chipQ.setFromEuler(chipE.set(c.r.x,c.r.y,c.r.z)),chipS.copy(c.s).multiplyScalar(end)));}
+   if(any)chips.instanceMatrix.needsUpdate=true;
+  }
+  // What a bullet met, for the footage look: the ground's own kind where it is ground, else what the thing is called or made of.
+  function kindOf(hit,n,mat){
+   const name=(hit.object.name||'')+' '+(mat?.name||'')+' '+(hit.object.parent?.name||'');
+   if(/leaf|foliage|flower|fern|grass|shrub|hedge|ivy|plant/i.test(name))return 'leaf';
+   if(/glass|window/i.test(name))return 'glass';
+   if(/wood|crate|timber|plank|bark|cart|barrel-wood|signpost|barricade|bench|door/i.test(name))return 'wood';
+   if(/iron|steel|bronze|metal|barrel|hydrant|lamp|gate|portcullis|chandelier|anvil|container|drum/i.test(name)||mat?.metalness>.5)return 'metal';
+   if(/sandbag|terracotta|pot|amphora|planter/i.test(name))return 'clay';
+   if(n.y>.7&&hit.point.y<.12&&hit.point.z<-20){const g=root.edenMatrix?.ground?.(hit.point.x,hit.point.z);if(g?.wet)return 'water';if(g?.type==='earth')return 'earth';if(g?.type==='asphalt')return 'asphalt';}
+   const c=mat?.color;return c&&c.r-c.b>.12?'plaster':'stone';
+  }
+  const STUFF={stone:[0x6f6b64,0xb3ada2,.016],asphalt:[0x2b2b2c,0x6a6865,.014],plaster:[0x8c7a62,0xc9b79c,.02],clay:[0x8a4a30,0xa8785c,.018],earth:[0x2e2419,0x4f4233,.022],wood:[0x8a6238,0xa58a64,.022],leaf:[0x2c3417,0x3f4a22,.026],glass:[0x9fb4ba,0xb8c4c8,.012],metal:[0x3a3a3c,0x77777a,.008],water:[0x8f9aa3,0xa9b4bc,.01]};
+  const iN=new T.Vector3(),iR=new T.Vector3(),iV=new T.Vector3(),iP=new T.Vector3(),iCol=new T.Color(),iDust=new T.Color();
+  function realImpact(hit,dir,power,n,mat,kind){
+   const [solid,dusty,size]=STUFF[kind],k=Math.min(2,power),few=mobile?.5:1,count=v=>Math.max(1,Math.round(v*few));
+   iCol.set(solid);iDust.set(dusty);if(mat?.color&&['stone','plaster','clay'].includes(kind)&&!mat.map){iCol.lerp(mat.color,.5);iDust.lerp(mat.color,.35);}
+   // Out along the face, leaning to where the round would have gone on.
+   iN.copy(n);iR.copy(dir).reflect(n).lerp(n,.45).normalize();iP.copy(hit.point).addScaledVector(n,.015);
+   const spray=(lo,hi,wide)=>iV.copy(iR).multiplyScalar(rand(lo,hi)).add(effectLook.set(rand(-wide,wide),rand(-wide*.4,wide),rand(-wide,wide)));
+   if(kind==='water'){for(let i=0;i<count(10*k);i++)spawn({map:tx.soft,pos:iP,vel:spray(.4,1.4,.7).setY(rand(1.2,3.4)),life:rand(.25,.55),size:[.02,.012],alpha:.5,color:iDust,gravity:9.8,drag:.3});spawn({map:tx.puff,pos:iP,vel:iV.set(0,.5,0),life:.5,size:[.06,.3],alpha:.22,color:iDust,drag:2});}
+   else if(kind==='metal'){for(let i=0;i<count(9*k);i++)spawn({map:tx.soft,additive:true,pos:iP,vel:spray(2,6,2),life:rand(.1,.32),size:[.022,.004],color:0xffdfa0,color1:0xff5a10,gravity:9,drag:.8});spawn({map:tx.puff,pos:iP,vel:iV.copy(iR).multiplyScalar(.4),life:.7,size:[.03,.2],alpha:.2,color:iDust,drag:2});}
+   else{
+    const dust={earth:.8,plaster:1.2,stone:1,asphalt:.8,clay:1.1,wood:.45,leaf:.1,glass:.15}[kind]??1;
+    // A fast jet, then the cloud it leaves hanging, then grit falling back down the face.
+    for(let i=0;i<count(4*k*dust);i++)spawn({map:tx.puff,pos:iP,vel:spray(1.2,3.4,.5),life:rand(.25,.5),size:[.03,.26],alpha:.5*Math.min(1,dust),color:iDust,gravity:.2,drag:5});
+    for(let i=0;i<count(3*k*dust);i++)spawn({map:tx.puff,pos:iP,vel:spray(.15,.6,.18),life:rand(1.4,2.6),size:[.10,.62],alpha:.22*Math.min(1,dust),color:iDust,gravity:.04,drag:1.6,fadeIn:.1});
+    if(n.y<.5&&dust>.6)for(let i=0;i<count(3);i++)spawn({map:tx.soft,pos:iP,vel:iV.set(rand(-.15,.15),rand(-.2,.1),rand(-.15,.15)).addScaledVector(n,.2),life:rand(.5,.9),size:[.012,.02],alpha:.5,color:iDust,gravity:5,drag:.6});
+    if(['stone','asphalt'].includes(kind)&&Math.random()<.35*k)for(let i=0;i<count(3);i++)spawn({map:tx.soft,additive:true,pos:iP,vel:spray(2,5,1.5),life:rand(.05,.14),size:[.014,.004],color:0xffe0a0,color1:0xff6a18,gravity:10,drag:.5});
+    const n2={leaf:5,wood:6,glass:8,earth:6}[kind]||5;
+    for(let i=0;i<count(n2*k);i++)chip(iP,spray(kind==='leaf'?.2:.8,kind==='leaf'?1:3.2,kind==='leaf'?.6:1.1),iCol,size*rand(.4,1.1),kind==='leaf'?{flat:.06,float:1,life:rand(1.6,3)}:kind==='wood'?{flat:.22,life:rand(1.6,3)}:kind==='glass'?{flat:.15}:{life:rand(1.8,3.4)});
+   }
+   if(hit.object.isMesh&&!hit.object.isInstancedMesh&&!['water','leaf'].includes(kind))decal(hit,kind==='metal'?tx.splat:tx.hole,{wood:.032,metal:.045,earth:.06,plaster:.06,clay:.05}[kind]||.042);
+   if(kind==='metal')sfx.ding(hit.point,power);else if(kind==='wood'||kind==='leaf')sfx.wood(hit.point,power*(kind==='leaf'?.35:1));else sfx.dirt(hit.point,!['earth','water'].includes(kind));
+  }
   function impact(hit,dir,power=1,isTrue=false){
    const t=targetOf(hit.object);
    const n=hit.face?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):dir.clone().negate();
@@ -476,7 +535,8 @@
    const metal=t?.kind==='plate'||(mat?.metalness>.5);
    const wood=t?.kind==='post'||mat===M.post||/wood|crate|timber|plank|bark/i.test(hit.object.name+' '+mat?.name);
    const col=mat?.color?mat.color.clone():new T.Color(0x8a7a60);
-   if(metal){
+   if(!t&&real())realImpact(hit,dir,power,n,mat,kindOf(hit,n,mat));
+   else if(metal){
     for(let i=0;i<(isTrue?18:9);i++)spawn({map:tx.soft,additive:true,pos:hit.point,vel:n.clone().multiplyScalar(rand(1,4)).add(new T.Vector3(rand(-3,3),rand(-1,4),rand(-3,3))),life:rand(.15,.4),size:[.03,.008],color:0xffd08a,color1:0xff5a10,gravity:9,drag:.6});
     spawn({map:tx.soft,additive:true,pos:hit.point,life:.08,size:[.18,.3],color:0xfff0c0});
     decal(hit,tx.splat,isTrue?.07:.05);sfx.ding(hit.point,power);
@@ -522,11 +582,37 @@
    s.kind=type;s.mesh.visible=true;s.mesh.position.copy(pos);
    const right=new T.Vector3(1,0,0).applyQuaternion(camera.quaternion),up=new T.Vector3(0,1,0).applyQuaternion(camera.quaternion),back=new T.Vector3(0,0,1).applyQuaternion(camera.quaternion);
    s.vel.copy(right).multiplyScalar(rand(1.8,2.8)).addScaledVector(up,rand(1.6,2.6)).addScaledVector(back,rand(.1,.6));
-   s.spin.set(rand(-20,20),rand(-30,30),rand(-20,20));s.ground=groundAt(pos.x,pos.z,pos.y+.3);s.bounces=0;s.age=0;s.mesh.scale.setScalar(1);
+   s.spin.set(rand(-20,20),rand(-30,30),rand(-20,20));s.ground=groundAt(pos.x,pos.z,pos.y+.3);s.bounces=0;s.age=0;s.real=real();s.rest=false;s.wall=null;
+   // Brass to the calibre, carrying your own movement; the one wall it could reach on the way down is found once, now.
+   s.mesh.scale.setScalar(s.real&&type==='pistol'?({rifle:1.55,sniper:2.1,smg:1.15}[current.id]||1):1);s.size=s.mesh.scale.x;
+   if(s.real){s.vel.add(bodyVel);shellDir.copy(s.vel).setY(0);const reach=shellDir.length();if(reach>.3){shellDir.divideScalar(reach);const h=worldHits(pos,shellDir,2.2);if(h&&h.face){s.wall=(s.wallN||=new T.Vector3()).copy(h.face.normal).transformDirection(h.object.matrixWorld).setY(0);s.wallAt=(s.wallP||=new T.Vector3()).copy(h.point);if(s.wall.lengthSq()<.2)s.wall=null;else s.wall.normalize();}}}
   }
+  // Beyond Eden's footage look (app.js bodycam): everything here that is only for it asks this.
+  const real=()=>!!root.bodycam?.active?.();
+  const shellDir=new T.Vector3(),bodyVel=new T.Vector3(),flatQ=new T.Quaternion(),shellE=new T.Euler();
+  // What a surface gives back: bounce, grip and how loudly brass rings on it.
+  const GIVE={earth:[.10,.35,.12],brick:[.36,.6,1],paving:[.42,.66,1],stone:[.46,.7,1.1],concrete:[.4,.64,1],asphalt:[.34,.55,.8],wet:[.08,.4,.1]};
+  function underfoot(x,z,y=0){if(y>.25)return 'stone';const g=root.edenMatrix?.ground?.(x,z);return !g?.type?'brick':g.wet?'wet':g.type;}
+  function shellStep(s,dt){
+   const p=s.mesh.position;s.vel.y-=9.81*dt;s.vel.multiplyScalar(Math.exp(-.12*dt));p.addScaledVector(s.vel,dt);
+   s.mesh.rotation.x+=s.spin.x*dt;s.mesh.rotation.y+=s.spin.y*dt;s.mesh.rotation.z+=s.spin.z*dt;
+   if(s.wall){const d=(p.x-s.wallAt.x)*s.wall.x+(p.z-s.wallAt.z)*s.wall.z,v=s.vel.dot(s.wall);if(d<.012&&v<0){p.addScaledVector(s.wall,.012-d);s.vel.addScaledVector(s.wall,-1.45*v);s.spin.multiplyScalar(-.7);if(s.bounces<2)sfx.tink(s.kind,p,.7);}}
+   const floor=s.ground+.0055*s.size;
+   if(p.y>floor)return;
+   // Off an edge or onto a step: look again under where it has got to.
+   s.ground=groundAt(p.x,p.z,p.y+.3);if(p.y>s.ground+.0055*s.size)return;p.y=s.ground+.0055*s.size;
+   const [give,grip,ring]=GIVE[underfoot(p.x,p.z,s.ground)]||GIVE.brick,hit=-s.vel.y;
+   if(hit>.25&&s.bounces<4&&ring>.2)sfx.tink(s.kind,p,ring*Math.min(1,hit/4)*(s.bounces?.6:1));
+   if(ring<=.12&&!s.bounces)spawn({map:tx.puff,pos:p,vel:effectVel.set(0,.25,0),life:.35,size:[.02,.09],alpha:.3,color:ring<.11?0x9aa4ad:0x4a3d2c,gravity:.4,drag:2});
+   s.vel.y=hit>.35?hit*give:0;s.vel.x=s.vel.x*grip+rand(-.12,.12)*hit*.4;s.vel.z=s.vel.z*grip+rand(-.12,.12)*hit*.4;s.spin.multiplyScalar(grip*.8);s.bounces++;
+   // Down: it rolls a little on its side and stops.
+   if(s.vel.y===0||s.bounces>9){s.vel.y=0;const roll=Math.hypot(s.vel.x,s.vel.z);s.vel.x*=Math.exp(-5*dt);s.vel.z*=Math.exp(-5*dt);s.spin.set(0,s.spin.y*.8,0);s.mesh.quaternion.slerp(flatQ.setFromEuler(shellE.set(Math.PI/2,0,s.mesh.rotation.y)),Math.min(1,dt*16));if(roll<.03||s.bounces>70){s.rest=true;s.bounces=Math.max(4,s.bounces);}}
+  }
+  const effectVel=new T.Vector3();
   function updateShells(dt){
    for(const s of shells){if(!s.mesh.visible)continue;s.age+=dt;
-    if(s.age>14){s.mesh.visible=false;continue;}
+    if(s.age>(s.real?30:14)){s.mesh.visible=false;continue;}
+    if(s.real){if(!s.rest)shellStep(s,dt);continue;}
     if(s.bounces<4){s.vel.y-=9.8*dt;s.mesh.position.addScaledVector(s.vel,dt);s.mesh.rotation.x+=s.spin.x*dt;s.mesh.rotation.y+=s.spin.y*dt;s.mesh.rotation.z+=s.spin.z*dt;
      if(s.mesh.position.y<s.ground+.006){s.mesh.position.y=s.ground+.006;if(s.bounces===0)sfx.tink(s.kind,s.mesh.position);s.vel.y*=-.32;s.vel.x*=.55;s.vel.z*=.55;s.spin.multiplyScalar(.45);s.bounces++;if(s.bounces>=4){s.mesh.rotation.x=0;s.mesh.rotation.z=Math.PI/2*Math.sign(Math.random()-.5);}}}
    }
@@ -744,7 +830,7 @@
     ding:go((t,pos,p=1)=>{if(recorded?.play('metal',{time:t,pos,gain:p*.65}))return;const base=rand(480,560);[[1,.32],[2.71,.16],[4.1,.09],[5.8,.05]].forEach(([m,g])=>tone(t,{f0:base*m,dur:1.4/m+.3,gain:g*Math.min(1.5,p),pos,send:.4}));noise(t,{dur:.01,type:'highpass',f0:4000,gain:.4,pos});}),
     dirt:go((t,pos,hard=false)=>{if(recorded?.play(hard?'stone':'dirt',{time:t,pos,gain:.5}))return;noise(t,{dur:.06,f0:1500,f1:300,gain:.25,pos,send:.1});}),
     nearMiss:go((t,pos)=>recorded?.play('near-miss',{time:t,pos,gain:.3})),
-    tink:go((t,kind,pos)=>{if(recorded?.play('casing',{time:t,pos,gain:kind==='pump'?.14:.1}))return;const f=kind==='pump'?900:rand(3600,4400);tone(t,{f0:f,dur:kind==='pump'?.08:.2,gain:.06,pos,send:.05,type:kind==='pump'?'triangle':'sine'});tone(t+.09,{f0:f*1.04,dur:.12,gain:.03,pos,send:0});}),
+    tink:go((t,kind,pos,loud=1)=>{if(recorded?.play('casing',{time:t,pos,gain:(kind==='pump'?.14:.1)*loud})||loud<1)return;const f=kind==='pump'?900:rand(3600,4400);tone(t,{f0:f,dur:kind==='pump'?.08:.2,gain:.06,pos,send:.05,type:kind==='pump'?'triangle':'sine'});tone(t+.09,{f0:f*1.04,dur:.12,gain:.03,pos,send:0});}),
     throw:go(t=>noise(t,{dur:.2,type:'bandpass',f0:500,f1:1500,q:1,gain:.3,attack:.05})),
     stick:go((t,pos)=>{tone(t,{f0:140,f1:90,dur:.08,gain:.35,pos});noise(t,{dur:.04,f0:900,gain:.2,pos});}),
     beep:go(t=>{tone(t,{f0:2600,dur:.07,type:'square',gain:.08,send:0});tone(t+.11,{f0:2600,dur:.07,type:'square',gain:.08,send:0});}),
@@ -993,7 +1079,20 @@
    if(w.id==='smg'||w.id==='rifle'||w.id==='sniper'){startAction('reload',w.id==='sniper'?2.3:1.9,{inserted:false,wasEmpty:s.ammo===0});}
   }
 
-  function updateAction(dt){
+  // Reloading with hands that weigh something: the weapon sags as the support hand leaves it and rides on the wrist, gets
+  // lighter when the magazine drops, and is knocked up and settles when the new one is driven home. Timing is untouched.
+  let wasRunning=false;
+  function reloadWeight(w,a,out){
+   if(a.name!=='reload'||!real())return;const h=1+(WEIGHT[w.id]||0)*1.1,away=clamp(a.leftAway||0,0,1),t=a.t;
+   out.y-=.010*away*h;out.rx-=.045*away*h;out.rz+=.02*Math.sin(t*5.2)*away;out.x+=.0035*Math.sin(t*3.7+1)*away;out.ry+=.015*Math.sin(t*2.9)*away;
+   if(o.reduced)return;
+   if((a.dropped||a.out)&&!a.felt){a.felt=true;anim.posY.kick(-.7);anim.rotX.kick(.9);}
+   if(a.inserted&&!a.seated){a.seated=true;anim.posY.kick(-.9*h);anim.rotX.kick(1.6*h);anim.posZ.kick(.5);look.shake=Math.max(look.shake,.06);}
+   if(a.loaded!=null&&a.loaded!==(a.feltLoad||0)){a.feltLoad=a.loaded;anim.rotX.kick(.7);anim.posZ.kick(.3);}
+   if((a.slapped||a.charged)&&!a.racked){a.racked=true;anim.rotZ.kick(1.1);anim.posY.kick(.5*h);look.shake=Math.max(look.shake,.05);}
+  }
+  function updateAction(dt){const w=current,a=state[w.id].action,out=poseAction(dt);if(a)reloadWeight(w,a,out);return out;}
+  function poseAction(dt){
    const w=current,s=state[w.id],m=models[w.id],P=m.parts,a=s.action;
    const out={x:0,y:0,z:0,rx:0,ry:0,rz:0};
    // Pistol slide cycle
@@ -1338,11 +1437,17 @@
    const cp=camera.position;
    if(lastCamPos){const v=Math.hypot(cp.x-lastCamPos.x,cp.z-lastCamPos.z)/Math.max(dt,1e-3);speedSmoothed=lerp(speedSmoothed,Math.min(v,8),1-Math.exp(-10*dt));const vy=(cp.y-lastY)/Math.max(dt,1e-3);if(verticalVel<-1.5&&vy>-.2)anim.land.kick(-Math.min(3,-verticalVel*.6)*(1+(WEIGHT[current?.id]||0)));verticalVel=vy;
     const rx=Math.cos(yaw),rz=Math.sin(yaw),lat=((cp.x-lastCamPos.x)*rx+(cp.z-lastCamPos.z)*rz)/Math.max(dt,1e-3);lateral=lerp(lateral,clamp(lat,-7,7),1-Math.exp(-8*dt));}
+   if(lastCamPos&&dt>0){bodyVel.copy(cp).sub(lastCamPos).divideScalar(Math.max(dt,1e-3));if(bodyVel.lengthSq()>144)bodyVel.set(0,0,0);bodyVel.y*=.3;}
    if(!lastCamPos)lastCamPos=new T.Vector3();lastCamPos.copy(cp);lastY=cp.y;
    const mv=movementInfo();
    const prevPhase=bobPhase;bobPhase+=dt*(speedSmoothed>.2?lerp(6,11,clamp(speedSmoothed/6,0,1)):0);
    // Each footfall settles the weapon down a little, harder for heavy ones.
-   if(Math.floor(prevPhase/Math.PI)!==Math.floor(bobPhase/Math.PI)&&!mv.airborne)stepDip=Math.min(1,stepDip+.6);stepDip=Math.max(0,stepDip-dt*5);
+   if(Math.floor(prevPhase/Math.PI)!==Math.floor(bobPhase/Math.PI)&&!mv.airborne){stepDip=Math.min(1,stepDip+.6);
+    // At a run every stride lands: the weapon drops, rocks toward the planted foot and comes back late.
+    if(real()&&!o.reduced){const run=clamp((speedSmoothed-3)/3.5,0,1)*(1-adsBlend*.8),h=1+(WEIGHT[current?.id]||0)*1.2,foot=Math.floor(bobPhase/Math.PI)%2?1:-1;if(run>0){anim.posY.kick(.75*run*h);anim.rotX.kick(-.55*run*h);anim.rotZ.kick(foot*.75*run*h);anim.posX.kick(foot*.35*run);}}}
+   // Breaking into a run heaves it up; stopping lets it swing on.
+   if(real()&&!o.reduced){const going=!!mv.sprinting;if(going!==wasRunning){wasRunning=going;const h=1+(WEIGHT[current?.id]||0);anim.posZ.kick(going?.8*h:-1.1*h);anim.rotX.kick(going?-1.2*h:1.9*h);anim.posY.kick(going?-.5*h:1.3*h);}}else wasRunning=false;
+   stepDip=Math.max(0,stepDip-dt*5);
 
    const w=current,s=state[w.id];
    if(state.hitStop>0){state.hitStop-=dt;dt*=.08;}
@@ -1421,13 +1526,14 @@
 
   function render(){
    if(!built)return;
+   if(studioNow!==1&&(viewHidden()||!root.bodycam?.active?.()))dimStudio(1);
    if(!mobile)renderHeat();
    if(armed&&!o.overlayed?.())renderViewmodel();
    renderPost();
   }
 
   // The view-space flash sprite and its light exist from the start (prewarm compiles them), not from the first shot.
-  function ensureViewFlash(){if(viewScene.userData.flash)return;const f=new T.Sprite(new T.SpriteMaterial({map:tx.flashes?.[0]||tx.flash,transparent:true,blending:T.AdditiveBlending,depthWrite:false}));f.layers.enable(GLOW);f.visible=false;viewScene.add(f);viewScene.userData.flash=f;const l=new T.PointLight(0xffa850,0,1.2,2);viewScene.add(l);viewScene.userData.flashLight=l;}
+  function ensureViewFlash(){if(viewScene.userData.flash)return;const f=new T.Sprite(new T.SpriteMaterial({map:tx.flashes?.[0]||tx.flash,transparent:true,blending:T.AdditiveBlending,depthWrite:false}));/* adds light, covers nothing: the overlay's alpha stays the gun's */Object.assign(f.material,{blending:T.CustomBlending,blendSrc:T.SrcAlphaFactor,blendDst:T.OneFactor,blendSrcAlpha:T.ZeroFactor,blendDstAlpha:T.OneFactor});f.layers.enable(GLOW);f.visible=false;viewScene.add(f);viewScene.userData.flash=f;const l=new T.PointLight(0xffa850,0,1.2,2);viewScene.add(l);viewScene.userData.flashLight=l;}
   // The weapon is lit by what lights the place it is in (Beyond Eden: o.viewLight, app.js), eased so it does not flicker from
   // one probe to the next. Directions are world directions, turned into the view.
   const viewQ=new T.Quaternion(),lightNow={sky:new T.Color(),ground:new T.Color(),key:new T.Color(),rim:new T.Color(),keyDir:new T.Vector3(0,1,0),rimDir:new T.Vector3(0,1,0),env:0},lightTo={sky:new T.Color(),ground:new T.Color(),key:new T.Color(),rim:new T.Color(),keyDir:new T.Vector3(0,1,0),rimDir:new T.Vector3(0,1,0),env:0};let lightAt=0;
@@ -1456,7 +1562,7 @@
    // Sun direction (world) into view space so the weapon is lit like the garden.
    const sun=new T.Vector3(-23,19,-48).normalize().applyQuaternion(camera.quaternion.clone().invert());
    if(!lit){sunView.position.copy(sun);sunView.target.position.set(0,0,0);}
-   const night=clamp(-(camera.position.z+11)/30,0,1);if(!lit){sunView.color.setHex(0xfff0d0);viewHemi.color.setHex(0xe6f2ff);viewHemi.groundColor.setHex(0x4a4a32);viewRim.color.setHex(0xbfd6ff);viewRim.position.set(-1,.5,1);sunView.intensity=lerp(2.6,.5,night);viewScene.environmentIntensity=lerp(1,.12,night);if(viewRim)viewRim.intensity=lerp(.8,.16,night);if(viewHemi)viewHemi.intensity=lerp(.9,.12,night);}
+   const night=clamp(-(camera.position.z+11)/30,0,1);if(!lit){viewHemi.position.set(0,1,0);sunView.color.setHex(0xfff0d0);viewHemi.color.setHex(0xe6f2ff);viewHemi.groundColor.setHex(0x4a4a32);viewRim.color.setHex(0xbfd6ff);viewRim.position.set(-1,.5,1);sunView.intensity=lerp(2.6,.5,night);viewScene.environmentIntensity=lerp(1,.12,night);if(viewRim)viewRim.intensity=lerp(.8,.16,night);if(viewHemi)viewHemi.intensity=lerp(.9,.12,night);}
    // Muzzle flash sprite rendered in view space
    ensureViewFlash();
    const fl=viewScene.userData.flash,fll=viewScene.userData.flashLight;
@@ -1613,16 +1719,16 @@
    primeView(){build();ensureViewFlash();const hidden=[];viewScene.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}});const auto=renderer.autoClear,wasArmed=armed;try{renderer.autoClear=false;renderer.render(viewScene,viewCamera);armed=true;warmPost();}finally{armed=wasArmed;renderer.autoClear=auto;for(const o of hidden)o.visible=false;}},
    prewarmShaders(){build();sfx.init();ensureViewFlash();warmPost();const hidden=[];viewScene.traverse(x=>{if(!x.visible&&!x.isLight){hidden.push(x);x.visible=true;}});try{const job=renderer.compileAsync?renderer.compileAsync(viewScene,viewCamera):renderer.compile(viewScene,viewCamera);job?.catch?.(()=>{});}catch(e){console.warn('Weapon prewarm failed',e);}finally{for(const x of hidden)x.visible=false;}return hidden.length;},
    ready(){build();return armsRig?armsRig.ready.then(()=>true,()=>false):Promise.resolve(false);},
-   weaponModel(id){build();if(id==='c4'){const g=buildC4Block();return g;}const w=armsRig?.weapons[id];if(!w)return null;const c=w.model.clone(true);c.traverse(x=>{x.visible=true;});return c;},
+   weaponModel(id){build();if(id==='c4'){const g=buildC4Block();return g;}const w=armsRig?.weapons[id];if(!w)return null;const c=w.model.clone(true),own=new Map();/* its own materials: the ones in your hands are dimmed with the place you stand in */c.traverse(x=>{x.visible=true;if(x.isMesh&&!Array.isArray(x.material)&&x.material){let m=own.get(x.material);if(!m){m=x.material.clone();m.onBeforeCompile=x.material.onBeforeCompile;m.customProgramCacheKey=x.material.customProgramCacheKey;m.envMapIntensity=studio.get(x.material)??x.material.envMapIntensity;own.set(x.material,m);}x.material=m;}});return c;},
    setHudMode(mode){build();hud.el.dataset.mode=mode||'';},
    armed:()=>armed,
    weapon:()=>current&&current.id!=='fists'?current.id:null,
    setHandsBusy(on){handsBusy=!!on;},handsBusy:()=>handsBusy,weaponShown:()=>armed&&!(handsBusy&&equipBlend<.04),
    capturing:()=>armed,
-   busy:()=>armed||(built&&(glowActive()||embers.length||heat.length||flips.some(f=>f.alive)||particles.some(p=>p.alive)||shells.some(s=>s.mesh.visible&&s.bounces<4)||charges.some(c=>!c.done)||targets.some(t=>Math.abs(t.swing.v)>.001||Math.abs(t.swing.x)>.001||t.down)||debris.length||tracers.some(t=>t.alive)||(state.blast||0)>0)),
+   busy:()=>armed||(built&&(glowActive()||embers.length||heat.length||flips.some(f=>f.alive)||particles.some(p=>p.alive)||chipList.some(c=>c.alive)||shells.some(s=>s.mesh.visible&&(s.real?!s.rest:s.bounces<4))||charges.some(c=>!c.done)||targets.some(t=>Math.abs(t.swing.v)>.001||Math.abs(t.swing.x)>.001||t.down)||debris.length||tracers.some(t=>t.alive)||(state.blast||0)>0)),
    blocks(p){for(const t of targets){const q=t.root.position;if(t.kind==='plate'?Math.abs(p.x-q.x)<.62&&Math.abs(p.z-q.z)<.25:Math.hypot(p.x-q.x,p.z-q.z)<t.radius)return true;}return false;},
    inspect:()=>({audio:recorded?.inspect(),pools:{ready:poolsReady,particles:particles.length,tracers:tracers.length,shells:shells.length,decals:decals.length,flips:flips.length},aimAssist:window.edenSettings?.get('aimAssist')||'high',wallPull,action:current?state[current.id]?.action?.name||null:null,built,armed,locked,weapon:current?.id||null,ammo:current?state[current.id].ammo:null,focus:current?state[current.id].focus:0,charges:charges.filter(c=>!c.done).length,stats:{...stats},targets:targets.length,particles:particles.filter(p=>p.alive).length}),
-   _debug:{look:(dx,dy)=>{freeLook(dx,dy);requestFrame();},startAudioCapture:()=>recorded?.startCapture(),stopAudioCapture:()=>recorded?.stopCapture(),explodeAt:(x,z)=>{const g=new T.Group();g.position.set(x,groundAt(x,z)+.05,z);world.add(g);state.blastSeen=1;explode({group:g});},viewScene:()=>viewScene,fire:()=>{if(current)fire();},state,models,setButtons:b=>Object.assign(buttons,b),setLocked:v=>{locked=v;},detonate:()=>detonate(),reload:()=>{const l=locked;locked=true;reload();locked=l;}}
+   _debug:{shells:()=>shells,chips:()=>chipList,look:(dx,dy)=>{freeLook(dx,dy);requestFrame();},startAudioCapture:()=>recorded?.startCapture(),stopAudioCapture:()=>recorded?.stopCapture(),explodeAt:(x,z)=>{const g=new T.Group();g.position.set(x,groundAt(x,z)+.05,z);world.add(g);state.blastSeen=1;explode({group:g});},viewScene:()=>viewScene,fire:()=>{if(current)fire();},state,models,setButtons:b=>Object.assign(buttons,b),setLocked:v=>{locked=v;},detonate:()=>detonate(),reload:()=>{const l=locked;locked=true;reload();locked=l;}}
   };
  }
  root.createCombat=createCombat;

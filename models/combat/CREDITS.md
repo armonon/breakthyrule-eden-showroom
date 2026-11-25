@@ -3,6 +3,7 @@
 | file | model | author | licence |
 |---|---|---|---|
 | `arms_military.glb` | First-person arms of the `Military_Male_03` avatar from the [Microsoft Rocketbox Avatar Library](https://github.com/microsoft/Microsoft-Rocketbox). Sleeve insignia painted out. | Microsoft | MIT (notice below) |
+| `arms_tactical.glb`, `arms_tactical_lite.glb` | The same arms, modified: subdivided, cloth folds pressed into the sleeves (`tools/combat/refine-arms.py`), dyed in `combat-arms.js`. | Microsoft, modified for Break Thy Rule | MIT (notice below) |
 | `pistol.glb` | [Service Pistol](https://polyhaven.com/a/service_pistol) | Mateusz Sadek, Poly Haven | CC0 |
 | `shotgun.glb` | Mossberg 500, from the 3D Model Haven gun pack ([archive](https://archive.org/details/gun_models.7z)) | Rajil Jose Macatangay | CC0 |
 | `hatchet/` | [Hatchet](https://polyhaven.com/a/hatchet), 1k glTF | Poly Haven | CC0 |
