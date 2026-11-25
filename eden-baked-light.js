@@ -69,11 +69,12 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
    vec2 uv=(w.xz-beyondBounds.xy)/beyondBounds.zw;uv.y=1.-uv.y;
    vec3 ground=texture2D(beyondGround,uv).rgb,shade=texture2D(beyondSun,uv).rgb;light=ground*ground*ground*beyondBake.y;vis=shade.r;local=shade.g;contact=shade.b;
   }else{
-   // Probes are read a little off the surface, so a wall does not pick up the dark inside itself.
+   // Probes are read a little off the surface, so a wall does not pick up the dark inside itself (further above a step or
+   // table top, whose thin slab would otherwise shade itself).
    vec3 cu=clamp((w+n*.5-beyondMin)/beyondSize*beyondGridC,vec3(.5),beyondGridC-.5)/beyondAtlas;
    vec4 a=texture(beyondProbeA,cu),b=texture(beyondProbeB,cu);
    // The fine grid over the courtyard and altar takes over inside its box.
-   vec3 du=(w+n*.25-beyondDetailMin)/beyondDetailSize,de=smoothstep(vec3(0.),vec3(.08),du)*smoothstep(vec3(0.),vec3(.08),1.-du);float fine=de.x*de.z*smoothstep(0.,.1,1.-du.y);
+   vec3 du=(w+n*mix(.25,.95,smoothstep(.65,.9,n.y))-beyondDetailMin)/beyondDetailSize,de=smoothstep(vec3(0.),vec3(.08),du)*smoothstep(vec3(0.),vec3(.08),1.-du);float fine=de.x*de.z*smoothstep(0.,.1,1.-du.y);
    if(fine>0.){du=(beyondGridO+clamp(du*beyondGridD,vec3(.5),beyondGridD-.5))/beyondAtlas;a=mix(a,texture(beyondProbeA,du),fine);b=mix(b,texture(beyondProbeB,du),fine);}
    light=a.rgb*a.rgb*a.rgb*beyondBake.y*max(1.+dot(b.xyz*2.-1.,n),.05);vis=b.w;local=a.a;
   }
@@ -112,8 +113,8 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
    const [bin,ground,sun]=await Promise.all([fetch(file('probes.bin')).then(r=>{if(!r.ok)throw Error(r.status);return r.arrayBuffer();}),new T.TextureLoader().loadAsync(file('lightmap.jpg')),new T.TextureLoader().loadAsync(file('sun.jpg'))]);
    const [nx,ny,nz]=meta.atlas,n=nx*ny*nz,bytes=new Uint8Array(bin);if(bytes.length!==n*8)throw Error('Invalid Beyond probe data');
    const a=new Uint8Array(n*4),b=new Uint8Array(n*4);for(let i=0;i<n;i++){a.set(bytes.subarray(i*8,i*8+4),i*4);b.set(bytes.subarray(i*8+4,i*8+8),i*4);}
-   for(const [texture,data] of [[beyondA,a],[beyondB,b]]){texture.image={data,width:nx,height:ny,depth:nz};texture.needsUpdate=true;}
-   for(const [texture,loaded] of [[beyondGround,ground],[beyondSun,sun]]){texture.isDataTexture=false;texture.image=loaded.image;texture.colorSpace=T.NoColorSpace;texture.flipY=true;texture.generateMipmaps=true;texture.minFilter=T.LinearMipmapLinearFilter;texture.magFilter=T.LinearFilter;texture.anisotropy=4;texture.needsUpdate=true;loaded.dispose();}
+   for(const [texture,data] of [[beyondA,a],[beyondB,b]]){texture.dispose();texture.image={data,width:nx,height:ny,depth:nz};texture.needsUpdate=true;}
+   for(const [texture,loaded] of [[beyondGround,ground],[beyondSun,sun]]){texture.dispose();texture.isDataTexture=false;texture.image=loaded.image;texture.colorSpace=T.NoColorSpace;texture.flipY=true;texture.generateMipmaps=true;texture.minFilter=T.LinearMipmapLinearFilter;texture.magFilter=T.LinearFilter;texture.anisotropy=4;texture.needsUpdate=true;loaded.dispose();}
    // Voxel centres: texel 0 sits half a texel inside each grid's box.
    const coarse=meta.grids.coarse,detail=meta.grids.detail;beyondAtlas.set(nx,ny,nz);
    beyondMin.set(...coarse.min.map((v,i)=>v-coarse.step[i]/2));beyondSize.set(...coarse.dims.map((k,i)=>k*coarse.step[i]));beyondGridC.set(...coarse.dims);
