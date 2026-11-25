@@ -1,3 +1,3 @@
 Beyond Eden lighting bake — generated for Break Thy Rule in Blender Cycles.
-Derived only from existing project geometry and materials; source licences remain in assets/night/SOURCE.md and the Eden foliage asset credits.
+Derived only from existing project geometry and materials; source licences remain in assets/night/SOURCE.md, assets/world-props and the Eden foliage asset credits.
 Reproduce with tools/agent/export-static-scene.mjs, tools/blender/bake_beyond_light.py and tools/pipeline/encode-beyond-light.py.

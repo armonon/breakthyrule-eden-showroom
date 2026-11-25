@@ -48,7 +48,11 @@ window.createNightRoad=function(T,scene,{sections,roadX,roadStart,nightStart=roa
   // Sections beyond the fog (~120 m) are not drawn at all.
   for(const part of parts)part.root.visible=enabled&&part.active&&Math.abs(part.section.position.z-viewer.position.z)<roadLength*.5+120;
   scene.fog.color.copy(originalFog).lerp(nightFog,amount);scene.fog.density=T.MathUtils.lerp(.016,matrixSky?.0125:.019,amount);
-  for(const state of lights){const l=state.light;l.color.copy(state.color).lerp(moonColor,amount);l.intensity=T.MathUtils.lerp(state.intensity,l.isHemisphereLight?.8:state.intensity>1?1.5:.34,amount);if(state.ground)l.groundColor.copy(state.ground).lerp(moonGround,amount);}
+  // Where the night bake is in force (eden-baked-light.js) it replaces the hemisphere light on every standard surface with
+  // far darker measured sky light; what is left of the hemisphere lights the characters and the land beyond the bake, and
+  // comes down with it so they do not glow against the baked dark.
+  const skyFill=.8-.45*(window.edenBaked?.nightStrength()||0);
+  for(const state of lights){const l=state.light;l.color.copy(state.color).lerp(moonColor,amount);l.intensity=T.MathUtils.lerp(state.intensity,l.isHemisphereLight?skyFill:state.intensity>1?1.5:.34,amount);if(state.ground)l.groundColor.copy(state.ground).lerp(moonGround,amount);}
   roadMaterial.color.copy(originalRoad).lerp(nightRoadColor,amount);vergeMaterial.color.copy(originalVerge).lerp(nightVerge,amount);
   clouds.forEach(cloud=>{cloud.material.opacity=.65*(1-amount);});stars.material.opacity=matrixSky?0:amount*.8;
  }
