@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0e10">
+  <meta name="robots" content="noindex">
+  <meta name="description" content="COWNinja prototype: ride in, break the pen, lead the herd out. Graphic content.">
+  <title>COWNinja — Break Thy Rule (prototype)</title>
+  <link rel="icon" href="/assets/favicon-32.png">
+  <link rel="stylesheet" href="/cowninja/cowninja.css?v=1">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/assets/vendor/three-r187/build/three.webgpu.js",
+      "three/webgpu": "/assets/vendor/three-r187/build/three.webgpu.js",
+      "three/tsl": "/assets/vendor/three-r187/build/three.tsl.js",
+      "three/addons/": "/assets/vendor/three-r187/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <main id="cn-app" aria-label="COWNinja prototype">
+    <div id="scene" aria-label="The slaughterhouse yard"></div>
+    <p id="cn-status" role="status">Starting renderer…</p>
+
+    <header class="cn-top">
+      <div><p class="cn-eyebrow">BREAK THY RULE / PROTOTYPE</p><h1>COWNINJA</h1></div>
+      <a class="cn-back" href="/showroom.html">← Eden</a>
+    </header>
+
+    <section class="cn-hud" aria-label="Status">
+      <p id="cn-goal" role="status"></p>
+      <div class="cn-row"><span class="cn-label">HEALTH</span><div class="cn-bar cn-health"><i id="cn-health-fill"></i></div></div>
+      <div class="cn-row"><span class="cn-label">CHARGE</span><div class="cn-bar cn-charge"><i id="cn-charge-fill"></i></div><strong id="cn-speed">0 km/h</strong></div>
+      <p id="cn-count"></p>
+    </section>
+    <p id="cn-toast" role="status" aria-live="polite"></p>
+    <footer class="cn-keys"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> ride</span><span><kbd>SHIFT</kbd> charge</span><span><kbd>S</kbd>+turn skid</span><span><kbd>SPACE</kbd> hop</span><span><kbd>R</kbd> restart</span><span id="cn-backend"></span></footer>
+
+    <section id="cn-gate" hidden role="dialog" aria-labelledby="cn-gate-title">
+      <div>
+        <p class="cn-eyebrow">CONTENT WARNING</p>
+        <h2 id="cn-gate-title">COWNinja</h2>
+        <p>This is a prototype set in a working slaughterhouse. It shows blood, violence against people and animal slaughter imagery.</p>
+        <p class="cn-small">Ride in, break the pen gate, and lead the herd out through the north gate. Charge to knock farmers down. Hit the truck square on its side to flip it; head-on, it wins.</p>
+        <div class="cn-actions"><button id="cn-enter" type="button">I UNDERSTAND · RIDE</button><a href="/showroom.html">Back to Eden</a></div>
+      </div>
+    </section>
+    <section id="cn-end" hidden role="dialog" aria-labelledby="cn-end-title">
+      <div><h2 id="cn-end-title"></h2><p id="cn-end-body"></p><div class="cn-actions"><button id="cn-again" type="button">RIDE AGAIN</button><a href="/showroom.html">Back to Eden</a></div></div>
+    </section>
+  </main>
+  <script type="module" src="/cowninja/main.js?v=1"></script>
+</body>
+</html>

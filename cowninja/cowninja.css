@@ -1,0 +1,42 @@
+/* COWNinja prototype HUD: cold steel type on black, red only where it matters. */
+:root{--cn-ink:#e8e6e0;--cn-dim:rgba(232,230,224,.55);--cn-red:#c5140e;--cn-line:rgba(232,230,224,.18)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#0b0e10;color:var(--cn-ink);font-family:'DM Sans',system-ui,Arial,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+#cn-app,#scene{position:fixed;inset:0}
+#scene canvas{display:block;width:100%;height:100%;outline:none}
+#cn-status{position:fixed;inset:0;display:grid;place-items:center;margin:0;font-size:12px;letter-spacing:.3em;color:var(--cn-dim);text-transform:uppercase;pointer-events:none}
+#cn-status[hidden]{display:none}
+.cn-top{position:fixed;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:flex-start;padding:calc(16px + env(safe-area-inset-top)) 20px 0;pointer-events:none}
+.cn-eyebrow{margin:0;font-size:10px;font-weight:600;letter-spacing:.34em;color:var(--cn-dim)}
+.cn-top h1{margin:4px 0 0;font:700 28px/1 'Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.22em}
+.cn-back{pointer-events:auto;color:var(--cn-ink);text-decoration:none;font-size:11px;letter-spacing:.2em;padding:9px 12px;border:1px solid var(--cn-line);border-radius:999px;background:rgba(8,10,11,.5);backdrop-filter:blur(8px)}
+.cn-back:hover{border-color:var(--cn-ink)}
+.cn-hud{text-shadow:0 1px 5px rgba(0,0,0,.9);position:fixed;left:20px;bottom:calc(52px + env(safe-area-inset-bottom));width:min(340px,calc(100vw - 40px));display:grid;gap:7px;pointer-events:none}
+#cn-goal{margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:.16em;line-height:1.5;text-shadow:0 1px 6px #000}
+.cn-row{display:flex;align-items:center;gap:10px}
+.cn-label{width:54px;font-size:9px;font-weight:600;letter-spacing:.26em;color:var(--cn-dim)}
+.cn-bar{flex:1;height:5px;background:rgba(232,230,224,.14);border-radius:3px;overflow:hidden}
+.cn-bar i{display:block;height:100%;transform-origin:left;transform:scaleX(0);transition:transform .12s linear}
+.cn-health i{background:var(--cn-ink);transform:scaleX(1)}
+.cn-charge i{background:var(--cn-red)}
+.cn-charge.full{box-shadow:0 0 12px rgba(197,20,14,.8)}
+#cn-speed{width:74px;text-align:right;font:700 15px/1 'Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+#cn-count{margin:2px 0 0;font-size:10px;letter-spacing:.24em;color:var(--cn-dim)}
+#cn-toast{position:fixed;left:50%;top:22%;transform:translate(-50%,8px);margin:0;font:700 clamp(22px,4.4vw,44px)/1 'Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.2em;text-align:center;opacity:0;transition:opacity .25s,transform .25s cubic-bezier(.2,.8,.2,1);text-shadow:0 2px 18px #000;pointer-events:none;white-space:nowrap}
+#cn-toast.show{opacity:1;transform:translate(-50%,0)}
+.cn-keys{position:fixed;left:0;right:0;bottom:0;display:flex;gap:18px;flex-wrap:wrap;align-items:center;padding:0 20px calc(14px + env(safe-area-inset-bottom));font-size:10px;letter-spacing:.14em;color:var(--cn-dim);pointer-events:none}
+.cn-keys kbd{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;margin-right:3px;border-radius:5px;background:rgba(232,230,224,.9);color:#0b0e10;font:700 10px/1 inherit;letter-spacing:0}
+#cn-backend{margin-left:auto;letter-spacing:.26em}
+#cn-gate,#cn-end{position:fixed;inset:0;display:grid;place-items:center;padding:24px;background:rgba(5,6,7,.82);backdrop-filter:blur(6px)}
+#cn-gate[hidden],#cn-end[hidden]{display:none}
+#cn-gate>div,#cn-end>div{max-width:520px;text-align:left;border-top:1px solid var(--cn-red);padding-top:22px}
+#cn-gate h2,#cn-end h2{margin:8px 0 14px;font:700 clamp(34px,7vw,60px)/1 'Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.14em}
+#cn-gate p,#cn-end p{margin:0 0 12px;font-size:14px;line-height:1.6}
+.cn-small{color:var(--cn-dim);font-size:12px!important}
+.cn-actions{display:flex;gap:18px;align-items:center;margin-top:20px;flex-wrap:wrap}
+.cn-actions button{min-height:46px;padding:14px 22px;border:0;border-radius:999px;background:var(--cn-red);color:#fff;font:700 11px/1 inherit;letter-spacing:.2em;cursor:pointer}
+.cn-actions button:hover{filter:brightness(1.15)}
+.cn-actions a{color:var(--cn-dim);font-size:11px;letter-spacing:.16em}
+.cn-actions :is(button,a):focus-visible,.cn-back:focus-visible{outline:2px solid #fff;outline-offset:3px}
+@media (max-width:640px){.cn-keys{display:none}.cn-hud{bottom:calc(20px + env(safe-area-inset-bottom))}}
+@media (prefers-reduced-motion:reduce){#cn-toast,.cn-bar i{transition:none}}
