@@ -1,8 +1,8 @@
 'use strict';
 // The Broadcast Room: past the museum's main gallery, through Hall B's west wall, three walls of stacked analog TVs,
-// one wall per channel. Every set shows static; the few with the best view become live YouTube players (the official
+// one wall per channel. Every set shows static; each one you press play on becomes a live YouTube player (the official
 // embedded player, laid over the screen with a CSS homography and a CRT finish), each looping its channel's whole
-// upload list from a different starting video, through YouTube's IFrame API. Click a set to bring it up close with sound. The video index lives in /assets/broadcast/channels.json and is
+// upload list from a different starting video, through YouTube's IFrame API. Pressing play brings it up close with sound. The video index lives in /assets/broadcast/channels.json and is
 // browsable at /broadcast.html. Nothing is downloaded or rehosted: the creators keep their views.
 window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camera,stage,fade={fadeNear:{value:12},fadeFar:{value:90}},onChange=()=>{}}){
  const mobile=matchMedia('(pointer:coarse)').matches||innerWidth<700,LIVE=mobile?2:6,parent=place.far;
@@ -81,6 +81,12 @@ window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camer
   });
  });
  merge();
+ // A play button glows over each set's static until it is pressed.
+ const playCanvas=document.createElement('canvas');playCanvas.width=playCanvas.height=128;
+ {const g=playCanvas.getContext('2d');g.fillStyle='rgba(8,9,10,.72)';g.beginPath();g.arc(64,64,58,0,7);g.fill();g.strokeStyle='#fff';g.lineWidth=5;g.stroke();g.fillStyle='#fff';g.beginPath();g.moveTo(50,38);g.lineTo(94,64);g.lineTo(50,90);g.closePath();g.fill();}
+ const playMap=new T.CanvasTexture(playCanvas);playMap.colorSpace=T.SRGBColorSpace;
+ for(const set of sets){set.playing=false;const b=new T.Mesh(new T.PlaneGeometry(.26,.26),new T.MeshBasicMaterial({map:playMap,transparent:true,depthWrite:false,toneMapped:false,fog:false}));
+  b.quaternion.copy(set.pick.quaternion);const n=new T.Vector3().copy(set.normal);b.position.copy(set.centre).addScaledVector(n,.012);b.name='Broadcast Room play';b.raycast=()=>{};parent.add(b);set.button=b;}
  parent.updateMatrixWorld(true);
  for(const set of sets){set.centre.applyMatrix4(parent.matrixWorld);for(const key of ['right','up','normal'])set[key].transformDirection(parent.matrixWorld);}
 
@@ -112,7 +118,7 @@ window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camer
   const out=new T.BufferGeometry();out.setAttribute('position',new T.BufferAttribute(position,3));out.setAttribute('normal',new T.BufferAttribute(normal,3));return out;
  }
  const ink=new T.Color(0x3b3c39),glow=new T.Color(0xd9d6cc),plaques=[];
- let dark=0,darkTarget=0,lastTick=0;
+ let dark=0,darkTarget=0,lastTick=0,staticAt=0;const still=matchMedia('(prefers-reduced-motion: reduce)').matches;
 
  // channel plaques above each wall (white lettering tinted by the material: grey on white, pale on black)
  function plaque(text,sub,wall,y=3.3){
@@ -127,12 +133,12 @@ window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camer
  }
  plaque('The Broadcast Room','three channels · endless loop',{o:new T.Vector3(room.x1,0,door.z0),along:new T.Vector3(0,0,1),facing:new T.Vector3(-1,0,0),length:door.z1-door.z0},door.h+.5);
 
- // ---------------------------------------------------------------- the exhibition: a lit sign between the two sets
- // facing the door, and on a stand before it the archive that goes with the room (assets/broadcast/archive, read in
+ // ---------------------------------------------------------------- the exhibition: a lit sign beside the way in, clear of every
+ // channel's wall and under the room's own name, and on a stand before it the archive that goes with the room (assets/broadcast/archive, read in
  // the museum's own reader).
- const exhibit=new T.Group();exhibit.name='Broadcast Room exhibition';exhibit.position.set(room.x0,0,(room.z0+room.z1)/2);exhibit.rotation.y=Math.PI/2;parent.add(exhibit); // local +z faces the door
+ const exhibit=new T.Group();exhibit.name='Broadcast Room exhibition';exhibit.position.set(room.x1-lining,0,(door.z1+room.z1)/2);exhibit.rotation.y=-Math.PI/2;parent.add(exhibit); // local +z faces into the room
  const lit=(g,options,x,y,z,tilt=0)=>{const mesh=new T.Mesh(g,new T.MeshBasicMaterial({toneMapped:false,fog:false,...options}));mesh.position.set(x,y,z);mesh.rotation.x=tilt;exhibit.add(mesh);return mesh;};
- const SIGN_TEXT=['Six televisions play three YouTube channels in an endless loop,','each in its creators’ own words.','',
+ const SIGN_TEXT=['Six televisions, three YouTube channels, two sets for each.','They show static until you press play.','',
    'On the stand is the archive: The World in Photographs.','Sixty-four images, 1838 to 1952: early cities, lost landscapes,','ordinary lives, war and reconstruction.','',
    'Listen to the stories, then look at the pictures.','A photograph is evidence of what the camera recorded,','not by itself proof of when a structure was built.'];
  function signTexture(){
@@ -144,7 +150,7 @@ window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camer
   g.fillRect(480,222,400,3);
   const body=SIGN_TEXT;
   body.forEach((text,i)=>line(text,300+i*61,(i>6?'italic ':'')+'42px Georgia, serif'));
-  g.fillRect(480,920,400,3);line('PRESS THE BOOK TO READ  ·  PRESS A TELEVISION TO LISTEN',992,'600 31px Georgia, serif','3px');
+  g.fillRect(480,920,400,3);line('PRESS THE BOOK TO READ  ·  PRESS A TELEVISION TO PLAY',992,'600 31px Georgia, serif','3px');
   const texture=new T.CanvasTexture(c);texture.colorSpace=T.SRGBColorSpace;texture.anisotropy=8;return texture;
  }
  lit(new T.BoxGeometry(2.02,1.62,.14),{color:0x17130f},0,2.02,.14);
@@ -167,7 +173,7 @@ window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camer
    .catch(error=>console.warn('Broadcast Room archive unavailable:',error.message));
  }
  book.userData.onPick=sign.userData.onPick=read; // the sign opens the same text at reading size, for small screens
- const solids=[[room.x0+.95,room.x0+1.95,exhibit.position.z-.55,exhibit.position.z+.55]]; // the stand
+ const solids=[[room.x1-lining-1.95,room.x1-lining-.95,exhibit.position.z-.55,exhibit.position.z+.55]]; // the stand
 
  // ---------------------------------------------------------------- live players over the best-placed screens
  const overlay=document.createElement('div');overlay.className='broadcast-overlay';
@@ -190,7 +196,7 @@ window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camer
    background:#f4f3ef;color:#2b2c29;text-decoration:none;cursor:pointer}`;
  document.head.appendChild(style);
  const hud=document.createElement('div');hud.className='broadcast-hud';
- hud.innerHTML='<button type="button" data-zoom="back">← BACK</button><button type="button" data-zoom="next">NEXT VIDEO ▸</button><button type="button" data-room aria-pressed="false">SOUND OFF</button><button type="button" data-archive>READ THE ARCHIVE</button><a href="/broadcast.html" target="_blank" rel="noopener">VIDEO INDEX ↗</a>';
+ hud.innerHTML='<button type="button" data-zoom="back">← BACK</button><button type="button" data-zoom="next">NEXT VIDEO ▸</button><button type="button" data-zoom="stop">STOP</button><button type="button" data-room aria-pressed="false">SOUND OFF</button><button type="button" data-archive>READ THE ARCHIVE</button><a href="/broadcast.html" target="_blank" rel="noopener">VIDEO INDEX ↗</a>';
  document.body.appendChild(hud);
  hud.querySelector('[data-archive]').addEventListener('click',read);
  const soundButton=hud.querySelector('[data-room]');let soundOn=false,loud=null;
@@ -203,6 +209,7 @@ window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camer
  function zoom(set){
   if(!inRoom||!channels[set.channel]||(zoomed&&zoomed.set===set&&!zoomed.closing))return;
   if(zoomed)live.get(zoomed.set)?.el.classList.remove('zoomed');
+  set.playing=true;set.button.visible=false;
   zoomed={set,t0:performance.now(),closing:false};document.exitPointerLock?.();
   backdrop.classList.add('on');hud.classList.add('zoomed');onChange();
  }
@@ -210,6 +217,8 @@ window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camer
  backdrop.addEventListener('click',unzoom);
  hud.querySelector('[data-zoom=back]').addEventListener('click',unzoom);
  hud.querySelector('[data-zoom=next]').addEventListener('click',()=>{const e=zoomed&&live.get(zoomed.set);if(e)command(e,'nextVideo');});
+ function stop(set){set.playing=false;set.button.visible=true;const e=live.get(set);if(e){command(e,'destroy');e.el.remove();live.delete(set);if(loud===e)loud=null;}}
+ hud.querySelector('[data-zoom=stop]').addEventListener('click',()=>{if(!zoomed)return;const set=zoomed.set;zoomed=null;backdrop.classList.remove('on');hud.classList.remove('zoomed');stop(set);onChange();});
  addEventListener('keydown',e=>{if(zoomed&&!zoomed.closing&&(e.key==='Escape'||/^[wasd]$/i.test(e.key)||e.key.startsWith('Arrow')))unzoom();},true);
 
  fetch('/assets/broadcast/channels.json').then(r=>r.ok?r.json():null).then(d=>{if(!d)return;channels=d.channels;
@@ -264,9 +273,12 @@ window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camer
   lastTick=now;
   inRoom=!!here;if(here)loadCover();
   if(!here&&zoomed){zoomed=null;backdrop.classList.remove('on');hud.classList.remove('zoomed');}
-  if(!here){for(const [set,e] of live){command(e,'destroy');e.el.remove();live.delete(set);}loud=null;return;}
+  if(!here){for(const set of sets)if(set.playing)stop(set);loud=null;return;}
+  // the static crawls on every set that is not playing
+  if(now-staticAt>60&&!still&&sets.some(s=>!s.playing)){staticAt=now;noiseMap.offset.set(Math.random(),Math.random());}if(!still)onChange();
+  soundButton.style.display=sets.some(s=>s.playing)&&!zoomed?'':'none';
   camera.updateMatrixWorld();const rect=stage.getBoundingClientRect(),ranked=[];
-  for(const set of sets){if(toCam.copy(camPos).sub(set.centre).dot(set.normal)<=0)continue;const p=project(set,rect);if(p)ranked.push({set,p});}
+  for(const set of sets){if(!set.playing||toCam.copy(camPos).sub(set.centre).dot(set.normal)<=0)continue;const p=project(set,rect);if(p)ranked.push({set,p});}
   ranked.sort((a,b)=>b.p.area-a.p.area);
   const keep=new Set(ranked.slice(0,LIVE).map(r=>r.set));
   if(zoomed){keep.add(zoomed.set);if(!ranked.some(r=>r.set===zoomed.set))ranked.push({set:zoomed.set,p:{pts:null,area:0}});}
@@ -296,5 +308,5 @@ window.createBroadcastRoom=function createBroadcastRoom(T,{place,room,door,camer
   const target=zoomed&&!zoomed.closing?live.get(zoomed.set)||null:centred?live.get(centred.set):null;
   if(target!==loud){if(loud)command(loud,'mute');if(target){command(target,'unMute');command(target,'setVolume',[100]);}loud=target;}
  }
- return {update,sets,pickables,solids,read,zoom,unzoom,inspect:()=>({sets:sets.length,live:live.size,zoomed:!!zoomed,channels:channels.map(c=>c.title+' '+c.videos.length)})};
+ return {update,sets,pickables,solids,read,zoom,unzoom,stop,inspect:()=>({sets:sets.length,live:live.size,zoomed:!!zoomed,channels:channels.map(c=>c.title+' '+c.videos.length)})};
 };

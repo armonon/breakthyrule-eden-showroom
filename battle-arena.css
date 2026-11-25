@@ -132,3 +132,13 @@ body.soul-taken #battle-hud::after{content:'';position:fixed;inset:0;pointer-eve
 @media (prefers-reduced-motion:reduce){.ar-power-glow{animation:none}}
 
 .ar-pages .pg.watcher{background:rgba(193,131,255,.55);border-color:#c183ff;box-shadow:0 0 6px rgba(193,131,255,.7)}
+
+/* Beyond Eden shows the weapons and nothing else: what you carry, its ammunition and the crosshair. Damage still reads
+   on the screen itself (blood, the shield's shimmer); Tab still brings up the scores while it is held. */
+#battle-hud>*:not(.ar-blood):not(.ar-board):not(.ar-end):not(.ar-vitals){display:none!important}
+#battle-hud .ar-vitals{all:unset}#battle-hud .ar-vitals>*:not(.ar-shimmer){display:none!important}
+#battle-hud::after{display:none!important}
+body.battle-on #fight-pop,body.battle-on #momentum-hud{display:none!important}
+#combat-hud[data-mode="arena"] :is(.ch-lock,.ch-putaway,.ch-toast,.ch-true,.ch-ring,.ch-score,.ch-keys,.ch-guard){display:none!important}
+#combat-hud.empty :is(.ch-ammo,.ch-cross,.ch-hit,.ch-zoom){display:none}
+#combat-hud[data-mode="arena"] .ch-hands{display:none}

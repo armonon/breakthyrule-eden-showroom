@@ -617,7 +617,7 @@
    if(it.type==='weapon'){
     const inv=ars.inspect();const guns=inv.owned.filter(id=>!['axe','c4'].includes(id));
     if(inv.owned.includes(it.weapon)){ars.addAmmo(W(it.weapon).ammo,it.loaded);toast('+'+it.loaded+' '+AMMO_LABEL[W(it.weapon).ammo]);removeLoot(l);return;}
-    if(guns.length>=2){const cur=combat.inspect().weapon;const swap=guns.includes(cur)?cur:guns[0];const loaded=ars.drop(swap);const d=rollItem({weapon:swap});d.loaded=loaded;const p=posOf(player);dropItem(d,p.x+rand(-.5,.5),p.z+rand(-.5,.5));}
+    if(guns.length>=2){const cur=combat.inspect().weapon;const swap=guns.includes(cur)?cur:guns[0];const loaded=ars.drop(swap);const d=rollItem({weapon:swap});d.loaded=loaded;d.droppedAt=clock;const p=posOf(player);dropItem(d,p.x+rand(-.5,.5),p.z+rand(-.5,.5));}
     ars.give(it.weapon,it.loaded);const [t,n]=AMMO_FOR[it.weapon]||[];if(t&&!(inv.reserve[t]>0))ars.addAmmo(t,Math.round(n*.5));combat.equip(it.weapon);
    }else if(it.type==='armor'){
     if(player.garment&&player.armor>0){const p=posOf(player);dropItem({type:'armor',armor:Math.round(player.armor),garment:player.garment,rarity:player.garment.rarity,label:player.garment.name.toUpperCase()+' · '+Math.round(player.armor)+' ARMOR'},p.x+.6,p.z);}
@@ -643,6 +643,13 @@
     else if(h.t>=h.dur){player.heals[h.kind]--;player.hp=Math.min(h.kind==='medkit'?100:75,player.hp+(h.kind==='medkit'?60:15));player.healing=null;}}
    // Pages are picked up just by walking over them.
    for(const l of loot)if(l.item.type==='page'&&!l.vel&&Math.hypot(l.pos.x-p.x,l.pos.z-p.z)<1.1&&Math.abs(l.pos.y-p.y)<1.3){playerTake(l);break;}
+   // No prompts on screen: walking over something useful takes it, and walking up to a chest opens it. F or E is only
+   // needed to trade a gun you carry for the one at your feet.
+   for(const c of chests)if(!c.open&&!c.dropping&&Math.hypot(c.pos.x-p.x,c.pos.z-p.z)<1.5&&Math.abs(c.pos.y-p.y)<1.4){openChest(c,player);break;}
+   for(const l of loot){if(l.vel||l.item.type==='page'||l.item.droppedAt>clock-3||Math.hypot(l.pos.x-p.x,l.pos.z-p.z)>1.05||Math.abs(l.pos.y-p.y)>1.3)continue;const it=l.item,inv=combat.arsenal.inspect();if(!inv)break;
+    if(it.type==='weapon'&&!inv.owned.includes(it.weapon)&&inv.owned.filter(id=>!['axe','c4'].includes(id)).length>=2)continue;
+    if(it.type==='armor'&&it.armor<=player.armor)continue;
+    playerTake(l);break;}
    // Chest + pickup prompts
    const fwd=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion);let best=null,bs=0;
    for(const c of chests){if(c.open)continue;const d=c.pos.distanceTo(p);if(d<2.2){const s=(2.2-d)+Math.max(0,fwd.dot(c.pos.clone().sub(camera.position).normalize()));if(s>bs){bs=s;best={chest:c};}}}
@@ -653,8 +660,9 @@
    player.focus=best;hud.prompt(best?.catch?'CATCH '+best.loot.item.label:best?best.chest?'OPEN CHEST':(best.loot.item.type==='weapon'&&combat.arsenal.inspect().owned.filter(id=>!['axe','c4'].includes(id)).length>=2&&!combat.arsenal.inspect().owned.includes(best.loot.item.weapon)?'SWAP FOR ':'PICK UP ')+best.loot.item.label:null,best?.loot?.item.rarity);
   }
   function interact(){
-   if(phase!=='live'||!player?.alive)return;const f=player.focus;if(!f)return;
+   if(phase!=='live'||!player?.alive)return true;const f=player.focus;if(!f)return false;
    if(f.chest)openChest(f.chest,player);else{if(f.catch){if(!loot.includes(f.loot))return;announce('CAUGHT · '+f.loot.item.label);chime([523,784],.06,.05);}playerTake(f.loot);}
+   return true;
   }
 
   /* ---------------------------------------------------------------- HUD */
@@ -971,7 +979,7 @@
   function tackled(b,dir){
    if(!player?.alive||clock<(player.protectUntil||0))return;
    const cur=combat.inspect().weapon;let lost=null;
-   if(cur&&cur!=='axe'&&cur!=='c4'){const loaded=combat.arsenal.drop(cur);const it=rollItem({weapon:cur});it.loaded=loaded;const p=posOf(player);const l=dropItem(it,p.x,p.z,new T.Vector3(dir.x*2.2+rand(-.5,.5),3.8,dir.z*2.2+rand(-.5,.5)));if(l){l.y=p.y+1.3;l.group.position.y=l.y;}lost=W(cur)?.name||cur;}
+   if(cur&&!['axe','c4','fists'].includes(cur)){const loaded=combat.arsenal.drop(cur);const it=rollItem({weapon:cur});it.loaded=loaded;const p=posOf(player);const l=dropItem(it,p.x,p.z,new T.Vector3(dir.x*2.2+rand(-.5,.5),3.8,dir.z*2.2+rand(-.5,.5)));if(l){l.y=p.y+1.3;l.group.position.y=l.y;}lost=W(cur)?.name||cur;}
    damage(player,15,b,{weapon:'melee',dir:dir.clone()});o.onTackled?.(dir);
    announce(lost?`${b.name} TACKLED YOU · ${lost} KNOCKED LOOSE · ${window.edenControls?.hint('loot')||'F'} TO CATCH`:`${b.name} TACKLED YOU`);chime([120,80],.14,.05);
   }
@@ -1147,7 +1155,7 @@
    if(!window.GardenCharacterSchema){try{const r=await fetch('/character-schema.json?v=4');if(r.ok)window.GardenCharacterSchema=await r.json();}catch{}}
    buildGrid();
    hud=buildHud();
-   document.addEventListener('keydown',e=>{if(!active||e.repeat||(window.edenControls?.blockedModifiers(e)??(e.ctrlKey||e.metaKey||e.altKey||e.isComposing))||e.target?.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target?.tagName)||(window.edenControls?.modalOpen?.()??!!document.querySelector('dialog[open]')))return;const k=window.edenControls?.key(e)??e.key.toLowerCase();if(k==='f'){e.preventDefault();if(!heldStrike('f'))interact();}if(['fire','aim','b'].includes(k)&&player?.hold&&!combat.armed?.()){e.preventDefault();heldStrike(k,null);}if(k==='h'){e.preventDefault();useHeal();}if(k==='tab'){e.preventDefault();const b=hud.el.querySelector('.ar-board');b.hidden=false;hud.update();}});
+   document.addEventListener('keydown',e=>{if(!active||e.repeat||(window.edenControls?.blockedModifiers(e)??(e.ctrlKey||e.metaKey||e.altKey||e.isComposing))||e.target?.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target?.tagName)||(window.edenControls?.modalOpen?.()??!!document.querySelector('dialog[open]')))return;const k=window.edenControls?.key(e)??e.key.toLowerCase();if(k==='f'){e.preventDefault();if(!heldStrike('f')&&!interact())combat.raiseFists?.();}if(['fire','aim','b'].includes(k)&&player?.hold&&!combat.armed?.()){e.preventDefault();heldStrike(k,null);}if(k==='h'){e.preventDefault();useHeal();}if(k==='tab'){e.preventDefault();const b=hud.el.querySelector('.ar-board');b.hidden=false;hud.update();}});
    document.addEventListener('keyup',e=>{if((window.edenControls?.key(e)??e.key.toLowerCase())==='tab'&&hud)hud.el.querySelector('.ar-board').hidden=true;});
    const hideScores=()=>{if(hud)hud.el.querySelector('.ar-board').hidden=true;};window.addEventListener('blur',hideScores);document.addEventListener('visibilitychange',()=>{if(document.hidden)hideScores();});window.edenControls?.onChange(hideScores);
   }
