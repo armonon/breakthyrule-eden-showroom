@@ -142,3 +142,8 @@ body.battle-on #fight-pop,body.battle-on #momentum-hud{display:none!important}
 #combat-hud[data-mode="arena"] :is(.ch-lock,.ch-putaway,.ch-toast,.ch-true,.ch-ring,.ch-score,.ch-keys,.ch-guard){display:none!important}
 #combat-hud.empty :is(.ch-ammo,.ch-cross,.ch-hit,.ch-zoom){display:none}
 #combat-hud[data-mode="arena"] .ch-hands{display:none}
+
+/* Body-camera free aim (combat.js sets body.bodycam-aim in Beyond Eden while the setting bodycamAim is on): no crosshair,
+   the weapon itself shows where it points; the hit marker sits where the muzzle points (--aim-x/--aim-y, in pixels). */
+body.bodycam-aim #combat-hud .ch-cross{display:none!important}
+body.bodycam-aim #combat-hud .ch-hit{translate:var(--aim-x,0px) var(--aim-y,0px)}
