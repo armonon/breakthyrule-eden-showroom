@@ -157,10 +157,11 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  const snake=window.createTreeSnake(T,scene,{bark,reduced,model:heroModel,viper:viperModel,onChange});assetJobs.push(snake.ready);
  // The night section (pyramid court, district, night woodland) is built only when the viewer heads for the road
  // entrance or an expedition starts, one piece per frame so the build never lands as a single long stall.
- let pyramid=null,district=null,castle=null,worldProps=null,propWarm=null,nightSteps=null,lastViewer=null,skyMoving=false,lastTime=0;
+ let pyramid=null,district=null,castle=null,altar=null,altarOn=false,courtyard=null,worldProps=null,propWarm=null,nightSteps=null,lastViewer=null,skyMoving=false,lastTime=0;
  // The garden is enclosed in a painted sky box (eden-skybox.js); a hidden door behind the "where is god ?" sign opens
  // onto the brick road. Its south and west walls stand beyond the black-box valley (black-box.js) so the valley stays inside.
  const skybox=window.createEdenSkybox(T,scene,{sky,roadX,reduced,bounds:{minX:-28,maxX:23,minZ:-21.5,maxZ:59}});
+ function setAltar(on){if(!altar||on===altarOn)return;altarOn=on;altar.group.visible=on;if(courtyard)courtyard.visible=on;for(const [list,mine] of [[district.walls,altar.walls],[district.surfaces,altar.surfaces]]){if(on)list.push(...mine);else{const keep=list.filter(w=>!mine.includes(w));list.length=0;list.push(...keep);}}}
  const nightBuilders=[
   ()=>{pyramid=window.createRoadPyramid(T,scene,{roadX,roadEnd,stone,onChange,reduced});},
   ()=>{district=window.createNightDistrict(T,scene,{stone,leafMat,layout:window.nightLayout,reduced});window.mergeStaticMeshes?.(T,district.root,{skip:o=>o.name.startsWith('Lost page')||o.userData.landmarkModel})
@@ -168,9 +169,23 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
    // walking and parkour treat its floors, stairs and walls like any other building; scenery keeps off its footprint.
    castle=window.createCastle?.(T,district.root,{x:87,z:-93})||null;
    if(castle){district.walls.push(...castle.walls);district.surfaces.push(...castle.surfaces);const clear=district.clearGround;district.clearGround=(x,z)=>castle.covers(x,z,4)||clear(x,z);}
+   // The altar and the cross at the middle of the Commons, where the chests are (matrix-world.js).
+   const A=window.nightLayout?.arena;altar=A&&window.edenMatrix?.altar(T,district.root,{x:A.x,z:A.z})||null;
+   if(altar){setAltar(true);}
+   window.edenMatrix?.surface(T,district.root,{kind:'auto',wash:true,skip:o=>{for(let p=o;p;p=p.parent)if(p===altar?.group)return true;return false;}});for(const m of [roadMaterial,vergeMaterial])window.edenMatrix?.patch(T,m,m===vergeMaterial?'ground':'model');
+   window.edenMatrix?.surface(T,pyramid?.root||scene.getObjectByName('Pyramid at the end of the road'),{kind:'stone',wash:true});
+   const plan=window.worldPropsLayout?.courtyard;
+   if(plan&&altar){for(const t of plan.trees)altar.walls.push([t.x,t.z,.45*t.s,.45*t.s,3]);setAltar(false);setAltar(true);}
    // The asset workshop's models (world-props.js): their collision joins the district's surfaces, trees keep off them.
    worldProps=window.createDistrictProps?.(T,district,{onChange,warmup:propWarmup})||null;
-   if(worldProps){const clear=district.clearGround;district.clearGround=(x,z)=>worldProps.covers(x,z)||clear(x,z);}},
+   if(worldProps){const clear=district.clearGround;district.clearGround=(x,z)=>worldProps.covers(x,z)||clear(x,z);}
+   // Eden's trees, shrubs, ferns, flowers and grass, brought into the courtyard between the models.
+   if(plan){const open=(x,z,m=0)=>Math.hypot(x-plan.x,z-plan.z)>8.6&&Math.abs(x-roadX)>3+m&&Math.abs(z+63.5)>2.5+m&&!worldProps?.covers(x,z,m)&&!district.walls.some(w=>Math.abs(x-w[0])<w[2]/2+m&&Math.abs(z-w[1])<w[3]/2+m);
+    flora.courtyard(district.root,{...plan,free:open}).then(g=>{courtyard=g;if(!g)return;
+     const spots=[],tint=new T.Color(),q=new T.Quaternion(),e=new T.Euler(),p=new T.Vector3(),s=new T.Vector3(),h=(a,b,c)=>{const t=Math.sin(a*127.1+b*311.7+c*74.7)*43758.5453;return t-Math.floor(t);},cell=mobile?1.1:.43,n=Math.ceil(plan.r/cell);
+     for(let i=-n;i<=n;i++)for(let j=-n;j<=n;j++){const x=plan.x+(i+h(i,j,1))*cell,z=plan.z+(j+h(i,j,2))*cell,d=Math.hypot(x-plan.x,z-plan.z);if(d>plan.r-h(i,j,6)*5||h(i,j,5)<.22||!open(x,z,.1))continue;const k=.55+h(i,j,3)*.55;spots.push(new T.Matrix4().compose(p.set(x,-.1,z),q.setFromEuler(e.set(0,h(i,j,4)*6.283,0)),s.set(k*1.1,k*.46,k*1.1)));}
+     for(let k=0;k<4;k++){const mine=spots.filter(o=>(o.elements[12]<plan.x?0:1)+(o.elements[14]<plan.z?0:2)===k);if(!mine.length)continue;const mesh=new T.InstancedMesh(grass.mesh.geometry,grass.mesh.material,mine.length);mine.forEach((o,i)=>{mesh.setMatrixAt(i,o);mesh.setColorAt(i,tint.setHSL(.3+h(i,k,7)*.04,.4,.26+h(i,k,8)*.12));});mesh.computeBoundingSphere();mesh.receiveShadow=true;mesh.name='Courtyard grass';mesh.userData.noHit=true;mesh.raycast=()=>{};g.add(mesh);}
+     onChange();}).catch(error=>console.warn('Courtyard plants unavailable',error));}},
   ()=>{nightRoad=window.createNightRoad(T,scene,{sections:roadSections,roadX,roadStart,nightStart:skybox.door.z,roadLength,clearingStart:-120,district,sky,bark,forest:flora.forest,stone,roadMaterial,vergeMaterial,clouds:garden.children.filter(node=>node.isSprite),reduced,mobile});roadFirst=-1;if(lastViewer)updateRoad(lastViewer.position);onChange();}
  ];
  // The workshop's models prepare their shaders and textures before they are shown (world-props.js).
@@ -182,7 +197,7 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  const nightNear=p=>p.z<doorZ+6;
  function buildNight(all=false){nightSteps??=[...nightBuilders];while(nightSteps.length){nightSteps.shift()();if(!all)break;}}
  const nightBuilt=()=>!!nightRoad;
- return {snake,skybox,get castle(){return castle;},get worldProps(){return worldProps;},gardenModels,get nightRoad(){return nightRoad;},get pyramid(){buildNight(true);return pyramid;},get district(){buildNight(true);return district;},nightBuilt,
+ return {snake,skybox,get castle(){return castle;},get worldProps(){return worldProps;},get altar(){return altar;},setAltar,gardenModels,get nightRoad(){return nightRoad;},get pyramid(){buildNight(true);return pyramid;},get district(){buildNight(true);return district;},nightBuilt,
   // prewarm.js: one Beyond Eden build step per call, in idle time, so its lights exist before its shaders compile.
   warmNight(){buildNight();return !!nightSteps&&!nightSteps.length;},
   ready:Promise.allSettled(assetJobs),constrain(position,previous,feet=null,body=null){
@@ -193,7 +208,7 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
   if(position.z>26&&!window.edenValley.reaches(position.x,position.z)){if(previous.z>26)position.copy(previous);else position.z=26;}
   return position;
  },road:{x:roadX,start:roadStart,end:roadEnd,door:skybox.door.z,inspect:()=>({first:roadFirst,sections:roadSections.length,near:roadStart-roadFirst*roadLength,far:Math.max(roadEnd,roadStart-(roadFirst+roadSections.length)*roadLength)})},update(time,viewer,active=true){
-  if(viewer){lastViewer=viewer;if(gardenModels){if(viewer.position.z>-30)gardenModels.update(viewer);else gardenModels.clear();}if(worldProps&&viewer.position.z>-8)worldProps.clear();if(activeGrass.update(viewer.position))onChange();flora.setVisible(viewer.position.z>-45);flora.lod(viewer.position,viewer);if(!nightBuilt()&&(nightSteps||nightNear(viewer.position))){buildNight();onChange();}updateRoad(viewer.position);sky.position.copy(viewer.position);skyMoving=skybox.update(time,viewer,Math.min(.05,Math.max(0,time-lastTime)));lastTime=time;snake.update(time,viewer,active);if(nightBuilt()){const near=nightNear(viewer.position);nightRoad.setEnabled(near);district.root.visible=near;nightRoad.update(time,viewer,active);pyramid.update(viewer,time);if(near){district.update(time,viewer,nightRoad.amount);castle?.update(viewer);worldProps?.update(viewer);}}}
+  if(viewer){lastViewer=viewer;if(gardenModels){if(viewer.position.z>-30)gardenModels.update(viewer);else gardenModels.clear();}if(worldProps&&viewer.position.z>-8)worldProps.clear();if(activeGrass.update(viewer.position))onChange();flora.setVisible(viewer.position.z>-45);flora.lod(viewer.position,viewer);if(!nightBuilt()&&(nightSteps||nightNear(viewer.position))){buildNight();onChange();}updateRoad(viewer.position);sky.position.copy(viewer.position);skyMoving=skybox.update(time,viewer,Math.min(.05,Math.max(0,time-lastTime)));lastTime=time;snake.update(time,viewer,active);if(nightBuilt()){const near=nightNear(viewer.position);nightRoad.setEnabled(near);district.root.visible=near;nightRoad.update(time,viewer,active);pyramid.update(viewer,time);if(near){district.update(time,viewer,nightRoad.amount);castle?.update(viewer);altar?.update(time);worldProps?.update(viewer);}}}
   if(reduced)return;wind.value=time;flora.update(time);waterUniforms.time.value=time;dust.rotation.y=Math.sin(time*.025)*.07;
  },get animating(){return skyMoving;},foliage:flora.leaves,flora,sky,get grassMesh(){return activeGrass.mesh;},pond:{water,lilies,time:waterUniforms.time,bed:groundLitter},stones,stoneSpots,
   // Photoreal: a denser, taller field of the same scanned blades, built the first time it is asked for.

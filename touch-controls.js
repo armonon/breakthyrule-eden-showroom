@@ -56,7 +56,7 @@
    listen(b,'click',e=>{if(e.detail===0&&canInput()){const finish=start();finish?.();}});
   }
   const heldKey=k=>{key(k,true);return()=>key(k,false);};
-  hold('.tc-fire',()=>{const c=combat();if(expedition())return heldKey('g');if(c?.armed()){c.touchFire(true);return()=>c.touchFire(false);}return heldKey('f');},{dragLook:true});
+  hold('.tc-fire',()=>{const c=combat();if(expedition())return heldKey('g');if(c?.armed()){c.touchFire(true);return()=>c.touchFire(false);}return c?.canRaise?.()?(c.touchFire(true),()=>c.touchFire(false)):heldKey('f');},{dragLook:true});
   hold('.tc-aim',()=>{combat()?.toggleZoom?.();},{dragLook:true});
   hold('.tc-jump',()=>{if(jump){const release=jump(true);return typeof release==='function'?release:jumpUp||(()=>jump(false));}return heldKey(' ');},{dragLook:true});
   hold('.tc-slide',()=>{if(crouch){crouch(true);return()=>crouch(false);}return heldKey('c');},{dragLook:true});
@@ -68,7 +68,7 @@
   hold('.tc-third',()=>{third();});
   hold('.tc-leave',()=>{reset();leave?.();});
   hold('.tc-settings',()=>{reset();settings?.();});
-  hold('.tc-swap',()=>{const c=combat(),ids=c?.arsenal?.inspect?.()?.owned||['axe','pistol'],guns=ids.length?ids:['pistol'];slot=(slot+1)%(guns.length+1);if(slot===guns.length){if(c?.armed())heldKey('x')();}else heldKey(String(slot+1))();});
+  hold('.tc-swap',()=>{const c=combat();if(c?.cycle&&c.arsenal?.inspect?.()){c.cycle();return;}const ids=c?.arsenal?.inspect?.()?.owned||['axe','pistol'],guns=ids.length?ids:['pistol'];slot=(slot+1)%(guns.length+1);if(slot===guns.length){if(c?.armed())heldKey('x')();}else heldKey(String(slot+1))();});
   function sync(){if(disposed)return;const on=!!canInput(),isExpedition=!!expedition(),mode=isExpedition?'expedition':armed()?'armed':'unarmed';
    // Holstering or drawing changes the buttons, not the fingers: release button holds only,
    // so the move thumb and the look thumb keep working through SWAP.

@@ -264,7 +264,7 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
   }
   const bloomGeo=new T.BufferGeometry();bloomGeo.setAttribute('position',new T.Float32BufferAttribute(bp,3));bloomGeo.setAttribute('normal',new T.Float32BufferAttribute(bn,3));bloomGeo.setAttribute('uv',new T.Float32BufferAttribute(buv,2));bloomGeo.setIndex(bi);
   const bloomMap=new T.TextureLoader().load('/assets/flora/jacaranda-blossom.webp');bloomMap.colorSpace=T.SRGBColorSpace;bloomMap.anisotropy=4;
-  jacaranda.bloom=new T.InstancedMesh(bloomGeo,windMaterial({map:bloomMap,alphaTest:.45,roughness:.7,emissive:0x2a1840,emissiveIntensity:.1},{sway:.045,flutter:.02}),n);
+  jacaranda.bloomGeo=bloomGeo;jacaranda.bloom=new T.InstancedMesh(bloomGeo,windMaterial({map:bloomMap,alphaTest:.45,roughness:.7,emissive:0x2a1840,emissiveIntensity:.1},{sway:.045,flutter:.02}),n);
   jacaranda.bloom.count=0;shadowed(jacaranda.bloom,false);gardenMeshes.push(jacaranda.bloom);leafMeshes.push(jacaranda.bloom);
   jacaranda.ready=true;lastLod=null;
   // shrubs reuse the real frond texture
@@ -333,7 +333,7 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
 
  // ---- flowers: photographic clumps (generated locally with SDXL, cut out) on crossed cards, in beds and drifts.
  // assets/flora/flowers.json lists each type's texture and aspect; one instanced draw per type, 4 triangles a clump.
- const flowerSpots=[],flowerMeshes=[];
+ const flowerSpots=[],flowerMeshes=[],flowerKinds=[];
  const pathEdge=z=>Math.sin((z-3)*.15)*1.5; // centreline of the main stepping-stone path (garden.js pathX)
  function flowerBed(cx,cz,radius,count,type){for(let k=0;k<count;k++){const a=between(0,6.28),r=Math.sqrt(random())*radius,x=cx+Math.cos(a)*r,z=cz+Math.sin(a)*r;if(!openGround(x,z))flowerSpots.push({x,z,type,s:between(.8,1.25)});}}
  // beds along both edges of the main path, alternating types in short runs
@@ -352,6 +352,7 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
    g.setAttribute('position',new T.Float32BufferAttribute(p,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setAttribute('normal',new T.Float32BufferAttribute(n,3));g.setIndex(idx);
    const map=new T.TextureLoader().load(type.url);map.colorSpace=T.SRGBColorSpace;map.anisotropy=4;
    const material=windMaterial({map,alphaTest:.62,roughness:.8},{sway:.35,flutter:.008,keepNormals:false,bend:.26}); // high cutoff drops faint backdrop haze
+   flowerKinds.push({geometry:g,material});
    const mesh=instance(g,material,spots.map(f=>matrix(f.x,f.z,f.s,-.03)),spots.map(()=>new T.Color().setHSL(0,0,between(.9,1.05))),false);
    if(mesh)flowerMeshes.push(mesh);
   });
@@ -376,6 +377,29 @@ window.createEdenFlora=function(T,garden,{bark,openGround,mobile=false,heroModel
   get leaves(){return leafMeshes.filter(Boolean);},
   // Templates for other woodland (the night road streams its own instances of these).
   get forest(){return {trees:(jacaranda.ready?[{wood:jacaranda.wood,foliage:jacaranda.leaves,material:jacaranda.leafMaterial,woodMaterial:jacaranda.woodMaterial,height:jacaranda.height}]:[[forestTemplates[0],leafMaterial],[forestTemplates[1],leafMaterial]].map(([t,material])=>({wood:t.wood,foliage:t.foliage,material,height:t.height}))).concat([{wood:forestCypress.wood,foliage:forestCypress.foliage,material:cypressMaterial,height:forestCypress.height}]),fern:{geometry:fern,material:fernMaterial}};},
+  // Eden's own plants somewhere else (the courtyard of Beyond Eden, garden.js): jacarandas in leaf and blossom, cypresses,
+  // shrubs, ferns and flowers as instances of the garden's templates, so they share its materials, wind and shaders.
+  // trees: [{x,z,s,k,b}]; free(x,z,margin) says where low plants may grow.
+  async courtyard(parent,{x:cx,z:cz,r:radius,trees:spots,free,ground=-.09}){
+   await Promise.allSettled([jacarandaReady,flowersReady,shrubsReady]);const root=new T.Group();root.name='Courtyard plants';root.userData.dynamicShadow=true;parent.add(root);
+   let s=52711;const rnd=()=>((s=(s*1664525+1013904223)>>>0)/4294967296),range=(a,b)=>a+(b-a)*rnd();
+   const at=(x,z,scale)=>{dummy.position.set(x,ground,z);dummy.rotation.set(0,range(0,6.28),0);dummy.scale.setScalar(scale);dummy.updateMatrix();return dummy.matrix.clone();};
+   const hue=(h,sa,l)=>new T.Color().setHSL(h+range(-.02,.02),sa+range(-.06,.06),l+range(-.06,.06));
+   // Split into quarters of the courtyard so whatever is behind the viewer is culled.
+   const put=(geometry,material,list,tint,cast)=>{for(let q=0;q<4;q++){const mine=list.filter(p=>(p.x<cx?0:1)+(p.z<cz?0:2)===q);if(!mine.length)continue;const m=new T.InstancedMesh(geometry,material,mine.length);
+     mine.forEach((p,i)=>{m.setMatrixAt(i,p.m);if(tint)m.setColorAt(i,tint(p));});m.computeBoundingSphere();m.castShadow=cast;m.receiveShadow=true;m.userData.noHit=true;m.raycast=()=>{};root.add(m);}};
+   const jac=spots.filter(t=>t.k==='jacaranda'&&(!mobile||t.s<.95)).map(t=>({...t,m:at(t.x,t.z,t.s)})),cyp=spots.filter(t=>t.k==='cypress').map(t=>({...t,m:at(t.x,t.z,t.s)}));
+   if(jacaranda.ready){put(jacaranda.wood,jacaranda.woodMaterial,jac,null,true);put(jacaranda.leaves,jacaranda.leafMaterial,jac,()=>hue(.27,.4,.48),true);put(jacaranda.bloomGeo,jacaranda.bloom.material,jac.filter(t=>t.b),null,false);}
+   else{put(forestTemplates[0].wood,bark,jac,null,true);put(forestTemplates[0].foliage,leafMaterial,jac,()=>hue(.25,.4,.75),true);}
+   put(cypressTemplates[0].wood,bark,cyp,null,true);put(cypressTemplates[0].foliage,cypressMaterial,cyp,()=>hue(.31,.35,.5),true);
+   const spot=(lo,hi,margin,near)=>{for(let k=0;k<14;k++){let x,z;if(near&&rnd()<.6){const t=spots[Math.floor(rnd()*spots.length)],a=range(0,6.28),d=range(.8,2.3);x=t.x+Math.cos(a)*d;z=t.z+Math.sin(a)*d;}else{const a=range(0,6.28),d=Math.sqrt(range(lo*lo,hi*hi));x=cx+Math.cos(a)*d;z=cz+Math.sin(a)*d;}if(free(x,z,margin))return {x,z};}return null;};
+   const many=(n,lo,hi,margin,size,near)=>Array.from({length:n},()=>spot(lo,hi,margin,near)).filter(Boolean).map(p=>({...p,m:at(p.x,p.z,range(...size))}));
+   const k=mobile?.35:1;
+   shrubTemplates.forEach(g=>put(g,jacaranda.ready?jacaranda.leafMaterial:leafMaterial,many(Math.round(20*k),10,radius,.55,[.6,1.05],true),()=>hue(.28,.42,.44),true));
+   put(fern,fernMaterial,many(Math.round(150*k),9,radius,.2,[.8,1.5],true),()=>hue(.28,.45,.5),false);
+   flowerKinds.forEach(f=>put(f.geometry,f.material,many(Math.round(70*k),8.8,radius-4,.12,[.8,1.3],true),()=>new T.Color().setHSL(0,0,range(.85,1.05)),false));
+   return root;
+  },
   update(t){time.value=t;},
   buildPhotoTrees,setPhotoTrees,photoLeaves:()=>photo.built?[photo.near[2].geometry,photo.mid[2].geometry,photo.hero.geometry]:[],
   photoStats:()=>photo.built?{near:photo.near[0].count,mid:photo.mid[0].count,shadow:photo.shadow[0].count,culled:photo.culled}:null,

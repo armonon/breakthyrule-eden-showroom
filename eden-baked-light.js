@@ -74,7 +74,7 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
  #endif
  `;
  const apply=()=>{params.x=state.enabled&&state.loaded&&state.world==='eden'?1-state.night:0;params.z=state.gain;
-  beyondParams.x=state.enabled&&state.beyondLoaded&&state.world==='beyond'?T.MathUtils.smoothstep(state.night,.55,.84):0;beyondParams.z=state.gain;shadows(beyondParams.x>.999);
+  beyondParams.x=state.enabled&&state.beyondLoaded&&state.world==='beyond'?T.MathUtils.smoothstep(state.night,.55,.84):0;beyondParams.z=state.gain*(state.beyondGain??4);shadows(beyondParams.x>.999);
  };
  // Beyond Eden's bake is not needed in the garden, so it waits until someone heads there or the first view has settled.
  let beyondStart=null;const beyondGo=new Promise(resolve=>{beyondStart=resolve;});

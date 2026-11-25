@@ -5,7 +5,7 @@
 window.createWorldProps=function(T,parent,{props,onChange=()=>{},warmup=null}={}){
  if(!props?.length)return null;
  const phone=!!window.edenRenderProfile?.().mobile;
- const MAX=phone?16:48,LOADS=1,SCALE=phone?.5:.85;
+ const MAX=phone?16:96,LOADS=phone?1:2,SCALE=phone?.5:.85;
  const root=new T.Group();root.name='Workshop models';parent.add(root);
  const ground=new Map(),live=new Map();let loading=0,nextCheck=0,disposed=false,wanted=[],enabled=true;
  for(const p of props){
@@ -25,12 +25,13 @@ window.createWorldProps=function(T,parent,{props,onChange=()=>{},warmup=null}={}
    const tall=Math.max(...p.s)>1.1;
    s.traverse(o=>{if(!o.isMesh)return;o.receiveShadow=true;o.castShadow=!phone&&tall;const m=o.material;m.metalness=Math.min(m.metalness,.55);m.side=T.FrontSide;
     if(m.map){m.emissiveMap=m.map;m.emissive.set(0xffffff);m.emissiveIntensity=.07;}});
+   window.edenMatrix?.surface(T,s,{kind:'model'});
    if(phone)window.shrinkModelTextures?.(s,{maxTextureSize:256,detailSize:128});
    s.updateMatrixWorld(true);s.traverse(o=>{o.matrixAutoUpdate=false;});
    // Shaders compiled and textures uploaded before it is drawn, so walking does not stutter.
    try{await warmup?.()?.prepare(s);}catch{}
    if(disposed||live.get(p)!==entry){free(s);return;}
-   entry.scene=s;root.add(s);onChange();
+   entry.scene=s;root.add(s);if(s.position.z<-21)window.edenMatrix?.form(T,s,{duration:1.5});onChange();
   }catch{if(live.get(p)===entry){live.delete(p);p.retry=performance.now()+20000;}}
   finally{loading--;pump();}
  }

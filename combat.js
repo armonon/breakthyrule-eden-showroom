@@ -47,7 +47,9 @@
   {id:'c4',slot:4,name:'REVELATION',kind:'C4 CHARGE',mag:3,interval:.2,focusTime:1,window:1,dmg:150,ammo:'c4'},
   {id:'smg',slot:5,name:'PSALM',kind:'.45 SMG',mag:30,interval:.068,auto:true,focusTime:.3,window:.35,dmg:15,ammo:'smg',range:70,hip:.05,aim:.012,heat:.004,rec:{z:.45,x:1.3,yaw:.03,pitch:.014},snd:'smg'},
   {id:'rifle',slot:6,name:'EXODUS',kind:'7.62 RIFLE',mag:30,interval:.1,auto:true,focusTime:.42,window:.3,dmg:17,ammo:'rifle',range:160,hip:.045,aim:.004,heat:.003,rec:{z:.75,x:2.1,yaw:.035,pitch:.022},snd:'rifle'},
-  {id:'sniper',slot:7,name:'GENESIS',kind:'BOLT SNIPER',mag:5,interval:1.1,focusTime:.75,window:.45,dmg:95,ammo:'sniper',range:300,hip:.1,aim:0,scope:true,rec:{z:2.2,x:5.5,yaw:.03,pitch:.085},snd:'sniper'}
+  {id:'sniper',slot:7,name:'GENESIS',kind:'BOLT SNIPER',mag:5,interval:1.1,focusTime:.75,window:.45,dmg:95,ammo:'sniper',range:300,hip:.1,aim:0,scope:true,rec:{z:2.2,x:5.5,yaw:.03,pitch:.085},snd:'sniper'},
+  // Always with you (never dropped or looted): what comes up when you attack with empty hands.
+  {id:'fists',slot:8,name:'FISTS',kind:'BARE HANDS',mag:0,interval:.05,focusTime:1,window:1,dmg:20}
  ];
 
  function createCombat(o){
@@ -59,7 +61,7 @@
   const look={fovPulse:0,kickPitch:new Spring(120,16),kickYaw:new Spring(120,16),shake:0};
   const stats={hits:0,trueShots:0,shots:0,bodyHits:0,headHits:0,kills:0};
   let lastCamPos=null,speedSmoothed=0,bobPhase=0,verticalVel=0,lastY=0;
-  let fillBase=null,env,M,viewScene,viewCamera,sunView,world,fxGroup,flashLight,blastLight,raycaster,hud,audio=null;
+  let viewHemi=null,viewRim=null,fillBase=null,env,M,viewScene,viewCamera,sunView,world,fxGroup,flashLight,blastLight,raycaster,hud,audio=null;
   const models={},state={},particles=[],shells=[],decals=[],tracers=[],charges=[],targets=[],debris=[];
 
   /* ------------------------------------------------------------ textures */
@@ -313,6 +315,7 @@
     if(rig.ads){holder.position.set(0,0,0);holder.rotation.set(0,0,0);holder.updateMatrixWorld(true);const s=built.parts.sight.getWorldPosition(new T.Vector3());adsPos=[-s.x,-s.y,-rig.ads-s.z];}
     models[id]={holder,model,parts:built.parts,rig,adsPos};
    }
+   {const mk=()=>new T.Object3D();models.fists={holder:new T.Group(),model:new T.Group(),parts:{muzzle:mk(),sight:mk(),ejector:mk()},rig:RIG.axe,adsPos:null};}
    // Realistic-only guns: empty holders until combat-arms.js delivers the models.
    for(const id of ['smg','rifle','sniper']){const holder=new T.Group();holder.visible=false;viewScene.add(holder);const mk=()=>new T.Object3D();models[id]={holder,model:new T.Group(),parts:{muzzle:mk(),sight:mk(),ejector:mk()},rig:{hip:[.13,-.15,-.27],hipRot:[0,0,0],sprint:[0,-.08,0],sprintRot:[-.3,.6,.3],ads:0},adsPos:null,pending:true};holder.add(models[id].model);}
    if(models.c4){models.c4.parts.remote.position.set(-.3,-.17,-.36);models.c4.parts.remote.rotation.set(.25,.35,-.05);models.c4.parts.remote.visible=false;viewScene.add(models.c4.parts.remote);}
@@ -782,7 +785,7 @@
    const set=(node,key,val,fn)=>{if(cache.get(key)===val)return;cache.set(key,val);fn(node,val);};
    const text=(sel,val)=>set(q(sel),sel,val,(n,v)=>{n.textContent=v;});
    const cls=(name,on)=>set(el,'c:'+name,on,(n,v)=>n.classList.toggle(name,v));
-   return {el,
+   return {el,reset(){cache.delete('active');},
     toast(text){const t=q('.ch-toast');t.textContent=text;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);},
     hitmarker(isTrue,kill,head=false){const h=q('.ch-hit');h.classList.remove('show','gold','kill','head');void h.offsetWidth;h.classList.add('show');if(isTrue)h.classList.add('gold');if(head)h.classList.add('head');if(kill)h.classList.add('kill');clearTimeout(hitTimer);hitTimer=setTimeout(()=>h.classList.remove('show'),kill?460:head?260:190);},
     trueShot(){const t=q('.ch-true');t.classList.remove('show');void t.offsetWidth;t.classList.add('show');clearTimeout(trueTimer);trueTimer=setTimeout(()=>t.classList.remove('show'),700);},
@@ -801,11 +804,11 @@
       const hands=document.createElement('button');hands.dataset.id='';hands.className='ch-hands';hands.innerHTML='<b></b>EMPTY HANDS';hands.firstChild.textContent=holsterHint;hands.title='Put the weapon away ('+holsterHint+')';hands.onclick=e=>{e.stopPropagation();holster();};
       box.replaceChildren(hands,...ids.map((id,i)=>{const W=WEAPONS.find(x=>x.id===id),b=document.createElement('button');b.dataset.id=id;b.innerHTML=`<b></b><span>${W.name}</span><small></small>`;b.firstChild.textContent=slotHints[i];b.title=W.name+' / '+W.kind;b.onclick=e=>{e.stopPropagation();if(current?.id===id)holster();else equip(id);};cache.delete('ammo:'+id);return b;}));cache.delete('active');});
      set(el,'active',w.id,()=>el.querySelectorAll('.ch-slots button').forEach(b=>b.classList.toggle('active',b.dataset.id===w.id)));
-     for(const b of el.querySelectorAll('.ch-slots button[data-id]:not(.ch-hands)')){const W=WEAPONS.find(x=>x.id===b.dataset.id),st=state[W.id],r=reserveOf(W);set(b.lastChild,'ammo:'+W.id,W.id==='axe'?'':W.id==='c4'?String(arsenal?arsenal.reserve.c4||0:W.mag):st.ammo+'/'+(r===Infinity?W.mag:r),(n,v)=>{n.textContent=v;});}
-     if(w.id==='axe'){text('.ch-count b','∞');text('.ch-count small','');}
+     for(const b of el.querySelectorAll('.ch-slots button[data-id]:not(.ch-hands)')){const W=WEAPONS.find(x=>x.id===b.dataset.id),st=state[W.id],r=reserveOf(W);set(b.lastChild,'ammo:'+W.id,W.id==='axe'||W.id==='fists'?'':W.id==='c4'?String(arsenal?arsenal.reserve.c4||0:W.mag):st.ammo+'/'+(r===Infinity?W.mag:r),(n,v)=>{n.textContent=v;});}
+     if(w.id==='axe'||w.id==='fists'){text('.ch-count b','∞');text('.ch-count small','');}
      else if(w.id==='c4'){const live=charges.filter(c=>!c.done).length;text('.ch-count b',String(arsenal?arsenal.reserve.c4||0:w.mag-live));text('.ch-count small',live?` · ${live} ARMED`:` / ${w.mag}`);}
      else{const r=reserveOf(w);text('.ch-count b',String(s.ammo));text('.ch-count small',' / '+(r===Infinity?w.mag:r)+(w.id==='pump'&&s.chamber===false&&s.ammo>0?' · PUMP':''));}
-     text('.ch-state',s.action?.name==='reload'?'RELOADING':(w.id!=='axe'&&w.id!=='c4'&&s.ammo===0?'EMPTY · '+controlHint('reload','R'):''));
+     text('.ch-state',s.action?.name==='reload'?'RELOADING':(w.id!=='axe'&&w.id!=='fists'&&w.id!=='c4'&&s.ammo===0?'EMPTY · '+controlHint('reload','R'):''));
      text('.ch-score',stats.shots?`RANGE · ${stats.hits} HITS · ${stats.trueShots} TRUE`:'');
      // Crosshair gap from spread, ring from focus
      const spreadPx=Math.max(4,currentSpread()*stage.clientHeight/(2*Math.tan(camera.fov*Math.PI/360))*1);
@@ -818,7 +821,7 @@
      // Guard: a bar that shows while the block is up or still recovering, red once broken.
      if(guard){const g=q('.ch-guard');set(g.firstChild,'guard',guard.stamina.toFixed(0),(n,v)=>{n.style.width=v+'%';});g.classList.toggle('show',guard.raised||guard.stamina<99||guard.broken());g.classList.toggle('up',guard.raised);g.classList.toggle('broken',guard.broken());cls('guarding',guard.raised);}
      cls('ads',adsBlend>.6&&w.id!=='axe');text('.ch-zoom',adsBlend>.05&&ZOOM[w.id]?(1+(ZOOM[w.id]-1)*adsBlend).toFixed(1)+'×'+(scoped?(breath.tired>0?' · RECOVERING':shiftHeld&&breath.hold>0?' · HOLDING '+Math.ceil(BREATH_HOLD-breath.hold):' · '+controlHint('sprint','Shift')+' STEADY'):''):'');
-     set(q('.ch-mag i'),'mag',w.mag&&w.id!=='axe'&&w.id!=='c4'?(s.ammo/w.mag*100).toFixed(0):'0',(n,v)=>{n.style.width=v+'%';n.parentNode.classList.toggle('low',+v<=25);});cls('melee',w.id==='axe'||w.id==='c4');
+     set(q('.ch-mag i'),'mag',w.mag?(s.ammo/w.mag*100).toFixed(0):'0',(n,v)=>{n.style.width=v+'%';n.parentNode.classList.toggle('low',+v<=25);});cls('melee',w.id==='axe'||w.id==='c4');
     }
    };
   }
@@ -857,7 +860,7 @@
   }
   function movementInfo(){const m=o.movement?.()||{};return {speed:speedSmoothed,sprinting:!!m.sprinting&&speedSmoothed>1,airborne:!!m.airborne};}
   function startAction(name,duration,data={}){const s=state[current.id];s.action={name,t:0,duration,...data};o.onAction?.(name,current.id,duration);}
-  function canFire(){if(!current||!(locked||touchMode)||!o.canAct()||guard?.raised)return false;const s=state[current.id];if(equipBlend<.85)return false;if(s.action&&!(s.action.name==='reload'&&current.id==='pump'))return false;return lastTime-s.lastFire>=current.interval*(current.id==='pump'?lerp(1,.72,adsBlend):1);}
+  function canFire(){if(!current||!(locked||touchMode)||!o.canAct()||guard?.raised)return false;const s=state[current.id];if(equipBlend<.85&&current.id!=='fists')return false;if(s.action&&!(s.action.name==='reload'&&current.id==='pump'))return false;return lastTime-s.lastFire>=current.interval*(current.id==='pump'?lerp(1,.72,adsBlend):1);}
   function reserveOf(w){if(!w.ammo)return Infinity;if(!arsenal)return Infinity;return arsenal.reserve[w.ammo]||0;}
 
   // Aim assist: a wider visible-target cone, stable target preference, slower
@@ -882,6 +885,7 @@
   const lastPain=new WeakMap();
   function fire(){
    const w=current,s=state[w.id];
+   if(w.id==='fists'){punch(false);return;}
    if(w.id==='axe'){if(s.action)return;const heavy=inWindow();startAction('swing',meleeMove(heavy?'cleave':'chop').recover,{heavy,hit:false});sfx.whoosh(heavy);meleeLunge(heavy?'cleave':'chop');s.focus=0;s.windowT=0;return;}
    if(w.id==='c4'){if(s.action)return;if(throwCharge()){startAction('throw',.55);}return;}
    if(s.action?.name==='reload'&&w.id==='pump'){s.action.cancel=true;return;}
@@ -935,7 +939,7 @@
 
   function reload(){
    if(!current||!(locked||touchMode))return;const w=current,s=state[w.id];
-   if(w.id==='axe'||w.id==='c4'||s.action||s.ammo>=w.mag&&(w.id!=='pump'||s.chamber))return;
+   if(w.id==='axe'||w.id==='fists'||w.id==='c4'||s.action||s.ammo>=w.mag&&(w.id!=='pump'||s.chamber))return;
    const have=reserveOf(w);if(have<=0){hud.toast('NO '+w.ammo.toUpperCase()+' AMMO');return;}
    if(w.id==='pistol'){startAction('reload',s.lockedBack?1.62:1.4,{dropped:false,inserted:false,slap:s.lockedBack});}
    if(w.id==='pump'){const need=Math.min(w.mag-s.ammo,have);startAction('reload',.35+need*.48,{loaded:0,need,wasEmpty:!s.chamber});}
@@ -1068,11 +1072,29 @@
    const p=camera.getWorldPosition(new T.Vector3()),f=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion).setY(0).normalize();
    const step=M.lunge(p,f,list.map(t=>t.chest).filter(Boolean),meleeMove(id));if(step)o.lunge({direction:new T.Vector3(step.x,0,step.z),distance:step.distance});
   }
+  // Fists (fist-viewmodel.js draws them): click for a left and right by turns, right click or B for the haymaker.
+  let fistArms=null,fistHand=0,fistAttack=null,fistReady=0;
+  const FIST_MOVES={jab:{windup:.1,recover:.26,reach:1.75,damage:8,tier:'light',label:'JAB'},cross:{windup:.13,recover:.34,reach:1.8,damage:12,tier:'light',label:'CROSS'},haymaker:{windup:.25,recover:.62,reach:1.9,damage:22,tier:'heavy',label:'HAYMAKER'}};
+  function punch(heavy){
+   const left=fistReady-lastTime;if(left>0){if(left<.3&&!state.punchQueued){state.punchQueued=true;setTimeout(()=>{state.punchQueued=false;if(armed&&current?.id==='fists')punch(heavy);},left*1000+10);}return;}
+   const id=heavy?'haymaker':fistHand?'cross':'jab',base=root.EdenMelee?.move(id)||FIST_MOVES[id],move={...base,damage:base.damage*2.4,reach:base.reach+.35};
+   guard?.lower();fistAttack={kind:heavy?'power':id,hand:heavy||fistHand?1:0,start:lastTime,impact:base.windup,recover:base.recover,landed:false,missed:false};fistHand=heavy?0:fistHand^1;fistReady=lastTime+base.recover*.85;
+   sfx.whoosh(heavy);meleeLunge(id);o.onAction?.('punch','fists',base.recover);
+   const a=fistAttack;setTimeout(()=>{if(!armed||current?.id!=='fists'||!o.canAct())return;const struck=bashStrike(move,true);a.landed=struck;a.missed=!struck;requestFrame();},base.windup*1000);
+   requestFrame();
+  }
+  function updateFists(time,dt){
+   const show=armed&&current?.id==='fists'&&o.canAct()&&!handsBusy&&!((o.thirdPerson?.()||0)>.35);
+   if(!fistArms){if(!show)return;try{fistArms=root.createFistViewModel?.(T,camera,{reduced:!!o.reduced})||{update(){}};}catch(error){console.warn('Fists unavailable',error);fistArms={update(){}};}}
+   const a=fistAttack&&time-fistAttack.start<fistAttack.recover?{...fistAttack,elapsed:time-fistAttack.start,freeze:fistAttack.landed?.06:0}:null;
+   fistArms.update(time,dt,{show,blocking:!!guard?.raised,attack:a,leadHand:0});
+  }
   // B (or right click): a Halo-style melee bash with whatever is in your hands. Hold B for a wound-up slam that hits harder.
   // With the axe, a bash is its heavy swing.
   function bash(heavy=false){
    if(!current||!o.canAct())return;const s=state[current.id];
    if(current.id==='axe'){if(!s.action){startAction('swing',meleeMove('cleave').recover,{heavy:true,hit:false});sfx.whoosh(true);meleeLunge('cleave');}return;}
+   if(current.id==='fists'){punch(true);return;}
    const move=meleeMove(heavy?'slam':'bash');
    // Input buffer: a press in the last 0.35 s of the previous blow's recovery is held and thrown the moment it can be,
    // so chains (and combo finishers) don't drop presses.
@@ -1086,12 +1108,14 @@
    meleeLunge(heavy?'slam':'bash');
    setTimeout(()=>{if(armed)bashStrike(move);},move.windup*1000);
   }
-  function bashStrike(move=meleeMove('bash')){
+  function bashStrike(move=meleeMove('bash'),seek=false){
    const origin=camera.getWorldPosition(new T.Vector3()),f=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion),r=new T.Vector3(1,0,0).applyQuaternion(camera.quaternion);
-   for(const off of [0,-.22,.22]){const d=f.clone().addScaledVector(r,off).normalize();const ch=o.shotHook?.(origin,d,move.reach,{weapon:'melee',player:true});
-    if(ch){const boost=meleeBoost(move);const res=ch.apply(move.damage*boost.scale*(ch.head?1.3:1),{head:ch.head,weapon:'melee',melee:true,tier:move.tier,knockdown:move.knockdown||boost.finisher,finisher:boost.finisher,dir:f.clone().setY(0).normalize()});bloodPuff(ch.point,d);hud.hitmarker(move.tier==='heavy'&&move.label!=='BASH',res?.killed);state.hitStop=.08;meleeLand(move,res?.killed,boost);return;}}
-   const h=worldHits(origin,f,move.reach-.3);if(h){impact(h,f,move.tier==='heavy'?2.2:1.4,false);sfx.wood(h.point,.8);look.shake=Math.max(look.shake,.16);state.hitStop=.05;root.EdenMelee?.combo.reset();}
-   else root.EdenMelee?.whiff();
+   // Fists go to whoever is in front of you (shoulder width, any height), not only to what is dead under the crosshair.
+   const sought=[];if(seek)for(const t of o.aimTargets?.()||[])for(const p of [t.head,t.chest]){if(!p)continue;const d=p.clone().sub(origin),flat=Math.hypot(d.x,d.z);if(flat>move.reach)continue;const along=(d.x*f.x+d.z*f.z)/(flat*Math.hypot(f.x,f.z)||1);if(along>.8){d.normalize();sought.push(d);}}
+   for(const off of [0,-.22,.22,...sought]){const d=off.isVector3?off:f.clone().addScaledVector(r,off).normalize();const ch=o.shotHook?.(origin,d,move.reach,{weapon:'melee',player:true});
+    if(ch){const boost=meleeBoost(move);const res=ch.apply(move.damage*boost.scale*(ch.head?1.3:1),{head:ch.head,weapon:'melee',melee:true,tier:move.tier,knockdown:move.knockdown||boost.finisher,finisher:boost.finisher,dir:f.clone().setY(0).normalize()});bloodPuff(ch.point,d);hud.hitmarker(move.tier==='heavy'&&move.label!=='BASH',res?.killed);state.hitStop=.08;meleeLand(move,res?.killed,boost);return true;}}
+   const h=worldHits(origin,f,move.reach-.3);if(h){impact(h,f,move.tier==='heavy'?2.2:1.4,false);sfx.wood(h.point,.8);look.shake=Math.max(look.shake,.16);state.hitStop=.05;root.EdenMelee?.combo.reset();return true;}
+   root.EdenMelee?.whiff();return false;
   }
   function meleeHit(heavy){
    const origin=camera.getWorldPosition(new T.Vector3()),f=new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion),r=new T.Vector3(1,0,0).applyQuaternion(camera.quaternion);
@@ -1115,12 +1139,17 @@
   // A ground hold (battle-arena.js, a tackle you stayed on) takes melee input first: 'swing' plays the axe swing for
   // its finisher without this file's own hit test, 'bash' the bash kick for a punch thrown with a gun in hand.
   function heldInput(input){
-   const r=o.heldStrike?.(input,current?.id||null);if(!r)return false;
+   const r=o.heldStrike?.(input,current?.id==='fists'?null:current?.id||null);if(!r)return false;
    if(r==='swing'&&current?.id==='axe'){if(!state.axe.action){startAction('swing',meleeMove('cleave').recover,{heavy:true,hit:true});sfx.whoosh(true);}}
    else if(r==='bash'){anim.posZ.kick(-5);anim.rotX.kick(-8);anim.rotY.kick(5);anim.rotZ.kick(-3);look.kickPitch.kick(-.5);}
    requestFrame();return true;
   }
+  // Attacking with empty hands brings your fists up and throws the first punch.
+  function raiseFists(strike=true){if(armed||!built||!(arsenal||rangeOn)||!o.canAct()||o.holding?.())return false;equip('fists');if(armed&&strike){equipBlend=1;punch(false);}return armed;}
+  // Q: the next weapon you carry, from empty hands too.
+  function cycle(step=1){const ids=slotIds();if(!ids.length||!o.canAct())return;const at=armed?ids.indexOf(current?.id):-1;equip(ids[(at+step+ids.length)%ids.length]);}
   function pressButton(key){
+   if(!armed&&(key==='fire'||key==='aim')&&(locked||touchMode)){raiseFists();return;}
    if(!armed||!(locked||touchMode)||!o.canAct())return;
    if((key==='fire'||key==='aim')&&heldInput(key))return;
    if(key==='fire'){buttons.left=true;pendingFire=true;}
@@ -1129,7 +1158,7 @@
   }
   function releaseButton(key){if(key==='fire')buttons.left=false;if(key==='aim'){buttons.right=false;if(setting('aim','wheel')==='hold')zoomTarget=0;}}
   function releaseInputs(){bashHold.cancel();if(typeof guard!=='undefined')guard?.lower();shiftHeld=false;buttons.left=buttons.right=false;pendingFire=false;if(setting('aim','wheel')==='hold')zoomTarget=0;}
-  function onMouseDown(e){if(!armed||inputBlocked(e))return;if(!locked){if(e.target===renderer.domElement&&e.button===0)requestLock();return;}if(root.edenControls)return;e.preventDefault();pressButton(e.button===0?'fire':e.button===2?'aim':'');}
+  function onMouseDown(e){if(inputBlocked(e))return;if(!armed){if(!locked&&e.target===renderer.domElement&&e.button===0)raiseFists();return;}if(!locked){if(e.target===renderer.domElement&&e.button===0)requestLock();return;}if(root.edenControls)return;e.preventDefault();pressButton(e.button===0?'fire':e.button===2?'aim':'');}
   function onMouseUp(e){if(!root.edenControls)releaseButton(e.button===0?'fire':e.button===2?'aim':'');}
   // B: tap to bash, hold to slam (the shared tap-for-light, hold-for-heavy melee rule).
   const bashHold=root.EdenMelee?.charge({light:()=>bash(false),heavy:()=>bash(true)})||{down:()=>bash(false),up(){},cancel(){}};
@@ -1142,8 +1171,8 @@
    if(/^[1-7]$/.test(k)){if(!o.canAct())return;const id=slotIds()[+k-1];if(!id)return;e.preventDefault();if(armed&&current?.id===id)holster();else equip(id);return;}
    if((k==='0'||k==='`')&&armed){e.preventDefault();holster();return;}
    if(k==='g'&&armed&&o.canAct()&&current?.id==='c4'){e.preventDefault();detonate();return;}
+   if(k==='q'&&o.canAct()&&(armed||arsenal)){e.preventDefault();cycle();return;}
    if(!armed||!o.canAct())return;
-   if(k==='q'){e.preventDefault();if(previous)equip(previous);}
    if(k==='r'){e.preventDefault();reload();}
    if(k==='b'){e.preventDefault();if(heldInput('b'))return;if(current?.id==='c4')detonate();else bashHold.down();}
    if(k==='z'&&typeof guardInput==='function'){e.preventDefault();guardInput(true);}
@@ -1157,9 +1186,9 @@
    tx=buildTextures();env=buildEnvironment();M=buildMaterials(tx);
    viewScene=new T.Scene();viewScene.environment=env;
    viewCamera=new T.PerspectiveCamera(58,1,.01,10);
-   viewScene.add(new T.HemisphereLight(0xe6f2ff,0x4a4a32,.9));
+   viewHemi=new T.HemisphereLight(0xe6f2ff,0x4a4a32,.9);viewScene.add(viewHemi);
    sunView=new T.DirectionalLight(0xfff0d0,2.6);viewScene.add(sunView);viewScene.add(sunView.target);
-   const rim=new T.DirectionalLight(0xbfd6ff,.8);rim.position.set(-1,.5,1);viewScene.add(rim);
+   viewRim=new T.DirectionalLight(0xbfd6ff,.8);viewRim.position.set(-1,.5,1);viewScene.add(viewRim);
    world=new T.Group();world.name='Eden combat range';scene.add(world);
    fxGroup=new T.Group();fxGroup.name='Combat effects';fxGroup.userData.noHit=true;scene.add(fxGroup);
    // No new lights in the garden scene: adding one would force every garden material to recompile.
@@ -1174,7 +1203,7 @@
    onLockChange(); // Prewarming can build weapons after the world already owns pointer lock.
    document.addEventListener('mousemove',onMouseMove);
    document.addEventListener('mousedown',onMouseDown);
-   renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===0&&armed&&!locked&&!inputBlocked(e))requestLock();});
+   renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button!==0||locked||inputBlocked(e))return;if(armed)requestLock();else raiseFists();});
    document.addEventListener('mouseup',onMouseUp);
    renderer.domElement.addEventListener('contextmenu',e=>{if(armed)e.preventDefault();});
   }
@@ -1206,7 +1235,7 @@
    const w=WEAPONS.find(x=>x.id===id);if(!w)return;
    if(current?.id===id&&armed)return;
    if(current&&current.id!==id)previous=current.id;
-   if(!armed){const l=o.getLook();yaw=l.yaw;pitch=l.pitch;armed=true;document.body.classList.add('combat-armed');hud.el.classList.add('on');}
+   if(!armed){const l=o.getLook();yaw=l.yaw;pitch=l.pitch;armed=true;document.body.classList.add('combat-armed');hud.el.classList.add('on');}hud.el.classList.remove('empty');hud.reset?.();
    for(const k in models)models[k].holder.visible=false;
    if(models.c4)models.c4.parts.remote.visible=false;
    if(current&&state[current.id].action){state[current.id].action=null;}
@@ -1219,7 +1248,7 @@
   function holster(){
    if(!armed)return;armed=false;buttons.left=buttons.right=false;o.onAction?.('holster',current?.id,0);
    for(const k in models)models[k].holder.visible=false;if(models.c4)models.c4.parts.remote.visible=false;if(armsRig?.arms)armsRig.arms.group.visible=false;
-   document.body.classList.remove('combat-armed');hud?.el.classList.remove('on');
+   document.body.classList.remove('combat-armed');if(arsenal)hud?.el.classList.add('empty');else hud?.el.classList.remove('on');hud?.el.querySelectorAll('.ch-slots button').forEach(b=>b.classList.remove('active'));
    // On desktop the garden keeps mouse look after the weapon is put away (o.keepLock).
    if(document.pointerLockElement===renderer.domElement&&!o.keepLock?.())document.exitPointerLock();
    current=null;adsBlend=0;zoomTarget=0;if(scoped){scoped=false;hud?.el.classList.remove('scoped');}if(camera.zoom!==1){camera.zoom=1;camera.updateProjectionMatrix();}o.requestDraw();
@@ -1254,6 +1283,7 @@
    }
    state.flash=Math.max(0,(state.flash||0)-dt*28);state.blast=Math.max(0,(state.blast||0)-dt*1.6);
 
+   updateFists(time,dt);
    if(!armed)return;
 
    // Movement sampling for bob/sway
@@ -1350,19 +1380,19 @@
   // The view-space flash sprite and its light exist from the start (prewarm compiles them), not from the first shot.
   function ensureViewFlash(){if(viewScene.userData.flash)return;const f=new T.Sprite(new T.SpriteMaterial({map:tx.flashes?.[0]||tx.flash,transparent:true,blending:T.AdditiveBlending,depthWrite:false}));f.layers.enable(GLOW);f.visible=false;viewScene.add(f);viewScene.userData.flash=f;const l=new T.PointLight(0xffa850,0,1.2,2);viewScene.add(l);viewScene.userData.flashLight=l;}
   function renderViewmodel(){
-   if(scoped||(o.thirdPerson?.()||0)>.35||handsBusy&&equipBlend<.04)return;
+   if(current?.id==='fists'||scoped||(o.thirdPerson?.()||0)>.35||handsBusy&&equipBlend<.04)return;
    viewCamera.aspect=camera.aspect;viewCamera.updateProjectionMatrix();
    // Sun direction (world) into view space so the weapon is lit like the garden.
    const sun=new T.Vector3(-23,19,-48).normalize().applyQuaternion(camera.quaternion.clone().invert());
    sunView.position.copy(sun);sunView.target.position.set(0,0,0);
-   const night=clamp(-(camera.position.z+11)/30,0,1);sunView.intensity=lerp(2.6,.35,night);
+   const night=clamp(-(camera.position.z+11)/30,0,1);sunView.intensity=lerp(2.6,.5,night);viewScene.environmentIntensity=lerp(1,.12,night);if(viewRim)viewRim.intensity=lerp(.8,.16,night);if(viewHemi)viewHemi.intensity=lerp(.9,.12,night);
    // Muzzle flash sprite rendered in view space
    ensureViewFlash();
    const fl=viewScene.userData.flash,fll=viewScene.userData.flashLight;
-   const fa=state.flash||0;fl.visible=fa>.05&&current&&current.id!=='axe'&&current.id!=='c4';
+   const fa=state.flash||0;fl.visible=fa>.05&&current&&current.id!=='axe'&&current.id!=='fists'&&current.id!=='c4';
    if(fl.visible){models[current.id].holder.updateMatrixWorld(true);models[current.id].parts.muzzle.getWorldPosition(fl.position);const s=(current.id==='pump'?.32:.2)*(.7+fa*.5)*(state.flashScale||1);fl.scale.set(s,s,s);if(tx.flashes)fl.material.map=tx.flashes[state.flashVariant||0];fl.material.rotation=state.flashRot||0;fl.material.opacity=Math.min(1,fa*1.4);fll.position.copy(fl.position);}
    fll.intensity=fa*fa*3;
-   const auto=renderer.autoClear;renderer.autoClear=false;renderer.clearDepth();renderer.render(viewScene,viewCamera);renderer.autoClear=auto;
+   const auto=renderer.autoClear;renderer.autoClear=false;renderer.clearDepth();const exposure=renderer.toneMappingExposure;renderer.toneMappingExposure=exposure*lerp(1,.5,night);renderer.render(viewScene,viewCamera);renderer.toneMappingExposure=exposure;renderer.autoClear=auto;
   }
 
   /* ------------------------------------------------------------ bloom + lens flares (shot effects only) */
@@ -1472,15 +1502,15 @@
    hud.hurt(.35+amount/40,ang);look.kickPitch.kick((amount*.055+.15)*flinch);if(adsBlend>.2)look.kickYaw.kick(rand(-1,1)*amount*.05*adsBlend);look.kickYaw.kick(rand(-1,1)*amount*.035+Math.sin(ang)*amount*.02);look.shake=Math.max(look.shake,Math.min(.75,.18+amount/45));sfx.hurt(amount);if(amount>=18)o.hitStop?.(Math.min(140,40+amount*2));
   }
   const arsenalApi={
-   set(a){build();if(!a){arsenal=null;resetState();hud.update();return;}
-    arsenal={owned:new Set(a.owned||[]),reserve:{...(a.reserve||{})},order:['pistol','smg','rifle','sniper','pump','axe','c4'],
-     slots(){return this.order.filter(id=>this.owned.has(id));}};
+   set(a){build();if(!a){arsenal=null;resetState();hud.el.classList.remove('empty');if(!armed)hud.el.classList.remove('on');hud.update();return;}
+    arsenal={owned:new Set(a.owned||[]),reserve:{...(a.reserve||{})},order:['pistol','smg','rifle','sniper','pump','axe','c4','fists'],
+     slots(){return this.order.filter(id=>this.owned.has(id));}};arsenal.owned.add('fists');
     for(const w of WEAPONS){state[w.id]={...state[w.id],ammo:a.loaded?.[w.id]??0,chamber:true,action:null,lockedBack:false};}
     if(current&&!arsenal.owned.has(current.id)){const first=arsenal.slots()[0];if(first)equip(first);else holster();}hud.update();},
    give(id,loaded){build();if(!arsenal)return false;const W=WEAPONS.find(x=>x.id===id);if(!W)return false;const had=arsenal.owned.has(id);arsenal.owned.add(id);if(!had)state[id]={...state[id],ammo:loaded??W.mag,chamber:true,action:null,lockedBack:false};hud.update();return !had;},
    drop(id){if(!arsenal)return 0;const ammo=state[id]?.ammo||0;arsenal.owned.delete(id);if(current?.id===id){const n=arsenal.slots()[0];if(n)equip(n);else holster();}hud.update();return ammo;},
    addAmmo(type,n){if(!arsenal)return;arsenal.reserve[type]=(arsenal.reserve[type]||0)+n;hud.update();},
-   inspect(){return arsenal?{owned:[...arsenal.owned],reserve:{...arsenal.reserve},loaded:Object.fromEntries([...arsenal.owned].map(id=>[id,state[id]?.ammo||0]))}:null;}
+   inspect(){return arsenal?{owned:[...arsenal.owned].filter(id=>id!=='fists'),reserve:{...arsenal.reserve},loaded:Object.fromEntries([...arsenal.owned].filter(id=>id!=='fists').map(id=>[id,state[id]?.ammo||0]))}:null;}
   };
 
   return {
@@ -1493,12 +1523,12 @@
     awayFrom(dx);
     // Friction slows fine aiming over a target; a quick swipe turns at full speed.
     const friction=lerp(assist.friction,1,Math.min(1,Math.hypot(dx,dy)/14)),z=ZOOM[current?.id]||1,sens=.0042*lerp(1,Math.min(.7,1.35/z),adsBlend)*lookScale()*friction;yaw+=dx*sens;pitch=clamp(pitch-dy*sens*ySign(),-1.35,1.35);anim.swayX.kick(-dx*.02);anim.swayY.kick(dy*.02);requestFrame();},
-   touchFire(on){if(!armed)return;buttons.left=!!on;if(on)pendingFire=true;requestFrame();},
+   touchFire(on){if(!armed){if(on)raiseFists();return;}buttons.left=!!on;if(on)pendingFire=true;requestFrame();},
    touchMelee(){if(!armed)return;if(current?.id==='c4')detonate();else bash();},
    // Phones: the HIT button follows the keyboard (tap to bash, hold to slam); BLOCK raises the guard while held.
    touchMeleeDown(){if(!armed)return;if(heldInput('b'))return;if(current?.id==='c4')detonate();else bashHold.down();},
    touchMeleeUp(){bashHold.up();},
-   touchGuard(down){guardInput(down);},
+   touchGuard(down){guardInput(down);},raiseFists,cycle,canRaise:()=>!!arsenal&&!armed&&!!o.canAct(),
    guard:()=>guard,
    toggleZoom(){if(!zoomable())return false;zoomTarget=zoomTarget>.5?0:1;requestFrame();return true;},
    scoped:()=>scoped,ads:()=>armed?adsBlend:0,weight:()=>armed&&current?WEIGHT[current.id]||0:0,zoom:(v)=>{if(v!=null){zoomTarget=clamp(v,0,1);requestFrame();}return zoomTarget;},
@@ -1512,7 +1542,7 @@
    weaponModel(id){build();if(id==='c4'){const g=buildC4Block();return g;}const w=armsRig?.weapons[id];if(!w)return null;const c=w.model.clone(true);c.traverse(x=>{x.visible=true;});return c;},
    setHudMode(mode){build();hud.el.dataset.mode=mode||'';},
    armed:()=>armed,
-   weapon:()=>current?.id||null,
+   weapon:()=>current&&current.id!=='fists'?current.id:null,
    setHandsBusy(on){handsBusy=!!on;},handsBusy:()=>handsBusy,weaponShown:()=>armed&&!(handsBusy&&equipBlend<.04),
    capturing:()=>armed,
    busy:()=>armed||(built&&(glowActive()||embers.length||heat.length||flips.some(f=>f.alive)||particles.some(p=>p.alive)||shells.some(s=>s.mesh.visible&&s.bounces<4)||charges.some(c=>!c.done)||targets.some(t=>Math.abs(t.swing.v)>.001||Math.abs(t.swing.x)>.001||t.down)||debris.length||tracers.some(t=>t.alive)||(state.blast||0)>0)),

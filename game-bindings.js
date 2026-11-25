@@ -19,12 +19,12 @@
  add('punch','Punch / jab','f',['KeyF','Mouse0'],['fists']);add('haymaker','Haymaker','g',['KeyG'],['fists']);add('block','Block','q',['KeyQ','Mouse2'],['fists']);
  add('gardenPunch','Punch','f',['KeyF'],['walk']);
  add('fire','Fire / attack','fire',['Mouse0'],['combat','battle','arena','horror']);add('aim','Aim / block / alternate fire','aim',['Mouse2'],['combat','battle','arena','horror']);
- add('swap','Previous weapon / swap','q',['KeyQ'],['walk','combat','battle','arena','horror']);
+ add('swap','Next weapon / swap','q',['KeyQ'],['walk','combat','battle','arena','horror']);
  add('holster','Holster weapon','x',['KeyX','Digit0'],['walk','combat','battle','horror']);add('bash','Melee bash (hold: slam)','b',['KeyB'],['combat','battle','horror']);add('guard','Block (tap just before a hit: parry)','z',['KeyZ','Mouse4'],['combat','battle','horror']);
  add('detonate','Detonate C4','g',['KeyG'],['combat','battle','horror']);
  for(let n=1;n<=7;n++)add('weapon'+n,'Weapon slot '+n,String(n),['Digit'+n],n<=2?['walk','combat','battle','arena','horror']:['walk','combat','battle','horror']);
  add('chapterInteract','Take story ticket / enter garment lab','chapter',['KeyF'],['horror']);
- add('loot','Interact / pick up loot','f',['KeyF'],['battle']);add('heal','Heal','h',['KeyH'],['battle']);add('scores','Scores','tab',['Tab'],['battle','arena']);
+ add('loot','Interact / pick up loot','f',['KeyF','KeyE'],['battle']);add('heal','Heal','h',['KeyH'],['battle']);add('scores','Scores','tab',['Tab'],['battle','arena']);
  const byId=new Map(actions.map(a=>[a.id,a])),copy=v=>Object.fromEntries(Object.entries(v).map(([k,a])=>[k,[...a]])),defaults=()=>Object.fromEntries(actions.map(a=>[a.id,[...a.inputs]]));
  const overlap=(a,b)=>a.contexts.some(c=>b.contexts.includes(c));
  const valid=(code,id)=>typeof code==='string'&&(/^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Shift(Left|Right)|Control(Left|Right)|Alt(Left|Right)|Space|Enter|Backspace|Delete|Insert|Home|End|PageUp|PageDown|BracketLeft|BracketRight|Semicolon|Quote|Comma|Period|Slash|Backslash|Backquote|Minus|Equal|Numpad[0-9]|Numpad(Add|Subtract|Multiply|Divide|Decimal|Enter)|Mouse[0-4])$/.test(code)||code==='Tab'&&id==='scores');
