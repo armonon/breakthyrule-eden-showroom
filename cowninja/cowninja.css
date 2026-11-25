@@ -64,3 +64,8 @@ html,body{margin:0;height:100%;background:#0b0e10;color:var(--cn-ink);font-famil
 .cn-touching .cn-top h1{font-size:18px}
 .cn-touching #cn-goal{font-size:9px;margin:0}
 .cn-touching #cn-prompt{bottom:auto;top:30%}
+/* Objective marker */
+#cn-marker{position:fixed;left:0;top:0;pointer-events:none;z-index:2;will-change:transform}
+#cn-marker i{position:absolute;left:-7px;top:-7px;width:14px;height:14px;transform:rotate(45deg);border:2px solid #ff3a20;background:rgba(255,58,32,.25);box-shadow:0 0 10px rgba(255,58,32,.7)}
+#cn-marker span{position:absolute;left:14px;top:-7px;font:700 11px/14px 'Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.14em;color:#e8e6e0;text-shadow:0 1px 4px #000;white-space:nowrap}
+#cn-marker[data-edge="1"] i{background:#ff3a20}

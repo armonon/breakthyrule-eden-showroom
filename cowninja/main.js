@@ -44,10 +44,10 @@ async function boot() {
   const blood = createBlood({ scene });
   const audio = createAudio({ camera });
   const stats = { knockouts: 0, herdKnockouts: 0, flips: 0, hits: 0, start: 0, time: 0 };
-  let health = 100, hurtFlash = 0, shake = 0, phase = 'intro', message = '', messageUntil = 0, alarm = false, alarmAt = 0, mode = 'ride', calling = 0, whistleAt = 0, takedowns = 0;
+  let health = 100, hurtFlash = 0, shake = 0, phase = 'intro', message = '', messageUntil = 0, alarm = false, alarmAt = 0, mode = 'foot', calling = 0, whistleAt = 0, takedowns = 0;
   const say = (text, seconds = 2.6) => { message = text; messageUntil = performance.now() + seconds * 1000; $('cn-toast').textContent = text; $('cn-toast').classList.toggle('long', text.length > 20); $('cn-toast').classList.add('show'); };
 
-  const cow = createCow({ scene, physics, spawn: world.spawn, assets });
+  const cow = createCow({ scene, physics, spawn: world.cowSpawn, assets }); cow.setRider(false);
   const foot = createFoot({ scene, world, onEffect: e => { if (e.kind === 'footstep:step') audio.hoof(...e.args); else if (e.kind === 'footstep:land') audio.land(...e.args); } });
   // Whoever the yard is reacting to: the cow while you ride it, the ninja while you are on foot.
   const actor = () => mode === 'foot' ? foot.state : cow.state;
@@ -79,7 +79,7 @@ async function boot() {
 
   // Input. `keys` holds what is held; E (use) and Q (whistle) are single presses.
   const keys = new Set(), map = { KeyW: 'w', ArrowUp: 'w', KeyS: 's', ArrowDown: 's', KeyA: 'a', ArrowLeft: 'a', KeyD: 'd', ArrowRight: 'd', ShiftLeft: 'shift', ShiftRight: 'shift', Space: 'space', KeyC: 'crouch', ControlLeft: 'crouch' };
-  let camYaw = 0, camPitch = -.12;
+  let camYaw = world.spawn.yaw, camPitch = -.12;
   addEventListener('keydown', e => {
     const k = map[e.code];
     if (!k) { if (e.repeat) return; if (e.code === 'KeyR' && phase !== 'intro') restart(); else if (e.code === 'KeyE') use(); else if (e.code === 'KeyQ') whistle(); return; }
@@ -98,8 +98,9 @@ async function boot() {
     if (mode === 'ride') return foot.available && Math.abs(cow.state.speed) < 5 && !cow.state.airborne ? { kind: 'dismount', label: 'GET OFF' } : null;
     const p = foot.state, near = farmers.nearest(p.x, p.z, 1.7);
     if (near && (near.behind || near.unaware)) return { kind: 'takedown', label: 'TAKE DOWN', farmer: near.farmer };
-    if (!herd.free && Math.hypot(p.x - world.gatePost.x, p.z - world.gatePost.z) < 2.4) return { kind: 'latch', label: 'UNLATCH THE PEN' };
+    if (!herd.free && Math.hypot(p.x - world.gatePost.x, p.z - world.gatePost.z) < 2.4) return { kind: 'latch', label: 'PULL THE LEVER' };
     if (Math.hypot(p.x - cow.state.x, p.z - cow.state.z) < 2.9) return { kind: 'mount', label: 'RIDE' };
+    if (herd.free) { const other = herd.nearest(p.x, p.z, 2.6); if (other) return { kind: 'mount', label: 'RIDE', swap: other }; }
     return near ? { kind: 'none', label: 'HE SEES YOU' } : null;
   }
   function use() {
@@ -111,7 +112,7 @@ async function boot() {
       if (!foot.enter(side[0], side[1], camYaw)) return;
       mode = 'foot'; cow.setRider(false); calling = 0; keys.delete('shift'); say('ON FOOT · C CROUCH · E USE · Q CALL THE COW', 3);
       if (!touch.active) renderer.domElement.requestPointerLock?.();
-    } else if (o.kind === 'mount') { mode = 'ride'; foot.leave(); cow.setRider(true); calling = 0; document.exitPointerLock?.(); audio.moo(.14); }
+    } else if (o.kind === 'mount') { if (o.swap) herd.swap(o.swap, cow); mode = 'ride'; foot.leave(); cow.setRider(true); calling = 0; document.exitPointerLock?.(); audio.moo(.14); }
     else if (o.kind === 'takedown') { const f = o.farmer, p = foot.state, d = Math.hypot(f.p.x - p.x, f.p.z - p.z) || 1; foot.play('cross', { fade: .05, speed: 1.6, mask: 'upper' }); farmers.knock(f, (f.p.x - p.x) / d * 2.4, (f.p.z - p.z) / d * 2.4, 'takedown'); }
     else if (o.kind === 'latch') { world.openGate(); foot.play('interact', { fade: .08, mask: 'upper' }); audio.hit('wood', world.gatePost.x, world.gatePost.z, .8); }
   }
@@ -119,7 +120,7 @@ async function boot() {
   function whistle() {
     const now = performance.now(); if (phase !== 'play' || now - whistleAt < 1500) return; whistleAt = now; audio.whistle();
     const a = actor(); farmers.noise(a.x, a.z, 15, .55);
-    if (mode === 'foot') { calling = 14; say('CALLING THE COW', 1.2); } else audio.moo(.2);
+    if (mode === 'foot' && herd.free) { calling = 14; say('CALLING A COW', 1.2); } else audio.moo(.2);
   }
 
   function end(won) {
@@ -133,7 +134,7 @@ async function boot() {
   }
   function restart() { location.reload(); }
   $('cn-again').onclick = restart;
-  $('cn-enter').onclick = () => { $('cn-gate').hidden = true; phase = 'play'; stats.start = performance.now(); renderer.domElement.focus(); audio.start(); say('FREE THE HERD · RIDE IN LOUD, OR GET OFF (E) AND GO QUIET', 5); };
+  $('cn-enter').onclick = () => { $('cn-gate').hidden = true; phase = 'play'; stats.start = performance.now(); renderer.domElement.focus(); audio.start(); foot.enter(world.spawn.x, world.spawn.z, world.spawn.yaw); if (!touch.active) renderer.domElement.requestPointerLock?.(); say('GET IN · PULL THE RED LEVER · RIDE A COW OUT', 5); };
 
   // Camera. Riding: behind and above, swinging wider and lower with speed. On foot: an orbit you steer with the mouse,
   // pulled in when a wall is in the way. Both are shaken by impacts.
@@ -184,7 +185,8 @@ async function boot() {
     renderer.setSize(container.clientWidth, container.clientHeight, false);
   }
 
-  const hud = { speed: $('cn-speed'), charge: $('cn-charge-fill'), health: $('cn-health-fill'), goal: $('cn-goal'), count: $('cn-count'), prompt: $('cn-prompt'), seen: $('cn-seen-fill'), stealth: $('cn-stealth'), keys: $('cn-keys-text') };
+  const mark = new THREE.Vector3();
+  const hud = { marker: $('cn-marker'), speed: $('cn-speed'), charge: $('cn-charge-fill'), health: $('cn-health-fill'), goal: $('cn-goal'), count: $('cn-count'), prompt: $('cn-prompt'), seen: $('cn-seen-fill'), stealth: $('cn-stealth'), keys: $('cn-keys-text') };
   let last = performance.now(), acc = 0, hudAt = 0, beat = 0, lastGate = false;
   function frame(now) {
     const dt = Math.min(.1, (now - last) / 1000); last = now; acc += dt;
@@ -200,7 +202,7 @@ async function boot() {
     { const t = truck.body.read().p; audio.truck(truck.speed, Math.hypot(t[0] - a.x, t[2] - a.z), truck.active && !truck.flipped); }
     if (live) {
       const broken = world.gateBroken();
-      if (!herd.free && broken) { herd.release(); audio.moo(.25); if (mode === 'ride') { raiseAlarm(); audio.hit('wood', 8, 36, 1.3); say('THE GATE IS DOWN · LEAD THEM NORTH', 3.5); } else say('THE PEN IS OPEN · GET TO YOUR COW AND LEAD THEM NORTH', 4); }
+      if (!herd.free && broken) { herd.release(); audio.moo(.25); if (mode === 'ride') { raiseAlarm(); audio.hit('wood', 8, 36, 1.3); say('THE GATE IS DOWN · LEAD THEM NORTH', 3.5); } else say('THE PEN IS OPEN · RIDE ONE OUT THE NORTH GATE', 4); }
       lastGate = broken;
       if (alarmAt && now > alarmAt) { if (farmers.alerted()) raiseAlarm(); else alarmAt = 0; }
       // Won: you are out past the north gate and at least half the herd has followed.
@@ -208,10 +210,17 @@ async function boot() {
     }
     hurtFlash = Math.max(0, hurtFlash - dt * 1.6); post.set({ hurt: hurtFlash * .9 + (health < 30 && live ? .18 : 0) });
     updateCamera(dt); tune(dt, now);
+    // The objective marker: a diamond over the lever, then your cow, then the way out; pinned to the screen edge when off it.
+    { const m = hud.marker, target = !live ? null : !herd.free ? [world.gatePost.x, 2.6, world.gatePost.z] : mode === 'foot' ? [cow.state.x, 2.2, cow.state.z] : [world.exit.x, 3, world.exit.z + 4];
+      if (!target || window.cowNinja?.freeCam) m.hidden = true; else {
+        mark.set(target[0], target[1], target[2]); const far = Math.hypot(target[0] - a.x, target[2] - a.z); mark.project(camera);
+        const behind = mark.z > 1; let sx = mark.x, sy = mark.y; if (behind) { sx = -sx; sy = -1; }
+        const k = Math.max(Math.abs(sx) / .92, Math.abs(sy) / .86, 1); sx /= k; sy /= k;
+        m.hidden = false; m.style.transform = `translate(${((sx * .5 + .5) * container.clientWidth).toFixed(1)}px, ${((-sy * .5 + .5) * container.clientHeight).toFixed(1)}px)`; m.dataset.edge = k > 1 || behind ? '1' : '0'; m.lastChild.textContent = Math.round(far) + ' m'; } }
     if (now - hudAt > 90) { hudAt = now; const c = cow.state, level = farmers.alertLevel(), o = option();
       hud.speed.textContent = Math.round((mode === 'foot' ? foot.state.speed : Math.abs(c.speed)) * 3.6) + ' km/h'; hud.charge.style.transform = `scaleX(${(mode === 'foot' ? 0 : c.charge).toFixed(2)})`; hud.charge.parentElement.classList.toggle('full', mode === 'ride' && c.charge > .97);
       hud.health.style.transform = `scaleX(${(health / 100).toFixed(2)})`;
-      hud.goal.textContent = phase === 'intro' ? '' : !herd.free ? (mode === 'foot' ? 'UNLATCH THE PEN (SOUTH-EAST OF THE KILL FLOOR)' : 'BREAK THE PEN GATE, OR GET OFF AND SNEAK IN') : mode === 'foot' ? 'GET BACK ON YOUR COW (Q CALLS IT)' : `LEAD THE HERD OUT THE NORTH GATE · ${herd.saved}/${herd.count} OUT`;
+      hud.goal.textContent = phase === 'intro' ? '' : !herd.free ? (mode === 'foot' ? 'PULL THE RED LEVER BY THE PEN' : 'BREAK THE PEN GATE') : mode === 'foot' ? 'GET ON A COW (E) · Q CALLS ONE' : `LEAD THE HERD OUT THE NORTH GATE · ${herd.saved}/${herd.count} OUT`;
       hud.count.textContent = `${farmers.out()} DOWN · ${stats.flips} FLIPPED`;
       hud.seen.style.transform = `scaleX(${level.toFixed(2)})`; hud.stealth.textContent = alarm ? 'ALARM' : level >= 1 ? 'SPOTTED' : level > .3 ? 'SUSPICIOUS' : 'HIDDEN'; hud.stealth.parentElement.dataset.state = alarm || level >= 1 ? 'hot' : level > .3 ? 'warm' : 'cold';
       hud.prompt.textContent = o ? (o.kind === 'none' ? o.label : `${touch.active ? 'USE' : 'E'} · ${o.label}`) : ''; hud.prompt.classList.toggle('show', !!o);

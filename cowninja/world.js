@@ -190,6 +190,18 @@ export function createWorld({ scene, physics, assets }) {
   for (const [x, z] of [[-10, 30], [-10, 40], [2, 34], [-18, 20]]) { place('mounted_fluorescent_lights', x, 5.5, z, { part: 'mounted_fluorescent_lights_a', scale: 2.2, yaw: Math.PI / 2, cast: false }); lamp(x, 5.38, z, 0xd8f0e6, 46, 24, .8, [1.9, .05, .12]); }
   place('caged_hanging_light', 15, 3.9, 36, { scale: 1.1, cast: false }); lamp(15, 3.1, 36, 0xff2a1a, 30, 16, .2, [.2, .12, .2]);
 
+  // The pen lever: a floor-standing throw switch by the gate with a red lamp over it, so it reads from across the floor.
+  const lever = new THREE.Group(); lever.position.set(7.2, 0, 32.7); root.add(lever);
+  { const paint = new THREE.MeshStandardMaterial({ color: 0xc9a227, roughness: .55, metalness: .3 }), dark = new THREE.MeshStandardMaterial({ color: 0x1a1c1e, roughness: .5, metalness: .7 }), grip = new THREE.MeshStandardMaterial({ color: 0xc4130d, roughness: .45, emissive: 0x4a0603 });
+    const part = (g, m, x, y, z, sx, sy, sz, parent = lever) => { const o = new THREE.Mesh(g, m); o.position.set(x, y, z); o.scale.set(sx, sy, sz); o.castShadow = true; parent.add(o); return o; };
+    const box = new THREE.BoxGeometry(1, 1, 1), rod = new THREE.CylinderGeometry(.5, .5, 1, 12);
+    part(box, dark, 0, .04, 0, .5, .08, .5); part(box, paint, 0, .55, 0, .26, 1.0, .2); part(box, dark, 0, 1.0, 0, .32, .1, .26);
+    const arm = new THREE.Group(); arm.position.set(0, .82, .13); arm.rotation.x = -.85; lever.add(arm); lever.userData.arm = arm;
+    part(rod, dark, 0, .36, 0, .045, .72, .045, arm); part(rod, grip, 0, .74, 0, .09, .2, .09, arm);
+    const sign = part(box, new THREE.MeshBasicMaterial({ color: 0xff3020 }), 0, 2.25, 0, .16, .16, .16); lever.userData.sign = sign;
+    const glowLight = new THREE.PointLight(0xff3a20, 14, 9, 1.6); glowLight.position.set(0, 2.2, 0); lever.add(glowLight); lever.userData.light = glowLight; }
+  physics.staticBox([7.2, .55, 32.7], [.14, .55, .12]);
+
   // 2D blocking test for walkers (farmers, the herd): a circle against the wall rectangles.
   function blocked(x, z, r = .35) {
     for (const w of walls2d) if (x > w[0] - r && x < w[1] + r && z > w[2] - r && z < w[3] + r) return true;
@@ -212,6 +224,7 @@ export function createWorld({ scene, physics, assets }) {
       l.light.intensity = l.base * drop * (.92 + .08 * Math.sin(time * 60 + l.phase));
       l.bulb.material.color.setScalar(drop).multiply(l.light.color);
     }
+    if (lever.userData.arm) { const pulled = leverPulled ? Math.min(1, (performance.now() - leverPulled) / 260) : 0; lever.userData.arm.rotation.x = -.85 + pulled * 1.7; if (!leverPulled) lever.userData.light.intensity = 10 + Math.sin(time * 4) * 5; }
     if (focus) { const fx = Math.round(focus.x / 2) * 2, fz = Math.round(focus.z / 2) * 2; if (moon.target.position.x !== fx || moon.target.position.z !== fz) { moon.target.position.set(fx, 0, fz); moon.position.set(fx + moonOffset.x, moonOffset.y, fz + moonOffset.z); moon.target.updateMatrixWorld(); } }
   }
   // The roof can be stood on (and is a ceiling for the camera).
@@ -224,17 +237,19 @@ export function createWorld({ scene, physics, assets }) {
   }
   const solidAt = (x, y, z, pad = .15) => { for (const b of solids) if (x > b.minX - pad && x < b.maxX + pad && z > b.minZ - pad && z < b.maxZ + pad && y < b.top + pad && y > b.bottom - pad) return true; return false; };
   // Unlatch the pen gate by hand: the planks drop and are shoved clear without the noise of a charge.
-  function openGate() { gate.forEach((g, i) => { g.body.wake(); g.body.impulse(-60 - i * 14, 30, (i - 2) * 26); }); opened = true; }
-  let opened = false;
+  function openGate() { if (lever.userData.arm) { leverPulled = performance.now(); lever.userData.sign.material.color.set(0x35ff5a); lever.userData.light.color.set(0x35ff5a); }
+    gate.forEach((g, i) => { g.body.wake(); g.body.impulse(-60 - i * 14, 30, (i - 2) * 26); }); opened = true; }
+  let opened = false, leverPulled = 0;
   const gateBroken = () => opened || gate.some(g => { const t = g.body.read().p; return Math.hypot(t[0] - g.home[0], t[2] - g.home[2]) > 1.2; });
 
   return {
-    root, mat, blocked, walk, update, gateBroken, openGate, solids, solidAt, sightBlocked, gatePost: { x: 7.4, z: 33.2 }, loose, looseModel, place, walls2d, dynamic,
-    spawn: { x: 0, z: -66, yaw: Math.PI },                 // on the road outside the north gate, facing the yard (yaw 0 faces -z)
+    root, mat, blocked, walk, update, gateBroken, openGate, solids, solidAt, sightBlocked, gatePost: { x: 7.2, z: 32.7 }, loose, looseModel, place, walls2d, dynamic,
+    spawn: { x: 0, z: -66, yaw: 0 },                       // the ninja, on foot on the road outside the north gate (foot yaw 0 faces +z, the yard)
+    cowSpawn: { x: 15, z: 39.5, yaw: -Math.PI / 2 },       // your cow starts penned with the rest (cow yaw 0 faces -z)
     exit: { x: 0, z: -56, radius: 7 },
     pen: { minX: 9.5, maxX: 20.5, minZ: 29.5, maxZ: 42.5 },
     escape: [[10.5, 36], [5, 36], [0, 27], [0, 16], [0, 6]],   // the herd's way out of the building
-    truckStart: { x: 0, z: -104, yaw: Math.PI },
+    truckStart: { x: 31, z: -40, yaw: Math.PI },           // parked inside the fence by the east lamp
     patrols: [
       [[-18, -30], [18, -30], [18, -12], [-18, -12]],
       [[26, 0], [32, -20], [32, 20]],

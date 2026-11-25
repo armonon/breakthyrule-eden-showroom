@@ -8,7 +8,7 @@
   <meta name="description" content="COWNinja prototype: ride in, break the pen, lead the herd out. Graphic content.">
   <title>COWNinja — Break Thy Rule (prototype)</title>
   <link rel="icon" href="/assets/favicon-32.png">
-  <link rel="stylesheet" href="/cowninja/cowninja.css?v=3">
+  <link rel="stylesheet" href="/cowninja/cowninja.css?v=4">
   <script type="importmap">
   {
     "imports": {
@@ -44,6 +44,7 @@
       <span><kbd>Q</kbd> whistle</span><span><kbd>R</kbd> restart</span><span id="cn-backend"></span>
     </footer>
     <p id="cn-prompt" role="status"></p>
+    <div id="cn-marker" hidden aria-hidden="true"><i></i><span></span></div>
     <div id="cn-touch" hidden></div>
 
     <section id="cn-gate" hidden role="dialog" aria-labelledby="cn-gate-title">
@@ -51,7 +52,7 @@
         <p class="cn-eyebrow">CONTENT WARNING</p>
         <h2 id="cn-gate-title">COWNinja</h2>
         <p>This is a prototype set in a working slaughterhouse. It shows blood, violence against people and animal slaughter imagery.</p>
-        <p class="cn-small">Get the herd out through the north gate. <strong>Loud:</strong> ride in, charge the pen gate, flatten whoever is in the way; hit the truck square on its side to flip it. <strong>Quiet:</strong> get off the cow, stay low and out of sight, take farmers down from behind, unlatch the pen, whistle for your cow and ride out.</p>
+        <p class="cn-small">You arrive on foot. Get inside, pull the <strong>red lever</strong> by the pen to free the herd, get on a cow and ride out through the north gate. Stay low and out of sight and take farmers down from behind, or do it loud: once you are riding, charge through anyone in the way and hit the truck square on its side to flip it.</p>
         <div class="cn-actions"><button id="cn-enter" type="button">I UNDERSTAND · RIDE</button><a href="/showroom.html">Back to Eden</a></div>
       </div>
     </section>
@@ -78,6 +79,6 @@
   <script defer src="/character-motion.js"></script>
   <script defer src="/character-rocketbox.js"></script>
   <script defer src="/character-model.js"></script>
-  <script type="module" src="/cowninja/main.js?v=3"></script>
+  <script type="module" src="/cowninja/main.js?v=4"></script>
 </body>
 </html>

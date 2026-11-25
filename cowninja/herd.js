@@ -50,5 +50,8 @@ export function createHerd({ scene, world, cow, farmers, assets, count = 8 }) {
       if (free && Math.hypot(c.p.x - world.exit.x, c.p.z - world.exit.z) < world.exit.radius) { c.saved = true; saved++; c.model.group.visible = false; }
     }
   }
-  return { update, release() { free = true; }, get free() { return free; }, get saved() { return saved; }, count };
+  // The nearest loose cow to a point, and trading places with the ridden cow (so any cow can be the one you ride).
+  function nearest(x, z, reach) { let best = null, d = reach; for (const c of cows) if (!c.saved) { const r = Math.hypot(c.p.x - x, c.p.z - z); if (r < d) { d = r; best = c; } } return best; }
+  function swap(c, ridden) { const x = ridden.state.x, z = ridden.state.z, yaw = ridden.state.yaw; ridden.teleport(c.p.x, c.p.z, c.yaw); c.p.x = x; c.p.z = z; c.yaw = yaw; c.stage = world.escape.length; }
+  return { update, nearest, swap, release() { free = true; }, get free() { return free; }, get saved() { return saved; }, count };
 }
