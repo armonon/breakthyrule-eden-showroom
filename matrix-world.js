@@ -88,7 +88,7 @@
  const patched=new WeakMap();
  // kind: 'model' (own textures: detail, grime, damp, running code), 'stone' (procedural walls: scanned stone projected in
  // world space), 'ground' (paving near the Commons and the road, wet cobble and earth elsewhere), 'form' (forming only).
- function patch(T,material,kind='form'){
+ function patch(T,material,kind='form',wash=false){
   if(!material?.isMeshStandardMaterial)return null;const had=patched.get(material);if(had)return had;build(T);
   if(phone())kind=kind==='ground'?'ground0':'form';
   const form={value:new T.Vector4(1,0,1,0)},own=material.onBeforeCompile,key=material.customProgramCacheKey.bind(material);
@@ -127,8 +127,8 @@
     diffuseColor.rgb*=1.-.45*mxDamp;`:`
     ${kind==='stone'?`vec3 mxStone=texture2D(mxMapA,mxUv*.42).rgb;diffuseColor.rgb=diffuseColor.rgb*mix(.55,1.1,mxBroad)*mxStone*1.75;`:`diffuseColor.rgb*=mix(1.,.55+.95*texture2D(mxKit,mxUv*1.7).b,.6*mxNear);`}
     // Rain streaks down the walls, soot under ledges, damp and moss near the ground, broad tone changes that break the tiling.
-    float mxWall=1.-smoothstep(.4,.75,mxA.y),mxStreak=texture2D(mxKit,vec2(mxUv.x*.31,mxUv.y*.022)).b;
-    diffuseColor.rgb*=1.-mxWall*.5*smoothstep(.47,.68,mxStreak);diffuseColor.rgb*=.78+.44*mxBroad;
+    float mxWall=1.-smoothstep(.4,.75,mxA.y),mxStreak=texture2D(mxKit,vec2(mxUv.x*.17,mxUv.y*.035)).b;
+    diffuseColor.rgb*=1.-mxWall*.42*smoothstep(.5,.72,mxStreak)*smoothstep(.35,.6,mxBroad);diffuseColor.rgb*=.78+.44*mxBroad;
     mxDamp=exp(-max(vMx.y,0.)*1.1)*(.4+.6*mxFine)*mxWall+(1.-mxWall)*step(.5,mxWn.y)*smoothstep(.45,.65,mxBroad);
     diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.45,.56,.40),clamp(mxDamp,0.,1.)*.75);`)+`}`));
    if(kind!=='form'){
@@ -143,17 +143,19 @@
     if(mxGlow>0.){vec3 mxFn=abs(normalize(cross(dFdx(vMx),dFdy(vMx))));vec2 mxP=(mxFn.x>mxFn.z?vMx.zy:vMx.xy)*7.;if(mxFn.y>.7)mxP=vMx.xz*7.;vec2 mxCell=floor(mxP),mxF=clamp(fract(mxP),.08,.92);float mxId=floor(mxHash(mxCell+floor(mxTime*9.))*64.);
      float mxG=texture2D(mxKit,(vec2(mod(mxId,8.),floor(mxId/8.))+vec2(mxF.x,1.-mxF.y))/8.).r;vec2 mxEdge=abs(fract(mxP*.5)-.5);
      totalEmissiveRadiance+=${GREEN}*mxGlow*(mxG*.62+.018+smoothstep(.44,.5,max(mxEdge.x,mxEdge.y))*.16+pow(mxGlow,8.)*.25);}`+(kind==='model'||kind==='stone'?`
+    ${wash?`{ // Architectural uplights: pools of warm light climbing the walls between the piers, cool moonlight on what faces up.
+     float mxPool=.35+.65*pow(.5+.5*cos(mxUv.x*1.05),3.);totalEmissiveRadiance+=diffuseColor.rgb*mxOn*(vec3(1.,.62,.30)*(1.-abs(mxWn.y))*mxPool*(exp(-max(vMx.y,0.)*.42)*.5+exp(-max(vMx.y,0.)*.16)*.13)+vec3(.16,.30,.27)*max(mxWn.y,0.)*.16+vec3(.03,.06,.048));}`:''}
     {float mxWall=1.-smoothstep(.3,.5,abs(mxWn.y));if(mxWall*mxOn>0.){vec2 mxP=vec2(mxUv.x*3.6,vMx.y*3.6),mxCell=floor(mxP);float mxCh=mxHash(vec2(mxCell.x,11.));
      // A column here and there down a wall still shows the program running.
      if(mxCh>.972){float mxLen=26.,mxDrop=mod(mxCell.y+mxTime*(2.+mxCh*3.)*1.6+mxCh*997.,90.),mxTail=mxDrop<mxLen?exp(-mxDrop*.15):0.;
       if(mxTail>.01){float mxId=step(.5,mxBit(-mxCell.y+mxCell.x*64.));vec2 mxF=clamp(fract(mxP),.08,.92);float mxG=texture2D(mxKit,(vec2(mxId,0.)+vec2(mxF.x,1.-mxF.y))/8.).r;totalEmissiveRadiance+=${GREEN}*mxG*mxTail*.5*mxOn;}}}}`:''));
    sh.fragmentShader=f;};
-  material.customProgramCacheKey=()=>key()+'|mx6'+kind+lean+(own&&own!==T.Material.prototype.onBeforeCompile?String(own).length:'');
+  material.customProgramCacheKey=()=>key()+'|mx7'+kind+lean+wash+(own&&own!==T.Material.prototype.onBeforeCompile?String(own).length:'');
   material.needsUpdate=true;return form;
  }
- function surface(T,object,{kind='model',skip=null}={}){
+ function surface(T,object,{kind='model',skip=null,wash=false}={}){
   if(!object)return;object.traverse(o=>{if(!o.isMesh||o.isSkinnedMesh||skip?.(o))return;for(const m of [].concat(o.material||[])){if(!m?.isMeshStandardMaterial||m.transparent||m.alphaTest>0)continue;
-   const glows=m.emissive&&m.emissiveIntensity>.5&&!m.emissiveMap&&m.emissive.getHex();patch(T,m,glows||m.metalness>.5?'form':kind==='auto'?(m.normalMap||m.map&&m.map.image?.width>300?'model':'stone'):kind);
+   const glows=m.emissive&&m.emissiveIntensity>.5&&!m.emissiveMap&&m.emissive.getHex();patch(T,m,glows||(m.metalness>.5&&!m.metalnessMap)?'form':kind==='auto'?(m.normalMap||m.map&&m.map.image?.width>300?'model':'stone'):kind,wash);
    if(m.map&&!phone())m.map.anisotropy=Math.max(m.map.anisotropy,8);}});
  }
 
@@ -237,7 +239,7 @@
   const surfaces=STEPS.map(([r,top])=>({minX:x-r*.86,maxX:x+r*.86,minZ:z-r*.86,maxZ:z+r*.86,top,bottom:-1,wall:false,prop:'altar'}));
   const table={minX:x-1.3,maxX:x+1.3,minZ:z-.15,maxZ:z+1.25,top:1.56,bottom:-1,wall:true,prop:'altar'};surfaces.push(table);
   const walls=[[x,z+.55,2.6,1.35,1.56],[x,z-.75,1.5,1.1,1.03],[x,z-.75,.5,.4,7]];
-  return {group:g,surfaces,walls,candles,flames,air:[{position:new T.Vector3(x,2.2,z+1.2),color:new T.Color(1,.66,.3),power:.05},{position:new T.Vector3(x,6.2,z-.5),color:new T.Color(1,.85,.55),power:.05}],lights:[warm,high],
+  return {group:g,surfaces,walls,candles,flames,air:[{position:new T.Vector3(x,2.2,z+1.2),color:new T.Color(1,.66,.3),power:.016},{position:new T.Vector3(x,6.2,z-.5),color:new T.Color(1,.85,.55),power:.016}],lights:[warm,high],
    covers:(px,pz,m=0)=>Math.hypot(px-x,pz-z)<5+m,
    update(t){const k=still()?1:1+.07*Math.sin(t*9.)+.05*Math.sin(t*23.7);warm.intensity=26*k;if(still())return;flames.forEach((f,i)=>{f.scale.y=2.1+.35*Math.sin(t*11.+i*1.7);f.updateMatrix();});}};
  }

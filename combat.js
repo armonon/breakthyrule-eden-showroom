@@ -1362,7 +1362,7 @@
    const fa=state.flash||0;fl.visible=fa>.05&&current&&current.id!=='axe'&&current.id!=='c4';
    if(fl.visible){models[current.id].holder.updateMatrixWorld(true);models[current.id].parts.muzzle.getWorldPosition(fl.position);const s=(current.id==='pump'?.32:.2)*(.7+fa*.5)*(state.flashScale||1);fl.scale.set(s,s,s);if(tx.flashes)fl.material.map=tx.flashes[state.flashVariant||0];fl.material.rotation=state.flashRot||0;fl.material.opacity=Math.min(1,fa*1.4);fll.position.copy(fl.position);}
    fll.intensity=fa*fa*3;
-   const auto=renderer.autoClear;renderer.autoClear=false;renderer.clearDepth();renderer.render(viewScene,viewCamera);renderer.autoClear=auto;
+   const auto=renderer.autoClear;renderer.autoClear=false;renderer.clearDepth();const exposure=renderer.toneMappingExposure;renderer.toneMappingExposure=exposure*lerp(1,.5,night);renderer.render(viewScene,viewCamera);renderer.toneMappingExposure=exposure;renderer.autoClear=auto;
   }
 
   /* ------------------------------------------------------------ bloom + lens flares (shot effects only) */

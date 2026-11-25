@@ -137,7 +137,7 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
    const scene=gltf.scene;scene.name=s.name+' (modelled)';scene.userData.landmarkModel=true;scene.position.set(s.x,0,s.z);
    scene.traverse(o=>{if(!o.isMesh)return;o.receiveShadow=true;o.castShadow=!/bulb|sign|relief|glass/.test(o.name+o.material?.name);});
    if(phone)window.shrinkModelTextures?.(scene,{maxTextureSize:512,detailSize:256});
-   window.edenMatrix?.surface(T,scene,{kind:'model'});window.edenBaked?.registerStatic(scene);if(prepareModel)await prepareModel(scene);else if(warmup)await warmup.prepare(scene);if(disposed){releaseModel(scene);return;}
+   window.edenMatrix?.surface(T,scene,{kind:'model',wash:true});window.edenBaked?.registerStatic(scene);if(prepareModel)await prepareModel(scene);else if(warmup)await warmup.prepare(scene);if(disposed){releaseModel(scene);return;}
    shell.visible=false;root.add(scene);window.edenMatrix?.form(T,scene,{duration:2.6,scene:root.parent});modelState[s.id]='model';loadedModels.set(s.id,{s,model,shell,scene});
   }).catch(error=>{if(disposed)return;modelState[s.id]='fallback';console.warn(s.name+' model unavailable; keeping the procedural building',error);})
    .finally(()=>{modelInFlight=false;});
