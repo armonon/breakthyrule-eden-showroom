@@ -172,7 +172,7 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
    // The altar and the cross at the middle of the Commons, where the chests are (matrix-world.js).
    const A=window.nightLayout?.arena;altar=A&&window.edenMatrix?.altar(T,district.root,{x:A.x,z:A.z})||null;
    if(altar){setAltar(true);}
-   window.edenMatrix?.surface(T,district.root,{kind:'auto',wash:true,skip:o=>{for(let p=o;p;p=p.parent)if(p===altar?.group)return true;return false;}});for(const m of [roadMaterial,vergeMaterial])window.edenMatrix?.patch(T,m,m===vergeMaterial?'ground':'model');
+   window.edenMatrix?.surface(T,district.root,{kind:'auto',wash:true,skip:o=>{for(let p=o;p;p=p.parent)if(p===altar?.group)return true;return false;}});for(const m of [roadMaterial,vergeMaterial])window.edenMatrix?.patch(T,m,m===vergeMaterial?'ground':'road');
    window.edenMatrix?.surface(T,pyramid?.root||scene.getObjectByName('Pyramid at the end of the road'),{kind:'stone',wash:true});
    const plan=window.worldPropsLayout?.courtyard;
    if(plan&&altar){for(const t of plan.trees)altar.walls.push([t.x,t.z,.45*t.s,.45*t.s,3]);setAltar(false);setAltar(true);}

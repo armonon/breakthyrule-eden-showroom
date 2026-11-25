@@ -5,7 +5,8 @@
 window.createWorldProps=function(T,parent,{props,onChange=()=>{},warmup=null}={}){
  if(!props?.length)return null;
  const phone=!!window.edenRenderProfile?.().mobile;
- const MAX=phone?16:96,LOADS=phone?1:2,SCALE=phone?.5:.85;
+ // The scanned street props have their own allowance on top, so they never push a workshop model out.
+ const MAX=phone?16:96,SCANS=phone?4:24,CAP=MAX+SCANS,LOADS=phone?1:2,SCALE=phone?.5:.85;
  const root=new T.Group();root.name='Workshop models';parent.add(root);
  const ground=new Map(),live=new Map();let loading=0,nextCheck=0,disposed=false,wanted=[],enabled=true;
  for(const p of props){
@@ -19,7 +20,8 @@ window.createWorldProps=function(T,parent,{props,onChange=()=>{},warmup=null}={}
  async function load(p){
   const entry={scene:null};live.set(p,entry);loading++;
   try{
-   const s=(await window.showroomAssets.model('/assets/world-props/'+p.f+'.glb?v=1',{priority:'low'})).scene;
+   // 'scan:name' is one of Beyond Eden's photo-scanned street props (assets/beyond-eden/scan, CC0).
+   const s=(await window.showroomAssets.model((p.f.startsWith('scan:')?'/assets/beyond-eden/scan/models/'+p.f.slice(5):'/assets/world-props/'+p.f)+'.glb?v=1',{priority:'low'})).scene;
    if(disposed||live.get(p)!==entry){free(s);return;}
    s.name='Workshop model '+p.n+' '+p.k;s.position.set(...p.p);s.rotation.y=p.a??p.r*Math.PI/2;
    const tall=Math.max(...p.s)>1.1;
@@ -35,15 +37,15 @@ window.createWorldProps=function(T,parent,{props,onChange=()=>{},warmup=null}={}
   }catch{if(live.get(p)===entry){live.delete(p);p.retry=performance.now()+20000;}}
   finally{loading--;pump();}
  }
- function pump(){while(!disposed&&loading<LOADS&&wanted.length&&live.size<MAX+LOADS){const p=wanted.shift();if(!live.has(p))load(p);}}
+ function pump(){while(!disposed&&loading<LOADS&&wanted.length&&live.size<CAP+LOADS){const p=wanted.shift();if(!live.has(p))load(p);}}
  function update(viewer){
   const now=performance.now();if(disposed||!enabled||now<nextCheck)return;nextCheck=now+300;
   const {x,y,z}=viewer.position,near=[];
   for(const p of props){const d=p.distance=Math.hypot(p.p[0]-x,(p.p[1]+1.6-y)*1.5,p.p[2]-z)/p.range;if(d<1&&!(p.retry>now))near.push(p);}
-  near.sort((a,b)=>a.distance-b.distance);near.length=Math.min(near.length,MAX);const keep=new Set(near);
+  near.sort((a,b)=>a.distance-b.distance);{let a=0,b=0;for(let i=0;i<near.length;i++){const p=near[i];if(p.f.startsWith('scan:')?b++<SCANS:a++<MAX)continue;near.splice(i--,1);}}const keep=new Set(near);
   let over=live.size-near.filter(p=>live.has(p)).length;
   // Models just out of range or past the cap only go to make room, so standing on an edge does not thrash.
-  for(const p of [...live.keys()])if(!keep.has(p)&&(p.distance>1.35||over>MAX*.15)){over--;release(p);}
+  for(const p of [...live.keys()])if(!keep.has(p)&&(p.distance>1.35||over>CAP*.15)){over--;release(p);}
   wanted=near.filter(p=>!live.has(p));pump();
  }
  const around=(x,z)=>ground.get(Math.floor(x/4)+','+Math.floor(z/4))||[];

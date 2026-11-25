@@ -1,0 +1,88 @@
+Beyond Eden scanned surfaces and street props. Everything here is from Poly Haven (https://polyhaven.com), licence CC0 1.0
+(https://creativecommons.org/publicdomain/zero/1.0/): free to use for any purpose, no attribution required. Credited anyway.
+Fetched and converted by tools/world/fetch-beyond-scans.py (1k sources; web copies are WebP, models meshopt .glb).
+
+asphalt-d.webp, asphalt-n.webp, asphalt-m.webp
+  texture: "asphalt_04" by Jenelle van Heerden, Sergej Majboroda, CC0
+  https://polyhaven.com/a/asphalt_04
+
+concrete-d.webp, concrete-n.webp, concrete-m.webp
+  texture: "cracked_concrete" by Dimitrios Savva, CC0
+  https://polyhaven.com/a/cracked_concrete
+
+paving-d.webp, paving-n.webp, paving-m.webp
+  texture: "concrete_pavement" by Charlotte Baglioni, CC0
+  https://polyhaven.com/a/concrete_pavement
+
+plaster-d.webp, plaster-n.webp, plaster-m.webp
+  texture: "worn_plaster_wall" by Dimitrios Savva, CC0
+  https://polyhaven.com/a/worn_plaster_wall
+
+brick-d.webp, brick-n.webp, brick-m.webp
+  texture: "red_brick_plaster_patch_02" by Rob Tuytel, CC0
+  https://polyhaven.com/a/red_brick_plaster_patch_02
+
+rust-d.webp, rust-n.webp, rust-m.webp
+  texture: "rusty_metal_sheet" by Amal Kumar, CC0
+  https://polyhaven.com/a/rusty_metal_sheet
+
+models/road-barrier.glb
+  model: "concrete_road_barrier_02" by Amal Kumar, CC0
+  https://polyhaven.com/a/concrete_road_barrier_02
+
+models/trash-can.glb
+  model: "metal_trash_can" by GurJas Studios, CC0
+  https://polyhaven.com/a/metal_trash_can
+
+models/trash-bag.glb
+  model: "trashbag" by Benny Weimer, CC0
+  https://polyhaven.com/a/trashbag
+
+models/wooden-crate.glb
+  model: "wooden_crate_02" by James Ray Cock, Jurita Burger, CC0
+  https://polyhaven.com/a/wooden_crate_02
+
+models/plastic-crate.glb
+  model: "plastic_crate_01" by PierreB3D, CC0
+  https://polyhaven.com/a/plastic_crate_01
+
+models/old-tyre.glb
+  model: "old_tyre" by MP, CC0
+  https://polyhaven.com/a/old_tyre
+
+models/cement-bag.glb
+  model: "cement_bag" by PierreB3D, CC0
+  https://polyhaven.com/a/cement_bag
+
+models/cardboard-box.glb
+  model: "cardboard_box_01" by Rahul Chaudhary, CC0
+  https://polyhaven.com/a/cardboard_box_01
+
+models/oil-barrel.glb
+  model: "barrel_03" by Serhii Khromov, CC0
+  https://polyhaven.com/a/barrel_03
+
+models/wheel-rim.glb
+  model: "rusted_wheel_rim_01" by John Hutcheson, CC0
+  https://polyhaven.com/a/rusted_wheel_rim_01
+
+models/utility-box.glb
+  model: "utility_box_01" by James Ray Cock, CC0
+  https://polyhaven.com/a/utility_box_01
+
+models/fire-hydrant.glb
+  model: "fire_hydrant" by Gonçalo Felício, CC0
+  https://polyhaven.com/a/fire_hydrant
+
+models/manhole-cover.glb
+  model: "water_manhole_cover" by Raunox, CC0
+  https://polyhaven.com/a/water_manhole_cover
+
+models/rubble-stones.glb
+  model: "namaqualand_stones_01" by Greg Zaal, Jenelle van Heerden, CC0
+  https://polyhaven.com/a/namaqualand_stones_01
+
+models/pipes.glb
+  model: "modular_industrial_pipes_01" by Jorge Camacho, CC0
+  https://polyhaven.com/a/modular_industrial_pipes_01
+
