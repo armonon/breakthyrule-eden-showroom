@@ -1,8 +1,8 @@
 'use strict';
 window.createNightRoad=function(T,scene,{sections,roadX,roadStart,nightStart=roadStart,roadLength,clearingStart=-Infinity,district,sky,bark,forest,roadMaterial,vergeMaterial,clouds,mobile}){
  const smooth=T.MathUtils.smoothstep,parts=[],lights=scene.children.filter(o=>o.isLight&&!o.userData.bodyLight).map(light=>({light,intensity:light.intensity,color:light.color.clone(),ground:light.groundColor?.clone()}));
- const originalFog=scene.fog.color.clone(),nightFog=new T.Color(0x07110d),originalRoad=roadMaterial.color.clone(),originalVerge=vergeMaterial.color.clone();
- const moonColor=new T.Color(0x9fc9c4),moonGround=new T.Color(0x0c1a13),nightRoadColor=new T.Color(0x909f97),nightVerge=new T.Color(0x60775a);
+ const originalFog=scene.fog.color.clone(),nightFog=new T.Color(0x0a0d12),originalRoad=roadMaterial.color.clone(),originalVerge=vergeMaterial.color.clone();
+ const moonColor=new T.Color(0xa8bcd8),moonGround=new T.Color(0x10141a),nightRoadColor=new T.Color(0x97999c),nightVerge=new T.Color(0x62685c);
  const dummy=new T.Object3D(),leafTint=new T.Color();
  function noise(index,n,salt=0){let v=Math.imul(index+17,73856093)^Math.imul(n+11,19349663)^Math.imul(salt+7,83492791);v=Math.imul(v^(v>>>16),0x45d9f3b);return ((v^(v>>>16))>>>0)/4294967296;}
  function stamp(mesh,index,x,y,z,sx,sy,sz,rx=0,ry=0,rz=0){dummy.position.set(x,y,z);dummy.rotation.set(rx,ry,rz);dummy.scale.set(sx,sy,sz);dummy.updateMatrix();mesh.setMatrixAt(index,dummy.matrix);}
@@ -24,7 +24,7 @@ window.createNightRoad=function(T,scene,{sections,roadX,roadStart,nightStart=roa
    if(occupied(x,z))continue;
    const h=5+noise(index,i,2)*6.2,t=Math.floor(noise(index,i,6)*part.trees.length),tree=part.trees[t],s=h/tree.kind.height,k=counts[t]++;
    for(const mesh of [tree.wood,tree.leaves])stamp(mesh,k,x,0,z,s,s,s,0,noise(index,i,4)*6.28,.04*(noise(index,i,5)-.5));
-   tree.leaves.setColorAt(k,leafTint.setHSL(.25+noise(index,i,7)*.05,.32,.62+noise(index,i,8)*.12));
+   tree.leaves.setColorAt(k,leafTint.setHSL(.25+noise(index,i,7)*.05,.22,.5+noise(index,i,8)*.12));
   }
   for(let i=0;i<(mobile?55:100);i++){
    const side=i%2?1:-1,x=side*(3.4+noise(index,i,20)*47),z=(noise(index,i,21)-.5)*roadLength;
@@ -52,7 +52,7 @@ window.createNightRoad=function(T,scene,{sections,roadX,roadStart,nightStart=roa
   // far darker measured sky light; what is left of the hemisphere lights the characters and the land beyond the bake, and
   // comes down with it so they do not glow against the baked dark.
   const skyFill=.8-.45*(window.edenBaked?.nightStrength()||0);
-  for(const state of lights){const l=state.light;l.color.copy(state.color).lerp(moonColor,amount);l.intensity=T.MathUtils.lerp(state.intensity,l.isHemisphereLight?skyFill:state.intensity>1?1.5:.34,amount);if(state.ground)l.groundColor.copy(state.ground).lerp(moonGround,amount);}
+  for(const state of lights){const l=state.light;l.color.copy(state.color).lerp(moonColor,amount);l.intensity=T.MathUtils.lerp(state.intensity,l.isHemisphereLight?skyFill:state.intensity>1?2.1:.34,amount);if(state.ground)l.groundColor.copy(state.ground).lerp(moonGround,amount);}
   roadMaterial.color.copy(originalRoad).lerp(nightRoadColor,amount);vergeMaterial.color.copy(originalVerge).lerp(nightVerge,amount);
   clouds.forEach(cloud=>{cloud.material.opacity=.65*(1-amount);});stars.material.opacity=matrixSky?0:amount*.8;
  }

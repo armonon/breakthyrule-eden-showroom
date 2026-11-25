@@ -1422,26 +1422,48 @@
   function render(){
    if(!built)return;
    if(!mobile)renderHeat();
-   if(armed)renderViewmodel();
+   if(armed&&!o.overlayed?.())renderViewmodel();
    renderPost();
   }
 
   // The view-space flash sprite and its light exist from the start (prewarm compiles them), not from the first shot.
   function ensureViewFlash(){if(viewScene.userData.flash)return;const f=new T.Sprite(new T.SpriteMaterial({map:tx.flashes?.[0]||tx.flash,transparent:true,blending:T.AdditiveBlending,depthWrite:false}));f.layers.enable(GLOW);f.visible=false;viewScene.add(f);viewScene.userData.flash=f;const l=new T.PointLight(0xffa850,0,1.2,2);viewScene.add(l);viewScene.userData.flashLight=l;}
-  function renderViewmodel(){
-   if(current?.id==='fists'||scoped||(o.thirdPerson?.()||0)>.35||handsBusy&&equipBlend<.04)return;
+  // The weapon is lit by what lights the place it is in (Beyond Eden: o.viewLight, app.js), eased so it does not flicker from
+  // one probe to the next. Directions are world directions, turned into the view.
+  const viewQ=new T.Quaternion(),lightNow={sky:new T.Color(),ground:new T.Color(),key:new T.Color(),rim:new T.Color(),keyDir:new T.Vector3(0,1,0),rimDir:new T.Vector3(0,1,0),env:0},lightTo={sky:new T.Color(),ground:new T.Color(),key:new T.Color(),rim:new T.Color(),keyDir:new T.Vector3(0,1,0),rimDir:new T.Vector3(0,1,0),env:0};let lightAt=0;
+  // Weapon materials carry the studio map themselves, at full strength: dim it with the place.
+  const studio=new Map();let studioAt=0,studioNow=1;
+  function dimStudio(k){const now=performance.now();if(k!==1&&now-studioAt>1000||k!==studioNow&&!studio.size){studioAt=now;viewScene.traverse(x=>{if(x.isMesh)for(const m of [].concat(x.material))if(m?.envMap&&!studio.has(m))studio.set(m,m.envMapIntensity);});}
+   if(k===1&&studioNow===1)return;studioNow=k;for(const [m,base] of studio)m.envMapIntensity=base*k;}
+  function viewLight(){
+   if(!o.viewLight?.(lightTo)){lightAt=0;dimStudio(1);return false;}
+   const now=performance.now(),k=lightAt?1-Math.exp(-Math.min(.2,(now-lightAt)/1000)*7):1;lightAt=now;
+   for(const n of ['sky','ground','key','rim'])lightNow[n].lerp(lightTo[n],k);for(const n of ['keyDir','rimDir'])lightNow[n].lerp(lightTo[n],k);lightNow.env+=(lightTo.env-lightNow.env)*k;
+   // Not the lens's own turn: the weapon moves inside the frame, and light does not turn with it.
+   viewQ.copy(camera.quaternion).invert();
+   viewHemi.color.copy(lightNow.sky);viewHemi.groundColor.copy(lightNow.ground);viewHemi.position.set(0,1,0).applyQuaternion(viewQ);viewHemi.intensity=1;
+   sunView.position.copy(lightNow.keyDir).normalize().applyQuaternion(viewQ);sunView.target.position.set(0,0,0);sunView.color.copy(lightNow.key);sunView.intensity=1;
+   viewRim.position.copy(lightNow.rimDir).normalize().applyQuaternion(viewQ);viewRim.color.copy(lightNow.rim);viewRim.intensity=1;viewScene.environmentIntensity=lightNow.env;dimStudio(lightNow.env);
+   return true;
+  }
+  // Drawn by the post chain in front of the lens (Beyond Eden), or straight onto the finished picture.
+  const viewHidden=()=>!built||!armed||current?.id==='fists'||scoped||(o.thirdPerson?.()||0)>.35||handsBusy&&equipBlend<.04;
+  function renderOverlay(){if(viewHidden())return false;renderViewmodel(true);return true;}
+  function renderViewmodel(target=false){
+   if(viewHidden())return;
    viewCamera.aspect=camera.aspect;viewCamera.updateProjectionMatrix();viewCamera.quaternion.copy(free.view).invert();
+   const lit=viewLight(target);
    // Sun direction (world) into view space so the weapon is lit like the garden.
    const sun=new T.Vector3(-23,19,-48).normalize().applyQuaternion(camera.quaternion.clone().invert());
-   sunView.position.copy(sun);sunView.target.position.set(0,0,0);
-   const night=clamp(-(camera.position.z+11)/30,0,1);sunView.intensity=lerp(2.6,.5,night);viewScene.environmentIntensity=lerp(1,.12,night);if(viewRim)viewRim.intensity=lerp(.8,.16,night);if(viewHemi)viewHemi.intensity=lerp(.9,.12,night);
+   if(!lit){sunView.position.copy(sun);sunView.target.position.set(0,0,0);}
+   const night=clamp(-(camera.position.z+11)/30,0,1);if(!lit){sunView.color.setHex(0xfff0d0);viewHemi.color.setHex(0xe6f2ff);viewHemi.groundColor.setHex(0x4a4a32);viewRim.color.setHex(0xbfd6ff);viewRim.position.set(-1,.5,1);sunView.intensity=lerp(2.6,.5,night);viewScene.environmentIntensity=lerp(1,.12,night);if(viewRim)viewRim.intensity=lerp(.8,.16,night);if(viewHemi)viewHemi.intensity=lerp(.9,.12,night);}
    // Muzzle flash sprite rendered in view space
    ensureViewFlash();
    const fl=viewScene.userData.flash,fll=viewScene.userData.flashLight;
    const fa=state.flash||0;fl.visible=fa>.05&&current&&current.id!=='axe'&&current.id!=='fists'&&current.id!=='c4';
    if(fl.visible){models[current.id].holder.updateMatrixWorld(true);models[current.id].parts.muzzle.getWorldPosition(fl.position);const s=(current.id==='pump'?.32:.2)*(.7+fa*.5)*(state.flashScale||1);fl.scale.set(s,s,s);if(tx.flashes)fl.material.map=tx.flashes[state.flashVariant||0];fl.material.rotation=state.flashRot||0;fl.material.opacity=Math.min(1,fa*1.4);fll.position.copy(fl.position);}
    fll.intensity=fa*fa*3;
-   const auto=renderer.autoClear;renderer.autoClear=false;renderer.clearDepth();const exposure=renderer.toneMappingExposure;renderer.toneMappingExposure=exposure*lerp(1,.5,night);renderer.render(viewScene,viewCamera);renderer.toneMappingExposure=exposure;renderer.autoClear=auto;
+   const auto=renderer.autoClear;renderer.autoClear=false;if(!target)renderer.clearDepth();const exposure=renderer.toneMappingExposure;renderer.toneMappingExposure=lit?exposure:exposure*lerp(1,.5,night);renderer.render(viewScene,viewCamera);renderer.toneMappingExposure=exposure;renderer.autoClear=auto;
   }
 
   /* ------------------------------------------------------------ bloom + lens flares (shot effects only) */
@@ -1587,6 +1609,7 @@
    dropAim(){zoomTarget=0;},
    syncLook(dPitch=0){const l=o.getLook();yaw=l.yaw;pitch=clamp(l.pitch+dPitch,-1.35,1.35);},
    // prewarm.js: compile every first-person weapon (hidden ones too) before the first draw, not on first equip.
+   renderOverlay,
    primeView(){build();ensureViewFlash();const hidden=[];viewScene.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}});const auto=renderer.autoClear,wasArmed=armed;try{renderer.autoClear=false;renderer.render(viewScene,viewCamera);armed=true;warmPost();}finally{armed=wasArmed;renderer.autoClear=auto;for(const o of hidden)o.visible=false;}},
    prewarmShaders(){build();sfx.init();ensureViewFlash();warmPost();const hidden=[];viewScene.traverse(x=>{if(!x.visible&&!x.isLight){hidden.push(x);x.visible=true;}});try{const job=renderer.compileAsync?renderer.compileAsync(viewScene,viewCamera):renderer.compile(viewScene,viewCamera);job?.catch?.(()=>{});}catch(e){console.warn('Weapon prewarm failed',e);}finally{for(const x of hidden)x.visible=false;}return hidden.length;},
    ready(){build();return armsRig?armsRig.ready.then(()=>true,()=>false):Promise.resolve(false);},
