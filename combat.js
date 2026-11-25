@@ -59,7 +59,7 @@
   const look={fovPulse:0,kickPitch:new Spring(120,16),kickYaw:new Spring(120,16),shake:0};
   const stats={hits:0,trueShots:0,shots:0,bodyHits:0,headHits:0,kills:0};
   let lastCamPos=null,speedSmoothed=0,bobPhase=0,verticalVel=0,lastY=0;
-  let fillBase=null,env,M,viewScene,viewCamera,sunView,world,fxGroup,flashLight,blastLight,raycaster,hud,audio=null;
+  let viewHemi=null,viewRim=null,fillBase=null,env,M,viewScene,viewCamera,sunView,world,fxGroup,flashLight,blastLight,raycaster,hud,audio=null;
   const models={},state={},particles=[],shells=[],decals=[],tracers=[],charges=[],targets=[],debris=[];
 
   /* ------------------------------------------------------------ textures */
@@ -1157,9 +1157,9 @@
    tx=buildTextures();env=buildEnvironment();M=buildMaterials(tx);
    viewScene=new T.Scene();viewScene.environment=env;
    viewCamera=new T.PerspectiveCamera(58,1,.01,10);
-   viewScene.add(new T.HemisphereLight(0xe6f2ff,0x4a4a32,.9));
+   viewHemi=new T.HemisphereLight(0xe6f2ff,0x4a4a32,.9);viewScene.add(viewHemi);
    sunView=new T.DirectionalLight(0xfff0d0,2.6);viewScene.add(sunView);viewScene.add(sunView.target);
-   const rim=new T.DirectionalLight(0xbfd6ff,.8);rim.position.set(-1,.5,1);viewScene.add(rim);
+   viewRim=new T.DirectionalLight(0xbfd6ff,.8);viewRim.position.set(-1,.5,1);viewScene.add(viewRim);
    world=new T.Group();world.name='Eden combat range';scene.add(world);
    fxGroup=new T.Group();fxGroup.name='Combat effects';fxGroup.userData.noHit=true;scene.add(fxGroup);
    // No new lights in the garden scene: adding one would force every garden material to recompile.
@@ -1355,7 +1355,7 @@
    // Sun direction (world) into view space so the weapon is lit like the garden.
    const sun=new T.Vector3(-23,19,-48).normalize().applyQuaternion(camera.quaternion.clone().invert());
    sunView.position.copy(sun);sunView.target.position.set(0,0,0);
-   const night=clamp(-(camera.position.z+11)/30,0,1);sunView.intensity=lerp(2.6,.35,night);
+   const night=clamp(-(camera.position.z+11)/30,0,1);sunView.intensity=lerp(2.6,.5,night);viewScene.environmentIntensity=lerp(1,.12,night);if(viewRim)viewRim.intensity=lerp(.8,.16,night);if(viewHemi)viewHemi.intensity=lerp(.9,.12,night);
    // Muzzle flash sprite rendered in view space
    ensureViewFlash();
    const fl=viewScene.userData.flash,fll=viewScene.userData.flashLight;

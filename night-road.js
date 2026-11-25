@@ -1,8 +1,8 @@
 'use strict';
 window.createNightRoad=function(T,scene,{sections,roadX,roadStart,nightStart=roadStart,roadLength,clearingStart=-Infinity,district,sky,bark,forest,roadMaterial,vergeMaterial,clouds,mobile}){
- const smooth=T.MathUtils.smoothstep,parts=[],lights=scene.children.filter(o=>o.isLight).map(light=>({light,intensity:light.intensity,color:light.color.clone(),ground:light.groundColor?.clone()}));
- const originalFog=scene.fog.color.clone(),nightFog=new T.Color(0x192a25),originalRoad=roadMaterial.color.clone(),originalVerge=vergeMaterial.color.clone();
- const moonColor=new T.Color(0xa9c8c1),moonGround=new T.Color(0x14261b),nightRoadColor=new T.Color(0x909f97),nightVerge=new T.Color(0x60775a);
+ const smooth=T.MathUtils.smoothstep,parts=[],lights=scene.children.filter(o=>o.isLight&&!o.userData.bodyLight).map(light=>({light,intensity:light.intensity,color:light.color.clone(),ground:light.groundColor?.clone()}));
+ const originalFog=scene.fog.color.clone(),nightFog=new T.Color(0x07110d),originalRoad=roadMaterial.color.clone(),originalVerge=vergeMaterial.color.clone();
+ const moonColor=new T.Color(0x9fc9c4),moonGround=new T.Color(0x0c1a13),nightRoadColor=new T.Color(0x909f97),nightVerge=new T.Color(0x60775a);
  const dummy=new T.Object3D(),leafTint=new T.Color();
  function noise(index,n,salt=0){let v=Math.imul(index+17,73856093)^Math.imul(n+11,19349663)^Math.imul(salt+7,83492791);v=Math.imul(v^(v>>>16),0x45d9f3b);return ((v^(v>>>16))>>>0)/4294967296;}
  function stamp(mesh,index,x,y,z,sx,sy,sz,rx=0,ry=0,rz=0){dummy.position.set(x,y,z);dummy.rotation.set(rx,ry,rz);dummy.scale.set(sx,sy,sz);dummy.updateMatrix();mesh.setMatrixAt(index,dummy.matrix);}
@@ -39,15 +39,18 @@ window.createNightRoad=function(T,scene,{sections,roadX,roadStart,nightStart=roa
  parts.forEach(part=>recycle(part.section,part.section.userData.roadIndex||0));
  const starPositions=[];for(let i=0;i<280;i++){const az=noise(44,i)*Math.PI*2,y=.16+noise(44,i,1)*.8,r=Math.sqrt(1-y*y);starPositions.push(Math.cos(az)*r*149,y*149,Math.sin(az)*r*149);}
  const starGeo=new T.BufferGeometry();starGeo.setAttribute('position',new T.Float32BufferAttribute(starPositions,3));const stars=new T.Points(starGeo,new T.PointsMaterial({color:0xcfe4da,size:.16,transparent:true,opacity:0,depthWrite:false,fog:false}));sky.add(stars);
+ // The night is the program's: its sky (matrix-world.js) closes over the old one as the road darkens.
+ const matrixSky=window.edenMatrix?.sky(T)||null;if(matrixSky)sky.add(matrixSky);
  let amount=0,enabled=true,override=null,stage=0,stageTarget=0;
  function update(time,viewer){
   stage+=(stageTarget-stage)*.04;amount=override??Math.max(smooth(nightStart-viewer.position.z,.5,15),stage);sky.material.uniforms.roadNight.value=amount;
+  if(matrixSky){matrixSky.visible=amount>.002;window.edenMatrix.update(time,amount);}
   // Sections beyond the fog (~120 m) are not drawn at all.
   for(const part of parts)part.root.visible=enabled&&part.active&&Math.abs(part.section.position.z-viewer.position.z)<roadLength*.5+120;
-  scene.fog.color.copy(originalFog).lerp(nightFog,amount);scene.fog.density=T.MathUtils.lerp(.016,.019,amount);
-  for(const state of lights){const l=state.light;l.color.copy(state.color).lerp(moonColor,amount);l.intensity=T.MathUtils.lerp(state.intensity,l.isHemisphereLight?.58:state.intensity>1?.52:.16,amount);if(state.ground)l.groundColor.copy(state.ground).lerp(moonGround,amount);}
+  scene.fog.color.copy(originalFog).lerp(nightFog,amount);scene.fog.density=T.MathUtils.lerp(.016,matrixSky?.0125:.019,amount);
+  for(const state of lights){const l=state.light;l.color.copy(state.color).lerp(moonColor,amount);l.intensity=T.MathUtils.lerp(state.intensity,l.isHemisphereLight?.8:state.intensity>1?1.5:.34,amount);if(state.ground)l.groundColor.copy(state.ground).lerp(moonGround,amount);}
   roadMaterial.color.copy(originalRoad).lerp(nightRoadColor,amount);vergeMaterial.color.copy(originalVerge).lerp(nightVerge,amount);
-  clouds.forEach(cloud=>{cloud.material.opacity=.65*(1-amount);});stars.material.opacity=amount*.8;
+  clouds.forEach(cloud=>{cloud.material.opacity=.65*(1-amount);});stars.material.opacity=matrixSky?0:amount*.8;
  }
  return {recycle,update,setOverride(v){override=v;},setStage(value){stageTarget=Math.max(0,Math.min(1,value));},get stage(){return stageTarget;},setEnabled(value){enabled=value;if(!value)for(const part of parts)part.root.visible=false;},blocks:district.blocks,get amount(){return amount;},inspect:()=>({night:amount,sections:parts.length,trees:parts.reduce((n,p)=>n+(p.root.visible?p.trees.reduce((m,t)=>m+t.wood.count,0):0),0),district:district.inspect()})};
 };

@@ -8,12 +8,14 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
  let disposed=false;
  const settings={enabled,ao:.8,aoRadius:.7,aoIntensity:4.5,bloom:.26,bloomThreshold:.9,warmth:.025,saturation:1.06,vignette:.22,flare:.8,rays:.7,glare:.9,contrast:.12,split:.035,taa:true,taaFeedback:.88,sharpen:.6,grain:.028,lut:1,
   // realism (each costs nothing when 0): auto-exposure, distance haze, cloud shadows, wet ground at night, depth of field, motion blur
-  exposure:1,haze:.3,clouds:0,wet:0,dof:0,motionBlur:0};
+  exposure:1,haze:.3,clouds:0,wet:0,dof:0,motionBlur:0,
+  // body-camera look (Beyond Eden): wide-lens barrel bend, colour fringing at the edges, light hanging in the air round lamps, night grade
+  lens:0,chroma:0,air:0,grade:0};
  const webgl2=true,size=new T.Vector2(),last=new T.Vector2();
  const target=(type=T.HalfFloatType,extra={})=>new T.WebGLRenderTarget(1,1,{type,depthBuffer:false,...extra});
  const depth=new T.DepthTexture(1,1);depth.type=T.UnsignedIntType;
  const sceneRT=new T.WebGLRenderTarget(1,1,{type:T.HalfFloatType,samples:webgl2?4:0,depthTexture:depth});sceneRT.texture.colorSpace=T.SRGBColorSpace;sceneRT.isXRRenderTarget=true;
- const aoA=target(),aoB=target(),down=[target(),target(),target()],up=[target(),target()],rayA=target(),rayB=target();
+ const aoA=target(),aoB=target(),down=Array.from({length:5},()=>target()),up=Array.from({length:4},()=>target()),rayA=target(),rayB=target();
  // Eye adaptation state, ping-ponged 1x1: r = adapted scene luminance, g = exposure factor, b = focus distance (m).
  const lum=[0,1].map(()=>new T.WebGLRenderTarget(1,1,{type:T.HalfFloatType,depthBuffer:false,minFilter:T.NearestFilter,magFilter:T.NearestFilter}));let lumIndex=0,lumValid=false,lastTime=0;
  const wetRT=target(),lensRT=target();
@@ -26,6 +28,7 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
     v+=amp*((at(ix,iy)*(1-tx)+at(ix+1,iy)*tx)*(1-ty)+(at(ix,iy+1)*(1-tx)+at(ix+1,iy+1)*tx)*ty);total+=amp;amp*=.5;}
    const b=Math.round(v/total*255),k=(y*NOISE+x)*4;noiseData[k]=noiseData[k+1]=noiseData[k+2]=b;noiseData[k+3]=255;}}
  const noise=new T.DataTexture(noiseData,NOISE,NOISE);noise.wrapS=noise.wrapT=T.RepeatWrapping;noise.magFilter=noise.minFilter=T.LinearFilter;noise.needsUpdate=true;
+ const NIGHT_AIR=new T.Color(.016,.040,.029),HAZE_NIGHT=new T.Color(.05,.07,.085),airNear=[];
  const tmpMatrix=new T.Matrix4(),camRot=new T.Matrix3(),camPos=new T.Vector3(),cloudOffset=new T.Vector2(),hazeColor=new T.Color(),moveReproject=new T.Matrix4(),prevCamPos=new T.Vector3(),moveMatrix=new T.Matrix4();let moveSpeed=0;
  // Light sources for the lens effects: the sky's sun disc, the night district's lanterns and any flashlights
  // (set by setLights); a flashlight glares hard, but only while its beam points at the camera.
@@ -134,8 +137,8 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
  const composite=new T.ShaderMaterial({vertexShader,depthTest:false,depthWrite:false,toneMapped:false,
   uniforms:{tScene:{value:sceneRT.texture},tAO:{value:aoA.texture},tBloom:{value:up[0].texture},tRays:{value:rayA.texture},tVisible:{value:visible.texture},ao:{value:0},bloom:{value:0},warmth:{value:0},saturation:{value:1},vignette:{value:0},contrast:{value:0},split:{value:0},view:{value:0},
    sun:{value:sunUv},sunGate:{value:0},flare:{value:0},rays:{value:0},glare:{value:0},aspect:{value:1},lamps:{value:Array.from({length:LAMPS},()=>new T.Vector4())},lampColors:{value:Array.from({length:LAMPS},()=>new T.Color())},
-   tDepth:{value:depth},tLum:{value:lum[0].texture},tNoise:{value:noise},tWet:{value:wetRT.texture},projInv:{value:new T.Matrix4()},camRot:{value:camRot},camPos:{value:camPos},cloudOffset:{value:cloudOffset},hazeColor:{value:hazeColor},exposure:{value:0},haze:{value:0},clouds:{value:0},wet:{value:0}},
-  fragmentShader:`varying vec2 vUv;uniform sampler2D tScene,tAO,tBloom,tRays,tVisible,tDepth,tLum,tNoise,tWet;uniform mat4 projInv;uniform mat3 camRot;uniform vec3 camPos,hazeColor;uniform vec2 cloudOffset;uniform float exposure,haze,clouds,wet;uniform float ao,bloom,warmth,saturation,vignette,contrast,split,view,sunGate,flare,rays,glare,aspect;uniform vec2 sun;uniform vec4 lamps[${LAMPS}];uniform vec3 lampColors[${LAMPS}];
+   tDepth:{value:depth},tLum:{value:lum[0].texture},tNoise:{value:noise},tWet:{value:wetRT.texture},projInv:{value:new T.Matrix4()},camRot:{value:camRot},camPos:{value:camPos},cloudOffset:{value:cloudOffset},hazeColor:{value:hazeColor},exposure:{value:0},haze:{value:0},clouds:{value:0},wet:{value:0},grade:{value:0},air:{value:0},airPos:{value:Array.from({length:6},()=>new T.Vector4())},airColor:{value:Array.from({length:6},()=>new T.Color())}},
+  fragmentShader:`varying vec2 vUv;uniform sampler2D tScene,tAO,tBloom,tRays,tVisible,tDepth,tLum,tNoise,tWet;uniform mat4 projInv;uniform mat3 camRot;uniform vec3 camPos,hazeColor;uniform vec2 cloudOffset;uniform float exposure,haze,clouds,wet,grade,air;uniform vec4 airPos[6];uniform vec3 airColor[6];uniform float ao,bloom,warmth,saturation,vignette,contrast,split,view,sunGate,flare,rays,glare,aspect;uniform vec2 sun;uniform vec4 lamps[${LAMPS}];uniform vec3 lampColors[${LAMPS}];
  // A ghost is the sun reflected between lens elements: a soft disc with a brighter rim, each colour a slightly different size.
  vec3 ghost(vec2 centre,float r){float d=length((vUv-centre)*vec2(aspect,1.));vec3 rr=r*vec3(1.,1.05,1.1);
   return smoothstep(rr,rr*.45,vec3(d))*.5+smoothstep(rr,rr*.9,vec3(d))*smoothstep(rr*.76,rr*.94,vec3(d))*.5;}
@@ -154,6 +157,10 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   return g;}
  void main(){vec4 s=texture2D(tScene,vUv);
   if(view>.5){gl_FragColor=vec4(view<1.5?vec3(texture2D(tAO,vUv).x):view<2.5?texture2D(tBloom,vUv).rgb:view<3.5?vec3(s.a):view<4.5?texture2D(tRays,vUv).rgb*4.:texture2D(tWet,vUv).rgb*3.,1.);return;}vec3 c=clamp(s.rgb,0.,1.)*mix(1.,texture2D(tAO,vUv).x,ao);
+  if(air>0.){float d=texture2D(tDepth,vUv).x;vec4 p=projInv*vec4(vec3(vUv,min(d,.99999))*2.-1.,1.);vec3 ray=camRot*(p.xyz/p.w);float reach=min(length(ray),60.);ray=normalize(ray);vec3 fog=vec3(0.);
+   // Light scattered by damp air: the exact integral of each lamp's falloff along the view ray.
+   for(int i=0;i<6;i++){vec4 l=airPos[i];if(l.w<=0.)continue;vec3 q=camPos-l.xyz;float b=dot(ray,q),s=1./sqrt(max(dot(q,q)-b*b,.02));fog+=airColor[i]*l.w*min(s*(atan((reach+b)*s)-atan(b*s)),7.);}
+   float n=texture2D(tNoise,(camPos.xz+ray.xz*min(reach,14.))*.05+cloudOffset*40.).r;c=1.-(1.-c)*(1.-clamp(fog*air*(.55+.9*n),0.,.85));}
   if(clouds+wet+haze>0.){float d=texture2D(tDepth,vUv).x;if(d<1.){vec4 p=projInv*vec4(vec3(vUv,d)*2.-1.,1.);vec3 vp=p.xyz/p.w;float dist=length(vp);vec3 wp=camPos+camRot*vp;
    // cloud shadows: drifting noise on the ground plane dims what is lit (bright pixels) more than what is already in shade
    if(clouds>0.){float n=texture2D(tNoise,wp.xz*.011+cloudOffset).r*.65+texture2D(tNoise,wp.xz*.027-cloudOffset*1.6).r*.35;
@@ -169,6 +176,8 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   // Film-like grade: a gentle S-curve for contrast, cool shadows and warm highlights (split toning).
   {float l=dot(c,vec3(.2126,.7152,.0722));vec3 s=c*c*(3.-2.*clamp(c,0.,1.));c=mix(c,s,contrast);
    c+=split*(mix(vec3(-.35,.05,.45),vec3(.5,.18,-.4),smoothstep(.15,.75,l)))*(1.-abs(l*2.-1.)*.5);}
+  // Night grade: green-black shadows, skin and flame kept warm, a filmic shoulder.
+  if(grade>0.){float l=dot(c,vec3(.2126,.7152,.0722));vec3 g=c*mix(vec3(.86,1.06,.95),vec3(1.04,1.,.95),smoothstep(.06,.5,l));g=g*(1.+g*.22)/(1.+g*.30);g=mix(vec3(l),g,.94);c=mix(c,g,grade);}
   vec2 q=vUv-.5;c*=1.-vignette*dot(q,q)*2.;
   gl_FragColor=vec4(clamp(c,0.,1.),s.a);
  }`});
@@ -203,24 +212,25 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
    const out=c.map((v,i)=>{let x=v+(l-v)*-.14;x=x+(smooth(Math.min(1,Math.max(0,x)))-x)*.5;const shadow=(1-l)*(1-l),light=l*l;return x+[-.008,.0,.014][i]*shadow+[.007,.002,-.008][i]*light;});
    for(const v of out)lutData[n++]=Math.round(Math.min(1,Math.max(0,v))*255);lutData[n++]=255;}}
  const lut=new T.Data3DTexture(lutData,LUT_SIZE,LUT_SIZE,LUT_SIZE);lut.format=T.RGBAFormat;lut.minFilter=lut.magFilter=T.LinearFilter;lut.wrapS=lut.wrapT=lut.wrapR=T.ClampToEdgeWrapping;lut.needsUpdate=true;
- const finish=raw(`varying vec2 vUv;uniform sampler2D tSrc;uniform highp sampler3D tLut;uniform vec2 texel;uniform float sharpen,grain,lutMix,seed;
+ const finish=raw(`varying vec2 vUv;uniform sampler2D tSrc;uniform highp sampler3D tLut;uniform vec2 texel;uniform float sharpen,grain,lutMix,seed,lens,chroma,aspect;
  float hash(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
- void main(){vec3 c=texture2D(tSrc,vUv).rgb,n=texture2D(tSrc,vUv+vec2(0.,texel.y)).rgb,s=texture2D(tSrc,vUv-vec2(0.,texel.y)).rgb,e=texture2D(tSrc,vUv+vec2(texel.x,0.)).rgb,w=texture2D(tSrc,vUv-vec2(texel.x,0.)).rgb;
+ void main(){vec2 q=(vUv-.5)*vec2(aspect,1.);float r2=dot(q,q)/(aspect*aspect*.25+.25);vec2 uv=.5+(vUv-.5)*(1.-lens*(1.-r2));vec3 c=texture2D(tSrc,uv).rgb,n=texture2D(tSrc,uv+vec2(0.,texel.y)).rgb,s=texture2D(tSrc,uv-vec2(0.,texel.y)).rgb,e=texture2D(tSrc,uv+vec2(texel.x,0.)).rgb,w=texture2D(tSrc,uv-vec2(texel.x,0.)).rgb;
+  if(chroma>0.){vec2 o=(vUv-.5)*r2*chroma;c.r=texture2D(tSrc,uv+o).r;c.b=texture2D(tSrc,uv-o).b;}
   // contrast-adaptive sharpening: weaker where the neighbourhood is already contrasty, so edges do not ring
   vec3 lo=min(c,min(n,min(s,min(e,w)))),hi=max(c,max(n,max(s,max(e,w))));vec3 amp=sqrt(clamp(min(lo,1.-hi)/max(hi,vec3(1e-3)),0.,1.));
   vec3 wgt=-amp*sharpen*.2;c=clamp((c+(n+s+e+w)*wgt)/(1.+4.*wgt),0.,1.);
   vec3 scale=vec3(${((LUT_SIZE-1)/LUT_SIZE).toFixed(6)}),off=vec3(${(.5/LUT_SIZE).toFixed(6)});c=mix(c,texture(tLut,c*scale+off).rgb,lutMix);
   float l=dot(c,vec3(.2126,.7152,.0722));c+=(hash(gl_FragCoord.xy+seed)-.5)*grain*(1.-l*.7);
-  gl_FragColor=vec4(c,1.);}`,{tSrc:{value:null},tLut:{value:lut},texel:{value:new T.Vector2()},sharpen:{value:0},grain:{value:0},lutMix:{value:1},seed:{value:0}});
+  gl_FragColor=vec4(c,1.);}`,{tSrc:{value:null},tLut:{value:lut},texel:{value:new T.Vector2()},sharpen:{value:0},grain:{value:0},lutMix:{value:1},seed:{value:0},lens:{value:0},chroma:{value:0},aspect:{value:1}});
  function resize(){
   renderer.getDrawingBufferSize(size);if(size.equals(last))return;last.copy(size);
   const w=size.x,h=size.y,hw=Math.max(1,w>>1),hh=Math.max(1,h>>1);
   sceneRT.setSize(w,h);taaCurrent.setSize(w,h);taaHistory.forEach(t=>t.setSize(w,h));taaValid=false;resolve.uniforms.texel.value.set(1/w,1/h);finish.uniforms.texel.value.set(1/w,1/h);aoA.setSize(hw,hh);aoB.setSize(hw,hh);
-  down.forEach((t,i)=>t.setSize(Math.max(1,w>>(i+1)),Math.max(1,h>>(i+1))));up[0].setSize(hw,hh);up[1].setSize(Math.max(1,w>>2),Math.max(1,h>>2));
+  down.forEach((t,i)=>t.setSize(Math.max(1,w>>(i+1)),Math.max(1,h>>(i+1))));up.forEach((t,i)=>t.setSize(Math.max(1,w>>(i+1)),Math.max(1,h>>(i+1))));
   rayA.setSize(Math.max(1,w>>2),Math.max(1,h>>2));rayB.setSize(Math.max(1,w>>2),Math.max(1,h>>2));
   wetRT.setSize(hw,hh);wetMaterial.uniforms.texel.value.set(1/hw,1/hh);lensRT.setSize(w,h);lensMaterial.uniforms.texel.value.set(1/w,1/h);
   aoMaterial.uniforms.texel.value.set(1/hw,1/hh);
-  for(const m of [visibleMaterial,rayMaskMaterial,composite,lensMaterial])m.uniforms.aspect.value=w/h;
+  for(const m of [visibleMaterial,rayMaskMaterial,composite,lensMaterial,finish])m.uniforms.aspect.value=w/h;
  }
  // Screen position (uv) of a world point and its distance along the view axis; 0 when behind the camera.
  function project(world,out){tmp.copy(world).applyMatrix4(camera.matrixWorldInverse);const dist=-tmp.z;if(dist<.1)return 0;tmp.applyMatrix4(camera.projectionMatrix);out.set(tmp.x*.5+.5,tmp.y*.5+.5);return dist;}
@@ -252,6 +262,10 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   }
   return sunGate>0||lampCount>0;
  }
+ // The six lamps that matter most to the air around the viewer; altar({position,color,power}) comes through lights.air.
+ function updateAir(){const pos=composite.uniforms.airPos.value,col=composite.uniforms.airColor.value;airNear.length=0;
+  for(const p of lights.lamps()||[])airNear.push({p,w:.020,c:LANTERN,d:p.distanceToSquared(camPos)});for(const a of lights.air?.()||[])airNear.push({p:a.position,w:a.power,c:a.color,d:a.position.distanceToSquared(camPos)*.2});
+  airNear.sort((a,b)=>a.d-b.d);for(let i=0;i<6;i++){const a=airNear[i];if(!a||a.d>3600){pos[i].w=0;continue;}pos[i].set(a.p.x,a.p.y,a.p.z,a.w*(1-T.MathUtils.smoothstep(a.d,1600,3600)));col[i].copy(a.c);}}
  function render(){
   if(disposed)return;
   if(!settings.enabled){renderer.info.autoReset=true;renderer.render(scene,camera);return;}
@@ -268,13 +282,13 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   }
   if(settings.bloom>0){
    brightMaterial.uniforms.threshold.value=settings.bloomThreshold;pass(brightMaterial,down[0]);
-   for(let i=1;i<3;i++){downMaterial.uniforms.tSrc.value=down[i-1].texture;downMaterial.uniforms.texel.value.set(.5/down[i-1].width,.5/down[i-1].height);pass(downMaterial,down[i]);}
-   for(let i=1;i>=0;i--){const src=i===1?down[2]:up[1];upMaterial.uniforms.tSrc.value=src.texture;upMaterial.uniforms.tBase.value=down[i].texture;upMaterial.uniforms.texel.value.set(.5/src.width,.5/src.height);pass(upMaterial,up[i]);}
+   const levels=settings.grade>0?5:3;for(let i=1;i<levels;i++){downMaterial.uniforms.tSrc.value=down[i-1].texture;downMaterial.uniforms.texel.value.set(.5/down[i-1].width,.5/down[i-1].height);pass(downMaterial,down[i]);}
+   for(let i=levels-2;i>=0;i--){const src=i===levels-2?down[levels-1]:up[i+1];upMaterial.uniforms.tSrc.value=src.texture;upMaterial.uniforms.tBase.value=down[i].texture;upMaterial.uniforms.texel.value.set(.5/src.width,.5/src.height);pass(upMaterial,up[i]);}
   }
   // Realism passes: eye adaptation / focus (1x1), wet ground (half resolution, at night).
   const now=performance.now(),dt=lastTime?Math.min(.25,(now-lastTime)/1000):1/60;lastTime=now;
   camera.updateMatrixWorld();camRot.setFromMatrix4(camera.matrixWorld);camera.getWorldPosition(camPos);
-  cloudOffset.set(now*.0000065,now*.0000025);hazeColor.setRGB(.62,.71,.78).lerp(new T.Color(.05,.07,.085),night);
+  cloudOffset.set(now*.0000065,now*.0000025);hazeColor.setRGB(.62,.71,.78).lerp(settings.grade>0?NIGHT_AIR:HAZE_NIGHT,night);
   const wetAmount=settings.wet*T.MathUtils.smoothstep(night,.3,.8);
   if(camPos.distanceTo(prevCamPos)>6)lumValid=false; // a teleport (new world, loading screen) starts adapted, not with a flash
   if(settings.exposure>0||settings.dof>0){
@@ -292,6 +306,7 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   }
   const c=composite.uniforms;c.ao.value=settings.ao;c.bloom.value=settings.bloom;c.warmth.value=settings.warmth;c.saturation.value=settings.saturation;c.vignette.value=settings.vignette;c.contrast.value=settings.contrast;c.split.value=settings.split;
   c.projInv.value.copy(camera.projectionMatrixInverse);c.exposure.value=lumValid?settings.exposure:0;c.haze.value=settings.haze;c.clouds.value=settings.clouds*(1-night);c.wet.value=wetAmount;
+  c.grade.value=settings.grade;c.air.value=settings.air*night;if(settings.air>0)updateAir();
   c.sunGate.value=sunGate;c.flare.value=settings.flare;c.rays.value=settings.rays;c.glare.value=lampCount?settings.glare:0;c.tRays.value=rayB.texture;
   // Raw diagnostic views intentionally bypass the grade; ordinary non-TAA
   // rendering still owns grain, LUT and sharpening in the finish pass.
@@ -310,7 +325,7 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   if(blur){moveMatrix.copy(camera.matrixWorld).setPosition(prevCamPos).invert();moveReproject.multiplyMatrices(camera.projectionMatrix,moveMatrix).multiply(tmpMatrix.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse).invert());}
   prevCamPos.copy(camPos);
   if(settings.dof>0||blur){const u=lensMaterial.uniforms;u.tSrc.value=color;u.projInv.value.copy(camera.projectionMatrixInverse);u.dof.value=settings.dof;u.motion.value=blur?settings.motionBlur*T.MathUtils.smoothstep(moveSpeed,4.5,9):0;pass(lensMaterial,lensRT);color=lensRT.texture;}
-  const f=finish.uniforms;f.tSrc.value=color;f.sharpen.value=settings.sharpen;f.grain.value=settings.grain;f.lutMix.value=settings.lut;f.seed.value=(taaIndex%64)*7.13;pass(finish,previous);
+  const f=finish.uniforms;f.tSrc.value=color;f.sharpen.value=settings.sharpen;f.grain.value=settings.grain;f.lutMix.value=settings.lut;f.lens.value=settings.lens;f.chroma.value=settings.chroma;f.seed.value=(taaIndex%64)*7.13;pass(finish,previous);
   taaIndex++;
  }
  return {

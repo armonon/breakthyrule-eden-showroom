@@ -30,7 +30,7 @@ const maxSize=Math.min(4096,(()=>{try{const gl=renderer.getContext();return gl.g
  // Photographed sky (assets/eden-sky.hdr), turned so its sun sits over the scene's sun; grass bounce below.
  if(hasSky>.5){vec2 uv=vec2(fract(atan(d.z,d.x)/6.2831853+.5+skyTurn),.5-asin(clamp(h,-1.,1.))/3.1415927);
   vec3 photo=texture2D(skyMap,uv).rgb*skyGain;c=mix(ground*.9,photo,smoothstep(-.06,.02,h));}
- vec3 moonlit=mix(vec3(.012,.02,.016),vec3(.002,.004,.005),pow(max(h,0.),.45));
+ vec3 moonlit=mix(vec3(.030,.066,.050),vec3(.010,.022,.022),pow(max(h,0.),.45))*smoothstep(-.35,.1,h)+vec3(.20,.26,.25)*pow(max(dot(d,normalize(vec3(-.38,.62,-.64))),0.),24.);
  gl_FragColor=vec4(mix(c,moonlit,night)*strength,1.);}`})));
  const pmrem=new T.PMREMGenerator(renderer);
  let envTarget=null,bakedNight=-1,skyUniform=null,bakes=0,skyStarted=false;

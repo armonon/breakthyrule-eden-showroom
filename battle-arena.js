@@ -4,7 +4,7 @@
  * Loaded as battle-arena.js; arena.js is the online PvP sword-and-crossbow arena.
  *
  * 8 combatants (the player + 7 test bots) spawn on a ring around The Commons, a clearing in the
- * middle of a daylight Beyond Eden. The centre holds chests with armour (pieces from the collection),
+ * middle of a Beyond Eden where it is always night. The centre holds chests with armour (pieces from the collection),
  * heals and C4; guns there are rare (pistol ~8%, SMG ~3%). Real weapons lie around the landmarks:
  * the Hotel holds the sniper, the Observatory the rifle, the Temple the SMG and pump, the Playhouse
  * pistols and C4. Night closes in from the edges in phases; standing in the dark drains health.
@@ -54,7 +54,7 @@
  // pages that have been moved and carries them back to where they belong, and otherwise walks between the page spots.
  // Slower by day, faster and far more dangerous at night; he cannot reach the rooftops.
  const WATCHER={day:2.4,night:3.7,carry:3,hitDay:22,hitNight:55,every:1.4,hunt:60};
- const CYCLE={day:180,dusk:20,night:120,dawn:20},NIGHT_MAX=.86,ATTENDANT={speed:3.9,hit:55,every:1.4,stun:150,stunFor:8};
+ const CYCLE={day:180,dusk:20,night:120,dawn:20},NIGHT_MAX=1,ATTENDANT={speed:3.9,hit:55,every:1.4,stun:150,stunFor:8};
  const SUPPLY_TABLE=[[30,{weapon:'sniper'}],[30,{weapon:'rifle'}],[20,'c4'],[20,{weapon:'smg'}]];
  const STREAKS={2:'DOUBLE KILL',3:'TRIPLE KILL',4:'OVERKILL'},SPREES={5:'KILLING SPREE',10:'RAMPAGE',15:'UNTOUCHABLE'};
  const ZONE_PHASES=[{wait:70,shrink:60,r:52,dps:1},{wait:50,shrink:50,r:32,dps:2},{wait:40,shrink:40,r:16,dps:4},{wait:30,shrink:36,r:6,dps:7},{wait:20,shrink:30,r:0,dps:12}];
@@ -137,9 +137,9 @@
    const lid=new T.Mesh(new T.CylinderGeometry(.28,.28,.92,20,1,false,0,Math.PI),M.wood);lid.rotation.z=Math.PI/2;lid.rotation.y=Math.PI/2;lid.position.set(0,0,.28);lid.castShadow=true;lidPivot.add(lid);
    for(const sx of [-.38,.38]){const band=new T.Mesh(new T.CylinderGeometry(.29,.29,.05,20,1,true,0,Math.PI),M.iron);band.rotation.copy(lid.rotation);band.position.set(sx,0,.28);lidPivot.add(band);}
    box(.08,.1,.03,M.brass,g,0,.4,.29);
-   const glow=new T.Mesh(new T.PlaneGeometry(2.2,2.2),new T.MeshBasicMaterial({map:M.ring,color:0xffd27a,transparent:true,opacity:.45,depthWrite:false,blending:T.AdditiveBlending}));glow.rotation.x=-Math.PI/2;glow.position.y=.03;g.add(glow);
+   const glow=new T.Mesh(new T.PlaneGeometry(2.2,2.2),new T.MeshBasicMaterial({map:M.ring,color:0xffd27a,transparent:true,opacity:.2,depthWrite:false,blending:T.AdditiveBlending}));glow.rotation.x=-Math.PI/2;glow.position.y=.03;g.add(glow);
    g.traverse(n=>n.userData.noHit=false);
-   const c={group:g,lidPivot,glow,open:false,openT:0,pos:new T.Vector3(x,y,z)};chests.push(c);return c;
+   const c={group:g,lidPivot,glow,open:false,openT:0,pos:new T.Vector3(x,y,z)};chests.push(c);window.edenMatrix?.form(T,g,{duration:1.4});return c;
   }
 
   function itemVisual(item){
@@ -158,7 +158,7 @@
    return g;
   }
   function dropItem(item,x,z,vel=null){
-   if(!item)return null;const g=itemVisual(item),y=groundY(x,z);g.position.set(x,y,z);root.add(g);
+   if(!item)return null;const g=itemVisual(item),y=groundY(x,z);g.position.set(x,y,z);root.add(g);if(active)window.edenMatrix?.form(T,g,{duration:1});
    const l={item,group:g,pos:new T.Vector3(x,y,z),vel:vel?vel.clone():null,phase:Math.random()*TAU,y};loot.push(l);return l;
   }
   function removeLoot(l){loot.splice(loot.indexOf(l),1);l.group.parent?.remove(l.group);}
@@ -212,8 +212,9 @@
     weapons:{axe:{loaded:0}},weapon:'axe',reserve:{},heals:{bandage:0,medkit:0},
     state:'rush',target:null,goal:null,path:[],repath:0,think:rand(0,.3),fireT:0,reloadT:0,aimT:0,strafe:Math.random()<.5?1:-1,strafeT:0,stride:0,
     skill:rand(.42,.68),reaction:rand(.35,.7),seen:null,deathT:0,lastHurt:-9,heading:face,healT:0};
-   setBotWeapon(b,'axe');bots.push(b);return b;
+   setBotWeapon(b,'axe');bots.push(b);formBot(b);return b;
   }
+  function formBot(b){b.model.root.traverse(n=>{if(n.isMesh)for(const m of [].concat(n.material||[]))window.edenMatrix?.patch(T,m,'form');});window.edenMatrix?.form(T,b.root,{duration:1.5,cloud:true});}
   function setBotWeapon(b,id){
    // The gun is gripped in both hands and aimed (character-motion.js hold/aimAt); b.hand stays as the muzzle marker.
    b.weapon=id;b.shadowNear=null;b.hand.clear();const m=combat.weaponModel(id);
@@ -429,6 +430,8 @@
    const PF=root_PF();if(!PF)return;
    const w=Math.ceil(B[1]-B[0]),h=Math.ceil(B[3]-B[2]);const g=new PF.Grid(w,h);const p=new T.Vector3();
    for(let x=0;x<w;x++)for(let z=0;z<h;z++){p.set(B[0]+x+.5,0,B[2]+z+.5);if(blocked(p))g.setWalkableAt(x,z,false);}
+   // The courtyard's models: bots path round anything too tall to step over.
+   for(const s of garden.district?.surfaces||[])if(s.prop&&s.wall&&s.bottom<1)for(let x=Math.floor(s.minX-B[0]-.2);x<=Math.floor(s.maxX-B[0]+.2);x++)for(let z=Math.floor(s.minZ-B[2]-.2);z<=Math.floor(s.maxZ-B[2]+.2);z++)if(x>=0&&z>=0&&x<w&&z<h){const px=B[0]+x+.5,pz=B[2]+z+.5;if(px>s.minX-.35&&px<s.maxX+.35&&pz>s.minZ-.35&&pz<s.maxZ+.35)g.setWalkableAt(x,z,false);}
    grid=g;finder=new PF.AStarFinder({diagonalMovement:PF.DiagonalMovement.OnlyWhenNoObstacles});
   }
   function root_PF(){return window.NightPathfinding;}
@@ -610,7 +613,7 @@
   function playerTake(l){
    if(l.item.type!=='page')o.onPlayerAction?.('pickup');
    const it=l.item;const ars=combat.arsenal;
-   if(it.type==='page'){takePage(player,l);const n=pagesOf(player);toast(`${it.label} · ${n} CARRIED · ${nightLevel()>.5?'THE TEMPLE IS OPEN':'THE TEMPLE OPENS AT NIGHT'}`);hud.update();return;}
+   if(it.type==='page'){takePage(player,l);const n=pagesOf(player);toast(`${it.label} · ${n} CARRIED · ${nightLevel()>.5?'THE TEMPLE IS OPEN':'THE TEMPLE OPENS WITH THE WATCH'}`);hud.update();return;}
    if(it.type==='weapon'){
     const inv=ars.inspect();const guns=inv.owned.filter(id=>!['axe','c4'].includes(id));
     if(inv.owned.includes(it.weapon)){ars.addAmmo(W(it.weapon).ammo,it.loaded);toast('+'+it.loaded+' '+AMMO_LABEL[W(it.weapon).ammo]);removeLoot(l);return;}
@@ -679,7 +682,7 @@
      text('.ar-alive',player?.score||0);text('.ar-top-label',player?`SCORE · #${everyone.indexOf(player)+1} OF ${everyone.length}`:'SCORE');
      const un=untilNight(),mm=x=>`${Math.floor(x/60)}:${String(Math.floor(x)%60).padStart(2,'0')}`;
      const open=templeOpen(),inT=pages.filter(pg=>pg.state==='delivered').length,mine=player?pagesOf(player):0;
-     text('.ar-zone',(open?`MOON TEMPLE OPEN · DAWN IN ${mm(-un)}`:`TEMPLE OPENS IN ${mm(un)}`)+(event?.kind==='supply'?` · ${event.label}`:'')+(window.edenStory?.has('pages')&&!window.edenStory.has('office')?' · THE OFFICE IS OPEN: THE PYRAMID':''));
+     text('.ar-zone',(open?`MOON TEMPLE OPEN · CLOSES IN ${mm(Math.max(0,-un))}`:`TEMPLE OPENS IN ${mm(un)}`)+(event?.kind==='supply'?` · ${event.label}`:'')+(window.edenStory?.has('pages')&&!window.edenStory.has('office')?' · THE OFFICE IS OPEN: THE PYRAMID':''));
      html('.ar-pages',pages.map(pg=>`<i class="pg ${pg.state}${pg.carrier===player?' mine':''}" title="${pg.state}"></i>`).join('')+`<span>${mine?`<b>${mine}</b> CARRIED · `:''}${inT}/${PAGE_COUNT} IN THE TEMPLE${pinged&&clock<pingUntil?` · <em>${pinged===player?'YOU ARE':nameOf(pinged)+' IS'} PINGED</em>`:''}</span>`);
      {const pw=player?.power||0,lv=Math.min(POWER_MAX,pw),top=strongest();html('.ar-power',(pw?`<b>POWER ${pw}</b><span>+${Math.round(lv*POWER_DMG*100)}% DAMAGE · +${lv*POWER_SHIELD} SHIELD${pw>=POWER_GLOW?' · <em>YOU GLOW RED</em>':''}</span>`:'')+(top&&top!==player?`<small>STRONGEST: ${nameOf(top)} · POWER ${top.power}</small>`:''));}
      const board=q('.ar-board');if(!board.hidden)board.innerHTML='<h3>BEYOND EDEN · OPEN MATCH</h3><table><tr><th></th><th>SCORE</th><th>KILLS</th><th>PAGES</th><th>POWER</th><th>DEATHS</th></tr>'+everyone.map((c,i)=>`<tr class="${c===player?'me':''}"><td>${i+1}. ${nameOf(c)}${pinged===c&&clock<pingUntil?' ◉':''}</td><td>${c.score||0}</td><td>${c.kills||0}</td><td>${c.delivered||0}${pagesOf(c)?' +'+pagesOf(c):''}</td><td${(c.power||0)>=POWER_GLOW?' class="glow"':''}>${c.power||0}</td><td>${c.deaths||0}</td></tr>`).join('')+'</table>';
@@ -756,7 +759,7 @@
   function respawnBot(b){
    const spot=farSpawn();b.model.motion?.revive?.();b.root.position.set(spot.x,groundY(spot.x,spot.z),spot.z);b.root.rotation.set(0,rand(0,TAU),0);
    Object.assign(b,{stagger:null,stunT:0,hp:100,shield:SHIELD_BOT,shieldMax:SHIELD_BOT,armor:0,armorMax:0,garment:null,alive:true,respawnAt:0,lastHurt:-9,lastFlinch:-9,flinchT:0,dodgeT:0,bashT:0,deathT:0,target:null,goal:null,seen:null,healing:null,healT:0,fireT:0,reloadT:0,aimT:0,think:rand(0,.3),repath:0,strafeT:0,stride:0,heading:b.root.rotation.y,heals:{bandage:0,medkit:0},state:'roam'});
-   b.path.length=0;kitBot(b);rendererShadowDirty();
+   b.path.length=0;kitBot(b);formBot(b);rendererShadowDirty();
   }
   function rendererShadowDirty(){const r=window.breakThyRuleShowroom?.renderer?.();if(r)r.shadowMap.needsUpdate=true;}
   function respawnPlayer(){
@@ -866,7 +869,7 @@
    const open=templeOpen();
    if(templeRing){templeRing.children[0].material.color.set(open?0xffd27a:0x7a2c22);templeRing.children[0].material.opacity=open?.85:.35;templeRing.children[1].material.color.set(open?0xffd27a:0x7a2c22);templeRing.children[1].material.opacity=open?.2+.08*Math.sin(clock*3):.05;}
    for(const c of combatants()){if(!pagesOf(c)||posOf(c).distanceTo(temple())>6)continue;
-    if(open)deliver(c);else if(c===player&&clock>(player.shutHint||0)){player.shutHint=clock+6;hud.prompt('THE MOON TEMPLE IS SHUT · IT OPENS AT NIGHT','epic');announce(`THE TEMPLE OPENS IN ${Math.ceil(untilNight())}s`);}}
+    if(open)deliver(c);else if(c===player&&clock>(player.shutHint||0)){player.shutHint=clock+6;hud.prompt('THE MOON TEMPLE IS SHUT · IT OPENS WITH THE WATCH','epic');announce(`THE TEMPLE OPENS IN ${Math.ceil(untilNight())}s`);}}
    // Ping whoever carries the most pages.
    if(clock>=pingAt){pingAt=clock+PING_EVERY;
     const top=combatants().map(c=>[c,pagesOf(c)]).filter(([,n])=>n>0).sort((a,b)=>b[1]-a[1])[0];
@@ -880,9 +883,9 @@
    g.traverse(n=>{n.userData.noHit=true;n.raycast=()=>{};});g.visible=false;root.add(g);return g;
   }
   function updateNight(dt){
-   const n=nightLevel();o.setNight(n*NIGHT_MAX);
-   if(n>.5&&lastNight<=.5)announce('NIGHT FALLS · THE MOON TEMPLE IS OPEN · THE WATCHER GROWS BOLD');
-   if(n<=.5&&lastNight>.5)announce('DAWN · THE TEMPLE CLOSES · HOLD ON TO YOUR PAGES');
+   const n=nightLevel();o.setNight(NIGHT_MAX); // it is always night; the clock now only opens the temple and wakes the Watcher
+   if(n>.5&&lastNight<=.5)announce('THE WATCH BEGINS · THE MOON TEMPLE IS OPEN · THE WATCHER GROWS BOLD');
+   if(n<=.5&&lastNight>.5)announce('THE WATCH ENDS · THE TEMPLE CLOSES · HOLD ON TO YOUR PAGES');
    lastNight=n;
    updateWatcher(dt,n);
   }
@@ -1164,9 +1167,9 @@
     await build();hud.el.classList.add('on');hud.hideEnd();hud.el.classList.add('loading');hud.announce('ENTERING BEYOND EDEN…');
     await combat.ready();hud.el.classList.remove('loading');
     clearMatch();pads=[];event=null;eventIndex=0;active=true;suspended=false;phase='live';countdown=0;clock=0;ended=null;matchStart=0;nextEventAt=EVENT_FIRST;
-    o.setNight(0);combat.setHudMode('arena');document.body.classList.add('battle-on');
-    // Centre cache: one chest in the middle, six around it; they restock a minute after being opened.
-    makeChest(CENTER.x,CENTER.z,0);for(let i=0;i<6;i++){const a=i/6*TAU+.3;makeChest(CENTER.x+Math.cos(a)*4.6,CENTER.z+Math.sin(a)*4.6,-a+Math.PI/2);}
+    o.setNight(NIGHT_MAX);combat.setHudMode('arena');document.body.classList.add('battle-on');
+    // Centre cache: one chest before the altar, six around it; they restock a minute after being opened.
+    makeChest(CENTER.x,CENTER.z+5.6,0);for(let i=0;i<6;i++){const a=i/6*TAU+.3;makeChest(CENTER.x+Math.cos(a)*6.4,CENTER.z+Math.sin(a)*6.4,-a+Math.PI/2);}
     // Weapon pads along each building's approach: whatever is taken comes back PAD_RESTOCK seconds later.
     for(const lm of layout.landmarks){const list=LANDMARK_LOOT[lm.id]||['armor','bandage'];list.forEach((spec,i)=>{const x=lm.x-lm.w/2+1.5+(i/(list.length-1||1))*(lm.w-3),z=lm.z+lm.d/2+2.2+(i%2)*.9;const p=new T.Vector3(x,0,z);if(!blocked(p))pads.push({spec,x,z,l:dropItem(rollItem(spec),x,z),respawnAt:0});});}
     for(let i=0;i<10;i++){const x=rand(B[0]+6,B[1]-6),z=rand(B[2]+6,B[3]-6),p=new T.Vector3(x,0,z);if(blocked(p)||Math.hypot(x-CENTER.x,z-CENTER.z)<A.r)continue;dropItem(rollItem(pick(['ammo','armor','bandage',{weapon:pick(['pistol','pump','smg'])}])),x,z);}
@@ -1183,7 +1186,7 @@
    document.body.classList.remove('battle-on');hud?.el.classList.remove('on');o.setNight(null);combat.holster();if(garden.district?.watcher)garden.district.watcher.visible=false;combat.arsenal.set(null);combat.setHudMode('');
   }
   function resume(){
-   active=true;suspended=false;hud.el.classList.add('on');document.body.classList.add('battle-on');combat.setHudMode('arena');o.setNight(0);
+   active=true;suspended=false;hud.el.classList.add('on');document.body.classList.add('battle-on');combat.setHudMode('arena');o.setNight(NIGHT_MAX);
    combat.arsenal.set(savedArsenal&&savedArsenal.owned?.length?savedArsenal:{owned:['axe','pistol'],reserve:{pistol:24},loaded:{pistol:12}});
    if(player&&!player.alive)player.respawnAt=Math.min(player.respawnAt??clock,clock+1);
    hud.update();announce('BACK BEYOND EDEN');
