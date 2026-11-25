@@ -1445,41 +1445,6 @@
   ],
   "parts": {}
  },
- "portable_generator": {
-  "tris": 14000,
-  "min": [
-   -0.415,
-   0.0,
-   -0.282
-  ],
-  "max": [
-   0.404,
-   0.577,
-   0.282
-  ],
-  "parts": {
-   "portable_generator": [
-    0.0,
-    0.0,
-    -0.0
-   ],
-   "portable_generator_dial": [
-    0.092,
-    0.416,
-    0.24
-   ],
-   "portable_generator_switch": [
-    -0.26,
-    0.438,
-    0.238
-   ],
-   "portable_generator_toggle": [
-    0.012,
-    0.429,
-    0.234
-   ]
-  }
- },
  "tool_cart": {
   "tris": 14000,
   "min": [

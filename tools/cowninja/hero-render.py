@@ -15,7 +15,18 @@ data = json.load(open(f'{A}/site.json'))
 bpy.ops.wm.read_factory_settings(use_empty=True)
 sc = bpy.context.scene
 
+def decoded(path):
+    # The game's GLBs are meshopt-compressed (tools/cowninja/compress.sh), which this Blender build cannot read:
+    # import a decoded copy, made once with gltf-transform and kept beside the renders.
+    if b'EXT_meshopt_compression' not in open(path, 'rb').read(4096 * 16): return path
+    import subprocess, hashlib
+    cache = os.path.join(os.path.dirname(OUT.rstrip('/')), 'decoded'); os.makedirs(cache, exist_ok=True)
+    out = os.path.join(cache, hashlib.md5(path.encode()).hexdigest()[:10] + '-' + os.path.basename(path))
+    if not os.path.exists(out) or os.path.getmtime(out) < os.path.getmtime(path):
+        subprocess.run(['npx', '-y', '@gltf-transform/cli@4', 'copy', path, out], check=True, capture_output=True)
+    return out
 def imp(path):
+    path = decoded(path)
     before = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=path)
     return [o for o in bpy.data.objects if o not in before]
 

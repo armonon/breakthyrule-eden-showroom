@@ -36,9 +36,15 @@ async function boot() {
   status.textContent = 'Loading the yard…';
   const [physics, assets] = await Promise.all([
     createPhysics(),
-    loadAssets({ renderer, onProgress: (done, total) => { status.textContent = `Loading the yard… ${Math.round(done / total * 100)}%`; } }),
+    loadAssets({ renderer, onProgress: (done, total, waiting = [], bytes = new Map()) => {
+      // Name what is still coming, with megabytes for the big files, so a slow connection never looks like a hang.
+      const mb = n => (n / 1048576).toFixed(1), big = waiting.filter(n => bytes.has(n)).map(n => `${n} ${mb(bytes.get(n)[0])}/${mb(bytes.get(n)[1])} MB`);
+      const rest = waiting.length - big.length;
+      status.textContent = `Loading the yard… ${Math.floor(done / total * 100)}%` + (waiting.length && waiting.length <= 6 ? ` · ${[...big, ...(rest ? [rest + ' more'] : [])].join(' · ')}` : big.length ? ` · ${big.join(' · ')}` : '');
+    } }),
     // People: the Rocketbox meshes the farmers and the rider use, and the shared animation clips.
-    Promise.all([...['harbor', 'boulevard', 'coast', 'midnight'].map(id => window.GardenCharacterRocketbox?.load(id).catch(() => {})), window.GardenAnim?.load?.()]).catch(() => {}),
+    // (never allowed to hold the page: after 30 s the game starts and they appear when they arrive)
+    Promise.race([Promise.all([...['harbor', 'boulevard', 'coast', 'midnight'].map(id => window.GardenCharacterRocketbox?.load(id).catch(() => {})), Promise.resolve(window.GardenAnim?.load?.()).catch(() => {})]), new Promise(r => setTimeout(r, 30000))]).catch(() => {}),
   ]);
   const world = createWorld({ scene, physics, assets });
   const blood = createBlood({ scene });

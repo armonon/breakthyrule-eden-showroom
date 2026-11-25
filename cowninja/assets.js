@@ -34,28 +34,38 @@ export async function loadAssets({ renderer, onProgress } = {}) {
     for (const o of [-64, 0, 64]) { g.moveTo(o, 0); g.lineTo(o + 64, 64); g.moveTo(o + 64, 0); g.lineTo(o, 64); } g.stroke();
     wire = new THREE.CanvasTexture(c); wire.wrapS = wire.wrapT = THREE.RepeatWrapping; wire.repeat.set(26, 26); wire.anisotropy = anisotropy; return wire;
   };
+  // Progress: every file counts once; the big ones also report bytes. Optional files that have not arrived after
+  // OPTIONAL_WAIT are given up on (the game starts without them) so a stalled request can never hold the page.
   let done = 0, total = 0;
-  const track = promise => { total++; return promise.then(v => { done++; onProgress?.(done, total); return v; }); };
-  const load = (name, url) => track(gltf.loadAsync(url).catch(() => gltf.loadAsync(url)).then(g => {
+  const pending = new Map(), bytes = new Map(), OPTIONAL_WAIT = 40000;
+  const report = () => onProgress?.(done, total, [...pending.keys()], bytes);
+  const track = (promise, name = 'file', critical = false) => {
+    total++; pending.set(name, true);
+    const finished = promise.then(v => v, error => { if (critical) throw error; console.warn('[cowninja] gave up on', name, error?.message || error); });
+    const raced = critical ? finished : Promise.race([finished, new Promise(r => setTimeout(() => { if (pending.has(name)) console.warn('[cowninja] still waiting for', name, '- starting without it'); r(); }, OPTIONAL_WAIT))]);
+    return raced.then(v => { if (pending.delete(name)) { done++; report(); } return v; });
+  };
+  const progress = name => e => { if (e.lengthComputable) { bytes.set(name, [e.loaded, e.total]); report(); } };
+  const load = (name, url, critical = false) => track(gltf.loadAsync(url, progress(name)).catch(() => gltf.loadAsync(url, progress(name))).then(g => {
     g.scene.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; for (const m of [].concat(o.material)) { if (m.map) m.map.anisotropy = anisotropy; if (m.transparent) { m.transparent = false; m.alphaTest = .45; m.depthWrite = true; m.side = THREE.DoubleSide; } if (/chainlink_fence_wire/.test(m.name)) { m.alphaMap = mesh(); m.alphaTest = .5; m.color.set(0xb8bcc0); m.metalness = .8; m.roughness = .5; } } } });
     models.set(name, g.scene);
-  }).catch(error => { console.warn('[cowninja] model missing:', name, error?.message || error); }));
+  }).catch(error => { if (critical) throw error; console.warn('[cowninja] model missing:', name, error?.message || error); }), name, critical);
   const map = (name, kind, colour) => track(textures.loadAsync(`${BASE}tex/${name}-${kind}.webp`).then(t => {
     t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = anisotropy; if (colour) t.colorSpace = THREE.SRGBColorSpace; maps.set(name + kind, t);
-  }).catch(() => {}));
-  const jobs = [load('cow', BASE + 'cow.glb'), load('site', BASE + 'site.glb')];
+  }).catch(() => {}), name + '-' + kind);
+  const jobs = [load('cow', BASE + 'cow.glb'), load('site', BASE + 'site.glb', true)];
   let siteData = null, lightmap = null;
-  jobs.push(track(fetch(BASE + 'site.json').then(r => r.json()).then(d => { siteData = d; })));
-  jobs.push(track(textures.loadAsync(BASE + 'site-lightmap.webp').then(t => { t.channel = 1; t.colorSpace = THREE.SRGBColorSpace; t.flipY = false; lightmap = t; }).catch(() => {})));
+  jobs.push(track(fetch(BASE + 'site.json').then(r => { if (!r.ok) throw Error('site.json ' + r.status); return r.json(); }).then(d => { siteData = d; }), 'site.json', true));
+  jobs.push(track(textures.loadAsync(BASE + 'site-lightmap.webp').then(t => { t.channel = 1; t.colorSpace = THREE.SRGBColorSpace; t.flipY = false; lightmap = t; }).catch(() => {}), 'lightmap'));
   for (const name of PROPS) jobs.push(load(name, `${BASE}props/${name}.glb`));
   for (const name of GAME_PROPS) jobs.push(load(name, `/assets/world-props/${name}.glb`));
-  for (const name of SURFACES) jobs.push(map(name, 'diff', true), map(name, 'nor'), map(name, 'arm'));
+  // (The older code-built yard's tiling surfaces, SURFACES, are no longer loaded: the site carries its own materials.)
   let sky = null;
   jobs.push(track(new HDRLoader().loadAsync(BASE + 'night-sky.hdr').then(t => {
     // The moon is thousands of times brighter than the rest of the sky: clamp it, or it floods the bloom and lights everything.
     const d = t.image.data, half = d instanceof Uint16Array, cap = 2.5;
     for (let i = 0; i < d.length; i++) { if ((i & 3) === 3) continue; const v = half ? THREE.DataUtils.fromHalfFloat(d[i]) : d[i]; if (v > cap) d[i] = half ? THREE.DataUtils.toHalfFloat(cap) : cap; }
-    t.needsUpdate = true; t.mapping = THREE.EquirectangularReflectionMapping; sky = t; }).catch(error => console.warn('[cowninja] sky missing', error?.message || error))));
+    t.needsUpdate = true; t.mapping = THREE.EquirectangularReflectionMapping; sky = t; }).catch(error => console.warn('[cowninja] sky missing', error?.message || error)), 'sky'));
   await Promise.all(jobs);
 
   // A PBR surface that repeats every `size` metres. Box and plane UVs run 0..1, so the repeat is set per use.
