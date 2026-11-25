@@ -32,6 +32,7 @@ export function createWorld({ scene, physics, assets }) {
     mat.wood = new THREE.MeshStandardMaterial({ map, normalMap: nor, color: 0xa79a8c, roughness: .85 }); }
   const TILE = { [mat.ground.uuid]: 5, [mat.road.uuid]: 4, [mat.concrete.uuid]: 3.2, [mat.floor.uuid]: 3, [mat.tile.uuid]: 2, [mat.wallTile.uuid]: 1.6, [mat.steel.uuid]: 1.5, [mat.rust.uuid]: 1.5, [mat.roof.uuid]: 2.4, [mat.wood.uuid]: 1.4 };
   const walls2d = [];   // [minX, maxX, minZ, maxZ] of anything walkers cannot pass
+  const solids = [];    // {minX,maxX,minZ,maxZ,top,bottom}: every static box, for the on-foot movement and the camera
   const dynamic = [];   // {mesh, body} synced every frame
   const lights = [];    // flickering practicals
   const tmp = new THREE.Matrix4(), box3 = new THREE.Box3(), v3 = new THREE.Vector3();
@@ -39,7 +40,7 @@ export function createWorld({ scene, physics, assets }) {
   function block(center, half, material, { solid = true, cast = true, walker = true, visible = true } = {}) {
     let m = null;
     if (visible) { m = new THREE.Mesh(tiledBox(half[0] * 2, half[1] * 2, half[2] * 2, TILE[material.uuid] || 2), material); m.position.set(...center); m.castShadow = cast; m.receiveShadow = true; root.add(m); }
-    if (solid) { physics.staticBox(center, half); if (walker && half[1] > .25) walls2d.push([center[0] - half[0], center[0] + half[0], center[2] - half[2], center[2] + half[2]]); }
+    if (solid) { physics.staticBox(center, half); if (walker && half[1] > .25) { walls2d.push([center[0] - half[0], center[0] + half[0], center[2] - half[2], center[2] + half[2]]); solids.push({ minX: center[0] - half[0], maxX: center[0] + half[0], minZ: center[2] - half[2], maxZ: center[2] + half[2], top: center[1] + half[1], bottom: center[1] - half[1] }); } }
     return m;
   }
   // A wall between two points (axis-aligned), `h` tall.
@@ -107,7 +108,9 @@ export function createWorld({ scene, physics, assets }) {
   // Slaughterhouse shell: front wall with a doorway, side and back walls, the loading corridor, the pen, a roof.
   const H = 6.5;
   wall(-24, 10, -4, 10, H); wall(4, 10, 24, 10, H);            // front, door 8 m wide
-  wall(-24, 10, -24, 46, H); wall(24, 10, 24, 46, H); wall(-24, 46, 24, 46, H);
+  wall(-24, 10, -24, 46, H); wall(-24, 46, 24, 46, H);
+  // East wall with a staff door (z 12.2..14): the quiet way in, a few steps from the pen.
+  wall(24, 10, 24, 12.2, H); wall(24, 14, 24, 46, H); block([24, 4.4, 13.1], [.15, 2.1, .9], mat.concrete, { solid: false });
   block([0, 5.2, 10], [4, 1.3, .15], mat.concrete, { solid: false });   // lintel over the door
   block([0, H + .12, 28], [24.6, .12, 18.6], mat.roof, { solid: false });
   for (const z of [16, 22, 28, 34, 40]) block([0, H - .25, z], [24, .14, .1], mat.steel, { solid: false, cast: false }); // roof trusses
@@ -180,7 +183,7 @@ export function createWorld({ scene, physics, assets }) {
   for (const [x, z] of [[-28, -36], [28, -36], [-28, 30], [30, -4]]) {
     const yaw = Math.atan2(-x, -z);
     if (!place('street_lamp_01', x, 0, z, { yaw, scale: 1.6 })) block([x, 3, z], [.1, 3, .1], mat.steel, { walker: false });
-    physics.staticBox([x, 3, z], [.12, 3, .12]); walls2d.push([x - .15, x + .15, z - .15, z + .15]);
+    physics.staticBox([x, 3, z], [.12, 3, .12]); walls2d.push([x - .15, x + .15, z - .15, z + .15]); solids.push({ minX: x - .15, maxX: x + .15, minZ: z - .15, maxZ: z + .15, top: 6, bottom: 0 });
     lamp(x + Math.sin(yaw) * .7, 5.9, z + Math.cos(yaw) * .7, 0xffa64d, 300, 40);
   }
   for (const z of [12, 17, 22]) { place('mounted_fluorescent_lights', 0, 3.16, z, { part: 'mounted_fluorescent_lights_a', scale: 1.7, yaw: Math.PI / 2, cast: false }); lamp(0, 3.08, z, 0xd8f0e6, 18, 14, .5); }
@@ -211,15 +214,27 @@ export function createWorld({ scene, physics, assets }) {
     }
     if (focus) { const fx = Math.round(focus.x / 2) * 2, fz = Math.round(focus.z / 2) * 2; if (moon.target.position.x !== fx || moon.target.position.z !== fz) { moon.target.position.set(fx, 0, fz); moon.position.set(fx + moonOffset.x, moonOffset.y, fz + moonOffset.z); moon.target.updateMatrixWorld(); } }
   }
-  const gateBroken = () => gate.some(g => { const t = g.body.read().p; return Math.hypot(t[0] - g.home[0], t[2] - g.home[2]) > 1.2; });
+  // The roof can be stood on (and is a ceiling for the camera).
+  solids.push({ minX: -24.6, maxX: 24.6, minZ: 9.4, maxZ: 46.6, top: H + .24, bottom: H, roof: true });
+  // Is the line between two people (at eye height) cut by something taller than them?
+  function sightBlocked(x1, z1, x2, z2) {
+    const n = Math.max(2, Math.ceil(Math.hypot(x2 - x1, z2 - z1) / .6));
+    for (let i = 1; i < n; i++) { const x = x1 + (x2 - x1) * i / n, z = z1 + (z2 - z1) * i / n; for (const b of solids) if (!b.roof && b.top > 1.45 && b.bottom < 1.2 && x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ) return true; }
+    return false;
+  }
+  const solidAt = (x, y, z, pad = .15) => { for (const b of solids) if (x > b.minX - pad && x < b.maxX + pad && z > b.minZ - pad && z < b.maxZ + pad && y < b.top + pad && y > b.bottom - pad) return true; return false; };
+  // Unlatch the pen gate by hand: the planks drop and are shoved clear without the noise of a charge.
+  function openGate() { gate.forEach((g, i) => { g.body.wake(); g.body.impulse(-60 - i * 14, 30, (i - 2) * 26); }); opened = true; }
+  let opened = false;
+  const gateBroken = () => opened || gate.some(g => { const t = g.body.read().p; return Math.hypot(t[0] - g.home[0], t[2] - g.home[2]) > 1.2; });
 
   return {
-    root, mat, blocked, walk, update, gateBroken, loose, looseModel, place, walls2d, dynamic,
-    spawn: { x: 0, z: -40, yaw: Math.PI },                 // inside the north gate, facing the building (yaw 0 faces -z)
+    root, mat, blocked, walk, update, gateBroken, openGate, solids, solidAt, sightBlocked, gatePost: { x: 7.4, z: 33.2 }, loose, looseModel, place, walls2d, dynamic,
+    spawn: { x: 0, z: -66, yaw: Math.PI },                 // on the road outside the north gate, facing the yard (yaw 0 faces -z)
     exit: { x: 0, z: -56, radius: 7 },
     pen: { minX: 9.5, maxX: 20.5, minZ: 29.5, maxZ: 42.5 },
     escape: [[10.5, 36], [5, 36], [0, 27], [0, 16], [0, 6]],   // the herd's way out of the building
-    truckStart: { x: 0, z: -82, yaw: Math.PI },
+    truckStart: { x: 0, z: -104, yaw: Math.PI },
     patrols: [
       [[-18, -30], [18, -30], [18, -12], [-18, -12]],
       [[26, 0], [32, -20], [32, 20]],

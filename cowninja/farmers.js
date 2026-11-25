@@ -8,7 +8,7 @@ import { createRagdoll } from '/ragdoll-jolt.js';
 const SEE = 24, SEE_COS = Math.cos(1.05), HEAR = 13, RAM_SPEED = 5.5;
 const LOOKS = ['harbor', 'boulevard', 'coast', 'midnight', 'boulevard', 'harbor'];
 
-export function createFarmers({ scene, physics, world, cow, blood, onEvent }) {
+export function createFarmers({ scene, physics, world, cow, blood, onEvent, target = null }) {
   const cube = new THREE.BoxGeometry(1, 1, 1), C = window.GardenCharacter;
   const steel = new THREE.MeshStandardMaterial({ color: 0x9aa0a4, roughness: .4, metalness: .8 }), shaftWood = new THREE.MeshStandardMaterial({ color: 0x6b5a48, roughness: .8 });
   const farmers = [], up = new THREE.Vector3(0, 1, 0);
@@ -46,7 +46,7 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent }) {
   }
 
   function update(dt, time, live) {
-    const c = cow.state;
+    const c = target ? target() : cow.state, foot = !!c.onFoot;
     for (const f of farmers) {
       if (f.ragdoll) {
         f.down += dt;
@@ -61,8 +61,11 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent }) {
       const dx = c.x - f.p.x, dz = c.z - f.p.z, dist = Math.hypot(dx, dz);
       // Perception: in front and in range, or close and loud (a charge, a skid).
       const facing = (Math.sin(f.yaw) * dx - Math.cos(f.yaw) * dz) / (dist || 1);
-      const sees = live && dist < SEE && facing > SEE_COS, hears = live && dist < HEAR * (c.charging || c.skid > .4 ? 1.6 : Math.abs(c.speed) > 6 ? 1 : .45);
-      if (sees || hears) { f.alert = Math.min(1, f.alert + dt * (sees ? 1.8 : .9)); f.seenAt = time; } else if (time - f.seenAt > 4) f.alert = Math.max(0, f.alert - dt * .3);
+      // On foot the ninja is a small dark shape: seen from less far (less still when crouched), heard only by how he moves.
+      const range = foot ? SEE * (c.crouched ? .5 : .8) : SEE;
+      const sees = live && dist < range && facing > SEE_COS && !(foot && world.sightBlocked?.(f.p.x, f.p.z, c.x, c.z));
+      const hears = live && (foot ? dist < HEAR * 1.25 * (c.noise || 0) : dist < HEAR * (c.charging || c.skid > .4 ? 1.6 : Math.abs(c.speed) > 6 ? 1 : .45));
+      if (sees || hears) { f.alert = Math.min(1, f.alert + dt * (sees ? (foot ? (c.crouched ? .55 : 1) * (1.7 - dist / range) : 1.8) : .9)); f.seenAt = time; } else if (time - f.seenAt > 4) f.alert = Math.max(0, f.alert - dt * .3);
       if (f.state === 'patrol' && f.alert >= 1) { f.state = 'chase'; onEvent?.({ type: 'spotted', farmer: f }); }
       if (f.state === 'chase' && f.alert <= 0) f.state = 'patrol';
       // Move: along the route, or straight at the cow.
@@ -76,7 +79,7 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent }) {
       if (pace && (f.state !== 'chase' || dist > 1.5)) moving = world.walk(f.p, mx / md * pace * dt, mz / md * pace * dt, .35);
       // Contact with the cow: rammed at speed, or close enough to stab.
       const along = dx * c.forward.x + dz * c.forward.z, side = Math.abs(dx * c.forward.z - dz * c.forward.x), closing = Math.hypot(c.velocity.x, c.velocity.z);
-      if (live && dist < 1.9 && -along < 1.75 && -along > -1.2 && side < .8 && closing > RAM_SPEED) { knock(f, c.velocity.x, c.velocity.z); continue; }
+      if (live && !foot && dist < 1.9 && -along < 1.75 && -along > -1.2 && side < .8 && closing > RAM_SPEED) { knock(f, c.velocity.x, c.velocity.z); continue; }
       f.strike = Math.max(0, f.strike - dt);
       if (live && f.state === 'chase' && dist < 1.9 && f.strike <= 0) { f.strike = 1.3; onEvent?.({ type: 'stabbed', dx: -dx / (dist || 1), dz: -dz / (dist || 1) }); }
       // Pose: the character animates itself from how fast its root is moving; the fork comes up in a chase.
@@ -86,5 +89,16 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent }) {
       f.fork.rotation.x = f.state === 'chase' ? -.1 : .9; f.fork.position.z = -.2 - (f.strike > 1 ? (f.strike - 1) * 2.2 : 0);
     }
   }
-  return { farmers, update, knock, standing: () => farmers.filter(f => !f.ragdoll), out: () => farmers.filter(f => f.ragdoll).length, alerted: () => farmers.some(f => f.state === 'chase') };
+  // The nearest standing farmer within `reach` of a point, and whether that point is behind him (a takedown).
+  function nearest(x, z, reach = 1.6) {
+    let best = null, bestD = reach;
+    for (const f of farmers) { if (f.ragdoll) continue; const d = Math.hypot(f.p.x - x, f.p.z - z); if (d < bestD) { bestD = d; best = f; } }
+    if (!best) return null;
+    const facing = (Math.sin(best.yaw) * (x - best.p.x) - Math.cos(best.yaw) * (z - best.p.z)) / (bestD || 1);
+    return { farmer: best, behind: facing < .25, unaware: best.state !== 'chase' };
+  }
+  // A sound at a point (the whistle): everyone within `radius` grows suspicious and looks that way.
+  function noise(x, z, radius, amount = .5) { for (const f of farmers) if (!f.ragdoll && Math.hypot(f.p.x - x, f.p.z - z) < radius) { f.alert = Math.min(.95, f.alert + amount); f.seenAt = performance.now() / 1000; } }
+  const alertLevel = () => farmers.reduce((m, f) => f.ragdoll ? m : Math.max(m, f.state === 'chase' ? 1 : f.alert), 0);
+  return { farmers, update, knock, nearest, noise, alertLevel, standing: () => farmers.filter(f => !f.ragdoll), out: () => farmers.filter(f => f.ragdoll).length, alerted: () => farmers.some(f => f.state === 'chase') };
 }

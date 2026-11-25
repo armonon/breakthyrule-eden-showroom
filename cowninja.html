@@ -8,7 +8,7 @@
   <meta name="description" content="COWNinja prototype: ride in, break the pen, lead the herd out. Graphic content.">
   <title>COWNinja — Break Thy Rule (prototype)</title>
   <link rel="icon" href="/assets/favicon-32.png">
-  <link rel="stylesheet" href="/cowninja/cowninja.css?v=1">
+  <link rel="stylesheet" href="/cowninja/cowninja.css?v=2">
   <script type="importmap">
   {
     "imports": {
@@ -34,17 +34,24 @@
       <p id="cn-goal" role="status"></p>
       <div class="cn-row"><span class="cn-label">HEALTH</span><div class="cn-bar cn-health"><i id="cn-health-fill"></i></div></div>
       <div class="cn-row"><span class="cn-label">CHARGE</span><div class="cn-bar cn-charge"><i id="cn-charge-fill"></i></div><strong id="cn-speed">0 km/h</strong></div>
+      <div class="cn-row cn-stealth-row" data-state="cold"><span class="cn-label" id="cn-stealth">HIDDEN</span><div class="cn-bar cn-seen"><i id="cn-seen-fill"></i></div></div>
       <p id="cn-count"></p>
     </section>
     <p id="cn-toast" role="status" aria-live="polite"></p>
-    <footer class="cn-keys"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> ride</span><span><kbd>SHIFT</kbd> charge</span><span><kbd>S</kbd>+turn skid</span><span><kbd>SPACE</kbd> hop</span><span><kbd>R</kbd> restart</span><span id="cn-backend"></span></footer>
+    <footer class="cn-keys" id="cn-keys-text" data-mode="ride">
+      <span class="ride"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> ride</span><span class="ride"><kbd>SHIFT</kbd> charge</span><span class="ride"><kbd>S</kbd>+turn skid</span><span class="ride"><kbd>SPACE</kbd> hop</span><span class="ride"><kbd>E</kbd> get off</span>
+      <span class="foot"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span><span class="foot"><kbd>MOUSE</kbd> look</span><span class="foot"><kbd>SHIFT</kbd> sprint</span><span class="foot"><kbd>SPACE</kbd> jump · climb · wall-run</span><span class="foot"><kbd>C</kbd> crouch</span><span class="foot"><kbd>E</kbd> use</span>
+      <span><kbd>Q</kbd> whistle</span><span><kbd>R</kbd> restart</span><span id="cn-backend"></span>
+    </footer>
+    <p id="cn-prompt" role="status"></p>
+    <div id="cn-touch" hidden></div>
 
     <section id="cn-gate" hidden role="dialog" aria-labelledby="cn-gate-title">
       <div>
         <p class="cn-eyebrow">CONTENT WARNING</p>
         <h2 id="cn-gate-title">COWNinja</h2>
         <p>This is a prototype set in a working slaughterhouse. It shows blood, violence against people and animal slaughter imagery.</p>
-        <p class="cn-small">Ride in, break the pen gate, and lead the herd out through the north gate. Charge to knock farmers down. Hit the truck square on its side to flip it; head-on, it wins.</p>
+        <p class="cn-small">Get the herd out through the north gate. <strong>Loud:</strong> ride in, charge the pen gate, flatten whoever is in the way; hit the truck square on its side to flip it. <strong>Quiet:</strong> get off the cow, stay low and out of sight, take farmers down from behind, unlatch the pen, whistle for your cow and ride out.</p>
         <div class="cn-actions"><button id="cn-enter" type="button">I UNDERSTAND · RIDE</button><a href="/showroom.html">Back to Eden</a></div>
       </div>
     </section>
@@ -59,10 +66,18 @@
   <script defer src="/character-details.js"></script>
   <script defer src="/character-human-proxies.js"></script>
   <script defer src="/movement-state.js"></script>
+  <!-- On foot: the main game's own movement and parkour, and its sound. -->
+  <script defer src="/expedition-world.js"></script>
+  <script defer src="/player-motion.js"></script>
+  <script defer src="/parkour.js"></script>
+  <script defer src="/player-movement.js"></script>
+  <script defer src="/expedition-controller.js"></script>
+  <script defer src="/combat-audio.js"></script>
+  <script defer src="/footsteps.js"></script>
   <script defer src="/character-anim.js"></script>
   <script defer src="/character-motion.js"></script>
   <script defer src="/character-rocketbox.js"></script>
   <script defer src="/character-model.js"></script>
-  <script type="module" src="/cowninja/main.js?v=2"></script>
+  <script type="module" src="/cowninja/main.js?v=3"></script>
 </body>
 </html>

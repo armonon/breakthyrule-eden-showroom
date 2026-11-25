@@ -71,12 +71,11 @@ export function animateCow(cow, { gait = 0, run = 0, moving = 1, airborne = fals
 }
 
 // The ninja: one of the main game's people (same rig and animation as every visitor in Eden), dressed in black with
-// the red headband, seated on the cow's back.
-function buildRider(cow) {
+// the red headband. Used seated on the cow (the rider) and on foot (foot.js).
+export function createNinja() {
   const C = window.GardenCharacter; if (!C || !window.GardenCharacterRocketbox) return null;
   let person = null;
-  try { person = C.create(THREE, { version: 1, character: 'midnight', height: 176, weight: 70, build: .4, shoulders: 1, waist: 1, hips: 1, legLength: 1 }); } catch (error) { console.warn('[cowninja] rider', error); return null; }
-  const seat = new THREE.Group(); seat.position.set(0, .93, .08); seat.rotation.y = Math.PI; seat.add(person.root); cow.body.add(seat);
+  try { person = C.create(THREE, { version: 1, character: 'midnight', height: 176, weight: 70, build: .4, shoulders: 1, waist: 1, hips: 1, legLength: 1 }); } catch (error) { console.warn('[cowninja] ninja', error); return null; }
   const cloth = new THREE.Color(0xa0a0aa), band = new THREE.Mesh(new THREE.TorusGeometry(.098, .017, 6, 20), new THREE.MeshStandardMaterial({ color: 0xc4130d, roughness: .55, emissive: 0x3a0503 }));
   let dressed = null;
   function dress() {
@@ -84,6 +83,12 @@ function buildRider(cow) {
     person.root.traverse(o => { if (o.isSkinnedMesh) { o.castShadow = true; o.frustumCulled = false; const dark = m => { const c = m.clone(); c.color.multiply(cloth); return c; }; o.material = Array.isArray(o.material) ? o.material.map(dark) : dark(o.material); } });
     const head = person.byName.head; if (head) { band.rotation.x = Math.PI / 2 - .12; band.position.set(0, .075, .012); head.add(band); }
   }
+  return { person, dress };
+}
+function buildRider(cow) {
+  const ninja = createNinja(); if (!ninja) return null;
+  const { person, dress } = ninja;
+  const seat = new THREE.Group(); seat.position.set(0, .93, .08); seat.rotation.y = Math.PI; seat.add(person.root); cow.body.add(seat);
   let seated = false;
   const sit = () => { if (!seated && person.skeleton) seated = !!person.motion.play?.('sitIdle', { loop: true, fade: 0, mask: 'full' }); return seated; };
   return { person, seat, dress, sit };
@@ -132,7 +137,7 @@ export function createCow({ scene, physics, spawn, assets }) {
   function update(dt) {
     const t = body.read(), v = body.velocity();
     state.x = t.p[0]; state.y = t.p[1] - TUNE.rest; state.z = t.p[2]; state.yaw = yaw; state.speed = speed; state.charge = charge;
-    state.charging = charge > .35 && speed > TUNE.trot * .9; state.skid = skid; state.airborne = airborne;
+    state.charging = charge > .35 && speed > TUNE.trot * .9; state.skid = skid; state.airborne = airborne; state.gait = gait; state.mounted = !rider || rider.seat.visible;
     state.forward.set(Math.sin(yaw), 0, -Math.cos(yaw)); state.velocity.set(v[0], v[1], v[2]);
     model.group.position.set(t.p[0], t.p[1] - TUNE.rest, t.p[2]); model.group.rotation.y = -yaw;
     const run = Math.min(1, Math.abs(speed) / TUNE.charge), moving = Math.min(1, Math.abs(speed) / 1.2);
@@ -143,7 +148,7 @@ export function createCow({ scene, physics, spawn, assets }) {
     pitch += ((airborne ? -v[1] * .03 : Math.sin(gait * Math.PI * 2 + 1) * .05 * run) - pitch) * Math.min(1, dt * 10); model.body.rotation.x = pitch;
     const turning = (lateral * -.05) + skid * Math.sign(lateral || 1) * -.12; lean += (turning - lean) * Math.min(1, dt * 6); model.body.rotation.z = Math.max(-.35, Math.min(.35, lean));
     animateCow(model, { gait, run, moving, airborne, charge, turn: Math.max(-1, Math.min(1, -lean * 4)), time: clock });
-    if (rider) {
+    if (rider && rider.seat.visible) {
       rider.dress(); rider.sit(); rider.person.motion.update(dt, { velocity: STILL }); // carried, not walking
       // He rides the cow's back: forward over the neck in a charge, rising and falling a beat behind it.
       rider.seat.rotation.x = .1 + charge * .32; rider.seat.position.y = .93 + Math.abs(Math.sin(gait * Math.PI * 2 + .6)) * .04 * run;
@@ -155,7 +160,17 @@ export function createCow({ scene, physics, spawn, assets }) {
   function teleport(x, z, toYaw = yaw) { body.place(x, TUNE.rest + .05, z); body.setVelocity(0, 0, 0); yaw = toYaw; charge = 0; speed = 0; }
   function reset() { body.place(spawn.x, TUNE.rest + .1, spawn.z); body.setVelocity(0, 0, 0); yaw = spawn.yaw; charge = 0; speed = 0; }
 
-  return { state, control, update, hit, reset, teleport, body, model, TUNE };
+  // Riderless: `keys` for control() that walk the cow to a point (the whistle), stopping `near` metres short.
+  const auto = new Set();
+  function steerTo(x, z, near = 2.6) {
+    auto.clear(); const dx = x - state.x, dz = z - state.z, dist = Math.hypot(dx, dz); if (dist < near) { if (Math.abs(speed) > .5) auto.add('s'); return auto; }
+    const cross = Math.sin(yaw) * dz + Math.cos(yaw) * dx, ahead = (Math.sin(yaw) * dx - Math.cos(yaw) * dz) / dist; // cross > 0: target to the right
+    if (ahead < .96) auto.add(cross > 0 ? 'd' : 'a');
+    if (ahead > -.2 && speed < Math.min(7, 1.5 + dist)) auto.add('w');
+    return auto;
+  }
+  const setRider = on => { if (rider) rider.seat.visible = on; };
+  return { state, control, update, hit, reset, teleport, steerTo, setRider, body, model, TUNE };
 }
 
 // A herd cow: no physics and no rider, a coat of its own. Used by herd.js.

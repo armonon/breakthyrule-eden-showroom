@@ -40,3 +40,21 @@ html,body{margin:0;height:100%;background:#0b0e10;color:var(--cn-ink);font-famil
 .cn-actions :is(button,a):focus-visible,.cn-back:focus-visible{outline:2px solid #fff;outline-offset:3px}
 @media (max-width:640px){.cn-keys{display:none}.cn-hud{bottom:calc(20px + env(safe-area-inset-bottom))}}
 @media (prefers-reduced-motion:reduce){#cn-toast,.cn-bar i{transition:none}}
+
+/* On foot, stealth and touch (prototype 2) */
+.cn-keys[data-mode="ride"] .foot,.cn-keys[data-mode="foot"] .ride{display:none}
+.cn-seen i{background:#e8e6e0}
+.cn-stealth-row .cn-label{min-width:76px}
+.cn-stealth-row[data-state="warm"] .cn-label{color:#e6b84a}.cn-stealth-row[data-state="warm"] .cn-seen i{background:#e6b84a}
+.cn-stealth-row[data-state="hot"] .cn-label{color:var(--cn-red)}.cn-stealth-row[data-state="hot"] .cn-seen i{background:var(--cn-red)}
+#cn-prompt{position:fixed;left:50%;bottom:22%;transform:translate(-50%,6px);margin:0;padding:8px 14px;border:1px solid rgba(232,230,224,.5);border-radius:6px;background:rgba(8,10,12,.62);font:700 13px/1 'Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.2em;color:#e8e6e0;opacity:0;transition:opacity .12s,transform .12s;pointer-events:none;white-space:nowrap}
+#cn-prompt.show{opacity:1;transform:translate(-50%,0)}
+#cn-touch{position:fixed;inset:0;pointer-events:none;z-index:3}
+#cn-touch>*{pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none}
+.cn-stick{position:absolute;left:calc(22px + env(safe-area-inset-left));bottom:calc(96px + env(safe-area-inset-bottom));width:124px;height:124px;border-radius:50%;border:1px solid rgba(232,230,224,.35);background:rgba(8,10,12,.3)}
+.cn-stick i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px;border-radius:50%;background:rgba(232,230,224,.55)}
+.cn-pad{position:absolute;right:calc(16px + env(safe-area-inset-right));bottom:calc(92px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,64px);gap:10px;justify-items:center}
+.cn-pad button{width:64px;height:64px;border-radius:50%;border:1px solid rgba(232,230,224,.4);background:rgba(8,10,12,.4);color:#e8e6e0;font:700 11px/1 'Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.12em}
+.cn-pad button.on{background:rgba(197,20,14,.75)}
+@media (prefers-reduced-motion:reduce){#cn-prompt{transition:none}}
+#cn-toast.long{font-size:clamp(13px,2vw,21px);letter-spacing:.16em;max-width:92vw;line-height:1.3}

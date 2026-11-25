@@ -5,7 +5,7 @@ import * as THREE from 'three/webgpu';
 
 const HALF = [1.02, .78, 2.05], MASS = 1500, REST = .8, TOP = 14.5, ACCEL = 6, TURN = 1.25, FLIP_SPEED = 8.5, SQUARE = .62;
 
-export function createTruck({ scene, physics, world, cow, blood, onEvent, assets }) {
+export function createTruck({ scene, physics, world, cow, blood, onEvent, assets, target = null }) {
   const group = new THREE.Group(), cube = new THREE.BoxGeometry(1, 1, 1);
   // The pickup model (assets/cowninja/props/pickup.glb): body, four wheels that turn, headlights that die in a wreck.
   const model = assets?.clone('pickup'), wheels = [], beams = [];
@@ -27,7 +27,7 @@ export function createTruck({ scene, physics, world, cow, blood, onEvent, assets
   function update(dt, live) {
     const t = body.read(); group.position.set(t.p[0], t.p[1], t.p[2]); q.set(t.q[0], t.q[1], t.q[2], t.q[3]); group.quaternion.copy(q);
     up.set(0, 1, 0).applyQuaternion(q); fwd.set(0, 0, -1).applyQuaternion(q); right.set(1, 0, 0).applyQuaternion(q);
-    const c = cow.state, upright = up.y > .72;
+    const c = target ? target() : cow.state, upright = up.y > .72;
     hitCool = Math.max(0, hitCool - dt);
     if (!flipped && up.y < .2) { flipped = true; wreck = 0; lamp.intensity = 0; for (const b of beams) { b.material.emissiveIntensity = 0; b.material.color.setScalar(.15); } onEvent?.({ type: 'flipped' }); }
     if (flipped) { wreck += dt; return; }
@@ -64,5 +64,5 @@ export function createTruck({ scene, physics, world, cow, blood, onEvent, assets
       } else if (cowSpeed > 4) { hitCool = .5; onEvent?.({ type: 'glanced', speed: cowSpeed }); }
     }
   }
-  return { update, body, group, start() { if (!active) { active = true; body.wake(); onEvent?.({ type: 'truck-coming' }); } }, get flipped() { return flipped; }, get active() { return active; } };
+  return { update, body, group, get speed() { return speed; }, start() { if (!active) { active = true; body.wake(); onEvent?.({ type: 'truck-coming' }); } }, get flipped() { return flipped; }, get active() { return active; } };
 }
