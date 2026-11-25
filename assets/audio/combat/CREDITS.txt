@@ -13,3 +13,5 @@ https://opengameart.org/content/death-sounds-0
 Edits by Break Thy Rule: trimming, mono 32 kHz AAC, normalization, fades and indicated filters.
 Head/kill accents derive from Kenney body impacts. Near-miss cracks are edited rifle transients.
 manifest.json records source URLs, source-file hashes and every edit. No AI voice synthesis.
+Beyond Eden body-cam sound (beyond-audio.js): reverb impulse responses, footsteps, cloth, gear and breathing are
+synthesised in code at run time by Break Thy Rule; no additional recordings or downloads.
