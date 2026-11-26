@@ -11,11 +11,14 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   exposure:1,haze:.3,clouds:0,wet:0,dof:0,motionBlur:0,
   // body-camera look (Beyond Eden): wide-lens barrel bend, colour fringing at the edges, light hanging in the air round lamps, night grade
   lens:0,chroma:0,air:0,grade:0,
+  // falling light (Beyond Eden, needs air): the air round the nearest lamps lit in a cone below each one and shadowed by
+  // the bake's lamp visibility (trees, eaves), instead of an even glow; 0 keeps the even glow (the expedition page)
+  cones:0,
   // body-camera sensor (all neutral here, so Eden is untouched): auto exposure that settles at its own pace each way
   // (exposureUp/Down, per second), a steady gain toward a key level (exposureAuto, exposureKey) inside hard limits
   // (exposureMin/Max); blur from turning (turnBlur), sensor noise that rises in the dark (sensor), compression blocks
   // (block) and the clip and recovery of a muzzle flash (flashClip, fired with flash()).
-  exposureUp:.7,exposureDown:.7,exposureAuto:0,exposureKey:.18,exposureMin:.55,exposureMax:1.6,turnBlur:0,sensor:0,block:0,flashClip:0,
+  exposureUp:.7,exposureDown:.7,exposureAuto:0,exposureKey:.18,exposureMin:.55,exposureMax:1.6,exposureScene:0,turnBlur:0,sensor:0,block:0,flashClip:0,
   // Dirt on the lens that a lamp behind it lights up (dirt) and the rolling shutter's lean on fast turns (shutter): -1 follows
   // the body camera (dirt with its sensor noise, the lean with its turn blur, which reduced motion switches off), 0 is off.
   dirt:-1,shutter:-1};
@@ -116,14 +119,18 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
  // scene by ~1.5 s, and the exposure factor is (scene / adapted)^0.6 — stepping into the dark looks darker and then
  // recovers, stepping into sunlight blows out and settles — while every steady view keeps exactly its tuned exposure.
  // The same pass tracks the focus distance at screen centre for depth of field.
- const lumMaterial=raw(`varying vec2 vUv;uniform sampler2D tScene,tPrev,tDepth;uniform mat4 projInv;uniform float rate,rateUp,rateDown,strength,first,autoGain,key,lo,hi;
+ const lumMaterial=raw(`varying vec2 vUv;uniform sampler2D tScene,tPrev,tDepth;uniform mat4 projInv;uniform float rate,rateUp,rateDown,strength,first,autoGain,key,lo,hi,scene;
  float dist(vec2 uv){float d=texture2D(tDepth,uv).x;if(d>=1.)return 200.;vec4 p=projInv*vec4(vec3(uv,d)*2.-1.,1.);return min(length(p.xyz/p.w),200.);}
- void main(){float sum=0.,wsum=0.;
-  for(int y=0;y<8;y++)for(int x=0;x<8;x++){vec2 uv=(vec2(float(x),float(y))+.5)/8.,q=uv-.5;float w=exp(-dot(q,q)*5.);sum+=log(max(dot(min(texture2D(tScene,uv).rgb,1.),vec3(.2126,.7152,.0722)),.002))*w;wsum+=w;}
+ void main(){float sum=0.,msum=0.,wsum=0.;
+  for(int y=0;y<8;y++)for(int x=0;x<8;x++){vec2 uv=(vec2(float(x),float(y))+.5)/8.,q=uv-.5;float w=exp(-dot(q,q)*5.),l=dot(min(texture2D(tScene,uv).rgb,1.),vec3(.2126,.7152,.0722));sum+=log(max(l,.002))*w;msum+=l*w;wsum+=w;}
   float avg=exp(sum/wsum),f=(dist(vec2(.5))*2.+dist(vec2(.47,.5))+dist(vec2(.53,.5))+dist(vec2(.5,.46))+dist(vec2(.5,.54)))/6.;
   vec4 prev=texture2D(tPrev,vec2(.5));float adapted=first>.5?avg:mix(prev.r,avg,avg>prev.r?rateUp:rateDown),focus=first>.5?f:mix(prev.b,f,min(1.,rate*3.));
-  gl_FragColor=vec4(adapted,clamp(pow(avg/adapted,.6*strength)*pow(key/max(adapted,.004),autoGain),lo,hi),focus,1.);}`,
-  {tScene:{value:sceneRT.texture},tPrev:{value:null},tDepth:{value:depth},projInv:{value:new T.Matrix4()},rate:{value:.05},rateUp:{value:.05},rateDown:{value:.05},strength:{value:1},first:{value:1},autoGain:{value:0},key:{value:.18},lo:{value:.55},hi:{value:1.6}});
+  // scene > 0 (body camera): the transient is judged on the light in front of the lens, not on the tone-mapped picture,
+  // whose curve squeezes a lamp-lit court and a dark lane to nearly the same grey. The frame's mean display level is
+  // roughly the log of the scene's light, so the sensor tracks that mean (a) and the transient is 2^(scene x the step).
+  float ml=msum/wsum,adaptedL=first>.5||prev.a<=0.?ml:mix(prev.a,ml,ml>prev.a?rateUp:rateDown),ratio=scene>0.?exp2(scene*(ml-adaptedL)):avg/adapted;
+  gl_FragColor=vec4(adapted,clamp(pow(ratio,.6*strength)*pow(key/max(adapted,.004),autoGain),lo,hi),focus,adaptedL);}`,
+  {tScene:{value:sceneRT.texture},tPrev:{value:null},tDepth:{value:depth},projInv:{value:new T.Matrix4()},rate:{value:.05},rateUp:{value:.05},rateDown:{value:.05},strength:{value:1},first:{value:1},autoGain:{value:0},key:{value:.18},lo:{value:.55},hi:{value:1.6},scene:{value:0}});
  // Wet ground at night (half resolution): on upward-facing surfaces, march the reflected view ray through the depth buffer
  // (24 growing steps) and take the scene colour it hits; puddles (noise) mirror, the rest is merely damp. a = dampness.
  const wetMaterial=raw(`varying vec2 vUv;uniform sampler2D tDepth,tScene,tNoise;uniform mat4 projInv,proj;uniform mat3 camRot;uniform vec3 camPos;uniform vec2 texel;
@@ -155,8 +162,9 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
  const composite=new T.ShaderMaterial({vertexShader,depthTest:false,depthWrite:false,toneMapped:false,
   uniforms:{tScene:{value:sceneRT.texture},tAO:{value:aoA.texture},tBloom:{value:up[0].texture},tRays:{value:rayA.texture},tVisible:{value:visible.texture},ao:{value:0},bloom:{value:0},warmth:{value:0},saturation:{value:1},vignette:{value:0},contrast:{value:0},split:{value:0},view:{value:0},
    sun:{value:sunUv},sunGate:{value:0},flare:{value:0},rays:{value:0},glare:{value:0},aspect:{value:1},lamps:{value:Array.from({length:LAMPS},()=>new T.Vector4())},lampColors:{value:Array.from({length:LAMPS},()=>new T.Color())},
-   tDepth:{value:depth},tLum:{value:lum[0].texture},tNoise:{value:noise},tWet:{value:wetRT.texture},projInv:{value:new T.Matrix4()},camRot:{value:camRot},camPos:{value:camPos},cloudOffset:{value:cloudOffset},hazeColor:{value:hazeColor},exposure:{value:0},haze:{value:0},clouds:{value:0},wet:{value:0},grade:{value:0},air:{value:0},airPos:{value:Array.from({length:6},()=>new T.Vector4())},airColor:{value:Array.from({length:6},()=>new T.Color())}},
-  fragmentShader:`varying vec2 vUv;uniform sampler2D tScene,tAO,tBloom,tRays,tVisible,tDepth,tLum,tNoise,tWet;uniform mat4 projInv;uniform mat3 camRot;uniform vec3 camPos,hazeColor;uniform vec2 cloudOffset;uniform float exposure,haze,clouds,wet,grade,air;uniform vec4 airPos[6];uniform vec3 airColor[6];uniform float ao,bloom,warmth,saturation,vignette,contrast,split,view,sunGate,flare,rays,glare,aspect;uniform vec2 sun;uniform vec4 lamps[${LAMPS}];uniform vec3 lampColors[${LAMPS}];
+   tDepth:{value:depth},tLum:{value:lum[0].texture},tNoise:{value:noise},tWet:{value:wetRT.texture},projInv:{value:new T.Matrix4()},camRot:{value:camRot},camPos:{value:camPos},cloudOffset:{value:cloudOffset},hazeColor:{value:hazeColor},exposure:{value:0},haze:{value:0},clouds:{value:0},wet:{value:0},grade:{value:0},air:{value:0},airPos:{value:Array.from({length:6},()=>new T.Vector4())},airColor:{value:Array.from({length:6},()=>new T.Color())},
+   cones:{value:0},tVol:{value:null},volMin:{value:new T.Vector3()},volSize:{value:new T.Vector3(1,1,1)},volGrid:{value:new T.Vector3(1,1,1)},volAtlas:{value:new T.Vector3(1,1,1)},volFineMin:{value:new T.Vector3(1e6,1e6,1e6)},volFineSize:{value:new T.Vector3(1,1,1)},volFineGrid:{value:new T.Vector3(1,1,1)},volFineOffset:{value:new T.Vector3()}},
+  fragmentShader:`varying vec2 vUv;uniform sampler2D tScene,tAO,tBloom,tRays,tVisible,tDepth,tLum,tNoise,tWet;uniform mat4 projInv;uniform mat3 camRot;uniform vec3 camPos,hazeColor;uniform vec2 cloudOffset;uniform float exposure,haze,clouds,wet,grade,air,cones;uniform vec4 airPos[6];uniform vec3 airColor[6];uniform highp sampler3D tVol;uniform vec3 volMin,volSize,volGrid,volAtlas,volFineMin,volFineSize,volFineGrid,volFineOffset;uniform float ao,bloom,warmth,saturation,vignette,contrast,split,view,sunGate,flare,rays,glare,aspect;uniform vec2 sun;uniform vec4 lamps[${LAMPS}];uniform vec3 lampColors[${LAMPS}];
  // A ghost is the sun reflected between lens elements: a soft disc with a brighter rim, each colour a slightly different size.
  vec3 ghost(vec2 centre,float r){float d=length((vUv-centre)*vec2(aspect,1.));vec3 rr=r*vec3(1.,1.05,1.1);
   return smoothstep(rr,rr*.45,vec3(d))*.5+smoothstep(rr,rr*.9,vec3(d))*smoothstep(rr*.76,rr*.94,vec3(d))*.5;}
@@ -174,11 +182,26 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
    // The body camera's small lens only blooms a little: no streak and no star.
    g+=v*(tint*(exp(-d*10.)*.35+exp(-d*38.)*.6)*(1.-.45*grade)+(pale*exp(-q.y*110.-q.x*4.)*.3+pale*(exp(-q.x*190.-q.y*11.)+exp(-q.y*190.-q.x*11.))*.12)*(1.-grade));}
   return g;}
+ // How much of the lamps' light reaches a point in the air, from the bake's probe volume (alpha of probe A): the fine
+ // courtyard grid inside its box, the coarse district grid elsewhere. Trees, eaves and walls cut the light this way.
+ float lampVisible(vec3 p){vec3 f=(p-volFineMin)/volFineSize;
+  vec3 u=all(greaterThan(f,vec3(.02)))&&all(lessThan(f,vec3(.98)))?(volFineOffset+clamp(f*volFineGrid,vec3(.5),volFineGrid-.5))/volAtlas:clamp((p-volMin)/volSize*volGrid,vec3(.5),volGrid-.5)/volAtlas;
+  return texture(tVol,u).a;}
  void main(){vec4 s=texture2D(tScene,vUv);
   if(view>.5){gl_FragColor=vec4(view<1.5?vec3(texture2D(tAO,vUv).x):view<2.5?texture2D(tBloom,vUv).rgb:view<3.5?vec3(s.a):view<4.5?texture2D(tRays,vUv).rgb*4.:texture2D(tWet,vUv).rgb*3.,1.);return;}vec3 c=clamp(s.rgb,0.,1.)*mix(1.,texture2D(tAO,vUv).x,ao);
   if(air>0.){float d=texture2D(tDepth,vUv).x;vec4 p=projInv*vec4(vec3(vUv,min(d,.99999))*2.-1.,1.);vec3 ray=camRot*(p.xyz/p.w);float reach=min(length(ray),60.);ray=normalize(ray);vec3 fog=vec3(0.);
    // Light scattered by damp air: the exact integral of each lamp's falloff along the view ray.
-   for(int i=0;i<6;i++){vec4 l=airPos[i];if(l.w<=0.)continue;vec3 q=camPos-l.xyz;float b=dot(ray,q),s=1./sqrt(max(dot(q,q)-b*b,.02));fog+=airColor[i]*l.w*min(s*(atan((reach+b)*s)-atan(b*s)),7.);}
+   for(int i=0;i<6;i++){vec4 l=airPos[i];if(l.w<=0.)continue;vec3 q=camPos-l.xyz;float b=dot(ray,q),s=1./sqrt(max(dot(q,q)-b*b,.02));fog+=airColor[i]*l.w*min(s*(atan((reach+b)*s)-atan(b*s)),7.)*(i<3?1.-cones:1.);}
+   // Falling light: for the three nearest lamps, march the stretch of the view ray within 7 m of the lamp. The air is lit
+   // most in a cone below the lantern (its cap shades the sky above it), and only where the bake says the lamp is seen.
+   if(cones>0.){float jit=fract(52.9829*fract(dot(gl_FragCoord.xy,vec2(.0671106,.0058372))));
+    for(int i=0;i<3;i++){vec4 l=airPos[i];if(l.w<=0.)continue;vec3 q=camPos-l.xyz;float b=dot(ray,q),m=dot(q,q)-b*b;if(m>49.)continue;
+     float h=sqrt(49.-m),t0=max(0.,-b-h),t1=min(reach,-b+h);if(t1<=t0)continue;float dt=(t1-t0)/8.,acc=0.;
+     for(int k=0;k<8;k++){float t=t0+(float(k)+jit)*dt;vec3 p=camPos+ray*t,v=p-l.xyz;float d2=dot(v,v),down=-v.y*inversesqrt(d2+1e-4);
+      // (the air right at the lens is not seen lit: a lamp overhead would otherwise haze the whole frame)
+      acc+=(.08+smoothstep(-.15,.8,down)*1.6)/(d2+1.)*lampVisible(p)*step(0.,p.y)*smoothstep(.6,3.,t);}
+     // (capped like the even glow, so standing under a lamp does not fill the frame with light)
+     fog+=airColor[i]*l.w*min(acc*dt,1.8)*cones*(1.-smoothstep(25.,49.,m));}}
    float n=texture2D(tNoise,(camPos.xz+ray.xz*min(reach,14.))*.05+cloudOffset*40.).r;c=1.-(1.-c)*(1.-clamp(fog*air*(.55+.9*n),0.,.85));}
   if(clouds+wet+haze>0.){float d=texture2D(tDepth,vUv).x;if(d<1.){vec4 p=projInv*vec4(vec3(vUv,d)*2.-1.,1.);vec3 vp=p.xyz/p.w;float dist=length(vp);vec3 wp=camPos+camRot*vp;
    // cloud shadows: drifting noise on the ground plane dims what is lit (bright pixels) more than what is already in shade
@@ -362,7 +385,7 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   const wetAmount=settings.wet*T.MathUtils.smoothstep(night,.3,.8);
   if(camPos.distanceTo(prevCamPos)>6)lumValid=false; // a teleport (new world, loading screen) starts adapted, not with a flash
   if(settings.exposure>0||settings.dof>0){
-   const u=lumMaterial.uniforms;u.tPrev.value=lum[lumIndex^1].texture;u.projInv.value.copy(camera.projectionMatrixInverse);u.rate.value=1-Math.exp(-dt*.7);u.rateUp.value=1-Math.exp(-dt*settings.exposureUp);u.rateDown.value=1-Math.exp(-dt*settings.exposureDown);u.autoGain.value=settings.exposureAuto;u.key.value=settings.exposureKey;u.lo.value=settings.exposureMin;u.hi.value=settings.exposureMax;u.strength.value=settings.exposure;u.first.value=lumValid?0:1;
+   const u=lumMaterial.uniforms;u.tPrev.value=lum[lumIndex^1].texture;u.projInv.value.copy(camera.projectionMatrixInverse);u.rate.value=1-Math.exp(-dt*.7);u.rateUp.value=1-Math.exp(-dt*settings.exposureUp);u.rateDown.value=1-Math.exp(-dt*settings.exposureDown);u.autoGain.value=settings.exposureAuto;u.key.value=settings.exposureKey;u.lo.value=settings.exposureMin;u.hi.value=settings.exposureMax;u.scene.value=settings.exposureScene;u.strength.value=settings.exposure;u.first.value=lumValid?0:1;
    pass(lumMaterial,lum[lumIndex]);composite.uniforms.tLum.value=lensMaterial.uniforms.tLum.value=lum[lumIndex].texture;lumIndex^=1;lumValid=true;
   }else lumValid=false;
   if(wetAmount>0){const u=wetMaterial.uniforms;u.projInv.value.copy(camera.projectionMatrixInverse);u.proj.value.copy(camera.projectionMatrix);pass(wetMaterial,wetRT);}
@@ -377,6 +400,7 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
   const c=composite.uniforms;c.ao.value=settings.ao;c.bloom.value=settings.bloom*(1+1.2*flashNow*settings.flashClip);c.warmth.value=settings.warmth;c.saturation.value=settings.saturation;c.vignette.value=settings.vignette;c.contrast.value=settings.contrast;c.split.value=settings.split;
   c.projInv.value.copy(camera.projectionMatrixInverse);c.exposure.value=lumValid?settings.exposure:0;c.haze.value=settings.haze;c.clouds.value=settings.clouds*(1-night);c.wet.value=wetAmount;
   c.grade.value=settings.grade;c.air.value=settings.air*night;if(settings.air>0)updateAir();
+  {const vol=settings.cones>0&&settings.air>0?window.edenBaked?.volume?.():null;c.cones.value=vol?settings.cones:0;if(vol){c.tVol.value=vol.texture;c.volMin.value.copy(vol.min);c.volSize.value.copy(vol.size);c.volGrid.value.copy(vol.grid);c.volAtlas.value.copy(vol.atlas);c.volFineMin.value.copy(vol.detailMin);c.volFineSize.value.copy(vol.detailSize);c.volFineGrid.value.copy(vol.detailGrid);c.volFineOffset.value.copy(vol.detailOffset);}}
   c.sunGate.value=sunGate;c.flare.value=settings.flare;c.rays.value=settings.rays;c.glare.value=lampCount?settings.glare:0;c.tRays.value=rayB.texture;
   // Raw diagnostic views intentionally bypass the grade; ordinary non-TAA
   // rendering still owns grain, LUT and sharpening in the finish pass.
