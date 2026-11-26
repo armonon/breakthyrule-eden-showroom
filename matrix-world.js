@@ -294,6 +294,7 @@ ${OLD?`     float mxPool=.35+.65*pow(.5+.5*cos(mxUv.x*1.05),3.);totalEmissiveRad
      if(mxCh>.972){float mxLen=26.,mxDrop=mod(mxCell.y+mxTime*(2.+mxCh*3.)*1.6+mxCh*997.,90.),mxTail=mxDrop<mxLen?exp(-mxDrop*.15):0.;
       if(mxTail>.01){float mxId=step(.5,mxBit(-mxCell.y+mxCell.x*64.));vec2 mxF=clamp(fract(mxP),.08,.92);float mxG=texture2D(mxKit,(vec2(mxId,0.)+vec2(mxF.x,1.-mxF.y))/8.).r;totalEmissiveRadiance+=${GREEN}*mxG*mxTail*.5*mxOn;}}}}`:''}`:''));
    if(ownMap){ // the building's own maps, read at world-space coordinates (normal maps follow: three derives their frame from the uv)
+    f=f.replace(/#include <(map_fragment|normal_fragment_begin|normal_fragment_maps|roughnessmap_fragment|metalnessmap_fragment|aomap_fragment|emissivemap_fragment)>/g,(m,n)=>T.ShaderChunk[n]); // the uv names live inside these chunks
     const at=f.indexOf('void main()');f=f.slice(0,at)+'vec2 mxWuv=vec2(0.);\n'+f.slice(at).replace(/\bv(Map|NormalMap|RoughnessMap|MetalnessMap|AoMap|EmissiveMap)Uv\b/g,'mxWuv')
      .replace('#include <clipping_planes_fragment>',`#include <clipping_planes_fragment>
     {vec3 mxQ=abs(normalize(cross(dFdx(vMx),dFdy(vMx))));mxWuv=(mxQ.y>max(mxQ.x,mxQ.z)?vMx.xz:(mxQ.x>mxQ.z?vec2(vMx.z,-vMx.y):vec2(vMx.x,-vMx.y)))*.4;}`);}

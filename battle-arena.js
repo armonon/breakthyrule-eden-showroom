@@ -118,7 +118,7 @@
    MAT={
     wood:new T.MeshStandardMaterial({map:wood,roughness:.8}),
     // Beyond Eden's match doors: weathered boards (matrix-world.js 'planks'); the expedition page keeps the plain wood.
-    ...(document.body?.classList.contains('expedition-entry')||!window.edenMatrix?{}:{door:(()=>{const m=new T.MeshStandardMaterial({color:0x6e5440,roughness:.85});window.edenMatrix.patch(T,m,'planks');return m;})(),iron:new T.MeshStandardMaterial({color:0x232425,metalness:.7,roughness:.6})}),
+    ...(document.body?.classList.contains('expedition-entry')||!window.edenMatrix?{}:{door:(()=>{const m=new T.MeshStandardMaterial({color:0x6e5440,roughness:.85});window.edenMatrix.patch(T,m,'planks');return m;})(),doorIron:new T.MeshStandardMaterial({color:0x232425,metalness:.7,roughness:.6})}),
     iron:new T.MeshStandardMaterial({color:0x2c2b28,metalness:.8,roughness:.45}),
     brass:new T.MeshStandardMaterial({color:0xb8913e,metalness:1,roughness:.3}),
     ring,beam,
@@ -994,7 +994,7 @@
    const M=materials();doors=[];
    for(const lm of layout.landmarks){if(lm.id==='gardens')continue;
     for(const end of [-1,1]){const z=lm.z+end*lm.d/2,g=new T.Group();g.position.set(lm.x,groundY(lm.x,z),z);root.add(g);
-     const leaves=[-1,1].map(side=>{const pivot=new T.Group();pivot.position.set(side*1.62,0,0);g.add(pivot);const leaf=box(1.58,2.82,.07,M.door||M.wood,pivot,-side*.8,1.41,0);box(.06,.18,.12,M.brass,pivot,-side*1.45,1.15,0);if(M.door){/* raised panels and iron straps, so a door has depth */for(const [py,ph] of [[.62,.9],[1.88,1.3]])for(const s2 of [1,-1])box(1.3,ph,.03,M.door,leaf,0,py-1.41,s2*.045);for(const sy of [-.95,.95])box(1.5,.07,.02,M.iron,leaf,0,sy,.05);}return {pivot,leaf,side,a:0,v:0,gone:false};});
+     const leaves=[-1,1].map(side=>{const pivot=new T.Group();pivot.position.set(side*1.62,0,0);g.add(pivot);const leaf=box(1.58,2.82,.07,M.door||M.wood,pivot,-side*.8,1.41,0);box(.06,.18,.12,M.brass,pivot,-side*1.45,1.15,0);if(M.door){/* raised panels and iron straps, so a door has depth */for(const [py,ph] of [[.62,.9],[1.88,1.3]])for(const s2 of [1,-1])box(1.3,ph,.03,M.door,leaf,0,py-1.41,s2*.045).castShadow=false;for(const sy of [-.95,.95])box(1.5,.07,.02,M.doorIron,leaf,0,sy,.05).castShadow=false;}return {pivot,leaf,side,a:0,v:0,gone:false};});
      g.traverse(n=>{n.userData.noHit=true;});doors.push({g,end,lm,leaves,x:lm.x,z,brokenAt:0});}}
   }
   function smashDoor(d,dir,force=6){

@@ -84,6 +84,8 @@
    m.customProgramCacheKey=()=>'rocketbox-night-4-'+kind;
    set[kind]=m;
   }
+  // The matrix form-in (bots crystallising out of glyphs) patches what a body wears: the night set must carry it too.
+  if(root.edenMatrix)for(const m of new Set(Object.values(set)))if(m?.isMeshStandardMaterial)root.edenMatrix.patch(T,m,'form');
   nightSets.set(id,set);return set;
  }
  // Which set a body draws with: night only in the main scene of the showroom while it is in Beyond Eden with its bake.
