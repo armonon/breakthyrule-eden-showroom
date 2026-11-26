@@ -142,9 +142,21 @@
    const c={group:g,lidPivot,glow,open:false,openT:0,pos:new T.Vector3(x,y,z)};chests.push(c);window.edenMatrix?.form(T,g,{duration:1.4});return c;
   }
 
+  // Guns out in the world (in bots' hands, on the ground): the first-person gun's steel, blued darker, with the studio
+  // reflection turned well down so the scene lights it. What is left of the reflection is dimmed by place by the bake
+  // (eden-baked-light.js), and the lamps and muzzle flashes put real highlights on it. One copy per source material.
+  const worldSteel=new Map(),BLUED=new T.Color(.42,.45,.53);
+  function worldGun(g){
+   g?.traverse(n=>{if(!n.isMesh||Array.isArray(n.material)||!n.material)return;const src=n.material;let m=worldSteel.get(src);
+    if(!m){m=src.clone();m.onBeforeCompile=src.onBeforeCompile;m.customProgramCacheKey=src.customProgramCacheKey;
+     if(m.metalness>.5){m.color.multiply(BLUED);m.envMapIntensity=src.envMapIntensity*.2;}else m.envMapIntensity=src.envMapIntensity*.45;
+     worldSteel.set(src,m);}
+    n.material=m;});
+   return g;
+  }
   function itemVisual(item){
    const M=materials(),g=new T.Group();
-   if(item.type==='weapon'){const m=combat.weaponModel(item.weapon);if(m){m.rotation.set(0,0,Math.PI/2);m.position.y=.05;const s=new T.Group();s.add(m);g.add(s);}else box(.5,.08,.12,M.iron,g);}
+   if(item.type==='weapon'){const m=worldGun(combat.weaponModel(item.weapon));if(m){m.rotation.set(0,0,Math.PI/2);m.position.y=.05;const s=new T.Group();s.add(m);g.add(s);}else box(.5,.08,.12,M.iron,g);}
    else if(item.type==='armor'){const t=item.garment.image?new T.TextureLoader().load(item.garment.image,()=>o.requestDraw()):null;if(t)t.colorSpace=T.SRGBColorSpace;
     const fold=new T.Mesh(new T.BoxGeometry(.42,.07,.34),[M.white,M.white,new T.MeshStandardMaterial({map:t,color:t?0xffffff:0xdddddd,roughness:.9}),M.white,M.white,M.white]);fold.position.y=.04;fold.castShadow=true;g.add(fold);}
    else if(item.type==='heal'){if(item.heal==='medkit'){box(.34,.2,.24,M.white,g,0,.1,0);box(.2,.21,.06,M.red,g,0,.1,0);box(.06,.21,.2,M.red,g,0,.1,0);}else{for(const dx of [-.07,.07]){const r=new T.Mesh(new T.CylinderGeometry(.06,.06,.1,16),M.gauze);r.rotation.z=Math.PI/2;r.position.set(dx,.06,0);g.add(r);}}}
@@ -217,7 +229,7 @@
   function formBot(b){b.model.root.traverse(n=>{if(n.isMesh)for(const m of [].concat(n.material||[]))window.edenMatrix?.patch(T,m,'form');});window.edenMatrix?.form(T,b.root,{duration:1.5,cloud:true});}
   function setBotWeapon(b,id){
    // The gun is gripped in both hands and aimed (character-motion.js hold/aimAt); b.hand stays as the muzzle marker.
-   b.weapon=id;b.shadowNear=null;b.hand.clear();const m=combat.weaponModel(id);
+   b.weapon=id;b.shadowNear=null;b.hand.clear();const m=worldGun(combat.weaponModel(id));
    if(m){m.traverse(n=>{n.userData.noHit=true;n.castShadow=true;});if(b.model.motion?.hold)b.model.motion.hold(m,id);else{m.rotation.set(0,Math.PI,0);b.hand.add(m);}}
   }
   const W=id=>combat.weapons.find(w=>w.id===id);
@@ -606,6 +618,20 @@
    const dh=((b.heading-b.root.rotation.y+Math.PI*3)%TAU)-Math.PI;b.root.rotation.y+=dh*Math.min(1,dt*8);
    if(animateNow(b))b.model.animate?.(clock,Math.min(1,b.stride*(speed/4.2)));
   }
+  // A bot's muzzle flash lights the bot and what stands beside it for a frame or two. One light, added once with the
+  // arena (while Beyond Eden loads) and never removed; it rests at intensity 0 and the nearest shot takes it. It lives in
+  // the arena group, not on the scene: worlds.js then draws it through its fixed pool of point lights (no change to the
+  // light count, so no shader recompiles), and night-road.js, which re-levels the scene's own lights, leaves it alone.
+  // As a point light it also takes the bake's lamp shadow in Beyond Eden (eden-baked-light.js).
+  let muzzleLight=null,muzzleT=0,muzzlePeak=0,muzzleHold=0;const MUZZLE_LIFE=.06,MUZZLE_POWER={pistol:6,smg:6,rifle:7.5,sniper:9,pump:9};
+  function botFlash(b,from,dir,w){
+   if(!muzzleLight)return;const d=from.distanceTo(camera.position);if(d>45)return;
+   // Another flash still burning nearer the camera keeps the light.
+   if(muzzleT>0&&muzzleLight.userData.d<d)return;
+   muzzleLight.position.copy(from).addScaledVector(dir,.7);muzzleLight.position.y+=.08; /* from is the grip: out past the muzzle, so the body is lit, not burnt */muzzleLight.userData.d=d;
+   muzzlePeak=(MUZZLE_POWER[w.id]||6)*rand(.85,1.15);muzzleT=MUZZLE_LIFE;muzzleLight.intensity=muzzlePeak;muzzleLight.color.setHSL(.085+rand(-.01,.01),1,.62);
+  }
+  function updateMuzzle(dt){if(!muzzleLight||muzzleT<=0)return;if(muzzleHold>0){muzzleHold-=dt;return;}muzzleT=Math.max(0,muzzleT-dt);const k=muzzleT/MUZZLE_LIFE;muzzleLight.intensity=muzzlePeak*k*k;}
   function botShoot(b,target,w,dist){
    const held=b.model.motion?.held?.()?.mesh,from=(held?.parent?held:b.hand).getWorldPosition(new T.Vector3()).add(new T.Vector3(0,.05,0));
    const aim=eyeOf(target);aim.y-=rand(.1,.55);
@@ -615,6 +641,7 @@
    const hit=Math.random()<p;
    const dir=aim.clone().sub(from).normalize();
    if(!hit){const off=new T.Vector3(rand(-1,1),rand(-.5,1),rand(-1,1)).multiplyScalar(dist*.04+.3);dir.copy(aim.clone().add(off).sub(from).normalize());}
+   botFlash(b,from,dir,w);
    const far=from.clone().addScaledVector(dir,w.range||120),wt=segBlocked(from,far),wallD=wt===null?999:wt*(w.range||120);
    const th=hit?hitTest(from,dir,wallD,b):null;
    if(th){const head=Math.random()<.12;const dmg=(w.botDmg??w.dmg)*(w.id==='pump'?clamp(1.3-dist/20,.3,1.2)*5:1)*(head?1.8:1);
@@ -1165,6 +1192,7 @@
   async function build(){
    if(built)return;built=true;loadReactions();
    root=new T.Group();root.name='Arena';scene.add(root);
+   muzzleLight=new T.PointLight(0xffa452,0,9,2);muzzleLight.name='Bot muzzle flash';muzzleLight.castShadow=false;root.add(muzzleLight);
    if(!window.GardenCharacterSchema){try{const r=await fetch('/character-schema.json?v=4');if(r.ok)window.GardenCharacterSchema=await r.json();}catch{}}
    buildGrid();
    hud=buildHud();
@@ -1203,7 +1231,7 @@
    }finally{entering=false;}
   }
   function suspend(){
-   if(!active)return;endHold(null);reactions?.clear();if(player){player.runPoint=null;player.ramUntil=0;player.impactPoint=null;player.impactAir=false;player.impactCharge=false;}active=false;suspended=true;savedArsenal=combat.arsenal.inspect();
+   if(!active)return;endHold(null);reactions?.clear();muzzleT=0;if(muzzleLight)muzzleLight.intensity=0;if(player){player.runPoint=null;player.ramUntil=0;player.impactPoint=null;player.impactAir=false;player.impactCharge=false;}active=false;suspended=true;savedArsenal=combat.arsenal.inspect();
    document.body.classList.remove('battle-on');hud?.el.classList.remove('on');o.setNight(null);combat.holster();if(garden.district?.watcher)garden.district.watcher.visible=false;combat.arsenal.set(null);combat.setHudMode('');
   }
   function resume(){
@@ -1228,7 +1256,7 @@
    updateHold();
    for(const b of bots){updateBot(b,dt);const p=b.root.position;if(dt>0)(b.vel??=new T.Vector3()).set((p.x-(b.px??p.x))/dt,0,(p.z-(b.pz??p.z))/dt);b.px=p.x;b.pz=p.z;}
    if(reactions)try{reactions.update(dt);}catch(error){console.warn('Physical hit reactions stopped; keeping procedural ones.',error);try{reactions.clear();}catch{}reactions=null;}
-   updateGlints(dt);
+   updateGlints(dt);updateMuzzle(dt);
    if(player)updatePlayer(dt);
    // Loot physics + idle motion
    for(const l of loot){
@@ -1275,7 +1303,7 @@
    inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,event:event&&{kind:event.kind,label:event.label},night:+nightLevel().toFixed(2),attendant:attendant&&{x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1),stunned:clock<attendant.stunUntil},pages:player?pagesOf(player):0,power:player?.power||0,pageState:pages.map(pg=>pg.state),delivered:pages.filter(pg=>pg.state==='delivered').length,pinged:pinged?nameOf(pinged):null,watcher:attendant&&{mode:attendant.mode,page:attendant.page?attendant.page.i:null,x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1)},templeOpen:templeOpen(),soul:!!player?.soul,nextEvent:+(nextEventAt-clock).toFixed(1),pads:pads.length,player:player&&{alive:player.alive,stomps:player.stomps||0,rams:player.rams||0,score:player.score||0,deaths:player.deaths||0,hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
     bots:bots.map(b=>({name:b.name,score:b.score||0,kills:b.kills||0,alive:b.alive,hp:Math.round(b.hp),shield:Math.round(b.shield),down:+(b.model.motion?.downAmount?.()||0).toFixed(2),state:b.state,weapon:b.weapon,armor:b.armor,x:+b.root.position.x.toFixed(1),z:+b.root.position.z.toFixed(1)})),
     zone:zone&&{phase:zone.phase,state:zone.state,r:+zone.r.toFixed(1),x:+zone.center.x.toFixed(1),z:+zone.center.z.toFixed(1)},chests:chests.filter(c=>c.open).length+'/'+chests.length,loot:loot.length,arsenal:combat.arsenal.inspect()}),
-   _debug:{get bots(){return bots;},get reactions(){return reactions;},get player(){return player;},get loot(){return loot;},get chests(){return chests;},interact,damage,god(v=true){godMode=v;},place:(x,z,lx,lz,dp=0)=>{o.placePlayer(x,z,lx,lz);combat.syncLook(dp);},skip(t){countdown=0;clock+=t||0;},setZone(r){if(zone){zone.r=r;}},get pages(){return pages;},get watcher(){return attendant;},dropPages,deliver,placePage,setPower,night(){const total=CYCLE.day+CYCLE.dusk+CYCLE.night+CYCLE.dawn;worldOffset+=CYCLE.day+CYCLE.dusk+1-worldClock()%total;},blood(v){bloodHit=v;}}
+   _debug:{get bots(){return bots;},get muzzleLight(){return muzzleLight;},shoot(b,target=player,hold=0){if(!(b?.alive&&target))return;botShoot(b,target,W(b.weapon==='axe'?'pistol':b.weapon),posOf(b).distanceTo(posOf(target)));muzzleHold=hold;},/* hold: keep the flash lit that long, for stills */get reactions(){return reactions;},get player(){return player;},get loot(){return loot;},get chests(){return chests;},interact,damage,god(v=true){godMode=v;},place:(x,z,lx,lz,dp=0)=>{o.placePlayer(x,z,lx,lz);combat.syncLook(dp);},skip(t){countdown=0;clock+=t||0;},setZone(r){if(zone){zone.r=r;}},get pages(){return pages;},get watcher(){return attendant;},dropPages,deliver,placePage,setPower,night(){const total=CYCLE.day+CYCLE.dusk+CYCLE.night+CYCLE.dawn;worldOffset+=CYCLE.day+CYCLE.dusk+1-worldClock()%total;},blood(v){bloodHit=v;}}
   };
  }
  root.createBattleArena=createArena;
