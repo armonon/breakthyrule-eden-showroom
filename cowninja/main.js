@@ -64,7 +64,7 @@ async function boot() {
   // Whoever the yard is reacting to: the cow while you ride it, the ninja while you are on foot.
   const actor = () => mode === 'foot' ? foot.state : cow.state;
   function damage(amount, dx, dz, push) {
-    if (phase !== 'play' || window.cowNinja?.god || performance.now() < graceUntil) return; health = Math.max(0, health - amount); stats.hits++; hurtFlash = 1; shake = Math.max(shake, .5);
+    if (phase !== 'play' || window.cowNinja?.god || performance.now() < graceUntil) return; health = Math.max(0, health - amount); kick(dx || 0, dz || 0, Math.min(.6, amount * .02)); stats.hits++; hurtFlash = 1; shake = Math.max(shake, .5);
     if (mode === 'foot') foot.cancelAction();
     const a = actor(); if (mode === 'ride') cow.hit(dx, dz, push); blood.burst(a.x, 1.2, a.z, dx * 4, dz * 4, 6); audio.hit('body', a.x, a.z, 1);
     if (mode === 'ride' && health > 0 && amount >= TUNE.rider.throwDamage) throwOff(dx, dz, 'THROWN OFF · E ON ANY COW TO RIDE AGAIN');
@@ -78,7 +78,10 @@ async function boot() {
     const c = cow.state, spot = [[dx * 1.8, dz * 1.8], [-1.5, 0], [1.5, 0], [0, 1.9], [0, -1.9]].map(([ox, oz]) => [c.x + ox, c.z + oz]).find(([x, z]) => !world.blocked(x, z, .4));
     if (!spot) return false;
     const yaw = Math.PI - c.yaw; if (!foot.enter(spot[0], spot[1], yaw)) return false;
-    camYaw = yaw; camPitch = -.15; mode = 'foot'; cow.setRider(false); calling = 0; keys.delete('shift'); camEase = 1.2; graceUntil = performance.now() + TUNE.rider.recoverGrace * 1000;
+    mode = 'foot'; cow.setRider(false); calling = 0; keys.delete('shift'); camEase = 1.2; rig.wideUntil = performance.now() + 2500;
+    // Face where help is: the herd if there is one nearby, else the cow that threw you.
+    { const list = herd.cows.filter(o => o.state === 'free'); let tx = c.x, tz = c.z; if (list.length) { tx = 0; tz = 0; for (const o of list) { tx += o.p.x; tz += o.p.z; } tx /= list.length; tz /= list.length; }
+      camYaw = Math.hypot(tx - spot[0], tz - spot[1]) > 2 ? Math.atan2(tx - spot[0], tz - spot[1]) : yaw; camPitch = -.22; } graceUntil = performance.now() + TUNE.rider.recoverGrace * 1000;
     // The cow runs from what threw you, as far as there is open ground.
     { let far = 3; const bx = -dx || c.forward.x, bz = -dz || c.forward.z, l = Math.hypot(bx, bz) || 1; while (far < TUNE.rider.boltDistance && !world.blocked(c.x + bx / l * (far + 1), c.z + bz / l * (far + 1), 1)) far += 1;
       bolt = { x: c.x + bx / l * far, z: c.z + bz / l * far, until: performance.now() + TUNE.rider.boltSeconds * 1000 }; }
@@ -119,7 +122,7 @@ async function boot() {
       if (e.hit) { const through = mode === 'foot' ? Math.max(fight.raised?.() ? .6 : 1, 0) : 1; damage((mode === 'foot' ? TUNE.staff.pistol.damageFoot : TUNE.staff.pistol.damageRide) * through, e.dx, e.dz, 2); } }
     else if (e.type === 'lob') blasts.spawn(e.x, e.z);
     else if (e.type === 'police-coming') { /* the siren says it */ }
-    else if (e.type === 'police-arrived') say(e.role === 'heavy' ? 'HEAVY UNITS ARE OUT OF THE TRUCK' : `${e.count} POLICE BEYOND THE GATE`, 2.6);
+    else if (e.type === 'police-arrived') rig.wideUntil = performance.now() + 3500, say(e.role === 'heavy' ? 'HEAVY UNITS ARE OUT OF THE TRUCK' : `${e.count} POLICE BEYOND THE GATE`, 2.6);
     else if (e.type === 'police-car-hit') { provoke('policeVehicle', 'police car'); shake = Math.max(shake, .7); audio.hit('metal', e.x, e.z, 1.4, .6); say('A POLICE CAR IS HIT · THEY WILL ANSWER FOR IT', 2.6); }
     else if (e.type === 'spotted') { say('SPOTTED', 1.4); audio.hit(Math.random() < .5 ? 'voice-a-pain' : 'voice-b-pain', e.farmer.p.x, e.farmer.p.z, .8, .8); if (!alarm && !alarmAt) alarmAt = performance.now() + 4500; }
     else if (e.type === 'windup') window.EdenMelee?.sound('glint', .8);
@@ -140,6 +143,7 @@ async function boot() {
     else if (e.type === 'charge') { audio.moo(.3); say('CHARGE', 1.2); }
     else if (e.type === 'thud') { audio.hit(e.gate.kind === 'main' ? 'metal' : 'wood', e.gate.x, e.gate.z, Math.min(1.4, .5 + e.power / 14)); shake = Math.max(shake, Math.min(.5, e.sum / e.need * .45)); }
     else if (e.type === 'break') {
+      rig.wideUntil = performance.now() + 3000;
       audio.hit('metal', e.gate.x, e.gate.z, 1.6, .6); audio.moo(.35); shake = 1; hitStopUntil = performance.now() + 90; raiseAlarm(); provoke('gate', 'gate');
       say(e.gate.kind === 'main' ? 'THE MAIN GATE IS DOWN · RUN' : 'THE GATE GIVES', 2.6);
       // A short look at the breakthrough from beyond the gate. Any input takes the camera back.
@@ -175,7 +179,19 @@ async function boot() {
   // Where the herd has been sent: a ring on the ground (green: go and hold; red: charge this gate).
   const orderMark = new THREE.Mesh(new THREE.RingGeometry(.82, 1, 40), new THREE.MeshBasicMaterial({ color: 0x5dff8a, transparent: true, opacity: .9, depthTest: false, side: THREE.DoubleSide }));
   orderMark.rotation.x = -Math.PI / 2; orderMark.renderOrder = 5; orderMark.visible = false; scene.add(orderMark);
+  const aimMark = new THREE.Group(); aimMark.visible = false; scene.add(aimMark);
+  { const glow = new THREE.MeshBasicMaterial({ color: 0x5dff8a, transparent: true, opacity: .85, depthTest: false, side: THREE.DoubleSide });
+    const ring = new THREE.Mesh(new THREE.RingGeometry(.55, .7, 36), glow); ring.rotation.x = -Math.PI / 2; ring.position.y = .14; ring.renderOrder = 6;
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, 3, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0x5dff8a, transparent: true, opacity: .45, depthWrite: false }));
+    beam.position.y = 1.5; aimMark.add(ring, beam); aimMark.userData = { ring, beam }; }
   let cinematic = query.get('cine') !== '0', view = 'auto', wide = 0, camEase = 0;
+  // Camera state beyond position: the rider's orbit (right-drag or touch-drag while riding; eases back behind the cow
+  // once you let go), zoom (mouse wheel), a spring for the chase view, a dip on landings, a kick from blows, a roll
+  // into turns, and framing requests (close for a takedown or a lever, wide when the police arrive or a gate goes).
+  const rig = { orbitYaw: 0, orbitPitch: 0, orbitIdle: 9, zoom: 1, vel: new THREE.Vector3(), dip: 0, dipV: 0, kick: new THREE.Vector3(), roll: 0, lastYaw: 0, closeUntil: 0, wideUntil: 0, airFoot: false, airCow: false };
+  const kick = (dx, dz, amount) => { rig.kick.x += dx * amount; rig.kick.z += dz * amount; rig.kick.y -= amount * .3; };
+  // Aiming a herd order: hold F, a cursor shows where it will land and what it will do; let go to give it.
+  const aim = { on: false, at: 0, x: 0, z: 0, check: null, checkedAt: 0 };
   // Fists (Break Thy Rule's melee core): hit-stop freezes the game for a few frames, slow motion stretches a finisher.
   const fight = createFight({ foot, farmers, hooks: { yaw: () => camYaw, shake: a => { shake = Math.max(shake, a * 1.6); }, hitStop: ms => { hitStopUntil = performance.now() + ms; },
     onHit: ({ farmer }) => { audio.hit('body', farmer.p.x, farmer.p.z, 1); farmers.noise(farmer.p.x, farmer.p.z, 9, .35); } } });
@@ -188,10 +204,16 @@ async function boot() {
   let camYaw = world.spawn.yaw, camPitch = -.12;
   addEventListener('keydown', e => {
     const k = map[e.code];
-    if (!k) { if (e.repeat) return; if (e.code === 'KeyR' && phase !== 'intro') restart(); else if (e.code === 'KeyE') use(); else if (e.code === 'KeyQ') whistle(); else if (e.code === 'KeyF') commandAt2D(pointer.x, pointer.y); else if (e.code === 'KeyV') cycleView(); return; }
+    if (!k) { if (e.repeat) return; if (e.code === 'KeyR' && phase !== 'intro') restart(); else if (e.code === 'KeyE') use(); else if (e.code === 'KeyQ') whistle(); else if (e.code === 'KeyF') { if (phase === 'play') { aim.on = true; aim.at = performance.now(); aim.checkedAt = 0; } } else if (e.code === 'KeyV') cycleView(); return; }
     e.preventDefault(); if (k === 'space' && e.repeat) return; keys.add(k);
   });
-  addEventListener('keyup', e => { const k = map[e.code]; if (k) keys.delete(k); });
+  addEventListener('keyup', e => { const k = map[e.code]; if (k) keys.delete(k); if (e.code === 'KeyF' && aim.on) { aim.on = false; commandAt2D(pointer.x, pointer.y); } });
+  // Riding, the mouse is free (click gives orders): drag with the right button to look round; the wheel zooms.
+  let orbitDrag = false;
+  renderer.domElement.addEventListener('mousedown', e => { if (e.button === 2 && mode === 'ride') orbitDrag = true; });
+  addEventListener('mouseup', e => { if (e.button === 2) orbitDrag = false; });
+  addEventListener('mousemove', e => { if (orbitDrag && mode === 'ride') look(e.movementX, e.movementY); });
+  renderer.domElement.addEventListener('wheel', e => { rig.zoom = Math.max(.6, Math.min(1.9, rig.zoom * (e.deltaY > 0 ? 1.08 : 1 / 1.08))); e.preventDefault(); }, { passive: false });
   addEventListener('keydown', e => { if (!e.repeat) cine = null; }); addEventListener('pointerdown', () => { cine = null; });
   // Herd orders. F (or a click while riding, or a tap on a touch screen) sends the herd to the spot under the cursor
   // (the middle of the screen while the mouse is steering the camera); on a closed gate it means "charge it".
@@ -218,7 +240,9 @@ async function boot() {
     el.addEventListener('pointerup', e => { if (!tap || e.pointerId !== tap.id) return; const quick = performance.now() - tap.t < 300 && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < 12; tap = null;
       if (quick) { const b = renderer.domElement.getBoundingClientRect(); commandAt2D((e.clientX - b.left) / b.width * 2 - 1, -((e.clientY - b.top) / b.height * 2 - 1)); } }); }
   addEventListener('blur', () => keys.clear());
-  const look = (dx, dy) => { camYaw -= dx * .0024; camPitch = Math.max(-1.1, Math.min(.75, camPitch - dy * .002)); };
+  const look = (dx, dy) => {
+    if (mode === 'ride') { rig.orbitYaw = Math.max(-2.6, Math.min(2.6, rig.orbitYaw - dx * .004)); rig.orbitPitch = Math.max(-.35, Math.min(.6, rig.orbitPitch - dy * .003)); rig.orbitIdle = 0; return; }
+    camYaw -= dx * .0024; camPitch = Math.max(-1.1, Math.min(.75, camPitch - dy * .002)); };
   renderer.domElement.addEventListener('click', () => { if (phase === 'play' && mode === 'foot' && document.pointerLockElement !== renderer.domElement) renderer.domElement.requestPointerLock?.(); });
   addEventListener('mousemove', e => { if (document.pointerLockElement === renderer.domElement) look(e.movementX, e.movementY); });
   // Fists: left mouse (or J) punches, tap for jab/cross and hold for the haymaker; right mouse (or K) guards.
@@ -276,7 +300,7 @@ async function boot() {
         farmers.knock(f, (f.p.x - p.x) / d * 2.4, (f.p.z - p.z) / d * 2.4, 'takedown');
       }
     }
-    else if (o.kind === 'latch') { world.openGate(o.gate.id); foot.play('interact', { fade: .08, mask: 'upper' }); audio.hit(o.gate.kind === 'main' ? 'metal' : 'wood', o.gate.x, o.gate.z, .8); if (o.gate.kind === 'main') say('THE MAIN GATE IS OPEN · GET THEM OUT', 3); }
+    else if (o.kind === 'latch') { rig.closeUntil = performance.now() + 1400; world.openGate(o.gate.id); foot.play('interact', { fade: .08, mask: 'upper' }); audio.hit(o.gate.kind === 'main' ? 'metal' : 'wood', o.gate.x, o.gate.z, .8); if (o.gate.kind === 'main') say('THE MAIN GATE IS OPEN · GET THEM OUT', 3); }
   }
   // The whistle: on foot it brings the cow to you. Anyone close enough hears it too.
   function whistle() {
@@ -303,38 +327,73 @@ async function boot() {
   // pulled in when a wall is in the way. Both are shaken by impacts.
   const camPos = new THREE.Vector3(world.spawn.x, 6, world.spawn.z - 9), camAim = new THREE.Vector3(), want = new THREE.Vector3();
   const cam = { reach: 3.5, tilt: 0, side: .42, lead: { x: 0, z: 0 } };
+  const springTo = (pos, vel, target, omega, dt) => {   // a critically damped spring: no overshoot, no lag at rest
+    const x = omega * dt, e = 1 / (1 + x + .48 * x * x + .235 * x * x * x);
+    for (const k of ['x', 'y', 'z']) { const change = pos[k] - target[k], temp = (vel[k] + omega * change) * dt; vel[k] = (vel[k] - omega * temp) * e; pos[k] = target[k] + (change + temp) * e; }
+  };
+  const probe = new THREE.Vector3();
+  // Pull a camera position in towards `from` until nothing solid is between them (a short sphere march).
+  function clear(from, to, pad = .3) {
+    const dx = to.x - from.x, dy = to.y - from.y, dz = to.z - from.z, len = Math.hypot(dx, dy, dz) || 1;
+    for (let d = .4; d <= len; d += .3) { probe.set(from.x + dx / len * d, from.y + dy / len * d, from.z + dz / len * d); if (world.solidAt(probe.x, probe.y, probe.z, .22)) { const k = Math.max(.6, d - pad) / len; to.set(from.x + dx * k, from.y + dy * k, from.z + dz * k); return true; } }
+    return false;
+  }
   function updateCamera(dt) {
     const free = window.cowNinja?.freeCam; // debug: [x, y, z, lookX, lookY, lookZ] pins the camera for screenshots
     if (free) { camera.position.set(free[0], free[1], free[2]); camera.lookAt(free[3], free[4], free[5]); return; }
-    let fov = 62;
-    { const target = view === 'herd' ? 1 : view === 'close' ? 0 : mode === 'ride' ? Math.min(1, herd.freeCount / TUNE.camera.herdFull) : performance.now() - commandAt < 4500 ? .8 : 0; wide += (target - wide) * (1 - Math.exp(-2.2 * dt)); camEase = Math.max(0, camEase - dt); }
-    if (cine && performance.now() < cine.until) {
-      want.set(cine.pos[0], cine.pos[1], cine.pos[2]); camPos.lerp(want, 1 - Math.exp(-7 * dt)); camAim.lerp(want.set(cine.aim[0], cine.aim[1], cine.aim[2]), 1 - Math.exp(-9 * dt)); fov = 50; camEase = .9;
+    const now = performance.now();
+    let fov = 62, roll = 0;
+    // How wide: the view setting, the herd's size while riding, an order just given or being aimed, and framing requests.
+    { const close = view === 'close', framed = now < rig.wideUntil && !close ? .85 : 0, aiming = aim.on ? (mode === 'ride' ? .9 : .7) : 0;
+      const target = Math.max(view === 'herd' ? 1 : close ? 0 : mode === 'ride' ? Math.min(1, herd.freeCount / TUNE.camera.herdFull) : now - commandAt < 4500 ? .8 : 0, framed, aiming);
+      wide += (target - wide) * (1 - Math.exp(-2.2 * dt)); camEase = Math.max(0, camEase - dt); }
+    // Landings dip the camera, then it springs back.
+    { const fa = foot.state.airborne, ca = cow.state.airborne;
+      if (mode === 'foot' && rig.airFoot && !fa) rig.dipV -= Math.min(2.2, Math.abs(foot.state.velocity.y) * .22 + .5);
+      if (mode === 'ride' && rig.airCow && !ca) rig.dipV -= 1.6;
+      rig.airFoot = fa; rig.airCow = ca; rig.dipV += (-rig.dip * 90 - rig.dipV * 14) * dt; rig.dip += rig.dipV * dt; }
+    rig.kick.multiplyScalar(Math.exp(-7 * dt));
+    if (cine && now < cine.until) {
+      want.set(cine.pos[0], cine.pos[1], cine.pos[2]); camPos.lerp(want, 1 - Math.exp(-7 * dt)); camAim.lerp(want.set(cine.aim[0], cine.aim[1], cine.aim[2]), 1 - Math.exp(-9 * dt)); fov = 50; camEase = .9; rig.vel.set(0, 0, 0);
     } else if (mode === 'foot') {
       // A freerunning camera: over the shoulder on the ground; it pulls back and rises on climbs so the wall above is in
       // frame, pulls back and tips down on a fall so the landing is, leads the way you are moving, and widens with speed.
-      const p = foot.state, climbing = p.climbing, falling = p.airborne && p.velocity.y < -3, fast = Math.min(1, p.speed / 7.5);
+      // A takedown or a lever pull brings it in close over the shoulder.
+      const p = foot.state, climbing = p.climbing, falling = p.airborne && p.velocity.y < -3, fast = Math.min(1, p.speed / 7.5), close = p.busy || now < rig.closeUntil;
       const k = 1 - Math.exp(-4.5 * dt);
-      cam.reach += ((climbing ? 5.0 : p.airborne ? 5.2 : 3.3 + fast * 1.1) + wide * 5.5 - cam.reach) * k;
-      cam.tilt += ((climbing ? .3 : falling ? -.38 : 0) - wide * .32 - cam.tilt) * k;
-      cam.side += ((climbing || p.airborne ? 0 : .42) - cam.side) * k;
+      cam.reach += (((close ? 2.2 : climbing ? 5.0 : p.airborne ? 5.2 : 3.3 + fast * 1.1) + wide * 5.5) * rig.zoom - cam.reach) * k;
+      cam.tilt += ((close ? -.06 : climbing ? .3 : falling ? -.38 : 0) - wide * .32 - cam.tilt) * k;
+      cam.side += ((close ? .7 : climbing || p.airborne ? 0 : .42) - cam.side) * k;
       cam.lead.x += (p.velocity.x * .22 - cam.lead.x) * k; cam.lead.z += (p.velocity.z * .22 - cam.lead.z) * k;
       const pitchNow = Math.max(-1.2, Math.min(1.0, camPitch + cam.tilt)), eye = p.y + (p.crouched ? 1.05 : 1.5), cp = Math.cos(pitchNow), dx = Math.sin(camYaw) * cp, dy = Math.sin(pitchNow), dz = Math.cos(camYaw) * cp;
       const sx = -Math.cos(camYaw) * cam.side, sz = Math.sin(camYaw) * cam.side;   // to the camera's right
       let reach = cam.reach; for (let d = .5; d <= cam.reach; d += .25) if (world.solidAt(p.x + sx - dx * d, eye - dy * d + .25, p.z + sz - dz * d, .2)) { reach = Math.max(.5, d - .3); break; }
       want.set(p.x + sx - dx * reach, Math.max(.35, eye - dy * reach + .3), p.z + sz - dz * reach); { const ceiling = Math.min(world.ceilingAt(want.x, want.z), world.ceilingAt(p.x, p.z)); if (p.y < ceiling - .5 && want.y > ceiling - .35) want.y = ceiling - .35; }
-      camPos.lerp(want, 1 - Math.exp(-(camEase > 0 ? 3.5 : 14) * dt)); camAim.set(p.x + sx * .6 + cam.lead.x + dx * 4, eye + dy * 4 + .1, p.z + sz * .6 + cam.lead.z + dz * 4); fov = 62 + fast * 9 + (p.airborne ? 5 : 0);
+      camPos.lerp(want, 1 - Math.exp(-(camEase > 0 ? 3.5 : 14) * dt)); camAim.set(p.x + sx * .6 + cam.lead.x + dx * 4, eye + dy * 4 + .1, p.z + sz * .6 + cam.lead.z + dz * 4); fov = 62 + fast * 9 + (p.airborne ? 5 : 0) - (close ? 6 : 0);
+      rig.vel.set(0, 0, 0); rig.orbitYaw = 0; rig.orbitPitch = 0;
     } else {
-      const c = cow.state, fast = Math.min(1, Math.abs(c.speed) / cow.TUNE.charge), back = TUNE.camera.rideBack + fast * 2.6 + wide * (TUNE.camera.herdBack - TUNE.camera.rideBack), up = TUNE.camera.rideUp - fast * .9 + wide * (TUNE.camera.herdUp - TUNE.camera.rideUp);
-      want.set(c.x - c.forward.x * back, c.y + up, c.z - c.forward.z * back);
-      camPos.lerp(want, 1 - Math.exp(-(3.2 + fast * 2) * dt)); if (camPos.y < .6) camPos.y = .6;
-      // Under the roof the high chase view would sit above the ceiling: keep it below.
-      { const ceiling = world.ceilingAt(camPos.x, camPos.z), under = world.ceilingAt(c.x, c.z); if (Math.min(ceiling, under) < Infinity) camPos.y = Math.min(camPos.y, Math.min(ceiling, under) - .45); }
-      camAim.set(c.x + c.forward.x * (2.5 + fast * 4), c.y + 1.35, c.z + c.forward.z * (2.5 + fast * 4)); fov = 62 + fast * 16 + c.charge * 5;
+      // Riding: a chase camera on a spring. It sits lower and closer as the cow gathers into a charge (and the lens
+      // widens), rolls a little into turns, and can be swung round by hand; let go and it drifts back behind.
+      const c = cow.state, fast = Math.min(1, Math.abs(c.speed) / cow.TUNE.charge), charging = c.charging ? 1 : 0;
+      rig.orbitIdle += dt; if (rig.orbitIdle > 1.6) { const back = 1 - Math.exp(-1.8 * dt); rig.orbitYaw -= rig.orbitYaw * back; rig.orbitPitch -= rig.orbitPitch * back; }
+      const back = (TUNE.camera.rideBack + fast * 1.6 - charging * 1.1 + wide * (TUNE.camera.herdBack - TUNE.camera.rideBack)) * rig.zoom;
+      const up = (TUNE.camera.rideUp - fast * .7 - charging * .5 + wide * (TUNE.camera.herdUp - TUNE.camera.rideUp)) * rig.zoom * (1 + rig.orbitPitch);
+      const yaw = Math.atan2(c.forward.x, c.forward.z) + rig.orbitYaw, fx = Math.sin(yaw), fz = Math.cos(yaw);
+      want.set(c.x - fx * back, c.y + Math.max(.8, up), c.z - fz * back);
+      probe.set(c.x, c.y + 1.6, c.z); clear(probe, want);
+      { const ceiling = Math.min(world.ceilingAt(want.x, want.z), world.ceilingAt(c.x, c.z)); if (ceiling < Infinity) want.y = Math.min(want.y, ceiling - .45); }
+      springTo(camPos, rig.vel, want, camEase > 0 ? 3 : 4.5 + fast * 3, dt); if (camPos.y < .6) camPos.y = .6;
+      const lead = (2.5 + fast * 4) * (1 - Math.min(1, Math.abs(rig.orbitYaw)));
+      camAim.set(c.x + c.forward.x * lead, c.y + 1.35 - wide * .6, c.z + c.forward.z * lead);
+      // Roll into the turn, from how fast the cow's heading is changing.
+      let turn = Math.atan2(c.forward.x, c.forward.z) - rig.lastYaw; turn = Math.atan2(Math.sin(turn), Math.cos(turn)); rig.lastYaw = Math.atan2(c.forward.x, c.forward.z);
+      rig.roll += (Math.max(-.07, Math.min(.07, -turn / Math.max(dt, .001) * .025 * fast)) - rig.roll) * (1 - Math.exp(-5 * dt)); roll = rig.roll;
+      fov = 62 + fast * 13 + charging * 8;
     }
     shake = Math.max(0, shake - dt * 2.4);
-    camera.position.copy(camPos); if (shake > 0) camera.position.add(want.set((Math.random() - .5), (Math.random() - .5), (Math.random() - .5)).multiplyScalar(shake * .35));
-    camera.lookAt(camAim);
+    camera.position.copy(camPos).add(rig.kick); camera.position.y += rig.dip;
+    if (shake > 0) camera.position.add(want.set((Math.random() - .5), (Math.random() - .5), (Math.random() - .5)).multiplyScalar(shake * .35));
+    camera.lookAt(camAim); if (roll) camera.rotateZ(roll);
     if (Math.abs(camera.fov - fov) > .05) { camera.fov += (fov - camera.fov) * Math.min(1, dt * 5); camera.updateProjectionMatrix(); }
   }
 
@@ -402,6 +461,16 @@ async function boot() {
       // Done: you stand on the safe ground and every cow still alive is there too. (With cows left behind, E leaves.)
       if (herd.saved > 0 && herd.freeCount === 0 && herd.penned === 0 && Math.hypot(a.x - world.exit.x, a.z - world.exit.z) < world.exit.radius + 3 && now - lastSaveAt > 1500) end(true);
     }
+    // The aiming cursor (F held): where the order would land and what it would do, checked a few times a second.
+    if (aim.on && live) {
+      ray.setFromCamera(pointer, camera);
+      if (!ray.ray.intersectPlane(ground, hitPoint) || hitPoint.distanceTo(camera.position) > 140) hitPoint.copy(ray.ray.direction).setY(0).normalize().multiplyScalar(60).add(camera.position).setY(0);
+      aim.x = hitPoint.x; aim.z = hitPoint.z;
+      if (now - aim.checkedAt > 180) { aim.checkedAt = now; aim.check = herd.check(aim.x, aim.z); }
+      const r = aim.check, color = !r || !r.ok ? 0xff3030 : r.type === 'charge' ? (r.outlook.ok ? 0xffb020 : 0xff6a30) : 0x5dff8a;
+      aimMark.visible = true; aimMark.position.set(r?.type === 'charge' ? r.x : aim.x, 0, r?.type === 'charge' ? r.z : aim.z); aimMark.scale.setScalar(r?.type === 'charge' ? r.gate.half / .7 : 1 + Math.sin(time * 6) * .06);
+      aimMark.userData.ring.material.color.set(color); aimMark.userData.beam.material.color.set(color);
+    } else aimMark.visible = false;
     // The order ring.
     { const o = herd.order, show = live && o.type !== 'follow' && herd.freeCount > 0; orderMark.visible = show;
       if (show) { const charge = o.type === 'charge', pulse = 1 + Math.sin(time * 5) * .08, size = charge ? o.gate.half + .6 : 2.2; orderMark.position.set(o.x, .12, o.z); orderMark.scale.setScalar(size * pulse); orderMark.material.color.set(charge ? 0xff4a2a : 0x5dff8a); }
@@ -424,7 +493,8 @@ async function boot() {
       // With nothing to use, the prompt forecasts a charge at the gate you are aiming at, before you order it.
       let forecast = '';
       if (!o && live && herd.freeCount) { ray.setFromCamera(pointer, camera); if (ray.ray.intersectPlane(ground, mark)) { const g = world.gateNear(mark.x, mark.z, TUNE.herd.commandGateRadius); if (g) { const f = herd.assess(g); forecast = `${touch.active ? 'TAP' : 'F'} · CHARGE · ${f.verdict}`; } } }
-      hud.prompt.textContent = o ? (o.kind === 'none' ? o.label : `${touch.active ? 'USE' : 'E'} · ${o.label}`) : forecast; hud.prompt.classList.toggle('show', !!o || !!forecast);
+      if (aim.on && aim.check) { const r = aim.check; forecast = !r.ok ? `${r.reason}` : r.type === 'charge' ? `LET GO · CHARGE · ${r.outlook.verdict}` : `LET GO · GO HERE AND HOLD`; }
+      hud.prompt.textContent = aim.on && forecast ? forecast : o ? (o.kind === 'none' ? o.label : `${touch.active ? 'USE' : 'E'} · ${o.label}`) : forecast; hud.prompt.classList.toggle('show', !!o || !!forecast);
       if (hud.keys.dataset.mode !== mode) hud.keys.dataset.mode = mode;
       if (message && now > messageUntil) { message = ''; $('cn-toast').classList.remove('show'); } }
     post.render();

@@ -68,7 +68,9 @@ export function createHerd({ scene, world, cow, farmers, assets, leader, onEvent
   }
   // An order at a point on the ground: charge the closed gate there if there is one, else go there and hold.
   // Returns { ok, type, x, z, gate } or { ok: false, reason } and then the standing order is kept.
-  function command(x, z) {
+  // What an order at a point would be, without giving it (the aiming cursor shows this): { ok, type, ... } or a reason.
+  function check(x, z) { return command(x, z, true); }
+  function command(x, z, dry = false) {
     const list = free(); if (!list.length) return { ok: false, reason: 'NO FREE COWS YET' };
     if (navDirty) { nav.rebuild(); navDirty = false; }
     const from = centroid(list), near = list.reduce((a, c) => Math.hypot(c.p.x - from.x, c.p.z - from.z) < Math.hypot(a.p.x - from.x, a.p.z - from.z) ? c : a, list[0]);
@@ -77,11 +79,13 @@ export function createHerd({ scene, world, cow, farmers, assets, leader, onEvent
       // Charge from the herd's side. The run-up starts as far back as there is room for, up to H.runup.
       const { dir, back, ax, az } = approach(gate, near.p), f = nav.field(ax, az);
       if (f.steps(near.p.x, near.p.z) < 0 || back < 4) return { ok: false, reason: 'APPROACH BLOCKED' };
+      if (dry) return { ok: true, type: 'charge', x: gate.x, z: gate.z, gate, outlook: assess(gate) };
       order = { type: 'charge', gate, dir, ax, az, back, phase: 'gather', since: null, x: gate.x, z: gate.z }; field = f; fieldCell = -2;
       return { ok: true, type: 'charge', x: gate.x, z: gate.z, gate, outlook: assess(gate) };
     }
     if (nav.snap(x, z) < 0) return { ok: false, reason: 'NOT A PLACE COWS CAN STAND' };
     const f = nav.field(x, z); if (f.steps(near.p.x, near.p.z) < 0) return { ok: false, reason: 'THE HERD CAN\'T GET THERE' };
+    if (dry) return { ok: true, type: 'move', x, z };
     order = { type: 'move', x, z }; field = f; fieldCell = -2;
     return { ok: true, type: 'move', x, z };
   }
@@ -240,7 +244,7 @@ export function createHerd({ scene, world, cow, farmers, assets, leader, onEvent
     const pen = pens.find(p => x > p.minX && x < p.maxX && z > p.minZ && z < p.maxZ), gate = pen && world.gates.find(g => g.id === pen.id);
     if (pen && gate && !gate.open) { c.pen = pen; c.state = 'penned'; }
   }
-  return { update, nearest, swap, release, recall, command, assess, blast, cows, nav, count, get lost() { return lost; },
+  return { update, nearest, swap, release, recall, command, check, assess, blast, cows, nav, count, get lost() { return lost; },
     get order() { return order; }, get status() { return status; }, get freeCount() { return cows.filter(c => c.state === 'free').length; },
     get penned() { return cows.filter(c => c.state === 'penned').length; },
     get free() { return cows.some(c => c.state !== 'penned'); }, get saved() { return saved; } };
