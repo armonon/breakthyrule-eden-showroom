@@ -32,7 +32,7 @@ export function createBlasts({ scene, audio, onBlast }) {
       }
     }
     const age = time - flashAt; flash.intensity = age < .5 ? 1400 * (1 - age / .5) : 0;
-    fire.visible = age < .35; if (fire.visible) { fire.scale.setScalar(1 + age * 16); fire.material.opacity = .85 * (1 - age / .35); }
+    fire.visible = false;   // the fireball itself is particles now (fx.js)
   }
   return { spawn, update, get pending() { return live.length; }, get lastAt() { return lastAt; }, live };
 }

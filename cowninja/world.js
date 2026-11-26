@@ -22,7 +22,7 @@ export function createWorld({ scene, physics, assets, shadows = 7 }) {
       for (const m of [].concat(o.material)) {
         if (m.map) m.map.anisotropy = 8;
         { const wet = { killtile: .38, floor: .55, apron: .8 }[m.name] ?? (m.name?.startsWith('blood_') ? .6 : null); if (wet !== null && !m.userData.wet) { m.userData.wet = true; m.roughness *= wet; } }
-        if (/^(gravel|apron|grass)$/.test(m.name) && !m.userData.toned) { m.userData.toned = true; m.color.multiplyScalar(m.name === 'gravel' ? .38 : m.name === 'grass' ? .42 : .7); }
+        if (/^(gravel|apron|grass|mud|tracks)$/.test(m.name) && !m.userData.toned) { m.userData.toned = true; m.color.multiplyScalar({ gravel: .38, grass: .42, apron: .7, mud: .4, tracks: .5 }[m.name]); if (m.name === 'mud') m.roughness = Math.min(m.roughness, .3); }
         if (m.transparent) { m.depthWrite = false; m.side = THREE.DoubleSide; }
         if (lm && (o.userData.lightmap || o.parent?.userData?.lightmap) && o.geometry.attributes.uv1) {
           // Its own copy: the same material may also be on unbaked kit, which has no lightmap UVs.

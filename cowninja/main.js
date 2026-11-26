@@ -15,6 +15,8 @@ import { createBlasts } from '/cowninja/blasts.js';
 import { createPolice } from '/cowninja/police.js';
 import { createAwareness } from '/cowninja/awareness.js';
 import { createMinimap } from '/cowninja/minimap.js';
+import { createFx } from '/cowninja/fx.js';
+import { createSearchlights } from '/cowninja/searchlights.js';
 import { createBlood } from '/cowninja/blood.js';
 import { createGrimPost } from '/cowninja/post.js';
 import { createFoot } from '/cowninja/foot.js';
@@ -62,7 +64,7 @@ async function boot() {
   const say = (text, seconds = 2.6) => { message = text; messageUntil = performance.now() + seconds * 1000; $('cn-toast').textContent = text; $('cn-toast').classList.toggle('long', text.length > 20); $('cn-toast').classList.add('show'); };
 
   const cow = createCow({ scene, physics, spawn: world.cowSpawn, assets }); cow.setRider(false);
-  const foot = createFoot({ scene, world, onEffect: e => { if (e.kind === 'footstep:step') audio.hoof(...e.args); else if (e.kind === 'footstep:land') audio.land(...e.args); else if (e.kind === 'leap-of-faith') { say('LEAP OF FAITH', 1.4); audio.land('grass', 1); } } });
+  const foot = createFoot({ scene, world, onEffect: e => { if (e.kind === 'footstep:step') audio.hoof(...e.args); else if (e.kind === 'footstep:land') { audio.land(...e.args); if (foot.state.velocity.y < -6) fx.puff(foot.state.x, .1, foot.state.z, 6); } else if (e.kind === 'leap-of-faith') { say('LEAP OF FAITH', 1.4); audio.land('grass', 1); } } });
   // Whoever the yard is reacting to: the cow while you ride it, the ninja while you are on foot.
   const actor = () => mode === 'foot' ? foot.state : cow.state;
   function damage(amount, dx, dz, push) {
@@ -120,7 +122,7 @@ async function boot() {
     else if (e.type === 'reported') raiseAlarm('REPORTED · THE ALARM IS UP');
     else if (e.type === 'body-found') { say('A BODY HAS BEEN FOUND', 2.4); if (!alarm && !bodyAlarm) bodyAlarm = { farmer: e.farmer, at: performance.now() + 6000 }; }
     else if (e.type === 'aiming') window.EdenMelee?.sound('glint', .7);
-    else if (e.type === 'shot') { const f = e.farmer, a = actor(); audio.hit('metal', f.p.x, f.p.z, 1.3, 1.9); tracer.fire(f.p.x, f.p.z, a.x + (e.hit ? 0 : -e.dz * 1.2), a.z + (e.hit ? 0 : e.dx * 1.2), a.y || 0);
+    else if (e.type === 'shot') { const f = e.farmer, a = actor(); fx.muzzle(f.p.x + Math.sin(f.yaw) * .5, 1.35, f.p.z - Math.cos(f.yaw) * .5, e.dx, e.dz); audio.hit('metal', f.p.x, f.p.z, 1.3, 1.9); tracer.fire(f.p.x, f.p.z, a.x + (e.hit ? 0 : -e.dz * 1.2), a.z + (e.hit ? 0 : e.dx * 1.2), a.y || 0);
       if (e.hit) { const through = mode === 'foot' ? Math.max(fight.raised?.() ? .6 : 1, 0) : 1; damage((mode === 'foot' ? TUNE.staff.pistol.damageFoot : TUNE.staff.pistol.damageRide) * through, e.dx, e.dz, 2); } }
     else if (e.type === 'lob') blasts.spawn(e.x, e.z);
     else if (e.type === 'police-coming') { /* the siren says it */ }
@@ -131,11 +133,12 @@ async function boot() {
     // A farmer's blow: on foot it meets your guard first (parried: nothing; blocked: a chip; else all of it).
     else if (e.type === 'stabbed') { const through = mode === 'foot' ? fight.incoming(e) : 1; if (through > 0) damage((mode === 'foot' ? 19 : 11) * through, e.dx, e.dz, 3.2); }
     else if (e.type === 'run-over') { damage(Math.min(mode === 'foot' ? 70 : 40, (mode === 'foot' ? 30 : 14) + e.speed * 1.6), e.dx, e.dz, 7); audio.hit('metal', actor().x, actor().z, 1.2); }
-    else if (e.type === 'rammed-truck') { shake = 1; say(e.square > .88 ? 'PERFECT ANGLE' : 'SIDE HIT', 1.4); audio.hit('metal', cow.state.x, cow.state.z, 1.4, .7); }
+    else if (e.type === 'rammed-truck') { shake = 1; fx.sparks(cow.state.x + cow.state.forward.x * 1.5, 1, cow.state.z + cow.state.forward.z * 1.5, cow.state.forward.x, cow.state.forward.z, 30); say(e.square > .88 ? 'PERFECT ANGLE' : 'SIDE HIT', 1.4); audio.hit('metal', cow.state.x, cow.state.z, 1.4, .7); }
     else if (e.type === 'glanced') { shake = Math.max(shake, .35); audio.hit('metal', cow.state.x, cow.state.z, .7); }
-    else if (e.type === 'flipped') { provoke('vehicle', 'truck'); stats.flips++; say('TRUCK FLIPPED', 2); audio.hit('metal', cow.state.x, cow.state.z, 1.5, .55); }
+    else if (e.type === 'flipped') { { const t = truck.body.read().p; fx.sparks(t[0], .5, t[2], 0, 0, 40); fx.puff(t[0], .3, t[2], 14); } provoke('vehicle', 'truck'); stats.flips++; say('TRUCK FLIPPED', 2); audio.hit('metal', cow.state.x, cow.state.z, 1.5, .55); }
     else if (e.type === 'truck-coming') say('THEY CALLED THE TRUCK', 2.4);
   }
+  const fx = createFx({ scene, camera, quality: Number(query.get('q') ?? (matchMedia?.('(pointer: coarse)').matches ? 2 : 0)), rain: query.get('rain') === '1' });
   const farmers = createFarmers({ scene, physics, world, cow, blood, onEvent, target: actor });
   const truck = createTruck({ scene, physics, world, cow, blood, onEvent, assets, target: actor });
   // The herd reports what happens to it: cows freed, blows on a gate, a gate that gives or holds, cows made safe.
@@ -143,9 +146,9 @@ async function boot() {
   function onHerd(e) {
     if (e.type === 'released') { audio.moo(.25); say(`${e.count} COWS FREE · ${herd.freeCount} IN THE HERD · F SENDS THEM · Q CALLS THEM`, 4); }
     else if (e.type === 'charge') { audio.moo(.3); say('CHARGE', 1.2); }
-    else if (e.type === 'thud') { audio.hit(e.gate.kind === 'main' ? 'metal' : 'wood', e.gate.x, e.gate.z, Math.min(1.4, .5 + e.power / 14)); shake = Math.max(shake, Math.min(.5, e.sum / e.need * .45)); }
+    else if (e.type === 'thud') { fx.puff(e.gate.x, .6, e.gate.z, 4); if (e.power > 6) fx.sparks(e.gate.x, 1, e.gate.z, 0, 0, 6); audio.hit(e.gate.kind === 'main' ? 'metal' : 'wood', e.gate.x, e.gate.z, Math.min(1.4, .5 + e.power / 14)); shake = Math.max(shake, Math.min(.5, e.sum / e.need * .45)); }
     else if (e.type === 'break') {
-      rig.wideUntil = performance.now() + 3000;
+      rig.wideUntil = performance.now() + 3000; fx.sparks(e.gate.x, 1.1, e.gate.z, e.gate.n[0], e.gate.n[1], 50); fx.puff(e.gate.x, .5, e.gate.z, 18);
       audio.hit('metal', e.gate.x, e.gate.z, 1.6, .6); audio.moo(.35); shake = 1; hitStopUntil = performance.now() + 90; raiseAlarm(); provoke('gate', 'gate');
       say(e.gate.kind === 'main' ? 'THE MAIN GATE IS DOWN · RUN' : 'THE GATE GIVES', 2.6);
       // A short look at the breakthrough from beyond the gate. Any input takes the camera back.
@@ -159,6 +162,8 @@ async function boot() {
   farmers.setNav(herd.nav);
   const minimap = createMinimap({ canvas: $('cn-map'), world, herd, farmers });
   const awareness = createAwareness({ root: container, scene, camera, farmers });
+  let caughtAt = 0;
+  const searchlights = createSearchlights({ scene, world, farmers, onCaught: () => { const now = performance.now(); if (now - caughtAt > 6000) { caughtAt = now; say('IN THE SEARCHLIGHT · GET OUT OF IT', 1.8); audio.hit('metal', actor().x, actor().z, .4, 2); } } });
   // A thrown stone: it arcs to where you aim and clatters, and anyone near enough goes to look. On foot only.
   let throwAt = 0, dragging = null;
   const stone = new THREE.Mesh(new THREE.IcosahedronGeometry(.07, 0), new THREE.MeshStandardMaterial({ color: 0x77706a, roughness: .9 })); stone.visible = false; scene.add(stone);
@@ -186,6 +191,7 @@ async function boot() {
   // you, and a second while you are still shaken throws you, whatever your health. A blast you dodged counts for nothing.
   let shaken = false, shakenAt = 0, threatAt = 0;
   const blasts = createBlasts({ scene, audio, onBlast(b) {
+    fx.explosion(b.x, b.z);
     const a = actor(), dx = a.x - b.x, dz = a.z - b.z, d = Math.hypot(dx, dz) || 1, now = performance.now(), covered = (x, z) => !!world.sightBlocked(b.x, b.z, x, z);
     if (d < TUNE.blast.threatRange) threatAt = now;
     shake = Math.max(shake, Math.min(1, 9 / d));
@@ -506,6 +512,12 @@ async function boot() {
     const time = now / 1000, a = actor();
     cow.update(dt); world.update(time, a); farmers.update(dt, time, live); truck.update(dt, live); herd.update(dt, time, a); blood.update(dt); blasts.update(dt, time); police.update(dt, time, live); tracer.update(now);
     // Dragging: the body comes along behind you at a walk; climbing, jumping or getting on a cow lets go.
+    // The herd at a run kicks up dust; standing cows near you breathe out into the cold.
+    for (const c of herd.cows) { if (c.state === 'lost' || c.state === 'saved') continue; const near = Math.hypot(c.p.x - a.x, c.p.z - a.z); if (near > 45) continue;
+      if (c.speed > 5 && Math.random() < dt * (2 + c.speed * .3)) fx.hoofDust(c.p.x + Math.sin(c.yaw) * (Math.random() - .6) * 2, c.p.z - Math.cos(c.yaw) * (Math.random() - .6) * 2, c.speed);
+      if (near < 18 && Math.random() < dt * .45) fx.breath(c.p.x + Math.sin(c.yaw) * 1.25, 1.05, c.p.z - Math.cos(c.yaw) * 1.25, Math.sin(c.yaw), -Math.cos(c.yaw)); }
+    if (mode === 'ride' && Math.random() < dt * .4) fx.breath(cow.state.x + cow.state.forward.x * 1.3, 1.05, cow.state.z + cow.state.forward.z * 1.3, cow.state.forward.x, cow.state.forward.z);
+    fx.update(dt, time, a); searchlights.update(dt, time, { active: alarm && live, actor: a, onFoot: mode === 'foot' });
     awareness.update({ actor: a, crouched: mode === 'foot' && foot.state.crouched, width: container.clientWidth, height: container.clientHeight, time, live });
     // Air takedown: come down on a farmer from above and he is out, silently.
     if (live && mode === 'foot' && foot.state.airborne && foot.state.velocity.y < -2.5 && foot.state.y < 2.8) {
@@ -515,7 +527,7 @@ async function boot() {
     if (mode === 'foot') fight.update(dt); else fight.cancel();
     if (calling > 0) { calling -= dt; if (Math.hypot(cow.state.x - foot.state.x, cow.state.z - foot.state.z) < 3) calling = 0; }
     // Hooves: four beats a stride, louder and harder the faster it goes.
-    { const b = Math.floor(cow.state.gait * 4); if (b !== beat) { beat = b; const v = Math.abs(cow.state.speed); if (v > .6 && !cow.state.airborne) { const d = Math.hypot(cow.state.x - a.x, cow.state.z - a.z); if (d < 30) audio.hoof(world.indoors(cow.state.x, cow.state.z) ? 'stone' : 'grass', Math.min(6, 2 + v * .3)); } } }
+    { const b = Math.floor(cow.state.gait * 4); if (b !== beat) { beat = b; const v = Math.abs(cow.state.speed); if (v > 4.5 && !cow.state.airborne && !world.indoors(cow.state.x, cow.state.z)) fx.hoofDust(cow.state.x - cow.state.forward.x * (b % 2 ? 1.1 : -.6), cow.state.z - cow.state.forward.z * (b % 2 ? 1.1 : -.6), v); if (v > .6 && !cow.state.airborne) { const d = Math.hypot(cow.state.x - a.x, cow.state.z - a.z); if (d < 30) audio.hoof(world.indoors(cow.state.x, cow.state.z) ? 'stone' : 'grass', Math.min(6, 2 + v * .3)); } } }
     { const t = truck.body.read().p; audio.truck(truck.speed, Math.hypot(t[0] - a.x, t[2] - a.z), truck.active && !truck.flipped); }
     if (live) {
       if (alarmAt && now > alarmAt) { if (farmers.alerted()) raiseAlarm(); else alarmAt = 0; }
@@ -568,7 +580,7 @@ async function boot() {
   addEventListener('resize', () => { renderer.setSize(container.clientWidth, container.clientHeight, false); camera.aspect = container.clientWidth / container.clientHeight; camera.updateProjectionMatrix(); });
   status.hidden = true; $('cn-gate').hidden = false;
   renderer.setAnimationLoop(frame);
-  window.cowNinja = { fight, assets, renderer, scene, camera, cow, foot, farmers, truck, herd, blood, world, physics, audio, keys, stats, use, whistle, look, option, command, TUNE, cycleView, blasts, police, response, throwStone, get dragging() { return dragging; }, provoke, raiseAlarm,
+  window.cowNinja = { fight, assets, renderer, scene, camera, cow, foot, farmers, truck, herd, blood, world, physics, audio, keys, stats, use, whistle, look, option, command, TUNE, cycleView, blasts, police, response, throwStone, fx, searchlights, get dragging() { return dragging; }, provoke, raiseAlarm,
     get post() { return post; }, get mode() { return mode; }, set yaw(v) { camYaw = v; }, get yaw() { return camYaw; },
     state: () => ({ phase, mode, health, alarm, quality, takedowns, level: farmers.alertLevel(), option: option()?.kind || null, cow: { ...cow.state, forward: cow.state.forward.toArray(), velocity: cow.state.velocity.toArray() }, foot: { ...foot.state, forward: foot.state.forward.toArray(), velocity: foot.state.velocity.toArray() }, out: farmers.out(), flips: stats.flips, herdFree: herd.free, saved: herd.saved, response: { stage: response.stage, name: STAGES[response.stage], aggression: response.aggression }, shaken, thrown: stats.thrown, lost: herd.lost, herd: { status: herd.status, order: herd.order.type, free: herd.freeCount, penned: herd.penned, count: herd.count }, gates: world.gates.filter(g => g.open).map(g => g.id), blood: blood.inspect(), truckFlipped: truck.flipped }),
     begin: () => $('cn-enter').click(),
