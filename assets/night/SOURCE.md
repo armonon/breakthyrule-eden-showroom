@@ -35,3 +35,14 @@ used as inputs (prompts describe styles in words), and nothing is a replica.
   (local, 10 steps, octree 380), decimated to 5–6k triangles, given a scan material.
 - Shipping: `tools/pipeline/optimize-landmark.sh` (normal/ARM maps 512 px, JPEG 80, KHR_mesh_quantization).
   Each GLB is ~2 MB; buildings stream in when the viewer is within 75 m.
+
+## built/ (Beyond Eden's own build; the expedition page keeps the GLBs above)
+
+`built/<name>.glb` is the same building re-cut by a scripted, re-runnable Blender pass (`bash tools/night/build-landmarks.sh`,
+`tools/night/build-landmarks.py`): bevelled and chipped hard edges, windows set back 15–20 cm with reveals, architraves,
+sills, lintels and glazing bars, cast-iron drainpipes, and a `_WEATHER` vertex attribute on the walls (rain streaks under
+ledges and sills, occlusion) that `matrix-world.js` reads. Those files hold geometry and material names only;
+`night-district.js` takes each material, textures and all, from the original GLB by name (`<name>@wash` is a copy that
+carries the architectural uplight: the temple's and theatre's fronts and the hotel's entrance). Footprints, doorways and
+step heights are the originals'; collision still comes from `night-layout.json` / `expedition-world.js`. The timber's
+boards scan is Poly Haven's CC0 `weathered_planks` (`assets/beyond-eden/scan/planks-*`, see its CREDITS.txt).
