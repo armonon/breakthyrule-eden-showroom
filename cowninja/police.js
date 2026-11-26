@@ -15,7 +15,9 @@ export function createPolice({ scene, physics, assets, farmers, herd, cow, audio
     else { const part = (x, y, z, sx, sy, sz) => { const m = new THREE.Mesh(cube, paint); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; group.add(m); }; part(0, -.1, 0, 1.96, .7, 4.1); part(0, .5, -.3, 1.8, .62, 2.0); }
     const bar = [0x2050ff, 0xff2020].map((c, i) => { const m = new THREE.Mesh(cube, new THREE.MeshBasicMaterial({ color: c })); m.position.set(i ? .35 : -.35, .95, -.4); m.scale.set(.5, .14, .22); group.add(m); return m; });
     const light = new THREE.PointLight(0x3060ff, 0, 30, 1.7); light.position.set(0, 1.4, -.4); group.add(light);
-    scene.add(group); return { group, bar, light };
+    // A turning beacon: a spot that sweeps round the car, washing the yard in red and blue.
+    const sweep = new THREE.SpotLight(0x3060ff, 0, 45, .5, .6, 1.4); sweep.position.set(0, 1.5, -.4); group.add(sweep, sweep.target);
+    scene.add(group); return { group, bar, light, sweep };
   }
   // A car arrives for stop `slot` with `count` officers of `role` ('police' or 'heavy').
   function arrive(role = 'police', count = 3) {
@@ -29,6 +31,7 @@ export function createPolice({ scene, physics, assets, farmers, herd, cow, audio
   function update(dt, time, live) {
     for (const car of cars) {
       const on = Math.floor(time * 5) % 2; car.bar[0].visible = !!on; car.bar[1].visible = !on; car.light.color.set(on ? 0x3060ff : 0xff2828); car.light.intensity = car.wrecked ? 0 : 260;
+      { const a = time * 5.5; car.sweep.target.position.set(Math.cos(a) * 12, -1.4, Math.sin(a) * 12); car.sweep.color.set(Math.sin(a * .5) > 0 ? 0x3060ff : 0xff2828); car.sweep.intensity = 1600; }
       if (!car.parked) {
         car.t += dt / R.arriveSeconds; const k = Math.min(1, car.t), ease = 1 - (1 - k) * (1 - k);
         car.group.position.set(car.x, REST, R.arriveFrom + (car.z - R.arriveFrom) * ease); car.group.rotation.y = -(Math.PI + (car.yaw) * Math.max(0, (k - .75) / .25));

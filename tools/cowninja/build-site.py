@@ -56,6 +56,9 @@ def material(key, tex=None, tile=2.0, color=None, rough=None, metal=None, normal
 
 material('ground', 'muddy_tracks', 5, color=(.72, .7, .68))
 material('grass', 'withered_grass', 6, color=(.62, .64, .55))
+material('mud', 'brown_mud_leaves_01', 2.5, color=(.62, .56, .5), rough=.36)
+material('tracks', 'muddy_tracks', 3, color=(.7, .66, .62), rough=.5)
+material('water', None, color=(.025, .04, .045), rough=.03, metal=0)
 material('road', 'asphalt_02', 4) if os.path.exists(f'{WORK}/tex/asphalt_02-diff.jpg') else material('road', 'hangar_concrete_floor', 4, color=(.55, .55, .55))
 material('gravel', 'gravel_floor_02', 3, color=(.6, .6, .6))
 material('apron', 'hangar_concrete_floor', 4, color=(.85, .84, .82))
@@ -552,6 +555,30 @@ for row, (z0, z1, gz, nz) in enumerate(((LANE0 - PD, LANE0, LANE0, 1), (LANE1, L
             for i in range(3): cyl('hay', (x1 + 1.0 + i * .1, .7 + (i == 2) * 1.2, gz - nz * (1.2 - (i == 2) * .0) + (i == 1) * nz * -1.5), (x1 + 2.3 + i * .1, .7 + (i == 2) * 1.2, gz - nz * 1.2 + (i == 1) * nz * -1.5), .7, 'hay', 18)
         PENS.append({'id': f'pen{k}', 'minX': x0 + 1.6, 'maxX': x1 - 1.6, 'minZ': z0 + 1.6, 'maxZ': z1 - 1.6, 'count': V['count']})
         GATES.append({'id': f'pen{k}', 'kind': 'pen', 'x': cx, 'z': gz, 'axis': 'x', 'half': 2.5, 'n': [0, nz], 'lever': lever, 'strength': V['strength']})
+# A working farm: trodden mud at every gate and round the troughs, water in the troughs, a muddy track down the
+# lane with puddles, a lean-to shelter in each pen (its roof is a walkable route over the pens), hay bales stacked
+# where they give cover.
+fr = random.Random(5)
+for k, p in enumerate(PENS[1:], start=1):
+    g = GATES[k]; nz = g['n'][1]
+    for i in range(6):
+        mx, mz = g['x'] + fr.uniform(-3.2, 3.2), g['z'] + nz * fr.uniform(-3, 3); r = fr.uniform(1.1, 2.3)
+        cyl('mud', (mx, .052, mz), (mx, .068, mz), r, 'mud', 18, group='kit')
+    x0, x1, z0, z1 = p['minX'] - 1.6, p['maxX'] + 1.6, p['minZ'] - 1.6, p['maxZ'] + 1.6; far = z0 if nz == 1 else z1
+    tz0, tz1 = (far + .5, far + 1.1) if nz == 1 else (far - 1.1, far - .5)
+    box('water', (x0 + 1.32, .5, tz0 + .1), (x0 + 4.08, .52, tz1 - .1), 'water', solid=False, group='kit')
+    for i in range(3): mx, mz = x0 + 2.7 + fr.uniform(-1.5, 1.5), (tz0 + tz1) / 2 - nz * fr.uniform(1, 2.6); cyl('mud', (mx, .052, mz), (mx, .068, mz), fr.uniform(1, 1.8), 'mud', 16, group='kit')
+    # The shelter: four posts and a roof along the far fence, on the side away from the trough.
+    sx0, sx1 = x1 - 8.5, x1 - .6; sz0, sz1 = (far + .5, far + 4) if nz == 1 else (far - 4, far - .5)
+    for px in (sx0, sx1):
+        for pz in (sz0, sz1): box('shelter-post', (px - .09, 0, pz - .09), (px + .09, 2.7, pz + .09), 'planks', group='kit')
+    box('shelter-roof', (sx0 - .3, 2.7, sz0 - .3), (sx1 + .3, 2.86, sz1 + .3), 'roof')
+    box('shelter-straw', (sx0, .05, sz0), (sx1, .08, sz1), 'hay', solid=False, group='kit')
+box('lane-track', (31, .021, 27.2), (98, .026, 32.8), 'tracks', solid=False)
+for (x, z, r) in ((44, 29, 1.6), (58.5, 31.2, 1.1), (67, 28.6, 2.0), (79, 31, 1.3), (88, 29.4, 1.7), (36, 30.5, 1.2), (96, 12, 1.5), (34, 50, 1.4)):
+    cyl('water', (x, .028, z), (x, .034, z), r, 'water', 20, group='kit')
+for (x, z, n) in ((38.5, 2.5, 3), (73, 60.5, 2), (97.5, 45, 3), (49, 62, 2)):
+    for i in range(n): box('bale', (x - 1.1, i * .55, z - .5 + (i % 2) * .1), (x + 1.1, i * .55 + .55, z + .5 + (i % 2) * .1), 'hay')
 # Cover along the lane and round the farm: crate stacks to move between.
 for (x, z) in ((51, 26.5), (71, 33.5), (91.5, 25), (94, 36), (31, 12), (93, 50)):
     box('crate', (x - .9, 0, z - .9), (x + .9, 1.7, z + .9), 'planks'); box('crate', (x + .9, 0, z - .6), (x + 2.1, 1.0, z + .6), 'planks')

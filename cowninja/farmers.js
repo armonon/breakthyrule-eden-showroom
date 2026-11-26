@@ -43,8 +43,20 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
     group.position.set(f.p.x, 0, f.p.z); farmers.push(f); return f;
   }
   world.patrols.forEach((route, i) => make(route, i));
+  // Things people say, shown over their heads (awareness.js) for a couple of seconds.
+  function callout(f, text, time) { if (f.ragdoll) return; f.say = text; f.sayUntil = time + 2.6; }
+  // Routines at a post: a clip on loop while nothing is wrong (talking, smoking, leaning), dropped at the first alarm.
+  const ACTS = { talk: ['idleTalk', 'talk'], smoke: ['leanRail'], watch: ['foldArms'], lean: ['leanRail'], phone: ['idleTalk'] };
+  function startAct(f) { if (f.actLayer || !f.person?.motion?.play) return; const names = ACTS[f.act] || [f.act], A = window.GardenAnim, id = names.find(n => A?.has?.(n)); if (!id) return; f.actLayer = f.person.motion.play(id, { fade: .4, loop: true, mask: 'full', weight: 1 }) || true; }
+  function stopAct(f) { if (!f.actLayer) return; const L = f.actLayer; f.actLayer = null; if (L !== true) f.person?.motion?.stop?.(L.id, .3); }
   // Someone arriving mid-mission (police.js): he walks to his post and holds it until he has a reason not to.
-  function spawn(role, x, z, post = [x, z]) { const f = make([[x, z]], farmers.length, role); f.route = [post]; f.yaw = Math.PI; return f; }
+  function spawn(role, x, z, post = [x, z], { yaw = Math.PI, act = null } = {}) { const f = make([[x, z]], farmers.length, role); f.route = [post]; f.yaw = yaw; f.postYaw = act ? yaw : null; f.act = act; return f; }
+  // Staff at fixed posts with a routine (config.js): two guards talking, a smoker, a guard watching from the gatehouse.
+  for (const p of S.posts || []) { const f = spawn(p.role, p.x, p.z, [p.x, p.z], { yaw: p.yaw, act: p.act }); if (p.act === 'smoke' && f.fork) { const ember = new THREE.Mesh(cube, new THREE.MeshBasicMaterial({ color: 0xff5a10 })); ember.scale.setScalar(.035); ember.position.set(-.05, .45, -.2); f.fork.add(ember); f.ember = ember; } }
+  // Dragging a body: pulled along the ground toward a point (behind whoever drags it); hidden once dropped in hay.
+  function drag(b, x, z, dt) { if (!b.ragdoll?.translate) return false; const t = b.ragdoll.pelvis(), dx = x - t.x, dz = z - t.z, d = Math.hypot(dx, dz); if (d < .05) return true; const k = Math.min(d, 6 * dt) / d; b.ragdoll.translate(new THREE.Vector3(dx * k, 0, dz * k)); b.p.x = t.x + dx * k; b.p.z = t.z + dz * k; return true; }
+  function hide(b) { b.hidden = true; b.found = true; b.group.visible = false; }
+  const downNear = (x, z, reach = 1.8) => { let best = null, d = reach; for (const f of farmers) if (f.ragdoll && f.ragdoll.pelvis && !f.hidden) { const t = f.ragdoll.pelvis(), r = Math.hypot(t.x - x, t.z - z); if (r < d) { d = r; best = f; } } return best; };
 
   // Knock a farmer out: his own skeleton goes to the physics engine, thrown with the hitter's velocity plus lift.
   function knock(f, vx, vz, by = 'cow', { settled = false } = {}) {
@@ -113,15 +125,27 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
       // Perception: in front and in range, or close and loud (a charge, a skid).
       const facing = (Math.sin(f.yaw) * dx - Math.cos(f.yaw) * dz) / (dist || 1);
       // On foot the ninja is a small dark shape: seen from less far (less still when crouched), heard only by how he moves.
-      const range = foot ? SEE * (c.crouched ? .5 : .8) : SEE;
+      // Someone busy at his post (talking, smoking, leaning) sees less far until something has caught his attention.
+      const busy = f.act && f.state === 'patrol' && f.alert < .3 && f.atPost ? S.distracted : 1;
+      const range = (foot ? SEE * (c.crouched ? .5 : .8) : SEE) * busy;
       const sees = live && !c.hidden && dist < range && facing > SEE_COS && !(foot && world.sightBlocked?.(f.p.x, f.p.z, c.x, c.z));
       const hears = live && !c.hidden && (foot ? dist < HEAR * 1.25 * (c.noise || 0) : dist < HEAR * (c.charging || c.skid > .4 ? 1.6 : Math.abs(c.speed) > 6 ? 1 : .45));
-      if (sees || hears) { f.alert = Math.min(1, f.alert + dt * (sees ? (foot ? (c.crouched ? .55 : 1) * (1.7 - dist / range) : 1.8) : .9)); f.seenAt = time; } else if (time - f.seenAt > (c.hidden ? 1.5 : 4)) f.alert = Math.max(0, f.alert - dt * (c.hidden ? .6 : .3));
+      if (sees || hears) { f.alert = Math.min(1, f.alert + dt * (sees ? (foot ? (c.crouched ? .55 : 1) * (1.7 - dist / range) : 1.8) : .9)); f.seenAt = time; f.heard = { x: c.x, z: c.z, at: time }; } else if (time - f.seenAt > (c.hidden ? 1.5 : 4)) f.alert = Math.max(0, f.alert - dt * (c.hidden ? .6 : .3));
       // A body on the ground, seen: whoever finds it knows something is wrong (a quiet takedown is only quiet until then).
-      if (live && f.state === 'patrol') for (const b of farmers) if (b.ragdoll && !b.found && b.ragdoll.pelvis) { const t = b.ragdoll.pelvis(), bx = t.x - f.p.x, bz = t.z - f.p.z, bd = Math.hypot(bx, bz);
-        if (bd < S.bodySight && (Math.sin(f.yaw) * bx - Math.cos(f.yaw) * bz) / (bd || 1) > SEE_COS && !world.sightBlocked?.(f.p.x, f.p.z, t.x, t.z)) { b.found = true; f.alert = Math.max(f.alert, .9); f.seenAt = time; onEvent?.({ type: 'body-found', farmer: f, body: b }); } }
+      // An opened pen gate, seen: he goes to look (a broken one means trouble at once).
+      if (live && (f.state === 'patrol' || f.state === 'search')) for (const g of world.gates || []) if (g.open && !(f.gatesSeen ||= new Set()).has(g.id)) {
+        const gx = g.x - f.p.x, gz = g.z - f.p.z, gd = Math.hypot(gx, gz);
+        if (gd < S.gateSight && (Math.sin(f.yaw) * gx - Math.cos(f.yaw) * gz) / (gd || 1) > SEE_COS && !world.sightBlocked?.(f.p.x, f.p.z, g.x, g.z)) {
+          f.gatesSeen.add(g.id); f.alert = Math.max(f.alert, g.broken ? 1 : .7); f.seenAt = time; f.heard = { x: g.x, z: g.z, at: time }; callout(f, g.broken ? 'THE GATE\'S SMASHED!' : 'WHO OPENED THAT PEN?', time); }
+      }
+      if (live && (f.state === 'patrol' || f.state === 'search')) for (const b of farmers) if (b.ragdoll && !b.found && !b.hidden && b.ragdoll.pelvis) { const t = b.ragdoll.pelvis(), bx = t.x - f.p.x, bz = t.z - f.p.z, bd = Math.hypot(bx, bz);
+        if (bd < S.bodySight && (Math.sin(f.yaw) * bx - Math.cos(f.yaw) * bz) / (bd || 1) > SEE_COS && !world.sightBlocked?.(f.p.x, f.p.z, t.x, t.z)) { b.found = true; f.alert = Math.max(f.alert, .9); f.seenAt = time; f.heard = { x: t.x, z: t.z, at: time }; callout(f, 'MAN DOWN!', time); onEvent?.({ type: 'body-found', farmer: f, body: b }); } }
       if (radio && live && f.state === 'patrol' && (f.role === 'police' || f.role === 'heavy') && dist < 70) { f.alert = 1; f.seenAt = time; }
-      if (f.state === 'patrol' && f.alert >= 1) {
+      // Suspicious, with somewhere to look: he walks over to check (a call first), looks round, and goes back to his round.
+      if (live && f.state === 'patrol' && f.alert > .35 && f.heard && time - f.heard.at < 12 && f.role !== 'worker') { f.state = 'search'; f.search = { x: f.heard.x, z: f.heard.z, since: time, look: 0 }; stopAct(f); callout(f, ['WHO\'S THERE?', 'HELLO?', 'WHAT WAS THAT?'][farmers.indexOf(f) % 3], time); }
+      if (f.state === 'search' && f.heard && f.heard.at > f.search.since && Math.hypot(f.heard.x - f.search.x, f.heard.z - f.search.z) > 3) { f.search.x = f.heard.x; f.search.z = f.heard.z; f.search.look = 0; }
+      if ((f.state === 'patrol' || f.state === 'search') && f.alert >= 1) {
+        stopAct(f); callout(f, f.role === 'worker' ? 'INTRUDER!' : f.role === 'police' || f.role === 'heavy' ? 'POLICE! DON\'T MOVE!' : 'HEY! YOU!', time);
         if (f.role === 'worker') { f.state = 'flee'; f.report = S.reportPoints.reduce((a, r) => Math.hypot(r[0] - f.p.x, r[1] - f.p.z) < Math.hypot(a[0] - f.p.x, a[1] - f.p.z) ? r : a, S.reportPoints[0]); f.fleeFor = 0; }
         else f.state = 'chase';
         onEvent?.({ type: 'spotted', farmer: f });
@@ -132,7 +156,13 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
       const ranged = f.role === 'gunner' || f.role === 'police' || f.role === 'heavy', W = f.role === 'heavy' ? S.heavy : S.pistol;
       if (f.state === 'flee') {   // a worker running to report: stop him before he gets there and nobody hears of it
         tx = f.report[0]; tz = f.report[1]; pace = S.fleeSpeed; step = fieldTo(tx, tz)?.dir(f.p.x, f.p.z, out); f.fleeFor += dt;
-        if (Math.hypot(tx - f.p.x, tz - f.p.z) < 2 || f.fleeFor > 25) { f.state = 'cower'; f.alert = .2; onEvent?.({ type: 'reported', farmer: f }); }
+        if (Math.hypot(tx - f.p.x, tz - f.p.z) < 2 || f.fleeFor > 25) { f.state = 'cower'; f.alert = .2; f.person?.motion.play?.('crouchIdle', { fade: .3, loop: true, mask: 'full' }); onEvent?.({ type: 'reported', farmer: f }); }
+      }
+      else if (f.state === 'search') {
+        tx = f.search.x; tz = f.search.z; pace = 1.9; const there = Math.hypot(tx - f.p.x, tz - f.p.z) < 1.6;
+        if (nav && !there) step = fieldTo(Math.round(tx), Math.round(tz))?.dir(f.p.x, f.p.z, out);
+        if (there || time - f.search.since > 20) { pace = 0; if (!f.search.look) f.person?.motion.play?.('lookAround', { fade: .25, mask: 'full' }); f.search.look += dt; f.alert = Math.max(.2, f.alert);
+          if (f.search.look > 4.5 || time - f.search.since > 26) { f.state = 'patrol'; f.alert = .15; f.heard = null; callout(f, ['MUST BE NOTHING.', 'RATS AGAIN.', 'HUH.'][farmers.indexOf(f) % 3], time); } }
       }
       else if (f.state === 'cower') { tx = f.p.x; tz = f.p.z; pace = 0; f.alert = Math.min(f.alert, .2); }
       else if (f.state === 'chase') { tx = c.x; tz = c.z; pace = ranged && sees && dist < W.standoff ? 0 : 3.7;
@@ -144,7 +174,9 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
           else f.at = (f.at + 1) % f.route.length; } }
       const routed = step && (step.x || step.z), mx = routed ? step.x : tx - f.p.x, mz = routed ? step.z : tz - f.p.z, md = Math.hypot(mx, mz) || 1;
       if (f.state === 'patrol' && f.route.length === 1 && md < .6) pace = 0;   // holding a post
-      const want = f.state === 'flee' ? Math.atan2(mx, -mz) : f.state === 'chase' || f.alert > .3 ? Math.atan2(dx, -dz) : Math.atan2(mx, -mz);
+      const atPost = f.state === 'patrol' && f.route.length === 1 && md < .6; f.atPost = atPost;
+      if (atPost && f.act && f.alert < .3) startAct(f); else if (f.actLayer && !atPost) stopAct(f);
+      const want = f.state === 'flee' || f.state === 'search' && pace ? Math.atan2(mx, -mz) : atPost && f.postYaw != null && f.alert < .3 ? f.postYaw : f.state === 'chase' || f.alert > .3 ? Math.atan2(dx, -dz) : Math.atan2(mx, -mz);
       let turn = want - f.yaw; turn = Math.atan2(Math.sin(turn), Math.cos(turn)); f.yaw += turn * Math.min(1, dt * 6);
       let moving = false;
       if (pace && (f.state !== 'chase' || dist > 1.5)) moving = world.walk(f.p, mx / md * pace * dt, mz / md * pace * dt, .35);
@@ -159,12 +191,14 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
       if (ranged && live && f.state === 'chase') {
         if (f.cool > 0) { f.cool -= dt; f.aim = 0; }
         else if (dist > W.min && dist < W.range && (sees || (f.role === 'heavy' && f.alert >= 1))) {
-          if (!f.aim) onEvent?.({ type: 'aiming', farmer: f }); f.aim += dt;
+          if (!f.aim) { onEvent?.({ type: 'aiming', farmer: f }); if (f.role !== 'heavy') f.aimLayer = f.person?.motion.play?.('pistolAim', { fade: .12, mask: 'upper', hold: true, arms: true }); } f.aim += dt;
           if (f.aim >= W.aim) { f.aim = 0; f.cool = W.cooldown;
+            if (f.aimLayer) { f.person?.motion.stop?.('pistolAim', .1); f.aimLayer = null; }
+            f.person?.motion.play?.(f.role === 'heavy' ? 'throw' : 'pistolShoot', { fade: .05, speed: f.role === 'heavy' ? 1.3 : 1, mask: 'upper', arms: true });
             if (f.role === 'heavy') onEvent?.({ type: 'lob', farmer: f, x: c.x + c.velocity.x * W.lead, z: c.z + c.velocity.z * W.lead });
             else { const chance = Math.max(.06, Math.min(.95, W.accuracy - Math.hypot(c.velocity.x, c.velocity.z) * W.dodge - dist / W.range * .35)) * (c.crouched ? .7 : 1);
               onEvent?.({ type: 'shot', farmer: f, hit: Math.random() < chance, dx: dx / (dist || 1), dz: dz / (dist || 1) }); } }
-        } else f.aim = 0;
+        } else { f.aim = 0; if (f.aimLayer) { f.person?.motion.stop?.('pistolAim', .2); f.aimLayer = null; } }
       }
       if (f.role !== 'guard') { /* only guards use the fork */ }
       else if (f.windup > 0) { f.windup -= dt; if (f.windup <= 0 && live && dist < 2.3) onEvent?.({ type: 'stabbed', farmer: f, dx: dx / (dist || 1), dz: dz / (dist || 1) }); }
@@ -199,7 +233,7 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
     return { farmer: best, behind: facing < .25, unaware: best.state !== 'chase' };
   }
   // A sound at a point (the whistle): everyone within `radius` grows suspicious and looks that way.
-  function noise(x, z, radius, amount = .5) { for (const f of farmers) if (!f.ragdoll && !f.takedown && Math.hypot(f.p.x - x, f.p.z - z) < radius) { f.alert = Math.min(.95, f.alert + amount); f.seenAt = performance.now() / 1000; } }
+  function noise(x, z, radius, amount = .5) { for (const f of farmers) if (!f.ragdoll && !f.takedown && Math.hypot(f.p.x - x, f.p.z - z) < radius) { f.heard = { x, z, at: performance.now() / 1000 }; f.alert = Math.min(.95, f.alert + amount); f.seenAt = performance.now() / 1000; } }
   const alertLevel = () => farmers.reduce((m, f) => f.ragdoll ? m : Math.max(m, f.state === 'chase' ? 1 : f.alert), 0);
-  return { farmers, update, spawn, setNav(n) { nav = n; }, knock, hurt, stun, beginTakedown, poseTakedown, cancelTakedown, finishTakedown, nearest, noise, alertLevel, standing: () => farmers.filter(f => !f.ragdoll), out: () => farmers.filter(f => f.ragdoll).length, alerted: () => farmers.some(f => f.state === 'chase') };
+  return { farmers, update, spawn, drag, hide, downNear, callout, setNav(n) { nav = n; }, knock, hurt, stun, beginTakedown, poseTakedown, cancelTakedown, finishTakedown, nearest, noise, alertLevel, standing: () => farmers.filter(f => !f.ragdoll), out: () => farmers.filter(f => f.ragdoll).length, alerted: () => farmers.some(f => f.state === 'chase') };
 }

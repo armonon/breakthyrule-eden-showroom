@@ -27,7 +27,15 @@ export const TUNE = {
   staff: {
     roles: ['guard', 'worker', 'gunner', 'guard', 'worker', 'guard', 'gunner', 'guard', 'worker', 'guard', 'gunner'],
     reportPoints: [[-10.5, -53.5], [-20, 6], [30, -6]],   // gatehouse, office door, yard phone: a worker runs to the nearest
-    fleeSpeed: 4.8, bodySight: 10,       // how far away a body on the ground is noticed
+    fleeSpeed: 4.8, bodySight: 10, gateSight: 18, stoneRadius: 13,
+    distracted: .45,                     // sight range of someone busy at his post, as a fraction of normal
+    // Fixed posts with a routine: x, z, facing (yaw 0 looks toward -z), and what they are doing.
+    posts: [
+      { role: 'guard', x: -3.2, z: -27, yaw: Math.PI / 2, act: 'talk' }, { role: 'guard', x: -1.8, z: -27, yaw: -Math.PI / 2, act: 'talk' },
+      { role: 'worker', x: -37.5, z: 27, yaw: Math.PI / 2, act: 'smoke' },
+      { role: 'gunner', x: -12.2, z: -55.4, yaw: Math.PI, act: 'watch' },
+      { role: 'guard', x: 99, z: 34, yaw: -Math.PI / 2, act: 'lean' },
+    ],       // how far away a body on the ground is noticed
     pistol: { min: 3, range: 24, standoff: 11, aim: .9, cooldown: 1.6, accuracy: .85, dodge: .075, damageFoot: 12, damageRide: 9 },
     heavy: { min: 7, range: 34, standoff: 18, aim: 1.1, cooldown: 4.5, lead: .9 },
   },
@@ -45,5 +53,5 @@ export const TUNE = {
   // saves you. Mounted: the first blast that reaches you shakes you, the second (while still shaken) throws you.
   blast: { fuse: 1.9, radius: 6.5, lethal: 2.6, scatter: 15, scatterSeconds: 4, damageFoot: 34, damageRide: 8, recover: 9, threatRange: 45 },          // a hit this hard or harder throws you off the cow
   camera: { rideBack: 6.2, rideUp: 3.3, herdBack: 9, herdUp: 8, herdFull: 14 },   // the wide view is fully out at `herdFull` cows
-  finish: { linger: 5 },               // seconds after you reach safety before the count is final
+  finish: { linger: 5, par: 900 },     // par: seconds for the quick-run rating; linger: seconds after you reach safety before the count is final
 };

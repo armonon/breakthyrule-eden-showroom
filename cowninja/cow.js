@@ -49,13 +49,21 @@ function buildCow(assets, { tint = null } = {}) {
 }
 
 // Write one frame of gait. run 0..1 (how close to a flat-out charge), gait in cycles, extras optional.
-export function animateCow(cow, { gait = 0, run = 0, moving = 1, airborne = false, charge = 0, turn = 0, time = 0, graze = 0 } = {}) {
+// Extra poses layered over the gait: `toss` (0..1) throws the head up and back; `stumble` (0..1) buckles the front
+// legs and drops the head; `recoil` (0..1) rears back from a blow (a gate that held); `dead` (0..1) stiffens the legs
+// out as the body goes over.
+export function animateCow(cow, { gait = 0, run = 0, moving = 1, airborne = false, charge = 0, turn = 0, time = 0, graze = 0, toss = 0, stumble = 0, recoil = 0, dead = 0 } = {}) {
+  if (dead > 0) { for (const [, side, , , front] of LEGS) { if (front) { cow.pose(`fl-shoulder${side}`, .5 * dead); cow.pose(`fl-fore${side}`, .1); cow.pose(`fl-cannon${side}`, -.2 * dead); cow.pose(`fl-hoof${side}`, 0); } else { cow.pose(`bl-thigh${side}`, -.45 * dead); cow.pose(`bl-gaskin${side}`, .1); cow.pose(`bl-cannon${side}`, .15); cow.pose(`bl-hoof${side}`, 0); } }
+    cow.pose('neck', -.25 * dead, 0); cow.pose('head', -.3 * dead, 0); cow.pose('tail1', -.1, 0); return; }
   const { pose } = cow, swing = (.3 + run * .5) * moving, fold = (.45 + run * .75) * moving, gallop = Math.min(1, Math.max(0, (run - .3) / .35));
   for (const [end, side, walkAt, gallopAt, front] of LEGS) {
     const phase = (gait + walkAt + (gallopAt - walkAt) * gallop) * Math.PI * 2, s = Math.sin(phase), lift = Math.max(0, Math.cos(phase)) * fold;
     if (airborne) {
       if (front) { pose(`fl-shoulder${side}`, .75); pose(`fl-fore${side}`, .35); pose(`fl-cannon${side}`, -1.25); pose(`fl-hoof${side}`, -.3); }
       else { pose(`bl-thigh${side}`, -.7); pose(`bl-gaskin${side}`, -.1); pose(`bl-cannon${side}`, .5); pose(`bl-hoof${side}`, -.4); }
+    } else if (front && (stumble > 0 || recoil > 0)) {
+      // Buckling (stumble) folds the knees; rearing (recoil) lifts the forelegs off the ground.
+      pose(`fl-shoulder${side}`, s * swing * (1 - stumble) - stumble * .35 + recoil * .9); pose(`fl-fore${side}`, stumble * .9 + recoil * .5); pose(`fl-cannon${side}`, -stumble * 1.4 - recoil * 1.1); pose(`fl-hoof${side}`, -stumble * .3 - recoil * .4);
     } else if (front) {
       pose(`fl-shoulder${side}`, s * swing - lift * .15); pose(`fl-fore${side}`, lift * .45); pose(`fl-cannon${side}`, -lift * 1.35); pose(`fl-hoof${side}`, -lift * .5 + Math.max(0, -s) * swing * .5);
     } else {
@@ -65,8 +73,8 @@ export function animateCow(cow, { gait = 0, run = 0, moving = 1, airborne = fals
   const beat = gait * Math.PI * 2;
   // The barrel flexes with the gallop; the head drives down in a charge and nods at a walk; the tail streams.
   pose('chest', Math.sin(beat + .6) * .05 * gallop * moving, turn * .12); pose('pelvis', -Math.sin(beat + .6) * .07 * gallop * moving, -turn * .1);
-  pose('neck', -charge * .55 - graze * .9 + Math.sin(beat * (gallop > .5 ? 1 : 2)) * (.05 + run * .06) * moving, turn * .35 + Math.sin(time * .5) * .12 * (1 - moving));
-  pose('head', -charge * .25 - graze * .35 + Math.sin(beat * 2 + 1) * .03 * moving, turn * .2);
+  pose('neck', -charge * .55 - graze * .9 + toss * .7 - stumble * .5 + recoil * .6 + Math.sin(beat * (gallop > .5 ? 1 : 2)) * (.05 + run * .06) * moving, turn * .35 + Math.sin(time * .5) * .12 * (1 - moving) + toss * Math.sin(time * 9) * .15);
+  pose('head', -charge * .25 - graze * .35 + toss * .45 - stumble * .3 + recoil * .3 + Math.sin(beat * 2 + 1) * .03 * moving, turn * .2);
   pose('tail1', -(.12 + run * .95) + Math.sin(time * 2.3) * .08, Math.sin(time * 3.1 + gait) * (.18 + run * .1)); pose('tail2', -run * .5, Math.sin(time * 3.1 + gait + .8) * .25); pose('tail3', -run * .35, Math.sin(time * 3.1 + gait + 1.6) * .3);
 }
 
@@ -91,7 +99,7 @@ function buildRider(cow) {
   const seat = new THREE.Group(); seat.position.set(0, .93, .08); seat.rotation.y = Math.PI; seat.add(person.root); cow.body.add(seat);
   let seated = false;
   const sit = () => { if (!seated && person.skeleton) seated = !!person.motion.play?.('sitIdle', { loop: true, fade: 0, mask: 'full' }); return seated; };
-  return { person, seat, dress, sit };
+  return { person, seat, dress, sit, mount: null };
 }
 
 export function createCow({ scene, physics, spawn, assets }) {
@@ -99,7 +107,7 @@ export function createCow({ scene, physics, spawn, assets }) {
   const body = physics.dynamicBox([spawn.x, TUNE.rest + .1, spawn.z], TUNE.half, {
     mass: TUNE.mass, friction: 0, restitution: 0, linearDamping: 0, angularDamping: 0, dofs: physics.DOF.upright,
   });
-  let yaw = spawn.yaw, charge = 0, speed = 0, lateral = 0, skid = 0, airborne = false, gait = 0, clock = 0, lean = 0, pitch = 0, bump = 0, lastVy = 0;
+  let yaw = spawn.yaw, charge = 0, speed = 0, lateral = 0, skid = 0, airborne = false, gait = 0, clock = 0, lean = 0, pitch = 0, bump = 0, lastVy = 0, shaken = false, stumbleT = 0, nextStumble = 0, toss = 0;
   const state = { x: spawn.x, y: 0, z: spawn.z, yaw, speed: 0, charge: 0, charging: false, skid: 0, airborne: false, forward: new THREE.Vector3(), velocity: new THREE.Vector3() };
 
   // One physics tick of control. keys: Set of 'w','a','s','d','shift','space'.
@@ -111,7 +119,7 @@ export function createCow({ scene, physics, spawn, assets }) {
     const wantCharge = !frozen && keys.has('shift') && gas > 0 && speed > 3;
     charge = Math.max(0, Math.min(1, charge + (wantCharge ? TUNE.chargeBuild : -TUNE.chargeFade) * dt));
     // Throttle: top speed rises with the charge meter; braking is strong; nothing changes in the air.
-    const top = TUNE.trot + (TUNE.charge - TUNE.trot) * charge;
+    const top = (TUNE.trot + (TUNE.charge - TUNE.trot) * charge) * (shaken ? .82 : 1);
     if (!airborne) {
       if (gas > 0) { if (speed < top) speed = Math.min(top, speed + (speed < 0 ? TUNE.brake : wantCharge ? TUNE.chargeAccel : TUNE.accel) * dt); }
       else if (gas < 0) speed = speed > .4 ? Math.max(0, speed - TUNE.brake * dt) : Math.max(-TUNE.reverse, speed - TUNE.accel * .6 * dt);
@@ -143,15 +151,25 @@ export function createCow({ scene, physics, spawn, assets }) {
     const run = Math.min(1, Math.abs(speed) / TUNE.charge), moving = Math.min(1, Math.abs(speed) / 1.2);
     gait += dt * (.5 + Math.abs(speed) * .19) * moving; clock += dt;
     bump = Math.max(0, bump - dt * 2.5);
+    // Shaken (a blast): every so often a stumble that costs it pace; the rider fights to stay on.
+    if (shaken && !airborne) { nextStumble -= dt; if (nextStumble <= 0 && Math.abs(speed) > 2) { stumbleT = .45; nextStumble = 1.6 + (Math.sin(clock * 7.3) * .5 + .5) * 1.4; speed *= .75; bump = Math.min(1, bump + .4); } }
+    stumbleT = Math.max(0, stumbleT - dt);
+    // Standing still, now and then it tosses its head.
+    toss = Math.max(0, toss - dt * 2.2); if (Math.abs(speed) < .5 && Math.sin(clock * .9 + spawn.x) > .995) toss = 1;
     // The barrel rises twice a stride at a walk and once at a gallop, rocks, and leans into turns.
     model.body.position.y = airborne ? 0 : Math.abs(Math.sin(gait * Math.PI * 2)) * .06 * run - bump * .25;
     pitch += ((airborne ? -v[1] * .03 : Math.sin(gait * Math.PI * 2 + 1) * .05 * run) - pitch) * Math.min(1, dt * 10); model.body.rotation.x = pitch;
     const turning = (lateral * -.05) + skid * Math.sign(lateral || 1) * -.12; lean += (turning - lean) * Math.min(1, dt * 6); model.body.rotation.z = Math.max(-.35, Math.min(.35, lean));
-    animateCow(model, { gait, run, moving, airborne, charge, turn: Math.max(-1, Math.min(1, -lean * 4)), time: clock });
+    const stumble = stumbleT > 0 ? Math.sin((1 - stumbleT / .45) * Math.PI) : 0;
+    model.body.rotation.x += stumble * .12;
+    animateCow(model, { gait, run, moving, airborne, charge, turn: Math.max(-1, Math.min(1, -lean * 4)), time: clock, toss, stumble });
     if (rider && rider.seat.visible) {
       rider.dress(); rider.sit(); rider.person.motion.update(dt, { velocity: STILL }); // carried, not walking
       // He rides the cow's back: forward over the neck in a charge, rising and falling a beat behind it.
-      rider.seat.rotation.x = .1 + charge * .32; rider.seat.position.y = .93 + Math.abs(Math.sin(gait * Math.PI * 2 + .6)) * .04 * run;
+      rider.seat.rotation.x = .1 + charge * .32 + stumble * .35; rider.seat.position.y = .93 + Math.abs(Math.sin(gait * Math.PI * 2 + .6)) * .04 * run;
+      rider.seat.rotation.z = shaken ? Math.sin(clock * 11) * .07 + stumble * .25 * Math.sign(Math.sin(clock * 3) || 1) : 0;
+      // Getting on: the rider comes up from where you stood in an arc and lands in the seat.
+      const m = rider.mount; if (m) { m.t += dt / .42; const k = Math.min(1, m.t), e = 1 - (1 - k) * (1 - k); rider.seat.position.x = m.x * (1 - e); rider.seat.position.z = .08 + (m.z - .08) * (1 - e); rider.seat.position.y += m.y * (1 - e) + Math.sin(k * Math.PI) * .5; if (k >= 1) rider.mount = null; }
     }
   }
 
@@ -169,8 +187,16 @@ export function createCow({ scene, physics, spawn, assets }) {
     if (ahead > -.2 && speed < Math.min(7, 1.5 + dist)) auto.add('w');
     return auto;
   }
-  const setRider = on => { if (rider) rider.seat.visible = on; };
-  return { state, control, update, hit, reset, teleport, steerTo, setRider, body, model, TUNE };
+  const setRider = on => { if (rider) { rider.seat.visible = on; if (!on) rider.mount = null; } };
+  // Mounting from a point in the world: the rider vaults from there into the seat.
+  function mountFrom(x, z) {
+    if (!rider) return; setRider(true);
+    const dx = x - state.x, dz = z - state.z, c = Math.cos(yaw), s2 = Math.sin(yaw);   // into the cow's frame (the seat is turned round)
+    rider.mount = { t: 0, x: dx * c + dz * s2, z: -dx * s2 + dz * c, y: -.75 };
+    rider.person.motion?.play?.('pkVault', { fade: .05, speed: 1.5, mask: 'full' });
+  }
+  const setShaken = on => { shaken = on; if (on) nextStumble = .4; };
+  return { state, control, update, hit, reset, teleport, steerTo, setRider, mountFrom, setShaken, body, model, TUNE };
 }
 
 // A herd cow: no physics and no rider, a coat of its own. Used by herd.js.
