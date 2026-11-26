@@ -69,3 +69,11 @@ html,body{margin:0;height:100%;background:#0b0e10;color:var(--cn-ink);font-famil
 #cn-marker i{position:absolute;left:-7px;top:-7px;width:14px;height:14px;transform:rotate(45deg);border:2px solid #ff3a20;background:rgba(255,58,32,.25);box-shadow:0 0 10px rgba(255,58,32,.7)}
 #cn-marker span{position:absolute;left:14px;top:-7px;font:700 11px/14px 'Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.14em;color:#e8e6e0;text-shadow:0 1px 4px #000;white-space:nowrap}
 #cn-marker[data-edge="1"] i{background:#ff3a20}
+/* Fists: the main game's popup word (from fist-combat.css), over this page's scene */
+#fight-pop{position:fixed;left:50%;top:38%;z-index:3;transform:translate(-50%,-50%) scale(.6);opacity:0;pointer-events:none;font:900 34px/1 Impact,"Arial Black",sans-serif;letter-spacing:.04em;color:#ffe14d;-webkit-text-stroke:2px #5a0d0a;text-shadow:0 3px 0 #5a0d0a,0 6px 18px #0006;white-space:nowrap}
+#fight-pop.show{animation:cn-fight-pop .7s ease-out}
+#fight-pop.block{color:#bfe7ff;-webkit-text-stroke-color:#1f4f8a;text-shadow:0 3px 0 #1f4f8a}
+#fight-pop.ko{color:#ff5a3c;font-size:46px}
+@keyframes cn-fight-pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}30%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-62%) scale(1)}}
+.cn-pad{grid-template-columns:repeat(4,58px)}
+.cn-pad button{width:58px;height:58px}

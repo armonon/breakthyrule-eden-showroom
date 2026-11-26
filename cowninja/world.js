@@ -48,6 +48,15 @@ export function createWorld({ scene, physics, assets, shadows = 7 }) {
 
   // ---- helpers for props
   function place(name, x, y, z, { yaw = 0, scale = 1, part = null, pitch = 0, cast = true } = {}) {
+    // Generated pieces come with their origin anywhere: they are anchored by their bounding box instead, at the base
+    // centre (standing things) or, with part 'top', at the top centre (hanging things).
+    if (name.startsWith('modly:')) {
+      const model = assets.clone(name); if (!model) return null;
+      model.updateMatrixWorld(true); box3.setFromObject(model);
+      const c = box3.getCenter(new THREE.Vector3()); model.position.set(-c.x, part === 'top' ? -box3.max.y : -box3.min.y, -c.z);
+      const holder = new THREE.Group(); holder.add(model); holder.scale.setScalar(scale); holder.rotation.set(pitch, yaw, 0); holder.position.set(x, y, z);
+      root.add(holder); return holder;
+    }
     const m = assets.clone(name, part); if (!m) return null;
     m.scale.setScalar(scale); m.rotation.set(pitch, yaw, 0); m.position.set(x, y, z);
     if (!cast) m.traverse(o => { o.castShadow = false; });
