@@ -56,13 +56,21 @@
  };
 
 
+ // Beyond Eden's body-camera look for what is held in front of the lens (0 elsewhere, so Eden and the range are unchanged):
+ // softer sleeve folds with a fabric sheen, and gun steel that can show a lamp as a small sharp highlight. combat.js sets it
+ // only while it draws the first-person view, so the same materials cloned into other hands keep their own look.
+ const LOOK={value:0},SHEEN=new Float32Array(3);
  // Cloth and leather that hold up at arm's length: the scan's camouflage is dyed dark, its folds kept, and a weave (sleeves)
  // or grain (gloves) is laid over it, both fading out with distance before they can shimmer.
  function dress(material){
   const own=material.onBeforeCompile;material.roughness=1;material.metalness=0;material.normalScale?.setScalar(.8);
+  // three's own cloth sheen (Charlie), on a standard material: its colour is 0 outside the body camera, which leaves the
+  // lighting exactly as it was (no sheen, no energy taken from the diffuse).
+  material.defines={...(material.defines||{}),USE_SHEEN:''};
   material.onBeforeCompile=(sh,r)=>{own?.call(material,sh,r);
+   sh.uniforms.armLook=LOOK;sh.uniforms.sheenColor={get value(){SHEEN.fill(.2*LOOK.value);return SHEEN;}};sh.uniforms.sheenRoughness={value:.55};
    sh.fragmentShader=sh.fragmentShader.replace('#include <common>',`#include <common>
-   float armH=0.,armGlove=0.;float armHash(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
+   uniform float armLook;float armH=0.,armGlove=0.;float armHash(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
    float armNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(armHash(i),armHash(i+vec2(1.,0.)),f.x),mix(armHash(i+vec2(0.,1.)),armHash(i+1.),f.x),f.y);}`)
    .replace('#include <map_fragment>',`#include <map_fragment>
    {float l=dot(diffuseColor.rgb,vec3(.2126,.7152,.0722)),bare=smoothstep(.12,.3,diffuseColor.r-diffuseColor.b),skin=0.;l*=mix(1.,.45,bare); /* the sleeves run to the gloves: a bare forearm is dyed as cloth too */armGlove=smoothstep(.69,.71,vMapUv.y);
@@ -75,9 +83,16 @@
     diffuseColor.rgb=mix(mix(cloth,leather,armGlove),diffuseColor.rgb,skin);
     armH=mix(weave*fade*.00012,grain*gf*.0002,armGlove)*(1.-skin);}`)
    .replace('#include <roughnessmap_fragment>',`float roughnessFactor=mix(.94,.62,armGlove)-.12*armGlove*smoothstep(.3,.7,armNoise(vMapUv*90.));`)
-   .replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
-   {vec3 sx=dFdx(-vViewPosition),sy=dFdy(-vViewPosition);vec3 r1=cross(sy,normal),r2=cross(normal,sx);float det=dot(sx,r1)*faceDirection;vec3 gr=sign(det)*(dFdx(armH)*r1+dFdy(armH)*r2);normal=normalize(abs(det)*normal-gr*.8);}`);};
-  material.customProgramCacheKey=()=>'arms-cloth-3';material.needsUpdate=true;
+   .replace('#include <normal_fragment_maps>',`vec3 armBase=normal;
+   #include <normal_fragment_maps>
+   // Under a strong lamp the scan's fine fold detail and the weave read as fur: on the body camera the sleeves keep about half
+   // of the normal map and a third of the weave, and the gloves most of theirs.
+   {float soft=armLook*mix(.55,.25,armGlove);normal=normalize(mix(normal,armBase,soft));
+    vec3 sx=dFdx(-vViewPosition),sy=dFdy(-vViewPosition);vec3 r1=cross(sy,normal),r2=cross(normal,sx);float det=dot(sx,r1)*faceDirection;vec3 gr=sign(det)*(dFdx(armH)*r1+dFdy(armH)*r2);normal=normalize(abs(det)*normal-gr*.8*(1.-armLook*mix(.65,.2,armGlove)));}`)
+   // The sheen is the sleeves' (woven cloth); leather gloves get none.
+   .replace('#include <lights_physical_fragment>',`#include <lights_physical_fragment>
+   material.sheenColor*=1.-armGlove;`);};
+  material.customProgramCacheKey=()=>'arms-cloth-4';material.needsUpdate=true;
  }
  // Gun steel: blued rather than bare, so a grey scan stops glowing at night; the scan's bright edges stay as worn metal.
  const STEEL=`#include <map_fragment>
@@ -90,8 +105,15 @@
   function basisQ(x,y,out=new T.Quaternion()){const X=x.clone().normalize(),Z=new T.Vector3().crossVectors(X,y).normalize(),Y=new T.Vector3().crossVectors(Z,X);tmpM.makeBasis(X,Y,Z);return out.setFromRotationMatrix(tmpM);}
   function setWorldQ(bone,q){bone.parent.getWorldQuaternion(tmpQ).invert();bone.quaternion.copy(tmpQ.multiply(q));bone.updateMatrixWorld(true);}
   // minRough keeps near-mirror texels from blowing out to white under direct sun.
+  // The lamp that lights the weapon most (combat.js viewLight's key), as a direction in the weapon camera's view space: on the
+  // body camera its reflection is a small sharp point on the steel (a tight lobe on top of three's broad one, which at these
+  // roughnesses spreads a lamp into a dull sheen).
+  const KEY={dir:{value:new T.Vector3(0,1,0)},color:{value:new T.Color(0,0,0)}};
   function prep(scene,{metalBoost=1,minRough=0}={}){scene.traverse(o=>{if(!o.isMesh)return;o.castShadow=false;o.frustumCulled=false;const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats){if(env){m.envMap=env;m.envMapIntensity=metalBoost;}
-   if(minRough&&m.roughnessMap){m.onBeforeCompile=sh=>{sh.fragmentShader=sh.fragmentShader.replace('#include <map_fragment>',STEEL);sh.fragmentShader=sh.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\n\troughnessFactor = max( roughnessFactor, '+minRough.toFixed(2)+' );');};m.customProgramCacheKey=()=>'steel1minRough'+minRough;}
+   // On the body camera the clamp drops to half on the smooth (worn, polished) faces only, so the nearest lamp can sit on the
+   // slide as a small sharp highlight without the whole gun going glossy.
+   if(minRough&&m.roughnessMap){m.onBeforeCompile=sh=>{sh.uniforms.armLook=LOOK;sh.uniforms.steelKey=KEY.dir;sh.uniforms.steelKeyColor=KEY.color;sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nuniform float armLook;uniform vec3 steelKey,steelKeyColor;').replace('#include <map_fragment>',STEEL)
+    .replace('#include <lights_fragment_end>','#include <lights_fragment_end>\n\tif(armLook>0.){vec3 rv=reflect(-geometryViewDir,normal);float glint=pow(max(dot(rv,steelKey),0.),300.)*1.6+pow(max(dot(rv,steelKey),0.),60.)*.12;reflectedLight.directSpecular+=min(steelKeyColor,vec3(2.))*glint*mix(.2,1.,1.-smoothstep(.3,.85,roughnessFactor))*mix(.35,1.,metalnessFactor)*armLook;}');sh.fragmentShader=sh.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\n\tfloat steelFloor = '+minRough.toFixed(2)+';\n\troughnessFactor = max( roughnessFactor, mix( steelFloor, mix( steelFloor, steelFloor * .45, 1. - smoothstep( steelFloor, steelFloor + .25, roughnessFactor ) ), armLook ) );');};m.customProgramCacheKey=()=>'steel3minRough'+minRough;}
    m.needsUpdate=true;}});return scene;}
 
   /* ---------------- arms */
@@ -231,6 +253,10 @@
 
   return {
    ready,weapons,grips:GRIPS,loadVariant,
+   // 1 while drawing the body camera's first-person view, 0 otherwise (see LOOK).
+   setLook(k){LOOK.value=k;},
+   // The key light for the steel's glint: direction in the weapon camera's view space (unit) and colour (black: none).
+   setKey(dir,color){KEY.dir.value.copy(dir);KEY.color.value.copy(color);},
    gripPos(grip,space,out=new T.Vector3()){space.updateMatrixWorld(true);return out.fromArray(grip.pos).applyMatrix4(space.matrixWorld);},
    get arms(){return arms;},
    /** weapon: Object3D whose matrixWorld is weapon space in view space. overrides: {left:{away,offset}} */

@@ -11,6 +11,10 @@ Runtime irradiance = Cycles DIFFUSE bake * pi. What the files hold (eden-baked-l
                 B = dominant direction * .5 + .5 + moon visibility
   bake.json     the grids, the scale, the weights used and the lights that were baked
 The weights only mix the separately baked kinds of light; change them and run this again, no rebake needed.
+The live bake (assets/beyond-night) was encoded with --weights sky=3,lamps=.5,uplight=.7,moon=1.5,live=.6. Since the
+showroom's night tuning (app.js BODYCAM_NIGHT: a sky floor, a roll-off of bright baked light, lamps as small sources) the
+suggested next encode is --weights sky=3,lamps=.42,uplight=.7,moon=1.9,live=.6: a little more moon so unlit lanes read by
+their shape and their moon shadows, a little less baked lamp light by the walls next to the lamps.
 Needs NumPy; writes JPEG with Pillow when it is installed, otherwise through ffmpeg.
 """
 import argparse, hashlib, json, struct, subprocess, sys, zlib

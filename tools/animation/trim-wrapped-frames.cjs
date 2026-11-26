@@ -18,7 +18,7 @@ const fixed=[];
 for(const [id,c] of Object.entries(lib.clips)){
  // Once per clip: clips that end on their start pose would otherwise look wrapped again. Mixamo clips were baked
  // after the fix.
- if(c.loop||c.n<4||c.src==='mixamo'||c.endTrimmed)continue;
+ if(c.loop||c.n<4||c.src.startsWith('mixamo')||c.endTrimmed)continue;
  const q=dec(c.q),hip=dec(c.hip),last=c.n-1;
  // Wrapped: the last frame repeats the first (to int16 rounding) while the clip moved away from it in between.
  const same=apart(q,0,last)<.03&&Math.abs(hip[last]-hip[0])<30,moved=apart(q,0,last-1)>.03||apart(q,0,Math.floor(last/2))>.03;

@@ -86,3 +86,7 @@ models/pipes.glb
   model: "modular_industrial_pipes_01" by Jorge Camacho, CC0
   https://polyhaven.com/a/modular_industrial_pipes_01
 
+
+planks-d.webp, planks-n.webp, planks-m.webp  (landmark buildings, tools/night/fetch-building-scans.py)
+  texture: "weathered_planks" by Dario Barresi, Dimitrios Savva, CC0
+  https://polyhaven.com/a/weathered_planks

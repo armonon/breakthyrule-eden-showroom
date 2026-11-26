@@ -82,6 +82,10 @@
   /* ---------------------------------------------------------------- helpers */
   // Ground heights are sampled once per 1 m cell (a full-scene raycast per bot per frame is far too slow).
   const groundCache=new Map();
+  // A bot's feet: the highest floor no more than a step above where it stands now (so walking past a crate, a barrier or a
+  // wall never lifts it onto the top in one frame), on a quarter-metre grid.
+  const feetY=(x,z,from)=>{const k=(Math.round(x*4)*8192+Math.round(z*4))*64+Math.round((from+8)*2);let y=feetCache.get(k);if(y===undefined){try{y=combat.groundAt(x,z,from+.5)??0;}catch{y=0;}if(!Number.isFinite(y)||Math.abs(y)>6)y=0;if(feetCache.size>40000)feetCache.clear();feetCache.set(k,y);}return y;};
+  const feetCache=new Map();
   const groundY=(x,z)=>{const k=Math.round(x)*4096+Math.round(z);let y=groundCache.get(k);if(y===undefined){try{y=combat.groundAt(Math.round(x),Math.round(z),8)??0;}catch{y=0;}if(Math.abs(y)>6)y=0;groundCache.set(k,y);}return y;};
   // Line of sight against building footprints (analytic, 2D slab test). Buildings are taller than anyone.
   const walls=()=>garden.district?.walls||[];
@@ -120,6 +124,8 @@
    const beam=canvasTex(32,128,(x)=>{const g=x.createLinearGradient(0,128,0,0);g.addColorStop(0,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,32,128);const s=x.createLinearGradient(0,0,32,0);s.addColorStop(0,'rgba(0,0,0,1)');s.addColorStop(.5,'rgba(0,0,0,0)');s.addColorStop(1,'rgba(0,0,0,1)');x.globalCompositeOperation='destination-out';x.fillStyle=s;x.fillRect(0,0,32,128);});
    MAT={
     wood:new T.MeshStandardMaterial({map:wood,roughness:.8}),
+    // Beyond Eden's match doors: weathered boards (matrix-world.js 'planks'); the expedition page keeps the plain wood.
+    ...(document.body?.classList.contains('expedition-entry')||!window.edenMatrix?{}:{door:(()=>{const m=new T.MeshStandardMaterial({color:0x6e5440,roughness:.85});window.edenMatrix.patch(T,m,'planks');return m;})(),doorIron:new T.MeshStandardMaterial({color:0x232425,metalness:.7,roughness:.6})}),
     iron:new T.MeshStandardMaterial({color:0x2c2b28,metalness:.8,roughness:.45}),
     brass:new T.MeshStandardMaterial({color:0xb8913e,metalness:1,roughness:.3}),
     ring,beam,
@@ -145,9 +151,21 @@
    const c={group:g,lidPivot,glow,open:false,openT:0,pos:new T.Vector3(x,y,z)};chests.push(c);window.edenMatrix?.form(T,g,{duration:1.4});return c;
   }
 
+  // Guns out in the world (in bots' hands, on the ground): the first-person gun's steel, blued darker, with the studio
+  // reflection turned well down so the scene lights it. What is left of the reflection is dimmed by place by the bake
+  // (eden-baked-light.js), and the lamps and muzzle flashes put real highlights on it. One copy per source material.
+  const worldSteel=new Map(),BLUED=new T.Color(.42,.45,.53);
+  function worldGun(g){
+   g?.traverse(n=>{if(!n.isMesh||Array.isArray(n.material)||!n.material)return;const src=n.material;let m=worldSteel.get(src);
+    if(!m){m=src.clone();m.onBeforeCompile=src.onBeforeCompile;m.customProgramCacheKey=src.customProgramCacheKey;
+     if(m.metalness>.5){m.color.multiply(BLUED);m.envMapIntensity=src.envMapIntensity*.2;}else m.envMapIntensity=src.envMapIntensity*.45;
+     worldSteel.set(src,m);}
+    n.material=m;});
+   return g;
+  }
   function itemVisual(item){
    const M=materials(),g=new T.Group();
-   if(item.type==='weapon'){const m=combat.weaponModel(item.weapon);if(m){m.rotation.set(0,0,Math.PI/2);m.position.y=.05;const s=new T.Group();s.add(m);g.add(s);}else box(.5,.08,.12,M.iron,g);}
+   if(item.type==='weapon'){const m=worldGun(combat.weaponModel(item.weapon));if(m){m.rotation.set(0,0,Math.PI/2);m.position.y=.05;const s=new T.Group();s.add(m);g.add(s);}else box(.5,.08,.12,M.iron,g);}
    else if(item.type==='armor'){const t=item.garment.image?new T.TextureLoader().load(item.garment.image,()=>o.requestDraw()):null;if(t)t.colorSpace=T.SRGBColorSpace;
     const fold=new T.Mesh(new T.BoxGeometry(.42,.07,.34),[M.white,M.white,new T.MeshStandardMaterial({map:t,color:t?0xffffff:0xdddddd,roughness:.9}),M.white,M.white,M.white]);fold.position.y=.04;fold.castShadow=true;g.add(fold);}
    else if(item.type==='heal'){if(item.heal==='medkit'){box(.34,.2,.24,M.white,g,0,.1,0);box(.2,.21,.06,M.red,g,0,.1,0);box(.06,.21,.2,M.red,g,0,.1,0);}else{for(const dx of [-.07,.07]){const r=new T.Mesh(new T.CylinderGeometry(.06,.06,.1,16),M.gauze);r.rotation.z=Math.PI/2;r.position.set(dx,.06,0);g.add(r);}}}
@@ -220,7 +238,7 @@
   function formBot(b){b.model.root.traverse(n=>{if(n.isMesh)for(const m of [].concat(n.material||[]))window.edenMatrix?.patch(T,m,'form');});window.edenMatrix?.form(T,b.root,{duration:1.5,cloud:true});}
   function setBotWeapon(b,id){
    // The gun is gripped in both hands and aimed (character-motion.js hold/aimAt); b.hand stays as the muzzle marker.
-   b.weapon=id;b.shadowNear=null;b.hand.clear();const m=combat.weaponModel(id);
+   b.weapon=id;b.shadowNear=null;b.hand.clear();const m=worldGun(combat.weaponModel(id));
    if(m){m.traverse(n=>{n.userData.noHit=true;n.castShadow=true;});if(b.model.motion?.hold)b.model.motion.hold(m,id);else{m.rotation.set(0,Math.PI,0);b.hand.add(m);}}
   }
   const W=id=>combat.weapons.find(w=>w.id===id);
@@ -238,10 +256,20 @@
    for(const c of [a,b]){const oc=o2.clone().sub(c),bb=oc.dot(d),cc=oc.dot(oc)-r*r,hh=bb*bb-cc;if(hh>0){const t=-bb-Math.sqrt(hh);if(t>0)return t;}}
    return null;
   }
+  const boneAt=(c,name)=>{const b=c.model.byName?.[name];return b?b.getWorldPosition(new T.Vector3()):null;};
+  function downHit(c,origin,dir){
+   const head=boneAt(c,'head'),chest=boneAt(c,'spine01'),pelvis=boneAt(c,'root')||c.root.position.clone(),fl=boneAt(c,'foot.L'),fr=boneAt(c,'foot.R'),kl=boneAt(c,'lowerleg01.L'),kr=boneAt(c,'lowerleg01.R');
+   let best=null;const take=(t,h)=>{if(t!=null&&(!best||t<best.distance))best={distance:t,head:h};};
+   if(head)take(raySphere(origin,dir,head,.15),true);
+   for(const [a,b,r] of [[chest||head,pelvis,.25],[head,chest,.17],[pelvis,kl,.15],[pelvis,kr,.15],[kl,fl,.12],[kr,fr,.12]])if(a&&b)take(rayCapsule(origin,dir,a,b,r),false);
+   return best;
+  }
   function raySphere(o2,d,c,r){const oc=o2.clone().sub(c),b=oc.dot(d),cc=oc.dot(oc)-r*r,h=b*b-cc;if(h<0)return null;const t=-b-Math.sqrt(h);return t>0?t:null;}
   function hitTest(origin,dir,maxDist,exclude){
    let best=null;
    for(const c of combatants()){if(c===exclude)continue;const p=posOf(c),scale=c.bot?1:1.02;
+    // On the ground or getting up the body is not a standing capsule: test it where its bones are.
+    if(c.bot&&(c.model.motion?.downAmount?.()||0)>0){const t=downHit(c,origin,dir);if(t&&t.distance<maxDist&&(!best||t.distance<best.distance))best={c,distance:t.distance,head:t.head};continue;}
     const head=new T.Vector3(p.x,p.y+(c.bot?1.6:1.62),p.z);const th=raySphere(origin,dir,head,.15);
     const tb=rayCapsule(origin,dir,new T.Vector3(p.x,p.y+.3,p.z),new T.Vector3(p.x,p.y+1.38*scale,p.z),.27);
     let t=null,headHit=false;if(th!=null&&(tb==null||th<=tb+.05)){t=th;headHit=true;}else t=tb;
@@ -282,25 +310,25 @@
   // jostles rather than topples. Returns false (the caller keeps the procedural reaction) when it is unavailable.
   let reactions=null;
   function physicalHit(b,dir,strength,zone){
-   const light=strength<1.2;if(light)strength=Math.min(1.19,strength*1.35); // a body that is shot gives
-   if(!reactions||(light&&clock-(b.lastPhysical??-9)<.22))return false;
-   if(!reactions.hit(b.model,{direction:dir,strength,zone,velocity:b.vel}))return false;
+   const light=strength<1.2;
+   if(!reactions||(light&&clock-(b.lastPhysical??-9)<.5))return false;
+   if(!reactions.hit(b.model,{direction:dir,strength,zone,velocity:b.vel,fall:!light}))return false;
    b.lastPhysical=clock;return true;
   }
   function loadReactions(){
    if(loadReactions.started)return;loadReactions.started=true;
-   import('/jolt-hit-reactions.js?v=20261121-hit10').then(m=>m.createHitReactions({T,groundY,walls,onFall:model=>{const b=bots.find(x=>x.model===model);if(b){b.stagger=null;b.stunT=0;b.lunge=null;}}}))
+   import('/jolt-hit-reactions.js?v=20261126-hit11').then(m=>m.createHitReactions({T,groundY,walls,onFall:model=>{const b=bots.find(x=>x.model===model);if(b){b.stagger=null;b.stunT=0;b.lunge=null;}}}))
     .then(r=>{reactions=r;}).catch(error=>console.warn('Physical hit reactions unavailable; keeping procedural ones.',error));
   }
   // A bullet that gets through the shield: a step back with it, a leg that gives for a moment, an arm whose aim is thrown off,
   // and, when several land close together, a moment folded over. Each has its own rest, so a spray cannot hold a bot still.
   function wound(b,dir,meta,through){
    if(!b.bot||through<=0)return;
-   if(clock-(b.lastStep??-9)>.3&&!b.stagger){b.lastStep=clock;stagger(b,dir,.14+Math.min(.16,through/160),.22);}
+   if(clock-(b.lastStep??-9)>.6&&!b.stagger){b.lastStep=clock;stagger(b,dir,.08+Math.min(.08,through/250),.2);}
    if(meta.zone==='leg'&&clock-(b.lastLeg??-9)>1.6){b.lastLeg=clock;b.limpT=Math.max(b.limpT||0,1.1);}
    if(meta.zone==='arm'&&clock-(b.lastArm??-9)>.9){b.lastArm=clock;b.fireT=Math.max(b.fireT,.3);b.aimT=Math.max(b.aimT,.18);}
    b.hurtSum=(clock-(b.hurtAt??-9)<1.1?b.hurtSum||0:0)+through;b.hurtAt=clock;
-   if(b.hurtSum>42&&clock-(b.lastFold??-9)>2.6){b.lastFold=clock;b.hurtSum=0;b.stunT=Math.max(b.stunT||0,.35);b.model.motion?.play?.('hitChest',{mask:'upper',fade:.05,speed:.85});b.model.motion?.hit?.(dir,1,{zone:'leg'});}
+   if(b.hurtSum>42&&clock-(b.lastFold??-9)>2.6){b.lastFold=clock;b.hurtSum=0;b.stunT=Math.max(b.stunT||0,.35);b.model.motion?.play?.('hitChest',{mask:'upper',fade:.05,speed:.85});b.model.motion?.hit?.(dir,1,{zone:'leg',fall:false});}
   }
   function stagger(b,dir,distance,duration){b.stagger={dir:dir.clone().setY(0).normalize(),distance,duration,t:0};}
   // Bot melee: before the blow lands the bot telegraphs it (an amber glow, a glint at its weapon, a ring you can
@@ -341,10 +369,12 @@
   function flashBot(b,kind,dur=.14){
    if(!b.flashMats){b.flashMats=[];b.model.root.traverse(n=>{for(const m of n.isMesh?(Array.isArray(n.material)?n.material:[n.material]):[])if(m?.emissive&&!b.flashMats.includes(m)){m.userData.baseEmissive??=m.emissive.clone();b.flashMats.push(m);}});}
    b.flashT=dur;b.flashDur=dur;b.flashColor=FLASH[kind];b.flashRamp=kind==='warn';
+   // Footage has no white hit flash: in the body camera's view a body hit only darkens a moment's glint, shields still glow.
+   b.flashGain=kind==='body'&&window.bodycam?.active?.()?.18:1;
   }
   function updateFlash(b,dt){
    if(!(b.flashT>0))return;b.flashT=Math.max(0,b.flashT-dt);const f=b.flashT/(b.flashDur||.14),k=b.flashT<=0?0:b.flashRamp?(1-f)*.7:f; // a warning builds toward the strike, then clears
-   for(const m of b.flashMats)m.emissive.copy(m.userData.baseEmissive).lerp(b.flashColor,k*.85);
+   for(const m of b.flashMats)m.emissive.copy(m.userData.baseEmissive).lerp(b.flashColor,k*.85*(b.flashGain??1));
   }
   const aimList=[];
   function damage(target,amount,attacker,meta={}){
@@ -373,8 +403,8 @@
      const dir=blowDirection(target,attacker,meta);
      if(meta.tier)meleeReaction(target,dir,meta);
      else if(heavy){const force=meta.blast?2.8:meta.weapon==='sniper'?2.6:meta.weapon==='pump'?2.1:2;if(physicalHit(target,dir,force,meta.zone))target.model.motion?.hit?.(dir,1.1,{zone:meta.zone});else target.model.motion?.hit?.(dir,2.2);}
-     else{wound(target,dir,meta,a);physicalHit(target,dir,meta.head?.9:.6,meta.zone);if(clock-target.lastFlinch>.7){target.lastFlinch=clock;target.model.motion?.hit?.(dir,meta.head?1.2:.7,{zone:meta.zone});target.model.motion?.play?.(meta.head?'hitHead':'hitChest',{mask:'upper',fade:.04,speed:1.2});}}
-     target.dodgeT=.38;target.strafe=Math.random()<.5?1:-1;}}
+     else{wound(target,dir,meta,a);physicalHit(target,dir,meta.head?.9:.6,meta.zone);if(clock-target.lastFlinch>.7){target.lastFlinch=clock;target.model.motion?.hit?.(dir,meta.head?1.2:.7,{zone:meta.zone,fall:false});target.model.motion?.play?.(meta.head?'hitHead':'hitChest',{mask:'upper',fade:.04,speed:1.2});}}
+     if(clock-(target.lastDodge??-9)>2.2&&Math.random()<.45){target.lastDodge=clock;target.dodgeT=.32;target.strafe=Math.random()<.5?1:-1;}}}
    else{combat.hurt(attacker&&attacker!==target?eyeOf(attacker):null,a+(amount-a)*.4+shielded*.55);if(meta.kind==='zone')combat.hurt(null,a*.4);hud.update();}
    if(target.hp<=0){kill(target,attacker,meta);return {killed:true};}
    return {killed:false};
@@ -504,6 +534,8 @@
   function animateNow(b){if(reactions?.reacting(b.model))return true;lodTo.copy(b.root.position).sub(camera.position);const d=lodTo.length();camera.getWorldDirection(lodFwd);
    const every=lodTo.dot(lodFwd)<-2&&d>4?4:d>40?3:d>20?2:1;b.animTick=(b.animTick||0)+1;return b.animTick%every===0;}
   function updateBot(b,dt){
+   // After a fall the body gets up where it lies, with the get-up clip (character-motion.js); the bot goes with it.
+   if(b.model.motion&&!b.model.motion.onGetUp)b.model.motion.onGetUp=off=>{const q=b.root.position,n=q.clone().add(off);if(!blocked(n)){q.x=n.x;q.z=n.z;q.y=feetY(q.x,q.z,q.y);}};
    const nearShadow=!window.edenBaked?.dynamicShadowOnly()||b.root.position.distanceToSquared(camera.position)<22*22;
    if(nearShadow!==b.shadowNear){b.shadowNear=nearShadow;b.root.traverse(n=>{if(n.isMesh)n.castShadow=nearShadow;});b.model.motion?.held()?.mesh?.traverse(n=>{if(n.isMesh)n.castShadow=nearShadow;});}
 
@@ -517,7 +549,7 @@
    if(b.model.motion?.downAmount?.()>0){b.model.animate?.(clock,0);return;}
    // A stagger slides the bot along the blow, fast at first then settling; while stunned it can't act.
    if(b.stagger){const st=b.stagger,k=Math.max(0,1-st.t/st.duration),step=st.distance/st.duration*2*k*dt,next=p.clone().addScaledVector(st.dir,step);
-    if(!blocked(next)){p.x=next.x;p.z=next.z;p.y=groundY(p.x,p.z);}st.t+=dt;if(st.t>=st.duration)b.stagger=null;}
+    if(!blocked(next)){p.x=next.x;p.z=next.z;p.y=feetY(p.x,p.z,p.y);}st.t+=dt;if(st.t>=st.duration)b.stagger=null;}
    if(b.stunT>0){b.stunT-=dt;b.fireT=Math.max(b.fireT,.2);b.bashT=Math.max(b.bashT,.2);b.model.animate?.(clock,0);return;}
    if(clock-b.lastHurt>SHIELD_DELAY&&b.shield<b.shieldMax)b.shield=Math.min(b.shieldMax,b.shield+30*dt);
    b.think-=dt;b.fireT-=dt;b.reloadT-=dt;b.aimT-=dt;b.strafeT-=dt;b.repath-=dt;b.dodgeT-=dt;b.bashT-=dt;
@@ -584,7 +616,7 @@
        else{if(guarded==='broken')M.land('broken',{hitStop:ms=>o.hitStop?.(ms),combo:false});tackled(b,dir);}}
       else if(b.lunge.t>.7)b.lunge=null;}
      const side=new T.Vector3(to.z,0,-to.x).multiplyScalar(b.strafe);if(!b.lunge){move.copy(side).addScaledVector(to,dist>ideal+4?1:dist<ideal-4?-.7:0);speed=dist>ideal+10?4.8:2.6;}
-     if(b.dodgeT>0&&!b.lunge){move.copy(side).multiplyScalar(1.6).addScaledVector(to,.2);speed=6.5;}
+     if(b.dodgeT>0&&!b.lunge){move.copy(side).multiplyScalar(1.6).addScaledVector(to,.2);speed=4.6;}
      const gun=b.weapons[id];
      if(gun.loaded<=0&&b.reloadT<=0){const r=b.reserve[w.ammo]||0;if(r>0){b.reloadT=id==='pump'?2.4:2;b.pendingReload=true;b.model.motion?.play?.('pistolReload',{mask:'upper',arms:true,fade:.12,speed:1.67/(id==='pump'?2.4:2)});}else{delete b.weapons[id];setBotWeapon(b,botBestWeapon(b));}}
      if(b.pendingReload&&b.reloadT<=0){const r=b.reserve[w.ammo]||0,take=Math.min(w.mag-gun.loaded,r);gun.loaded+=take;b.reserve[w.ammo]=r-take;b.pendingReload=false;}
@@ -605,10 +637,24 @@
     if(!blocked(next)&&next.x>B[0]+1&&next.x<B[1]-1&&next.z>B[2]+1&&next.z<B[3]-1){p.x=next.x;p.z=next.z;}
     else if(b.goal&&b.repath<=0){b.repath=1.5;b.path=findPath(p,b.goal);}
     b.stride=Math.min(1,b.stride+dt*4);}else b.stride=Math.max(0,b.stride-dt*4);
-   p.y=groundY(p.x,p.z);
+   {const y=feetY(p.x,p.z,p.y);p.y=y<p.y?Math.max(y,p.y-dt*9):y;} // steps up at once, falls off an edge rather than teleporting down
    const dh=((b.heading-b.root.rotation.y+Math.PI*3)%TAU)-Math.PI;b.root.rotation.y+=dh*Math.min(1,dt*8);
    if(animateNow(b))b.model.animate?.(clock,Math.min(1,b.stride*(speed/4.2)));
   }
+  // A bot's muzzle flash lights the bot and what stands beside it for a frame or two. One light, added once with the
+  // arena (while Beyond Eden loads) and never removed; it rests at intensity 0 and the nearest shot takes it. It lives in
+  // the arena group, not on the scene: worlds.js then draws it through its fixed pool of point lights (no change to the
+  // light count, so no shader recompiles), and night-road.js, which re-levels the scene's own lights, leaves it alone.
+  // As a point light it also takes the bake's lamp shadow in Beyond Eden (eden-baked-light.js).
+  let muzzleLight=null,muzzleT=0,muzzlePeak=0,muzzleHold=0;const MUZZLE_LIFE=.06,MUZZLE_POWER={pistol:6,smg:6,rifle:7.5,sniper:9,pump:9};
+  function botFlash(b,from,dir,w){
+   if(!muzzleLight)return;const d=from.distanceTo(camera.position);if(d>45)return;
+   // Another flash still burning nearer the camera keeps the light.
+   if(muzzleT>0&&muzzleLight.userData.d<d)return;
+   muzzleLight.position.copy(from).addScaledVector(dir,.7);muzzleLight.position.y+=.08; /* from is the grip: out past the muzzle, so the body is lit, not burnt */muzzleLight.userData.d=d;
+   muzzlePeak=(MUZZLE_POWER[w.id]||6)*rand(.85,1.15);muzzleT=MUZZLE_LIFE;muzzleLight.intensity=muzzlePeak;muzzleLight.color.setHSL(.085+rand(-.01,.01),1,.62);
+  }
+  function updateMuzzle(dt){if(!muzzleLight||muzzleT<=0)return;if(muzzleHold>0){muzzleHold-=dt;return;}muzzleT=Math.max(0,muzzleT-dt);const k=muzzleT/MUZZLE_LIFE;muzzleLight.intensity=muzzlePeak*k*k;}
   function botShoot(b,target,w,dist){
    const held=b.model.motion?.held?.()?.mesh,from=(held?.parent?held:b.hand).getWorldPosition(new T.Vector3()).add(new T.Vector3(0,.05,0));
    const aim=eyeOf(target);aim.y-=rand(.1,.55);
@@ -618,6 +664,7 @@
    const hit=Math.random()<p;
    const dir=aim.clone().sub(from).normalize();
    if(!hit){const off=new T.Vector3(rand(-1,1),rand(-.5,1),rand(-1,1)).multiplyScalar(dist*.04+.3);dir.copy(aim.clone().add(off).sub(from).normalize());}
+   botFlash(b,from,dir,w);
    const far=from.clone().addScaledVector(dir,w.range||120),wt=segBlocked(from,far),wallD=wt===null?999:wt*(w.range||120);
    const th=hit?hitTest(from,dir,wallD,b):null;
    if(th){const head=Math.random()<.12;const dmg=(w.botDmg??w.dmg)*(w.id==='pump'?clamp(1.3-dist/20,.3,1.2)*5:1)*(head?1.8:1);
@@ -970,7 +1017,7 @@
    const M=materials();doors=[];
    for(const lm of layout.landmarks){if(lm.id==='gardens')continue;
     for(const end of [-1,1]){const z=lm.z+end*lm.d/2,g=new T.Group();g.position.set(lm.x,groundY(lm.x,z),z);root.add(g);
-     const leaves=[-1,1].map(side=>{const pivot=new T.Group();pivot.position.set(side*1.62,0,0);g.add(pivot);const leaf=box(1.58,2.82,.07,M.wood,pivot,-side*.8,1.41,0);box(.06,.18,.12,M.brass,pivot,-side*1.45,1.15,0);return {pivot,leaf,side,a:0,v:0,gone:false};});
+     const leaves=[-1,1].map(side=>{const pivot=new T.Group();pivot.position.set(side*1.62,0,0);g.add(pivot);const leaf=box(1.58,2.82,.07,M.door||M.wood,pivot,-side*.8,1.41,0);box(.06,.18,.12,M.brass,pivot,-side*1.45,1.15,0);if(M.door){/* raised panels and iron straps, so a door has depth */for(const [py,ph] of [[.62,.9],[1.88,1.3]])for(const s2 of [1,-1])box(1.3,ph,.03,M.door,leaf,0,py-1.41,s2*.045).castShadow=false;for(const sy of [-.95,.95])box(1.5,.07,.02,M.doorIron,leaf,0,sy,.05).castShadow=false;}return {pivot,leaf,side,a:0,v:0,gone:false};});
      g.traverse(n=>{n.userData.noHit=true;});doors.push({g,end,lm,leaves,x:lm.x,z,brokenAt:0});}}
   }
   function smashDoor(d,dir,force=6){
@@ -1172,6 +1219,7 @@
   async function build(){
    if(built)return;built=true;loadReactions();
    root=new T.Group();root.name='Arena';scene.add(root);
+   muzzleLight=new T.PointLight(0xffa452,0,9,2);muzzleLight.name='Bot muzzle flash';muzzleLight.castShadow=false;root.add(muzzleLight);
    if(!window.GardenCharacterSchema){try{const r=await fetch('/character-schema.json?v=4');if(r.ok)window.GardenCharacterSchema=await r.json();}catch{}}
    buildGrid();
    hud=buildHud();
@@ -1210,7 +1258,7 @@
    }finally{entering=false;}
   }
   function suspend(){
-   if(!active)return;endHold(null);reactions?.clear();if(player){player.runPoint=null;player.ramUntil=0;player.impactPoint=null;player.impactAir=false;player.impactCharge=false;}active=false;suspended=true;savedArsenal=combat.arsenal.inspect();
+   if(!active)return;endHold(null);reactions?.clear();muzzleT=0;if(muzzleLight)muzzleLight.intensity=0;if(player){player.runPoint=null;player.ramUntil=0;player.impactPoint=null;player.impactAir=false;player.impactCharge=false;}active=false;suspended=true;savedArsenal=combat.arsenal.inspect();
    document.body.classList.remove('battle-on');hud?.el.classList.remove('on');o.setNight(null);combat.holster();if(garden.district?.watcher)garden.district.watcher.visible=false;combat.arsenal.set(null);combat.setHudMode('');
   }
   function resume(){
@@ -1235,7 +1283,7 @@
    updateHold();
    for(const b of bots){updateBot(b,dt);const p=b.root.position;if(dt>0)(b.vel??=new T.Vector3()).set((p.x-(b.px??p.x))/dt,0,(p.z-(b.pz??p.z))/dt);b.px=p.x;b.pz=p.z;}
    if(reactions)try{reactions.update(dt);}catch(error){console.warn('Physical hit reactions stopped; keeping procedural ones.',error);try{reactions.clear();}catch{}reactions=null;}
-   updateGlints(dt);
+   updateGlints(dt);updateMuzzle(dt);
    if(player)updatePlayer(dt);
    // Loot physics + idle motion
    for(const l of loot){
@@ -1282,7 +1330,7 @@
    inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,event:event&&{kind:event.kind,label:event.label},night:+nightLevel().toFixed(2),attendant:attendant&&{x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1),stunned:clock<attendant.stunUntil},pages:player?pagesOf(player):0,power:player?.power||0,pageState:pages.map(pg=>pg.state),delivered:pages.filter(pg=>pg.state==='delivered').length,pinged:pinged?nameOf(pinged):null,watcher:attendant&&{mode:attendant.mode,page:attendant.page?attendant.page.i:null,x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1)},templeOpen:templeOpen(),soul:!!player?.soul,nextEvent:+(nextEventAt-clock).toFixed(1),pads:pads.length,player:player&&{alive:player.alive,stomps:player.stomps||0,rams:player.rams||0,score:player.score||0,deaths:player.deaths||0,hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
     bots:bots.map(b=>({name:b.name,score:b.score||0,kills:b.kills||0,alive:b.alive,hp:Math.round(b.hp),shield:Math.round(b.shield),down:+(b.model.motion?.downAmount?.()||0).toFixed(2),state:b.state,weapon:b.weapon,armor:b.armor,x:+b.root.position.x.toFixed(1),z:+b.root.position.z.toFixed(1)})),
     zone:zone&&{phase:zone.phase,state:zone.state,r:+zone.r.toFixed(1),x:+zone.center.x.toFixed(1),z:+zone.center.z.toFixed(1)},chests:chests.filter(c=>c.open).length+'/'+chests.length,loot:loot.length,arsenal:combat.arsenal.inspect()}),
-   _debug:{get bots(){return bots;},get reactions(){return reactions;},get player(){return player;},get loot(){return loot;},get chests(){return chests;},interact,damage,god(v=true){godMode=v;},place:(x,z,lx,lz,dp=0)=>{o.placePlayer(x,z,lx,lz);combat.syncLook(dp);},skip(t){countdown=0;clock+=t||0;},setZone(r){if(zone){zone.r=r;}},get pages(){return pages;},get watcher(){return attendant;},dropPages,deliver,placePage,setPower,night(){const total=CYCLE.day+CYCLE.dusk+CYCLE.night+CYCLE.dawn;worldOffset+=CYCLE.day+CYCLE.dusk+1-worldClock()%total;},blood(v){bloodHit=v;}}
+   _debug:{get bots(){return bots;},get muzzleLight(){return muzzleLight;},shoot(b,target=player,hold=0){if(!(b?.alive&&target))return;botShoot(b,target,W(b.weapon==='axe'?'pistol':b.weapon),posOf(b).distanceTo(posOf(target)));muzzleHold=hold;},/* hold: keep the flash lit that long, for stills */get reactions(){return reactions;},get player(){return player;},get loot(){return loot;},get chests(){return chests;},interact,damage,god(v=true){godMode=v;},place:(x,z,lx,lz,dp=0)=>{o.placePlayer(x,z,lx,lz);combat.syncLook(dp);},skip(t){countdown=0;clock+=t||0;},setZone(r){if(zone){zone.r=r;}},get pages(){return pages;},get watcher(){return attendant;},dropPages,deliver,placePage,setPower,night(){const total=CYCLE.day+CYCLE.dusk+CYCLE.night+CYCLE.dawn;worldOffset+=CYCLE.day+CYCLE.dusk+1-worldClock()%total;},blood(v){bloodHit=v;}}
   };
  }
  root.createBattleArena=createArena;

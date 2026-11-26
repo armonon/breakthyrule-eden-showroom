@@ -9,11 +9,19 @@
 window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/assets/beyond-bake/',onShadowChange=()=>{}}={}){
  const shared=o=>{o.clone=()=>o;return o;};
  const grid=()=>{const t=new T.Data3DTexture(new Uint8Array(4),1,1,1);t.format=T.RGBAFormat;t.minFilter=t.magFilter=T.LinearFilter;t.wrapS=t.wrapT=t.wrapR=T.ClampToEdgeWrapping;t.unpackAlignment=1;t.needsUpdate=true;return shared(t);};
- const probeA=grid(),probeB=grid(),boxMin=shared(new T.Vector3()),boxSize=shared(new T.Vector3(1,1,1)),params=shared(new T.Vector3(0,1,1)); // x: strength (0 until loaded), y: scale, z: gain
+ // Each bake's two probe textures share one volume, B stacked on A along Y (one texture unit each instead of two: a
+ // material may use 16, and the lamp shadows need two of them).
+ const probeA=grid(),edenDims=shared(new T.Vector3(1,1,1)),boxMin=shared(new T.Vector3()),boxSize=shared(new T.Vector3(1,1,1)),params=shared(new T.Vector3(0,1,1)); // x: strength (0 until loaded), y: scale, z: gain
  const state={loaded:false,night:0,gain:1,enabled:true,world:'eden',beyondLoaded:false};
- const beyondA=grid(),beyondB=grid(),beyondMin=shared(new T.Vector3()),beyondSize=shared(new T.Vector3(1,1,1)),beyondParams=shared(new T.Vector3()),beyondBounds=shared(new T.Vector4());
+ const beyondA=grid(),beyondMin=shared(new T.Vector3()),beyondSize=shared(new T.Vector3(1,1,1)),beyondParams=shared(new T.Vector3()),beyondBounds=shared(new T.Vector4());
  // The two probe grids share one volume: where each sits in it (in texels), and the fine grid's box in the world (far away until loaded).
+ // Showroom-only tuning of the night (neutral by default, so the expedition page keeps its exact look): x = a moonlit sky
+ // floor added to the baked light (beyondFloor is its colour), y = a soft shoulder on bright baked light (lamp hot spots on
+ // walls a metre from a lamp), z = the live point lights' near softening radius squared (m^2), w = how far live lamp
+ // shadows also dim the baked light.
+ const beyondTune=shared(new T.Vector4()),beyondFloor=shared(new T.Color(.42,.52,.72));
  const beyondAtlas=shared(new T.Vector3(1,1,1)),beyondGridC=shared(new T.Vector3(1,1,1)),beyondGridD=shared(new T.Vector3(1,1,1)),beyondGridO=shared(new T.Vector3()),beyondDetailMin=shared(new T.Vector3(1e6,1e6,1e6)),beyondDetailSize=shared(new T.Vector3(1,1,1));
+ const stack=(a,b,nx,ny,nz)=>{const out=new Uint8Array(a.length*2),row=nx*ny*4;for(let z=0;z<nz;z++){out.set(a.subarray(z*row,(z+1)*row),z*row*2);out.set(b.subarray(z*row,(z+1)*row),z*row*2+row);}return out;};
  const image=()=>{const t=new T.DataTexture(new Uint8Array([0,0,0,255]),1,1);t.needsUpdate=true;return shared(t);};
  // Uniform values keep their object identity through UniformsUtils.clone; world changes
  // only mutate shared vectors/textures, never shader defines or material program keys.
@@ -23,16 +31,29 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
  function registerStatic(root){root.traverse(o=>{if(!o.isMesh||o.isSkinnedMesh||o.userData.noHit)return;for(let p=o;p;p=p.parent)if(p.userData.dynamicShadow)return;if(!staticCasters.has(o))staticCasters.set(o,o.castShadow);if(staticOff)o.castShadow=false;});}
  function unregisterStatic(root){root.traverse(o=>{const cast=staticCasters.get(o);if(cast!==undefined)o.castShadow=cast;staticCasters.delete(o);});}
 
- const uniforms={edenProbeA:{value:probeA},edenProbeB:{value:probeB},edenProbeMin:{value:boxMin},edenProbeSize:{value:boxSize},edenBake:{value:params}};
- Object.assign(uniforms,{beyondProbeA:{value:beyondA},beyondProbeB:{value:beyondB},beyondMin:{value:beyondMin},beyondSize:{value:beyondSize},beyondBake:{value:beyondParams},beyondGround:{value:beyondGround},beyondSun:{value:beyondSun},beyondBounds:{value:beyondBounds},beyondAtlas:{value:beyondAtlas},beyondGridC:{value:beyondGridC},beyondGridD:{value:beyondGridD},beyondGridO:{value:beyondGridO},beyondDetailMin:{value:beyondDetailMin},beyondDetailSize:{value:beyondDetailSize}});
+ const uniforms={edenProbeA:{value:probeA},edenProbeN:{value:edenDims},edenProbeMin:{value:boxMin},edenProbeSize:{value:boxSize},edenBake:{value:params}};
+ Object.assign(uniforms,{beyondTune:{value:beyondTune},beyondFloor:{value:beyondFloor},beyondProbeA:{value:beyondA},beyondMin:{value:beyondMin},beyondSize:{value:beyondSize},beyondBake:{value:beyondParams},beyondGround:{value:beyondGround},beyondSun:{value:beyondSun},beyondBounds:{value:beyondBounds},beyondAtlas:{value:beyondAtlas},beyondGridC:{value:beyondGridC},beyondGridD:{value:beyondGridD},beyondGridO:{value:beyondGridO},beyondDetailMin:{value:beyondDetailMin},beyondDetailSize:{value:beyondDetailSize}});
  Object.assign(T.ShaderLib.standard.uniforms,uniforms);Object.assign(T.ShaderLib.physical.uniforms,uniforms);
- T.ShaderChunk.lights_physical_pars_fragment=`uniform highp sampler3D edenProbeA,edenProbeB;uniform vec3 edenProbeMin,edenProbeSize,edenBake;\nuniform highp sampler3D beyondProbeA,beyondProbeB;uniform sampler2D beyondGround,beyondSun;uniform vec3 beyondMin,beyondSize,beyondBake,beyondAtlas,beyondGridC,beyondGridD,beyondGridO,beyondDetailMin,beyondDetailSize;uniform vec4 beyondBounds;\n`+T.ShaderChunk.lights_physical_pars_fragment;
+ // A lamp is not a point: its glass and housing spread it, so a wall a metre away is bright, not white. The live point
+ // lights' falloff reads the distance as sqrt(d^2 + r^2) (r^2 = beyondTune.z, 0 = three's own falloff everywhere else).
+ {const pars=T.ShaderChunk.lights_pars_begin,at='getDistanceAttenuation( lightDistance, pointLight.distance, pointLight.decay )';
+  if(pars.includes(at))T.ShaderChunk.lights_pars_begin='uniform vec4 beyondTune;\n'+pars.replace(at,'getDistanceAttenuation( sqrt( lightDistance * lightDistance + beyondTune.z ), pointLight.distance, pointLight.decay )');}
+ T.ShaderChunk.lights_physical_pars_fragment=`uniform highp sampler3D edenProbeA;uniform vec3 edenProbeMin,edenProbeSize,edenBake,edenProbeN;\nuniform highp sampler3D beyondProbeA;uniform sampler2D beyondGround,beyondSun;uniform vec3 beyondMin,beyondSize,beyondBake,beyondAtlas,beyondGridC,beyondGridD,beyondGridO,beyondDetailMin,beyondDetailSize,beyondFloor;uniform vec4 beyondBounds;\n`+T.ShaderChunk.lights_physical_pars_fragment;
  // The live lights are added in a fixed order (point, spot, directional). Noting the running total between them lets the
  // bake shade each kind with its own static shadow: lamps and altar lights, the chest light, the moon.
  {const begin=T.ShaderChunk.lights_fragment_begin,spot='#if ( NUM_SPOT_LIGHTS > 0 ) && defined( RE_Direct )',dir='#if ( NUM_DIR_LIGHTS > 0 ) && defined( RE_Direct )';
   if(begin.split(spot).length===2&&begin.split(dir).length===2&&begin.indexOf(spot)<begin.indexOf(dir)){
    T.ShaderChunk.lights_fragment_begin=begin.replace(spot,'#ifdef STANDARD\nvec3 beyondPointD=reflectedLight.directDiffuse,beyondPointS=reflectedLight.directSpecular;\n#endif\n'+spot).replace(dir,'#ifdef STANDARD\nvec3 beyondLocalD=reflectedLight.directDiffuse,beyondLocalS=reflectedLight.directSpecular;\n#endif\n'+dir);
    T.ShaderChunk.lights_physical_pars_fragment='#define BEYOND_SPLIT\n'+T.ShaderChunk.lights_physical_pars_fragment;}}
+ // Live lamp shadows (night-district.js, desktop High) fall only from what moves, but most of a lamp's light near it is in
+ // the bake, which they cannot shade. The point-light loop notes how much of the live lamp light each pixel loses to
+ // them, and the bake's light there is dimmed by that fraction (beyondTune.w: how far), so a figure under a lamp throws
+ // a shadow that reads.
+ {const begin=T.ShaderChunk.lights_fragment_begin,shade='directLight.color *= ( directLight.visible && receiveShadow ) ? getPointShadow(';
+  const i=begin.indexOf(shade),end=i<0?-1:begin.indexOf(';',begin.indexOf(')',i+shade.length)+1);
+  if(i>=0&&end>0&&begin.split(shade).length===2){const call=begin.slice(i+'directLight.color *= '.length,end);
+   T.ShaderChunk.lights_fragment_begin='float beyondShadeW=0.,beyondLitW=0.;\n'+begin.slice(0,i)+'{float beyondSh='+call+';float beyondW=dot(directLight.color,vec3(.333))*saturate(dot(geometryNormal,directLight.direction));beyondLitW+=beyondW;beyondShadeW+=beyondW*(1.-beyondSh);directLight.color*=beyondSh;}'+begin.slice(end+1);
+   T.ShaderChunk.lights_physical_pars_fragment='#define BEYOND_LAMP_SHADE\n'+T.ShaderChunk.lights_physical_pars_fragment;}}
  T.ShaderChunk.lights_fragment_maps+=`
  #if defined(RE_IndirectDiffuse)&&defined(STANDARD)
  #ifdef USE_LIGHTMAP
@@ -45,7 +66,7 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
    irradiance-=lightMapIrradiance;
   #else
    vec3 edenN=edenInvView*geometryNormal,edenUvw=(edenW-edenProbeMin)/edenProbeSize,edenE=smoothstep(vec3(0.),vec3(.06),edenUvw)*smoothstep(vec3(0.),vec3(.06),1.-edenUvw);
-   vec4 edenA=texture(edenProbeA,edenUvw);vec3 edenD=texture(edenProbeB,edenUvw).xyz*2.-1.;
+   vec3 edenQ=clamp(edenUvw*edenProbeN,vec3(.5),edenProbeN-.5)/edenProbeN*vec3(1.,.5,1.);vec4 edenA=texture(edenProbeA,edenQ);vec3 edenD=texture(edenProbeA,edenQ+vec3(0.,.5,0.)).xyz*2.-1.;
    edenBaked=edenA.rgb*edenA.rgb*edenBake.y*max(1.+dot(edenD,edenN),.05);edenFade=edenE.x*edenE.z*smoothstep(0.,.02,edenUvw.y+.02);
   #endif
   float edenMix=edenFade*edenBake.x;
@@ -73,12 +94,18 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
    // Probes are read a little off the surface, so a wall does not pick up the dark inside itself (further above a step or
    // table top, whose thin slab would otherwise shade itself).
    vec3 cu=clamp((w+n*.5-beyondMin)/beyondSize*beyondGridC,vec3(.5),beyondGridC-.5)/beyondAtlas;
-   vec4 a=texture(beyondProbeA,cu),b=texture(beyondProbeB,cu);
+   vec4 a=texture(beyondProbeA,cu),b=texture(beyondProbeA,cu+vec3(0.,.5,0.));
    // The fine grid over the courtyard and altar takes over inside its box.
    vec3 du=(w+n*mix(.25,.95,smoothstep(.65,.9,n.y))-beyondDetailMin)/beyondDetailSize,de=smoothstep(vec3(0.),vec3(.08),du)*smoothstep(vec3(0.),vec3(.08),1.-du);float fine=de.x*de.z*smoothstep(0.,.1,1.-du.y);
-   if(fine>0.){du=(beyondGridO+clamp(du*beyondGridD,vec3(.5),beyondGridD-.5))/beyondAtlas;a=mix(a,texture(beyondProbeA,du),fine);b=mix(b,texture(beyondProbeB,du),fine);}
+   if(fine>0.){du=(beyondGridO+clamp(du*beyondGridD,vec3(.5),beyondGridD-.5))/beyondAtlas;a=mix(a,texture(beyondProbeA,du),fine);b=mix(b,texture(beyondProbeA,du+vec3(0.,.5,0.)),fine);}
    light=a.rgb*a.rgb*a.rgb*beyondBake.y*max(1.+dot(b.xyz*2.-1.,n),.05);vis=b.w;local=a.a;
   }
+  // The camera's view of the night (beyondTune, 0 on the expedition page): bright baked light rolls off softly (lamp hot
+  // spots), and a little moonlit sky comes down everywhere, more on what faces up, less where things meet the ground.
+  light/=1.+dot(light,vec3(.333))*beyondTune.y;light+=beyondFloor*beyondTune.x*(.6+.4*n.y)*contact;
+  #ifdef BEYOND_LAMP_SHADE
+  if(beyondLitW>1e-4)light*=1.-beyondTune.w*beyondShadeW/beyondLitW;
+  #endif
   irradiance=mix(irradiance,light*beyondBake.z,amount);
   // Static shadows from the bake on the live lights; moving characters still cast onto the ground and each other in
   // the tight live moon map. Lamps and altar lights take their own baked shadow, the chest light a touch of contact
@@ -115,10 +142,10 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
    const [nx,ny,nz]=meta.atlas,n=nx*ny*nz,bytes=new Uint8Array(bin);if(bytes.length!==n*8)throw Error('Invalid Beyond probe data');
    const a=new Uint8Array(n*4),b=new Uint8Array(n*4);for(let i=0;i<n;i++){a.set(bytes.subarray(i*8,i*8+4),i*4);b.set(bytes.subarray(i*8+4,i*8+8),i*4);}
    probes={a,b,nx,ny,nz,coarse:meta.grids.coarse,detail:meta.grids.detail,scale:meta.scale};
-   for(const [texture,data] of [[beyondA,a],[beyondB,b]]){texture.dispose();texture.image={data,width:nx,height:ny,depth:nz};texture.needsUpdate=true;}
+   beyondA.dispose();beyondA.image={data:stack(a,b,nx,ny,nz),width:nx,height:ny*2,depth:nz};beyondA.needsUpdate=true;
    for(const [texture,loaded] of [[beyondGround,ground],[beyondSun,sun]]){texture.dispose();texture.isDataTexture=false;texture.image=loaded.image;texture.colorSpace=T.NoColorSpace;texture.flipY=true;texture.generateMipmaps=true;texture.minFilter=T.LinearMipmapLinearFilter;texture.magFilter=T.LinearFilter;texture.anisotropy=4;texture.needsUpdate=true;loaded.dispose();}
    // Voxel centres: texel 0 sits half a texel inside each grid's box.
-   const coarse=meta.grids.coarse,detail=meta.grids.detail;beyondAtlas.set(nx,ny,nz);
+   const coarse=meta.grids.coarse,detail=meta.grids.detail;beyondAtlas.set(nx,ny*2,nz);
    beyondMin.set(...coarse.min.map((v,i)=>v-coarse.step[i]/2));beyondSize.set(...coarse.dims.map((k,i)=>k*coarse.step[i]));beyondGridC.set(...coarse.dims);
    if(detail){beyondDetailMin.set(...detail.min.map((v,i)=>v-detail.step[i]/2));beyondDetailSize.set(...detail.dims.map((k,i)=>k*detail.step[i]));beyondGridD.set(...detail.dims);beyondGridO.set(...detail.offset);}
    const [x0,x1,z0,z1]=meta.bounds;beyondBounds.set(x0,z0,x1-x0,z1-z0);beyondParams.y=meta.scale;state.beyondLoaded=true;state.beyondScale=meta.scale;apply();return meta;
@@ -129,7 +156,7 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
    const [meta,bin]=await Promise.all([fetch(url+'bake.json').then(r=>{if(!r.ok)throw Error(r.status);return r.json();}),fetch(url+'probes.bin').then(r=>{if(!r.ok)throw Error(r.status);return r.arrayBuffer();})]);
    const [nx,ny,nz]=meta.dims,bytes=new Uint8Array(bin),n=nx*ny*nz,a=new Uint8Array(n*4),b=new Uint8Array(n*4);
    for(let i=0;i<n;i++){a.set(bytes.subarray(i*8,i*8+4),i*4);b.set(bytes.subarray(i*8+4,i*8+8),i*4);}
-   for(const [t,data] of [[probeA,a],[probeB,b]]){t.image={data,width:nx,height:ny,depth:nz};t.needsUpdate=true;}
+   probeA.image={data:stack(a,b,nx,ny,nz),width:nx,height:ny*2,depth:nz};probeA.needsUpdate=true;edenDims.set(nx,ny,nz);
    // voxel centres: texel 0 sits half a texel inside the texture
    const size=[nx,ny,nz].map((k,i)=>k*meta.step[i]);boxMin.set(meta.min[0]-meta.step[0]/2,meta.min[1]-meta.step[1]/2,meta.min[2]-meta.step[2]/2);boxSize.set(...size);
    params.y=meta.scale;state.loaded=true;state.scale=meta.scale;apply();return meta;
@@ -148,6 +175,11 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
    for(let c=0;c<8;c++){const q=[c&1,c>>1&1,c>>2&1],w=q.reduce((m,v,i)=>m*(v?t[i]:1-t[i]),1),k=((o[2]+i0[2]+q[2])*ny+o[1]+i0[1]+q[1])*nx+o[0]+i0[0]+q[0];for(let j=0;j<4;j++){sum[j]+=a[k*4+j]*w/255;sum[4+j]+=b[k*4+j]*w/255;}}
    const s=probes.scale*beyondParams.z;out.color.setRGB(sum[0]**3*s,sum[1]**3*s,sum[2]**3*s);out.direction.set(sum[4]*2-1,sum[5]*2-1,sum[6]*2-1);out.lamps=sum[3];out.moon=sum[7];return true;
   },
+  // The showroom's night look (see beyondTune): floor (sky light added, irradiance), knee (roll-off of bright baked light),
+  // near (the live point lights' softening radius, m), shade (live lamp shadows dim the bake too, 0..1). All 0 by default.
+  tune({floor=0,knee=0,near=0,shade=0}={}){beyondTune.set(floor,knee,near*near,shade);},
+  // The probe volume and its placement, for screen passes that read the bake (eden-post.js light cones). Null until loaded.
+  volume:()=>probes?{texture:beyondA,min:beyondMin,size:beyondSize,grid:beyondGridC,atlas:beyondAtlas,detailMin:beyondDetailMin,detailSize:beyondDetailSize,detailGrid:beyondGridD,detailOffset:beyondGridO}:null,
   dynamicShadowOnly:()=>staticOff,
   setNight(v){if(v!==state.night){state.night=v;apply();}},
   set(next){Object.assign(state,next);apply();},

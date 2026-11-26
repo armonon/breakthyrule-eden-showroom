@@ -8,7 +8,7 @@ window.GardenCharacter = {
   if(ghost||!a||!rocketbox)return this.createClassic(T,a,ghost);
   const id=rocketbox.idFor(a),holder=rocketbox.loaded(id)?this.createHolder(T,a):this.createClassic(T,a,false);
   const handle={motion:holder.motion,skeleton:holder.skeleton,parts:[...holder.root.children],owner:holder,disposed:false};
-  holder.handle=handle;holder.motion=new Proxy({},{get:(_,key)=>handle.motion[key]});holder.animate=(...args)=>handle.motion.animate(...args);
+  holder.handle=handle;holder.motion=new Proxy({},{get:(_,key)=>handle.motion[key],set:(_,key,value)=>{handle.motion[key]=value;return true;}});holder.animate=(...args)=>handle.motion.animate(...args);
   GardenCharacterMotion.bodies.add(holder);
   if(rocketbox.loaded(id))this.fit(T,holder,id,a);
   else rocketbox.load(id).then(()=>{if(!handle.disposed)this.fit(T,holder,id,a);}).catch(()=>{});

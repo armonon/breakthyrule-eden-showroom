@@ -438,7 +438,8 @@ box('office-roof', (OX0 - .08, OH, OZ0), (OX1, OH + .2, OZ1 + .08), 'concrete')
 box('office-floor', (OX0, .03, OZ0), (OX1, .05, OZ1), 'apron', solid=False)
 CEILINGS.append([OX0, OX1, OZ0, OZ1, OH]); INTERIORS.append([OX0, OX1, OZ0, OZ1])
 # Lockers along the corridor.
-for i in range(8): box('locker', (14 + i * .62, 0, 12.1), (14.58 + i * .62, 1.9, 12.6), 'locker')
+if 'locker-bank' not in MODLY:
+    for i in range(8): box('locker', (14 + i * .62, 0, 12.1), (14.58 + i * .62, 1.9, 12.6), 'locker')
 # Holding pen (south-east): steel fences on the kill-floor side with the gate gap at z 32..37; cattle enter from the race.
 PEN = dict(minX=7.5, maxX=24.5, minZ=25.5, maxZ=46.5)
 rail_fence(6, 24, 6, 32, 1.5, name='pen'); rail_fence(6, 37, 6, BZ1 - T / 2, 1.5, name='pen'); rail_fence(6, 24, BX1 - T / 2, 24, 1.5, name='pen')
@@ -623,22 +624,78 @@ for (x, z) in [(-20, 42), (-11, 42)]: lamp((x, 3.9, z), 0xbfe6ff, 26, 14, .2, [1
 lamp((16, 3.0, 6), 0xfff0d8, 30, 14, 0, [1.2, .05, .3])           # office
 lamp((16, 5.6, 36), 0xd8f0e6, 30, 22, .5, [1.9, .05, .12])        # pen
 
-# Generated hero pieces, placed by the game: [name, x, y, z, yaw, scale, part] with the name 'modly:<file>'.
-def modly(name, x, y, z, yaw=0.0, scale=1.0):
-    if name in MODLY: PROPS.append(['modly:' + name, x, y, z, yaw, scale, None])
-for z in (12, 14.5, 17, 25, 27.5, 31):                                   # sides on the bleed rail (bar along the rail)
-    modly('beef-half-carcass', -12, RAIL_Y - 2.42, z, math.pi / 2 + random.uniform(-.06, .06), random.uniform(.95, 1.03))
-for zz in (39, 42, 45):                                                  # the chiller: rows of sides
+# Generated hero pieces, placed by the game: [name, x, y, z, yaw, scale, anchor] with the name 'modly:<file>'. The
+# game anchors each by its bounding box: base centre, or top centre for hanging things (anchor 'top').
+# SIZE is each piece's footprint and height in metres (w along x, d along z at yaw 0), for collision.
+SIZE = {'hide-puller': (2.5, 1.6, 3.5), 'boning-table': (2.0, 1.5, 2.45), 'viscera-table': (1.2, 2.4, 1.07), 'bandsaw-meat': (1.2, 1.3, 1.9),
+        'locker-bank': (2.0, 1.8, 1.9), 'safety-cabinet': (1.1, 1.2, 1.8), 'ice-machine': (.62, .51, 1.2), 'splitting-platform': (2.0, 2.3, 2.0),
+        'pallet-cartons': (1.2, 1.2, .83), 'bleeding-trough': (1.1, 2.5, 1.2), 'blood-tank-small': (.92, .93, 1.2), 'apron-wash': (1.0, .5, 1.84),
+        'mincer': (.31, .44, .6), 'inspection-stand': (.48, .54, 1.5)}
+def modly(name, x, y, z, yaw=0.0, scale=1.0, anchor=None, solid=False):
+    if name not in MODLY: return False
+    PROPS.append(['modly:' + name, round(x, 3), round(y, 3), round(z, 3), round(yaw, 3), scale, anchor])
+    if solid and name in SIZE:
+        w, d, h = (v * scale for v in SIZE[name])
+        if abs(math.sin(yaw)) > .7: w, d = d, w
+        solid_only((x - w / 2, y, z - d / 2), (x + w / 2, y + h * .92, z + d / 2))
+    return True
+def loose_modly(name, x, z, yaw=0.0, scale=1.0, mass=20, y=0):
+    if name in MODLY: LOOSE.append(['modly:' + name, x, z, yaw, scale, mass, None, y])
+R = random.Random(5)
+# ---- carcasses: sides on the bleed rail, rows in the chiller with quarters, pork and lamb on the last rail
+for z in (12, 14.5, 17, 25, 27.5, 31): modly('beef-half-carcass', -12, RAIL_Y - .05, z, math.pi / 2 + R.uniform(-.06, .06), R.uniform(.95, 1.03), 'top')
+for zz in (39, 42):
     for x in [-23.3 + i * 2.5 for i in range(7)]:
-        if random.random() < .12: continue
-        modly('beef-half-carcass', x + random.uniform(-.15, .15), 3.3 - 2.42, zz, random.uniform(-.08, .08) + (math.pi if random.random() < .5 else 0), random.uniform(.95, 1.04))
+        if R.random() < .12: continue
+        modly('beef-half-carcass', x + R.uniform(-.15, .15), 3.28, zz, R.uniform(-.08, .08) + (math.pi if R.random() < .5 else 0), R.uniform(.95, 1.04), 'top')
+for i, x in enumerate([-23.6 + k * 1.45 for k in range(12)]):
+    kind = ('beef-quarter', 'pork-half', 'lamb-carcass', 'beef-quarter')[i % 4]
+    if not modly(kind, x, 3.28, 45, R.uniform(-.3, .3), R.uniform(.95, 1.05), 'top'): modly('beef-half-carcass', x, 3.28, 45, 0, 1, 'top')
+for z in range(10, 35, 3): modly('rail-trolley-hook', -17.5, 3.42, z, math.pi / 2, 1.0, 'top')
+modly('scales-hanging', -22, 3.28, 37.4, 0, 1.2, 'top'); modly('chain-hoist', -12, RAIL_Y - .02, 6.2, 0, 1.3, 'top')
+# ---- the line: knocking box, bleeding troughs under the rail, hide puller, split saw, platform, tables, saws
 modly('knocking-box', 3.7, 0, 21.5, 0, 1.12)
-modly('chain-hoist', -12, RAIL_Y - 1.0, 6.2, math.pi / 2, 1.0)
+for z in (9.5, 13.2): modly('bleeding-trough', -12, .05, z, 0, 1.0, solid=True)
+modly('blood-tank-small', -10, .05, 6.6, 0, 1.0, solid=True)
+HIDE = modly('hide-puller', -19, .05, 16, math.pi / 2, 1.0, solid=True)
+SAW = modly('splitting-saw', -15.5, 3.3, 27.5, .4, 1.0, 'top')
+modly('splitting-platform', -21.5, .05, 23, 0, 1.0, solid=True)
+modly('boning-table', -7, .05, 32.5, 0, 1.0, solid=True); modly('boning-table', -3.6, .05, 32.5, 0, 1.0, solid=True)
+modly('viscera-table', -21.5, .05, 11.5, 0, 1.0, solid=True); modly('viscera-table', -7.5, .05, 17.5, math.pi / 2, 1.0, solid=True)
+modly('inspection-stand', -9.6, .05, 19.2, .4, 1.0, solid=True)
+modly('bandsaw-meat', -.6, .05, 33.6, math.pi, 1.0, solid=True); modly('mincer', 1.6, .05, 34, 0, 1.9, solid=True)
+for (n, x, y, z, yaw) in (('cleaver', -7.3, .96, 32.4, .5), ('butcher-knife-set', -6.5, .96, 32.7, 0), ('cutting-board-stack', -3.9, .96, 32.4, .2), ('bone-saw-hand', -3.2, .96, 32.6, 1.2),
+                          ('brisket-saw', -21.5, 1.1, 11.2, .7), ('stunner-cartridges', -7.6, 1.1, 17.3, 0), ('captive-bolt-stunner', 3.2, 2.1, 19.75, 0)): modly(n, x, y, z, yaw)
+# ---- hygiene and services along the west wall; drains in the floor
+for z in (10.2, 19.2, 28.2): modly('knife-steriliser', BX0 + T / 2 + .14, 1.0, z, math.pi / 2)
+for z in (11.3, 29.3): modly('hand-wash-basin', BX0 + T / 2 + .3, .85, z, math.pi / 2)
+modly('apron-wash', BX0 + T / 2 + .3, .05, 23.2, math.pi / 2, 1.0, solid=True); modly('pressure-washer', -24.3, .05, 5, .6)
+modly('safety-cabinet', BX0 + T / 2 + .65, .05, 32.2, math.pi / 2, 1.0, solid=True); modly('ice-machine', -24.9, .05, 34.6, math.pi / 2, 1.0, solid=True)
+modly('squeegee', -25.3, .05, 21, 0); modly('meat-hooks-rack', -8, 1.9, BZ0 + T / 2 + .1, 0); modly('meat-hooks-rack', -15, 1.9, BZ0 + T / 2 + .1, 0)
+modly('emergency-stop', -12.9, .9, 6.0, 0, 1.6); modly('emergency-stop', 1.6, .9, 19.3, 0, 1.6)
+for (x, z) in ((-6, 12), (-20, 20), (0, 28), (-18, 31)): modly('floor-drain', x, .046, z, 0)
+modly('drain-channel', -12, .046, 4.6, 0); modly('floor-drain', -15, .032, 42, 0); modly('floor-drain', -10, .032, 40, 0)
+modly('cold-room-thermometer', -10.3, 1.6, CZ0 - .13, 0, 1.4)
+modly('boot-wash', 2.6, .05, 1.4, 0, 1.0); modly('boot-wash', 7.2, .05, 13.2, 0, 1.0)
+# ---- doors and curtains; lockers and aprons in the corridor; lamps outside
 modly('chiller-door', CX1 + .15, 0, 41, math.pi / 2, 1.0); modly('chiller-door', -19, 0, BZ1 - T / 2 - .2, 0, 1.0)
+modly('strip-curtain', BX1, 0, 31.3, math.pi / 2, .9); modly('swing-door-plastic', BX1, 0, 15.9, math.pi / 2, 1.05); modly('swing-door-plastic', OX0, 0, 9.6, math.pi / 2, .82)
+LOCKERS = modly('locker-bank', 15.2, .05, 13.2, 0, 1.0, solid=True); modly('locker-bank', 17.6, .05, 13.2, 0, 1.0, solid=True); modly('safety-cabinet', 24.9, .05, 20, -math.pi / 2, 1.0, solid=True)
+for x in (10, 11.2, 12.4): modly('apron-chainmail', x, 1.9, OZ1 + .14, 0, 1.0, 'top')
+for (x, y, z, yaw) in ((-10, 3.4, BZ0 - T / 2 - .12, math.pi), (10, 3.4, BZ0 - T / 2 - .12, math.pi), (BX1 + T / 2 + .12, 3.2, 22, math.pi / 2), (BX0 - T / 2 - .12, 3.2, 30, -math.pi / 2), (0, 3.2, BZ1 + T / 2 + .12, 0)): modly('caged-wall-lamp', x, y, z, yaw, 1.3)
+# ---- race, lairage gates, the pickup wreck; pallets of boxed beef in the chiller and on the dock
 for z in (29.6, 33):
     for x in (27.45, 29.35): modly('cattle-race-panel', x, 0, z, math.pi / 2, 1.0)
 for z in (14, 24, 34): modly('cattle-gate', LX1 - 2, 0, z, 0, 1.25)
 modly('old-pickup', -40, 0, -46, .35, .86)
+for (x, y, z) in ((-8.3, .034, 46.4), (-8.3, .034, 44.9), (-30, 1.3, 9), (-31.5, 1.3, 11), (-33, 1.3, 23)): modly('pallet-cartons', x, y, z, R.uniform(-.1, .1), 1.0, solid=True)
+# ---- loose things you can knock about: trolleys, bins, tubs, buckets, the pallet jack, cartons
+for (n, x, z, yaw, m) in (('meat-trolley', -14, 33.2, .3, 35), ('meat-trolley', -9.4, 34.4, 1.2, 35), ('meat-trolley', -10.5, 38.2, 0, 35), ('offal-bin', -24.2, 15, 0, 25), ('offal-bin', -24.2, 16.1, .2, 25),
+                          ('offal-bin', 3.6, 30, 1, 25), ('offal-bin', 11.5, 50, 0, 25), ('meat-tubs-stack', -4.6, 28.6, 0, 30), ('meat-tub', -22.8, 30, 0, 12), ('meat-tub', -2, 30.4, .5, 12),
+                          ('bucket-steel', -13.6, 10.4, 0, 6), ('bucket-steel', -10.8, 24, 0, 6), ('bucket-steel', 3.2, 26.6, 0, 6), ('bucket-steel', -20, 29, 0, 6), ('pallet-jack', -10.6, 45.2, .4, 60),
+                          ('carton-boxed-beef', -9.2, 35.2, .3, 14), ('shackle-chain', 1, 24.6, .8, 9), ('shackle-chain', -13.2, 7.2, 2, 9)): loose_modly(n, x, z, yaw, 1.0, m)
+for (x, z) in ((-29, 14), (-29.6, 14.4), (-31, 20)): loose_modly('carton-boxed-beef', x, z, R.uniform(0, 3), 1.0, 14, 1.3)
+loose_modly('pallet-jack', -32, 18, 1.2, 1.0, 60, 1.3)
 
 # Freerunning: drainpipes to the eaves on every side, a rope from the trusses, bars across the yard; hay to leap into
 # and hide in. parkour.js reads GRIPS (the same format as parkour-grips.js).
@@ -736,12 +793,14 @@ decal('pool', 3, .025, 55, 5, 3, .2); decal('smear', 16, .025, 53.6, 6, 1.8, 0);
 decal('dry', 40, .03, -3, 3, 5, 0)                                                   # trailer ramp
 # Kill-floor equipment from real layouts: a hide puller frame at the dressing rail, the split saw on the platform,
 # knife steriliser boxes, a wash-hand basin, the stun box's shackle hoist.
-box('hide-puller', (-19.4, 0, 14), (-18.6, 3.2, 14.6), 'stainless', group='kit'); box('hide-puller', (-19.4, 0, 17.4), (-18.6, 3.2, 18), 'stainless', group='kit')
-cyl('hide-puller-drum', (-19, .6, 14.3), (-19, .6, 17.7), .35, 'stainless', 16); box('hide-puller-chain', (-19.05, .9, 15.9), (-18.95, 3.3, 16.1), 'chain', group='kit', solid=False)
-obox('split-saw', (-15.5, 3.0, 27.5), (.18, .55, .3), rot_z(.3), 'stainless'); cyl('split-saw-cable', (-15.5, 3.55, 27.5), (-15.5, H - .2, 27.5), .02, 'chain', 6)
+if 'hide-puller' not in MODLY:
+    box('hide-puller', (-19.4, 0, 14), (-18.6, 3.2, 14.6), 'stainless', group='kit'); box('hide-puller', (-19.4, 0, 17.4), (-18.6, 3.2, 18), 'stainless', group='kit')
+    cyl('hide-puller-drum', (-19, .6, 14.3), (-19, .6, 17.7), .35, 'stainless', 16); box('hide-puller-chain', (-19.05, .9, 15.9), (-18.95, 3.3, 16.1), 'chain', group='kit', solid=False)
+if 'splitting-saw' not in MODLY: obox('split-saw', (-15.5, 3.0, 27.5), (.18, .55, .3), rot_z(.3), 'stainless')
+cyl('split-saw-cable', (-15.5, 3.3, 27.5), (-15.5, H - .2, 27.5), .02, 'chain', 6)
 for z in (10, 19, 28):
-    box('steriliser', (BX0 + .2, 1.0, z), (BX0 + .5, 1.4, z + .5), 'stainless', group='kit', solid=False)
-    box('basin', (BX0 + .2, .8, z + .9), (BX0 + .7, 1.0, z + 1.6), 'stainless', group='kit', solid=False)
+    if 'knife-steriliser' not in MODLY: box('steriliser', (BX0 + .2, 1.0, z), (BX0 + .5, 1.4, z + .5), 'stainless', group='kit', solid=False)
+    if 'hand-wash-basin' not in MODLY: box('basin', (BX0 + .2, .8, z + .9), (BX0 + .7, 1.0, z + 1.6), 'stainless', group='kit', solid=False)
 
 # ---------------------------------------------------------------------------------------------------- wear and services
 rw = random.Random(91)

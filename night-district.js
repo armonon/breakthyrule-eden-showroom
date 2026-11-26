@@ -11,6 +11,11 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
  const velvet=new T.MeshStandardMaterial({color:0x621f36,roughness:1});
  const glow=new T.MeshStandardMaterial({color:0xe6cd9e,emissive:0xffb34f,emissiveIntensity:.7,roughness:.45});
  const water=new T.MeshStandardMaterial({color:0x214f50,metalness:.65,roughness:.2});
+ // Beyond Eden's own build (not the expedition page, which keeps its look): the architectural uplight washes only the
+ // chosen facades (the temple's and theatre's fronts and the hotel's entrance), everything else is moonlit stone and
+ // plaster. matrix-world.js honours a material's userData.mxWash over the wash its caller asks for.
+ const OLD=!!document.body?.classList.contains('expedition-entry'),WASHED=new Set(['temple','playhouse','hotel']);
+ if(!OLD)for(const m of [plaster,marble,charcoal,brass,copper,velvet,glow,water])m.userData.mxWash=false;
  const walls=[],lamps=[],staticRoot=new T.Group(),surfaces=[],climbs=[];
  let gridOf=null;function wallGrid(){if(gridOf&&gridOf.n===walls.length&&gridOf.a===walls[0]&&gridOf.b===walls[walls.length-1])return gridOf;const cells=new Map();for(const W of walls){const m=.3,x0=Math.floor((W[0]-W[2]/2-m)/4),x1=Math.floor((W[0]+W[2]/2+m)/4),z0=Math.floor((W[1]-W[3]/2-m)/4),z1=Math.floor((W[1]+W[3]/2+m)/4);for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++){const k=x+','+z;let c=cells.get(k);if(!c)cells.set(k,c=[]);c.push(W);}}return gridOf={n:walls.length,a:walls[0],b:walls[walls.length-1],cells};}
  const ROOFS=window.edenRoofs||{},eaveOf=s=>ROOFS[s.id]?.eave??s.h;root.add(staticRoot);
@@ -44,7 +49,7 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
  },modelState={},pendingModels=[];
  for(const s of layout.landmarks){
   const p=new T.Group();p.name=s.name;p.position.set(s.x,0,s.z);staticRoot.add(p);p.updateWorldMatrix(true,false);
-  const facade=plaster.clone();facade.color.set(s.color);
+  const facade=plaster.clone();facade.color.set(s.color);if(!OLD)facade.userData.mxWash=WASHED.has(s.id);
   box(p,marble,0,-.07,0,s.w+3,.12,s.d+3);
   const model=MODELS[s.id];
   const shell=model?new T.Group():p,q=model&&!model.keepInterior?shell:p;
@@ -118,27 +123,59 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
  const phone=!!window.edenRenderProfile?.().mobile,LOAD_WITHIN=phone?60:75,RELEASE_PAST=phone?95:130;
  const renderer=window.breakThyRuleShowroom?.renderer?.(),camera=window.edenCamera;const warmup=!prepareModel&&renderer&&camera&&window.createRenderWarmup?.(renderer,camera,scene);
  function releaseModel(scene){window.edenBaked?.unregisterStatic(scene);scene.traverse(o=>{if(!o.isMesh)return;o.geometry.dispose();for(const m of [].concat(o.material)){for(const v of Object.values(m))if(v?.isTexture)v.dispose();m.dispose();}});}
+ // A hidden stand-in leaves the scene graph too: raycasts (shots, hits, picking) do not test visibility, so a hidden
+ // procedural wall a few centimetres in front of the model would still stop a bullet.
+ function showShell(shell,on){shell.visible=on;if(on&&!shell.parent)root.add(shell);else if(!on&&shell.parent)shell.removeFromParent();}
  function streamModels(viewer){
   if(disposed)return;
   const distance=s=>Math.hypot(viewer.position.x-s.x,viewer.position.z-s.z);
   for(const [id,entry] of loadedModels)if(!retainPrepared&&distance(entry.s)>RELEASE_PAST){
-   root.remove(entry.scene);releaseModel(entry.scene);entry.shell.visible=true;root.add(entry.shell);loadedModels.delete(id);modelState[id]='waiting';pendingModels.push(entry);}
-  for(const entry of loadedModels.values()){const d=distance(entry.s),high=!lodEnabled||d<(entry.scene.visible?82:72);if(high&&!entry.scene.visible)window.edenMatrix?.form(T,entry.scene,{duration:2.2,scene:root.parent});entry.scene.visible=high;entry.shell.visible=!high;}
+   root.remove(entry.scene);releaseModel(entry.scene);showShell(entry.shell,true);loadedModels.delete(id);modelState[id]='waiting';pendingModels.push(entry);}
+  for(const entry of loadedModels.values()){const d=distance(entry.s),high=!lodEnabled||d<(entry.scene.visible?82:72);if(high&&!entry.scene.visible)window.edenMatrix?.form(T,entry.scene,{duration:2.2,scene:root.parent});entry.scene.visible=high;showShell(entry.shell,!high);}
   if(modelInFlight)return;
   let next=pendingModels.findIndex(p=>priorityModels.has(p.s.id)),nearest=LOAD_WITHIN;
   if(next<0)pendingModels.forEach((p,i)=>{const d=distance(p.s);if(d<nearest){nearest=d;next=i;}});
   if(next<0)return;
   const [p]=pendingModels.splice(next,1);priorityModels.delete(p.s.id);fetchModel(p.s,p.model,p.shell);
  }
+ // The landmark pass (tools/night/build-landmarks.sh) re-cut each building: bevelled edges, chipped corners, windows set
+ // back with sills and lintels, drainpipes, weathering data on the walls. Its files (assets/night/built) hold geometry
+ // and material names only; each material, textures and all, is taken by name from the original, which the expedition
+ // page still draws as it is. '<name>@wash' is a washed copy of <name>. If the re-cut file fails, the original stands.
+ const BUILT_V='1';
+ async function built(s,model,original){
+  let cut=null;try{cut=(await window.showroomAssets.model(model.url.replace('/assets/night/','/assets/night/built/')+'?v='+BUILT_V)).scene;}catch{}
+  if(!cut)return original;
+  const mats=new Map(),washed=new Map();original.traverse(o=>{if(o.isMesh)for(const m of [].concat(o.material))mats.set(m.name,m);});
+  cut.traverse(o=>{if(!o.isMesh)return;const own=o.material,base=own.name.replace(/@wash$/,'');let m=mats.get(base);if(!m)return;
+   if(base!==own.name){m=washed.get(own.name)||washed.set(own.name,m.clone()).get(own.name);m.name=own.name;}o.material=m;own.dispose();});
+  original.traverse(o=>{if(o.isMesh)o.geometry.dispose();});
+  return cut;
+ }
+ // What each material is to matrix-world.js: walls take the world-space scans (the layer below), timber the boards,
+ // pipes rust, glass a room behind it. The wash follows the '@wash' copies.
+ // 'own' keeps the building's own scan, laid in world space; the observatory's trowelled rings read as fake at any size.
+ const FACADE={observatory:'plaster'};
+ function dress(s,scene){
+  const weather=new Map();
+  scene.traverse(o=>{if(!o.isMesh)return;for(const m of [].concat(o.material)){const n=m.name.replace(/@wash$/,'');m.userData.mxWash=/@wash$/.test(m.name);m.userData.mxFill=!m.userData.mxWash;
+   if(/(_wall|_side|_stone)$|^concrete_brick_wall_001$|^large_sandstone_blocks/.test(n)){m.userData.mxKind='facade';m.userData.mxLayer=FACADE[s.id]||'own';weather.set(m,(weather.get(m)??true)&&!!o.geometry.attributes._weather);}
+   else if(/_wood$/.test(n))m.userData.mxKind='planks';
+   else if(/_pipe$/.test(n))m.userData.mxKind='metal';
+   // the bake reads the glass's emission: about what the rooms behind it give out on average
+   else if(/_glass$/.test(n)){m.userData.mxKind='interior';m.emissiveIntensity=.3;}}});
+  for(const [m,w] of weather)m.userData.mxWeather=w;
+ }
  function fetchModel(s,model,shell){
   modelState[s.id]='loading';modelInFlight=true;
   window.showroomAssets?.model(model.url).then(async gltf=>{
    if(disposed){releaseModel(gltf.scene);return;}
-   const scene=gltf.scene;scene.name=s.name+' (modelled)';scene.userData.landmarkModel=true;scene.position.set(s.x,0,s.z);
+   const scene=OLD?gltf.scene:await built(s,model,gltf.scene);if(disposed){releaseModel(scene);return;}
+   if(!OLD)dress(s,scene);scene.name=s.name+' (modelled)';scene.userData.landmarkModel=true;scene.position.set(s.x,0,s.z);
    scene.traverse(o=>{if(!o.isMesh)return;o.receiveShadow=true;o.castShadow=!/bulb|sign|relief|glass/.test(o.name+o.material?.name);});
    if(phone)window.shrinkModelTextures?.(scene,{maxTextureSize:512,detailSize:256});
-   window.edenMatrix?.surface(T,scene,{kind:'model',wash:true});window.edenBaked?.registerStatic(scene);if(prepareModel)await prepareModel(scene);else if(warmup)await warmup.prepare(scene);if(disposed){releaseModel(scene);return;}
-   shell.visible=false;root.add(scene);window.edenMatrix?.form(T,scene,{duration:2.6,scene:root.parent});modelState[s.id]='model';loadedModels.set(s.id,{s,model,shell,scene});
+   window.edenMatrix?.surface(T,scene,{kind:'model',wash:OLD});window.edenBaked?.registerStatic(scene);if(prepareModel)await prepareModel(scene);else if(warmup)await warmup.prepare(scene);if(disposed){releaseModel(scene);return;}
+   showShell(shell,false);root.add(scene);window.edenMatrix?.form(T,scene,{duration:2.6,scene:root.parent});modelState[s.id]='model';loadedModels.set(s.id,{s,model,shell,scene});
   }).catch(error=>{if(disposed)return;modelState[s.id]='fallback';console.warn(s.name+' model unavailable; keeping the procedural building',error);})
    .finally(()=>{modelInFlight=false;});
  }
@@ -146,7 +183,7 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
  // one side wall, each tier within a climb of the last, so any roof can be reached. Walls carry their height so you are
  // only blocked by walls taller than where your feet are.
  {const cv=document.createElement('canvas');cv.width=cv.height=128;const g=cv.getContext('2d');g.fillStyle='#7a5634';g.fillRect(0,0,128,128);for(let i=0;i<6;i++){g.fillStyle=i%2?'#6d4a2b':'#835d38';g.fillRect(0,i*21+2,128,19);}g.strokeStyle='#3f2a17';g.lineWidth=10;g.strokeRect(5,5,118,118);g.beginPath();g.moveTo(10,10);g.lineTo(118,118);g.stroke();
-  const tex=new T.CanvasTexture(cv);tex.colorSpace=T.SRGBColorSpace;const crate=new T.MeshStandardMaterial({map:tex,roughness:.88});
+  const tex=new T.CanvasTexture(cv);tex.colorSpace=T.SRGBColorSpace;const crate=new T.MeshStandardMaterial({map:tex,roughness:.88});if(!OLD)crate.userData.mxWash=false;
   for(const s of layout.landmarks){
    const F=ROOFS[s.id],eave=eaveOf(s);
    if(F)surfaces.push({field:F,id:s.id,foot:{minX:s.x-s.w/2,maxX:s.x+s.w/2,minZ:s.z-s.d/2,maxZ:s.z+s.d/2}});else if(s.id!=='gardens')surfaces.push({minX:s.x-s.w/2,maxX:s.x+s.w/2,minZ:s.z-s.d/2,maxZ:s.z+s.d/2,top:s.h,bottom:s.h-.4,roof:true,id:s.id});
@@ -177,6 +214,21 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
  root.remove(staticRoot);for(const batch of batches.values()){const m=new T.InstancedMesh(batch.geometry,batch.material,batch.matrices.length);batch.matrices.forEach((matrix,i)=>m.setMatrixAt(i,matrix));m.receiveShadow=true;m.computeBoundingSphere?.();root.add(m);}
  const nearest=[null,null,null],distances=[Infinity,Infinity,Infinity],watcherTarget=new T.Vector3();
  const lightPool=[0,1,2].map(()=>{const l=new T.PointLight(0xffc68c,0,13,1.7);l.name='District lamp';scene.add(l);return l;});
+ // Live shadows from the nearest lamps (desktop High, setLampShadows(n)): the first n pooled lamps are lit by their own
+ // shadow-casting lights instead (worlds.js mirrors plain point lights through its stable pool, which cannot cast). The
+ // count only changes with the graphics setting, as it is part of every material's program. A shadowed lamp further
+ // than SHADOW_REACH from you fades its shadow out and stops re-rendering it. The static world's lamp shadow is in the bake
+ // (eden-baked-light.js), so only characters land in the cube maps: their shadow cameras see layer SHADOW_LAYER alone,
+ // which is switched on for every skinned mesh (people, bots, you) every couple of seconds. That keeps the maps cheap,
+ // nothing is darkened twice, and props or models that never registered with the bake cannot shade a lamp from inside
+ // its own lantern.
+ const SHADOW_REACH=16,SHADOW_LAYER=7,shadowPool=[],shadowRenderer=()=>window.breakThyRuleShowroom?.renderer?.();let castersAt=-1e9;
+ function tagCasters(time){if(time-castersAt<2)return;castersAt=time;scene.traverse(o=>{if(o.isSkinnedMesh&&o.castShadow)o.layers.enable(SHADOW_LAYER);});}
+ function setLampShadows(n){n=Math.max(0,Math.min(3,n|0));
+  while(shadowPool.length>n){const l=shadowPool.pop();scene.remove(l);l.shadow.map?.dispose();l.dispose?.();}
+  while(shadowPool.length<n){const l=new T.PointLight(0xffc68c,0,13,1.7);l.name='District lamp (shadow)';l.userData.nightLamp=true;l.castShadow=true;
+   Object.assign(l.shadow,{bias:-.003,normalBias:.035,radius:2,autoUpdate:false});l.shadow.mapSize.set(512,512);l.shadow.camera.near=.2;l.shadow.camera.layers.set(SHADOW_LAYER);scene.add(l);shadowPool.push(l);castersAt=-1e9;}}
+ setLampShadows(window.edenLampShadows);
  const pageRoot=new T.Group();root.add(pageRoot);const pages=new Map();
  const paper=document.createElement('canvas');paper.width=256;paper.height=384;const ctx=paper.getContext('2d');ctx.fillStyle='#dfd5b5';ctx.fillRect(0,0,256,384);ctx.strokeStyle='#85764f';ctx.lineWidth=2;ctx.strokeRect(15,15,226,354);ctx.beginPath();ctx.arc(128,98,37,0,Math.PI*2);ctx.moveTo(89,124);ctx.lineTo(128,51);ctx.lineTo(167,124);ctx.closePath();ctx.stroke();for(let y=169;y<325;y+=15){ctx.fillStyle=y%3?'#746851':'#afa083';ctx.fillRect(36,y,184-((y*7)%50),2);}const pageMap=new T.CanvasTexture(paper);pageMap.colorSpace=T.SRGBColorSpace;
  const pageMat=new T.MeshStandardMaterial({map:pageMap,roughness:1,side:T.DoubleSide,emissive:0xffd295,emissiveIntensity:.22});
@@ -189,12 +241,16 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
  box(watcher,brass,0,2.3,.245,.04,.75,.035);const sigil=mesh(watcher,new T.TorusGeometry(.12,.018,6,24),brass,0,2.61,.24);
  let snapshot=null;
  // The host registers the static root after its geometry-merging pass.
- return {root,watcher,walls,lamps,routes:authority?.routes||[],setPages,setLOD(on){lodEnabled=!!on;},prepare(ids){if(disposed)return;if(ids.length>=layout.landmarks.length&&!phone)retainPrepared=true;for(const id of ids)if(modelState[id]==='waiting')priorityModels.add(id);},dispose(){disposed=true;snapshot=null;pendingModels.length=0;priorityModels.clear();for(const entry of loadedModels.values())releaseModel(entry.scene);loadedModels.clear();window.edenBaked?.unregisterStatic(root);for(const light of lightPool)scene.remove(light);},setState(value){if(disposed)return;if(value&&value.code!==snapshot?.code)watcher.position.set(value.watcher.x,value.watcher.y||0,value.watcher.z);snapshot=value;watcher.visible=!!value&&value.phase==='playing'&&value.huntStarted!==false;if(value)setPages(value.pages,value.collected);else pageRoot.visible=false;},
+ return {root,watcher,walls,lamps,routes:authority?.routes||[],setPages,setLOD(on){lodEnabled=!!on;},setLampShadows(n){if((n|0)!==shadowPool.length&&!disposed)setLampShadows(n);},get lampShadows(){return shadowPool.length;},prepare(ids){if(disposed)return;if(ids.length>=layout.landmarks.length&&!phone)retainPrepared=true;for(const id of ids)if(modelState[id]==='waiting')priorityModels.add(id);},dispose(){disposed=true;snapshot=null;pendingModels.length=0;priorityModels.clear();for(const entry of loadedModels.values())releaseModel(entry.scene);loadedModels.clear();window.edenBaked?.unregisterStatic(root);for(const light of lightPool)scene.remove(light);setLampShadows(0);},setState(value){if(disposed)return;if(value&&value.code!==snapshot?.code)watcher.position.set(value.watcher.x,value.watcher.y||0,value.watcher.z);snapshot=value;watcher.visible=!!value&&value.phase==='playing'&&value.huntStarted!==false;if(value)setPages(value.pages,value.collected);else pageRoot.visible=false;},
   // feet: the height of the player's feet, when known: walls lower than a step up from there do not block.
   // Same answer as testing every wall, through a 4 m grid of them (rebuilt when walls are added): called for every step.
   blocks(p,feet=null){const g=wallGrid();const list=g.cells.get(Math.floor(p.x/4)+','+Math.floor(p.z/4));if(!list)return false;for(let i=0;i<list.length;i++){const W=list[i],h=W[4]??99;if(Math.abs(p.x-W[0])<W[2]/2+.3&&Math.abs(p.z-W[1])<W[3]/2+.3&&(feet==null||h>feet+.45))return true;}return false;},surfaces,climbs,
   clearGround(x,z){if(layout.arena&&Math.hypot(x-layout.arena.x,z-layout.arena.z)<layout.arena.r)return true;return layout.landmarks.some(s=>Math.abs(x-s.x)<s.w/2+3&&z-s.z>-s.d/2-4&&z-s.z<s.d/2+9)||layout.landmarks.some(s=>Math.abs(z-(s.z+s.d/2+3))<1.8&&x>Math.min(s.x,11.7)-1&&x<Math.max(s.x,11.7)+1);},
-  update(time,viewer,night){if(disposed)return;root.visible=viewer.position.z<0;if(root.visible)streamModels(viewer);pageRoot.visible=!!snapshot;distances.fill(Infinity);nearest.fill(null);for(const p of lamps){const d=p.distanceToSquared(viewer.position);for(let i=0;i<3;i++)if(d<distances[i]){for(let j=2;j>i;j--){distances[j]=distances[j-1];nearest[j]=nearest[j-1];}distances[i]=d;nearest[i]=p;break;}}lightPool.forEach((l,i)=>{if(nearest[i])l.position.copy(nearest[i]);l.intensity=root.visible?night*(window.edenMatrix?(document.body?.classList.contains('expedition-entry')?16:22):10)*(1-(window.edenMatrix?.35:1)*(window.edenBaked?.nightStrength()||0)):0;});if(snapshot){const w=snapshot.watcher;watcher.position.lerp(watcherTarget.set(w.x,w.y||0,w.z),.3);watcher.rotation.y=w.yaw;arms.forEach((a,i)=>{a.rotation.x=reduced?0:Math.sin(time*2+i*Math.PI)*.06;});sigil.material.emissive.set(0x503c22);sigil.material.emissiveIntensity=.2;}},
+  update(time,viewer,night){if(disposed)return;root.visible=viewer.position.z<0;if(root.visible)streamModels(viewer);pageRoot.visible=!!snapshot;distances.fill(Infinity);nearest.fill(null);for(const p of lamps){const d=p.distanceToSquared(viewer.position);for(let i=0;i<3;i++)if(d<distances[i]){for(let j=2;j>i;j--){distances[j]=distances[j-1];nearest[j]=nearest[j-1];}distances[i]=d;nearest[i]=p;break;}}let shadowDirty=false;lightPool.forEach((pooled,i)=>{const own=shadowPool[i],l=own||pooled;if(own)pooled.intensity=0;if(nearest[i])l.position.copy(nearest[i]);l.intensity=root.visible?night*(window.edenMatrix?(document.body?.classList.contains('expedition-entry')?16:22):10)*(1-(window.edenMatrix?.35:1)*(window.edenBaked?.nightStrength()||0)):0;
+   if(own){const reach=Math.sqrt(distances[i]);l.shadow.intensity=1-T.MathUtils.smoothstep(reach,SHADOW_REACH-4,SHADOW_REACH);if(l.intensity>0&&l.shadow.intensity>0){l.shadow.needsUpdate=true;shadowDirty=true;}}});
+   // The renderer only redraws shadow maps on request (app.js); a shadowed lamp in reach asks every frame, so moving
+   // characters' shadows follow them (eden-lighting.js keeps the moon's map from redrawing with them).
+   if(shadowDirty){tagCasters(time);const r=shadowRenderer();if(r){if('lampUpdate' in r.shadowMap)r.shadowMap.lampUpdate=true;else r.shadowMap.needsUpdate=true;}}if(snapshot){const w=snapshot.watcher;watcher.position.lerp(watcherTarget.set(w.x,w.y||0,w.z),.3);watcher.rotation.y=w.yaw;arms.forEach((a,i)=>{a.rotation.x=reduced?0:Math.sin(time*2+i*Math.PI)*.06;});sigil.material.emissive.set(0x503c22);sigil.material.emissiveIntensity=.2;}},
   inspect:()=>({lod:{enabled:lodEnabled,high:[...loadedModels.values()].filter(e=>e.scene.visible).length,low:[...loadedModels.values()].filter(e=>e.shell.visible).length},routes:(authority?.routes||[]).map(r=>({id:r.id,difficulty:r.difficulty,points:r.points.length})),routeDecks:authority?.routeSurfaces.length||0,landmarks:layout.landmarks.map(s=>({name:s.name,x:s.x,z:s.z})),batches:batches.size,theatre:modelState.playhouse==='model'?'model':'fallback',models:{...modelState},pages:pages.size,watcher:watcher.position.toArray()})
  };
 };

@@ -15,6 +15,7 @@ import { createGrimPost } from '/cowninja/post.js';
 import { createFoot } from '/cowninja/foot.js';
 import { createAudio } from '/cowninja/audio.js';
 import { createTouch } from '/cowninja/touch.js';
+import { pairedAnchor } from '/cowninja/animation-path.js';
 
 const $ = id => document.getElementById(id);
 const query = new URLSearchParams(location.search);
@@ -59,6 +60,7 @@ async function boot() {
   const actor = () => mode === 'foot' ? foot.state : cow.state;
   function damage(amount, dx, dz, push) {
     if (phase !== 'play') return; health = Math.max(0, health - amount); stats.hits++; hurtFlash = 1; shake = Math.max(shake, .5);
+    if (mode === 'foot') foot.cancelAction();
     const a = actor(); if (mode === 'ride') cow.hit(dx, dz, push); blood.burst(a.x, 1.2, a.z, dx * 4, dz * 4, 6); audio.hit('body', a.x, a.z, 1);
     if (health <= 0) end(false);
   }
@@ -104,7 +106,9 @@ async function boot() {
   function option() {
     if (phase !== 'play') return null;
     if (mode === 'ride') return foot.available && Math.abs(cow.state.speed) < 5 && !cow.state.airborne ? { kind: 'dismount', label: 'GET OFF' } : null;
-    const p = foot.state, near = farmers.nearest(p.x, p.z, 1.7);
+    const p = foot.state;
+    if (p.busy || p.climbing || p.airborne) return null;
+    const near = Math.abs(p.y) < .2 ? farmers.nearest(p.x, p.z, 1.7) : null;
     if (near && (near.behind || near.unaware)) return { kind: 'takedown', label: 'TAKE DOWN', farmer: near.farmer };
     if (!herd.free && Math.hypot(p.x - world.gatePost.x, p.z - world.gatePost.z) < 2.4) return { kind: 'latch', label: 'PULL THE LEVER' };
     if (Math.hypot(p.x - cow.state.x, p.z - cow.state.z) < 2.9) return { kind: 'mount', label: 'RIDE' };
@@ -121,7 +125,27 @@ async function boot() {
       mode = 'foot'; cow.setRider(false); calling = 0; keys.delete('shift'); say('ON FOOT · C CROUCH · E USE · Q CALL THE COW', 3);
       if (!touch.active) renderer.domElement.requestPointerLock?.();
     } else if (o.kind === 'mount') { if (o.swap) herd.swap(o.swap, cow); mode = 'ride'; foot.leave(); cow.setRider(true); calling = 0; document.exitPointerLock?.(); audio.moo(.14); }
-    else if (o.kind === 'takedown') { const f = o.farmer, p = foot.state, d = Math.hypot(f.p.x - p.x, f.p.z - p.z) || 1; foot.play('cross', { fade: .05, speed: 1.6, mask: 'upper' }); farmers.knock(f, (f.p.x - p.x) / d * 2.4, (f.p.z - p.z) / d * 2.4, 'takedown'); }
+    else if (o.kind === 'takedown') {
+      const f = o.farmer, A = window.GardenAnim;
+      // The source pair faces the same way, with the ninja behind the farmer. Both sample the same clock, so slow
+      // frames cannot separate the grab from the victim's response. Keep the existing quick hit if clips are absent.
+      if (A?.has('stealthAssassin') && A.has('stealthVictim') && foot.ninja?.person && f.person) {
+        // Skip the source's walking approach: the player has already approached. Keep both roles' authored drag
+        // and retreat after the grab, with their full paths checked against the yard before either one commits.
+        const yaw = Math.PI - f.yaw, sourceEnd = Math.min(A.duration('stealthAssassin'), A.duration('stealthVictim')), sourceStart = Math.min(2, sourceEnd * .3);
+        const { x, z } = pairedAnchor(A, foot.ninja.person, f.person, { x: f.p.x, z: f.p.z, yaw, start: sourceStart });
+        if (!farmers.beginTakedown(f, { sourceStart, sourceEnd })) { say('NO ROOM FOR A TAKEDOWN', 1.2); return; }
+        const started = foot.beginAction({ x, z, yaw, sourceStart, sourceEnd, duration: (sourceEnd - sourceStart) / 1.45,
+          valid: () => !f.ragdoll && !!f.takedown,
+          onProgress: p => farmers.poseTakedown(f, p), onFinish: () => farmers.finishTakedown(f), onCancel: () => farmers.cancelTakedown(f) });
+        if (!started) { farmers.cancelTakedown(f); say('NO ROOM FOR A TAKEDOWN', 1.2); }
+      } else {
+        const p = foot.state, d = Math.hypot(f.p.x - p.x, f.p.z - p.z) || 1;
+        if (A?.has?.('cnStab') && foot.play('cnStab', { fade: .08, speed: 1.7, start: 2.4, mask: 'upper' })) setTimeout(() => foot.ninja?.person.motion.stop?.('cnStab', .25), 1300);
+        else foot.play('cross', { fade: .05, speed: 1.6, mask: 'upper' });
+        farmers.knock(f, (f.p.x - p.x) / d * 2.4, (f.p.z - p.z) / d * 2.4, 'takedown');
+      }
+    }
     else if (o.kind === 'latch') { world.openGate(); foot.play('interact', { fade: .08, mask: 'upper' }); audio.hit('wood', world.gatePost.x, world.gatePost.z, .8); }
   }
   // The whistle: on foot it brings the cow to you. Anyone close enough hears it too.
@@ -132,6 +156,7 @@ async function boot() {
   }
 
   function end(won) {
+    foot.cancelAction();
     phase = won ? 'won' : 'lost'; stats.time = (performance.now() - stats.start) / 1000; document.exitPointerLock?.();
     const down = stats.knockouts + stats.herdKnockouts + takedowns, ghost = won && !alarm;
     $('cn-end-title').textContent = won ? (ghost ? 'GHOST · THE HERD IS OUT' : 'THE HERD IS OUT') : 'THEY GOT YOU';

@@ -1,0 +1,151 @@
+{
+  "source": "Adobe Mixamo / X Bot",
+  "baker": "three@0.158.0",
+  "fps": 30,
+  "settings": {
+    "format": "FBX Binary",
+    "skin": "Without Skin",
+    "keyframeReduction": "none"
+  },
+  "runtimeSha256": "0f0ae4ed003d19ced1d811e58b42679e0dbc4afab5eb09417d1e669ce34ab83c",
+  "clips": [
+    {
+      "id": "pkScramble",
+      "file": "Climbing Up Wall.fbx",
+      "loop": true,
+      "rootMotion": "cycle",
+      "sourceSha256": "806928d3850f49bae37a30701e37ef343000372f18a819dff7c12edff21bba6d",
+      "duration": 2,
+      "frames": 61
+    },
+    {
+      "id": "pkShimmyL",
+      "file": "Braced Hang Shimmy.fbx",
+      "loop": true,
+      "rootMotion": "cycle",
+      "sourceSha256": "4e6b836d0cfef9df8daf0c77ce6f74e051f4abc52684788409903b79612cad40",
+      "duration": 1.167,
+      "frames": 36
+    },
+    {
+      "id": "pkShimmyR",
+      "file": "Braced Hang Shimmy - Mirrored.fbx",
+      "loop": true,
+      "rootMotion": "cycle",
+      "sourceSha256": "567fcc9125cd2daa099ca5ac60080a05e3e7a4cbb2ab4ee4512478914b25fa05",
+      "duration": 1.167,
+      "frames": 36
+    },
+    {
+      "id": "pkClimb",
+      "file": "Braced Hang To Crouch.fbx",
+      "loop": false,
+      "rootMotion": "flat",
+      "sourceSha256": "874c49e09bc00ee589274179bfde31f34bc6f71b2833f64c5b5561923871a9da",
+      "duration": 1.133,
+      "frames": 35
+    },
+    {
+      "id": "pkLadder",
+      "file": "Climbing Ladder.fbx",
+      "loop": true,
+      "rootMotion": "cycle",
+      "sourceSha256": "bebf1c351fc5b8ceddb7b312f5a6f7a80c107ceb51dd5c63d4a19f38435dd63a",
+      "duration": 0.767,
+      "frames": 24
+    },
+    {
+      "id": "pkLadderEnter",
+      "file": "Start Climbing Ladder.fbx",
+      "loop": false,
+      "rootMotion": "flat",
+      "sourceSha256": "ed16964b0bc17d5b104c92cda7612cc5f78bcfcae78a09dee31387c24d029f65",
+      "duration": 2.033,
+      "frames": 62
+    },
+    {
+      "id": "pkLadderExit",
+      "file": "Climbing To Top.fbx",
+      "loop": false,
+      "rootMotion": "flat",
+      "sourceSha256": "34884b10b3c047064f9fb5d4fc0c3f890192b1063b152adf7166172eb7b8280e",
+      "duration": 4,
+      "frames": 121
+    },
+    {
+      "id": "pkRoll",
+      "file": "Falling To Roll.fbx",
+      "loop": false,
+      "rootMotion": "body",
+      "startTime": 0.4666666666666667,
+      "sourceSha256": "28d40a99e64f243d1449331b6674a87c8bae42c93fc12adc8034c70c71f2cab2",
+      "duration": 1.667,
+      "frames": 51
+    },
+    {
+      "id": "pkLeap",
+      "file": "Running Jump.fbx",
+      "loop": false,
+      "rootMotion": "flat",
+      "sourceSha256": "d21d330d5017e0e16904d693af9f3e4ab82bfaf86d668f3bbd054acc55c92850",
+      "duration": 0.9,
+      "frames": 28
+    },
+    {
+      "id": "pkHopL",
+      "file": "Braced Hang Hop Left.fbx",
+      "loop": false,
+      "rootMotion": "flat",
+      "sourceSha256": "e533dd77ccadd28974ef75a10db5a8a598a91765f72c90ef0a42c6751bb69777",
+      "duration": 1.5,
+      "frames": 46
+    },
+    {
+      "id": "pkHopR",
+      "file": "Braced Hang Hop Right.fbx",
+      "loop": false,
+      "rootMotion": "flat",
+      "sourceSha256": "160e5fca282dea9dee59bced6eeea8e1ba62f680195b1d2d753af24d6deecdd5",
+      "duration": 1.667,
+      "frames": 51
+    },
+    {
+      "id": "pkHopUp",
+      "file": "Braced Hang Hop Up.fbx",
+      "loop": false,
+      "rootMotion": "flat",
+      "sourceSha256": "4a33ecbc9511ef4db9ba845f15703d3d74fe663b7351fa2e5b0a7689036a207f",
+      "duration": 1.667,
+      "frames": 51
+    },
+    {
+      "id": "pkHangDrop",
+      "file": "Braced Hang Drop - To Standing.fbx",
+      "loop": false,
+      "rootMotion": "flat",
+      "sourceSha256": "a9774511ea167803c289971124aa25ab6f00204a72fad2235a90bb3aca0d61ab",
+      "duration": 1.667,
+      "frames": 51
+    },
+    {
+      "id": "stealthAssassin",
+      "file": "Stealth Assassination - Assassin.fbx",
+      "loop": false,
+      "rootMotion": "body",
+      "rootXZ": true,
+      "sourceSha256": "f07d1911ff3d894c80b57e950dba9133cf06d515885fab33f85e54c94765121d",
+      "duration": 7,
+      "frames": 211
+    },
+    {
+      "id": "stealthVictim",
+      "file": "Stealth Assassination - Victim.fbx",
+      "loop": false,
+      "rootMotion": "body",
+      "rootXZ": true,
+      "sourceSha256": "7504411a302dde038d32fbfac9ae9815cb9b68cfd16b18a5586e583a68d1465d",
+      "duration": 7,
+      "frames": 211
+    }
+  ]
+}
