@@ -4,6 +4,9 @@ window.createRoadPyramid=function(T,scene,{roadX,roadEnd,stone,onChange,reduced}
  const masonry=stone.clone();masonry.color.set(0xb8beb2);masonry.roughness=.94;masonry.emissive.set(0x687568);masonry.emissiveIntensity=.045;
  const courses=[masonry,masonry.clone(),masonry.clone()];courses[1].color.set(0xa6b0a4);courses[2].color.set(0xc3c5b6);
  const cube=new T.BoxGeometry(1,1,1);
+ // The expedition page keeps the pyramid it was built with; Beyond Eden gets merged courses and an iron gate.
+ const lean=!document.body?.classList.contains('expedition-entry'),courseGeometry=[];
+ function mergeLists(list){const pos=[],uv=[];for(const g of list){pos.push(...g.attributes.position.array);uv.push(...g.attributes.uv.array);}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.computeVertexNormals();return g;}
  function box(w,h,d,x,y,z,material=masonry){const mesh=new T.Mesh(cube,material);mesh.scale.set(w,h,d);mesh.position.set(x,y,z);mesh.receiveShadow=true;root.add(mesh);return mesh;}
  const court=stone.clone();court.color.set(0x757f75);
  box(88,.10,96,0,-.035,0,court);
@@ -18,8 +21,11 @@ window.createRoadPyramid=function(T,scene,{roadX,roadEnd,stone,onChange,reduced}
   }
   for(let side=0;side<4;side++){if(side===0&&i<6){face(side,-bottom,-1.7,-top,-1.7);face(side,1.7,bottom,1.7,top);}else face(side,-bottom,bottom,-top,top);}
   const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.setAttribute('uv',new T.Float32BufferAttribute(uvs,2));geometry.computeVertexNormals();
+  if(lean){(courseGeometry[i%3]??=[]).push(geometry);continue;}
   const course=new T.Mesh(geometry,courses[i%3]);course.receiveShadow=true;root.add(course);
  }
+ // One mesh per stone colour instead of 48 courses (three draw calls, not 48 plus their shadows).
+ if(lean)courseGeometry.forEach((list,k)=>{const merged=T.BufferGeometryUtils?.mergeGeometries?.(list)||mergeLists(list);const mesh=new T.Mesh(merged,courses[k]);mesh.receiveShadow=true;root.add(mesh);});
  for(const s of [-1,1])box(.5,4.65,1.0,s*1.98,2.325,24.4);box(4.5,.55,1.0,0,4.55,24.4);
  const metal=new T.MeshStandardMaterial({color:0x8c9989,metalness:.6,roughness:.38});
  const cap=new T.Mesh(new T.ConeGeometry(1.02,1.44,4),metal);cap.rotation.y=Math.PI/4;cap.position.y=height-.5;root.add(cap);
@@ -40,11 +46,12 @@ window.createRoadPyramid=function(T,scene,{roadX,roadEnd,stone,onChange,reduced}
  scene.updateMatrixWorld(true);for(const light of stableLights)lightRoot.attach(light);
 
  let unlocked=false;const collision=window.createPyramidCollision({roadX,roadEnd,unlocked:()=>unlocked});
- const gate=box(3.35,4.1,.4,0,2.05,24.25,metal);
+ const iron=lean?new T.MeshStandardMaterial({color:0x2c2f2c,metalness:.7,roughness:.62}):metal;
+ const gate=box(3.35,4.1,.4,0,2.05,24.25,iron);
  gate.userData.dynamicShadow=true;gate.castShadow=true;
- const seals=[];for(let i=0;i<8;i++)seals.push(box(.20,.22,.045,(i-3.5)*.35,2.15,24.48,lampMaterial.clone()));
+ const seals=[];for(let i=0;i<8;i++){const m=lampMaterial.clone();if(lean){m.emissiveIntensity=.9;m.color.set(0x8a6a3a);}seals.push(box(.20,.22,.045,(i-3.5)*.35,2.15,24.48,m));}
  return {
-  setPages(count){unlocked=count===8;gate.visible=!unlocked;seals.forEach((s,i)=>{s.visible=!unlocked;s.material.emissiveIntensity=i<count?2.2:.05;});},
+  setPages(count){unlocked=count===8;gate.visible=!unlocked;seals.forEach((s,i)=>{s.visible=!unlocked;s.material.emissiveIntensity=i<count?(lean?.9:2.2):.05;});},
   centerZ,clearingStart:roadEnd+24,gathering,ready:gathering.ready,
   blocks:collision.blocks,
   constrain(p){const width=T.MathUtils.lerp(32,42,T.MathUtils.smoothstep(roadEnd+36-p.z,0,24));p.x=T.MathUtils.clamp(p.x,roadX-width,roadX+width);p.z=Math.max(centerZ-45,p.z);},

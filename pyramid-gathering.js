@@ -1,4 +1,5 @@
 'use strict';
+const lean=!document.body?.classList.contains('expedition-entry');
 window.createPyramidGathering=function(T,parent,{stone,onChange=()=>{},reduced=false}){
  const hall=new T.Group();hall.name='The masked gathering';parent.add(hall);
  const cube=new T.BoxGeometry(1,1,1),plane=new T.PlaneGeometry(1,1),guests=[],pillars=[],flames=[],lights=[];
@@ -53,7 +54,8 @@ window.createPyramidGathering=function(T,parent,{stone,onChange=()=>{},reduced=f
   update(time,viewer){
    const x=viewer.position.x-parent.position.x,z=viewer.position.z-parent.position.z;
    inside=(Math.abs(x)<17.8&&Math.abs(z)<17.8)||(Math.abs(x)<1.7&&z>=17&&z<24.6);
-   hall.visible=Math.hypot(x,z)<90;fill.intensity=inside?.7:0;lights.forEach(l=>{l.intensity=hall.visible?24:0;});
+   // Seen only through the doorway: past 45 m it is a few dark pixels, so it is not drawn (the expedition page keeps 90).
+   const near=Math.hypot(x,z)<90;hall.visible=Math.hypot(x,z)<(lean?45:90);fill.intensity=inside?.7:0;lights.forEach(l=>{l.intensity=near?24:0;});
    if(hall.visible){for(const card of guests)card.rotation.y=Math.atan2(x-card.position.x,z-card.position.z);if(!reduced)flames.forEach((f,i)=>{f.scale.y=.085*(1+.10*Math.sin(time*2.5+i*2.3));});}
    if(inside)parent.parent.fog.density=.004;
   },

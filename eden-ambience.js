@@ -17,6 +17,7 @@ window.createEdenAmbience=function({reduced=false}={}){
   stone:    {wind:.4,tone:.45,rustle:0,  birds:0,  crickets:0,  frogs:0, owl:0, rumble:.3, hum:0, air:.5, room:0, drip:1}
  };
  const LEVEL=.55;
+ const EXPEDITION=!!document.body?.classList.contains('expedition-entry');let lastStreet=-1,nextDog=0,nextPuddle=0;
  let ctx=null,master=null,started=false,muted=false,place='garden',nightLevel=0,crowdTarget=0;
  let layers=null,meter=null,lastBed=-1,gust=.5,nextGust=0,nextBird=0,nextFrog=0,nextOwl=0,nextDrip=0,nextFlockCall=0;
  try{muted=localStorage.getItem('eden-ambience-muted')==='1';}catch{}
@@ -43,8 +44,14 @@ window.createEdenAmbience=function({reduced=false}={}){
    rumble:loop(brown,'lowpass',110,.7),
    air:loop(brown,'lowpass',260,.5),
    room:loop(white,'bandpass',5200,2.5),
-   hum:bus(),crickets:bus(),birds:bus(),night:bus()
+   hum:bus(),crickets:bus(),birds:bus(),night:bus(),
+   // Beyond Eden's street (never the expedition page): a city that is far away, the buzz of a lamp you stand under, the
+   // low hum of the pyramid.
+   city:loop(brown,'lowpass',180,.6),cityHiss:loop(white,'bandpass',900,.5),buzz:bus(),deep:bus()
   };
+  {const b=ctx.createOscillator(),f=ctx.createBiquadFilter();b.type='sawtooth';b.frequency.value=100;f.type='bandpass';f.frequency.value=1800;f.Q.value=3;b.connect(f).connect(layers.buzz);b.start();
+   const w=ctx.createOscillator(),wg=ctx.createGain();w.frequency.value=7.3;wg.gain.value=.35;w.connect(wg).connect(layers.buzz.gain);w.start();}
+  for(const [hz,g] of [[41,.6],[82.4,.25],[123.6,.08]]){const o=ctx.createOscillator(),v=ctx.createGain();o.frequency.value=hz;v.gain.value=g;o.connect(v).connect(layers.deep);o.start();}
   for(const [hz,g] of [[60,.5],[120,.28],[180,.12],[240,.05]]){const o=ctx.createOscillator(),v=ctx.createGain();o.frequency.value=hz*(1+R()*.002);v.gain.value=g;o.connect(v).connect(layers.hum);o.start();}
   if(!reduced)for(const [f,p,r,pan] of [[4400,46,1.7,-.6],[4700,52,2.3,.5],[4150,41,1.25,.1]])cricketVoice(layers.crickets,f,p,r,pan);
   else cricketVoice(layers.crickets,4400,46,1.7,0);
@@ -64,6 +71,8 @@ window.createEdenAmbience=function({reduced=false}={}){
  function frog(t,pan,gain){const to=panner(pan,layers.night),f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=650+R()*300;f.Q.value=4;f.connect(to);
   const base=90+R()*60,n=2+(R()<.3?1:0);for(let i=0;i<n;i++)note(t+i*.14,base*1.25,base,.09,gain,f,'sawtooth');}
  function owl(t,pan){const to=panner(pan,layers.night),f=380+R()*40;note(t,f,f*.96,.42,.05,to);note(t+.75,f*.98,f*.93,.2,.035,to);note(t+1.05,f,f*.9,.5,.045,to);}
+ // A dog two streets away: two or three rough barks, filtered by the distance.
+ function bark(t,pan,gain){const to=panner(pan,master),f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=900;f.connect(to);const n=2+(R()<.4?1:0);for(let i=0;i<n;i++){const s=t+i*(.28+R()*.1),b=420+R()*80;note(s,b,b*.62,.13,gain,f,'sawtooth');note(s,b*2.02,b*1.3,.1,gain*.4,f,'square');}}
  function drip(t,pan){const to=panner(pan,master),f=900+R()*700;note(t,f,f*2.4,.045,.05*(.4+R()*.6),to);}
  function tone(from,to,dur,gain,delay=0,type='sine'){if(!ctx)return;const t=ctx.currentTime+delay,o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(from,t);o.frequency.exponentialRampToValueAtTime(to,t+dur);g.gain.setValueAtTime(gain,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g).connect(master);o.start(t);o.stop(t+dur+.05);}
 
@@ -74,7 +83,7 @@ window.createEdenAmbience=function({reduced=false}={}){
  return {
   // position: the listener; night 0..1; place: garden | courtyard | museum | blackbox | stone (default: the acoustic space);
   // facing: the camera's forward vector (for panning); flock: world position of the bird flock overhead, or null.
-  update(position,{night=0,theater=null,place:where=null,facing=null,flock=null}={}){
+  update(position,{night=0,theater=null,place:where=null,facing=null,flock=null,lamps=null}={}){
    if(!ctx||!position)return;const t=ctx.currentTime;nightLevel=night;
    place=PLACES[where]?where:PLACES[window.edenAcoustics?.space?.()]?window.edenAcoustics.space():'garden';const p=PLACES[place],day=1-Math.min(1,night*1.6);
    if(ctx.state==='suspended')ctx.resume().catch(()=>{});
@@ -97,6 +106,16 @@ window.createEdenAmbience=function({reduced=false}={}){
    if(p.frogs&&night>.5&&t>nextFrog){const pan=R()*1.8-.9;frog(t,pan,.045*night);if(R()<.4)frog(t+.5+R()*.5,-pan,.03*night);nextFrog=t+1.5+R()*4.5;}
    if(p.owl&&night>.6&&t>nextOwl){if(nextOwl)owl(t,R()*1.6-.8);nextOwl=t+18+R()*25;}
    if(p.drip&&t>nextDrip){if(nextDrip)drip(t,R()*1.6-.8);nextDrip=t+1.8+R()*5;}
+   if(t-lastStreet>.25){lastStreet=t;const street=!EXPEDITION&&position.z<-21&&night>.3&&(place==='courtyard'||place==='stone');
+    // The city swells and falls as traffic would, a long way off.
+    set(layers.city.gain.gain,street?.05+.03*Math.sin(t*.07)+.015*Math.sin(t*.23):0,2);set(layers.cityHiss.gain.gain,street?.006+.004*Math.sin(t*.11):0,2);
+    let near=99;if(street&&lamps)for(const l of lamps){const d=Math.hypot(l.x-position.x,l.y-(position.y??1.6),l.z-position.z);if(d<near)near=d;}
+    set(layers.buzz.gain,street?.010*Math.max(0,1-near/3.5)**2:0,.3);
+    set(layers.deep.gain,street?.05*Math.max(0,Math.min(1,(-105-position.z)/25)):0,1.2);}
+   if(!EXPEDITION&&position.z<-21&&night>.3){
+    if(t>nextDog){if(nextDog)bark(t,R()*1.8-.9,.012+R()*.012);nextDog=t+25+R()*50;}
+    // Water dripping off something into a puddle near where you stand.
+    if(t>nextPuddle){const g=window.edenMatrix?.ground?.(position.x+(R()-.5)*6,position.z+(R()-.5)*6);if(nextPuddle&&g?.wet)drip(t,R()*1.6-.8);nextPuddle=t+.7+R()*2.2;}}
   },
   setCrowd(level){crowdTarget=level;if(level&&ctx)for(let i=0;i<6;i++)tone(300+R()*200,200,.4,.03,i*.07,'sawtooth');},
   bell(){for(let i=0;i<3;i++){tone(1180,1170,1.4,.12,i*.35);tone(2360,2350,.9,.04,i*.35);}},
