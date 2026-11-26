@@ -88,3 +88,19 @@ html,body{margin:0;height:100%;background:#0b0e10;color:var(--cn-ink);font-famil
 .cn-mark[data-state="hot"] b{background:#ff3a20;color:#fff;box-shadow:0 0 14px rgba(255,58,32,.8)}
 .cn-mark[data-state="hot"] i s{background:#ff3a20}
 .cn-mark[data-state="flee"] b{background:#7fb0ff}
+/* Briefing, mission beats, ratings, minimap */
+.cn-brief{margin:0 0 14px;padding-left:20px;font-size:13px;line-height:1.55}
+.cn-brief li{margin:0 0 6px}
+.cn-brief kbd{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:4px;background:rgba(232,230,224,.9);color:#0b0e10;font:700 10px/1 inherit}
+#cn-beats{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:3px;font-size:10px;letter-spacing:.2em;color:var(--cn-dim)}
+#cn-beats li::before{content:'○ ';color:var(--cn-dim)}
+#cn-beats li[data-state="now"]{color:#f2efe8}
+#cn-beats li[data-state="now"]::before{content:'▸ ';color:#ff3a20}
+#cn-beats li[data-state="done"]{color:#7fd69a;text-decoration:line-through;text-decoration-color:rgba(127,214,154,.5)}
+#cn-beats li[data-state="done"]::before{content:'✓ ';color:#7fd69a}
+#cn-ratings{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+#cn-ratings li{padding:5px 10px;border:1px solid rgba(232,230,224,.25);border-radius:999px;font:700 11px/1 'Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.18em;color:var(--cn-dim)}
+#cn-ratings li[data-got="1"]{border-color:#7fd69a;color:#7fd69a;background:rgba(127,214,154,.08)}
+#cn-ratings li[data-best="1"]::after{content:' · BEST';color:#ffc04a}
+#cn-map{position:fixed;right:20px;top:72px;width:180px;height:180px;border-radius:50%;pointer-events:none;box-shadow:0 0 0 1px rgba(232,230,224,.25),0 6px 24px rgba(0,0,0,.5)}
+.cn-touching #cn-map{width:120px;height:120px;top:62px;right:12px}

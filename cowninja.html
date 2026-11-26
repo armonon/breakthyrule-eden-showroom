@@ -8,7 +8,7 @@
   <meta name="description" content="COWNinja prototype: ride in, break the pen, lead the herd out. Graphic content.">
   <title>COWNinja — Break Thy Rule (prototype)</title>
   <link rel="icon" href="/assets/favicon-32.png">
-  <link rel="stylesheet" href="/cowninja/cowninja.css?v=8">
+  <link rel="stylesheet" href="/cowninja/cowninja.css?v=9">
   <script type="importmap">
   {
     "imports": {
@@ -36,6 +36,7 @@
       <div class="cn-row"><span class="cn-label" id="cn-charge-label">CHARGE</span><div class="cn-bar cn-charge"><i id="cn-charge-fill"></i></div><strong id="cn-speed">0 km/h</strong></div>
       <div class="cn-row cn-stealth-row" data-state="cold"><span class="cn-label" id="cn-stealth">HIDDEN</span><div class="cn-bar cn-seen"><i id="cn-seen-fill"></i></div></div>
       <p id="cn-count"></p>
+      <ol id="cn-beats" aria-label="Mission"><li data-beat="0">GET IN · FREE A PEN</li><li data-beat="1">BUILD THE HERD</li><li data-beat="2">BREAK OUT</li></ol>
     </section>
     <p id="cn-toast" role="status" aria-live="polite"></p>
     <footer class="cn-keys" id="cn-keys-text" data-mode="ride">
@@ -45,6 +46,7 @@
     </footer>
     <p id="cn-prompt" role="status"></p>
     <div id="cn-marker" hidden aria-hidden="true"><i></i><span></span></div>
+    <canvas id="cn-map" width="180" height="180" aria-hidden="true" hidden></canvas>
     <div id="cn-touch" hidden></div>
 
     <section id="cn-gate" hidden role="dialog" aria-labelledby="cn-gate-title">
@@ -52,12 +54,18 @@
         <p class="cn-eyebrow">CONTENT WARNING</p>
         <h2 id="cn-gate-title">COWNinja</h2>
         <p>This is a prototype set in a working slaughterhouse. It shows blood, violence against people and animal slaughter imagery.</p>
-        <p class="cn-small">You arrive on foot. Get inside, pull the <strong>red lever</strong> by the pen to free the herd, get on a cow and ride out through the north gate. Stay low and out of sight and take farmers down from behind, or do it loud: once you are riding, charge through anyone in the way and hit the truck square on its side to flip it.</p>
+        <p class="cn-eyebrow">BRIEFING</p>
+        <ol class="cn-brief">
+          <li><strong>Get in.</strong> The staff gate on the east side is open. Every pen has a <strong>red lever</strong>; pull one to free its cows.</li>
+          <li><strong>Build the herd.</strong> Freed cows follow you. Ride one, send the rest with <kbd>F</kbd>, charge a gate with them to free the pen behind it.</li>
+          <li><strong>Break out.</strong> Open the main gate from the gatehouse lever, or break it with a big enough charge, and get the cows to the safe ground beyond.</li>
+        </ol>
+        <p class="cn-small">Quiet or loud is your call: take guards down from behind and hide them in hay, or ride through them. The harder you hit people and police cars, the harder they hit back.</p>
         <div class="cn-actions"><button id="cn-enter" type="button">I UNDERSTAND · RIDE</button><a href="/showroom.html">Back to Eden</a></div>
       </div>
     </section>
     <section id="cn-end" hidden role="dialog" aria-labelledby="cn-end-title">
-      <div><h2 id="cn-end-title"></h2><p id="cn-end-body"></p><div class="cn-actions"><button id="cn-again" type="button">RIDE AGAIN</button><a href="/showroom.html">Back to Eden</a></div></div>
+      <div><h2 id="cn-end-title"></h2><ul id="cn-ratings"></ul><p id="cn-end-body"></p><div class="cn-actions"><button id="cn-continue" type="button" hidden>FROM THE CHECKPOINT</button><button id="cn-again" type="button">RIDE AGAIN</button><a href="/showroom.html">Back to Eden</a></div></div>
     </section>
   </main>
   <!-- People come from the main game: the same characters, animation and ragdoll as Eden. -->
@@ -81,6 +89,6 @@
   <script defer src="/character-motion.js?v=20261125-mixamo"></script>
   <script defer src="/character-rocketbox.js"></script>
   <script defer src="/character-model.js"></script>
-  <script type="module" src="/cowninja/main.js?v=16"></script>
+  <script type="module" src="/cowninja/main.js?v=17"></script>
 </body>
 </html>

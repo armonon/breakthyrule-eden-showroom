@@ -53,5 +53,5 @@ export const TUNE = {
   // saves you. Mounted: the first blast that reaches you shakes you, the second (while still shaken) throws you.
   blast: { fuse: 1.9, radius: 6.5, lethal: 2.6, scatter: 15, scatterSeconds: 4, damageFoot: 34, damageRide: 8, recover: 9, threatRange: 45 },          // a hit this hard or harder throws you off the cow
   camera: { rideBack: 6.2, rideUp: 3.3, herdBack: 9, herdUp: 8, herdFull: 14 },   // the wide view is fully out at `herdFull` cows
-  finish: { linger: 5 },               // seconds after you reach safety before the count is final
+  finish: { linger: 5, par: 900 },     // par: seconds for the quick-run rating; linger: seconds after you reach safety before the count is final
 };

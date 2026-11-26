@@ -14,6 +14,7 @@ import { TUNE } from '/cowninja/config.js';
 import { createBlasts } from '/cowninja/blasts.js';
 import { createPolice } from '/cowninja/police.js';
 import { createAwareness } from '/cowninja/awareness.js';
+import { createMinimap } from '/cowninja/minimap.js';
 import { createBlood } from '/cowninja/blood.js';
 import { createGrimPost } from '/cowninja/post.js';
 import { createFoot } from '/cowninja/foot.js';
@@ -108,7 +109,7 @@ async function boot() {
   function raiseAlarm(why) { if (alarm) return; alarm = true; alarmAt = 0; response.calledAt = performance.now(); truck.start(); audio.siren(6); if (why) say(why, 3); }
   function onEvent(e) {
     if (e.type === 'knockout') {
-      if (e.by === 'blast') { stats.knockouts++; return; }   // their own bomb: not yours to answer for
+      if (e.by === 'blast') { stats.blasted = (stats.blasted || 0) + 1; return; }   // their own bomb: not yours to answer for
       if (e.by === 'fists') { provoke('assault', 'assault'); stats.knockouts++; audio.hit('kill', e.farmer.p.x, e.farmer.p.z, 1.1); audio.hit(Math.random() < .5 ? 'voice-a-death' : 'voice-b-death', e.farmer.p.x, e.farmer.p.z, .9); farmers.noise(e.farmer.p.x, e.farmer.p.z, 12, .6); return; }
       if (e.by === 'takedown') { takedowns++; say('TAKEN DOWN', 1.1); audio.hit('body', e.farmer.p.x, e.farmer.p.z, .7); return; }
       provoke(e.by === 'herd' ? 'herdTrample' : 'trample', 'trampled'); e.by === 'herd' ? stats.herdKnockouts++ : stats.knockouts++; shake = Math.max(shake, Math.min(.9, e.speed / 16)); if (e.by !== 'herd') say(e.speed > 13 ? 'FLATTENED' : 'KNOCKED OUT', 1.2);
@@ -156,6 +157,7 @@ async function boot() {
   }
   const herd = createHerd({ scene, world, cow, farmers, assets, leader: actor, onEvent: onHerd });
   farmers.setNav(herd.nav);
+  const minimap = createMinimap({ canvas: $('cn-map'), world, herd, farmers });
   const awareness = createAwareness({ root: container, scene, camera, farmers });
   // A thrown stone: it arcs to where you aim and clatters, and anyone near enough goes to look. On foot only.
   let throwAt = 0, dragging = null;
@@ -339,12 +341,45 @@ async function boot() {
     foot.cancelAction();
     phase = won ? 'won' : 'lost'; stats.time = (performance.now() - stats.start) / 1000; document.exitPointerLock?.();
     const down = stats.knockouts + stats.herdKnockouts + takedowns, ghost = won && !alarm;
+    // Ratings: earned this run, and whether each beats your best (kept in this browser).
+    const noHarm = stats.knockouts === 0 && stats.herdKnockouts === 0, quick = won && stats.time < TUNE.finish.par;
+    const ratings = [['GHOST', won && !alarm], ['NO ONE HURT', won && noHarm], ['FULL RESCUE', won && herd.saved === herd.count], ['UNDER ' + Math.round(TUNE.finish.par / 60) + ' MIN', quick], ['NO CHECKPOINT', won && !stats.retries]];
+    let best = {}; try { best = JSON.parse(localStorage.getItem('cowninja-best') || '{}'); } catch { /* private mode */ }
+    const record = won && herd.saved > (best.saved || 0), faster = won && herd.saved === herd.count && (!best.fullTime || stats.time < best.fullTime);
+    if (won) { if (record) best.saved = herd.saved; if (faster) best.fullTime = stats.time; best.ratings = [...new Set([...(best.ratings || []), ...ratings.filter(r => r[1]).map(r => r[0])])]; try { localStorage.setItem('cowninja-best', JSON.stringify(best)); } catch { /* private mode */ } }
+    $('cn-ratings').innerHTML = ratings.map(([name, got]) => `<li data-got="${got ? 1 : 0}">${name}</li>`).join('') + (record ? `<li data-got="1" data-best="1">${herd.saved} SAVED</li>` : '') + (faster ? `<li data-got="1" data-best="1">${Math.floor(stats.time / 60)}:${String(Math.floor(stats.time % 60)).padStart(2, '0')}</li>` : '');
+    $('cn-continue').hidden = won || !checkpoint;
     const full = won && herd.saved === herd.count, tally = `${herd.saved} of ${herd.count} cows safe · ${herd.lost} lost · ${herd.penned + herd.freeCount} left behind`;
     $('cn-end-title').textContent = won ? (full ? (ghost ? 'GHOST · FULL RESCUE' : 'FULL RESCUE') : `PARTIAL RESCUE · ${herd.saved} OF ${herd.count}`) : 'THEY GOT YOU';
     $('cn-end-body').textContent = `${tally} · ${down} people down (${takedowns} quietly, ${stats.herdKnockouts} by the herd) · ${stats.flips} truck${stats.flips === 1 ? '' : 's'} flipped · response reached ${STAGES[Math.max(response.stage, alarm ? 2 : 0)]} · ${stats.thrown} time${stats.thrown === 1 ? '' : 's'} thrown · ${stats.time.toFixed(0)} s`;
     $('cn-end').hidden = false;
   }
   function restart() { location.reload(); }
+  // The checkpoint: once a pen is open, dying puts you back at the staff gate with the world as you left it
+  // (gates, herd, losses, police); the guards who had you lose track of you.
+  let checkpoint = null;
+  function resume() {
+    if (!checkpoint || phase !== 'lost') return;
+    $('cn-end').hidden = true; phase = 'play'; health = 100; hurtFlash = 0; stats.retries = (stats.retries || 0) + 1; graceUntil = performance.now() + 3000;
+    if (mode === 'ride') { cow.setRider(false); mode = 'foot'; }
+    foot.enter(checkpoint.x, checkpoint.z, checkpoint.yaw); camYaw = checkpoint.yaw; camPitch = -.12; camEase = 1;
+    for (const f of farmers.farmers) if (!f.ragdoll && (f.state === 'chase' || f.alert > .3)) { f.state = 'patrol'; f.alert = .2; f.heard = null; f.windup = 0; f.aim = 0; }
+    if (!touch.active) renderer.domElement.requestPointerLock?.(); say('BACK AT THE STAFF GATE · THE HERD IS WHERE YOU LEFT IT', 3.5);
+  }
+  $('cn-continue').onclick = resume;
+  // Mission beats: get in and free a pen; build the herd (every pen open, or the main gate open); break out.
+  const beatsEl = document.querySelectorAll('#cn-beats li'); let missionBeat = -1;
+  function updateBeats() {
+    const pens = world.gates.filter(g => g.kind !== 'main'), main = world.gates.find(g => g.kind === 'main');
+    const now = !pens.some(g => g.open) ? 0 : !(main?.open || pens.every(g => g.open)) ? 1 : 2;
+    if (now !== missionBeat) {
+      if (missionBeat >= 0 && now > missionBeat) { audio.moo(.3); say(now === 1 ? '✓ IN · NOW BUILD THE HERD: FREE MORE PENS' : '✓ HERD BUILT · BREAK OUT THROUGH THE MAIN GATE', 3.2); }
+      if (now >= 1 && !checkpoint) checkpoint = { x: world.spawn.x, z: world.spawn.z, yaw: world.spawn.yaw };
+      missionBeat = now; beatsEl.forEach((el, i) => { el.dataset.state = i < now ? 'done' : i === now ? 'now' : ''; });
+    }
+    const pens2 = pens.filter(g => g.open).length; if (beatsEl[1]) beatsEl[1].textContent = `BUILD THE HERD · ${pens2}/${pens.length} PENS OPEN`;
+    if (beatsEl[2]) beatsEl[2].textContent = `BREAK OUT · ${herd.saved}/${herd.count} SAFE`;
+  }
   $('cn-again').onclick = restart;
   $('cn-enter').onclick = () => { $('cn-gate').hidden = true; phase = 'play'; stats.start = performance.now(); renderer.domElement.focus(); audio.start(); foot.enter(world.spawn.x, world.spawn.z, world.spawn.yaw); if (!touch.active) renderer.domElement.requestPointerLock?.(); say('THE STAFF GATE IS OPEN · A RED LEVER FREES EACH PEN · GET THEM OUT THE MAIN GATE', 6); };
 
@@ -507,6 +542,7 @@ async function boot() {
       else if (live && now - orderFlash < 500) { orderMark.visible = true; orderMark.position.set(hitPoint.x, .12, hitPoint.z); orderMark.scale.setScalar(1.2); orderMark.material.color.set(0xff2020); } }
     hurtFlash = Math.max(0, hurtFlash - dt * 1.6); post.set({ hurt: hurtFlash * .9 + (health < 30 && live ? .18 : 0) });
     updateCamera(dt); tune(dt, now);
+    if (live) minimap.update({ x: a.x, z: a.z, heading: mode === 'ride' ? Math.atan2(cow.state.forward.x, cow.state.forward.z) + rig.orbitYaw : camYaw, order: herd.order, riding: mode === 'ride' });
     // The objective marker: a diamond over the lever, then your cow, then the way out; pinned to the screen edge when off it.
     { const m = hud.marker, target = !live ? null : objective(a).at;
       if (!target || window.cowNinja?.freeCam) m.hidden = true; else {
@@ -514,7 +550,7 @@ async function boot() {
         const behind = mark.z > 1; let sx = mark.x, sy = mark.y; if (behind) { sx = -sx; sy = -1; }
         const k = Math.max(Math.abs(sx) / .92, Math.abs(sy) / .86, 1); sx /= k; sy /= k;
         m.hidden = false; m.style.transform = `translate(${((sx * .5 + .5) * container.clientWidth).toFixed(1)}px, ${((-sy * .5 + .5) * container.clientHeight).toFixed(1)}px)`; m.dataset.edge = k > 1 || behind ? '1' : '0'; m.lastChild.textContent = Math.round(far) + ' m'; } }
-    if (now - hudAt > 90) { hudAt = now; const c = cow.state, level = farmers.alertLevel(), o = option();
+    if (now - hudAt > 90) { hudAt = now; if (phase !== 'intro') updateBeats(); const c = cow.state, level = farmers.alertLevel(), o = option();
       hud.speed.textContent = Math.round((mode === 'foot' ? foot.state.speed : Math.abs(c.speed)) * 3.6) + ' km/h'; hud.charge.style.transform = `scaleX(${(mode === 'foot' ? fight.stamina() / 100 : c.charge).toFixed(2)})`; if (hud.chargeLabel && hud.chargeLabel.dataset.mode !== mode) { hud.chargeLabel.dataset.mode = mode; hud.chargeLabel.textContent = mode === 'foot' ? 'GUARD' : 'CHARGE'; } hud.charge.parentElement.classList.toggle('full', mode === 'ride' && c.charge > .97);
       hud.health.style.transform = `scaleX(${(health / 100).toFixed(2)})`;
       hud.goal.textContent = phase === 'intro' ? '' : (shaken ? 'SHAKEN · ' : '') + objective(a).text;
