@@ -259,7 +259,8 @@ function updateJump(dt){
  if(rollTime!==null){rollTime+=dt;if(rollTime>=ROLL_TIME||airborne)rollTime=null;}
  const Pk=h.parkourOn()?h.parkour():null;if(Pk&&!Pk.active()&&!Pk.updated?.(tick)){Pk.update(dt,tick);if(airborne)Pk.air(dt);}
  // Parkour owns the player while it is active: a caught ledge is not a landing, and a later fall counts from where you let go.
- if(h.parkour()?.active()){slide=null;dive=null;rollTime=null;airTime=0;wasAirborne=false;airPeak=targetPosition.y-1.75;proneT=Math.max(0,proneT-dt);return;}
+ // A caught ledge ends a blast flight too (else its near-zero air steering would stick to every later jump).
+ if(h.parkour()?.active()){blastFlight=false;slide=null;dive=null;rollTime=null;airTime=0;wasAirborne=false;airPeak=targetPosition.y-1.75;proneT=Math.max(0,proneT-dt);return;}
  // Thrown by a blast: the landing is a hard one (a moment on the ground) but the blast already did its damage.
  if(blastFlight&&!airborne&&wasAirborne){blastFlight=false;airPeak=targetPosition.y-1.75;proneT=Math.max(proneT,.85);momentum=0;h.playerBody?.anim?.('jumpLand',{fade:.06,speed:1.3});h.kick(7);sway.bump(1.6,Math.random()<.5?-1:1);footsteps?.land(surfaceAt(targetPosition),1);{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,10,.9);}wasAirborne=false;return;}
  if(airborne){airTime+=dt;airPeak=Math.max(airPeak,targetPosition.y-1.75);}else if(wasAirborne){

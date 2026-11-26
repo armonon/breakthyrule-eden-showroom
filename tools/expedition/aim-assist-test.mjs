@@ -8,9 +8,11 @@ function fixture(level='high'){
  const camera=new T.PerspectiveCamera();camera.position.set(0,1.7,0);camera.updateMatrixWorld();
  const targets=[],scope={T,camera,armed:true,current:{id:'pistol',range:60},zoomable:()=>true,
   o:{aimTargets:()=>targets},clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),lerp:(a,b,t)=>a+(b-a)*t,
-  worldHits:()=>null,window:{edenSettings:{get:()=>level,on(){}}}};
+  worldHits:()=>null,window:{edenSettings:{get:()=>level,on(){}}},
+  // Shots and assist start at the chest lens (combat.js lensPosition/aimForward); here the camera stands in for it.
+  lensPosition:v=>v.copy(camera.position),aimForward:v=>camera.getWorldDirection(v),lastTime:0};
  vm.createContext(scope);vm.runInContext(source.slice(source.indexOf('  const ASSIST_BASE='),source.indexOf('  // Each enemy keeps a voice')),scope);
- return {scope,targets,scan(){scope.assistScan();return vm.runInContext('({target:assist.target,angle:assist.angle,friction:assist.friction,magnet:ASSIST.magnet,cone:ASSIST.cone})',scope);},
+ return {scope,targets,scan(){scope.lastTime+=1;/* past the line-of-sight cache: every scan looks again */scope.assistScan();return vm.runInContext('({target:assist.target,angle:assist.angle,friction:assist.friction,magnet:ASSIST.magnet,cone:ASSIST.cone})',scope);},
   target(x,z=-10){const t={c:{},chest:new T.Vector3(x,1.7,z),head:new T.Vector3(x,1.9,z)};targets.push(t);return t;}};
 }
 test('high and medium acquire a near miss beyond the former narrow cone; off is truly off',()=>{

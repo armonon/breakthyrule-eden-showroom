@@ -1,5 +1,5 @@
 'use strict';
-const lean=!document.body?.classList.contains('expedition-entry');
+const lean=!globalThis.document?.body?.classList.contains('expedition-entry');
 window.createPyramidGathering=function(T,parent,{stone,onChange=()=>{},reduced=false}){
  const hall=new T.Group();hall.name='The masked gathering';parent.add(hall);
  const cube=new T.BoxGeometry(1,1,1),plane=new T.PlaneGeometry(1,1),guests=[],pillars=[],flames=[],lights=[];

@@ -5,7 +5,7 @@ window.createRoadPyramid=function(T,scene,{roadX,roadEnd,stone,onChange,reduced}
  const courses=[masonry,masonry.clone(),masonry.clone()];courses[1].color.set(0xa6b0a4);courses[2].color.set(0xc3c5b6);
  const cube=new T.BoxGeometry(1,1,1);
  // The expedition page keeps the pyramid it was built with; Beyond Eden gets merged courses and an iron gate.
- const lean=!document.body?.classList.contains('expedition-entry'),courseGeometry=[];
+ const lean=!globalThis.document?.body?.classList.contains('expedition-entry'),courseGeometry=[];
  function mergeLists(list){const pos=[],uv=[];for(const g of list){pos.push(...g.attributes.position.array);uv.push(...g.attributes.uv.array);}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.computeVertexNormals();return g;}
  function box(w,h,d,x,y,z,material=masonry){const mesh=new T.Mesh(cube,material);mesh.scale.set(w,h,d);mesh.position.set(x,y,z);mesh.receiveShadow=true;root.add(mesh);return mesh;}
  const court=stone.clone();court.color.set(0x757f75);

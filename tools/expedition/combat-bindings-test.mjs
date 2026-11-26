@@ -16,7 +16,7 @@ function combat(){
  const f=fixture(),source=read('combat.js'),start=source.indexOf('  function inputKey(e)'),end=source.indexOf('  /* ------------------------------------------------------------ lifecycle */',start);
  assert.ok(start>=0&&end>start);
  vm.runInContext(`let armed=true,locked=true,touchMode=false,current={id:'pistol'},previous='pump',buttons={left:false,right:false},pendingFire=false,shiftHeld=false,zoomTarget=0;
- const o={canAct:()=>true,setThird:()=>{}}; const setting=()=> 'hold',zoomable=()=>true; function requestFrame(){counts.frames++;} function requestLock(){counts.lock++;} function bash(){counts.bash++;} function detonate(){counts.detonate++;} function reload(){counts.reload++;} function slotIds(){return ['pistol','pump'];} function equip(id){current={id};} function holster(){armed=false;}`,f.s);
+ const o={canAct:()=>true,setThird:()=>{}}; const setting=()=> 'hold',zoomable=()=>true; function requestFrame(){counts.frames++;} function cancelInspect(){} function requestLock(){counts.lock++;} function bash(){counts.bash++;} function detonate(){counts.detonate++;} function reload(){counts.reload++;} function slotIds(){return ['pistol','pump'];} function equip(id){current={id};} function holster(){armed=false;}`,f.s);
  vm.runInContext(source.slice(start,end),f.s);
  f.state=()=>JSON.parse(vm.runInContext('JSON.stringify({armed,locked,buttons,pendingFire,shiftHeld,zoomTarget,current})',f.s));
  return f;
@@ -66,7 +66,7 @@ test('actual arena listeners support rebound attacks, blocking and score release
 test('actual battle listeners remap loot, heal and scores without consuming editing input',()=>{
  const f=fixture('battle'),source=read('battle-arena.js'),start=source.indexOf("   document.addEventListener('keydown'"),end=source.indexOf('\n  }',start);
  f.s.hud={el:{querySelector:f.s.q},update(){}};
- vm.runInContext('let active=true;function interact(){counts.loot++;}function useHeal(){counts.heal++;}',f.s);vm.runInContext(source.slice(start,end),f.s);
+ vm.runInContext('let active=true;function interact(){counts.loot++;}function useHeal(){counts.heal++;}function heldStrike(){return false;}var combat={raiseFists(){}};',f.s);vm.runInContext(source.slice(start,end),f.s);
  f.set('loot','KeyL');f.set('heal','KeyU');f.set('scores','KeyJ');
  f.dispatch(f.event('f','KeyF'));assert.equal(f.s.counts.loot,0);f.dispatch(f.event('l','KeyL'));assert.equal(f.s.counts.loot,1);
  f.dispatch(f.event('u','KeyU'));assert.equal(f.s.counts.heal,1);f.dispatch(f.event('u','KeyU','keydown',{target:{tagName:'TEXTAREA'}}));assert.equal(f.s.counts.heal,1);
