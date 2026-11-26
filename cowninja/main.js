@@ -121,7 +121,7 @@ async function boot() {
       mode = 'foot'; cow.setRider(false); calling = 0; keys.delete('shift'); say('ON FOOT · C CROUCH · E USE · Q CALL THE COW', 3);
       if (!touch.active) renderer.domElement.requestPointerLock?.();
     } else if (o.kind === 'mount') { if (o.swap) herd.swap(o.swap, cow); mode = 'ride'; foot.leave(); cow.setRider(true); calling = 0; document.exitPointerLock?.(); audio.moo(.14); }
-    else if (o.kind === 'takedown') { const f = o.farmer, p = foot.state, d = Math.hypot(f.p.x - p.x, f.p.z - p.z) || 1; foot.play('cross', { fade: .05, speed: 1.6, mask: 'upper' }); farmers.knock(f, (f.p.x - p.x) / d * 2.4, (f.p.z - p.z) / d * 2.4, 'takedown'); }
+    else if (o.kind === 'takedown') { const f = o.farmer, p = foot.state, d = Math.hypot(f.p.x - p.x, f.p.z - p.z) || 1; if (!(window.GardenAnim?.has?.('cnStab') && foot.play('cnStab', { fade: .08, speed: 1.7, start: 2.4, mask: 'upper' }))) foot.play('cross', { fade: .05, speed: 1.6, mask: 'upper' }); setTimeout(() => foot.ninja?.person.motion.stop?.('cnStab', .25), 1300); farmers.knock(f, (f.p.x - p.x) / d * 2.4, (f.p.z - p.z) / d * 2.4, 'takedown'); }
     else if (o.kind === 'latch') { world.openGate(); foot.play('interact', { fade: .08, mask: 'upper' }); audio.hit('wood', world.gatePost.x, world.gatePost.z, .8); }
   }
   // The whistle: on foot it brings the cow to you. Anyone close enough hears it too.

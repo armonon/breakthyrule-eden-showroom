@@ -64,7 +64,8 @@ export function createFoot({ scene, world, onEffect }) {
   }
   function placeOnWall() { if (wallClimb.nx) wallClimb.x = wallClimb.at + wallClimb.nx * OFF; else wallClimb.z = wallClimb.at + wallClimb.nz * OFF; }
   function endClimb(x, y, z, yaw, jump = false) {
-    wallClimb = null; climbAt = tick + 40; ninja?.person.motion.stop?.('climbUp', .15);
+    if (wallClimb?.clip) ninja?.person.motion.stop?.(wallClimb.clip, .15);
+    wallClimb = null; climbAt = tick + 40;
     controller.reset({ x, y, z, yaw, nextTick: controller.tick });
     if (jump) try { controller.step({ heldMask: BIT.w | BIT.space, edges: 1, yaw, pitch: 0 }); } catch { /* falls instead */ }
     read();
@@ -86,7 +87,7 @@ export function createFoot({ scene, world, onEffect }) {
         // The top: pull up if there is somewhere to stand just beyond the edge.
         const sx = c.x - c.nx * 1.15, sz = c.z - c.nz * 1.15; let floor = -1;
         try { floor = controller.parkour.supportAt(sx, sz, ny + 2.2, .26); } catch { /* none */ }
-        if (floor > ny + .4 && floor < ny + 2.3 && !boxAt(sx, floor + 1.0, sz)) { onEffect?.({ kind: 'footstep:land', args: ['stone', .4] }); endClimb(sx, floor, sz, face); return; }
+        if (floor > ny + .4 && floor < ny + 2.3 && !boxAt(sx, floor + 1.0, sz)) { onEffect?.({ kind: 'footstep:land', args: ['stone', .4] }); endClimb(sx, floor, sz, face); once('cnPullUp', { fade: .05, speed: 1.6, start: .35 }); return; }
       } else if (!boxAt(c.x, ny + 1.7, c.z) || up < 0) c.y = Math.max(0, ny);   // (an overhang above the head stops you)
     }
     c.moving = !!(up || side); tick++;
@@ -94,9 +95,14 @@ export function createFoot({ scene, world, onEffect }) {
     read(); state.y = c.y; state.movement = 'wallclimb'; state.climbing = true; state.airborne = false; state.speed = c.moving ? 2 : 0; state.noise = c.moving ? .22 : 0; state.hidden = false; state.velocity.set(0, 0, 0);
     bodyYaw = face;
     if (ninja) { ninja.dress(); const person = ninja.person; person.root.position.set(c.x - c.nx * .12, c.y, c.z - c.nz * .12); person.root.rotation.y = face;
-      try { person.motion.airborne(false); person.motion.crouch(0); if (!person.motion.playing?.('climbUp')) person.motion.play?.('climbUp', { loop: true, fade: .15, speed: c.moving ? 1.5 : .0001, mask: 'full' }); person.motion.update(c.moving ? dt : dt * .05, { velocity: STILLV, wade: 0 }); } catch { /* pose only */ } }
+      try { person.motion.airborne(false); person.motion.crouch(0); const want = clipFor(side > 0 ? 'cnShimmyR' : side < 0 ? 'cnShimmyL' : 'cnWallClimb');
+        if (c.clip !== want) { if (c.clip) person.motion.stop?.(c.clip, .12); c.clip = want; person.motion.play?.(want, { loop: true, fade: .12, speed: want === 'climbUp' ? 1.5 : 1.25, mask: 'full' }); } person.motion.update(c.moving ? dt : dt * .05, { velocity: STILLV, wade: 0 }); } catch { /* pose only */ } }
   }
   const STILLV = new THREE.Vector3();
+  // COWNinja's own clips (tools/cowninja/bake-anims.cjs), with the older clip as the fallback.
+  const hasClip = id => !!G.GardenAnim?.has?.(id), clipFor = id => hasClip(id) ? id : 'climbUp';
+  const once = (id, options = {}) => hasClip(id) ? ninja?.person.motion.play?.(id, { mask: 'full', loop: false, ...options }) : null;
+  let pipeClip = false;
   // One 60 Hz tick. keys: Set of 'w','a','s','d','shift','space','crouch'; yaw/pitch: where the camera looks.
   function step(keys, yaw, pitch = 0) {
     if (!controller || !state.active) return;
@@ -136,9 +142,13 @@ export function createFoot({ scene, world, onEffect }) {
     if (state.airborne && state.velocity.y < -1 && state.y > 2.2) {
       if (!leap) { const fx = Math.sin(wrapped), fz = Math.cos(wrapped); let best = null, bd = 13;
         for (const h of world.hay || []) { const dx = h[0] - state.x, dz = h[1] - state.z, d = Math.hypot(dx, dz); if (d < bd && (d < 5 || (dx * fx + dz * fz) / d > .55)) { bd = d; best = h; } }
-        leap = best || 'none'; }
+        leap = best || 'none'; if (best) once('cnLeap', { fade: .1, speed: .8 }); }
       if (leap !== 'none') { const dx = leap[0] - state.x, dz = leap[1] - state.z, d = Math.hypot(dx, dz) || 1, v = Math.min(8.5, d * 2.4); controller.velocity.x = dx / d * v; controller.velocity.z = dz / d * v; }
     } else if (!state.airborne) { if (leap && leap !== 'none' && world.inHay?.(state.x, state.z)) onEffect?.({ kind: 'leap-of-faith' }); leap = null; }
+    // Pipes use the ladder climb while you are moving on them.
+    { const on = state.movement === 'pipe' && hasClip('cnLadder') && (keys.has('w') || keys.has('s'));
+      if (on && !pipeClip) { pipeClip = true; ninja?.person.motion.play?.('cnLadder', { loop: true, fade: .12, speed: 1.6, mask: 'full' }); }
+      else if (!on && pipeClip) { pipeClip = false; ninja?.person.motion.stop?.('cnLadder', .15); } }
     pose(1 / 60);
   }
   // The body follows the way he is moving (not the camera), and takes its traversal poses from the movement state.

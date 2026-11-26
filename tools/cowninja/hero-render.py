@@ -54,7 +54,7 @@ def place(name, x, y, z, yaw, scale, part):
     if not os.path.exists(path): return
     try: objs = imp(path)
     except Exception as error: print('SKIP', name, error); return
-    if part:
+    if part and not name.startswith('modly:'):
         keep = set()
         for o in objs:
             if o.name.startswith(part): keep.add(o); keep.update(o.children_recursive); p = o.parent
@@ -67,9 +67,17 @@ def place(name, x, y, z, yaw, scale, part):
     root = bpy.data.objects.new(name, None); sc.collection.objects.link(root)
     for o in objs:
         if o.parent is None: o.parent = root
-    if part:  # bring the part to the origin as the game does
+    if part and not name.startswith('modly:'):  # bring the part to the origin as the game does
         for o in objs:
             if o.parent is root: o.location = (0, 0, 0)
+    if name.startswith('modly:'):   # anchored by the bounding box, as the game does: base centre, or top centre
+        bpy.context.view_layer.update(); lo = Vector((1e9,) * 3); hi = Vector((-1e9,) * 3)
+        for o in objs:
+            if o.type == 'MESH':
+                for c in o.bound_box: w = o.matrix_world @ Vector(c); lo = Vector(map(min, lo, w)); hi = Vector(map(max, hi, w))
+        off = Vector((-(lo.x + hi.x) / 2, -(lo.y + hi.y) / 2, -(hi.z if part == 'top' else lo.z)))
+        for o in objs:
+            if o.parent is root: o.location = o.location + off
     root.location = B(x, y, z); root.rotation_euler = (0, 0, yaw); root.scale = (scale, scale, scale)
 for name, x, y, z, yaw, scale, part in data['props']: place(name, x, y, z, yaw, scale, part)
 for name, x, z, yaw, scale, mass, part, y in data['loose']: place(name, x, y, z, yaw, scale, part)

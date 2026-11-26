@@ -27,3 +27,8 @@ props/ (added)      Poly Haven models (CC0): Barrel_02, modular_airduct_rectangu
                     fire_hydrant, water_manhole_cover, wooden_ladder, metal_office_desk, metal_stool_01, portable_generator,
                     tool_cart, metal_jerrycan, wooden_bucket_01, cardboard_box_01, dead_tree_trunk, boulder_01, shrub_02,
                     shrub_04, grass_medium_01, grass_medium_02, fir_sapling, tree_stump_01, nettle_plant, weed_plant_02.
+
+modly/*.glb         Generated with Modly (image to 3D) from the prompts in docs/cowninja-modly-library.md; lightened by
+                    tools/cowninja/compress-modly.sh. Originals on the claude/cowninja-modly branch.
+Animation (cn* clips in assets/anim/clips.json): Adobe Mixamo, baked by tools/cowninja/bake-anims.cjs. Royalty-free for
+                    use in projects; the raw Mixamo files are not redistributed (kept out of the repository's tree).
