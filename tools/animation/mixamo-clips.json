@@ -1,0 +1,17 @@
+[
+  {"id":"pkScramble","file":"Climbing Up Wall.fbx","loop":true,"rootMotion":"cycle"},
+  {"id":"pkShimmyL","file":"Braced Hang Shimmy.fbx","loop":true,"rootMotion":"cycle"},
+  {"id":"pkShimmyR","file":"Braced Hang Shimmy - Mirrored.fbx","loop":true,"rootMotion":"cycle"},
+  {"id":"pkClimb","file":"Braced Hang To Crouch.fbx","loop":false,"rootMotion":"flat"},
+  {"id":"pkLadder","file":"Climbing Ladder.fbx","loop":true,"rootMotion":"cycle"},
+  {"id":"pkLadderEnter","file":"Start Climbing Ladder.fbx","loop":false,"rootMotion":"flat"},
+  {"id":"pkLadderExit","file":"Climbing To Top.fbx","loop":false,"rootMotion":"flat"},
+  {"id":"pkRoll","file":"Falling To Roll.fbx","loop":false,"rootMotion":"body","startTime":0.4666666666666667},
+  {"id":"pkLeap","file":"Running Jump.fbx","loop":false,"rootMotion":"flat"},
+  {"id":"pkHopL","file":"Braced Hang Hop Left.fbx","loop":false,"rootMotion":"flat"},
+  {"id":"pkHopR","file":"Braced Hang Hop Right.fbx","loop":false,"rootMotion":"flat"},
+  {"id":"pkHopUp","file":"Braced Hang Hop Up.fbx","loop":false,"rootMotion":"flat"},
+  {"id":"pkHangDrop","file":"Braced Hang Drop - To Standing.fbx","loop":false,"rootMotion":"flat"},
+  {"id":"stealthAssassin","file":"Stealth Assassination - Assassin.fbx","loop":false,"rootMotion":"body","rootXZ":true},
+  {"id":"stealthVictim","file":"Stealth Assassination - Victim.fbx","loop":false,"rootMotion":"body","rootXZ":true}
+]

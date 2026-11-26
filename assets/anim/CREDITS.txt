@@ -1,4 +1,4 @@
-Breakthyrule animation library — 72 clips
+Breakthyrule animation library — 81 clips
 
 51 in-place clips retargeted from Quaternius Universal Animation Libraries 1 and 2 (Standard).
 License: CC0-1.0. Original notices: licenses/ual1-CC0.txt and licenses/ual2-CC0.txt.
@@ -8,12 +8,18 @@ Sources: https://quaternius.itch.io/universal-animation-library
 11 retained Microsoft Rocketbox clips. License: MIT. See licenses/Rocketbox-LICENSE.md.
 These use the existing game skeleton; first-person and procedural motion remain game code.
 
-10 parkour clips (pkVault, pkClimb, pkHang, pkShimmyL, pkShimmyR, pkScramble, pkLeap, pkRoll, pkWallRun and its
-mirror pkWallRunR)
-baked by tools/animation/bake-mixamo.cjs from Adobe Mixamo (https://www.mixamo.com), X Bot rig.
-Mixamo animations are royalty-free for use in projects; the raw Mixamo files are not redistributed,
-only the baked rotations in clips.json.
+19 parkour and stealth clips from Adobe Mixamo (https://www.mixamo.com), X Bot rig.
+Mixamo animations are royalty-free for use in projects.
 
-Runtime clips.json SHA-256: 0b94bde921d73811574a2434a0461ffe2a2478cb6ef56fa6e0210bbe126bcff1
-Portable source/build kit is retained separately (not a runtime download):
+15 current FBX source exports in assets/cowninja/mixamo are baked by tools/animation/bake-mixamo.cjs:
+pkScramble, pkShimmyL, pkShimmyR, pkClimb, pkLadder, pkLadderEnter, pkLadderExit, pkRoll, pkLeap,
+pkHopL, pkHopR, pkHopUp, pkHangDrop, stealthAssassin and stealthVictim.
+Four older Mixamo clips and their source space are preserved: pkVault, pkHang, pkWallRun, pkWallRunR.
+The runtime loads only the baked rotations in clips.json, not the FBX build inputs.
+Source hashes, export settings and runtime mapping: mixamo-manifest.json.
+Rebuild instructions and root-motion handling: tools/animation/README.md.
+
+Runtime clips.json SHA-256: 989c9bb70fa2748f9b18cf01850871ca029ef0cb853f350a264e1b3a20c8d39d
+
+The original portable source/build kit is retained separately (not a runtime download):
 animation-build-kit.tar.gz SHA-256 f3160519e8c4085e22b4a0670f82783c1430d0759db5edbab22b421ee1c04899.
