@@ -168,6 +168,8 @@
     n.material=m;});
    return g;
   }
+  // Squared distances for ground loot detail (ring / item / beam): phones keep the ring to 15 m and beams to 60 m.
+  const LOOT_LOD=window.edenRenderProfile?.().mobile?[225,1225,3600]:[676,1600,12100];
   function itemVisual(item){
    const M=materials(),g=new T.Group();
    if(item.type==='weapon'){const m=worldGun(combat.weaponModel(item.weapon,item.variant,worldGun));if(m){m.rotation.set(0,0,Math.PI/2);m.position.y=.05;const s=new T.Group();s.add(m);g.add(s);}else box(.5,.08,.12,M.iron,g);}
@@ -739,7 +741,7 @@
    for(const l of loot){if(!l.vel||l.item.type==='page')continue;const g=l.group.position;const d=Math.hypot(g.x-p.x,g.z-p.z);if(d<2.4&&g.y>p.y+.4){const s=4+(2.4-d);if(s>bs){bs=s;best={loot:l,catch:true};}}}
    for(const l of loot){if(l.vel||Math.abs(l.pos.y-p.y)>1.4)continue;const d=Math.hypot(l.pos.x-p.x,l.pos.z-p.z);if(d<2){const s=(2-d)+Math.max(0,fwd.dot(l.pos.clone().sub(camera.position).normalize()))*1.2;if(s>bs){bs=s;best={loot:l};}}}
    if(player.hold){player.focus=null;hud.prompt(holdPrompt(),'epic');return;}
-   player.focus=best;hud.prompt(best?.catch?'CATCH '+best.loot.item.label:best?best.chest?'OPEN CHEST':(best.loot.item.type==='weapon'&&combat.arsenal.inspect().owned.filter(id=>!['axe','c4'].includes(id)).length>=2&&!combat.arsenal.inspect().owned.includes(best.loot.item.weapon)?'SWAP FOR ':'PICK UP ')+best.loot.item.label:null,best?.loot?.item.rarity);
+   player.focus=best;hud.prompt(best?.catch?'CATCH '+best.loot.item.label:best?best.chest?'OPEN CHEST':(best.loot.item.type==='weapon'&&(combat.arsenal.inspect()?.owned||[]).filter(id=>!['axe','c4'].includes(id)).length>=2&&!(combat.arsenal.inspect()?.owned||[]).includes(best.loot.item.weapon)?'SWAP FOR ':'PICK UP ')+best.loot.item.label:null,best?.loot?.item.rarity);
   }
   function interact(){
    if(phase!=='live'||!player?.alive)return true;const f=player.focus;if(!f)return false;
@@ -806,7 +808,7 @@
     },
     prompt(text,rarity){const p=q('.ar-prompt');p.classList.toggle('show',!!text);if(text){p.querySelector('span').textContent=text;p.style.setProperty('--rar','#'+new T.Color(RARITY[rarity]||RARITY.common).getHexString());}},
     count(n){const c=q('.ar-count');c.textContent=n>0?n:'';c.classList.toggle('show',n>0);},
-    announce(t){const a=q('.ar-announce');a.textContent=t;a.classList.remove('show');void a.offsetWidth;a.classList.add('show');clearTimeout(annT);annT=setTimeout(()=>a.classList.remove('show'),2600);},
+    announce(t){const a=q('.ar-announce');a.textContent=t;a.classList.remove('show');requestAnimationFrame(()=>a.classList.add('show'));clearTimeout(annT);annT=setTimeout(()=>a.classList.remove('show'),2600);},
     toast(t){this.announce(t);},
     feed(){q('.ar-feed').innerHTML=feed.slice(-5).map(f=>`<div>${f.html}</div>`).join('');},
     end(won){
@@ -1320,7 +1322,7 @@
      if(player?.alive&&(player.speed||0)>5.2&&l.item.type!=='page'){const q=posOf(player),dx=l.pos.x-q.x,dz=l.pos.z-q.z,d=Math.hypot(dx,dz);if(d<.75&&d>1e-3){const k=(player.speed||0)*.45;l.vel=new T.Vector3(dx/d*k+rand(-.4,.4),1.6+rand(0,.8),dz/d*k+rand(-.4,.4));l.y+=.05;}}}
     // Distance detail: up close the item, its ring and its beam; from 26 m only the item and beam; past 40 m just the
     // beam (the marker you see across the map); past 110 m nothing. 80 items were ~650 draw calls a frame.
-    const U=l.group.userData,gp=l.group.position,dd=(gp.x-camera.position.x)**2+(gp.z-camera.position.z)**2,lod=dd<676?0:dd<1600?1:dd<12100?2:3;
+    const U=l.group.userData,gp=l.group.position,dd=(gp.x-camera.position.x)**2+(gp.z-camera.position.z)**2,L=LOOT_LOD,lod=dd<L[0]?0:dd<L[1]?1:dd<L[2]?2:3;
     if(U.lod!==lod){U.lod=lod;for(const ch of l.group.children){ch.visible=ch===U.beam?lod<3:ch===U.ring?lod===0:lod<2;}}
     if(U.beam&&lod<3)U.beam.lookAt(camera.position.x,gp.y+U.beam.position.y,camera.position.z);
    }

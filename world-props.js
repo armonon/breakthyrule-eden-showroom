@@ -28,7 +28,9 @@ window.createWorldProps=function(T,parent,{props,onChange=()=>{},warmup=null}={}
    s.traverse(o=>{if(!o.isMesh)return;o.receiveShadow=true;o.castShadow=!phone&&tall;const m=o.material;m.metalness=Math.min(m.metalness,.55);m.side=T.FrontSide;
     if(m.map){m.emissiveMap=m.map;m.emissive.set(0xffffff);m.emissiveIntensity=.07;}});
    window.edenMatrix?.surface(T,s,{kind:'model'});
-   if(phone)window.shrinkModelTextures?.(s,{maxTextureSize:256,detailSize:128});
+   // Props are seen from metres away: 1024 px colour and 512 px detail maps on desktop (the 2048 px originals were
+   // ~16 MB of uploads each, a visible hitch as each appeared), 256/128 on phones.
+   if(phone)window.shrinkModelTextures?.(s,{maxTextureSize:256,detailSize:128});else window.shrinkModelTextures?.(s,{maxTextureSize:1024,detailSize:512});
    s.updateMatrixWorld(true);s.traverse(o=>{o.matrixAutoUpdate=false;});
    // Shaders compiled and textures uploaded before it is drawn, so walking does not stutter.
    try{await warmup?.()?.prepare(s);}catch{}

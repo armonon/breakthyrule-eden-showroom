@@ -977,8 +977,10 @@
    const cls=(name,on)=>set(el,'c:'+name,on,(n,v)=>n.classList.toggle(name,v));
    return {el,reset(){cache.delete('active');},
     toast(text){const t=q('.ch-toast');t.textContent=text;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);},
-    hitmarker(isTrue,kill,head=false){const h=q('.ch-hit');h.classList.remove('show','gold','kill','head');void h.offsetWidth;h.classList.add('show');if(isTrue)h.classList.add('gold');if(head)h.classList.add('head');if(kill)h.classList.add('kill');clearTimeout(hitTimer);hitTimer=setTimeout(()=>h.classList.remove('show'),kill?460:head?260:190);},
-    trueShot(){const t=q('.ch-true');t.classList.remove('show');void t.offsetWidth;t.classList.add('show');clearTimeout(trueTimer);trueTimer=setTimeout(()=>t.classList.remove('show'),700);},
+    // Markers restart their CSS animation on the next frame instead of reading offsetWidth, which forced a full
+    // layout of the page on every hit (a stutter in every gunfight).
+    hitmarker(isTrue,kill,head=false){const h=q('.ch-hit');h.classList.remove('show','gold','kill','head');clearTimeout(hitTimer);requestAnimationFrame(()=>{h.classList.add('show');if(isTrue)h.classList.add('gold');if(head)h.classList.add('head');if(kill)h.classList.add('kill');hitTimer=setTimeout(()=>h.classList.remove('show'),kill?460:head?260:190);});},
+    trueShot(){const t=q('.ch-true');t.classList.remove('show');clearTimeout(trueTimer);requestAnimationFrame(()=>{t.classList.add('show');trueTimer=setTimeout(()=>t.classList.remove('show'),700);});},
     hurt(a,angle){const f=q('.ch-hurt');f.style.setProperty('--a',angle.toFixed(2)+'rad');f.style.transition='none';f.style.opacity=Math.min(1,a);requestAnimationFrame(()=>{f.style.transition='opacity .7s ease-out';f.style.opacity=0;});},
     flash(a){const f=q('.ch-flash');f.style.transition='none';f.style.opacity=a;requestAnimationFrame(()=>{f.style.transition='opacity .9s ease-out';f.style.opacity=0;});},
     update(){
@@ -1058,6 +1060,9 @@
   // Once the camera is final for the frame: the muzzle direction in camera space (turn lag and sway put the lens a little
   // off the look), for the hands, the weapon camera (its own narrower lens: the angle is rescaled so the muzzle sits over
   // the point it will hit) and the hit marker.
+  // The stage's size, kept by a ResizeObserver: reading clientWidth every frame forced a layout whenever the HUD
+  // had changed text earlier in the frame.
+  const stageSize={w:stage.clientWidth,h:stage.clientHeight};if(window.ResizeObserver)new ResizeObserver(()=>{stageSize.w=stage.clientWidth;stageSize.h=stage.clientHeight;}).observe(stage);
   function syncAim(){
    if(!free.on){free.view.identity();free.local.identity();free.screen.x=free.screen.y=0;if(fistArms?.aim)fistArms.aim(null);return;}
    aimForward(free.dir);freeTmp.copy(free.dir).applyQuaternion(freeInv.copy(camera.quaternion).invert());if(freeTmp.z>-.2)freeTmp.set(0,0,-1);
@@ -1066,7 +1071,7 @@
    free.screen.x=tx/(half*camera.aspect);free.screen.y=ty/half;
    freeTmp.set(tx*ratio,ty*ratio,-1).normalize();free.view.setFromUnitVectors(FREE_FWD,freeTmp);
    fistArms?.aim?.(free.local);
-   if(hud?.el){const h=stage.clientHeight*.5,w=stage.clientWidth*.5,x=(free.screen.x*w).toFixed(0),y=(-free.screen.y*h).toFixed(0),key=x+','+y;if(key!==free.shown){free.shown=key;hud.el.style.setProperty('--aim-x',x+'px');hud.el.style.setProperty('--aim-y',y+'px');}}
+   if(hud?.el){const h=stageSize.h*.5,w=stageSize.w*.5,x=(free.screen.x*w).toFixed(0),y=(-free.screen.y*h).toFixed(0),key=x+','+y;if(key!==free.shown){free.shown=key;hud.el.style.setProperty('--aim-x',x+'px');hud.el.style.setProperty('--aim-y',y+'px');}}
   }
   // Where the picture is taken from: the chest lens in Beyond Eden sits below the eyes the camera rests at between frames.
   function lensPosition(v){camera.getWorldPosition(v);v.y-=o.lensDrop?.()||0;return v;}

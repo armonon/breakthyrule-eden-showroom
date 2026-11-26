@@ -15,8 +15,11 @@ window.createEdenPhotoreal=function(T,{renderer,scene,camera,garden,lighting,pos
  let level=0,loaded=null,treesLoaded=null;
 
  // ---- sky ----
+ // The 8K panorama (18 megapixels, a single GPU upload of a few hundred milliseconds) only on desktop High/Photo;
+ // phones and Low/Medium take the 4K copy (identical colours, a quarter of the upload).
+ const skyFile=()=>{const g=(()=>{try{return localStorage.getItem('eden-graphics');}catch{return null;}})(),phone=!!window.edenRenderProfile?.().mobile;return phone||g==='low'||g==='medium'?'/assets/eden-photo/sky-4k.webp?v=1':'/assets/eden-photo/sky.webp?v=1';};
  async function loadSky(){
-  const [info,map]=await Promise.all([fetch('/assets/eden-photo/sky.json?v=1').then(r=>r.json()),new T.TextureLoader().loadAsync('/assets/eden-photo/sky.webp?v=1')]);
+  const [info,map]=await Promise.all([fetch('/assets/eden-photo/sky.json?v=1').then(r=>r.json()),new T.TextureLoader().loadAsync(skyFile())]);
   map.colorSpace=T.NoColorSpace;map.wrapS=T.RepeatWrapping;map.generateMipmaps=false;map.minFilter=T.LinearFilter;map.magFilter=T.LinearFilter;map.anisotropy=1;
   skyUniforms.photoMap.value=map;
   skyUniforms.photoSky.value.y=info.sunU-(Math.atan2(sunDir.z,sunDir.x)/(Math.PI*2)+.5);

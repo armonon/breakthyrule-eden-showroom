@@ -112,6 +112,12 @@
    const changed=[];for(const c of scene.children)if(c.visible&&!c.isLight)c.traverse(o=>{if(o.isMesh||o.isSprite||o.isGroup){changed.push([o,o.visible,o.frustumCulled,o.castShadow]);o.visible=true;o.frustumCulled=false;if(o.isMesh)o.castShadow=true;}});
    const target=renderer.getRenderTarget();
    try{const job=renderer.compileAsync?renderer.compileAsync(scene,camera):Promise.resolve(renderer.compile(scene,camera));await Promise.race([job,new Promise(r=>setTimeout(r,cap))]);
+    // Upload the world's textures a few at a time between frames (about 8 ms of work each), so the warm-up render
+    // below does not upload them all at once: that froze the loading screen for seconds on the way into Beyond Eden.
+    {const seen=new Set(),list=[],uploaded=t=>{try{return !!renderer.properties.get(t).__webglInit;}catch{return true;}};
+     scene.traverseVisible(o=>{for(const m of [].concat(o.material||[])){for(const v of Object.values(m))if(v?.isTexture)seen.add(v);for(const u of Object.values(m.uniforms||{}))if(u?.value?.isTexture)seen.add(u.value);}});
+     for(const t of seen){const img=t.image;if(!t.isRenderTargetTexture&&!t.isVideoTexture&&img&&(img.width>0||img.data||Array.isArray(img))&&!uploaded(t))list.push(t);}
+     let t0=performance.now();for(const t of list){try{renderer.initTexture(t);}catch{}if(performance.now()-t0>8){await frame();t0=performance.now();}}}
     // Force initial geometry, depth shaders and textures with the final display color space
     // while the opaque loading card covers the world. Live frames reuse the GPU resources.
     renderer.shadowMap.needsUpdate=true;renderer.render(scene,camera);root.breakThyRuleShowroom?.combat()?.primeView?.();renderer.getContext().finish();primed=true;

@@ -241,6 +241,9 @@ if(recoveringGL&&mobileDevice)renderProfile.max=Math.min(renderProfile.max,.75);
 const viewport={width:stage.clientWidth,height:stage.clientHeight};let shelfWidth=160;
 new ResizeObserver(entries=>{const entry=entries[0];if(entry.contentRect.width>0)shelfWidth=entry.contentRect.width;}).observe($('shelf-actions'));
 try{renderer=new T.WebGLRenderer({alpha:true,antialias:renderProfile.antialias,powerPreference:'high-performance'});}catch{fallback();return;}
+// Shader error checks read each program's log, which waits for compilation to finish there and then (seconds of
+// freeze entering a world, and a hitch each time a new material appears). ?debug turns them back on.
+renderer.debug.checkShaderErrors=/[?&]debug\b/.test(location.search);
 renderer.setPixelRatio(renderProfile.max);renderer.setSize(stage.clientWidth,stage.clientHeight);renderer.setClearColor(0xc7d9b8,0);renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.AgXToneMapping;renderer.toneMappingExposure=1.5;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;stage.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Garden of Eden with a sunlit fruit tree, wildflowers, a reflective pond, stone paths and the Break Thy Rule collection in an open garden pavilion.');renderer.domElement.setAttribute('role','img');
 window.showroomEnableKTX2(renderer);
 // Phones: three.js shrinks any image texture larger than maxTextureSize as it uploads it. At a phone's 1x drawing
