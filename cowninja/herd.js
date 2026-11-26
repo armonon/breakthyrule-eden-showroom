@@ -28,7 +28,7 @@ export function createHerd({ scene, world, cow, farmers, assets, leader, onEvent
     }
   }
   const count = cows.length, exit = world.exit;
-  let saved = 0, order = { type: 'follow' }, field = null, fieldAt = -9, fieldCell = -2, status = 'penned', navDirty = false;
+  let saved = 0, lost = 0, order = { type: 'follow' }, field = null, fieldAt = -9, fieldCell = -2, status = 'penned', navDirty = false;
   const free = () => cows.filter(c => c.state === 'free');
   const gateStrength = g => TUNE.gates[g.kind] ?? g.strength ?? 30;
   const series = new Map();   // gate id -> { hits: [{t, power}], peak, count, last }
@@ -45,7 +45,27 @@ export function createHerd({ scene, world, cow, farmers, assets, leader, onEvent
     let n = 0; for (const c of cows) if (c.state === 'penned' && c.pen.id === id) { c.state = 'free'; n++; }
     navDirty = true; if (n) onEvent({ type: 'released', id, count: n }); return n;
   }
-  function recall() { order = { type: 'follow' }; field = null; return free().length; }
+  function recall() { order = { type: 'follow' }; field = null; for (const c of cows) c.flee = null; return free().length; }
+  // The run-up to a gate from the herd's side: which way the charge goes and how far back there is room to start.
+  function approach(gate, from) {
+    const side = (from.x - gate.x) * gate.n[0] + (from.z - gate.z) * gate.n[1] > 0 ? -1 : 1, dir = [gate.n[0] * side, gate.n[1] * side];
+    let back = 2; while (back < H.runup && !world.blocked(gate.x - dir[0] * (back + 1.5), gate.z - dir[1] * (back + 1.5), 1.2)) back += 1;
+    return { dir, back, ax: gate.x - dir[0] * back, az: gate.z - dir[1] * back };
+  }
+  // What a charge at this gate would do, before it is ordered: the force the herd can bring against what is needed.
+  function assess(gate) {
+    const list = free(), n = list.length, need = gateStrength(gate); if (!n) return { verdict: 'NO FREE COWS', ok: false, need, power: 0, cows: 0 };
+    if (navDirty) { nav.rebuild(); navDirty = false; }
+    const from = centroid(list), near = list.reduce((a, c) => Math.hypot(c.p.x - from.x, c.p.z - from.z) < Math.hypot(a.p.x - from.x, a.p.z - from.z) ? c : a, list[0]);
+    const a = approach(gate, near.p), reach = nav.field(a.ax, a.az).steps(near.p.x, near.p.z) >= 0;
+    if (!reach || a.back < 4) return { verdict: 'APPROACH BLOCKED', ok: false, need, power: 0, cows: n };
+    const speed = Math.min(H.chargeSpeed, Math.sqrt(2 * H.chargeAccel * Math.max(1, a.back - 1.5))), across = Math.max(1, Math.floor(Math.max(.5, gate.half - .9) * 2 / H.separation) + 1);
+    const ranks = Math.floor(H.impactWindow * speed / (H.separation * .8)) + 2, hitters = Math.min(n, across * ranks), power = hitters * speed * H.assessAim;
+    const most = Math.min(n, across * (Math.floor(H.impactWindow * H.chargeSpeed / (H.separation * .8)) + 2)) * H.chargeSpeed * H.assessAim;
+    const wanted = Math.ceil(need / (H.chargeSpeed * H.assessAim));
+    return { ok: power >= need, power, need, cows: n, wanted, back: a.back,
+      verdict: power >= need ? 'READY TO BREAK' : most < need ? `NEED MORE COWS (${n} OF ABOUT ${wanted})` : 'NEED A LONGER RUN-UP' };
+  }
   // An order at a point on the ground: charge the closed gate there if there is one, else go there and hold.
   // Returns { ok, type, x, z, gate } or { ok: false, reason } and then the standing order is kept.
   function command(x, z) {
@@ -55,12 +75,10 @@ export function createHerd({ scene, world, cow, farmers, assets, leader, onEvent
     const gate = world.gateNear(x, z, H.commandGateRadius);
     if (gate) {
       // Charge from the herd's side. The run-up starts as far back as there is room for, up to H.runup.
-      const side = (near.p.x - gate.x) * gate.n[0] + (near.p.z - gate.z) * gate.n[1] > 0 ? -1 : 1, dir = [gate.n[0] * side, gate.n[1] * side];
-      let back = 2; while (back < H.runup && !world.blocked(gate.x - dir[0] * (back + 1.5), gate.z - dir[1] * (back + 1.5), 1.2)) back += 1;
-      const ax = gate.x - dir[0] * back, az = gate.z - dir[1] * back, f = nav.field(ax, az);
-      if (f.steps(near.p.x, near.p.z) < 0) return { ok: false, reason: 'THE HERD CAN\'T REACH THAT GATE' };
+      const { dir, back, ax, az } = approach(gate, near.p), f = nav.field(ax, az);
+      if (f.steps(near.p.x, near.p.z) < 0 || back < 4) return { ok: false, reason: 'APPROACH BLOCKED' };
       order = { type: 'charge', gate, dir, ax, az, back, phase: 'gather', since: null, x: gate.x, z: gate.z }; field = f; fieldCell = -2;
-      return { ok: true, type: 'charge', x: gate.x, z: gate.z, gate };
+      return { ok: true, type: 'charge', x: gate.x, z: gate.z, gate, outlook: assess(gate) };
     }
     if (nav.snap(x, z) < 0) return { ok: false, reason: 'NOT A PLACE COWS CAN STAND' };
     const f = nav.field(x, z); if (f.steps(near.p.x, near.p.z) < 0) return { ok: false, reason: 'THE HERD CAN\'T GET THERE' };
@@ -122,18 +140,21 @@ export function createHerd({ scene, world, cow, farmers, assets, leader, onEvent
     const f = charging ? null : (field && order.type !== 'follow' && field.version === nav.version ? field : setField(tx, tz, time, order.type !== 'follow' && !field));
     // How far the front of a charge has got (those behind hurry to close up).
     let front = -1e9; if (charging) for (const c of list) front = Math.max(front, (c.p.x - order.gate.x) * order.dir[0] + (c.p.z - order.gate.z) * order.dir[1]);
-    let nearCount = 0, lost = 0;
+    let nearCount = 0, astray = 0, fleeing = 0;
     const rush = charging ? order : null;   // the order may change mid-loop (the gate gives): this charge's own data
 
     for (const c of cows) {
       let ax = 0, az = 0, cap = 1.1, turnRate = 2, graze = 0;
       if (c.stun > 0) c.stun -= dt;
+      if (c.state === 'lost') continue;
       if (c.state === 'penned' || c.state === 'saved') {   // mill about: in the pen, or on the grass once safe
         c.wander += Math.sin(time * .7 + c.slot * 2.1) * dt;
         const cx = c.state === 'saved' ? exit.x : (c.pen.minX + c.pen.maxX) / 2, cz = c.state === 'saved' ? exit.z : (c.pen.minZ + c.pen.maxZ) / 2;
         const rx = c.state === 'saved' ? exit.radius * .6 : (c.pen.maxX - c.pen.minX) * .3, rz = c.state === 'saved' ? exit.radius * .6 : (c.pen.maxZ - c.pen.minZ) * .3;
         const gx = cx + Math.cos(c.wander + c.slot) * rx, gz = cz + Math.sin(c.wander * 1.3 + c.slot) * rz, d = Math.hypot(gx - c.p.x, gz - c.p.z) || 1;
         const want = Math.min(cap, d * .8); ax = (gx - c.p.x) / d * want; az = (gz - c.p.z) / d * want; graze = Math.max(0, Math.sin(time * .25 + c.slot * 1.3));
+      } else if (c.flee && time < c.flee.until) {   // bolting from a blast
+        const fx = c.p.x - c.flee.x, fz = c.p.z - c.flee.z, d = Math.hypot(fx, fz) || 1; cap = 9.5; ax = fx / d * cap; az = fz / d * cap; turnRate = 7; fleeing++;
       } else if (charging && c.stun <= 0) {
         // Run at the gate in a lane, aimed well beyond it so the blow lands square.
         const tangent = [-rush.dir[1], rush.dir[0]], gx = rush.gate.x + tangent[0] * c.lane + rush.dir[0] * 14, gz = rush.gate.z + tangent[1] * c.lane + rush.dir[1] * 14;
@@ -143,7 +164,7 @@ export function createHerd({ scene, world, cow, farmers, assets, leader, onEvent
         ax = ((gx - c.p.x) / d + tangent[0] * steer * .6) * cap; az = ((gz - c.p.z) / d + tangent[1] * steer * .6) * cap; turnRate = 6;
       } else if (c.stun <= 0) {
         const direct = Math.hypot(tx - c.p.x, tz - c.p.z), step = f?.dir(c.p.x, c.p.z, out);
-        if (!step) lost++;
+        if (!step) astray++;
         if (direct < hold + 6) nearCount++;
         cap = direct > 14 ? Math.max(top, order.type === 'follow' ? H.followMax : top) : top;
         const want = direct < hold ? 0 : Math.min(cap, (direct - hold) * 1.6 + .6);
@@ -197,9 +218,20 @@ export function createHerd({ scene, world, cow, farmers, assets, leader, onEvent
       const blow = gate ? Math.abs(s.speed) * Math.abs(s.forward.x * gate.n[0] + s.forward.z * gate.n[1]) : 0;
       if (blow >= H.minBlow) { cow.herdHitAt = time; strike(gate, blow, time); }
     }
-    status = !n ? (saved ? 'safe' : 'penned') : order.type === 'charge' ? (charging ? 'charging' : 'forming up') : lost > n * .4 || (order.type === 'follow' && nearCount < n * .5) ? 'scattered' : order.type === 'follow' ? 'following' : nearCount >= n * .7 ? 'holding' : 'moving';
+    status = !n ? (saved ? 'safe' : lost ? 'lost' : 'penned') : order.type === 'charge' ? (charging ? 'charging' : 'forming up') : fleeing > n * .3 || astray > n * .4 || (order.type === 'follow' && nearCount < n * .5) ? 'scattered' : order.type === 'follow' ? 'following' : nearCount >= n * .7 ? 'holding' : 'moving';
   }
 
+  // A blast: cows close to it die (they stay where they fell and are counted lost), the rest nearby bolt from it
+  // for a few seconds. `covered(x, z)` says whether something solid stood between a cow and the blast.
+  function blast(x, z, { lethal = TUNE.blast.lethal, scatter = TUNE.blast.scatter, seconds = TUNE.blast.scatterSeconds, covered = () => false, time = 0 } = {}) {
+    let killed = 0, scattered = 0;
+    for (const c of cows) {
+      if (c.state === 'lost' || c.state === 'saved') continue; const d = Math.hypot(c.p.x - x, c.p.z - z);
+      if (d < lethal && !covered(c.p.x, c.p.z)) { c.state = 'lost'; lost++; killed++; c.speed = 0; c.model.group.rotation.z = Math.PI / 2 * (c.slot % 2 ? 1 : -1); c.model.group.position.y = .42; onEvent({ type: 'cow-lost', x: c.p.x, z: c.p.z, lost }); }
+      else if (d < scatter && c.state === 'free') { c.flee = { x, z, until: time + seconds * (1 - d / scatter * .5) }; c.stun = 0; scattered++; }
+    }
+    return { killed, scattered };
+  }
   // The nearest free cow to a point, and trading places with the ridden cow (so any cow can be the one you ride).
   function nearest(x, z, reach) { let best = null, d = reach; for (const c of cows) if (c.state === 'free') { const r = Math.hypot(c.p.x - x, c.p.z - z); if (r < d) { d = r; best = c; } } return best; }
   function swap(c, ridden) {
@@ -208,7 +240,7 @@ export function createHerd({ scene, world, cow, farmers, assets, leader, onEvent
     const pen = pens.find(p => x > p.minX && x < p.maxX && z > p.minZ && z < p.maxZ), gate = pen && world.gates.find(g => g.id === pen.id);
     if (pen && gate && !gate.open) { c.pen = pen; c.state = 'penned'; }
   }
-  return { update, nearest, swap, release, recall, command, cows, nav, count,
+  return { update, nearest, swap, release, recall, command, assess, blast, cows, nav, count, get lost() { return lost; },
     get order() { return order; }, get status() { return status; }, get freeCount() { return cows.filter(c => c.state === 'free').length; },
     get penned() { return cows.filter(c => c.state === 'penned').length; },
     get free() { return cows.some(c => c.state !== 'penned'); }, get saved() { return saved; } };
