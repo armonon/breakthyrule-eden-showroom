@@ -66,7 +66,7 @@
   // the pose blends back into the procedural animation as the character gets up.
   const ragdoll=(()=>{
    const order=['root','spine03','spine02','spine01','neck01','head','clavicle.L','upperarm01.L','lowerarm01.L','wrist.L','clavicle.R','upperarm01.R','lowerarm01.R','wrist.R','upperleg01.L','lowerleg01.L','foot.L','upperleg01.R','lowerleg01.R','foot.R'].map(bone).filter(Boolean);
-   const at=b=>order.indexOf(b),P=[],Q=[],links=[],stops=[];let active=false,clock=0,ground=0,acc=0,recover=0,snapshot=null,snapPelvis=new T.Vector3(),recoverTime=1.1;
+   const at=b=>order.indexOf(b),P=[],Q=[],links=[],stops=[];let active=false,clock=0,ground=0,acc=0,recover=0,snapshot=null,launched=false,snapPelvis=new T.Vector3(),recoverTime=1.1;
    // Leaf bones get a tip particle so their direction is simulated too.
    const tips=new Map();
    for(const b of order){const child=order.find(c=>c.parent===b);if(child)continue;const t=b.name.startsWith('head')?new T.Vector3(0,.22,.02):b.name.startsWith('wrist')?local(b).sub(local(b.parent)).setLength(.17):b.name.startsWith('foot')?new T.Vector3(0,-.04,.17):new T.Vector3(0,.1,0);tips.set(b,{local:t,index:order.length+tips.size});}
@@ -82,7 +82,8 @@
    // physics rather than a canned flinch. All of it runs on simulation time only (the server shares this file).
    let pinned=false,guard=0;
    // stay: a death; the body never gets back up (and stops simulating once it has settled).
-   function start(impulse,strength,stay=false){stayDown=stay;pinned=false;guard=0;
+   // launch (m/s, optional): a blast throws the whole body that fast, tumbling, before it falls back as a ragdoll.
+   function start(impulse,strength,stay=false,launch=null){stayDown=stay;pinned=false;guard=0;
     group.updateMatrixWorld(true);capture();Q.length=0;
     const up=new T.Vector3(0,1,0);P.forEach((p,i)=>{const h=clamp((p.y-group.getWorldPosition(v2).y)/1.6,0,1);Q[i]=p.clone().addScaledVector(impulse,-(.007+.02*h)*strength).addScaledVector(up,-.008*strength*h);});
     links.length=0;stops.length=0;const add=(a,b,list=links)=>{if(a>=0&&b>=0)list.push([a,b,P[a].distanceTo(P[b])]);};
@@ -90,12 +91,15 @@
     const L=pick('upperarm01.L'),R=pick('upperarm01.R'),hl=pick('upperleg01.L'),hr=pick('upperleg01.R'),chest=pick('spine01'),neck=pick('neck01'),hd=pick('head'),root=pick('root');
     for(const [a,b] of [[L,R],[hl,hr],[L,hl],[R,hr],[L,hr],[R,hl],[neck,L],[neck,R],[hd,L],[hd,R],[chest,hl],[chest,hr],[root,L],[root,R],[tips.get(bone('head'))?.index,neck],[tips.get(bone('head'))?.index,chest]])add(a,b);
     for(const [a,b] of [[pick('upperleg01.L'),pick('foot.L')],[pick('upperleg01.R'),pick('foot.R')],[pick('upperarm01.L'),pick('wrist.L')],[pick('upperarm01.R'),pick('wrist.R')]])if(a>=0&&b>=0)stops.push([a,b,P[a].distanceTo(P[b])*.55]);
-    ground=group.getWorldPosition(v2).y;active=true;clock=0;acc=0;recover=0;
+    ground=group.getWorldPosition(v2).y;active=true;clock=0;acc=0;recover=0;launched=false;
+    if(launch&&launch.lengthSq()>1){launched=true;const h=1/90,c=P[at(order[0])]||P[0],axis=new T.Vector3(launch.z,0,-launch.x);if(axis.lengthSq()<1e-6)axis.set(1,0,0);axis.normalize();
+     const spin=(4+Math.random()*4)*(Math.random()<.5?-1:1);
+     P.forEach((p,i)=>{const r=v1.subVectors(p,c),w=v2.crossVectors(axis,r).multiplyScalar(spin);Q[i].addScaledVector(launch,-h).addScaledVector(w,-h);});}
    }
    function step(dt){
     clock+=dt;acc+=dt;const h=1/90;let n=0;
     while(acc>=h&&n++<8){acc-=h;
-     P.forEach((p,i)=>{const prev=Q[i],vx=(p.x-prev.x)*.995,vy=(p.y-prev.y)*.995,vz=(p.z-prev.z)*.995;prev.copy(p);p.x+=vx;p.y+=vy-9.8*h*h;p.z+=vz;});
+     P.forEach((p,i)=>{const prev=Q[i],drag=launched&&p.y>ground+.35?.9997:.995,vx=(p.x-prev.x)*drag,vy=(p.y-prev.y)*drag,vz=(p.z-prev.z)*drag;prev.copy(p);p.x+=vx;p.y+=vy-9.8*h*h;p.z+=vz;});
      for(let k=0;k<10;k++){
       for(const [a,b,len] of links){const d=v1.subVectors(P[b],P[a]),l=d.length()||1e-6,c=(l-len)/l*.5;P[a].addScaledVector(d,c);P[b].addScaledVector(d,-c);}
       for(const [a,b,min] of stops){const d=v1.subVectors(P[b],P[a]),l=d.length()||1e-6;if(l<min){const c=(l-min)/l*.5;P[a].addScaledVector(d,c);P[b].addScaledVector(d,-c);}}
@@ -152,7 +156,8 @@
      step(dt);pose();
      // Lie still for a moment, then get up: the procedural pose takes over from the ragdoll over about a second.
      const still=Q.every((q,i)=>q.distanceToSquared(P[i])<1e-7);
-     if(!stayDown&&!pinned&&clock>2.2&&(still||clock>4.5)){active=false;recover=1;snapshot=model.skeleton.bones.map(b=>b.quaternion.clone());snapPelvis.copy(order[0].position);}},
+     if(launched&&P.every(p=>p.y<ground+.6))launched=false; // landed: back to ordinary ragdoll drag
+     if(!stayDown&&!pinned&&!launched&&clock>2.2&&(still||clock>4.5)){active=false;recover=1;snapshot=model.skeleton.bones.map(b=>b.quaternion.clone());snapPelvis.copy(order[0].position);}},
     blend(dt){recover=Math.max(0,recover-dt/recoverTime);const k=smooth(0,1,1-recover);model.skeleton.bones.forEach((b,i)=>b.quaternion.slerpQuaternions(snapshot[i],b.quaternion.clone(),k));order[0].position.lerpVectors(snapPelvis,order[0].position.clone(),k);},
     get recoverLeft(){return recover;},
     // Getting up with the get-up animation (api.onGetUp set): the body is first moved to where it actually lies, then the
@@ -279,7 +284,7 @@
    strike(part,impulse){if(!canonical&&ragdoll.active)ragdoll.strike(part,impulse);},
    // Where a joint of the ragdolled body is in the world (null while standing).
    ragdollPoint:name=>ragdoll.active?ragdoll.point(name):null,
-   knockdown(direction,strength=1.5,{stay=false}={}){if(canonical)throw Error('Canonical knockdown belongs to the authoritative physics actor.');if(ragdoll.active&&!stay)return;const d=direction.clone().setY(0);if(d.lengthSq()<1e-6)d.set(0,0,-1);d.normalize();ragdoll.start(d,strength,stay);},
+   knockdown(direction,strength=1.5,{stay=false,launch=null}={}){if(canonical)throw Error('Canonical knockdown belongs to the authoritative physics actor.');if(ragdoll.active&&!stay)return;const d=direction.clone().setY(0);if(d.lengthSq()<1e-6)d.set(0,0,-1);d.normalize();ragdoll.start(d,strength,stay,launch);},
    update(dt,options={}){
     dt=clamp(dt||0,0,1/20);
     if(ragdoll.active){state.time=(state.time||0)+dt;ragdoll.update(dt);if(state.held)state.held.mesh.visible=false;

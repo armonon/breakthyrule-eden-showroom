@@ -19,8 +19,8 @@
 
  // Loot tables. Weights are relative. Guns in the centre are deliberately rare.
  const CENTER_TABLE=[
-  [30,'armor'],[18,'bandage'],[10,'medkit'],[9,'c4'],[8,'ammo'],
-  [8,{weapon:'pistol'}],[3,{weapon:'smg'}],[14,'nothing']
+  [30,'armor'],[18,'bandage'],[10,'medkit'],[14,'c4'],[8,'ammo'],
+  [8,{weapon:'pistol'}],[3,{weapon:'smg'}],[9,'nothing']
  ];
  const AMMO_FOR={pistol:['pistol',24],smg:['smg',60],rifle:['rifle',60],sniper:['sniper',10],pump:['shells',12]};
  const AMMO_LABEL={pistol:'9MM',smg:'.45 ACP',rifle:'7.62',sniper:'.308',shells:'12GA'};
@@ -48,7 +48,8 @@
  // most is pinged to everyone every PING_EVERY seconds; a dropped page left alone PAGE_RESET seconds (or one nobody
  // collects for PAGE_SHUFFLE) goes back to a page spot. The Moon Temple only takes pages at night; when all eight
  // are in, whoever delivered most wins the ceremony and the pages scatter again.
- const PAGE_COUNT=8,PAGE_RESET=120,PAGE_SHUFFLE=120,PING_EVERY=20,PING_SHOW=8,SOUL_TIME=9;
+ // PAGE_COUNT pages in the temple hold the ceremony; PAGE_TOTAL lie about the district, so there are always more than you need.
+ const PAGE_COUNT=8,PAGE_TOTAL=20,PAGE_RESET=120,PAGE_SHUFFLE=120,PING_EVERY=20,PING_SHOW=8,SOUL_TIME=9;
  // Day and night (seconds): night brings the Attendant and opens the temple.
  // The Watcher: drawn to the pages. He hunts whoever carries them (a hit makes them drop everything), picks up
  // pages that have been moved and carries them back to where they belong, and otherwise walks between the page spots.
@@ -104,10 +105,14 @@
    if(spec==='armor'){const g=pick(garments);return g?{type:'armor',armor:g.armor,garment:g,rarity:g.rarity,label:g.name.toUpperCase()+' · '+g.armor+' ARMOR'}:null;}
    if(spec==='bandage')return {type:'heal',heal:'bandage',count:2,rarity:'common',label:'BANDAGES ×2'};
    if(spec==='medkit')return {type:'heal',heal:'medkit',count:1,rarity:'uncommon',label:'MEDKIT'};
-   if(spec==='c4')return {type:'c4',count:1,rarity:'uncommon',label:'C4 CHARGE'};
+   // The explosives slot: C4 (remote), or a frag grenade or pipe bomb (thrown, on a fuse); grenades turn up most.
+   if(spec==='c4'||spec?.explosive!==undefined){const variant=spec==='c4'?pick([null,'frag','frag','pipe']):spec.explosive,count=variant?2:1;return {type:'c4',variant,count,rarity:'uncommon',label:(variant&&combat.gunLabel?combat.gunLabel('c4',variant).split(' · ')[1]:'C4 CHARGE')+(count>1?' ×'+count:'')};}
    if(spec==='ammo'){const k=pick(Object.keys(AMMO_FOR));return rollItem({ammo:AMMO_FOR[k][0]});}
    if(spec.ammo){const [type,n]=Object.values(AMMO_FOR).find(([t])=>t===spec.ammo)||[spec.ammo,20];return {type:'ammo',ammo:type,count:n,rarity:'common',label:AMMO_LABEL[type]+' AMMO ×'+n};}
-   if(spec.weapon){const W=combat.weapons.find(w=>w.id===spec.weapon);return {type:'weapon',weapon:spec.weapon,loaded:W.mag,rarity:GUN_RARITY[spec.weapon]||'uncommon',label:W.name+' · '+W.kind};}
+   if(spec.weapon){const W=combat.weapons.find(w=>w.id===spec.weapon);
+    // Any gun of the class can turn up: its own model or one of its variants, equally often.
+    const pool=[null,...(combat.variants?.[spec.weapon]||[]).map(v=>v.id)],variant=spec.variant!==undefined?spec.variant:pick(pool);
+    return {type:'weapon',weapon:spec.weapon,variant,loaded:W.mag,rarity:GUN_RARITY[spec.weapon]||'uncommon',label:combat.gunLabel?combat.gunLabel(spec.weapon,variant):W.name+' · '+W.kind};}
    return null;
   }
 
@@ -306,6 +311,16 @@
   // character-motion.js still layers on the pose the motors chase. Light hits push at most every 0.22 s, so a spray
   // jostles rather than topples. Returns false (the caller keeps the procedural reaction) when it is unavailable.
   let reactions=null;
+  // Blasts throw people: up and away, harder the closer they stood (near the charge, three seconds or so in the air),
+  // a tumbling ragdoll the whole way (character-motion.js); bots get up where they come down, corpses stay there.
+  function launch(c,dir,near,scale=1){
+   const k=Math.max(0,Math.min(1,near))*scale;if(k<.08)return;
+   const up=(5+8*k)*rand(.9,1.1),out=(3+6.5*k)*rand(.85,1.15);
+   if(c===player){o.onBlastLaunch?.(new T.Vector3(dir.x*out,up*1.2,dir.z*out));return;}
+   const motion=c.model?.motion;if(!motion?.knockdown)return;
+   reactions?.release?.(c.model);c.stagger=null;c.stunT=0;c.lunge=null;
+   motion.knockdown(dir,3,{stay:!c.alive,launch:new T.Vector3(dir.x*out,up,dir.z*out)});
+  }
   function physicalHit(b,dir,strength,zone){
    const light=strength<1.2;
    if(!reactions||(light&&clock-(b.lastPhysical??-9)<.5))return false;
@@ -375,7 +390,7 @@
   }
   const aimList=[];
   function damage(target,amount,attacker,meta={}){
-   if(!target?.alive||phase==='ended')return {killed:false};
+   if(!active||!target?.alive||phase==='ended')return {killed:false};
    if(phase==='countdown')return {killed:false};
    if(!target.bot&&godMode)return {killed:false};
    if(target===player&&clock<(player.protectUntil||0))return {killed:false};
@@ -676,15 +691,19 @@
    if(it.type==='page'){takePage(player,l);const n=pagesOf(player);toast(`${it.label} · ${n} CARRIED · ${nightLevel()>.5?'THE TEMPLE IS OPEN':'THE TEMPLE OPENS WITH THE WATCH'}`);hud.update();return;}
    if(it.type==='weapon'){
     const inv=ars.inspect();const guns=inv.owned.filter(id=>!['axe','c4'].includes(id));
+    if(inv.owned.includes(it.weapon)&&(it.variant||null)!==(ars.variantOf?.(it.weapon)||null)){
+     // Same class, different gun: trade the carried one (and what is in it) for this one.
+     const old=ars.variantOf(it.weapon),loaded=ars.drop(it.weapon),d=rollItem({weapon:it.weapon,variant:old});d.loaded=loaded;d.droppedAt=clock;const p=posOf(player);dropItem(d,p.x+rand(-.5,.5),p.z+rand(-.5,.5));
+     ars.give(it.weapon,it.loaded,it.variant);combat.equip(it.weapon);toast(it.label);removeLoot(l);hud.update();return;}
     if(inv.owned.includes(it.weapon)){ars.addAmmo(W(it.weapon).ammo,it.loaded);toast('+'+it.loaded+' '+AMMO_LABEL[W(it.weapon).ammo]);removeLoot(l);return;}
-    if(guns.length>=2){const cur=combat.inspect().weapon;const swap=guns.includes(cur)?cur:guns[0];const loaded=ars.drop(swap);const d=rollItem({weapon:swap});d.loaded=loaded;d.droppedAt=clock;const p=posOf(player);dropItem(d,p.x+rand(-.5,.5),p.z+rand(-.5,.5));}
-    ars.give(it.weapon,it.loaded);const [t,n]=AMMO_FOR[it.weapon]||[];if(t&&!(inv.reserve[t]>0))ars.addAmmo(t,Math.round(n*.5));combat.equip(it.weapon);
+    if(guns.length>=2){const cur=combat.inspect().weapon;const swap=guns.includes(cur)?cur:guns[0];const old=ars.variantOf?.(swap)||null,loaded=ars.drop(swap);const d=rollItem({weapon:swap,variant:old});d.loaded=loaded;d.droppedAt=clock;const p=posOf(player);dropItem(d,p.x+rand(-.5,.5),p.z+rand(-.5,.5));}
+    ars.give(it.weapon,it.loaded,it.variant);const [t,n]=AMMO_FOR[it.weapon]||[];if(t&&!(inv.reserve[t]>0))ars.addAmmo(t,Math.round(n*.5));combat.equip(it.weapon);
    }else if(it.type==='armor'){
     if(player.garment&&player.armor>0){const p=posOf(player);dropItem({type:'armor',armor:Math.round(player.armor),garment:player.garment,rarity:player.garment.rarity,label:player.garment.name.toUpperCase()+' · '+Math.round(player.armor)+' ARMOR'},p.x+.6,p.z);}
     player.armor=it.armor;player.armorMax=Math.max(it.armor,player.garment?.armor||0);player.garment=it.garment;player.worn.add(it.garment);
    }else if(it.type==='ammo')ars.addAmmo(it.ammo,it.count);
    else if(it.type==='heal')player.heals[it.heal]+=it.count;
-   else if(it.type==='c4'){const inv=ars.inspect();if(!inv.owned.includes('c4'))ars.give('c4',0);ars.addAmmo('c4',it.count);}
+   else if(it.type==='c4'){const inv=ars.inspect();if(!inv.owned.includes('c4'))ars.give('c4',0,it.variant);else if((it.variant||null)!==(ars.variantOf?.('c4')||null))ars.setVariant?.('c4',it.variant);ars.addAmmo('c4',it.count);}
    toast(it.label);removeLoot(l);hud.update();
   }
   function useHeal(){
@@ -751,7 +770,7 @@
      const un=untilNight(),mm=x=>`${Math.floor(x/60)}:${String(Math.floor(x)%60).padStart(2,'0')}`;
      const open=templeOpen(),inT=pages.filter(pg=>pg.state==='delivered').length,mine=player?pagesOf(player):0;
      text('.ar-zone',(open?`MOON TEMPLE OPEN · CLOSES IN ${mm(Math.max(0,-un))}`:`TEMPLE OPENS IN ${mm(un)}`)+(event?.kind==='supply'?` · ${event.label}`:'')+(window.edenStory?.has('pages')&&!window.edenStory.has('office')?' · THE OFFICE IS OPEN: THE PYRAMID':''));
-     html('.ar-pages',pages.map(pg=>`<i class="pg ${pg.state}${pg.carrier===player?' mine':''}" title="${pg.state}"></i>`).join('')+`<span>${mine?`<b>${mine}</b> CARRIED · `:''}${inT}/${PAGE_COUNT} IN THE TEMPLE${pinged&&clock<pingUntil?` · <em>${pinged===player?'YOU ARE':nameOf(pinged)+' IS'} PINGED</em>`:''}</span>`);
+     html('.ar-pages',Array.from({length:PAGE_COUNT},(_,k)=>`<i class="pg ${k<inT?'delivered':k<inT+mine?'carried mine':'home'}"></i>`).join('')+`<span>${mine?`<b>${mine}</b> CARRIED · `:''}${inT}/${PAGE_COUNT} IN THE TEMPLE · ${pages.filter(pg=>pg.state!=='delivered'&&!(pg.state==='carried')).length} ON THE MAP${pinged&&clock<pingUntil?` · <em>${pinged===player?'YOU ARE':nameOf(pinged)+' IS'} PINGED</em>`:''}</span>`);
      {const pw=player?.power||0,lv=Math.min(POWER_MAX,pw),top=strongest();html('.ar-power',(pw?`<b>POWER ${pw}</b><span>+${Math.round(lv*POWER_DMG*100)}% DAMAGE · +${lv*POWER_SHIELD} SHIELD${pw>=POWER_GLOW?' · <em>YOU GLOW RED</em>':''}</span>`:'')+(top&&top!==player?`<small>STRONGEST: ${nameOf(top)} · POWER ${top.power}</small>`:''));}
      const board=q('.ar-board');if(!board.hidden)board.innerHTML='<h3>BEYOND EDEN · OPEN MATCH</h3><table><tr><th></th><th>SCORE</th><th>KILLS</th><th>PAGES</th><th>POWER</th><th>DEATHS</th></tr>'+everyone.map((c,i)=>`<tr class="${c===player?'me':''}"><td>${i+1}. ${nameOf(c)}${pinged===c&&clock<pingUntil?' ◉':''}</td><td>${c.score||0}</td><td>${c.kills||0}</td><td>${c.delivered||0}${pagesOf(c)?' +'+pagesOf(c):''}</td><td${(c.power||0)>=POWER_GLOW?' class="glow"':''}>${c.power||0}</td><td>${c.deaths||0}</td></tr>`).join('')+'</table>';
      if(player){const sh=Math.max(0,player.shield||0);q('.ar-shield i').style.width=(player.shieldMax?sh/player.shieldMax*100:0)+'%';text('.ar-shield span',sh>0?'SHIELD '+Math.ceil(sh):'SHIELD DOWN');q('.ar-shield').classList.toggle('down',sh<=0);
@@ -877,29 +896,30 @@
   function untilNight(){const total=CYCLE.day+CYCLE.dusk+CYCLE.night+CYCLE.dawn,t=worldClock()%total;return t<CYCLE.day?CYCLE.day-t:t<CYCLE.day+CYCLE.dusk+CYCLE.night?-(CYCLE.day+CYCLE.dusk+CYCLE.night-t):total-t+CYCLE.day;}
   const temple=()=>{const lm=layout.landmarks.find(l=>l.id==='temple')||layout.landmarks[0];return new T.Vector3(lm.x,0,lm.z+lm.d/2+3);};
   // ---- the eight lost pages
-  const PAGE_INFO=(layout.pages||[]).slice(0,PAGE_COUNT);
+  const PAGE_INFO=(layout.pages||[]).slice(0,PAGE_COUNT),infoOf=i=>PAGE_INFO[i%Math.max(1,PAGE_INFO.length)];
   function pageSpot(i,avoid){
    // About a third of the time a page waits on the roof of its building: climb for it (bots cannot).
-   const site=layout.landmarks.find(l=>l.id===PAGE_INFO[i]?.site);
+   const site=layout.landmarks.find(l=>l.id===infoOf(i)?.site);
    const F=site&&window.edenRoofs?.[site.id];
-   if(F&&Math.random()<.35){const cells=[];for(let r=1;r<F.rows-1;r++)for(let c=1;c<F.cols-1;c++){const h=F.h[r*F.cols+c];if(h>=F.eave-.3&&h<=F.eave+1.5&&Math.abs(F.h[r*F.cols+c+1]-h)<.5&&Math.abs(F.h[(r+1)*F.cols+c]-h)<.5)cells.push([r,c,h]);}
-    if(cells.length){const [r,c,h]=pick(cells),v=new T.Vector3(F.minX+(c+.5)*F.cell,h,F.minZ+(r+.5)*F.cell);if(!avoid||v.distanceTo(avoid)>2)return v;}}
-   const info=PAGE_INFO[i],sockets=(info?.sockets||[]).slice().sort(()=>Math.random()-.5);
-   for(const [x,z] of sockets){const v=new T.Vector3(x,0,z);if(!blocked(v)&&(!avoid||v.distanceTo(avoid)>2))return v;}
-   for(let k=0;k<12;k++){const lm=pick(nearLandmarks()),v=new T.Vector3(lm.x+rand(-lm.w/2,lm.w/2),0,lm.z+lm.d/2+rand(3,9));if(!blocked(v))return v;}
+   if(F&&Math.random()<.18){const cells=[];for(let r=1;r<F.rows-1;r++)for(let c=1;c<F.cols-1;c++){const h=F.h[r*F.cols+c];if(h>=F.eave-.3&&h<=F.eave+1.5&&Math.abs(F.h[r*F.cols+c+1]-h)<.5&&Math.abs(F.h[(r+1)*F.cols+c]-h)<.5)cells.push([r,c,h]);}
+    if(cells.length){const [r,c,h]=pick(cells),v=new T.Vector3(F.minX+(c+.5)*F.cell,h,F.minZ+(r+.5)*F.cell);if((!avoid||v.distanceTo(avoid)>2)&&!pages.some(pg=>pg.loot&&pg.i!==i&&pg.loot.pos.distanceTo(v)<2.5))return v;}}
+   const info=infoOf(i),sockets=(info?.sockets||[]).slice().sort(()=>Math.random()-.5),taken=v=>pages.some(pg=>pg.loot&&pg.i!==i&&pg.loot.pos.distanceTo(v)<2.5);
+   for(const [x,z] of sockets){const v=new T.Vector3(x,0,z);if(!blocked(v)&&!taken(v)&&(!avoid||v.distanceTo(avoid)>2))return v;}
+   for(let k=0;k<16;k++){const lm=pick(nearLandmarks()),v=new T.Vector3(lm.x+rand(-lm.w/2,lm.w/2),0,lm.z+lm.d/2+rand(3,9));if(!blocked(v)&&!taken(v))return v;}
    return CENTER.clone();
   }
   function placePage(pg,at,loose=false){
    if(pg.loot&&loot.includes(pg.loot))removeLoot(pg.loot);
-   const title=PAGE_INFO[pg.i]?.title||'A LOST PAGE';
+   const title=infoOf(pg.i)?.title||'A LOST PAGE';
    pg.loot=dropItem({type:'page',page:pg.i,rarity:'epic',label:`PAGE ${pg.i+1} · ${title.toUpperCase()}${at.y>.5?' · ON THE ROOF':''}`},at.x,at.z);
    if(at.y>.5&&pg.loot){pg.loot.y=at.y;pg.loot.pos.y=at.y;pg.loot.group.position.y=at.y;}
    pg.state=loose?'loose':'home';pg.carrier=null;pg.since=clock;if(!loose)pg.home=at.clone();
   }
   function scatterPages(){
    if(attendant){attendant.page=null;attendant.fetch=null;attendant.think=0;}
-   for(const pg of pages)if(pg.loot&&loot.includes(pg.loot))removeLoot(pg.loot);
-   pages=[];for(let i=0;i<PAGE_COUNT;i++){const pg={i,state:'home',carrier:null,loot:null,since:clock,by:null};pages.push(pg);placePage(pg,pageSpot(i));}
+   for(const pg of pages)if(pg.state!=='carried'&&pg.loot&&loot.includes(pg.loot))removeLoot(pg.loot);
+   // Pages someone is still carrying stay theirs; everything else scatters again.
+   const kept=pages.filter(pg=>pg.state==='carried'&&pg.carrier?.alive);pages=kept.slice();for(let i=0;i<PAGE_TOTAL;i++){if(kept.some(pg=>pg.i===i))continue;const pg={i,state:'home',carrier:null,loot:null,since:clock,by:null};pages.push(pg);placePage(pg,pageSpot(i));}
    for(const c of [player,...bots])if(c)c.delivered=0;
   }
   function takePage(c,l){const pg=pages.find(pg=>pg.loot===l);removeLoot(l);if(!pg)return;pg.loot=null;pg.state='carried';pg.carrier=c;pg.since=clock;}
@@ -980,7 +1000,7 @@
      damage(t,night?WATCHER.hitNight:WATCHER.hitDay,null,{kind:'attendant',blast:true,dir});chime([62,41],.16,.09);if(t===player)o.onImpact?.(a.pos,1.2);
      if(t.alive&&pagesOf(t)){dropPages(t);if(t===player)announce('THE WATCHER TORE THE PAGES FROM YOU');}}
     if(a.mode==='fetch'&&a.fetch&&d<1.3){const pg=a.fetch;if(pg.state==='loose'&&pg.loot){removeLoot(pg.loot);pg.loot=null;pg.state='watcher';pg.carrier=null;a.page=pg;a.think=0;}a.fetch=null;}
-    if(a.mode==='return'&&a.page&&d<1.3){const pg=a.page;placePage(pg,pg.home||pageSpot(pg.i));a.page=null;a.think=0;pushFeed(`<i>THE WATCHER RETURNED PAGE ${pg.i+1}</i>`);}
+    if(a.mode==='return'&&a.page&&d<1.3){const pg=a.page;placePage(pg,pg.home&&!pages.some(o2=>o2!==pg&&o2.loot&&o2.loot.pos.distanceTo(pg.home)<2.5)?pg.home:pageSpot(pg.i));a.page=null;a.think=0;pushFeed(`<i>THE WATCHER RETURNED PAGE ${pg.i+1}</i>`);}
    }
    w.position.set(a.pos.x,groundY(a.pos.x,a.pos.z)+Math.sin(clock*1.7)*.06+(clock<a.stunUntil?-.4:0),a.pos.z);
    // The page he carries glows in his hand.
@@ -1039,7 +1059,7 @@
   function tackled(b,dir){
    if(!player?.alive||clock<(player.protectUntil||0))return;
    const cur=combat.inspect().weapon;let lost=null;
-   if(cur&&!['axe','c4','fists'].includes(cur)){const loaded=combat.arsenal.drop(cur);const it=rollItem({weapon:cur});it.loaded=loaded;const p=posOf(player);const l=dropItem(it,p.x,p.z,new T.Vector3(dir.x*2.2+rand(-.5,.5),3.8,dir.z*2.2+rand(-.5,.5)));if(l){l.y=p.y+1.3;l.group.position.y=l.y;}lost=W(cur)?.name||cur;}
+   if(cur&&!['axe','c4','fists'].includes(cur)){const old=combat.arsenal.variantOf?.(cur)||null,loaded=combat.arsenal.drop(cur);const it=rollItem({weapon:cur,variant:old});it.loaded=loaded;const p=posOf(player);const l=dropItem(it,p.x,p.z,new T.Vector3(dir.x*2.2+rand(-.5,.5),3.8,dir.z*2.2+rand(-.5,.5)));if(l){l.y=p.y+1.3;l.group.position.y=l.y;}lost=W(cur)?.name||cur;}
    damage(player,15,b,{weapon:'melee',dir:dir.clone()});o.onTackled?.(dir);
    announce(lost?`${b.name} TACKLED YOU · ${lost} KNOCKED LOOSE · ${window.edenControls?.hint('loot')||'F'} TO CATCH`:`${b.name} TACKLED YOU`);chime([120,80],.14,.05);
   }
@@ -1241,7 +1261,15 @@
     makeChest(CENTER.x,CENTER.z+5.6,0);for(let i=0;i<6;i++){const a=i/6*TAU+.3;makeChest(CENTER.x+Math.cos(a)*6.4,CENTER.z+Math.sin(a)*6.4,-a+Math.PI/2);}
     // Weapon pads along each building's approach: whatever is taken comes back PAD_RESTOCK seconds later.
     for(const lm of layout.landmarks){const list=LANDMARK_LOOT[lm.id]||['armor','bandage'];list.forEach((spec,i)=>{const x=lm.x-lm.w/2+1.5+(i/(list.length-1||1))*(lm.w-3),z=lm.z+lm.d/2+2.2+(i%2)*.9;const p=new T.Vector3(x,0,z);if(!blocked(p))pads.push({spec,x,z,l:dropItem(rollItem(spec),x,z),respawnAt:0});});}
-    for(let i=0;i<10;i++){const x=rand(B[0]+6,B[1]-6),z=rand(B[2]+6,B[3]-6),p=new T.Vector3(x,0,z);if(blocked(p)||Math.hypot(x-CENTER.x,z-CENTER.z)<A.r)continue;dropItem(rollItem(pick(['ammo','armor','bandage',{weapon:pick(['pistol','pump','smg'])}])),x,z);}
+    for(let i=0;i<10;i++){const x=rand(B[0]+6,B[1]-6),z=rand(B[2]+6,B[3]-6),p=new T.Vector3(x,0,z);if(blocked(p)||Math.hypot(x-CENTER.x,z-CENTER.z)<A.r)continue;dropItem(rollItem(pick(['ammo','armor','bandage','c4',{weapon:pick(['pistol','pump','smg'])}])),x,z);}
+    // Every gun variant and both grenades have a spot of their own somewhere on the map, spread at least 9 m apart and
+    // out of the centre ring; like the building pads, the same thing comes back PAD_RESTOCK seconds after it is taken.
+    {const specs=[];for(const [weapon,list] of Object.entries(combat.variants||{}))for(const v of list)specs.push(weapon==='c4'?{explosive:v.id}:{weapon,variant:v.id});
+     const taken=pads.map(q=>[q.x,q.z]);
+     for(const spec of specs.sort(()=>Math.random()-.5)){
+      for(let tries=0;tries<200;tries++){const x=rand(B[0]+6,B[1]-6),z=rand(B[2]+6,B[3]-6),p=new T.Vector3(x,0,z);
+       if(blocked(p)||Math.hypot(x-CENTER.x,z-CENTER.z)<A.r+2||taken.some(([tx,tz])=>Math.hypot(tx-x,tz-z)<(tries<150?9:5)))continue;
+       taken.push([x,z]);pads.push({spec,x,z,l:dropItem(rollItem(spec),x,z),respawnAt:0});break;}}}
     buildDoors();templeRing=hillRing(temple());templeRing.scale.setScalar(.55);beacon=makeBeacon();pinged=null;pingAt=clock+PING_EVERY;round=1;
     player={alive:true,hp:100,shield:SHIELD_PLAYER,shieldMax:SHIELD_PLAYER,armor:0,armorMax:0,garment:null,worn:new Set(),heals:{bandage:0,medkit:0},kills:0,deaths:0,score:0,lastHurt:-9,protectUntil:SPAWN_PROTECT};
     if(!walkIn){const spot=DOOR_SPAWN();o.placePlayer(spot.x,spot.z,spot.x,spot.z-6);combat.syncLook();}
@@ -1315,11 +1343,12 @@
    hurtPlayer(amount,from=null){if(!active||!player?.alive)return;const dir=from?posOf(player).clone().sub(from).setY(0).normalize():null;damage(player,amount,null,{weapon:'melee',...(dir?{dir}:{})});},
    fallDamage(d){if(active&&player?.alive&&d>0)damage(player,d,null,{kind:'fall'});},
    tackle,heldStrike,hold:()=>player?.hold?{name:player.hold.b.name,t:+player.hold.t.toFixed(2),punches:player.hold.punches,finishing:player.hold.finishing,pinned:!!player.hold.b.model.motion?.pinned?.()}:null,releaseHold:()=>endHold('released'),reactions:()=>reactions?.inspect()||null,holdEnded:()=>player?.holdEnded||null,doors:()=>doors.map(d=>({x:d.x,z:d.z,open:+Math.max(...d.leaves.map(l=>Math.abs(l.a))).toFixed(2),broken:d.leaves.every(l=>l.gone)})),smashDoor:i=>smashDoor(doors[i],new T.Vector3(0,0,1)),
-   onExplosion(p,radius,dmg){if(!active)return;
+   onExplosion(p,radius,dmg,opts={}){if(!active)return;dmg=opts.dmg??dmg;radius=opts.radius??radius;
     // The blast throws loot and jolts chests.
     for(const l of loot){if(l.item.type==='page')continue;const d=l.group.position.distanceTo(p);if(d<radius*1.3){const out=l.group.position.clone().sub(p).setY(0);if(out.lengthSq()<1e-4)out.set(rand(-1,1),0,rand(-1,1));out.normalize().multiplyScalar(6*(1-d/(radius*1.3))+1);l.vel=out.add(new T.Vector3(0,4+rand(0,2),0));l.y+=.05;}}
     for(const c of chests){const d=c.pos.distanceTo(p);if(d<radius){c.jolt=.5*(1-d/radius)+.15;}}
-    for(const dr of doors){const dd=Math.hypot(dr.x-p.x,dr.z-p.z);if(dd<radius+1)smashDoor(dr,new T.Vector3(dr.x-p.x,0,dr.z-p.z),9*(1-dd/(radius+1))+3);}if(attendant&&attendant.pos.distanceTo(p)<radius)hurtAttendant(dmg);for(const c of combatants()){const d=posOf(c).distanceTo(p);if(d<radius&&los(p.clone().add(new T.Vector3(0,.4,0)),eyeOf(c)))damage(c,dmg*Math.pow(1-d/radius,1.2),player,{weapon:'c4',blast:true,dir:posOf(c).clone().sub(p).setY(0).normalize()});}},
+    for(const dr of doors){const dd=Math.hypot(dr.x-p.x,dr.z-p.z);if(dd<radius+1)smashDoor(dr,new T.Vector3(dr.x-p.x,0,dr.z-p.z),9*(1-dd/(radius+1))+3);}if(attendant&&attendant.pos.distanceTo(p)<radius)hurtAttendant(dmg);for(const c of combatants()){const d=posOf(c).distanceTo(p);if(d<radius&&los(p.clone().add(new T.Vector3(0,.4,0)),eyeOf(c))){const dir=posOf(c).clone().sub(p).setY(0);if(dir.lengthSq()<1e-4)dir.set(rand(-1,1),0,rand(-1,1));dir.normalize();
+     damage(c,dmg*Math.pow(1-d/radius,1.2),player,{weapon:'c4',blast:true,dir:dir.clone()});launch(c,dir,1-d/radius,opts.throw??1);}}},
    inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,event:event&&{kind:event.kind,label:event.label},night:+nightLevel().toFixed(2),attendant:attendant&&{x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1),stunned:clock<attendant.stunUntil},pages:player?pagesOf(player):0,power:player?.power||0,pageState:pages.map(pg=>pg.state),delivered:pages.filter(pg=>pg.state==='delivered').length,pinged:pinged?nameOf(pinged):null,watcher:attendant&&{mode:attendant.mode,page:attendant.page?attendant.page.i:null,x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1)},templeOpen:templeOpen(),soul:!!player?.soul,nextEvent:+(nextEventAt-clock).toFixed(1),pads:pads.length,player:player&&{alive:player.alive,stomps:player.stomps||0,rams:player.rams||0,score:player.score||0,deaths:player.deaths||0,hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
     bots:bots.map(b=>({name:b.name,score:b.score||0,kills:b.kills||0,alive:b.alive,hp:Math.round(b.hp),shield:Math.round(b.shield),down:+(b.model.motion?.downAmount?.()||0).toFixed(2),state:b.state,weapon:b.weapon,armor:b.armor,x:+b.root.position.x.toFixed(1),z:+b.root.position.z.toFixed(1)})),
     zone:zone&&{phase:zone.phase,state:zone.state,r:+zone.r.toFixed(1),x:+zone.center.x.toFixed(1),z:+zone.center.z.toFixed(1)},chests:chests.filter(c=>c.open).length+'/'+chests.length,loot:loot.length,arsenal:combat.arsenal.inspect()}),

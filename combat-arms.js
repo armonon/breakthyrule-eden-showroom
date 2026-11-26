@@ -224,6 +224,22 @@
    weapons.axe={model:g,parts:{blade:marker(scene,[0,.2,.06])}};
   }
 
+  // Variant guns (models/combat/variants, CC0, see models/combat/CREDITS.md), already in weapon space.
+  // v: {file, points:{muzzle, sight, ejector?}, metal?, rough?}. Pistols get a slide group (meshes named Slide*),
+  // pumps a fore-end group (meshes named *Fore*), so the class's actions and grips keep working.
+  const variantLoads={};
+  function loadVariant(cls,v){
+   return variantLoads[v.file]||(variantLoads[v.file]=window.showroomAssets.model(base+'variants/'+v.file).then(gltf=>{
+    const g=new T.Group();g.name=v.file;const scene=prep(gltf.scene,{metalBoost:v.metal??.5,minRough:v.rough??.4});g.add(scene);g.updateMatrixWorld(true);
+    const find=re=>{const out=[];scene.traverse(o=>{if(o.isMesh&&re.test(o.name))out.push(o);});return out;};
+    const P=v.points,parts={sight:marker(g,P.sight),ejector:marker(g,P.ejector||[.015,P.sight[1]-.03,-.02])};
+    if(cls==='pistol'){const slide=new T.Group();g.add(slide);find(/^slide/i).forEach(m=>slide.attach(m));parts.slide=slide;parts.muzzle=marker(slide,P.muzzle);}
+    else parts.muzzle=marker(g,P.muzzle);
+    if(cls==='pump'){const fore=new T.Group();g.add(fore);find(/fore/i).forEach(m=>fore.attach(m));parts.fore=fore;parts.port=marker(g,[0,.04,.02]);}
+    return {model:g,parts};
+   }));
+  }
+
   const ready=(async()=>{
    const load=url=>window.showroomAssets.model(base+url);
    const [a,p,s,h,smg,rifle,sniper]=await Promise.allSettled([load(root.edenRenderProfile?.().mobile?'arms_tactical_lite.glb':'arms_tactical.glb'),load('pistol.glb'),load('shotgun.glb'),load('hatchet/hatchet_1k.gltf'),load('smg.glb'),load('rifle_ak.glb'),load('sniper.glb')]);
@@ -236,7 +252,7 @@
   })();
 
   return {
-   ready,weapons,grips:GRIPS,
+   ready,weapons,grips:GRIPS,loadVariant,
    // 1 while drawing the body camera's first-person view, 0 otherwise (see LOOK).
    setLook(k){LOOK.value=k;},
    // The key light for the steel's glint: direction in the weapon camera's view space (unit) and colour (black: none).

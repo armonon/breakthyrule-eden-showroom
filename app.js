@@ -382,6 +382,8 @@ let roadCaption='';
 // turning, sensor noise that rises in the dark, compression blocks, and the clip of a muzzle flash. Low has no post pass
 // at all, so there it is only the chest-mounted view and free aim (camera-sway.js, combat.js).
 let shadowsGivenUp=false;
+// Firing ends a sprint until Shift is pressed again (combat.js cancelSprint).
+let sprintNow=false,sprintCut=false;addEventListener('keyup',e=>{if(e.key==='Shift')sprintCut=false;});addEventListener('keydown',e=>{if(e.key==='Shift'&&!e.repeat)sprintCut=false;});
 const BODYCAM={low:{lens:0,chroma:0,air:0,grade:0,turnBlur:0,sensor:0,block:0,flashClip:0,exposureScene:0},
  medium:{haze:.45,lens:.045,chroma:.0016,air:1,cones:1,grade:1,bloom:.42,bloomThreshold:.72,grain:.04,aoRadius:1.1,exposure:1.3,exposureUp:2.2,exposureDown:.8,exposureAuto:.38,exposureKey:.16,exposureMin:.72,exposureMax:2.3,exposureScene:18,turnBlur:.55,sensor:.03,block:.4,flashClip:.8},
  high:{haze:.5,lens:.06,chroma:.0022,air:1,cones:1,grade:1,bloom:.5,bloomThreshold:.7,grain:.04,aoRadius:1.2,exposure:1.3,exposureUp:2.2,exposureDown:.8,exposureAuto:.38,exposureKey:.16,exposureMin:.72,exposureMax:2.3,exposureScene:18,turnBlur:.7,sensor:.036,block:.5,flashClip:1}};BODYCAM.photo=BODYCAM.high;
@@ -661,7 +663,7 @@ function updateFeel(dt){
  const low=battle?.lowHealth?.()||0;if(Math.abs(low-lowShown)>.01){lowShown=low;post.set({saturation:1.06-.75*low,vignette:.22+.45*low});}
  const speed=Math.hypot(walkVelocity.x,walkVelocity.z),airborne=motion.inspect().airborne;
  movement.updateCrouch(dt);
- const sprinting=keys.has('shift')&&speed>4.5&&movement.crouchAmount<.3;
+ const sprinting=keys.has('shift')&&!sprintCut&&speed>4.5&&movement.crouchAmount<.3;sprintNow=sprinting;
  fovKick+=((movement.dive?15:movement.slide?.kind==='slide'?13:movement.slide?5:sprinting?8:0)+(parkour?.fov()||0)-fovKick)*(1-Math.exp(-(movement.slide||sprinting?6:4)*dt));
  movement.updateAir(dt,speed,airborne);
  combat?.setHandsBusy?.(!!parkour?.handsFull());
@@ -906,7 +908,7 @@ combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,
  getLook(){const d=targetAim.clone().sub(targetPosition).normalize();return {yaw:Math.atan2(d.x,-d.z),pitch:Math.asin(T.MathUtils.clamp(d.y,-1,1))};},
  setLook(yaw,pitch){freeView();targetAim.copy(targetPosition).add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(5));},
  placePlayer(x,z,lx,lz){if(expedition?.active())expedition.leave();followResident=null;stage.classList.remove('resident-view');motion.reset();walkVelocity.set(0,0,0);freeView();targetPosition.set(x,1.75+groundHeight(new T.Vector3(x,0,z)),z);targetAim.set(lx,targetPosition.y,lz);camera.position.copy(targetPosition);aim.copy(targetAim);camera.fov=70;camera.updateProjectionMatrix();camera.lookAt(aim);requestDraw();},
- movement:()=>({sprinting:keys.has('shift'),airborne:motion.inspect().airborne}),
+ movement:()=>({sprinting:sprintNow,airborne:motion.inspect().airborne,crouch:movement.crouchAmount||0}),cancelSprint(){if(sprintNow)sprintCut=true;},
  // Body camera (Beyond Eden): the weapon aims freely inside the frame; a shot clips the picture for a moment.
  freeAim:()=>bodycam.aim()&&bodycam.active(),onMuzzleFlash(id){if(bodycam.active())post.flash(id==='pump'||id==='sniper'?1:id==='rifle'?.85:.7);},
  keepLock:()=>matchMedia('(pointer: fine)').matches,
@@ -935,7 +937,7 @@ battle=window.createBattleArena?.({T,scene,camera,combat,garden,playerAnchor:()=
  onDeath(){sway.bump(1.5,Math.random()<.5?-1:1);hitStop(160);requestDraw();},
  dodging:()=>movement.slide?.kind==='dash'||!!movement.dive||!!movement.vault,
  onGuardBroken(){sway.bump(1.1,Math.random()<.5?-1:1);playerBody?.anim?.('hitChest',{fade:.05,mask:'upper'});requestDraw();},
- onTackled(dir){playerBody?.anim?.('knockback',{fade:.05});movement.proneT=1;movement.slide=null;movement.dive=null;walkVelocity.copy(dir).setY(0).multiplyScalar(4.5);sway.bump(1.4,Math.random()<.5?-1:1);hitStop(90);footsteps?.land(surfaceAt(targetPosition),1);requestDraw();},
+ onBlastLaunch(vel){if(movement.launch?.(vel)){sway.bump(1.8,Math.random()<.5?-1:1);hitStop(60);requestDraw();}},onTackled(dir){playerBody?.anim?.('knockback',{fade:.05});movement.proneT=1;movement.slide=null;movement.dive=null;walkVelocity.copy(dir).setY(0).multiplyScalar(4.5);sway.bump(1.4,Math.random()<.5?-1:1);hitStop(90);footsteps?.land(surfaceAt(targetPosition),1);requestDraw();},
  onPagesComplete(fresh){garden.pyramid.setPages(8);if(fresh)worlds?.card('THE OFFICE IS OPEN','ALL EIGHT PAGES ARE IN · FOLLOW THE BRICK ROAD TO THE PYRAMID','EIGHT PAGES',3600);},
  onSoul(on){document.body.classList.toggle('soul-taken',!!on);requestDraw();},
  onImpact(at,k=1){const d=at.distanceTo(targetPosition);if(d<30){sway.bump(k*(1-d/30),0);const p=at.clone();puff(p,8,1.6,'stone');}},
