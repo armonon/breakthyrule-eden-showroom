@@ -5,6 +5,7 @@
 import * as THREE from 'three/webgpu';
 import { createRagdoll } from '/ragdoll-jolt.js';
 import { animationPath, clearAnimationPath } from '/cowninja/animation-path.js';
+import { TUNE } from '/cowninja/config.js';
 
 const SEE = 24, SEE_COS = Math.cos(1.05), HEAR = 13, RAM_SPEED = 5.5;
 const LOOKS = ['harbor', 'boulevard', 'coast', 'midnight', 'boulevard', 'harbor'];
@@ -14,20 +15,33 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
   const steel = new THREE.MeshStandardMaterial({ color: 0x9aa0a4, roughness: .4, metalness: .8 }), shaftWood = new THREE.MeshStandardMaterial({ color: 0x6b5a48, roughness: .8 });
   const farmers = [], up = new THREE.Vector3(0, 1, 0), still = new THREE.Vector3();
 
-  function make(route, i) {
+  // Roles (config.js deals them to the patrols): 'guard' has the fork; 'worker' is unarmed, runs to report what he
+  // saw and then keeps out of the way; 'gunner' is a guard with a pistol; 'police' and 'heavy' arrive later (police.js)
+  // with a pistol and with a launcher that lobs explosives.
+  const S = TUNE.staff, dark = new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: .5, metalness: .6 }), out = { x: 0, z: 0 };
+  let nav = null, chase = null, chaseAt = -9; const reports = new Map();
+  const fieldTo = (x, z) => { if (!nav) return null; const k = x + ',' + z; let f = reports.get(k); if (!f || f.version !== nav.version) reports.set(k, f = nav.field(x, z)); return f; };
+  function make(route, i, role = S.roles[i % S.roles.length] || 'guard') {
     const group = new THREE.Group(), turn = new THREE.Group(); turn.rotation.y = Math.PI; group.add(turn);
     const look = { version: 1, character: LOOKS[i % LOOKS.length], height: 172 + (i * 7 % 16), weight: 82, build: .5, shoulders: 1, waist: 1, hips: 1, legLength: 1 };
     let person = null;
     try { person = C?.create(THREE, look); } catch (error) { console.warn('[cowninja] farmer', error); }
     if (person) { person.root.castShadow = true; turn.add(person.root); }
     const fork = new THREE.Group(); fork.position.set(.3, 1.05, -.2); group.add(fork);
-    const shaft = new THREE.Mesh(cube, shaftWood); shaft.scale.set(.04, .04, 1.5); shaft.position.z = -.35; shaft.castShadow = true; fork.add(shaft);
-    for (const x of [-.07, 0, .07]) { const t = new THREE.Mesh(cube, steel); t.scale.set(.02, .02, .3); t.position.set(x, 0, -1.2); fork.add(t); }
+    if (role === 'guard') {
+      const shaft = new THREE.Mesh(cube, shaftWood); shaft.scale.set(.04, .04, 1.5); shaft.position.z = -.35; shaft.castShadow = true; fork.add(shaft);
+      for (const x of [-.07, 0, .07]) { const t = new THREE.Mesh(cube, steel); t.scale.set(.02, .02, .3); t.position.set(x, 0, -1.2); fork.add(t); }
+    } else if (role !== 'worker') {   // a pistol, or the heavy unit's launcher; police carry a torch that marks them out in the dark
+      const heavy = role === 'heavy', gun = new THREE.Mesh(cube, dark); gun.scale.set(heavy ? .13 : .05, heavy ? .13 : .09, heavy ? .95 : .26); gun.position.z = heavy ? -.35 : -.42; gun.castShadow = true; fork.add(gun);
+      if (role !== 'gunner') { const lamp = new THREE.Mesh(cube, new THREE.MeshBasicMaterial({ color: heavy ? 0xff8a20 : 0x7fb0ff })); lamp.scale.set(.07, .07, .07); lamp.position.set(0, .12, heavy ? -.8 : -.5); fork.add(lamp); }
+    }
     scene.add(group);
-    const f = { group, person, fork, route, at: 0, p: { x: route[0][0], z: route[0][1] }, yaw: 0, state: 'patrol', alert: 0, strike: 0, ragdoll: null, down: 0, seenAt: 0, shadowed: null };
+    const f = { group, person, fork, route, at: 0, p: { x: route[0][0], z: route[0][1] }, yaw: 0, state: 'patrol', alert: 0, strike: 0, ragdoll: null, down: 0, seenAt: 0, shadowed: null, role, aim: 0, cool: 0 };
     group.position.set(f.p.x, 0, f.p.z); farmers.push(f); return f;
   }
-  world.patrols.forEach(make);
+  world.patrols.forEach((route, i) => make(route, i));
+  // Someone arriving mid-mission (police.js): he walks to his post and holds it until he has a reason not to.
+  function spawn(role, x, z, post = [x, z]) { const f = make([[x, z]], farmers.length, role); f.route = [post]; f.yaw = Math.PI; return f; }
 
   // Knock a farmer out: his own skeleton goes to the physics engine, thrown with the hitter's velocity plus lift.
   function knock(f, vx, vz, by = 'cow', { settled = false } = {}) {
@@ -75,6 +89,8 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
 
   function update(dt, time, live) {
     const c = target ? target() : cow.state, foot = !!c.onFoot;
+    // Police and heavy units share a radio: if any of them has you in sight, the rest of them know where to go.
+    const radio = farmers.some(o => !o.ragdoll && o.state === 'chase' && (o.role === 'police' || o.role === 'heavy') && time - o.seenAt < 2.5);
     for (const f of farmers) {
       if (f.ragdoll) {
         f.down += dt;
@@ -98,14 +114,31 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
       const sees = live && !c.hidden && dist < range && facing > SEE_COS && !(foot && world.sightBlocked?.(f.p.x, f.p.z, c.x, c.z));
       const hears = live && !c.hidden && (foot ? dist < HEAR * 1.25 * (c.noise || 0) : dist < HEAR * (c.charging || c.skid > .4 ? 1.6 : Math.abs(c.speed) > 6 ? 1 : .45));
       if (sees || hears) { f.alert = Math.min(1, f.alert + dt * (sees ? (foot ? (c.crouched ? .55 : 1) * (1.7 - dist / range) : 1.8) : .9)); f.seenAt = time; } else if (time - f.seenAt > (c.hidden ? 1.5 : 4)) f.alert = Math.max(0, f.alert - dt * (c.hidden ? .6 : .3));
-      if (f.state === 'patrol' && f.alert >= 1) { f.state = 'chase'; onEvent?.({ type: 'spotted', farmer: f }); }
+      // A body on the ground, seen: whoever finds it knows something is wrong (a quiet takedown is only quiet until then).
+      if (live && f.state === 'patrol') for (const b of farmers) if (b.ragdoll && !b.found && b.ragdoll.pelvis) { const t = b.ragdoll.pelvis(), bx = t.x - f.p.x, bz = t.z - f.p.z, bd = Math.hypot(bx, bz);
+        if (bd < S.bodySight && (Math.sin(f.yaw) * bx - Math.cos(f.yaw) * bz) / (bd || 1) > SEE_COS && !world.sightBlocked?.(f.p.x, f.p.z, t.x, t.z)) { b.found = true; f.alert = Math.max(f.alert, .9); f.seenAt = time; onEvent?.({ type: 'body-found', farmer: f, body: b }); } }
+      if (radio && live && f.state === 'patrol' && (f.role === 'police' || f.role === 'heavy') && dist < 70) { f.alert = 1; f.seenAt = time; }
+      if (f.state === 'patrol' && f.alert >= 1) {
+        if (f.role === 'worker') { f.state = 'flee'; f.report = S.reportPoints.reduce((a, r) => Math.hypot(r[0] - f.p.x, r[1] - f.p.z) < Math.hypot(a[0] - f.p.x, a[1] - f.p.z) ? r : a, S.reportPoints[0]); f.fleeFor = 0; }
+        else f.state = 'chase';
+        onEvent?.({ type: 'spotted', farmer: f });
+      }
       if (f.state === 'chase' && f.alert <= 0) f.state = 'patrol';
       // Move: along the route, or straight at the cow.
-      let tx, tz, pace;
-      if (f.state === 'chase') { tx = c.x; tz = c.z; pace = 3.7; }
+      let tx, tz, pace, step = null;
+      const ranged = f.role === 'gunner' || f.role === 'police' || f.role === 'heavy', W = f.role === 'heavy' ? S.heavy : S.pistol;
+      if (f.state === 'flee') {   // a worker running to report: stop him before he gets there and nobody hears of it
+        tx = f.report[0]; tz = f.report[1]; pace = S.fleeSpeed; step = fieldTo(tx, tz)?.dir(f.p.x, f.p.z, out); f.fleeFor += dt;
+        if (Math.hypot(tx - f.p.x, tz - f.p.z) < 2 || f.fleeFor > 25) { f.state = 'cower'; f.alert = .2; onEvent?.({ type: 'reported', farmer: f }); }
+      }
+      else if (f.state === 'cower') { tx = f.p.x; tz = f.p.z; pace = 0; f.alert = Math.min(f.alert, .2); }
+      else if (f.state === 'chase') { tx = c.x; tz = c.z; pace = ranged && sees && dist < W.standoff ? 0 : 3.7;
+        // Round the walls rather than into them, when there is no straight line to you.
+        if (pace && nav && dist > 3 && world.sightBlocked?.(f.p.x, f.p.z, c.x, c.z)) { if (!chase || time - chaseAt > .5 || chase.version !== nav.version) { chase = nav.field(c.x, c.z); chaseAt = time; } step = chase.dir(f.p.x, f.p.z, out); } }
       else { f.at %= f.route.length; const w = f.route[f.at]; tx = w[0]; tz = w[1]; pace = f.alert > .3 ? 0 : 1.25; if (Math.hypot(tx - f.p.x, tz - f.p.z) < .5) f.at = (f.at + 1) % f.route.length; }
-      const mx = tx - f.p.x, mz = tz - f.p.z, md = Math.hypot(mx, mz) || 1;
-      const want = f.state === 'chase' || f.alert > .3 ? Math.atan2(dx, -dz) : Math.atan2(mx, -mz);
+      const routed = step && (step.x || step.z), mx = routed ? step.x : tx - f.p.x, mz = routed ? step.z : tz - f.p.z, md = Math.hypot(mx, mz) || 1;
+      if (f.state === 'patrol' && f.route.length === 1 && md < .6) pace = 0;   // holding a post
+      const want = f.state === 'flee' ? Math.atan2(mx, -mz) : f.state === 'chase' || f.alert > .3 ? Math.atan2(dx, -dz) : Math.atan2(mx, -mz);
       let turn = want - f.yaw; turn = Math.atan2(Math.sin(turn), Math.cos(turn)); f.yaw += turn * Math.min(1, dt * 6);
       let moving = false;
       if (pace && (f.state !== 'chase' || dist > 1.5)) moving = world.walk(f.p, mx / md * pace * dt, mz / md * pace * dt, .35);
@@ -115,7 +148,20 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
       f.strike = Math.max(0, f.strike - dt);
       // His attack is telegraphed: the fork draws back for 0.45 s (a glint), then drives home if you are still in reach.
       // That beat is what a guard raised in time parries.
-      if (f.windup > 0) { f.windup -= dt; if (f.windup <= 0 && live && dist < 2.3) onEvent?.({ type: 'stabbed', farmer: f, dx: dx / (dist || 1), dz: dz / (dist || 1) }); }
+      // Guns and launchers: he stops, takes aim for a beat (a glint), and fires. Moving fast, keeping low and being far
+      // away all spoil the shot. A launcher lobs at where you will be; the blast has its own warning.
+      if (ranged && live && f.state === 'chase') {
+        if (f.cool > 0) { f.cool -= dt; f.aim = 0; }
+        else if (dist > W.min && dist < W.range && (sees || (f.role === 'heavy' && f.alert >= 1))) {
+          if (!f.aim) onEvent?.({ type: 'aiming', farmer: f }); f.aim += dt;
+          if (f.aim >= W.aim) { f.aim = 0; f.cool = W.cooldown;
+            if (f.role === 'heavy') onEvent?.({ type: 'lob', farmer: f, x: c.x + c.velocity.x * W.lead, z: c.z + c.velocity.z * W.lead });
+            else { const chance = Math.max(.06, Math.min(.95, W.accuracy - Math.hypot(c.velocity.x, c.velocity.z) * W.dodge - dist / W.range * .35)) * (c.crouched ? .7 : 1);
+              onEvent?.({ type: 'shot', farmer: f, hit: Math.random() < chance, dx: dx / (dist || 1), dz: dz / (dist || 1) }); } }
+        } else f.aim = 0;
+      }
+      if (f.role !== 'guard') { /* only guards use the fork */ }
+      else if (f.windup > 0) { f.windup -= dt; if (f.windup <= 0 && live && dist < 2.3) onEvent?.({ type: 'stabbed', farmer: f, dx: dx / (dist || 1), dz: dz / (dist || 1) }); }
       else if (live && f.state === 'chase' && dist < 1.9 && f.strike <= 0) { f.strike = 1.5; f.windup = .45; onEvent?.({ type: 'windup', farmer: f }); }
       // Pose: the character animates itself from how fast its root is moving; the fork comes up in a chase.
       if (live && f.state === 'chase' && dist < 1.9 && f.strike > 1.25) f.person?.motion.play?.('swingA', { fade: .06, speed: 1.5, mask: 'upper' });
@@ -149,5 +195,5 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
   // A sound at a point (the whistle): everyone within `radius` grows suspicious and looks that way.
   function noise(x, z, radius, amount = .5) { for (const f of farmers) if (!f.ragdoll && !f.takedown && Math.hypot(f.p.x - x, f.p.z - z) < radius) { f.alert = Math.min(.95, f.alert + amount); f.seenAt = performance.now() / 1000; } }
   const alertLevel = () => farmers.reduce((m, f) => f.ragdoll ? m : Math.max(m, f.state === 'chase' ? 1 : f.alert), 0);
-  return { farmers, update, knock, hurt, stun, beginTakedown, poseTakedown, cancelTakedown, finishTakedown, nearest, noise, alertLevel, standing: () => farmers.filter(f => !f.ragdoll), out: () => farmers.filter(f => f.ragdoll).length, alerted: () => farmers.some(f => f.state === 'chase') };
+  return { farmers, update, spawn, setNav(n) { nav = n; }, knock, hurt, stun, beginTakedown, poseTakedown, cancelTakedown, finishTakedown, nearest, noise, alertLevel, standing: () => farmers.filter(f => !f.ragdoll), out: () => farmers.filter(f => f.ragdoll).length, alerted: () => farmers.some(f => f.state === 'chase') };
 }
