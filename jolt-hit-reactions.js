@@ -52,15 +52,16 @@ export async function createHitReactions({T,groundY=()=>0,walls=()=>[],max=3,onF
   // A blow on a standing character. direction: the way the blow travels; strength: about 0.6 for a light hit,
   // 1.5 to 2.5 for a heavy one; zone: head, chest, arm or leg. Returns false if the body cannot react (down, or busy).
   // velocity: how fast the character is already moving (a running body keeps running as it takes the blow).
-  hit(model,{direction,strength=1,zone='chest',velocity=null}={}){
+  // fall:false (light gunfire): the body staggers and recovers however far it is pushed; it never loses its balance.
+  hit(model,{direction,strength=1,zone='chest',velocity=null,fall=true}={}){
    if(!standing(model)||!direction)return false;
    let s=active.get(model);const impulse=impulseFor(model,direction,strength,zone);stats.hits++;
-   if(s&&!s.blend){s.rig.push(impulse);s.k=Math.max(.2,s.k-.25*strength);s.t=Math.min(s.t,.15);s.strength=Math.max(s.strength,strength);return true;}
+   if(s&&!s.blend){s.rig.push(impulse);s.k=Math.max(.2,s.k-.25*strength);s.t=Math.min(s.t,.15);s.strength=Math.max(s.strength,strength);if(fall)s.fall=true;return true;}
    if(s)end(model);
    if(active.size>=max){const oldest=[...active.entries()].sort((a,b)=>b[1].t-a[1].t)[0];if(oldest)api.release(oldest[0]);}
    const rig=rigFor(model);model.root.updateMatrixWorld(true);ground(model.root.getWorldPosition(new T.Vector3()));
    rig.start({impulse,velocity:velocity?new T.Vector3(velocity.x,0,velocity.z):null,dt:STEP,active:true});
-   s={rig,skeleton:model.skeleton,root:model.root.getWorldPosition(new T.Vector3()),tv:new T.Vector3(),t:0,k:Math.max(.12,Math.min(.7,.8-.26*strength)),strength,blend:null,off:0};active.set(model,s);
+   s={rig,skeleton:model.skeleton,root:model.root.getWorldPosition(new T.Vector3()),tv:new T.Vector3(),t:0,k:Math.max(.12,Math.min(.7,.8-.26*strength)),strength,blend:null,off:0,fall};active.set(model,s);
    return true;
   },
   reacting:model=>active.has(model),
@@ -86,7 +87,7 @@ export async function createHitReactions({T,groundY=()=>0,walls=()=>[],max=3,onF
      continue;
     }
     s.rig.apply();model.root.updateMatrixWorld(true);
-    if(s.off>fallAt(s.strength)){
+    if(s.fall&&s.off>fallAt(s.strength)){
      // Lost balance: the knockdown ragdoll takes the body from exactly this pose, falling the way it was moving.
      last={fell:true,peak:+s.peak.toFixed(2),strength:s.strength};
      const v=s.rig.velocity().setY(0),speed=v.length();end(model);stats.falls++;

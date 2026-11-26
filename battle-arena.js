@@ -82,6 +82,10 @@
   /* ---------------------------------------------------------------- helpers */
   // Ground heights are sampled once per 1 m cell (a full-scene raycast per bot per frame is far too slow).
   const groundCache=new Map();
+  // A bot's feet: the highest floor no more than a step above where it stands now (so walking past a crate, a barrier or a
+  // wall never lifts it onto the top in one frame), on a quarter-metre grid.
+  const feetY=(x,z,from)=>{const k=(Math.round(x*4)*8192+Math.round(z*4))*64+Math.round((from+8)*2);let y=feetCache.get(k);if(y===undefined){try{y=combat.groundAt(x,z,from+.5)??0;}catch{y=0;}if(!Number.isFinite(y)||Math.abs(y)>6)y=0;if(feetCache.size>40000)feetCache.clear();feetCache.set(k,y);}return y;};
+  const feetCache=new Map();
   const groundY=(x,z)=>{const k=Math.round(x)*4096+Math.round(z);let y=groundCache.get(k);if(y===undefined){try{y=combat.groundAt(Math.round(x),Math.round(z),8)??0;}catch{y=0;}if(Math.abs(y)>6)y=0;groundCache.set(k,y);}return y;};
   // Line of sight against building footprints (analytic, 2D slab test). Buildings are taller than anyone.
   const walls=()=>garden.district?.walls||[];
@@ -249,10 +253,20 @@
    for(const c of [a,b]){const oc=o2.clone().sub(c),bb=oc.dot(d),cc=oc.dot(oc)-r*r,hh=bb*bb-cc;if(hh>0){const t=-bb-Math.sqrt(hh);if(t>0)return t;}}
    return null;
   }
+  const boneAt=(c,name)=>{const b=c.model.byName?.[name];return b?b.getWorldPosition(new T.Vector3()):null;};
+  function downHit(c,origin,dir){
+   const head=boneAt(c,'head'),chest=boneAt(c,'spine01'),pelvis=boneAt(c,'root')||c.root.position.clone(),fl=boneAt(c,'foot.L'),fr=boneAt(c,'foot.R'),kl=boneAt(c,'lowerleg01.L'),kr=boneAt(c,'lowerleg01.R');
+   let best=null;const take=(t,h)=>{if(t!=null&&(!best||t<best.distance))best={distance:t,head:h};};
+   if(head)take(raySphere(origin,dir,head,.15),true);
+   for(const [a,b,r] of [[chest||head,pelvis,.25],[head,chest,.17],[pelvis,kl,.15],[pelvis,kr,.15],[kl,fl,.12],[kr,fr,.12]])if(a&&b)take(rayCapsule(origin,dir,a,b,r),false);
+   return best;
+  }
   function raySphere(o2,d,c,r){const oc=o2.clone().sub(c),b=oc.dot(d),cc=oc.dot(oc)-r*r,h=b*b-cc;if(h<0)return null;const t=-b-Math.sqrt(h);return t>0?t:null;}
   function hitTest(origin,dir,maxDist,exclude){
    let best=null;
    for(const c of combatants()){if(c===exclude)continue;const p=posOf(c),scale=c.bot?1:1.02;
+    // On the ground or getting up the body is not a standing capsule: test it where its bones are.
+    if(c.bot&&(c.model.motion?.downAmount?.()||0)>0){const t=downHit(c,origin,dir);if(t&&t.distance<maxDist&&(!best||t.distance<best.distance))best={c,distance:t.distance,head:t.head};continue;}
     const head=new T.Vector3(p.x,p.y+(c.bot?1.6:1.62),p.z);const th=raySphere(origin,dir,head,.15);
     const tb=rayCapsule(origin,dir,new T.Vector3(p.x,p.y+.3,p.z),new T.Vector3(p.x,p.y+1.38*scale,p.z),.27);
     let t=null,headHit=false;if(th!=null&&(tb==null||th<=tb+.05)){t=th;headHit=true;}else t=tb;
@@ -293,25 +307,25 @@
   // jostles rather than topples. Returns false (the caller keeps the procedural reaction) when it is unavailable.
   let reactions=null;
   function physicalHit(b,dir,strength,zone){
-   const light=strength<1.2;if(light)strength=Math.min(1.19,strength*1.35); // a body that is shot gives
-   if(!reactions||(light&&clock-(b.lastPhysical??-9)<.22))return false;
-   if(!reactions.hit(b.model,{direction:dir,strength,zone,velocity:b.vel}))return false;
+   const light=strength<1.2;
+   if(!reactions||(light&&clock-(b.lastPhysical??-9)<.5))return false;
+   if(!reactions.hit(b.model,{direction:dir,strength,zone,velocity:b.vel,fall:!light}))return false;
    b.lastPhysical=clock;return true;
   }
   function loadReactions(){
    if(loadReactions.started)return;loadReactions.started=true;
-   import('/jolt-hit-reactions.js?v=20261121-hit10').then(m=>m.createHitReactions({T,groundY,walls,onFall:model=>{const b=bots.find(x=>x.model===model);if(b){b.stagger=null;b.stunT=0;b.lunge=null;}}}))
+   import('/jolt-hit-reactions.js?v=20261126-hit11').then(m=>m.createHitReactions({T,groundY,walls,onFall:model=>{const b=bots.find(x=>x.model===model);if(b){b.stagger=null;b.stunT=0;b.lunge=null;}}}))
     .then(r=>{reactions=r;}).catch(error=>console.warn('Physical hit reactions unavailable; keeping procedural ones.',error));
   }
   // A bullet that gets through the shield: a step back with it, a leg that gives for a moment, an arm whose aim is thrown off,
   // and, when several land close together, a moment folded over. Each has its own rest, so a spray cannot hold a bot still.
   function wound(b,dir,meta,through){
    if(!b.bot||through<=0)return;
-   if(clock-(b.lastStep??-9)>.3&&!b.stagger){b.lastStep=clock;stagger(b,dir,.14+Math.min(.16,through/160),.22);}
+   if(clock-(b.lastStep??-9)>.6&&!b.stagger){b.lastStep=clock;stagger(b,dir,.08+Math.min(.08,through/250),.2);}
    if(meta.zone==='leg'&&clock-(b.lastLeg??-9)>1.6){b.lastLeg=clock;b.limpT=Math.max(b.limpT||0,1.1);}
    if(meta.zone==='arm'&&clock-(b.lastArm??-9)>.9){b.lastArm=clock;b.fireT=Math.max(b.fireT,.3);b.aimT=Math.max(b.aimT,.18);}
    b.hurtSum=(clock-(b.hurtAt??-9)<1.1?b.hurtSum||0:0)+through;b.hurtAt=clock;
-   if(b.hurtSum>42&&clock-(b.lastFold??-9)>2.6){b.lastFold=clock;b.hurtSum=0;b.stunT=Math.max(b.stunT||0,.35);b.model.motion?.play?.('hitChest',{mask:'upper',fade:.05,speed:.85});b.model.motion?.hit?.(dir,1,{zone:'leg'});}
+   if(b.hurtSum>42&&clock-(b.lastFold??-9)>2.6){b.lastFold=clock;b.hurtSum=0;b.stunT=Math.max(b.stunT||0,.35);b.model.motion?.play?.('hitChest',{mask:'upper',fade:.05,speed:.85});b.model.motion?.hit?.(dir,1,{zone:'leg',fall:false});}
   }
   function stagger(b,dir,distance,duration){b.stagger={dir:dir.clone().setY(0).normalize(),distance,duration,t:0};}
   // Bot melee: before the blow lands the bot telegraphs it (an amber glow, a glint at its weapon, a ring you can
@@ -386,8 +400,8 @@
      const dir=blowDirection(target,attacker,meta);
      if(meta.tier)meleeReaction(target,dir,meta);
      else if(heavy){const force=meta.blast?2.8:meta.weapon==='sniper'?2.6:meta.weapon==='pump'?2.1:2;if(physicalHit(target,dir,force,meta.zone))target.model.motion?.hit?.(dir,1.1,{zone:meta.zone});else target.model.motion?.hit?.(dir,2.2);}
-     else{wound(target,dir,meta,a);physicalHit(target,dir,meta.head?.9:.6,meta.zone);if(clock-target.lastFlinch>.7){target.lastFlinch=clock;target.model.motion?.hit?.(dir,meta.head?1.2:.7,{zone:meta.zone});target.model.motion?.play?.(meta.head?'hitHead':'hitChest',{mask:'upper',fade:.04,speed:1.2});}}
-     target.dodgeT=.38;target.strafe=Math.random()<.5?1:-1;}}
+     else{wound(target,dir,meta,a);physicalHit(target,dir,meta.head?.9:.6,meta.zone);if(clock-target.lastFlinch>.7){target.lastFlinch=clock;target.model.motion?.hit?.(dir,meta.head?1.2:.7,{zone:meta.zone,fall:false});target.model.motion?.play?.(meta.head?'hitHead':'hitChest',{mask:'upper',fade:.04,speed:1.2});}}
+     if(clock-(target.lastDodge??-9)>2.2&&Math.random()<.45){target.lastDodge=clock;target.dodgeT=.32;target.strafe=Math.random()<.5?1:-1;}}}
    else{combat.hurt(attacker&&attacker!==target?eyeOf(attacker):null,a+(amount-a)*.4+shielded*.55);if(meta.kind==='zone')combat.hurt(null,a*.4);hud.update();}
    if(target.hp<=0){kill(target,attacker,meta);return {killed:true};}
    return {killed:false};
@@ -517,6 +531,8 @@
   function animateNow(b){if(reactions?.reacting(b.model))return true;lodTo.copy(b.root.position).sub(camera.position);const d=lodTo.length();camera.getWorldDirection(lodFwd);
    const every=lodTo.dot(lodFwd)<-2&&d>4?4:d>40?3:d>20?2:1;b.animTick=(b.animTick||0)+1;return b.animTick%every===0;}
   function updateBot(b,dt){
+   // After a fall the body gets up where it lies, with the get-up clip (character-motion.js); the bot goes with it.
+   if(b.model.motion&&!b.model.motion.onGetUp)b.model.motion.onGetUp=off=>{const q=b.root.position,n=q.clone().add(off);if(!blocked(n)){q.x=n.x;q.z=n.z;q.y=feetY(q.x,q.z,q.y);}};
    const nearShadow=!window.edenBaked?.dynamicShadowOnly()||b.root.position.distanceToSquared(camera.position)<22*22;
    if(nearShadow!==b.shadowNear){b.shadowNear=nearShadow;b.root.traverse(n=>{if(n.isMesh)n.castShadow=nearShadow;});b.model.motion?.held()?.mesh?.traverse(n=>{if(n.isMesh)n.castShadow=nearShadow;});}
 
@@ -530,7 +546,7 @@
    if(b.model.motion?.downAmount?.()>0){b.model.animate?.(clock,0);return;}
    // A stagger slides the bot along the blow, fast at first then settling; while stunned it can't act.
    if(b.stagger){const st=b.stagger,k=Math.max(0,1-st.t/st.duration),step=st.distance/st.duration*2*k*dt,next=p.clone().addScaledVector(st.dir,step);
-    if(!blocked(next)){p.x=next.x;p.z=next.z;p.y=groundY(p.x,p.z);}st.t+=dt;if(st.t>=st.duration)b.stagger=null;}
+    if(!blocked(next)){p.x=next.x;p.z=next.z;p.y=feetY(p.x,p.z,p.y);}st.t+=dt;if(st.t>=st.duration)b.stagger=null;}
    if(b.stunT>0){b.stunT-=dt;b.fireT=Math.max(b.fireT,.2);b.bashT=Math.max(b.bashT,.2);b.model.animate?.(clock,0);return;}
    if(clock-b.lastHurt>SHIELD_DELAY&&b.shield<b.shieldMax)b.shield=Math.min(b.shieldMax,b.shield+30*dt);
    b.think-=dt;b.fireT-=dt;b.reloadT-=dt;b.aimT-=dt;b.strafeT-=dt;b.repath-=dt;b.dodgeT-=dt;b.bashT-=dt;
@@ -597,7 +613,7 @@
        else{if(guarded==='broken')M.land('broken',{hitStop:ms=>o.hitStop?.(ms),combo:false});tackled(b,dir);}}
       else if(b.lunge.t>.7)b.lunge=null;}
      const side=new T.Vector3(to.z,0,-to.x).multiplyScalar(b.strafe);if(!b.lunge){move.copy(side).addScaledVector(to,dist>ideal+4?1:dist<ideal-4?-.7:0);speed=dist>ideal+10?4.8:2.6;}
-     if(b.dodgeT>0&&!b.lunge){move.copy(side).multiplyScalar(1.6).addScaledVector(to,.2);speed=6.5;}
+     if(b.dodgeT>0&&!b.lunge){move.copy(side).multiplyScalar(1.6).addScaledVector(to,.2);speed=4.6;}
      const gun=b.weapons[id];
      if(gun.loaded<=0&&b.reloadT<=0){const r=b.reserve[w.ammo]||0;if(r>0){b.reloadT=id==='pump'?2.4:2;b.pendingReload=true;b.model.motion?.play?.('pistolReload',{mask:'upper',arms:true,fade:.12,speed:1.67/(id==='pump'?2.4:2)});}else{delete b.weapons[id];setBotWeapon(b,botBestWeapon(b));}}
      if(b.pendingReload&&b.reloadT<=0){const r=b.reserve[w.ammo]||0,take=Math.min(w.mag-gun.loaded,r);gun.loaded+=take;b.reserve[w.ammo]=r-take;b.pendingReload=false;}
@@ -618,7 +634,7 @@
     if(!blocked(next)&&next.x>B[0]+1&&next.x<B[1]-1&&next.z>B[2]+1&&next.z<B[3]-1){p.x=next.x;p.z=next.z;}
     else if(b.goal&&b.repath<=0){b.repath=1.5;b.path=findPath(p,b.goal);}
     b.stride=Math.min(1,b.stride+dt*4);}else b.stride=Math.max(0,b.stride-dt*4);
-   p.y=groundY(p.x,p.z);
+   {const y=feetY(p.x,p.z,p.y);p.y=y<p.y?Math.max(y,p.y-dt*9):y;} // steps up at once, falls off an edge rather than teleporting down
    const dh=((b.heading-b.root.rotation.y+Math.PI*3)%TAU)-Math.PI;b.root.rotation.y+=dh*Math.min(1,dt*8);
    if(animateNow(b))b.model.animate?.(clock,Math.min(1,b.stride*(speed/4.2)));
   }
