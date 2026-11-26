@@ -45,7 +45,7 @@
     const t=c.clone().sub(origin).dot(dir);if(t<0||t>maxDist)continue;const p=origin.clone().addScaledVector(dir,t);
     if(Math.hypot(p.x-c.x,p.z-c.z)<.32&&p.y>c.y-h/2&&p.y<c.y+h/2&&(!best||t<best.t))best={g,t,p};}
    if(!best)return null;
-   return {c:null,distance:best.t,head:best.p.y>best.g.card.getWorldPosition(new T.Vector3()).y+best.g.card.scale.y*.32,point:best.p,apply:(dmg,meta={})=>{startShowdown();const g=best.g;g.hp-=dmg>=40||meta.head?2:1;if(g.hp<=0)drop(g);return {killed:g.hp<=0};}};
+   return {c:null,distance:best.t,head:best.p.y>best.g.card.getWorldPosition(new T.Vector3()).y+best.g.card.scale.y*.32,point:best.p,apply:(dmg,meta={})=>{const g=best.g;if(g.alive===false||g.hp<=0)return {killed:false};startShowdown();g.hp-=dmg>=40||meta.head?2:1;if(g.hp<=0)drop(g);return {killed:g.hp<=0};}};
   }
   function startShowdown(){
    if(showdown||!crowd.length)return;showdown={t:0,left:crowd.length};const first=story?.set('showdown');

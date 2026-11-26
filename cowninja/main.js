@@ -15,6 +15,7 @@ import { createGrimPost } from '/cowninja/post.js';
 import { createFoot } from '/cowninja/foot.js';
 import { createAudio } from '/cowninja/audio.js';
 import { createTouch } from '/cowninja/touch.js';
+import { createFight } from '/cowninja/fight.js';
 import { pairedAnchor } from '/cowninja/animation-path.js';
 
 const $ = id => document.getElementById(id);
@@ -67,13 +68,16 @@ async function boot() {
   function raiseAlarm() { if (alarm) return; alarm = true; alarmAt = 0; truck.start(); audio.siren(6); }
   function onEvent(e) {
     if (e.type === 'knockout') {
+      if (e.by === 'fists') { stats.knockouts++; audio.hit('kill', e.farmer.p.x, e.farmer.p.z, 1.1); audio.hit(Math.random() < .5 ? 'voice-a-death' : 'voice-b-death', e.farmer.p.x, e.farmer.p.z, .9); farmers.noise(e.farmer.p.x, e.farmer.p.z, 12, .6); return; }
       if (e.by === 'takedown') { takedowns++; say('TAKEN DOWN', 1.1); audio.hit('body', e.farmer.p.x, e.farmer.p.z, .7); return; }
       e.by === 'herd' ? stats.herdKnockouts++ : stats.knockouts++; shake = Math.max(shake, Math.min(.9, e.speed / 16)); if (e.by !== 'herd') say(e.speed > 13 ? 'FLATTENED' : 'KNOCKED OUT', 1.2);
       audio.hit(e.speed > 11 ? 'kill' : 'body', e.farmer.p.x, e.farmer.p.z, 1.2); audio.hit(Math.random() < .5 ? 'voice-a-death' : 'voice-b-death', e.farmer.p.x, e.farmer.p.z, .9); raiseAlarm();
     }
     // Seen: he shouts, and unless he is silenced in the next few seconds the alarm goes up.
     else if (e.type === 'spotted') { say('SPOTTED', 1.4); audio.hit(Math.random() < .5 ? 'voice-a-pain' : 'voice-b-pain', e.farmer.p.x, e.farmer.p.z, .8, .8); if (!alarm && !alarmAt) alarmAt = performance.now() + 4500; }
-    else if (e.type === 'stabbed') damage(mode === 'foot' ? 19 : 11, e.dx, e.dz, 3.2);
+    else if (e.type === 'windup') window.EdenMelee?.sound('glint', .8);
+    // A farmer's blow: on foot it meets your guard first (parried: nothing; blocked: a chip; else all of it).
+    else if (e.type === 'stabbed') { const through = mode === 'foot' ? fight.incoming(e) : 1; if (through > 0) damage((mode === 'foot' ? 19 : 11) * through, e.dx, e.dz, 3.2); }
     else if (e.type === 'run-over') { damage(Math.min(mode === 'foot' ? 70 : 40, (mode === 'foot' ? 30 : 14) + e.speed * 1.6), e.dx, e.dz, 7); audio.hit('metal', actor().x, actor().z, 1.2); }
     else if (e.type === 'rammed-truck') { shake = 1; say(e.square > .88 ? 'PERFECT ANGLE' : 'SIDE HIT', 1.4); audio.hit('metal', cow.state.x, cow.state.z, 1.4, .7); }
     else if (e.type === 'glanced') { shake = Math.max(shake, .35); audio.hit('metal', cow.state.x, cow.state.z, .7); }
@@ -83,6 +87,10 @@ async function boot() {
   const farmers = createFarmers({ scene, physics, world, cow, blood, onEvent, target: actor });
   const truck = createTruck({ scene, physics, world, cow, blood, onEvent, assets, target: actor });
   const herd = createHerd({ scene, world, cow, farmers, assets });
+  // Fists (Break Thy Rule's melee core): hit-stop freezes the game for a few frames, slow motion stretches a finisher.
+  let hitStopUntil = 0;
+  const fight = createFight({ foot, farmers, hooks: { yaw: () => camYaw, shake: a => { shake = Math.max(shake, a * 1.6); }, hitStop: ms => { hitStopUntil = performance.now() + ms; },
+    onHit: ({ farmer }) => { audio.hit('body', farmer.p.x, farmer.p.z, 1); farmers.noise(farmer.p.x, farmer.p.z, 9, .35); } } });
   // Phones and tablets start without reflections and occlusion; desktops get everything and step down if slow.
   const handheld = matchMedia?.('(pointer: coarse)').matches;
   let quality = Number(query.get('q') ?? (handheld ? 2 : 0)), post = createGrimPost({ renderer, scene, camera, level: quality, occlusion: query.get('ao') !== '0' });
@@ -100,7 +108,14 @@ async function boot() {
   const look = (dx, dy) => { camYaw -= dx * .0024; camPitch = Math.max(-1.1, Math.min(.75, camPitch - dy * .002)); };
   renderer.domElement.addEventListener('click', () => { if (phase === 'play' && mode === 'foot' && document.pointerLockElement !== renderer.domElement) renderer.domElement.requestPointerLock?.(); });
   addEventListener('mousemove', e => { if (document.pointerLockElement === renderer.domElement) look(e.movementX, e.movementY); });
-  const touch = createTouch({ root: $('cn-touch'), keys, onAct: () => use(), onWhistle: () => whistle(), onLook: look });
+  // Fists: left mouse (or J) punches, tap for jab/cross and hold for the haymaker; right mouse (or K) guards.
+  const fighting = () => phase === 'play' && mode === 'foot';
+  renderer.domElement.addEventListener('mousedown', e => { if (!fighting() || document.pointerLockElement !== renderer.domElement) return; if (e.button === 0) fight.attack(true); else if (e.button === 2) fight.guard(true); });
+  addEventListener('mouseup', e => { if (e.button === 0) fight.attack(false); else if (e.button === 2) fight.guard(false); });
+  renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+  addEventListener('keydown', e => { if (e.repeat || !fighting()) return; if (e.code === 'KeyJ') fight.attack(true); else if (e.code === 'KeyK') fight.guard(true); });
+  addEventListener('keyup', e => { if (e.code === 'KeyJ') fight.attack(false); else if (e.code === 'KeyK') fight.guard(false); });
+  const touch = createTouch({ root: $('cn-touch'), keys, onAct: () => use(), onWhistle: () => whistle(), onLook: look, onAttack: down => { if (fighting() || !down) fight.attack(down); }, onGuard: down => { if (fighting() || !down) fight.guard(down); } });
 
   // What E would do right now, or null. Riding: get off. On foot: a takedown, the pen latch, or back on the cow.
   function option() {
@@ -230,10 +245,12 @@ async function boot() {
   }
 
   const mark = new THREE.Vector3();
-  const hud = { marker: $('cn-marker'), speed: $('cn-speed'), charge: $('cn-charge-fill'), health: $('cn-health-fill'), goal: $('cn-goal'), count: $('cn-count'), prompt: $('cn-prompt'), seen: $('cn-seen-fill'), stealth: $('cn-stealth'), keys: $('cn-keys-text') };
+  const hud = { chargeLabel: $('cn-charge-label'), marker: $('cn-marker'), speed: $('cn-speed'), charge: $('cn-charge-fill'), health: $('cn-health-fill'), goal: $('cn-goal'), count: $('cn-count'), prompt: $('cn-prompt'), seen: $('cn-seen-fill'), stealth: $('cn-stealth'), keys: $('cn-keys-text') };
   let last = performance.now(), acc = 0, hudAt = 0, beat = 0, lastGate = false;
   function frame(now) {
-    const dt = Math.min(.1, (now - last) / 1000); last = now; acc += dt;
+    const raw = Math.min(.1, (now - last) / 1000); last = now;
+    if (now < hitStopUntil) { post.render(); return; }   // hit-stop: the blow hangs for a few frames
+    const dt = raw * (window.EdenMelee?.timeScale() ?? 1); acc += dt;
     const live = phase === 'play';
     let steps = 0;
     while (acc >= STEP && steps < 4) { tick(live); acc -= STEP; steps++; }
@@ -245,6 +262,7 @@ async function boot() {
       const below = farmers.nearest(foot.state.x, foot.state.z, 1.35);
       if (below) { farmers.knock(below.farmer, foot.state.velocity.x * .3, foot.state.velocity.z * .3, 'takedown'); say('AIR TAKEDOWN', 1.3); shake = Math.max(shake, .3); }
     }
+    if (mode === 'foot') fight.update(dt); else fight.cancel();
     if (calling > 0) { calling -= dt; if (Math.hypot(cow.state.x - foot.state.x, cow.state.z - foot.state.z) < 3) calling = 0; }
     // Hooves: four beats a stride, louder and harder the faster it goes.
     { const b = Math.floor(cow.state.gait * 4); if (b !== beat) { beat = b; const v = Math.abs(cow.state.speed); if (v > .6 && !cow.state.airborne) { const d = Math.hypot(cow.state.x - a.x, cow.state.z - a.z); if (d < 30) audio.hoof(world.indoors(cow.state.x, cow.state.z) ? 'stone' : 'grass', Math.min(6, 2 + v * .3)); } } }
@@ -267,7 +285,7 @@ async function boot() {
         const k = Math.max(Math.abs(sx) / .92, Math.abs(sy) / .86, 1); sx /= k; sy /= k;
         m.hidden = false; m.style.transform = `translate(${((sx * .5 + .5) * container.clientWidth).toFixed(1)}px, ${((-sy * .5 + .5) * container.clientHeight).toFixed(1)}px)`; m.dataset.edge = k > 1 || behind ? '1' : '0'; m.lastChild.textContent = Math.round(far) + ' m'; } }
     if (now - hudAt > 90) { hudAt = now; const c = cow.state, level = farmers.alertLevel(), o = option();
-      hud.speed.textContent = Math.round((mode === 'foot' ? foot.state.speed : Math.abs(c.speed)) * 3.6) + ' km/h'; hud.charge.style.transform = `scaleX(${(mode === 'foot' ? 0 : c.charge).toFixed(2)})`; hud.charge.parentElement.classList.toggle('full', mode === 'ride' && c.charge > .97);
+      hud.speed.textContent = Math.round((mode === 'foot' ? foot.state.speed : Math.abs(c.speed)) * 3.6) + ' km/h'; hud.charge.style.transform = `scaleX(${(mode === 'foot' ? fight.stamina() / 100 : c.charge).toFixed(2)})`; if (hud.chargeLabel && hud.chargeLabel.dataset.mode !== mode) { hud.chargeLabel.dataset.mode = mode; hud.chargeLabel.textContent = mode === 'foot' ? 'GUARD' : 'CHARGE'; } hud.charge.parentElement.classList.toggle('full', mode === 'ride' && c.charge > .97);
       hud.health.style.transform = `scaleX(${(health / 100).toFixed(2)})`;
       hud.goal.textContent = phase === 'intro' ? '' : !herd.free ? (mode === 'foot' ? 'PULL THE RED LEVER BY THE PEN' : 'BREAK THE PEN GATE') : mode === 'foot' ? 'GET ON A COW (E) · Q CALLS ONE' : `LEAD THE HERD OUT THE NORTH GATE · ${herd.saved}/${herd.count} OUT`;
       hud.count.textContent = `${farmers.out()} DOWN · ${stats.flips} FLIPPED`;
@@ -280,7 +298,7 @@ async function boot() {
   addEventListener('resize', () => { renderer.setSize(container.clientWidth, container.clientHeight, false); camera.aspect = container.clientWidth / container.clientHeight; camera.updateProjectionMatrix(); });
   status.hidden = true; $('cn-gate').hidden = false;
   renderer.setAnimationLoop(frame);
-  window.cowNinja = { assets, renderer, scene, camera, cow, foot, farmers, truck, herd, blood, world, physics, audio, keys, stats, use, whistle, look, option,
+  window.cowNinja = { fight, assets, renderer, scene, camera, cow, foot, farmers, truck, herd, blood, world, physics, audio, keys, stats, use, whistle, look, option,
     get post() { return post; }, get mode() { return mode; }, set yaw(v) { camYaw = v; }, get yaw() { return camYaw; },
     state: () => ({ phase, mode, health, alarm, quality, takedowns, level: farmers.alertLevel(), option: option()?.kind || null, cow: { ...cow.state, forward: cow.state.forward.toArray(), velocity: cow.state.velocity.toArray() }, foot: { ...foot.state, forward: foot.state.forward.toArray(), velocity: foot.state.velocity.toArray() }, out: farmers.out(), flips: stats.flips, herdFree: herd.free, saved: herd.saved, blood: blood.inspect(), truckFlipped: truck.flipped }),
     begin: () => $('cn-enter').click(),

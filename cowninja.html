@@ -8,7 +8,7 @@
   <meta name="description" content="COWNinja prototype: ride in, break the pen, lead the herd out. Graphic content.">
   <title>COWNinja — Break Thy Rule (prototype)</title>
   <link rel="icon" href="/assets/favicon-32.png">
-  <link rel="stylesheet" href="/cowninja/cowninja.css?v=4">
+  <link rel="stylesheet" href="/cowninja/cowninja.css?v=5">
   <script type="importmap">
   {
     "imports": {
@@ -33,14 +33,14 @@
     <section class="cn-hud" aria-label="Status">
       <p id="cn-goal" role="status"></p>
       <div class="cn-row"><span class="cn-label">HEALTH</span><div class="cn-bar cn-health"><i id="cn-health-fill"></i></div></div>
-      <div class="cn-row"><span class="cn-label">CHARGE</span><div class="cn-bar cn-charge"><i id="cn-charge-fill"></i></div><strong id="cn-speed">0 km/h</strong></div>
+      <div class="cn-row"><span class="cn-label" id="cn-charge-label">CHARGE</span><div class="cn-bar cn-charge"><i id="cn-charge-fill"></i></div><strong id="cn-speed">0 km/h</strong></div>
       <div class="cn-row cn-stealth-row" data-state="cold"><span class="cn-label" id="cn-stealth">HIDDEN</span><div class="cn-bar cn-seen"><i id="cn-seen-fill"></i></div></div>
       <p id="cn-count"></p>
     </section>
     <p id="cn-toast" role="status" aria-live="polite"></p>
     <footer class="cn-keys" id="cn-keys-text" data-mode="ride">
       <span class="ride"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> ride</span><span class="ride"><kbd>SHIFT</kbd> charge</span><span class="ride"><kbd>S</kbd>+turn skid</span><span class="ride"><kbd>SPACE</kbd> hop</span><span class="ride"><kbd>E</kbd> get off</span>
-      <span class="foot"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span><span class="foot"><kbd>MOUSE</kbd> look</span><span class="foot"><kbd>SHIFT</kbd> hold to freerun: vault, leap, climb any wall</span><span class="foot"><kbd>SPACE</kbd> jump · wall-run · let go</span><span class="foot"><kbd>C</kbd> crouch · let go</span><span class="foot"><kbd>E</kbd> use</span>
+      <span class="foot"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span><span class="foot"><kbd>MOUSE</kbd> look</span><span class="foot"><kbd>SHIFT</kbd> hold to freerun: vault, leap, climb any wall</span><span class="foot"><kbd>SPACE</kbd> jump · wall-run · let go</span><span class="foot"><kbd>C</kbd> crouch · let go</span><span class="foot"><kbd>LMB</kbd> punch · hold: haymaker</span><span class="foot"><kbd>RMB</kbd> block · parry</span><span class="foot"><kbd>E</kbd> use</span>
       <span><kbd>Q</kbd> whistle</span><span><kbd>R</kbd> restart</span><span id="cn-backend"></span>
     </footer>
     <p id="cn-prompt" role="status"></p>
@@ -74,6 +74,8 @@
   <script defer src="/player-movement.js?v=20261125-mixamo"></script>
   <script defer src="/expedition-controller.js"></script>
   <script defer src="/combat-audio.js"></script>
+  <!-- Fists: the main game's shared melee rules, sounds and popups. -->
+  <script defer src="/melee-core.js"></script>
   <script defer src="/footsteps.js"></script>
   <script defer src="/character-anim.js?v=20261125-mixamo"></script>
   <script defer src="/character-motion.js?v=20261125-mixamo"></script>

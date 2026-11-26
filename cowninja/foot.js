@@ -204,7 +204,8 @@ export function createFoot({ scene, world, onEffect }) {
     if (!ninja) return; ninja.dress();
     const person = ninja.person, motion = person.motion, M = G.GardenCharacterMotion, m = controller.movement, v = controller.velocity, moving = Math.hypot(v.x, v.z);
     const want = moving > .4 ? Math.atan2(v.x, v.z) : bodyYaw ?? state.yaw;
-    if (M?.turnBody) ({ yaw: bodyYaw, turning } = M.turnBody(bodyYaw, turning, want, moving, dt)); else bodyYaw = want;
+    if (tick < faceUntil) bodyYaw = faceYaw;   // a punch or a guard holds the body on its target
+    else if (M?.turnBody) ({ yaw: bodyYaw, turning } = M.turnBody(bodyYaw, turning, want, moving, dt)); else bodyYaw = want;
     person.root.position.set(state.x, state.y, state.z); person.root.rotation.y = bodyYaw;
     const dive = m.dive ? Math.min(1, m.dive.t * 4) : m.proneT > 0 ? Math.min(1, m.proneT / .4) : 0, slide = m.slide?.kind === 'slide' && !m.slide.belly ? 1 - m.slide.t / m.slide.dur : 0;
     const drop = m.crouchAmount * .55 + (m.dive ? Math.min(1, m.dive.t * 5) * .55 : 0) + (m.proneT > 0 ? Math.min(1, m.proneT / .25) * .75 : 0);
@@ -213,13 +214,19 @@ export function createFoot({ scene, world, onEffect }) {
     if (releasePose) { if (!state.airborne || releasePose.time >= releasePose.duration || traversal) releasePose = null;
       else { releasePose.time = Math.min(releasePose.duration, releasePose.time + dt); traversal = { ...releasePose }; } }
     try {
-      motion.airborne(state.airborne); motion.crouch(Math.min(drop, .55) / .55); motion.guard?.(0);
+      motion.airborne(state.airborne); motion.crouch(Math.min(drop, .55) / .55); motion.guard?.(guardWeight);
       if (M?.traverseBody) ({ handRise, handsOn } = M.traverseBody(THREE, person, { hands: controller.parkour.hands(), handRise, handsOn, pose: { traversal, dive, slide }, dt, probe }));
       lookPoint.set(state.x + Math.sin(bodyYaw) * 5, state.y + 1.6, state.z + Math.cos(bodyYaw) * 5); motion.lookAt?.(lookPoint);
       motion.update(dt, { velocity: v, wade: 0 });
     } catch (error) { if (!pose.warned) { pose.warned = true; console.warn('[cowninja] pose', error); } }
   }
   const play = (clip, options) => ninja?.person.motion.play?.(clip, options);
+  // Fighting (fight.js): hold the body on a target for a while, a short shove (the step into a punch), the guard pose.
+  let faceYaw = 0, faceUntil = 0, guardWeight = 0;
+  const face = (yaw, seconds = .4) => { faceYaw = yaw; faceUntil = tick + Math.round(seconds * 60); bodyYaw = yaw; };
+  const shove = (vx, vz) => { if (controller) { controller.velocity.x += vx; controller.velocity.z += vz; } };
+  const setGuard = w => { guardWeight = w; if (w && tick >= faceUntil) { faceYaw = state.yaw; faceUntil = tick + 2; } };
+  const facing = () => bodyYaw ?? state.yaw;
   // Paired actions use one movement clock. A small collision-checked alignment happens before either clip starts.
   function beginAction({ x, z, yaw, duration, sourceStart = 0, sourceEnd = G.GardenAnim?.duration('stealthAssassin'), onProgress, onFinish, onCancel, valid }) {
     if (!controller || !ninja || !state.active || state.airborne || state.climbing || action || mantle || !G.GardenAnim?.has('stealthAssassin')) return false;
@@ -251,5 +258,5 @@ export function createFoot({ scene, world, onEffect }) {
     scriptedPose(null, dt); lastJump = keys.has('space'); lastCrouch = keys.has('crouch');
     if (progress >= 1) { action = null; state.busy = false; ninja.person.motion.stop?.('stealthAssassin', .2); a.onFinish?.(); }
   }
-  return { state, enter, leave, step, play, beginAction, cancelAction, available: !!controller, controller, ninja, holder };
+  return { state, enter, leave, step, play, face, shove, setGuard, facing, beginAction, cancelAction, available: !!controller, controller, ninja, holder };
 }

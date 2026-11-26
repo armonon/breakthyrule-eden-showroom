@@ -88,6 +88,8 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
       }
       // The attacker supplies the normalized clock. No patrol, perception or attack can move the paired victim.
       if (f.takedown) { f.person.motion.update(dt, { velocity: still }); continue; }
+      // Reeling from a punch (or thrown off by a parry): no moving, no attacking, until it passes.
+      if (f.stun > 0) { f.stun -= dt; f.windup = 0; f.group.position.set(f.p.x, 0, f.p.z); f.group.rotation.y = -f.yaw; f.person?.motion.update(dt); continue; }
       const dx = c.x - f.p.x, dz = c.z - f.p.z, dist = Math.hypot(dx, dz);
       // Perception: in front and in range, or close and loud (a charge, a skid).
       const facing = (Math.sin(f.yaw) * dx - Math.cos(f.yaw) * dz) / (dist || 1);
@@ -111,7 +113,10 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
       const along = dx * c.forward.x + dz * c.forward.z, side = Math.abs(dx * c.forward.z - dz * c.forward.x), closing = Math.hypot(c.velocity.x, c.velocity.z);
       if (live && !foot && dist < 1.9 && -along < 1.75 && -along > -1.2 && side < .8 && closing > RAM_SPEED) { knock(f, c.velocity.x, c.velocity.z); continue; }
       f.strike = Math.max(0, f.strike - dt);
-      if (live && f.state === 'chase' && dist < 1.9 && f.strike <= 0) { f.strike = 1.3; onEvent?.({ type: 'stabbed', dx: -dx / (dist || 1), dz: -dz / (dist || 1) }); }
+      // His attack is telegraphed: the fork draws back for 0.45 s (a glint), then drives home if you are still in reach.
+      // That beat is what a guard raised in time parries.
+      if (f.windup > 0) { f.windup -= dt; if (f.windup <= 0 && live && dist < 2.3) onEvent?.({ type: 'stabbed', farmer: f, dx: dx / (dist || 1), dz: dz / (dist || 1) }); }
+      else if (live && f.state === 'chase' && dist < 1.9 && f.strike <= 0) { f.strike = 1.5; f.windup = .45; onEvent?.({ type: 'windup', farmer: f }); }
       // Pose: the character animates itself from how fast its root is moving; the fork comes up in a chase.
       if (live && f.state === 'chase' && dist < 1.9 && f.strike > 1.25) f.person?.motion.play?.('swingA', { fade: .06, speed: 1.5, mask: 'upper' });
       f.group.position.set(f.p.x, 0, f.p.z); f.group.rotation.y = -f.yaw;
@@ -119,6 +124,20 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
       f.fork.rotation.x = f.state === 'chase' ? -.1 : .9; f.fork.position.z = -.2 - (f.strike > 1 ? (f.strike - 1) * 2.2 : 0);
     }
   }
+  // A blow from the fists (fight.js). Health 40: a few jabs, or a combo and a haymaker. Returns {ko}.
+  const blowDir = new THREE.Vector3();
+  function hurt(f, damage, dx, dz, { tier = 'light', finisher = false, force = 2 } = {}) {
+    if (f.ragdoll || f.takedown) return { ko: false };
+    f.hp = (f.hp ?? 40) - damage;
+    if (f.state !== 'chase') { f.state = 'chase'; f.alert = 1; f.seenAt = performance.now() / 1000; }
+    if (f.hp <= 0 || finisher) { knock(f, dx * (finisher ? 6.5 : 3.2), dz * (finisher ? 6.5 : 3.2), 'fists'); return { ko: true }; }
+    f.stun = tier === 'heavy' ? .8 : .38; f.windup = 0; f.strike = Math.max(f.strike, .6);
+    world.walk(f.p, dx * (tier === 'heavy' ? .7 : .25), dz * (tier === 'heavy' ? .7 : .25), .35);
+    try { f.person?.motion.hit?.(blowDir.set(dx, 0, dz), tier === 'heavy' ? 1.5 : .9, { fall: false }); } catch { /* pose only */ }
+    blood?.burst(f.p.x, 1.5, f.p.z, dx * 2, dz * 2, tier === 'heavy' ? 5 : 2);
+    return { ko: false };
+  }
+  const stun = (f, seconds) => { if (f && !f.ragdoll) { f.stun = Math.max(f.stun || 0, seconds); f.windup = 0; try { f.person?.motion.hit?.(blowDir.set(-Math.sin(f.yaw), 0, Math.cos(f.yaw)), 1.2, { fall: false }); } catch { /* pose only */ } } };
   // The nearest standing farmer within `reach` of a point, and whether that point is behind him (a takedown).
   function nearest(x, z, reach = 1.6) {
     let best = null, bestD = reach;
@@ -130,5 +149,5 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
   // A sound at a point (the whistle): everyone within `radius` grows suspicious and looks that way.
   function noise(x, z, radius, amount = .5) { for (const f of farmers) if (!f.ragdoll && !f.takedown && Math.hypot(f.p.x - x, f.p.z - z) < radius) { f.alert = Math.min(.95, f.alert + amount); f.seenAt = performance.now() / 1000; } }
   const alertLevel = () => farmers.reduce((m, f) => f.ragdoll ? m : Math.max(m, f.state === 'chase' ? 1 : f.alert), 0);
-  return { farmers, update, knock, beginTakedown, poseTakedown, cancelTakedown, finishTakedown, nearest, noise, alertLevel, standing: () => farmers.filter(f => !f.ragdoll), out: () => farmers.filter(f => f.ragdoll).length, alerted: () => farmers.some(f => f.state === 'chase') };
+  return { farmers, update, knock, hurt, stun, beginTakedown, poseTakedown, cancelTakedown, finishTakedown, nearest, noise, alertLevel, standing: () => farmers.filter(f => !f.ragdoll), out: () => farmers.filter(f => f.ragdoll).length, alerted: () => farmers.some(f => f.state === 'chase') };
 }
