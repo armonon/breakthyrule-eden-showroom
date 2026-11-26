@@ -1,11 +1,11 @@
 // Touch controls for COWNinja: a stick on the left for W/A/S/D, buttons on the right, and dragging anywhere else to
 // look. They write into the same key set the keyboard uses, so the game cannot tell the difference.
-export function createTouch({ root, keys, onAct, onWhistle, onLook, onAttack, onGuard }) {
+export function createTouch({ root, keys, onAct, onWhistle, onLook, onAttack, onGuard, onThrow }) {
   const coarse = matchMedia?.('(pointer: coarse)').matches || 'ontouchstart' in window;
   if (!coarse || !root) return { active: false };
   root.hidden = false; document.getElementById('cn-app')?.classList.add('cn-touching');
   root.innerHTML = `<div class="cn-stick" data-stick><i></i></div>
-    <div class="cn-pad"><button data-key="shift">RUN</button><button data-tap="act">USE</button><button data-key="space">JUMP</button><button data-key="crouch">LOW</button><button data-tap="whistle">CALL</button><button data-hold="attack">HIT</button><button data-hold="guard">BLOCK</button></div>`;
+    <div class="cn-pad"><button data-key="shift">RUN</button><button data-tap="act">USE</button><button data-key="space">JUMP</button><button data-key="crouch">LOW</button><button data-tap="whistle">CALL</button><button data-tap="throw">THROW</button><button data-hold="attack">HIT</button><button data-hold="guard">BLOCK</button></div>`;
   const stick = root.querySelector('[data-stick]'), knob = stick.firstElementChild;
   let stickId = null, lookId = null, lx = 0, ly = 0;
   const setStick = (dx, dy) => {
@@ -19,7 +19,7 @@ export function createTouch({ root, keys, onAct, onWhistle, onLook, onAttack, on
   stick.addEventListener('pointerup', release); stick.addEventListener('pointercancel', release);
   for (const b of root.querySelectorAll('button')) {
     const key = b.dataset.key, tap = b.dataset.tap, hold = b.dataset.hold, held = down => (hold === 'attack' ? onAttack : onGuard)?.(down);
-    b.addEventListener('pointerdown', e => { e.preventDefault(); b.classList.add('on'); if (key) keys.add(key); else if (hold) held(true); else if (tap === 'act') onAct?.(); else onWhistle?.(); });
+    b.addEventListener('pointerdown', e => { e.preventDefault(); b.classList.add('on'); if (key) keys.add(key); else if (hold) held(true); else if (tap === 'act') onAct?.(); else if (tap === 'throw') onThrow?.(); else onWhistle?.(); });
     const up = () => { if (!b.classList.contains('on')) return; b.classList.remove('on'); if (key) keys.delete(key); else if (hold) held(false); };
     b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
   }
