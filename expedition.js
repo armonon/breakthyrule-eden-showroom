@@ -1,7 +1,7 @@
 'use strict';
 window.createExpedition=function({T,scene,camera,garden,getPose,place,stopMoving,requestDraw,returnHome,layout,onAction=()=>{},preferences=()=>null,entryUrl=null,correct=null,getCharacter=()=>window.GardenPlayerCharacter}){
  const $=id=>document.getElementById(id),dialog=$('night-dialog'),hud=$('night-hud'),avatars=new Map();
- let token=null,state=null,available=false,busy=false,seq=0,controller=null,streamTask=null,streamTime=0,poseTimer=0,poseBusy=false,lastSnapshot=0,nearest=null,autoPrompt=false,spectated=null,flashOn=true,soundOn=false,audio=null,osc=null,gain=null,disposed=false,browserSolo=null,soloTimer=0;
+ let token=null,state=null,available=false,busy=false,seq=0,controller=null,streamTask=null,streamTime=0,poseTimer=0,poseBusy=0,sentPoses=new Map(),lastSnapshot=0,nearest=null,autoPrompt=false,spectated=null,flashOn=true,soundOn=false,audio=null,osc=null,gain=null,disposed=false,browserSolo=null,soloTimer=0;
  let sharedWorldCache=null,suspended=false,roomVersion=null;
  let generation=0,requestAbort=new AbortController();const eventAbort=new AbortController();
  const STORAGE_KEY="eden-expedition-session-v2";
@@ -65,8 +65,11 @@ window.createExpedition=function({T,scene,camera,garden,getPose,place,stopMoving
   $('night-spectate').hidden=ended||self.status==='escaped'||!state.players.some(p=>p.status==='alive'&&p.id!==state.selfId);
   if(out&&oldStatus!==self.status){stopMoving();if(self.status==='escaped')place(11.7,-117,11.7,-133);else spectate();}
   if(ended)stopMoving();
-  // Only correct a meaningful disagreement, not normal in-flight movement prediction.
-  const pose=getPose();if(live()&&pose&&self.seq>=seq-2&&(self.poseRejected||Math.hypot(pose.x-self.x,pose.z-self.z)>2.4||Math.abs((pose.y||0)-(self.y||0))>1.4)){if(correct)correct(self);else place(self.x,self.z,self.x+Math.sin(self.yaw)*5,self.z+Math.cos(self.yaw)*5,self.y||0);}
+  // Only correct a real disagreement: the server refused a pose, or holds us somewhere other than the pose we sent
+  // for that sequence (a reset, an escape). Comparing with where we are now instead pulled every fast runner back by
+  // however far they had moved during the round trip.
+  const pose=getPose(),sent=sentPoses.get(self.seq),apart=sent?Math.hypot(sent.x-self.x,sent.z-self.z)>1.2||Math.abs(sent.y-(self.y||0))>1.2:pose&&(Math.hypot(pose.x-self.x,pose.z-self.z)>2.4||Math.abs((pose.y||0)-(self.y||0))>1.4);
+  if(live()&&pose&&self.seq>=seq-7&&(self.poseRejected||apart)){if(correct)correct(self);else place(self.x,self.z,self.x+Math.sin(self.yaw)*5,self.z+Math.cos(self.yaw)*5,self.y||0);}
   if(dialog.open)renderLobby();
   if(JSON.stringify(old?.collected)!==JSON.stringify(state.collected))renderJournal();
   requestDraw();
@@ -96,8 +99,10 @@ window.createExpedition=function({T,scene,camera,garden,getPose,place,stopMoving
   catch(error){if(ticket===generation&&!disposed){token=null;remember(null);errors('Previous room could not be resumed: '+error.message);}}
   finally{if(ticket===generation){busy=false;renderLobby();}}
  }
- async function sendPose(){if(!token||poseBusy)return;poseBusy=true;const ticket=token,epoch=generation;try{const pose=getPose();if(!pose)return;const result=await api({action:'pose',seq:++seq,pose:{...pose,flash:flashOn}});if(token===ticket&&generation===epoch)receive(result);}catch(error){if(token===ticket&&generation===epoch){$('night-connection').textContent=error.message;if(performance.now()-lastSnapshot>12000){$('night-outcome').hidden=false;$('night-outcome-title').textContent='Connection lost';stopMoving();}}}finally{if(generation===epoch)poseBusy=false;}}
- function leave(){const oldToken=token,wasBrowserSolo=!!browserSolo;generation++;requestAbort.abort();requestAbort=new AbortController();busy=false;poseBusy=false;remember(null);onAction('leave');token=null;controller?.abort();clearInterval(poseTimer);clearInterval(soloTimer);browserSolo=null;state=null;nearest=null;stopMoving();destroyAvatars();garden.district.setState(null);garden.pyramid.setPages(0);hud.hidden=true;$('night-action').hidden=true;$('night-chat').hidden=true;$('night-chat-input').value='';$('night-chat-open').classList.remove('unread');document.body.classList.remove('in-expedition');document.body.style.setProperty('--night-threat','0');flash.intensity=0;flareLight.intensity=0;if(gain)gain.gain.setTargetAtTime(0,audio.currentTime,.15);if(dialog.open)dialog.close();if($('night-journal').open)$('night-journal').close();if(oldToken&&!wasBrowserSolo)navigator.sendBeacon('/api/expedition',new Blob([JSON.stringify({action:'leave',token:oldToken})],{type:'application/json'}));autoPrompt=true;renderLobby();}
+ // Up to six pose requests in flight: with one at a time, a slow connection sent a pose only once per round trip,
+ // so each covered too much ground for the server's speed check and was rejected (the player was pulled back).
+ async function sendPose(){if(!token||poseBusy>=6)return;poseBusy++;const ticket=token,epoch=generation;try{const pose=getPose();if(!pose)return;const mine=++seq;sentPoses.set(mine,{x:pose.x,y:pose.y||0,z:pose.z});for(const k of sentPoses.keys())if(k<mine-64)sentPoses.delete(k);const result=await api({action:'pose',seq:mine,pose:{...pose,flash:flashOn}});if(token===ticket&&generation===epoch)receive(result);}catch(error){if(token===ticket&&generation===epoch){$('night-connection').textContent=error.message;if(performance.now()-lastSnapshot>12000){$('night-outcome').hidden=false;$('night-outcome-title').textContent='Connection lost';stopMoving();}}}finally{if(generation===epoch)poseBusy=Math.max(0,poseBusy-1);}}
+ function leave(){const oldToken=token,wasBrowserSolo=!!browserSolo;generation++;requestAbort.abort();requestAbort=new AbortController();busy=false;poseBusy=0;sentPoses.clear();remember(null);onAction('leave');token=null;controller?.abort();clearInterval(poseTimer);clearInterval(soloTimer);browserSolo=null;state=null;nearest=null;stopMoving();destroyAvatars();garden.district.setState(null);garden.pyramid.setPages(0);hud.hidden=true;$('night-action').hidden=true;$('night-chat').hidden=true;$('night-chat-input').value='';$('night-chat-open').classList.remove('unread');document.body.classList.remove('in-expedition');document.body.style.setProperty('--night-threat','0');flash.intensity=0;flareLight.intensity=0;if(gain)gain.gain.setTargetAtTime(0,audio.currentTime,.15);if(dialog.open)dialog.close();if($('night-journal').open)$('night-journal').close();if(oldToken&&!wasBrowserSolo)navigator.sendBeacon('/api/expedition',new Blob([JSON.stringify({action:'leave',token:oldToken})],{type:'application/json'}));autoPrompt=true;renderLobby();}
  function spectate(){const list=state?.players.filter(p=>p.status==='alive'&&p.id!==state.selfId)||[];if(!list.length)return;const index=list.findIndex(p=>p.id===spectated);spectated=list[(index+1)%list.length].id;}
  async function collect(){
   if(!live()||busy)return;

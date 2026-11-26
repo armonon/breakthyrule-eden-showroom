@@ -128,7 +128,9 @@
     room.message='Returned to the district entrance. Explore safely until you ring the bell.';
    }else if(data.action==='pose'){
     const pose={...data.pose,y:data.pose?.y??0,pitch:data.pose?.pitch??0,movement:data.pose?.movement||data.pose?.mode||'walk'};if(!['x','y','z','yaw','pitch'].every(k=>Number.isFinite(pose[k]))||Math.abs(pose.pitch)>Math.PI/2||!Number.isSafeInteger(data.seq)||data.seq<0||data.seq>p.seq+256||!movementModes.has(pose.movement))throw Error('Invalid position.');
-    if(data.seq>p.seq){p.seq=data.seq;const budget=budgets.get(id)||{distance:.8,at:now-.1};const dt=Math.min(.25,Math.max(0,now-budget.at));budget.distance=Math.min(2.5,budget.distance+dt*10);budget.at=now;
+    if(data.seq>p.seq){p.seq=data.seq;// Movement allowance: 12 m/s, earned over the real gap between poses (up to 0.6 s) and banked up to 6 m, so poses
+     // bunched or delayed by a slow connection are not refused as teleports while a sustained speed limit still holds.
+     const budget=budgets.get(id)||{distance:.8,at:now-.1};const dt=Math.min(.6,Math.max(0,now-budget.at));budget.distance=Math.min(6,budget.distance+dt*12);budget.at=now;
      const d=Math.hypot(pose.x-p.x,pose.z-p.z),floor=world.supportAt(pose.x,pose.z,pose.y+.1,root.playerBodyProfile(p.character).radius),grounded=pose.y<=floor+.12;
      const ledge=['hang','mantle','climb','scramble','wallrun'].includes(pose.movement)&&world.boxes.some(b=>pose.x>=b.minX-1.2&&pose.x<=b.maxX+1.2&&pose.z>=b.minZ-1.2&&pose.z<=b.maxZ+1.2&&b.top>=pose.y-.5&&b.top<pose.y+3.2);
      const air=airborne.get(id)||{at:now,base:p.y,peak:p.y};const age=Math.max(0,now-air.at);
