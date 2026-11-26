@@ -1024,7 +1024,8 @@
   // view turns, and shots, blows and aim assist follow where the muzzle points rather than the middle of the screen.
   // x/y: the muzzle's angle off the look (radians); yaw/pitch: the look as last sent to the host (recoil included);
   // view/local: that angle as a rotation in the weapon camera's space and in the main camera's.
-  const FREE_ZONE={x:.1,y:.075,soft:.3}; // smaller and quicker to hand over to the view, so a full turn takes no extra mouse travel
+  const FREE_ZONE={x:.1,y:.075,soft:.3};
+  const TURN_SHARE=.8; // how much of a quick turn goes straight to the view (the rest moves the gun in the frame first) // smaller and quicker to hand over to the view, so a full turn takes no extra mouse travel
   const free={on:false,x:0,y:0,yaw:0,pitch:0,view:new T.Quaternion(),local:new T.Quaternion(),dir:new T.Vector3(),screen:{x:0,y:0}},freeTmp=new T.Vector3(),freeInv=new T.Quaternion(),FREE_FWD=new T.Vector3(0,0,-1);
   const freeZone=()=>{const k=1-clamp(adsBlend/.8,0,1);return k*k*(3-2*k);};
   // Whatever lies outside the zone (it shrinks to nothing down the sights) is handed to the view, so the muzzle keeps its direction.
@@ -1038,7 +1039,7 @@
    const k=freeZone(),lx=FREE_ZONE.x*k||1e-6,ly=FREE_ZONE.y*k||1e-6,r=Math.hypot(free.x/lx,free.y/ly),outward=dx*free.x/(lx*lx)+dy*free.y/(ly*ly)>0;
    let share=0;if(outward){const t=clamp((r-FREE_ZONE.soft)/(1-FREE_ZONE.soft),0,1);share=t*t*(3-2*t);}
    // A quick turn goes straight to the view, as it did before free aim: only slow, small movements move the gun in the frame.
-   {const fast=clamp((Math.hypot(dx,dy)-.004)/.012,0,1);share=Math.max(share,fast*fast*(3-2*fast));}
+   {const fast=clamp((Math.hypot(dx,dy)-.004)/.012,0,1);share=Math.max(share,TURN_SHARE*fast*fast*(3-2*fast));}
    yaw+=dx*share;pitch=clamp(pitch+dy*share,-1.35,1.35);free.x+=dx*(1-share);free.y+=dy*(1-share);freeClamp();
   }
   function freeUpdate(dt,sprinting){
