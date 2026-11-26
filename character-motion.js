@@ -66,7 +66,7 @@
   // the pose blends back into the procedural animation as the character gets up.
   const ragdoll=(()=>{
    const order=['root','spine03','spine02','spine01','neck01','head','clavicle.L','upperarm01.L','lowerarm01.L','wrist.L','clavicle.R','upperarm01.R','lowerarm01.R','wrist.R','upperleg01.L','lowerleg01.L','foot.L','upperleg01.R','lowerleg01.R','foot.R'].map(bone).filter(Boolean);
-   const at=b=>order.indexOf(b),P=[],Q=[],links=[],stops=[];let active=false,clock=0,ground=0,acc=0,recover=0,snapshot=null,snapPelvis=new T.Vector3();
+   const at=b=>order.indexOf(b),P=[],Q=[],links=[],stops=[];let active=false,clock=0,ground=0,acc=0,recover=0,snapshot=null,snapPelvis=new T.Vector3(),recoverTime=1.1;
    // Leaf bones get a tip particle so their direction is simulated too.
    const tips=new Map();
    for(const b of order){const child=order.find(c=>c.parent===b);if(child)continue;const t=b.name.startsWith('head')?new T.Vector3(0,.22,.02):b.name.startsWith('wrist')?local(b).sub(local(b.parent)).setLength(.17):b.name.startsWith('foot')?new T.Vector3(0,-.04,.17):new T.Vector3(0,.1,0);tips.set(b,{local:t,index:order.length+tips.size});}
@@ -153,8 +153,13 @@
      // Lie still for a moment, then get up: the procedural pose takes over from the ragdoll over about a second.
      const still=Q.every((q,i)=>q.distanceToSquared(P[i])<1e-7);
      if(!stayDown&&!pinned&&clock>2.2&&(still||clock>4.5)){active=false;recover=1;snapshot=model.skeleton.bones.map(b=>b.quaternion.clone());snapPelvis.copy(order[0].position);}},
-    blend(dt){recover=Math.max(0,recover-dt/1.1);const k=smooth(0,1,1-recover);model.skeleton.bones.forEach((b,i)=>b.quaternion.slerpQuaternions(snapshot[i],b.quaternion.clone(),k));order[0].position.lerpVectors(snapPelvis,order[0].position.clone(),k);},
+    blend(dt){recover=Math.max(0,recover-dt/recoverTime);const k=smooth(0,1,1-recover);model.skeleton.bones.forEach((b,i)=>b.quaternion.slerpQuaternions(snapshot[i],b.quaternion.clone(),k));order[0].position.lerpVectors(snapPelvis,order[0].position.clone(),k);},
     get recoverLeft(){return recover;},
+    // Getting up with the get-up animation (api.onGetUp set): the body is first moved to where it actually lies, then the
+    // ragdoll pose hands over to the clip in a third of a second instead of floating upright for a second.
+    standFromHere(){const pelvis=P[0];if(!pelvis)return null;group.updateMatrixWorld(true);const origin=group.getWorldPosition(new T.Vector3()),off=pelvis.clone().sub(origin).setY(0);
+     const local=group.worldToLocal(origin.clone().add(off)).sub(group.worldToLocal(origin.clone()));snapPelvis.sub(local);recoverTime=.35;return off;},
+    endQuickly(){recoverTime=1.1;},
     inspect:()=>active?'down':recover>0?'getting up':'standing'
    };
   })();
@@ -163,6 +168,7 @@
   const state={time:null,phase:0,speed:0,weight:0,velocity:new T.Vector3(),last:new T.Vector3(),lastYaw:null,yawRate:0,walkHold:0,
    lean:{x:0,v:0},bank:{x:0,v:0},hitPitch:{x:0,v:0},hitRoll:{x:0,v:0},headPitch:{x:0,v:0},stumble:{x:new T.Vector3(),v:new T.Vector3()},
    guard:{x:0,v:0},guardTarget:0,wave:{x:0,v:0},wade:{x:0,v:0},look:null,lookYaw:{x:0,v:0},lookPitch:{x:0,v:0},airborne:false,treadmill:0,punches:0,hold:{x:0,v:0},held:null,aimPoint:null,layers:[],locoK:0,idleK:0};
+  let getUpLeft=0,getUpTotal=1;
   const requiredState=Object.keys(state),allowedState=new Set([...requiredState,'_t','crouch','crouchTarget','hits','flinch']);
   const rigKey=JSON.stringify({scale:group.scale.toArray(),joints:model.skeleton.bones.map(b=>[b.name,b.parent?.name||null,...b.position.toArray()])});
   const sideFields=['hand','foot','curl','touch','touchWeight','touchTarget','punch'];
@@ -260,12 +266,13 @@
    },
    // Jab with the hand furthest back; returns the seconds until the fist lands.
    punch(target){const s=sides[state.punches++%2];s.punch={t:0,target:target?toLocal(target):s.shoulder.clone().add(new T.Vector3(-s.sign*.08,.02,.62))};return .12;},
-   hit(direction,strength=1,{zone='chest'}={}){const d=direction.clone().applyQuaternion(group.getWorldQuaternion(new T.Quaternion()).invert());d.y=0;if(d.lengthSq()>1e-6)d.normalize();
-    state.hits=(state.hits||[]).filter(t=>state.time-t<1.3);state.hits.push(state.time);if(!canonical&&!ragdoll.active&&!root.GardenCharacterMotion.serverDecides&&(strength>=1.8||state.hits.length>=3)){state.hits=[];api.knockdown(direction,Math.max(strength,1.4));return 'down';}
+   // fall:false (light gunfire): a run of hits rocks the body but does not knock it over; only a hard hit (strength >= 1.8) does.
+   hit(direction,strength=1,{zone='chest',fall=true}={}){const d=direction.clone().applyQuaternion(group.getWorldQuaternion(new T.Quaternion()).invert());d.y=0;if(d.lengthSq()>1e-6)d.normalize();
+    state.hits=(state.hits||[]).filter(t=>state.time-t<1.3);state.hits.push(state.time);if(!canonical&&!ragdoll.active&&!root.GardenCharacterMotion.serverDecides&&(strength>=1.8||fall&&state.hits.length>=3)){state.hits=[];api.knockdown(direction,Math.max(strength,1.4));return 'down';}
     state.flinch=state.time+2.5;state.hitPitch.v+=d.z*7*strength;state.hitRoll.v-=d.x*7*strength;state.headPitch.v+=d.z*(zone==='head'?20:7)*strength;if(zone==='leg'){state.crouch??={x:0,v:0};state.crouch.v+=4*strength;}if(zone==='arm')state.hitRoll.v+=4*strength;state.stumble.v.addScaledVector(d,.9*strength);return 'hit';},
    // Knocked down: an explicit call, a hard hit, or the third hit in quick succession.
    // 1 while knocked down, falling to 0 as the character gets up; 0 when standing.
-   downAmount:()=>ragdoll.active?1:ragdoll.recovering?ragdoll.recoverLeft:0,
+   downAmount:()=>ragdoll.active?1:ragdoll.recovering?Math.max(ragdoll.recoverLeft,.01):getUpLeft>0?Math.max(.01,getUpLeft/getUpTotal*.99):0,
    // Ground hold (a tackle you stay on): pin(true) keeps a knocked-down body down; strike() lands a blow on it.
    pin(on=true){return !canonical&&ragdoll.pin(on);},
    pinned:()=>ragdoll.active&&ragdoll.pinned,
@@ -275,7 +282,11 @@
    knockdown(direction,strength=1.5,{stay=false}={}){if(canonical)throw Error('Canonical knockdown belongs to the authoritative physics actor.');if(ragdoll.active&&!stay)return;const d=direction.clone().setY(0);if(d.lengthSq()<1e-6)d.set(0,0,-1);d.normalize();ragdoll.start(d,strength,stay);},
    update(dt,options={}){
     dt=clamp(dt||0,0,1/20);
-    if(ragdoll.active){state.time=(state.time||0)+dt;ragdoll.update(dt);if(state.held)state.held.mesh.visible=false;return;}
+    if(ragdoll.active){state.time=(state.time||0)+dt;ragdoll.update(dt);if(state.held)state.held.mesh.visible=false;
+     // It has stopped moving and will get up: from where it lies, with the get-up clip, if the owner asked for that.
+     if(!ragdoll.active&&!canonical&&api.onGetUp){const off=ragdoll.standFromHere();if(off){api.onGetUp(off);const len=root.GardenAnim?.duration?.('getUp')||0;if(len>0){api.play('getUp',{fade:.12,mask:'full',speed:1.2});getUpTotal=getUpLeft=len/1.2;}}}
+     return;}
+    if(getUpLeft>0)getUpLeft=Math.max(0,getUpLeft-dt);
     api.procedural(dt,options);
     if(ragdoll.recovering)ragdoll.blend(dt);
    },

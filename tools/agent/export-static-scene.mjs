@@ -26,6 +26,8 @@ const lighting=await page.evaluate(`(()=>{const S=breakThyRuleShowroom,s=S.scene
  return {world:${JSON.stringify(world)},bounds:window.nightLayout?[nightLayout.bounds[0],nightLayout.bounds[1],-190,nightLayout.bounds[3]]:null,lamps:built?g.district.lamps.map(p=>p.toArray()):[],moon:{direction:d.toArray(),color:sun.color.toArray(),intensity:sun.intensity},lamp:{color:new THREE.Color(0xffc68c).toArray(),intensity:10,decay:1.7,distance:13},
   live,candles:altar?altar.candles.map(p=>p.toArray()):[],candle:{color:new THREE.Color(0xffb060).toArray(),intensity:.12,decay:2,distance:3}, // a flame beside a street lamp's 10: a glow on what it stands on, no more
   // matrix-world.js's wash on walls: emitted radiance = albedo * tint * (1-|n.y|) * pool * (near*exp(-y*nearFall) + far*exp(-y*farFall)) + albedo*(top*max(n.y,0) + glow)
+  // (the same constants as the shader's non-expedition branch; pool is the mean of .08+.92*((1+cos)/2)^5. Only washed buckets emit
+  // all of it; the showroom's unwashed landmark walls emit the cool part, albedo*(top*max(n.y,0)+glow), which this bake leaves out.)
   uplight:{tint:[1,.66,.36],pool:.306,near:.34,nearFall:.55,far:.06,farFall:.22,top:[.032,.04,.0512],glow:[.028,.034,.042]},
   courtyard:plan?{x:plan.x,z:plan.z,r:plan.r}:null,altar:altar?{x:nightLayout.arena.x,z:nightLayout.arena.z}:null,
   // eden-lighting.js's moonlit environment (linear radiance before its strength)
@@ -56,9 +58,10 @@ await page.evaluate(`(()=>{
    if(!sky&&!/blob shadow/i.test(mat.name||o.name)&&!(mat.transparent&&mat.opacity<.5&&!mat.map)){
     const colour=prop?atlasAlbedo(mat):null,cutout=!!mat.alphaTest&&mat.alphaTest>0;
     const key=isTerrain?'terrain':(custom?'water':prop?'prop|'+cutout+'|'+colour.map(x=>Math.round(Math.sqrt(x)*16)).join(','):mat.uuid);
-    // The uplight wash (matrix-world.js) is compiled into 'model' and 'stone' surfaces only; its flag is in the program key.
-    const wash=beyond&&!prop&&/\\|mx\\d+(model|stone)(true|false)true/.test(mat.customProgramCacheKey?.()||'');
-    if(!buckets.has(key))buckets.set(key,{name:isTerrain?'terrain':(custom?'water':prop?'workshop models':(mat.name||o.name||'mesh')),albedo:custom?[.05,.12,.12]:colour||albedo(mat),cutout,wash,emissive:mat.emissiveIntensity&&mat.emissive?mat.emissive.toArray().map(x=>x*mat.emissiveIntensity):[0,0,0],chunks:[],n:0});
+    // The uplight wash (matrix-world.js) is compiled into 'model', 'stone', 'facade', 'own' and 'planks' surfaces only; its flag is in
+    // the program key. In the showroom only the chosen facades carry it (the landmarks' '@wash' materials, night-district.js).
+    const wash=beyond&&!prop&&/\\|mx\\d+(model|stone|facade|planks|own)(true|false)true/.test(mat.customProgramCacheKey?.()||'');
+    if(!buckets.has(key))buckets.set(key,{name:isTerrain?'terrain':(custom?'water':prop?'workshop models':(mat.name||o.name||'mesh')),albedo:custom?[.05,.12,.12]:colour||albedo(mat),cutout,wash,fill:beyond&&!prop&&!wash&&!!mat.userData?.mxFill,emissive:mat.emissiveIntensity&&mat.emissive?mat.emissive.toArray().map(x=>x*mat.emissiveIntensity):[0,0,0],chunks:[],n:0});
     const b=buckets.get(key),g=o.geometry,p=g.attributes.position,ix=g.index?.array,tri=ix?ix.length:p.count,count=o.isInstancedMesh?o.count:1,a=new Float32Array(tri*3*count);let w=0;
     for(let k=0;k<count;k++){if(o.isInstancedMesh){o.getMatrixAt(k,im);m.multiplyMatrices(o.matrixWorld,im);}else m.copy(o.matrixWorld);
      // A mirrored placement turns the winding round (the renderer flips its front face for it): keep faces outward for

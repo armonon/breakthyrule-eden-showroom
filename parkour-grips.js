@@ -93,6 +93,8 @@
   root.mergeStaticMeshes?.(T,group,{skip:o=>ropes.some(r=>r.m===o)});
   group.traverse(o=>{if(o.isMesh&&!ropes.some(r=>r.m===o.parent)){o.updateMatrix();o.matrixAutoUpdate=false;}});
   scene.add(group);
+  // Beyond Eden (not the expedition page): the blocks take the scanned walls and their dirt instead of bare white.
+  if(!document.body?.classList.contains('expedition-entry'))window.edenMatrix?.surface(T,group,{kind:'stone'});
   const tmp=new T.Vector3(),down=new T.Vector3(0,-1,0);
   return {group,update(){const pose=getPose?.();for(const {g,m} of ropes){if(pose&&pose.id===g.id){tmp.set(pose.dx,-1,pose.dz).normalize();m.quaternion.setFromUnitVectors(down,tmp);}else if(m.quaternion.w<1)m.quaternion.identity();}},
    dispose(){scene.remove(group);geos.forEach(g=>g.dispose());mats.forEach(m=>m.dispose());grain.dispose();}};

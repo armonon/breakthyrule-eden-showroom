@@ -43,6 +43,17 @@ test('pipe ascent advances one controller tick and presents its actual travel pa
     assert.equal(h.animations.at(-1).kind, 'pipe');
     assert.ok(Math.abs(h.animations.at(-1).travelSpeed - (f.state.y - y) * 60) < 1e-8);
   }
+  assert.equal(h.layers.some(layer => layer.id === 'cnLadder'), false, 'the merged COWNinja ladder bake does not stack over shared traversal');
+});
+
+test('the merged hay-leap animation uses the shared jump transition when available', () => {
+  const h = harness(); h.world.hay.push([0, 3, 2]);
+  const f = h.make(); f.enter(0, 0, 0);
+  f.controller.reset({ x: 0, y: 4, z: 0, yaw: 0, nextTick: f.controller.tick }); f.controller.motion.set(4, -3);
+  f.step(held(), 0);
+  assert.ok(f.state.airborne);
+  assert.equal(h.animations.at(-1).kind, 'warp'); assert.equal(h.animations.at(-1).action, 'leap');
+  assert.equal(h.layers.some(layer => layer.id === 'cnLeap'), false, 'the incoming hay leap feature shares the normal transition layer');
 });
 
 test('free wall climb sends actual vertical, lateral and idle motion to shared authored traversal', () => {

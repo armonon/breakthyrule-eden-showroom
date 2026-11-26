@@ -141,6 +141,10 @@ export function createFoot({ scene, world, onEffect }) {
     scriptedPose({ kind: 'wallclimb', time: c.time, moving: c.moving, vertical, lateral, speed }, dt);
   }
   const STILLV = new THREE.Vector3();
+  // Preserve the COWNinja-specific bakes as fallbacks; shared traversal owns the equivalent parkour moves.
+  const hasClip = id => !!G.GardenAnim?.has?.(id);
+  const once = (id, options = {}) => hasClip(id) ? ninja?.person.motion.play?.(id, { mask: 'full', loop: false, ...options }) : null;
+  let pipeClip = false;
   // One 60 Hz tick. keys: Set of 'w','a','s','d','shift','space','crouch'; yaw/pitch: where the camera looks.
   function step(keys, yaw, pitch = 0) {
     if (!controller || !state.active) return;
@@ -183,9 +187,16 @@ export function createFoot({ scene, world, onEffect }) {
     if (state.airborne && state.velocity.y < -1 && state.y > 2.2) {
       if (!leap) { const fx = Math.sin(wrapped), fz = Math.cos(wrapped); let best = null, bd = 13;
         for (const h of world.hay || []) { const dx = h[0] - state.x, dz = h[1] - state.z, d = Math.hypot(dx, dz); if (d < bd && (d < 5 || (dx * fx + dz * fz) / d > .55)) { bd = d; best = h; } }
-        leap = best || 'none'; }
+        leap = best || 'none'; if (best) {
+          if (hasClip('pkLeap')) releasePose = { kind: 'warp', action: 'leap', time: 0, duration: G.GardenAnim.duration('pkLeap') / .8 };
+          else once('cnLeap', { fade: .1, speed: .8 });
+        } }
       if (leap !== 'none') { const dx = leap[0] - state.x, dz = leap[1] - state.z, d = Math.hypot(dx, dz) || 1, v = Math.min(8.5, d * 2.4); controller.velocity.x = dx / d * v; controller.velocity.z = dz / d * v; }
-    } else if (!state.airborne) { if (leap && leap !== 'none' && world.inHay?.(state.x, state.z)) onEffect?.({ kind: 'leap-of-faith' }); leap = null; }
+    } else if (!state.airborne) { if (leap && leap !== 'none') { if (world.inHay?.(state.x, state.z)) onEffect?.({ kind: 'leap-of-faith' }); ninja?.person.motion.stop?.('cnLeap', .15); } leap = null; }
+    // Older COWNinja libraries can supply their ladder clip; avoid stacking it over the shared traversal layer.
+    { const on = !hasClip('pkLadder') && state.movement === 'pipe' && hasClip('cnLadder') && (keys.has('w') || keys.has('s'));
+      if (on && !pipeClip) { pipeClip = true; ninja?.person.motion.play?.('cnLadder', { loop: true, fade: .12, speed: 1.6, mask: 'full' }); }
+      else if (!on && pipeClip) { pipeClip = false; ninja?.person.motion.stop?.('cnLadder', .15); } }
     pose(1 / 60);
   }
   // The body follows the way he is moving (not the camera), and takes its traversal poses from the movement state.

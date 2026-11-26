@@ -141,7 +141,9 @@ async function boot() {
         if (!started) { farmers.cancelTakedown(f); say('NO ROOM FOR A TAKEDOWN', 1.2); }
       } else {
         const p = foot.state, d = Math.hypot(f.p.x - p.x, f.p.z - p.z) || 1;
-        foot.play('cross', { fade: .05, speed: 1.6, mask: 'upper' }); farmers.knock(f, (f.p.x - p.x) / d * 2.4, (f.p.z - p.z) / d * 2.4, 'takedown');
+        if (A?.has?.('cnStab') && foot.play('cnStab', { fade: .08, speed: 1.7, start: 2.4, mask: 'upper' })) setTimeout(() => foot.ninja?.person.motion.stop?.('cnStab', .25), 1300);
+        else foot.play('cross', { fade: .05, speed: 1.6, mask: 'upper' });
+        farmers.knock(f, (f.p.x - p.x) / d * 2.4, (f.p.z - p.z) / d * 2.4, 'takedown');
       }
     }
     else if (o.kind === 'latch') { world.openGate(); foot.play('interact', { fade: .08, mask: 'upper' }); audio.hit('wood', world.gatePost.x, world.gatePost.z, .8); }
