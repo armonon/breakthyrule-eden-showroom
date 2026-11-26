@@ -15,7 +15,9 @@
  const time={value:0},strength={value:0},kit={value:null},program={value:null},scanA={value:null},scanB={value:null},detail={value:null};
  // The scans, one layer each of two texture arrays (a lit material here is at the GPU's 16 samplers, so no surface may
  // cost more than it did): A rgb albedo + a height, B rg normal + b roughness. SCALE is tiles per metre of each scan.
- const LAYERS=['asphalt','concrete','paving','plaster','brick','rust','eden'],SCALE=['.25','.5','.556','.556','.667','.5','.36'];let kitData=null;
+ // 'planks' (weathered boards) dresses the landmarks' timber; its -m file carries a third band, one random tone per board
+ // (tools/night/fetch-building-scans.py), which goes into B.a.
+ const LAYERS=['asphalt','concrete','paving','plaster','brick','rust','eden','planks'],SCALE=['.25','.5','.556','.556','.667','.5','.36','.6'];let kitData=null;
  const phone=()=>!!root.edenRenderProfile?.().mobile,still=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
  // What the binary says, eight bits to a letter, top to bottom down each column.
  const VERSES='IN THE BEGINNING WAS THE WORD · I AM THE ALPHA AND THE OMEGA · THE LIGHT SHINES IN THE DARKNESS AND THE DARKNESS HAS NOT OVERCOME IT · JESUS IS LORD · BE STILL AND KNOW THAT I AM GOD · '.replace(/·/g,'+');
@@ -49,16 +51,19 @@
   let low=false;try{low=localStorage.getItem('eden-graphics')==='low';}catch{}
   const n=phone()?3:LAYERS.length,S=phone()||low?512:1024,make=(fill,srgb)=>{const d=new Uint8Array(S*S*4*n);for(let i=0;i<d.length;i+=4){d[i]=fill[0];d[i+1]=fill[1];d[i+2]=fill[2];d[i+3]=fill[3];}
    const t=new T.DataArrayTexture(d,S,S,n);t.format=T.RGBAFormat;t.type=T.UnsignedByteType;t.wrapS=t.wrapT=T.RepeatWrapping;t.magFilter=T.LinearFilter;t.minFilter=T.LinearMipmapLinearFilter;t.generateMipmaps=true;t.anisotropy=phone()?2:8;if(srgb)t.colorSpace=T.SRGBColorSpace;t.onUpdate=()=>{t.userData.sent=true;};t.needsUpdate=true;return t;};
-  if(!pane){const cv=document.createElement('canvas');cv.width=S;cv.height=S*2;pane=cv.getContext('2d',{willReadFrequently:true});}
+  if(!pane){const cv=document.createElement('canvas');cv.width=S;cv.height=S*3;pane=cv.getContext('2d',{willReadFrequently:true});}
   const image=u=>files.get(u)||files.set(u,new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=u[0]==='/'?u:'/assets/beyond-eden/scan/'+u+'.webp?v=1';})).get(u);
   // Rows bottom first, like any other texture here, so a wall's scan stands the right way up. -m is roughness above
   // height; turned over, height is the first S rows and roughness the rest.
   const pixels=(img,h)=>{pane.setTransform(1,0,0,-1,0,h);pane.drawImage(img,0,0,S,h);pane.setTransform(1,0,0,1,0,0);return pane.getImageData(0,0,S,h).data;};
   const sent=(t,i)=>{if(t.userData.sent)t.addLayerUpdate(i);t.needsUpdate=true;},e=S*S;
   if(a&&!scanA.value){const t=scanA.value=make([120,112,100,128],true);LAYERS.slice(0,n).forEach(async(name,i)=>{try{if(name==='eden'){t.image.data.set(pixels(await image(EDEN[0]),S),i*e*4);sent(t,i);return;}
-   const [d,m]=await Promise.all([image(name+'-d'),image(name+'-m')]);const A=t.image.data,o=i*e*4;A.set(pixels(d,S),o);const mp=pixels(m,S*2);for(let k=0;k<e;k++)A[o+k*4+3]=mp[k*4];sent(t,i);}catch{}});}
+   const [d,m]=await Promise.all([image(name+'-d'),image(name+'-m')]);const A=t.image.data,o=i*e*4;A.set(pixels(d,S),o);const three=m.height>=m.width*2.5,mp=pixels(m,three?S*3:S*2),h=three?e:0;for(let k=0;k<e;k++)A[o+k*4+3]=mp[(h+k)*4];sent(t,i);}catch{}});}
   if(b&&!scanB.value){const t=scanB.value=make([128,128,215,255],false);LAYERS.slice(0,n).forEach(async(name,i)=>{try{if(name==='eden'){const B=t.image.data,o=i*e*4,c=pixels(await image(EDEN[1]),S),p=pixels(await image(EDEN[2]),S);for(let k=0;k<e;k++){B[o+k*4]=c[k*4];B[o+k*4+1]=c[k*4+1];B[o+k*4+2]=p[k*4];B[o+k*4+3]=p[k*4+1];}sent(t,i);return;}
-   const [nor,m]=await Promise.all([image(name+'-n'),image(name+'-m')]);const B=t.image.data,o=i*e*4,np=pixels(nor,S),mp=pixels(m,S*2);for(let k=0;k<e;k++){B[o+k*4]=np[k*4];B[o+k*4+1]=np[k*4+1];B[o+k*4+2]=mp[(e+k)*4];}sent(t,i);}catch{}});}
+   const [nor,m]=await Promise.all([image(name+'-n'),image(name+'-m')]);const B=t.image.data,o=i*e*4,np=pixels(nor,S);
+   // three bands (roughness, height, tone), turned over: tone first, then height, then roughness
+   if(m.height>=m.width*2.5){const mp=pixels(m,S*3);for(let k=0;k<e;k++){B[o+k*4]=np[k*4];B[o+k*4+1]=np[k*4+1];B[o+k*4+2]=mp[(2*e+k)*4];B[o+k*4+3]=mp[k*4];}}
+   else{const mp=pixels(m,S*2);for(let k=0;k<e;k++){B[o+k*4]=np[k*4];B[o+k*4+1]=np[k*4+1];B[o+k*4+2]=mp[(e+k)*4];}}sent(t,i);}catch{}});}
  }
  const HASH='\nfloat mxHash(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}\n';
 
@@ -121,17 +126,31 @@
   if(!material?.isMeshStandardMaterial)return null;const had=patched.get(material);if(had)return had;build(T);
   // garden.js hands the road over as a 'model': it is the one material painted and embossed from canvases.
   if(kind==='model'&&material.map?.isCanvasTexture&&material.bumpMap?.isCanvasTexture&&!material.normalMap)kind='road';
-  const lite=phone();if(lite&&kind!=='ground'&&kind!=='road')kind='form';
+  const lite=phone();if(lite&&kind!=='ground'&&kind!=='road'){
+   // Phones keep each building's own textures; its wall scans are laid at twice the density, closer to their real size.
+   if((kind==='facade'&&material.userData.mxLayer!=='own'||kind==='planks')&&!OLD)for(const t of [material.map,material.normalMap,material.roughnessMap,material.metalnessMap])t?.repeat.set(2,2);
+   kind='form';}
+  // facade: a landmark's wall. Layer 'own' (material.userData.mxLayer) keeps the building's own scan but lays it in world
+  // space, 2.5 m to a tile, so it neither stretches nor seams from face to face; any other layer (plaster, brick, concrete)
+  // replaces a texture that reads as fake however it is laid (the observatory's trowelled rings) with that world-space
+  // scan, keeping only its average colour. Both are weathered. planks: timber and doors, with the boards scan.
+  // interior: window glass with a room behind it.
+  const ownMap=kind==='facade'&&material.userData.mxLayer==='own'&&!OLD;if(ownMap)kind='own';
+  const facade=kind==='facade'||kind==='planks',interior=kind==='interior'&&!OLD,fill=!OLD&&!wash&&!!material.userData.mxFill,weathered=!OLD&&!!material.userData.mxWeather&&(facade||ownMap);
+  const layer=kind==='planks'?'planks':LAYERS.includes(material.userData.mxLayer)?material.userData.mxLayer:'plaster',layerIndex=LAYERS.indexOf(layer);
+  if(facade){const img=material.map?.image;if(img){try{const c=document.createElement('canvas');c.width=c.height=8;const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(img,0,0,8,8);const d=g.getImageData(0,0,8,8).data;let r=0,gg=0,b=0,n=0;for(let i=0;i<d.length;i+=4){if(d[i]+d[i+1]+d[i+2]<6)continue;r+=d[i];gg+=d[i+1];b+=d[i+2];n++;}if(n)material.color.multiply(new T.Color().setRGB(r/n/255,gg/n/255,b/n/255,T.SRGBColorSpace));}catch{}}
+   material.map=material.normalMap=material.roughnessMap=material.metalnessMap=material.aoMap=null;material.metalness=0;material.roughness=1;}
+  if(interior){material.color.setRGB(.02,.022,.025);material.roughness=.08;material.metalness=0;}
   const form={value:new T.Vector4(1,0,1,0)},own=material.onBeforeCompile,key=material.customProgramCacheKey.bind(material);
   patched.set(material,form);
-  const ground=kind==='ground',road=kind==='road',wall=kind==='stone'||kind==='concrete',metal=kind==='metal',model=kind==='model';
+  const ground=kind==='ground',road=kind==='road',wall=kind==='stone'||kind==='concrete'||facade,metal=kind==='metal',model=kind==='model';
   const lean=model&&!!(material.aoMap||material.lightMap||material.emissiveMap),useA=ground||road||wall||metal,useB=!lite&&useA,useD=(model&&!lean)||road&&!lite;scans(T,useA,useB);
   // A model keeps its own textures; close to, the stone grain is laid over its normals (the same one Eden and the expedition have always had).
   if(useD&&!detail.value){const t=detail.value=new T.TextureLoader().load('/assets/castle/wall-nor.webp?v=1');t.wrapS=t.wrapT=T.RepeatWrapping;t.anisotropy=8;}
   material.onBeforeCompile=(sh,r)=>{own.call(material,sh,r);
    Object.assign(sh.uniforms,{mxForm:form,mxTime:time,mxOn:strength,mxKit:kit});
    if(useA)sh.uniforms.mxScanA=scanA;if(useB)sh.uniforms.mxScanB=scanB;if(useD)sh.uniforms.mxNorA=detail;
-   sh.vertexShader='varying vec3 vMx;uniform vec4 mxForm;\n'+sh.vertexShader.replace('#include <project_vertex>',`
+   sh.vertexShader='varying vec3 vMx;uniform vec4 mxForm;\n'+(weathered?'attribute vec2 _weather;varying vec2 vMxW;\n':'')+sh.vertexShader.replace('#include <project_vertex>',`${weathered?'vMxW=_weather;':''}
     if(mxForm.x<1.){float mxS=max(length(modelMatrix[0].xyz),.0001)*mix(9.,2.2,(1.-mxForm.x)*(1.-mxForm.x)),mxK=(1.-mxForm.x)*(1.-mxForm.x);transformed=mix(transformed,floor(transformed*mxS+.5)/mxS,mxK);}
     #include <project_vertex>
     {vec4 mxW=vec4(transformed,1.);
@@ -142,7 +161,7 @@
      mxW=instanceMatrix*mxW;
     #endif
     vMx=(modelMatrix*mxW).xyz;}`);
-   let head=`varying vec3 vMx;uniform vec4 mxForm;uniform float mxTime,mxOn;uniform highp sampler2D mxKit;float mxGlow=0.;\nfloat mxBit(float n){int i=int(mod(n,1024.));return texelFetch(mxKit,ivec2(i%512,i/512),0).a;}\n`;
+   let head=`${weathered?'varying vec2 vMxW;':''}varying vec3 vMx;uniform vec4 mxForm;uniform float mxTime,mxOn;uniform highp sampler2D mxKit;float mxGlow=0.;\nfloat mxBit(float n){int i=int(mod(n,1024.));return texelFetch(mxKit,ivec2(i%512,i/512),0).a;}\n`;
    // One read of a scan: p in metres, l the layer, s its tiles per metre. Explicit gradients, so a change of layer or
    // of projection from one pixel to the next does not pick the wrong mip.
    if(kind!=='form')head+=`${useA?'uniform highp sampler2DArray mxScanA;vec4 mxA4(vec2 p,float l,float s){return textureGrad(mxScanA,vec3(p*s,l),dFdx(p)*s,dFdy(p)*s);}':''}${useB?'uniform highp sampler2DArray mxScanB;vec4 mxB4(vec2 p,float l,float s){return textureGrad(mxScanB,vec3(p*s,l),dFdx(p)*s,dFdy(p)*s);}':''}${useD?'uniform sampler2D mxNorA;':''}
@@ -169,11 +188,27 @@
     diffuseColor.rgb*=1.-mxWall*.42*smoothstep(.5,.72,mxStreak)*smoothstep(.35,.6,mxBroad);diffuseColor.rgb*=.78+.44*mxBroad;
     mxDamp=exp(-max(vMx.y,0.)*1.1)*(.4+.6*mxFine)*mxWall+(1.-mxWall)*step(.5,mxWn.y)*smoothstep(.45,.65,mxBroad);
     diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.45,.56,.40),clamp(mxDamp,0.,1.)*.75);`;
+   // Weathering (Beyond Eden's own build only; the expedition page keeps the walls it was built with): dirt and rain splash
+   // on the bottom 40 cm, damp and moss on faces turned from the moon (it stands at (-.38,.62,-.64)), and where the
+   // landmark pass left its vertex attribute (_weather, tools/night/build-landmarks.py), rain streaks under every sill and
+   // ledge and the occlusion of corners. Walls stand on ground at y 0 here, give or take a plinth.
+   const WEATHER=OLD?'':`
+    {float mxV=1.-smoothstep(.4,.75,abs(mxWn.y)),mxH=max(vMx.y,0.)+(mxFine-.5)*.16,mxIn2=1.-smoothstep(-24.,-20.,vMx.z);mxV*=mxIn2;
+     float mxBase=1.-smoothstep(.1,.48,mxH),mxSpl=smoothstep(.62,.8,texture2D(mxKit,mxUv*2.3).b+.35*mxBase)*(1.-smoothstep(.2,.75,mxH));
+     diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.40,.36,.31),mxBase*.75*mxV);diffuseColor.rgb*=1.-.3*mxSpl*mxV;
+     float mxAway=clamp(-dot(mxWn.xz,vec2(-.51,-.86)),0.,1.)*mxV,mxLow=1.-smoothstep(.3,3.,mxH);
+     float mxMoss=mxAway*smoothstep(.5,.72,mxBroad*.7+mxFine*.3+.22*mxLow)*(.35+.65*mxLow);
+     diffuseColor.rgb=mix(diffuseColor.rgb,vec3(dot(diffuseColor.rgb,vec3(.3333)))*vec3(.55,.74,.40),clamp(mxMoss,0.,1.)*.6);
+     diffuseColor.rgb*=1.-.18*mxAway*smoothstep(.4,.65,mxBroad);
+     mxDamp=max(mxDamp,mxBase*.55*mxV+mxMoss*.5);${weathered?`
+     float mxRun=vMxW.x*smoothstep(.42,.8,texture2D(mxKit,vec2(mxUv.x*1.1,vMx.y*.045+mxUv.x*.031)).b*.55+texture2D(mxKit,vec2(mxUv.x*3.7,vMx.y*.09)).b*.55);
+     diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.5,.47,.42),clamp(mxRun,0.,1.)*.75*mxIn2);mxDamp=max(mxDamp,mxRun*.45);
+     diffuseColor.rgb*=1.-.6*vMxW.y*mxIn2;`:''}}`;
    // Standing water: in the broad damp patches, where the scan's height says the surface is low.
    // MID is each ground scan's mean height: cracks and joints lie well below it, so they fill first and read darker.
    const WET=`smoothstep(0.,.1,(mxBroad-${OLD?'.6':'.55'})+(mxMid-mxT.a)*.9+(mxFine-.5)*.08)`,MID=`float mxMid=mxL>1.5?.545:(mxL>.5?.51:.40);`,CREVICE=`(1.-.5*smoothstep(.04,.25,mxMid-mxT.a))`;
    f=f.replace('#include <map_fragment>',`#include <map_fragment>
-    diffuseColor.rgb*=1.-mxGlow*.9;`+(kind==='form'?'':`
+    diffuseColor.rgb*=1.-mxGlow*.9;`+(kind==='form'||interior?'':`
     {vec3 mxD=vMx-cameraPosition;mxNear=1.-smoothstep(14.,42.,length(mxD));mxWn=normalize(cross(dFdx(vMx),dFdy(vMx)));vec3 mxA=abs(mxWn);
     mxUv=mxA.y>max(mxA.x,mxA.z)?vMx.xz:(mxA.x>mxA.z?vMx.zy:vMx.xy);
     float mxBroad=texture2D(mxKit,mxUv*.023).g,mxFine=texture2D(mxKit,mxUv*.19).b;mxFine2=mxFine;`+(ground?`
@@ -197,19 +232,25 @@
     diffuseColor.rgb=mix(diffuseColor.rgb,mxT.rgb*(mxL>1.5?vec3(.39,.39,.38):vec3(.48))*(.8+.4*mxBroad)*${CREVICE}*(1.-.45*smoothstep(.45,.62,mxBroad))*(1.-.35*mxWet),mxIn);
     if(${OLD?'false':'true'}){float mxX=abs(vMx.x-11.7),mxDirt=0.,mxDry=mxWet;vec3 mxS2=mxStreet(diffuseColor.rgb,vMx.xz,smoothstep(1.25,2.,mxX+mxFine*.5-.2),(1.-smoothstep(.1,.34,abs(mxX-.78)))*(1.-mxPave),mix(.10,.42,smoothstep(.7,1.9,mxX)),mxDry,mxDirt);diffuseColor.rgb=mix(diffuseColor.rgb,mxS2,mxIn);mxWet=mix(mxWet,mxDry,mxIn);mxLit=mxDirt*mxIn;}
     ${useB?`vec4 mxN=mxB4(vMx.xz,mxL,mxS);mxBump=mxN.xy*2.-1.;mxRough=mxN.b;`:''}`:wall?`
-    ${kind==='concrete'?`float mxL=1.,mxS=${SCALE[1]},mxBr=-1.;`:`
+    ${kind==='concrete'?`float mxL=1.,mxS=${SCALE[1]},mxBr=-1.;`:facade&&layer!=='plaster'?`float mxBr=-1.,mxL=mxA.y>.82&&${layer!=='planks'}?1.:${layerIndex}.,mxS=mxL<1.5?${SCALE[1]}:${SCALE[layerIndex]};`:facade?`
+    // a plastered landmark wall: the brick shows through in patches, more of them near the ground
+    float mxBr=mxBroad*.6+mxFine*.4+.22*exp(-max(vMx.y,0.)*.45)-.80;
+    float mxL=mxA.y>.82?1.:(mxBr>0.?4.:3.),mxS=mxL>3.5?${SCALE[4]}:(mxL>2.5?${SCALE[3]}:${SCALE[1]});`:`
     // Warm-coloured walls are brick under their plaster; any wall shows brick in patches, more of it near the ground.
     float mxRed=(diffuseColor.r-diffuseColor.b)/max(diffuseColor.r,.05),mxBr=mxBroad*.6+mxFine*.4+.4*smoothstep(.3,.6,mxRed)+.2*exp(-max(vMx.y,0.)*.45)-.64;
     float mxL=mxA.y>.82?1.:(mxA.y>.3?2.:(mxBr>0.?4.:3.)),mxS=mxL>3.5?${SCALE[4]}:(mxL>1.5?${SCALE[3]}:${SCALE[1]});`}
-    vec4 mxT=mxA4(mxUv,mxL,mxS);if(mxL>3.5)diffuseColor.rgb=mix(diffuseColor.rgb,vec3(dot(diffuseColor.rgb,vec3(.3333))),.65);
-    diffuseColor.rgb=diffuseColor.rgb*mix(.55,1.1,mxBroad)*mxT.rgb*(mxL>3.5?2.1:(mxL>1.5?2.:2.25));
-    if(mxL>2.5)diffuseColor.rgb*=1.-.4*(1.-smoothstep(0.,.03,abs(mxBr)));${GRIME}
+    vec4 mxT=mxA4(mxUv,mxL,mxS);if(mxL>3.5&&mxL<4.5)diffuseColor.rgb=mix(diffuseColor.rgb,vec3(dot(diffuseColor.rgb,vec3(.3333))),.65);
+    ${facade?`// the scan's grain and light, mostly in the building's own colour; one tone per block or board
+    if(mxL>2.5&&mxL<4.5){float mxG2=dot(mxT.rgb,vec3(.3333));mxT.rgb=mix(vec3(.36),mix(vec3(mxG2),mxT.rgb,.5),.62);}  // softer: a wall, not a sample swatch
+    if(mxL>6.5){mxT.rgb=mix(vec3(dot(mxT.rgb,vec3(.3333))),mxT.rgb,.35)*1.08;${useB?`diffuseColor.rgb*=.8+.4*mxB4(mxUv,mxL,mxS).a;`:''}}`:''}
+    diffuseColor.rgb=diffuseColor.rgb*mix(.55,1.1,mxBroad)*mxT.rgb*(mxL>3.5?2.1:(mxL>1.5?2.:2.25))${facade?'*1.2':''};
+    if(mxL>2.5)diffuseColor.rgb*=1.-.4*(1.-smoothstep(0.,.03,abs(mxBr)));${GRIME}${WEATHER}
     ${useB?`vec4 mxN=mxB4(mxUv,mxL,mxS);mxBump=mxN.xy*2.-1.;mxRough=mxN.b;`:''}`:metal?`
     // Paint where it has held, rust where it has not (mxPave carries how far through the rust is).
     vec4 mxT=mxA4(mxUv,5.,${SCALE[5]});mxPave=smoothstep(.07,.24,mxT.r-mxT.b);
     diffuseColor.rgb=mix(diffuseColor.rgb*(.62+.5*mxBroad),mxT.rgb*vec3(.8,.6,.48),mxPave*.85);${GRIME}
     ${useB?`vec4 mxN=mxB4(mxUv,5.,${SCALE[5]});mxBump=mxN.xy*2.-1.;mxRough=mxN.b;`:''}`:`
-    diffuseColor.rgb*=mix(1.,.55+.95*texture2D(mxKit,mxUv*1.7).b,.6*mxNear);${GRIME}`)+`}`));
+    diffuseColor.rgb*=mix(1.,.55+.95*texture2D(mxKit,mxUv*1.7).b,.6*mxNear);${GRIME}${model||ownMap?WEATHER:''}`)+`}`));
    if(kind!=='form'){
     // The scan's own roughness, then damp (duller, darker) and standing water (a mirror for the lamps).
     f=f.replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
@@ -229,20 +270,41 @@
    f=f.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
     if(mxGlow>0.){vec3 mxFn=abs(normalize(cross(dFdx(vMx),dFdy(vMx))));vec2 mxP=(mxFn.x>mxFn.z?vMx.zy:vMx.xy)*7.;if(mxFn.y>.7)mxP=vMx.xz*7.;vec2 mxCell=floor(mxP),mxF=clamp(fract(mxP),.08,.92);float mxId=floor(mxHash(mxCell+floor(mxTime*9.))*64.);
      float mxG=texture2D(mxKit,(vec2(mod(mxId,8.),floor(mxId/8.))+vec2(mxF.x,1.-mxF.y))/8.).r;vec2 mxEdge=abs(fract(mxP*.5)-.5);
-     totalEmissiveRadiance+=${GREEN}*mxGlow*(mxG*.62+.018+smoothstep(.44,.5,max(mxEdge.x,mxEdge.y))*.16+pow(mxGlow,8.)*.25);}`+(model||wall||metal?`
+     totalEmissiveRadiance+=${GREEN}*mxGlow*(mxG*.62+.018+smoothstep(.44,.5,max(mxEdge.x,mxEdge.y))*.16+pow(mxGlow,8.)*.25);}`+(interior?`
+    { // A room behind the glass (interior mapping): the view ray, from the pane into a grid of rooms 3.4 x 3.1 x 4.2 m, meets
+      // a back wall, a side wall, the floor or the ceiling. Some rooms have a lamp on, some curtains, most are dark.
+     vec3 mxV=normalize(vMx-cameraPosition),mxN=normalize(cross(dFdx(vMx),dFdy(vMx)));if(dot(mxN,mxV)>0.)mxN=-mxN;
+     vec3 mxTg=cross(vec3(0.,1.,0.),mxN);mxTg=length(mxTg)<.2?vec3(1.,0.,0.):normalize(mxTg);
+     vec3 mxD=vec3(dot(mxV,mxTg),mxV.y,max(dot(mxV,-mxN),.05)),mxO=vec3(dot(vMx,mxTg),vMx.y,0.),mxCs=vec3(3.4,3.1,4.2);
+     vec3 mxC=floor(mxO/mxCs);mxC.z=0.;vec3 mxB=(mxC+step(0.,mxD))*mxCs;mxB.z=mxCs.z;
+     vec3 mxT3=(mxB-mxO)/mxD;float mxTm=min(mxT3.x,min(mxT3.y,mxT3.z));vec3 mxHp=mxO+mxD*mxTm,mxFr=(mxHp-mxC*mxCs)/mxCs;
+     vec2 mxRid=mxC.xy+vec2(floor(dot(vMx,mxN)*1.7)*7.13,mxN.x*3.1);float mxOn2=step(.62,mxHash(mxRid)),mxTone=mxHash(mxRid+7.);
+     vec3 mxSurf=mxTm==mxT3.z?mix(vec3(.50,.42,.33),vec3(.36,.40,.36),step(.5,mxTone))*(.86+.14*step(.5,fract(mxFr.x*7.))):(mxTm==mxT3.y?(mxD.y<0.?vec3(.22,.15,.10):vec3(.62,.58,.52)):vec3(.44,.38,.31));
+     vec3 mxLamp=(vec3(.5,.86,.45)-mxFr)*vec3(mxCs.x,mxCs.y,mxCs.z);float mxFall=1./(1.+dot(mxLamp,mxLamp)*.35);
+     vec3 mxRoom=mxSurf*mix(vec3(.010,.012,.016),vec3(1.,.70,.42)*(.55+.5*mxTone)*mxFall*1.6,mxOn2);
+     float mxCur=step(.72,mxHash(mxRid+13.))*(1.-smoothstep(.18,.24,min(fract(mxO.x/mxCs.x),1.-fract(mxO.x/mxCs.x))));
+     mxRoom=mix(mxRoom,vec3(.30,.12,.09)*(.75+.25*sin(mxO.x*40.))*mix(.02,.55,mxOn2),mxCur);
+     totalEmissiveRadiance=mxRoom*mxOn*(1.-mxGlow);}`:'')+(model||ownMap||wall||metal?`
     ${wash?`{ // Architectural uplights: pools of warm light climbing the walls between the piers, cool moonlight on what faces up.
-${OLD?`     float mxPool=.35+.65*pow(.5+.5*cos(mxUv.x*1.05),3.);totalEmissiveRadiance+=diffuseColor.rgb*mxOn*(vec3(1.,.62,.30)*(1.-abs(mxWn.y))*mxPool*(exp(-max(vMx.y,0.)*.42)*.5+exp(-max(vMx.y,0.)*.16)*.13)+vec3(.16,.30,.27)*max(mxWn.y,0.)*.16+vec3(.03,.06,.048));`:`     float mxPool=.08+.92*pow(.5+.5*cos(mxUv.x*1.05),5.);totalEmissiveRadiance+=diffuseColor.rgb*mxOn*(vec3(1.,.66,.36)*(1.-abs(mxWn.y))*mxPool*(exp(-max(vMx.y,0.)*.55)*.34+exp(-max(vMx.y,0.)*.22)*.06)+vec3(.20,.25,.32)*max(mxWn.y,0.)*.16+vec3(.028,.034,.042));`}}`:''}${OLD?`
+${OLD?`     float mxPool=.35+.65*pow(.5+.5*cos(mxUv.x*1.05),3.);totalEmissiveRadiance+=diffuseColor.rgb*mxOn*(vec3(1.,.62,.30)*(1.-abs(mxWn.y))*mxPool*(exp(-max(vMx.y,0.)*.42)*.5+exp(-max(vMx.y,0.)*.16)*.13)+vec3(.16,.30,.27)*max(mxWn.y,0.)*.16+vec3(.03,.06,.048));`:`     float mxPool=.08+.92*pow(.5+.5*cos(mxUv.x*1.05),5.);totalEmissiveRadiance+=diffuseColor.rgb*mxOn*(vec3(1.,.66,.36)*(1.-abs(mxWn.y))*mxPool*(exp(-max(vMx.y,0.)*.55)*.34+exp(-max(vMx.y,0.)*.22)*.06)+vec3(.20,.25,.32)*max(mxWn.y,0.)*.16+vec3(.028,.034,.042));`}}`:fill?`
+    // the unwashed landmark walls keep the wash's cool part only: the moonlit sky on what faces up, a faint fill elsewhere
+    totalEmissiveRadiance+=diffuseColor.rgb*mxOn*(vec3(.20,.25,.32)*max(mxWn.y,0.)*.16+vec3(.028,.034,.042));`:''}${OLD?`
     {float mxWall=1.-smoothstep(.3,.5,abs(mxWn.y));if(mxWall*mxOn>0.){vec2 mxP=vec2(mxUv.x*3.6,vMx.y*3.6),mxCell=floor(mxP);float mxCh=mxHash(vec2(mxCell.x,11.));
      // A column here and there down a wall still shows the program running.
      if(mxCh>.972){float mxLen=26.,mxDrop=mod(mxCell.y+mxTime*(2.+mxCh*3.)*1.6+mxCh*997.,90.),mxTail=mxDrop<mxLen?exp(-mxDrop*.15):0.;
       if(mxTail>.01){float mxId=step(.5,mxBit(-mxCell.y+mxCell.x*64.));vec2 mxF=clamp(fract(mxP),.08,.92);float mxG=texture2D(mxKit,(vec2(mxId,0.)+vec2(mxF.x,1.-mxF.y))/8.).r;totalEmissiveRadiance+=${GREEN}*mxG*mxTail*.5*mxOn;}}}}`:''}`:''));
+   if(ownMap){ // the building's own maps, read at world-space coordinates (normal maps follow: three derives their frame from the uv)
+    const at=f.indexOf('void main()');f=f.slice(0,at)+'vec2 mxWuv=vec2(0.);\n'+f.slice(at).replace(/\bv(Map|NormalMap|RoughnessMap|MetalnessMap|AoMap|EmissiveMap)Uv\b/g,'mxWuv')
+     .replace('#include <clipping_planes_fragment>',`#include <clipping_planes_fragment>
+    {vec3 mxQ=abs(normalize(cross(dFdx(vMx),dFdy(vMx))));mxWuv=(mxQ.y>max(mxQ.x,mxQ.z)?vMx.xz:(mxQ.x>mxQ.z?vec2(vMx.z,-vMx.y):vec2(vMx.x,-vMx.y)))*.4;}`);}
    sh.fragmentShader=f;};
-  material.customProgramCacheKey=()=>key()+'|mx10'+kind+lean+wash+lite+(own&&own!==T.Material.prototype.onBeforeCompile?String(own).length:'');
+  material.customProgramCacheKey=()=>key()+'|mx11'+kind+lean+wash+lite+(facade?layer:'')+(weathered?'w':'')+(fill?'f':'')+(own&&own!==T.Material.prototype.onBeforeCompile?String(own).length:'');
   material.needsUpdate=true;return form;
  }
  function surface(T,object,{kind='model',skip=null,wash=false}={}){
   if(!object)return;object.traverse(o=>{if(!o.isMesh||o.isSkinnedMesh||skip?.(o))return;for(const m of [].concat(o.material||[])){if(!m?.isMeshStandardMaterial||m.transparent||m.alphaTest>0)continue;
-   const glows=m.emissive&&m.emissiveIntensity>.5&&!m.emissiveMap&&m.emissive.getHex();const bare=m.metalness>.5&&!m.metalnessMap;patch(T,m,glows?'form':bare?(kind==='auto'&&!m.map&&m.roughness>.3?'metal':'form'):kind==='auto'?(m.normalMap||m.map&&m.map.image?.width>300?'model':'stone'):kind,wash);
+   // A material may name its own kind and wash (night-district.js does, for the landmarks' walls, timber and glass).
+   const glows=m.emissive&&m.emissiveIntensity>.5&&!m.emissiveMap&&m.emissive.getHex();const bare=m.metalness>.5&&!m.metalnessMap;patch(T,m,m.userData.mxKind||(glows?'form':bare?(kind==='auto'&&!m.map&&m.roughness>.3?'metal':'form'):kind==='auto'?(m.normalMap||m.map&&m.map.image?.width>300?'model':'stone'):kind),m.userData.mxWash??wash);
    if(m.map&&!phone())m.map.anisotropy=Math.max(m.map.anisotropy,8);}});
  }
 
