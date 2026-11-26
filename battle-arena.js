@@ -48,7 +48,8 @@
  // most is pinged to everyone every PING_EVERY seconds; a dropped page left alone PAGE_RESET seconds (or one nobody
  // collects for PAGE_SHUFFLE) goes back to a page spot. The Moon Temple only takes pages at night; when all eight
  // are in, whoever delivered most wins the ceremony and the pages scatter again.
- const PAGE_COUNT=8,PAGE_RESET=120,PAGE_SHUFFLE=120,PING_EVERY=20,PING_SHOW=8,SOUL_TIME=9;
+ // PAGE_COUNT pages in the temple hold the ceremony; PAGE_TOTAL lie about the district, so there are always more than you need.
+ const PAGE_COUNT=8,PAGE_TOTAL=20,PAGE_RESET=120,PAGE_SHUFFLE=120,PING_EVERY=20,PING_SHOW=8,SOUL_TIME=9;
  // Day and night (seconds): night brings the Attendant and opens the temple.
  // The Watcher: drawn to the pages. He hunts whoever carries them (a hit makes them drop everything), picks up
  // pages that have been moved and carries them back to where they belong, and otherwise walks between the page spots.
@@ -751,7 +752,7 @@
      const un=untilNight(),mm=x=>`${Math.floor(x/60)}:${String(Math.floor(x)%60).padStart(2,'0')}`;
      const open=templeOpen(),inT=pages.filter(pg=>pg.state==='delivered').length,mine=player?pagesOf(player):0;
      text('.ar-zone',(open?`MOON TEMPLE OPEN · CLOSES IN ${mm(Math.max(0,-un))}`:`TEMPLE OPENS IN ${mm(un)}`)+(event?.kind==='supply'?` · ${event.label}`:'')+(window.edenStory?.has('pages')&&!window.edenStory.has('office')?' · THE OFFICE IS OPEN: THE PYRAMID':''));
-     html('.ar-pages',pages.map(pg=>`<i class="pg ${pg.state}${pg.carrier===player?' mine':''}" title="${pg.state}"></i>`).join('')+`<span>${mine?`<b>${mine}</b> CARRIED · `:''}${inT}/${PAGE_COUNT} IN THE TEMPLE${pinged&&clock<pingUntil?` · <em>${pinged===player?'YOU ARE':nameOf(pinged)+' IS'} PINGED</em>`:''}</span>`);
+     html('.ar-pages',Array.from({length:PAGE_COUNT},(_,k)=>`<i class="pg ${k<inT?'delivered':k<inT+mine?'carried mine':'home'}"></i>`).join('')+`<span>${mine?`<b>${mine}</b> CARRIED · `:''}${inT}/${PAGE_COUNT} IN THE TEMPLE · ${pages.filter(pg=>pg.state==='home'||pg.state==='loose').length} ON THE MAP${pinged&&clock<pingUntil?` · <em>${pinged===player?'YOU ARE':nameOf(pinged)+' IS'} PINGED</em>`:''}</span>`);
      {const pw=player?.power||0,lv=Math.min(POWER_MAX,pw),top=strongest();html('.ar-power',(pw?`<b>POWER ${pw}</b><span>+${Math.round(lv*POWER_DMG*100)}% DAMAGE · +${lv*POWER_SHIELD} SHIELD${pw>=POWER_GLOW?' · <em>YOU GLOW RED</em>':''}</span>`:'')+(top&&top!==player?`<small>STRONGEST: ${nameOf(top)} · POWER ${top.power}</small>`:''));}
      const board=q('.ar-board');if(!board.hidden)board.innerHTML='<h3>BEYOND EDEN · OPEN MATCH</h3><table><tr><th></th><th>SCORE</th><th>KILLS</th><th>PAGES</th><th>POWER</th><th>DEATHS</th></tr>'+everyone.map((c,i)=>`<tr class="${c===player?'me':''}"><td>${i+1}. ${nameOf(c)}${pinged===c&&clock<pingUntil?' ◉':''}</td><td>${c.score||0}</td><td>${c.kills||0}</td><td>${c.delivered||0}${pagesOf(c)?' +'+pagesOf(c):''}</td><td${(c.power||0)>=POWER_GLOW?' class="glow"':''}>${c.power||0}</td><td>${c.deaths||0}</td></tr>`).join('')+'</table>';
      if(player){const sh=Math.max(0,player.shield||0);q('.ar-shield i').style.width=(player.shieldMax?sh/player.shieldMax*100:0)+'%';text('.ar-shield span',sh>0?'SHIELD '+Math.ceil(sh):'SHIELD DOWN');q('.ar-shield').classList.toggle('down',sh<=0);
@@ -877,21 +878,21 @@
   function untilNight(){const total=CYCLE.day+CYCLE.dusk+CYCLE.night+CYCLE.dawn,t=worldClock()%total;return t<CYCLE.day?CYCLE.day-t:t<CYCLE.day+CYCLE.dusk+CYCLE.night?-(CYCLE.day+CYCLE.dusk+CYCLE.night-t):total-t+CYCLE.day;}
   const temple=()=>{const lm=layout.landmarks.find(l=>l.id==='temple')||layout.landmarks[0];return new T.Vector3(lm.x,0,lm.z+lm.d/2+3);};
   // ---- the eight lost pages
-  const PAGE_INFO=(layout.pages||[]).slice(0,PAGE_COUNT);
+  const PAGE_INFO=(layout.pages||[]).slice(0,PAGE_COUNT),infoOf=i=>PAGE_INFO[i%Math.max(1,PAGE_INFO.length)];
   function pageSpot(i,avoid){
    // About a third of the time a page waits on the roof of its building: climb for it (bots cannot).
-   const site=layout.landmarks.find(l=>l.id===PAGE_INFO[i]?.site);
+   const site=layout.landmarks.find(l=>l.id===infoOf(i)?.site);
    const F=site&&window.edenRoofs?.[site.id];
-   if(F&&Math.random()<.35){const cells=[];for(let r=1;r<F.rows-1;r++)for(let c=1;c<F.cols-1;c++){const h=F.h[r*F.cols+c];if(h>=F.eave-.3&&h<=F.eave+1.5&&Math.abs(F.h[r*F.cols+c+1]-h)<.5&&Math.abs(F.h[(r+1)*F.cols+c]-h)<.5)cells.push([r,c,h]);}
+   if(F&&Math.random()<.18){const cells=[];for(let r=1;r<F.rows-1;r++)for(let c=1;c<F.cols-1;c++){const h=F.h[r*F.cols+c];if(h>=F.eave-.3&&h<=F.eave+1.5&&Math.abs(F.h[r*F.cols+c+1]-h)<.5&&Math.abs(F.h[(r+1)*F.cols+c]-h)<.5)cells.push([r,c,h]);}
     if(cells.length){const [r,c,h]=pick(cells),v=new T.Vector3(F.minX+(c+.5)*F.cell,h,F.minZ+(r+.5)*F.cell);if(!avoid||v.distanceTo(avoid)>2)return v;}}
-   const info=PAGE_INFO[i],sockets=(info?.sockets||[]).slice().sort(()=>Math.random()-.5);
-   for(const [x,z] of sockets){const v=new T.Vector3(x,0,z);if(!blocked(v)&&(!avoid||v.distanceTo(avoid)>2))return v;}
-   for(let k=0;k<12;k++){const lm=pick(nearLandmarks()),v=new T.Vector3(lm.x+rand(-lm.w/2,lm.w/2),0,lm.z+lm.d/2+rand(3,9));if(!blocked(v))return v;}
+   const info=infoOf(i),sockets=(info?.sockets||[]).slice().sort(()=>Math.random()-.5),taken=v=>pages.some(pg=>pg.loot&&pg.i!==i&&pg.loot.pos.distanceTo(v)<2.5);
+   for(const [x,z] of sockets){const v=new T.Vector3(x,0,z);if(!blocked(v)&&!taken(v)&&(!avoid||v.distanceTo(avoid)>2))return v;}
+   for(let k=0;k<16;k++){const lm=pick(nearLandmarks()),v=new T.Vector3(lm.x+rand(-lm.w/2,lm.w/2),0,lm.z+lm.d/2+rand(3,9));if(!blocked(v)&&!taken(v))return v;}
    return CENTER.clone();
   }
   function placePage(pg,at,loose=false){
    if(pg.loot&&loot.includes(pg.loot))removeLoot(pg.loot);
-   const title=PAGE_INFO[pg.i]?.title||'A LOST PAGE';
+   const title=infoOf(pg.i)?.title||'A LOST PAGE';
    pg.loot=dropItem({type:'page',page:pg.i,rarity:'epic',label:`PAGE ${pg.i+1} · ${title.toUpperCase()}${at.y>.5?' · ON THE ROOF':''}`},at.x,at.z);
    if(at.y>.5&&pg.loot){pg.loot.y=at.y;pg.loot.pos.y=at.y;pg.loot.group.position.y=at.y;}
    pg.state=loose?'loose':'home';pg.carrier=null;pg.since=clock;if(!loose)pg.home=at.clone();
@@ -899,7 +900,7 @@
   function scatterPages(){
    if(attendant){attendant.page=null;attendant.fetch=null;attendant.think=0;}
    for(const pg of pages)if(pg.loot&&loot.includes(pg.loot))removeLoot(pg.loot);
-   pages=[];for(let i=0;i<PAGE_COUNT;i++){const pg={i,state:'home',carrier:null,loot:null,since:clock,by:null};pages.push(pg);placePage(pg,pageSpot(i));}
+   pages=[];for(let i=0;i<PAGE_TOTAL;i++){const pg={i,state:'home',carrier:null,loot:null,since:clock,by:null};pages.push(pg);placePage(pg,pageSpot(i));}
    for(const c of [player,...bots])if(c)c.delivered=0;
   }
   function takePage(c,l){const pg=pages.find(pg=>pg.loot===l);removeLoot(l);if(!pg)return;pg.loot=null;pg.state='carried';pg.carrier=c;pg.since=clock;}
