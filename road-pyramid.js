@@ -44,6 +44,8 @@ window.createRoadPyramid=function(T,scene,{roadX,roadEnd,stone,onChange,reduced}
  const lightRoot=new T.Group();lightRoot.name='Pyramid lighting';scene.add(lightRoot);
  const stableLights=[];root.traverse(node=>{if(node.isLight)stableLights.push(node);});
  scene.updateMatrixWorld(true);for(const light of stableLights)lightRoot.attach(light);
+ // Masonry, trim and cap never move: one draw per material (static-merge.js). The gate and seals below stay separate.
+ window.mergeStatic?.(T,root);
 
  let unlocked=false;const collision=window.createPyramidCollision({roadX,roadEnd,unlocked:()=>unlocked});
  const iron=lean?new T.MeshStandardMaterial({color:0x2c2f2c,metalness:.7,roughness:.62}):metal;

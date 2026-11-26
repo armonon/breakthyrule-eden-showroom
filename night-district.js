@@ -107,6 +107,8 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
   }
   // A pale approach is visible from the road and doubles as an escape route.
   const tx=11.7-s.x;box(p,marble,tx/2,-.012,s.d/2+3,Math.abs(tx),.04,1.8);
+  // The stand-in shown until (and beyond the reach of) the real model: one draw per material (static-merge.js).
+  if(model)window.mergeStatic?.(T,shell);
  }
  function loadModel(s,model,shell){
   // Glow points (the theatre marquee, lit interiors) join the lamp pool, so a pooled light washes them when near.
@@ -224,8 +226,10 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
  // its own lantern.
  const SHADOW_REACH=16,SHADOW_LAYER=7,shadowPool=[],shadowRenderer=()=>window.breakThyRuleShowroom?.renderer?.();let castersAt=-1e9;
  function tagCasters(time){if(time-castersAt<2)return;castersAt=time;scene.traverse(o=>{if(o.isSkinnedMesh&&o.castShadow)o.layers.enable(SHADOW_LAYER);});}
- function setLampShadows(n){n=Math.max(0,Math.min(3,n|0));
-  while(shadowPool.length>n){const l=shadowPool.pop();scene.remove(l);l.shadow.map?.dispose();l.dispose?.();}
+ // Turning lamp shadows down (adaptive quality giving up) darkens the spare shadow lamps rather than removing them:
+ // a change in the number of shadow-casting lights recompiles every lit shader on screen, a freeze of most of a second.
+ let activeShadows=0;
+ function setLampShadows(n){n=Math.max(0,Math.min(3,n|0));activeShadows=n;
   while(shadowPool.length<n){const l=new T.PointLight(0xffc68c,0,13,1.7);l.name='District lamp (shadow)';l.userData.nightLamp=true;l.castShadow=true;
    Object.assign(l.shadow,{bias:-.003,normalBias:.035,radius:2,autoUpdate:false});l.shadow.mapSize.set(512,512);l.shadow.camera.near=.2;l.shadow.camera.layers.set(SHADOW_LAYER);scene.add(l);shadowPool.push(l);castersAt=-1e9;}}
  setLampShadows(window.edenLampShadows);
@@ -241,12 +245,12 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
  box(watcher,brass,0,2.3,.245,.04,.75,.035);const sigil=mesh(watcher,new T.TorusGeometry(.12,.018,6,24),brass,0,2.61,.24);
  let snapshot=null;
  // The host registers the static root after its geometry-merging pass.
- return {root,watcher,walls,lamps,routes:authority?.routes||[],setPages,setLOD(on){lodEnabled=!!on;},setLampShadows(n){if((n|0)!==shadowPool.length&&!disposed)setLampShadows(n);},get lampShadows(){return shadowPool.length;},prepare(ids){if(disposed)return;if(ids.length>=layout.landmarks.length&&!phone)retainPrepared=true;for(const id of ids)if(modelState[id]==='waiting')priorityModels.add(id);},dispose(){disposed=true;snapshot=null;pendingModels.length=0;priorityModels.clear();for(const entry of loadedModels.values())releaseModel(entry.scene);loadedModels.clear();window.edenBaked?.unregisterStatic(root);for(const light of lightPool)scene.remove(light);setLampShadows(0);},setState(value){if(disposed)return;if(value&&value.code!==snapshot?.code)watcher.position.set(value.watcher.x,value.watcher.y||0,value.watcher.z);snapshot=value;watcher.visible=!!value&&value.phase==='playing'&&value.huntStarted!==false;if(value)setPages(value.pages,value.collected);else pageRoot.visible=false;},
+ return {root,watcher,walls,lamps,routes:authority?.routes||[],setPages,setLOD(on){lodEnabled=!!on;},setLampShadows(n){if((n|0)!==activeShadows&&!disposed)setLampShadows(n);},get lampShadows(){return activeShadows;},prepare(ids){if(disposed)return;if(ids.length>=layout.landmarks.length&&!phone)retainPrepared=true;for(const id of ids)if(modelState[id]==='waiting')priorityModels.add(id);},dispose(){disposed=true;snapshot=null;pendingModels.length=0;priorityModels.clear();for(const entry of loadedModels.values())releaseModel(entry.scene);loadedModels.clear();window.edenBaked?.unregisterStatic(root);for(const light of lightPool)scene.remove(light);setLampShadows(0);},setState(value){if(disposed)return;if(value&&value.code!==snapshot?.code)watcher.position.set(value.watcher.x,value.watcher.y||0,value.watcher.z);snapshot=value;watcher.visible=!!value&&value.phase==='playing'&&value.huntStarted!==false;if(value)setPages(value.pages,value.collected);else pageRoot.visible=false;},
   // feet: the height of the player's feet, when known: walls lower than a step up from there do not block.
   // Same answer as testing every wall, through a 4 m grid of them (rebuilt when walls are added): called for every step.
   blocks(p,feet=null){const g=wallGrid();const list=g.cells.get(Math.floor(p.x/4)+','+Math.floor(p.z/4));if(!list)return false;for(let i=0;i<list.length;i++){const W=list[i],h=W[4]??99;if(Math.abs(p.x-W[0])<W[2]/2+.3&&Math.abs(p.z-W[1])<W[3]/2+.3&&(feet==null||h>feet+.45))return true;}return false;},surfaces,climbs,
   clearGround(x,z){if(layout.arena&&Math.hypot(x-layout.arena.x,z-layout.arena.z)<layout.arena.r)return true;return layout.landmarks.some(s=>Math.abs(x-s.x)<s.w/2+3&&z-s.z>-s.d/2-4&&z-s.z<s.d/2+9)||layout.landmarks.some(s=>Math.abs(z-(s.z+s.d/2+3))<1.8&&x>Math.min(s.x,11.7)-1&&x<Math.max(s.x,11.7)+1);},
-  update(time,viewer,night){if(disposed)return;root.visible=viewer.position.z<0;if(root.visible)streamModels(viewer);pageRoot.visible=!!snapshot;distances.fill(Infinity);nearest.fill(null);for(const p of lamps){const d=p.distanceToSquared(viewer.position);for(let i=0;i<3;i++)if(d<distances[i]){for(let j=2;j>i;j--){distances[j]=distances[j-1];nearest[j]=nearest[j-1];}distances[i]=d;nearest[i]=p;break;}}let shadowDirty=false;lightPool.forEach((pooled,i)=>{const own=shadowPool[i],l=own||pooled;if(own)pooled.intensity=0;if(nearest[i])l.position.copy(nearest[i]);l.intensity=root.visible?night*(window.edenMatrix?(document.body?.classList.contains('expedition-entry')?16:22):10)*(1-(window.edenMatrix?.35:1)*(window.edenBaked?.nightStrength()||0)):0;
+  update(time,viewer,night){if(disposed)return;root.visible=viewer.position.z<0;if(root.visible)streamModels(viewer);pageRoot.visible=!!snapshot;distances.fill(Infinity);nearest.fill(null);for(const p of lamps){const d=p.distanceToSquared(viewer.position);for(let i=0;i<3;i++)if(d<distances[i]){for(let j=2;j>i;j--){distances[j]=distances[j-1];nearest[j]=nearest[j-1];}distances[i]=d;nearest[i]=p;break;}}let shadowDirty=false;shadowPool.forEach((l,i)=>{if(i>=activeShadows){l.intensity=0;l.shadow.intensity=0;}});lightPool.forEach((pooled,i)=>{const own=i<activeShadows?shadowPool[i]:null,l=own||pooled;if(own)pooled.intensity=0;if(nearest[i])l.position.copy(nearest[i]);l.intensity=root.visible?night*(window.edenMatrix?(document.body?.classList.contains('expedition-entry')?16:22):10)*(1-(window.edenMatrix?.35:1)*(window.edenBaked?.nightStrength()||0)):0;
    if(own){const reach=Math.sqrt(distances[i]);l.shadow.intensity=1-T.MathUtils.smoothstep(reach,SHADOW_REACH-4,SHADOW_REACH);if(l.intensity>0&&l.shadow.intensity>0){l.shadow.needsUpdate=true;shadowDirty=true;}}});
    // The renderer only redraws shadow maps on request (app.js); a shadowed lamp in reach asks every frame, so moving
    // characters' shadows follow them (eden-lighting.js keeps the moon's map from redrawing with them).

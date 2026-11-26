@@ -384,6 +384,8 @@ ${OLD?`     float mxPool=.35+.65*pow(.5+.5*cos(mxUv.x*1.05),3.);totalEmissiveRad
   const warm=new T.PointLight(0xffb868,20,17,1.55);warm.position.set(0,2.5,2.5);warm.name='Altar light';g.add(warm);
   const high=new T.PointLight(0xffe3b0,24,17,1.6);high.position.set(0,6.6,3.2);high.name='Altar light';g.add(high);
   surface(T,g,{kind:'concrete',skip:o=>o.material===wood||o.material===linen||o.material===gold||o.material===wax||Array.isArray(o.material)});for(const m of [wood,linen,gold,wax,thorn])patch(T,m,'form');
+  // Steps, trim, legs, thorns and candles never move: one draw per material instead of ~90 (static-merge.js). Flames flicker.
+  window.mergeStatic?.(T,g,{filter:m=>!flames.includes(m)&&m!==shaft});
   g.updateMatrixWorld(true);g.traverse(o=>{o.matrixAutoUpdate=false;});
   // Steps are walkable; only the table and the cross's base block. Off in an expedition, whose server has no altar.
   const surfaces=STEPS.map(([r,top])=>({minX:x-r*.86,maxX:x+r*.86,minZ:z-r*.86,maxZ:z+r*.86,top,bottom:-1,wall:false,prop:'altar'}));
