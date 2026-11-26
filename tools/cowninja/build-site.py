@@ -372,6 +372,24 @@ wall('x', BZ0, BX0, BX1, H, T, 'blockwall', openN, skin=-1, name='north')
 wall('x', BZ1, BX0, BX1, H, T, 'blockwall', openS, skin=1, name='south')
 wall('z', BX0, BZ0, BZ1, H, T, 'blockwall', openW, skin=-1, name='west')
 wall('z', BX1, BZ0, BZ1, H, T, 'blockwall', openE, skin=1, name='east')
+# Handholds: three steel rails round the outside of the hall, 1.8 m apart, broken at doors and windows. They are
+# what the hands are on when you free-climb a wall (foot.js climbs any tall face; these are its visible holds).
+def courses(axis, at, sign, a0, a1, openings):
+    for y in (1.85, 3.65, 5.45):
+        cur = a0; segs = []
+        for o in sorted(openings):
+            if o[2] < y + .15 and o[3] > y - .35: segs.append((cur, o[0] - .12)); cur = o[1] + .12
+        segs.append((cur, a1))
+        d0, d1 = (at - T / 2 - .14, at - T / 2) if sign < 0 else (at + T / 2, at + T / 2 + .14)
+        for a, b in segs:
+            if b - a < .6: continue
+            if axis == 'x': box('ledge', (a, y - .1, d0), (b, y, d1), 'steel', group='kit', solid=False)
+            else: box('ledge', (d0, y - .1, a), (d1, y, b), 'steel', group='kit', solid=False)
+courses('x', BZ0, -1, BX0 - .4, BX1 + .4, openN); courses('x', BZ1, 1, BX0 - .4, BX1 + .4, openS)
+courses('z', BX0, -1, BZ0, BZ1, openW + [(6, 26, 0, 1.3)]); courses('z', BX1, 1, BZ0, BZ1, openE)
+# Inside the kill floor: one beam course along the west and north walls, a way up to the catwalk and round the room.
+box('ledge', (BX0 + T / 2, 1.75, 4), (BX0 + T / 2 + .14, 1.85, 35.5), 'steel', group='kit', solid=False)
+box('ledge', (BX0 + T / 2, 3.55, 4), (BX0 + T / 2 + .14, 3.65, 35.5), 'steel', group='kit', solid=False)
 # Pitched roof: two slopes up to a ridge along x = 0, gables, trusses, skylights.
 RIDGE = 10.0
 pitch = math.atan2(RIDGE - H, BX1 + .6)

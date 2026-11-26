@@ -147,15 +147,25 @@ async function boot() {
   // Camera. Riding: behind and above, swinging wider and lower with speed. On foot: an orbit you steer with the mouse,
   // pulled in when a wall is in the way. Both are shaken by impacts.
   const camPos = new THREE.Vector3(world.spawn.x, 6, world.spawn.z - 9), camAim = new THREE.Vector3(), want = new THREE.Vector3();
+  const cam = { reach: 3.5, tilt: 0, side: .42, lead: { x: 0, z: 0 } };
   function updateCamera(dt) {
     const free = window.cowNinja?.freeCam; // debug: [x, y, z, lookX, lookY, lookZ] pins the camera for screenshots
     if (free) { camera.position.set(free[0], free[1], free[2]); camera.lookAt(free[3], free[4], free[5]); return; }
     let fov = 62;
     if (mode === 'foot') {
-      const p = foot.state, eye = p.y + (p.crouched ? 1.05 : 1.5), cp = Math.cos(camPitch), dx = Math.sin(camYaw) * cp, dy = Math.sin(camPitch), dz = Math.cos(camYaw) * cp;
-      let reach = 3.7; for (let d = .5; d <= 3.7; d += .25) if (world.solidAt(p.x - dx * d, eye - dy * d + .25, p.z - dz * d, .2)) { reach = Math.max(.5, d - .3); break; }
-      want.set(p.x - dx * reach, Math.max(.35, eye - dy * reach + .3), p.z - dz * reach); { const ceiling = Math.min(world.ceilingAt(want.x, want.z), world.ceilingAt(p.x, p.z)); if (p.y < ceiling - .5 && want.y > ceiling - .35) want.y = ceiling - .35; }
-      camPos.lerp(want, 1 - Math.exp(-18 * dt)); camAim.set(p.x + dx * 4, eye + dy * 4 + .1, p.z + dz * 4); fov = 64 + Math.min(10, p.speed * 1.2);
+      // A freerunning camera: over the shoulder on the ground; it pulls back and rises on climbs so the wall above is in
+      // frame, pulls back and tips down on a fall so the landing is, leads the way you are moving, and widens with speed.
+      const p = foot.state, climbing = p.climbing, falling = p.airborne && p.velocity.y < -3, fast = Math.min(1, p.speed / 7.5);
+      const k = 1 - Math.exp(-4.5 * dt);
+      cam.reach += ((climbing ? 5.0 : p.airborne ? 5.2 : 3.3 + fast * 1.1) - cam.reach) * k;
+      cam.tilt += ((climbing ? .3 : falling ? -.38 : 0) - cam.tilt) * k;
+      cam.side += ((climbing || p.airborne ? 0 : .42) - cam.side) * k;
+      cam.lead.x += (p.velocity.x * .22 - cam.lead.x) * k; cam.lead.z += (p.velocity.z * .22 - cam.lead.z) * k;
+      const pitchNow = Math.max(-1.2, Math.min(1.0, camPitch + cam.tilt)), eye = p.y + (p.crouched ? 1.05 : 1.5), cp = Math.cos(pitchNow), dx = Math.sin(camYaw) * cp, dy = Math.sin(pitchNow), dz = Math.cos(camYaw) * cp;
+      const sx = -Math.cos(camYaw) * cam.side, sz = Math.sin(camYaw) * cam.side;   // to the camera's right
+      let reach = cam.reach; for (let d = .5; d <= cam.reach; d += .25) if (world.solidAt(p.x + sx - dx * d, eye - dy * d + .25, p.z + sz - dz * d, .2)) { reach = Math.max(.5, d - .3); break; }
+      want.set(p.x + sx - dx * reach, Math.max(.35, eye - dy * reach + .3), p.z + sz - dz * reach); { const ceiling = Math.min(world.ceilingAt(want.x, want.z), world.ceilingAt(p.x, p.z)); if (p.y < ceiling - .5 && want.y > ceiling - .35) want.y = ceiling - .35; }
+      camPos.lerp(want, 1 - Math.exp(-14 * dt)); camAim.set(p.x + sx * .6 + cam.lead.x + dx * 4, eye + dy * 4 + .1, p.z + sz * .6 + cam.lead.z + dz * 4); fov = 62 + fast * 9 + (p.airborne ? 5 : 0);
     } else {
       const c = cow.state, fast = Math.min(1, Math.abs(c.speed) / cow.TUNE.charge), back = 6.2 + fast * 2.6, up = 3.3 - fast * .9;
       want.set(c.x - c.forward.x * back, c.y + up, c.z - c.forward.z * back);

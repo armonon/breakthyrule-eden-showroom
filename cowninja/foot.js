@@ -6,6 +6,7 @@
 import * as THREE from 'three/webgpu';
 import { createNinja } from '/cowninja/cow.js';
 
+const CLIMBS = new Set(['pipe', 'rope', 'climb', 'hang', 'scramble']);
 const BIT = { w: 1, s: 2, a: 4, d: 8, shift: 16, space: 32, crouch: 64 };
 
 export function createFoot({ scene, world, onEffect }) {
@@ -25,14 +26,14 @@ export function createFoot({ scene, world, onEffect }) {
   } catch (error) { console.warn('[cowninja] on-foot movement unavailable:', error); }
   const ninja = createNinja(), holder = ninja?.person.root || new THREE.Group(); holder.visible = false; scene.add(holder);
   const state = { active: false, x: 0, y: 0, z: 0, yaw: 0, speed: 0, charging: false, skid: 0, airborne: false, crouched: false, movement: 'ground', onFoot: true, noise: 0, hidden: false, forward: new THREE.Vector3(0, 0, 1), velocity: new THREE.Vector3() };
-  let bodyYaw = null, turning = false, handRise = 0, handsOn = false, tick = 0, lastJump = false, lastCrouch = false, freeAt = 0, topTicks = 0, leap = null;
+  let bodyYaw = null, turning = false, handRise = 0, handsOn = false, tick = 0, lastJump = false, lastCrouch = false, freeAt = 0, topTicks = 0, leap = null, climbAt = 0;
   const probe = new THREE.Vector3(), lookPoint = new THREE.Vector3();
 
   function enter(x, z, yaw) {
     if (!controller) return false;
     controller.reset({ x, z, y: 0, yaw, nextTick: controller.tick }); bodyYaw = yaw; state.active = true; holder.visible = true; read(); return true;
   }
-  function leave() { state.active = false; holder.visible = false; }
+  function leave() { state.active = false; holder.visible = false; wallClimb = null; }
   function read() {
     const p = controller.readPose(), v = controller.velocity;
     state.x = p.x; state.y = p.y; state.z = p.z; state.yaw = p.yaw; state.movement = p.movement; state.speed = Math.hypot(v.x, v.z);
@@ -41,24 +42,88 @@ export function createFoot({ scene, world, onEffect }) {
     // How far you can be heard, 0..1: nothing standing still or creeping, everything at a sprint or a landing.
     // In a hay pile and not sprinting: out of sight entirely.
     state.hidden = !!world.inHay?.(p.x, p.z) && state.speed < 4.2 && p.y < 2;
+    state.climbing = CLIMBS.has(p.movement) || p.movement === 'bar' || p.movement === 'wallrun';
     state.noise = state.hidden ? 0 : state.speed < .3 ? 0 : state.crouched ? .12 : p.movement === 'slide' ? .5 : state.speed > 4.6 ? .85 : .38;
   }
+  // ---- Free climbing (this mode's own, on top of parkour.js): any tall solid face can be climbed. Sprint into a wall
+  // too high to grab and you take hold of it; W/S climb, A/D traverse, Space kicks off, C lets go; at the top you
+  // pull up onto whatever is there. The wall is found from the site's solid boxes each tick, so openings stop you.
+  const CLIMB_UP = 2.5, CLIMB_SIDE = 1.7, OFF = .36;
+  let wallClimb = null;
+  const boxAt = (x, y, z) => { for (const b of world.solids) if (x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ && y < b.top && y > b.bottom) return b; return null; };
+  function findWall(yaw) {
+    const fx = Math.sin(yaw), fz = Math.cos(yaw), b = boxAt(state.x + fx * .75, state.y + 1.0, state.z + fz * .75);
+    if (!b || b.top < state.y + 2.5 || boxAt(state.x, state.y + 1.0, state.z)) return null;
+    // Which face are we at: the one whose outward normal faces us most squarely.
+    const faces = [[-1, 0, b.minX], [1, 0, b.maxX], [0, -1, b.minZ], [0, 1, b.maxZ]];
+    let best = null, bd = -.55;
+    for (const [nx, nz, at] of faces) { const d = fx * nx + fz * nz; if (d < bd) { bd = d; best = { nx, nz, at }; } }
+    if (!best) return null;
+    const dist = best.nx ? Math.abs(state.x - best.at) : Math.abs(state.z - best.at);
+    return dist < 1.0 ? best : null;
+  }
+  function placeOnWall() { if (wallClimb.nx) wallClimb.x = wallClimb.at + wallClimb.nx * OFF; else wallClimb.z = wallClimb.at + wallClimb.nz * OFF; }
+  function endClimb(x, y, z, yaw, jump = false) {
+    wallClimb = null; climbAt = tick + 40; ninja?.person.motion.stop?.('climbUp', .15);
+    controller.reset({ x, y, z, yaw, nextTick: controller.tick });
+    if (jump) try { controller.step({ heldMask: BIT.w | BIT.space, edges: 1, yaw, pitch: 0 }); } catch { /* falls instead */ }
+    read();
+  }
+  function stepWallClimb(keys) {
+    const c = wallClimb, dt = 1 / 60, face = Math.atan2(-c.nx, -c.nz);   // yaw looking into the wall
+    const up = (keys.has('w') ? 1 : 0) - (keys.has('s') ? 1 : 0), side = (keys.has('d') ? 1 : 0) - (keys.has('a') ? 1 : 0);
+    if (keys.has('space') && !lastJump) { lastJump = true; endClimb(c.x + c.nx * .5, c.y, c.z + c.nz * .5, Math.atan2(c.nx, c.nz), true); return; }
+    lastJump = keys.has('space');
+    if (keys.has('crouch')) { lastCrouch = true; endClimb(c.x + c.nx * .3, c.y, c.z + c.nz * .3, face); return; }
+    // Sideways along the wall (the camera's right is the wall's tangent seen from outside), if there is wall there.
+    if (side) { const tx = -c.nz * side, tz = c.nx * side, nx2 = c.x + tx * CLIMB_SIDE * dt, nz2 = c.z + tz * CLIMB_SIDE * dt;
+      if (boxAt(nx2 - c.nx * .6, c.y + 1.0, nz2 - c.nz * .6) && !boxAt(nx2, c.y + 1.0, nz2)) { c.x = nx2; c.z = nz2; } }
+    if (up) {
+      const ny = c.y + up * CLIMB_UP * dt;
+      if (up < 0 && ny <= 0) { endClimb(c.x + c.nx * .2, 0, c.z + c.nz * .2, face); return; }
+      const hold = boxAt(c.x - c.nx * .6, ny + 1.55, c.z - c.nz * .6);   // wall still there at chest height?
+      if (up > 0 && !hold) {
+        // The top: pull up if there is somewhere to stand just beyond the edge.
+        const sx = c.x - c.nx * 1.15, sz = c.z - c.nz * 1.15; let floor = -1;
+        try { floor = controller.parkour.supportAt(sx, sz, ny + 2.2, .26); } catch { /* none */ }
+        if (floor > ny + .4 && floor < ny + 2.3 && !boxAt(sx, floor + 1.0, sz)) { onEffect?.({ kind: 'footstep:land', args: ['stone', .4] }); endClimb(sx, floor, sz, face); return; }
+      } else if (!boxAt(c.x, ny + 1.7, c.z) || up < 0) c.y = Math.max(0, ny);   // (an overhang above the head stops you)
+    }
+    c.moving = !!(up || side); tick++;
+    controller.reset({ x: c.x, y: c.y, z: c.z, yaw: face, nextTick: controller.tick });
+    read(); state.y = c.y; state.movement = 'wallclimb'; state.climbing = true; state.airborne = false; state.speed = c.moving ? 2 : 0; state.noise = c.moving ? .22 : 0; state.hidden = false; state.velocity.set(0, 0, 0);
+    bodyYaw = face;
+    if (ninja) { ninja.dress(); const person = ninja.person; person.root.position.set(c.x - c.nx * .12, c.y, c.z - c.nz * .12); person.root.rotation.y = face;
+      try { person.motion.airborne(false); person.motion.crouch(0); if (!person.motion.playing?.('climbUp')) person.motion.play?.('climbUp', { loop: true, fade: .15, speed: c.moving ? 1.5 : .0001, mask: 'full' }); person.motion.update(c.moving ? dt : dt * .05, { velocity: STILLV, wade: 0 }); } catch { /* pose only */ } }
+  }
+  const STILLV = new THREE.Vector3();
   // One 60 Hz tick. keys: Set of 'w','a','s','d','shift','space','crouch'; yaw/pitch: where the camera looks.
   function step(keys, yaw, pitch = 0) {
     if (!controller || !state.active) return;
+    if (wallClimb) { stepWallClimb(keys); return; }
+    // Take hold of a tall wall: sprint held, pushing into it (from the ground or out of a jump).
+    if (keys.has('shift') && keys.has('w') && tick > climbAt && !CLIMBS.has(state.movement)) {
+      const w = findWall(yaw);
+      if (w) { wallClimb = { ...w, x: state.x, y: Math.max(0, state.y), z: state.z, moving: false }; placeOnWall(); climbAt = tick + 30; leap = null; stepWallClimb(keys); return; }
+    }
     let held = 0; for (const k in BIT) if (keys.has(k)) held |= BIT[k];
     const jump = keys.has('space'), crouch = keys.has('crouch'); let edges = (jump && !lastJump ? 1 : 0) | (crouch && !lastCrouch ? 2 : 0); lastJump = jump; lastCrouch = crouch;
     // Freerun: with sprint held you do not press jump for what is in your way. Running at something solid at knee
     // height jumps (parkour.js then vaults, scrambles or grabs it), and running off an edge with a drop leaps.
-    if (keys.has('shift') && keys.has('w') && !state.airborne && state.movement === 'ground' && tick > freeAt && state.speed > 2.2) {
+    // (No run-up needed at a wall: standing on a ledge and pushing into the wall goes for the next ledge up.)
+    if (keys.has('shift') && keys.has('w') && !state.airborne && state.movement === 'ground' && tick > freeAt) {
       const fx = Math.sin(yaw), fz = Math.cos(yaw);
       let go = world.solidAt(state.x + fx * .95, state.y + .55, state.z + fz * .95, 0) && !world.solidAt(state.x, state.y + .55, state.z, 0);
+      if (go && state.speed < 2.2 && state.y < .3 && !world.solidAt(state.x + fx * .95, state.y + 2.4, state.z + fz * .95, 0)) go = false;   // on the ground, a low thing needs a run-up; a wall does not
       if (!go && state.speed > 4.4) { try { const floor = controller.parkour.supportAt(state.x + fx * 1.25, state.z + fz * 1.25, state.y + .45, .26); go = state.y - floor > 1.1; } catch { /* older parkour.js */ } }
       if (go) { edges |= 1; freeAt = tick + 26; held |= BIT.space; }
     }
     if (leap && leap !== 'none') held &= ~(BIT.w | BIT.s | BIT.a | BIT.d | BIT.shift);   // committed to the leap: the fall is steered, not run
     let wrapped = yaw % (Math.PI * 2); if (wrapped > Math.PI) wrapped -= Math.PI * 2; if (wrapped < -Math.PI) wrapped += Math.PI * 2;
-    try { controller.step({ heldMask: held, edges, yaw: wrapped, pitch: Math.max(-1.3, Math.min(1.3, pitch)) }); } catch (error) { if (!step.warned) { step.warned = true; console.warn('[cowninja] movement step', error); } }
+    try { controller.step({ heldMask: held, edges, yaw: wrapped, pitch: Math.max(-1.3, Math.min(1.3, pitch)) });
+      // Climbing runs at double time here (pipes, ropes, mantles, shimmying): a second step of the same input. The
+      // shared parkour.js keeps its own pace for Eden and Beyond Eden.
+      if (CLIMBS.has(controller.movement.state()) && (held & (BIT.w | BIT.a | BIT.d | BIT.s))) controller.step({ heldMask: held, edges: 0, yaw: wrapped, pitch: Math.max(-1.3, Math.min(1.3, pitch)) }); } catch (error) { if (!step.warned) { step.warned = true; console.warn('[cowninja] movement step', error); } }
     tick++; read();
     // Top of a pipe with W held: step off onto whatever is there (the roof, the office roof) instead of hanging.
     if (state.movement === 'pipe' && keys.has('w')) {
