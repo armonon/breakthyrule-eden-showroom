@@ -105,7 +105,7 @@
    if(spec==='bandage')return {type:'heal',heal:'bandage',count:2,rarity:'common',label:'BANDAGES ×2'};
    if(spec==='medkit')return {type:'heal',heal:'medkit',count:1,rarity:'uncommon',label:'MEDKIT'};
    // The explosives slot: C4 (remote), or a frag grenade or pipe bomb (thrown, on a fuse); grenades turn up most.
-   if(spec==='c4'){const variant=pick([null,'frag','frag','pipe']),count=variant?2:1;return {type:'c4',variant,count,rarity:'uncommon',label:(variant&&combat.gunLabel?combat.gunLabel('c4',variant).split(' · ')[1]:'C4 CHARGE')+(count>1?' ×'+count:'')};}
+   if(spec==='c4'||spec?.explosive!==undefined){const variant=spec==='c4'?pick([null,'frag','frag','pipe']):spec.explosive,count=variant?2:1;return {type:'c4',variant,count,rarity:'uncommon',label:(variant&&combat.gunLabel?combat.gunLabel('c4',variant).split(' · ')[1]:'C4 CHARGE')+(count>1?' ×'+count:'')};}
    if(spec==='ammo'){const k=pick(Object.keys(AMMO_FOR));return rollItem({ammo:AMMO_FOR[k][0]});}
    if(spec.ammo){const [type,n]=Object.values(AMMO_FOR).find(([t])=>t===spec.ammo)||[spec.ammo,20];return {type:'ammo',ammo:type,count:n,rarity:'common',label:AMMO_LABEL[type]+' AMMO ×'+n};}
    if(spec.weapon){const W=combat.weapons.find(w=>w.id===spec.weapon);
@@ -1259,7 +1259,15 @@
     makeChest(CENTER.x,CENTER.z+5.6,0);for(let i=0;i<6;i++){const a=i/6*TAU+.3;makeChest(CENTER.x+Math.cos(a)*6.4,CENTER.z+Math.sin(a)*6.4,-a+Math.PI/2);}
     // Weapon pads along each building's approach: whatever is taken comes back PAD_RESTOCK seconds later.
     for(const lm of layout.landmarks){const list=LANDMARK_LOOT[lm.id]||['armor','bandage'];list.forEach((spec,i)=>{const x=lm.x-lm.w/2+1.5+(i/(list.length-1||1))*(lm.w-3),z=lm.z+lm.d/2+2.2+(i%2)*.9;const p=new T.Vector3(x,0,z);if(!blocked(p))pads.push({spec,x,z,l:dropItem(rollItem(spec),x,z),respawnAt:0});});}
-    for(let i=0;i<10;i++){const x=rand(B[0]+6,B[1]-6),z=rand(B[2]+6,B[3]-6),p=new T.Vector3(x,0,z);if(blocked(p)||Math.hypot(x-CENTER.x,z-CENTER.z)<A.r)continue;dropItem(rollItem(pick(['ammo','armor','bandage',{weapon:pick(['pistol','pump','smg'])}])),x,z);}
+    for(let i=0;i<10;i++){const x=rand(B[0]+6,B[1]-6),z=rand(B[2]+6,B[3]-6),p=new T.Vector3(x,0,z);if(blocked(p)||Math.hypot(x-CENTER.x,z-CENTER.z)<A.r)continue;dropItem(rollItem(pick(['ammo','armor','bandage','c4',{weapon:pick(['pistol','pump','smg'])}])),x,z);}
+    // Every gun variant and both grenades have a spot of their own somewhere on the map, spread at least 9 m apart and
+    // out of the centre ring; like the building pads, the same thing comes back PAD_RESTOCK seconds after it is taken.
+    {const specs=[];for(const [weapon,list] of Object.entries(combat.variants||{}))for(const v of list)specs.push(weapon==='c4'?{explosive:v.id}:{weapon,variant:v.id});
+     const taken=pads.map(q=>[q.x,q.z]);
+     for(const spec of specs.sort(()=>Math.random()-.5)){
+      for(let tries=0;tries<200;tries++){const x=rand(B[0]+6,B[1]-6),z=rand(B[2]+6,B[3]-6),p=new T.Vector3(x,0,z);
+       if(blocked(p)||Math.hypot(x-CENTER.x,z-CENTER.z)<A.r+2||taken.some(([tx,tz])=>Math.hypot(tx-x,tz-z)<(tries<150?9:5)))continue;
+       taken.push([x,z]);pads.push({spec,x,z,l:dropItem(rollItem(spec),x,z),respawnAt:0});break;}}}
     buildDoors();templeRing=hillRing(temple());templeRing.scale.setScalar(.55);beacon=makeBeacon();pinged=null;pingAt=clock+PING_EVERY;round=1;
     player={alive:true,hp:100,shield:SHIELD_PLAYER,shieldMax:SHIELD_PLAYER,armor:0,armorMax:0,garment:null,worn:new Set(),heals:{bandage:0,medkit:0},kills:0,deaths:0,score:0,lastHurt:-9,protectUntil:SPAWN_PROTECT};
     if(!walkIn){const spot=DOOR_SPAWN();o.placePlayer(spot.x,spot.z,spot.x,spot.z-6);combat.syncLook();}
