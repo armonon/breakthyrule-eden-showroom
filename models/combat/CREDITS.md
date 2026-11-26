@@ -7,11 +7,17 @@
 | `pistol.glb` | [Service Pistol](https://polyhaven.com/a/service_pistol) | Mateusz Sadek, Poly Haven | CC0 |
 | `shotgun.glb` | Mossberg 500, from the 3D Model Haven gun pack ([archive](https://archive.org/details/gun_models.7z)) | Rajil Jose Macatangay | CC0 |
 | `hatchet/` | [Hatchet](https://polyhaven.com/a/hatchet), 1k glTF | Poly Haven | CC0 |
+| `variants/1911.glb`, `variants/tec9.glb`, `variants/mp5.glb`, `variants/mac10.glb`, `variants/m14.glb`, `variants/m700.glb`, `variants/leveraction.glb` | [Free Classic Weapons Pack](https://stein-indie.itch.io/classic-weapons-pack) v1.2 | Stein Games | CC0 |
+| `variants/luger.glb`, `variants/makarov.glb`, `variants/greasegun.glb`, `variants/suomi.glb`, `variants/m4a1.glb`, `variants/shotgun870.glb`, `variants/fraggrenade.glb`, `variants/pipebomb.glb` | [Free CC0 Guns & Explosives Pack](https://3dmodelscc0.itch.io/free-cc0-guns-explosives-pack) | 3DModelsCC0 | CC0 |
 
 The arms, pistol and shotgun GLBs are the first-person conversions published in
 [vvanghelue/mini-cry](https://github.com/vvanghelue/mini-cry) (`public/models/fp`): re-oriented into
 weapon space (−Z forward, origin at the firing hand), with textures resized. The C4 charge is
 generated in code (`combat.js`).
+
+The `variants/` guns were converted for Break Thy Rule: textures resized to 1024 px and packed for glTF, rigs
+removed, and each gun turned and moved into weapon space so its grip sits where its class's hands go
+(`VARIANTS` in `combat.js` lists their muzzle and sight points).
 
 ## Microsoft Rocketbox: MIT License
 

@@ -123,25 +123,71 @@ export function createWorld({ scene, physics, assets, shadows = 7 }) {
     instanced(panel, placements, { cast: false });
   }
 
-  // ---- the pen gate (five loose planks: a charge smashes them) and the red lever that drops them
-  const gate = [], G = P.gate;
-  for (let i = 0; i < 5; i++) gate.push(loose([G.x, .35 + i * .3, G.z], [.07, .13, G.half], mat.wood, 28));
-  const lever = new THREE.Group(); lever.position.set(P.lever.x, 0, P.lever.z); root.add(lever);
-  { const paint = new THREE.MeshStandardMaterial({ color: 0xc9a227, roughness: .55, metalness: .3 }), dark = new THREE.MeshStandardMaterial({ color: 0x1a1c1e, roughness: .5, metalness: .7 }), grip = new THREE.MeshStandardMaterial({ color: 0xc4130d, roughness: .45, emissive: 0x4a0603 });
+  // ---- gates and their levers. Every enclosure (the holding pen in the hall, six pens on the farm) has a barred
+  // gate and a red lever beside it; the main gate has its lever in the gatehouse. A closed gate is a barrier for
+  // cows, the rider and anyone on foot (who can climb over). A lever swings its gate open; enough force breaks it.
+  const gates = [], gateListeners = [];
+  const steel = new THREE.MeshStandardMaterial({ color: 0x4d5357, roughness: .5, metalness: .75 }), rust = new THREE.MeshStandardMaterial({ color: 0x5a3a26, roughness: .8, metalness: .4 });
+  const leverParts = { paint: new THREE.MeshStandardMaterial({ color: 0xc9a227, roughness: .55, metalness: .3 }), dark: new THREE.MeshStandardMaterial({ color: 0x1a1c1e, roughness: .5, metalness: .7 }), grip: new THREE.MeshStandardMaterial({ color: 0xc4130d, roughness: .45, emissive: 0x4a0603 }),
+    cube: new THREE.BoxGeometry(1, 1, 1), rod: new THREE.CylinderGeometry(.5, .5, 1, 12) };
+  function makeLever(at, big) {
+    const lever = new THREE.Group(); lever.position.set(at.x, 0, at.z); root.add(lever);
+    const { paint, dark, grip, cube, rod } = leverParts;
     const part = (g, m, x, y, z, sx, sy, sz, parent = lever) => { const o = new THREE.Mesh(g, m); o.position.set(x, y, z); o.scale.set(sx, sy, sz); o.castShadow = true; parent.add(o); return o; };
-    const cube = new THREE.BoxGeometry(1, 1, 1), rod = new THREE.CylinderGeometry(.5, .5, 1, 12);
     part(cube, dark, 0, .04, 0, .5, .08, .5); part(cube, paint, 0, .55, 0, .26, 1.0, .2); part(cube, dark, 0, 1.0, 0, .32, .1, .26);
-    const arm = new THREE.Group(); arm.position.set(0, .82, .13); arm.rotation.x = -.85; lever.add(arm); lever.userData.arm = arm;
+    const arm = new THREE.Group(); arm.position.set(0, .82, .13); arm.rotation.x = -.85; lever.add(arm);
     part(rod, dark, 0, .36, 0, .045, .72, .045, arm); part(rod, grip, 0, .74, 0, .09, .2, .09, arm);
-    lever.userData.sign = part(cube, new THREE.MeshBasicMaterial({ color: 0xff3020 }), 0, 2.25, 0, .16, .16, .16);
-    const l = new THREE.PointLight(0xff3a20, 14, 9, 1.6); l.position.set(0, 2.2, 0); lever.add(l); lever.userData.light = l; }
-  physics.staticBox([P.lever.x, .55, P.lever.z], [.14, .55, .12]);
-  let opened = false, leverPulled = 0;
-  function openGate() {
-    leverPulled = performance.now(); lever.userData.sign.material.color.set(0x35ff5a); lever.userData.light.color.set(0x35ff5a);
-    gate.forEach((g, i) => { g.body.wake(); g.body.impulse(-60 - i * 14, 30, (i - 2) * 26); }); opened = true;
+    const sign = part(cube, new THREE.MeshBasicMaterial({ color: 0xff3020 }), 0, 2.25, 0, .16, .16, .16);
+    // Only the hall's and the main gate's levers carry a real light (lights are costly); the rest glow.
+    let light = null; if (big) { light = new THREE.PointLight(0xff3a20, 14, 9, 1.6); light.position.set(0, 2.2, 0); lever.add(light); }
+    physics.staticBox([at.x, .55, at.z], [.14, .55, .12]);
+    return { group: lever, arm, sign, light, pulled: 0 };
   }
-  const gateBroken = () => opened || gate.some(g => { const t = g.body.read().p; return Math.hypot(t[0] - g.home[0], t[2] - g.home[2]) > 1.2; });
+  function makeLeaf(g, from, to, height) {   // one barred leaf hinged at `from`, reaching to `to` (distances along the gate)
+    const hinge = new THREE.Group(), along = g.axis === 'x' ? [1, 0] : [0, 1], len = Math.abs(to - from), dirn = Math.sign(to - from);
+    hinge.position.set(g.x + along[0] * from, 0, g.z + along[1] * from); hinge.rotation.y = Math.atan2(-along[1] * dirn, along[0] * dirn); root.add(hinge);
+    const bar = (x, y, sx, sy, m = steel) => { const o = new THREE.Mesh(leverParts.cube, m); o.position.set(x, y, 0); o.scale.set(sx, sy, .06); o.castShadow = true; hinge.add(o); };
+    const rails = Math.max(4, Math.round(height / .32)); for (let i = 0; i < rails; i++) bar(len / 2, .22 + i * (height - .3) / (rails - 1), len, .07);
+    bar(.04, height / 2, .09, height); bar(len - .04, height / 2, .09, height); bar(len / 2, height / 2, .07, height, rust);
+    { const o = new THREE.Mesh(leverParts.cube, rust); o.position.set(len / 2, height / 2, 0); o.scale.set(Math.hypot(len, height - .3), .06, .05); o.rotation.z = Math.atan2(height - .3, len); hinge.add(o); }
+    return { hinge, rest: hinge.rotation.y, dirn, len };
+  }
+  for (const data of P.gates || [{ id: 'hall', kind: 'hall', x: P.gate.x, z: P.gate.z, axis: 'z', half: P.gate.half, n: [-1, 0], lever: P.lever, strength: 30 }]) {
+    const g = { ...data, open: false, broken: false, openedAt: 0 }, height = g.kind === 'main' ? 2.3 : 1.45, t = .14;
+    const hx = g.axis === 'x' ? g.half : t, hz = g.axis === 'x' ? t : g.half;
+    g.wall = [g.x - hx, g.x + hx, g.z - hz, g.z + hz]; walls2d.push(g.wall);
+    g.solid = { minX: g.x - hx, maxX: g.x + hx, minZ: g.z - hz, maxZ: g.z + hz, top: height, bottom: 0, roof: false, surface: false, gate: g }; solids.push(g.solid);
+    g.body = physics.staticBox([g.x, height / 2, g.z], [hx, height / 2, hz]);
+    g.leaves = g.kind === 'main' ? [makeLeaf(g, -g.half, 0, height), makeLeaf(g, g.half, 0, height)] : [makeLeaf(g, -g.half, g.half, height)];
+    g.post = makeLever(g.lever, g.kind !== 'pen'); g.height = height;
+    gates.push(g);
+  }
+  // Open a gate: by its lever (swings clear) or by force (`broken`: the leaves burst into loose bars along `dir`).
+  function openGate(id = 'hall', { broken = false, dir = null, power = 0 } = {}) {
+    const g = gates.find(o => o.id === id); if (!g || g.open) return false;
+    g.open = true; g.broken = broken; g.openedAt = performance.now();
+    const i = walls2d.indexOf(g.wall); if (i >= 0) walls2d.splice(i, 1);
+    g.solid.open = true; g.solid.top = -10; g.solid.bottom = -11; g.solid.minX = g.solid.maxX = 1e6; g.body.remove(); g.body = null;
+    g.post.pulled = g.openedAt; g.post.sign.material.color.set(0x35ff5a); g.post.light?.color.set(0x35ff5a);
+    if (broken) {
+      const d = dir || g.n, along = g.axis === 'x' ? [1, 0] : [0, 1], push = 40 + Math.min(80, power);
+      for (const leaf of g.leaves) leaf.hinge.visible = false;
+      const bars = g.kind === 'main' ? 9 : 5;
+      for (let k = 0; k < bars; k++) { const s = (k / (bars - 1) * 2 - 1) * (g.half - .8), y = .4 + (k % 3) * .45;
+        const piece = loose([g.x + along[0] * s, y, g.z + along[1] * s], g.axis === 'x' ? [.75, .05, .04] : [.04, .05, .75], steel, 16);
+        piece.body.impulse(d[0] * push * (1 + (k % 3) * .3) + along[0] * (k % 2 ? 20 : -20), 30 + (k % 4) * 14, d[1] * push * (1 + (k % 3) * .3) + along[1] * (k % 2 ? 20 : -20)); piece.body.spinImpulse((k % 3 - 1) * 6, (k % 2 ? 5 : -5), (k % 4 - 1.5) * 4); }
+    }
+    for (const fn of gateListeners) fn(g);
+    return true;
+  }
+  const closedAt = (g, x, z, r) => !g.open && x > g.wall[0] - r && x < g.wall[1] + r && z > g.wall[2] - r && z < g.wall[3] + r;
+  const gateAt = (x, z, r = .4) => gates.find(g => closedAt(g, x, z, r)) || null;
+  const gateNear = (x, z, r = 6) => { let best = null, d = r; for (const g of gates) if (!g.open) { const q = Math.hypot(Math.max(0, Math.abs(x - g.x) - (g.axis === 'x' ? g.half : 0)), Math.max(0, Math.abs(z - g.z) - (g.axis === 'z' ? g.half : 0))); if (q < d) { d = q; best = g; } } return best; };
+  const leverNear = (x, z, r = 2.4) => { let best = null, d = r; for (const g of gates) if (!g.open) { const q = Math.hypot(x - g.lever.x, z - g.lever.z); if (q < d) { d = q; best = g; } } return best; };
+  const gateBroken = () => gates[0].open;
+  // The safe ground beyond the main gate: a ring of marker lamps where rescued cows are counted.
+  { const E = P.exit, lamp = new THREE.MeshBasicMaterial({ color: 0x6dffa0 }), post = new THREE.CylinderGeometry(.05, .05, 1.2, 6);
+    for (let k = 0; k < 14; k++) { const a = k / 14 * Math.PI * 2, o = new THREE.Mesh(post, lamp); o.position.set(E.x + Math.cos(a) * E.radius, .6, E.z + Math.sin(a) * E.radius); root.add(o); } }
 
   // ---- light: the night sky as image-based light (dimmed: the baked map carries the ambient on the architecture),
   // a cold moon whose shadow follows the action, and the site's lamps (tubes stutter)
@@ -188,12 +234,18 @@ export function createWorld({ scene, physics, assets, shadows = 7 }) {
       const n = Math.sin(time * 31 + l.phase) * Math.sin(time * 7.3 + l.phase * 2), drop = n > .82 - l.flicker * .25 ? .15 : 1;
       l.light.intensity = l.base * drop * (.92 + .08 * Math.sin(time * 60 + l.phase)); l.bulb.material.color.setScalar(drop).multiply(l.light.color);
     }
-    const pulled = leverPulled ? Math.min(1, (performance.now() - leverPulled) / 260) : 0; lever.userData.arm.rotation.x = -.85 + pulled * 1.7; if (!leverPulled) lever.userData.light.intensity = 10 + Math.sin(time * 4) * 5;
+    const now = performance.now();
+    for (const g of gates) {
+      const post = g.post, pulled = post.pulled ? Math.min(1, (now - post.pulled) / 260) : 0; post.arm.rotation.x = -.85 + pulled * 1.7;
+      if (!g.open) { const pulse = .65 + .35 * Math.sin(time * 4 + g.x); post.sign.material.color.setRGB(pulse, pulse * .19, pulse * .12); if (post.light) post.light.intensity = 10 + Math.sin(time * 4) * 5; }
+      else if (!g.broken) { const k = Math.min(1, (now - g.openedAt) / 900), ease = 1 - (1 - k) * (1 - k), swing = (g.axis === 'x' ? -g.n[1] : g.n[0]) * 1.75;
+        for (const leaf of g.leaves) leaf.hinge.rotation.y = leaf.rest + swing * leaf.dirn * ease; }
+    }
     if (focus) { const fx = Math.round(focus.x / 2) * 2, fz = Math.round(focus.z / 2) * 2; if (moon.target.position.x !== fx || moon.target.position.z !== fz) { moon.target.position.set(fx, 0, fz); moon.position.set(fx + moonOffset.x, moonOffset.y, fz + moonOffset.z); moon.target.updateMatrixWorld(); } }
   }
 
   return {
-    root, mat, blocked, walk, update, gateBroken, openGate, solids, solidAt, sightBlocked, ceilingAt, indoors, walls2d, dynamic, loose, looseModel, place,
+    root, mat, blocked, walk, update, gateBroken, openGate, gates, gateAt, gateNear, leverNear, onGate: fn => gateListeners.push(fn), pens: P.pens || [], solids, solidAt, sightBlocked, ceilingAt, indoors, walls2d, dynamic, loose, looseModel, place,
     grips: data.grips || [], hay: data.hay || [], roofSteps: data.roofSteps || [],
     inHay: (x, z) => (data.hay || []).some(h => Math.hypot(x - h[0], z - h[1]) < h[2] * .85),
     gatePost: P.lever, spawn: P.spawn, cowSpawn: P.cowSpawn, exit: P.exit, gateZ: P.gateZ, bounds: P.bounds, pen: P.pen, escape: P.escape, truckStart: P.truckStart, patrols: P.patrols,

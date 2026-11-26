@@ -6,7 +6,7 @@
  root.createPlayerMovement=function(h){
  const {T,targetPosition,targetAim,walkVelocity,motion,keys,sway,footsteps,surfaceAt,puff,hitStop,requestDraw,obstacle,groundHeight,prepareWalking,shiftHeight}=h;
  const SLIDE_TIME=.75;
- let crouchHeld=false,crouchAmount=0,slide=null,airTime=0,wasAirborne=false,dive=null,proneT=0,diveCount=0,tackleCount=0,airPeak=0;
+ let crouchHeld=false,crouchAmount=0,slide=null,airTime=0,wasAirborne=false,dive=null,proneT=0,diveCount=0,tackleCount=0,airPeak=0,blastFlight=false;
  // Forgiveness: a jump still counts just after walking off an edge, and a press made too early is kept for a moment.
  const COYOTE=.12,JUMP_BUFFER=.15;
  let coyote=0,jumpBuffer=0;
@@ -82,7 +82,7 @@ function moveStep(dt,tick=null){
   const run=Math.hypot(walkVelocity.x,walkVelocity.z);
   if(!air&&run>4.2&&wish.lengthSq()){const now=Math.atan2(walkVelocity.x,walkVelocity.z),want=Math.atan2(wish.x,wish.z),d=Math.atan2(Math.sin(want-now),Math.cos(want-now)),limit=dt*T.MathUtils.lerp(9,3.4,T.MathUtils.smoothstep(run,4.2,6.4));
    if(Math.abs(d)>limit&&Math.abs(d)<2.2){const a=now+Math.sign(d)*limit,len=wish.length();wish.set(Math.sin(a)*len,0,Math.cos(a)*len);}}
-  walkVelocity.lerp(wish,1-Math.exp(-(air?(wish.lengthSq()?1.5:.2):wish.lengthSq()?9:11)*dt));}
+  walkVelocity.lerp(wish,1-Math.exp(-(air?(blastFlight?.06:wish.lengthSq()?1.5:.2):wish.lengthSq()?9:11)*dt));}
  if(walkVelocity.lengthSq()<1e-4){walkVelocity.set(0,0,0);return;}
  if(x||z)prepareWalking();
  // Try the full step, then each axis alone, so walls, props and the pond edge slide the player along.
@@ -260,6 +260,8 @@ function updateJump(dt){
  const Pk=h.parkourOn()?h.parkour():null;if(Pk&&!Pk.active()&&!Pk.updated?.(tick)){Pk.update(dt,tick);if(airborne)Pk.air(dt);}
  // Parkour owns the player while it is active: a caught ledge is not a landing, and a later fall counts from where you let go.
  if(h.parkour()?.active()){slide=null;dive=null;rollTime=null;airTime=0;wasAirborne=false;airPeak=targetPosition.y-1.75;proneT=Math.max(0,proneT-dt);return;}
+ // Thrown by a blast: the landing is a hard one (a moment on the ground) but the blast already did its damage.
+ if(blastFlight&&!airborne&&wasAirborne){blastFlight=false;airPeak=targetPosition.y-1.75;proneT=Math.max(proneT,.85);momentum=0;h.playerBody?.anim?.('jumpLand',{fade:.06,speed:1.3});h.kick(7);sway.bump(1.6,Math.random()<.5?-1:1);footsteps?.land(surfaceAt(targetPosition),1);{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,10,.9);}wasAirborne=false;return;}
  if(airborne){airTime+=dt;airPeak=Math.max(airPeak,targetPosition.y-1.75);}else if(wasAirborne){
   const fell=airPeak-(targetPosition.y-1.75),res=Pk?.land(fell);airPeak=targetPosition.y-1.75;
   if(res?.kind==='roll'){proneT=0;rollTime=0;h.kick(4);{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,8,.8);}}else if(res?.kind==='hard'){proneT=res.stun;momentum=0;h.playerBody?.anim?.('jumpLand',{fade:.06,speed:1.6});}footsteps?.land(surfaceAt(targetPosition),Math.min(1,airTime/.7));if(airTime>.45){const feet=targetPosition.clone();feet.y-=1.72;puff(feet,5,.7);}airTime=0;
@@ -287,7 +289,10 @@ function updateJump(dt){
  function restoreState(value){const s=validateState(value);momentum=s.momentum??0;jumpHold=s.jumpHold??-1;rollTime=s.rollTime??null;
   ({crouchHeld,crouchAmount,slide,airTime,wasAirborne,dive,proneT,diveCount,tackleCount,airPeak,coyote,jumpBuffer,vault,vaultCount,wallPops,rolls,lastBump,bumpCount}=s);Object.assign(lastTap,s.lastTap);
  }
- const api={captureState,restoreState,validateState,move,jump,updateJump,tryVault,cancelTraversal,bodyHeight,tryStep,startSlide,tapDodge,updateCrouch,updateAir,
+ // A blast throws the player: vel in m/s (up and away). Nearly ballistic until the landing.
+ function launch(vel){if(!vel||h.playerBody?.downed?.())return false;cancelTraversal();slide=null;dive=null;rollTime=null;prepareWalking();
+  const m=motion.inspect();motion.set(Math.max(m.height,.02),Math.max(vel.y,m.velocity||0));walkVelocity.set(vel.x,0,vel.z);blastFlight=true;wasAirborne=true;airPeak=targetPosition.y-1.75;jumpHold=-1;requestDraw();return true;}
+ const api={launch,blastFlying:()=>blastFlight,captureState,restoreState,validateState,move,jump,updateJump,tryVault,cancelTraversal,bodyHeight,tryStep,startSlide,tapDodge,updateCrouch,updateAir,
   needsStep:()=>!!(keys.size||walkVelocity.lengthSq()||slide||vault||h.parkour()?.active()||momentum>0||rollTime!==null),
   momentum:()=>h.momentumEnabled?.()===false?0:momentum,
   traversal:()=>h.parkour()?.presentation?.()||(vault?{kind:'vault',time:vault.t,duration:vault.dur,lift:vaultLift(vault)}:dive?{kind:'dive',time:dive.t}:rollTime!==null?{kind:'roll',time:rollTime,duration:ROLL_TIME}:slide?{kind:slide.kind,time:slide.t,duration:slide.dur}:null),

@@ -11,7 +11,7 @@ html,body{margin:0;height:100%;background:#0b0e10;color:var(--cn-ink);font-famil
 .cn-top h1{margin:4px 0 0;font:700 28px/1 'Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.22em}
 .cn-back{pointer-events:auto;color:var(--cn-ink);text-decoration:none;font-size:11px;letter-spacing:.2em;padding:9px 12px;border:1px solid var(--cn-line);border-radius:999px;background:rgba(8,10,11,.5);backdrop-filter:blur(8px)}
 .cn-back:hover{border-color:var(--cn-ink)}
-.cn-hud{text-shadow:0 1px 5px rgba(0,0,0,.9);position:fixed;left:20px;bottom:calc(52px + env(safe-area-inset-bottom));width:min(340px,calc(100vw - 40px));display:grid;gap:7px;pointer-events:none}
+.cn-hud{text-shadow:0 1px 5px rgba(0,0,0,.9);position:fixed;left:20px;bottom:calc(92px + env(safe-area-inset-bottom));width:min(340px,calc(100vw - 40px));display:grid;gap:7px;pointer-events:none}
 #cn-goal{margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:.16em;line-height:1.5;text-shadow:0 1px 6px #000}
 .cn-row{display:flex;align-items:center;gap:10px}
 .cn-label{width:54px;font-size:9px;font-weight:600;letter-spacing:.26em;color:var(--cn-dim)}
