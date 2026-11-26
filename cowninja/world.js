@@ -131,7 +131,7 @@ export function createWorld({ scene, physics, assets, shadows = 7 }) {
   const leverParts = { paint: new THREE.MeshStandardMaterial({ color: 0xc9a227, roughness: .55, metalness: .3 }), dark: new THREE.MeshStandardMaterial({ color: 0x1a1c1e, roughness: .5, metalness: .7 }), grip: new THREE.MeshStandardMaterial({ color: 0xc4130d, roughness: .45, emissive: 0x4a0603 }),
     cube: new THREE.BoxGeometry(1, 1, 1), rod: new THREE.CylinderGeometry(.5, .5, 1, 12) };
   function makeLever(at, big) {
-    const lever = new THREE.Group(); lever.position.set(at.x, 0, at.z); root.add(lever);
+    const lever = new THREE.Group(), base = at.y || 0; lever.position.set(at.x, base, at.z); root.add(lever);
     const { paint, dark, grip, cube, rod } = leverParts;
     const part = (g, m, x, y, z, sx, sy, sz, parent = lever) => { const o = new THREE.Mesh(g, m); o.position.set(x, y, z); o.scale.set(sx, sy, sz); o.castShadow = true; parent.add(o); return o; };
     part(cube, dark, 0, .04, 0, .5, .08, .5); part(cube, paint, 0, .55, 0, .26, 1.0, .2); part(cube, dark, 0, 1.0, 0, .32, .1, .26);
@@ -140,7 +140,7 @@ export function createWorld({ scene, physics, assets, shadows = 7 }) {
     const sign = part(cube, new THREE.MeshBasicMaterial({ color: 0xff3020 }), 0, 2.25, 0, .16, .16, .16);
     // Only the hall's and the main gate's levers carry a real light (lights are costly); the rest glow.
     let light = null; if (big) { light = new THREE.PointLight(0xff3a20, 14, 9, 1.6); light.position.set(0, 2.2, 0); lever.add(light); }
-    physics.staticBox([at.x, .55, at.z], [.14, .55, .12]);
+    physics.staticBox([at.x, base + .55, at.z], [.14, .55, .12]);
     return { group: lever, arm, sign, light, pulled: 0 };
   }
   function makeLeaf(g, from, to, height) {   // one barred leaf hinged at `from`, reaching to `to` (distances along the gate)
@@ -183,7 +183,7 @@ export function createWorld({ scene, physics, assets, shadows = 7 }) {
   const closedAt = (g, x, z, r) => !g.open && x > g.wall[0] - r && x < g.wall[1] + r && z > g.wall[2] - r && z < g.wall[3] + r;
   const gateAt = (x, z, r = .4) => gates.find(g => closedAt(g, x, z, r)) || null;
   const gateNear = (x, z, r = 6) => { let best = null, d = r; for (const g of gates) if (!g.open) { const q = Math.hypot(Math.max(0, Math.abs(x - g.x) - (g.axis === 'x' ? g.half : 0)), Math.max(0, Math.abs(z - g.z) - (g.axis === 'z' ? g.half : 0))); if (q < d) { d = q; best = g; } } return best; };
-  const leverNear = (x, z, r = 2.4) => { let best = null, d = r; for (const g of gates) if (!g.open) { const q = Math.hypot(x - g.lever.x, z - g.lever.z); if (q < d) { d = q; best = g; } } return best; };
+  const leverNear = (x, z, r = 2.4, y = null) => { let best = null, d = r; for (const g of gates) if (!g.open && (y == null || Math.abs(y - (g.lever.y || 0)) < 1.2)) { const q = Math.hypot(x - g.lever.x, z - g.lever.z); if (q < d) { d = q; best = g; } } return best; };
   const gateBroken = () => gates[0].open;
   // The safe ground beyond the main gate: a ring of marker lamps where rescued cows are counted.
   { const E = P.exit, lamp = new THREE.MeshBasicMaterial({ color: 0x6dffa0 }), post = new THREE.CylinderGeometry(.05, .05, 1.2, 6);
@@ -218,9 +218,17 @@ export function createWorld({ scene, physics, assets, shadows = 7 }) {
     if (!blocked(p.x, p.z + dz, r)) { p.z += dz; return true; }
     return false;
   }
+  // Is there something solid at eye height on the straight line between two points? An exact test of the line
+  // against each box (thin walls count; a sampled test used to step over them).
   function sightBlocked(x1, z1, x2, z2) {
-    const n = Math.max(2, Math.ceil(Math.hypot(x2 - x1, z2 - z1) / .6));
-    for (let i = 1; i < n; i++) { const x = x1 + (x2 - x1) * i / n, z = z1 + (z2 - z1) * i / n; for (const b of solids) if (b.top > 1.45 && b.bottom < 1.2 && b.surface !== false && x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ) return true; }
+    const dx = x2 - x1, dz = z2 - z1;
+    for (const b of solids) {
+      if (!(b.top > 1.45 && b.bottom < 1.2 && b.surface !== false)) continue;
+      let t0 = .02, t1 = .98;
+      if (Math.abs(dx) < 1e-9) { if (x1 <= b.minX || x1 >= b.maxX) continue; } else { const a = (b.minX - x1) / dx, c = (b.maxX - x1) / dx; t0 = Math.max(t0, Math.min(a, c)); t1 = Math.min(t1, Math.max(a, c)); if (t0 > t1) continue; }
+      if (Math.abs(dz) < 1e-9) { if (z1 <= b.minZ || z1 >= b.maxZ) continue; } else { const a = (b.minZ - z1) / dz, c = (b.maxZ - z1) / dz; t0 = Math.max(t0, Math.min(a, c)); t1 = Math.min(t1, Math.max(a, c)); if (t0 > t1) continue; }
+      return true;
+    }
     return false;
   }
   const solidAt = (x, y, z, pad = .15) => { for (const b of solids) if (x > b.minX - pad && x < b.maxX + pad && z > b.minZ - pad && z < b.maxZ + pad && y < b.top + pad && y > b.bottom - pad) return true; return false; };

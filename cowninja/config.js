@@ -28,7 +28,7 @@ export const TUNE = {
     roles: ['guard', 'worker', 'gunner', 'guard', 'worker', 'guard', 'gunner', 'guard', 'worker', 'guard', 'gunner'],
     reportPoints: [[-10.5, -53.5], [-20, 6], [30, -6]],   // gatehouse, office door, yard phone: a worker runs to the nearest
     fleeSpeed: 4.8, bodySight: 10,       // how far away a body on the ground is noticed
-    pistol: { min: 3, range: 24, standoff: 11, aim: .9, cooldown: 1.6, accuracy: .95, dodge: .075, damageFoot: 16, damageRide: 9 },
+    pistol: { min: 3, range: 24, standoff: 11, aim: .9, cooldown: 1.6, accuracy: .85, dodge: .075, damageFoot: 12, damageRide: 9 },
     heavy: { min: 7, range: 34, standoff: 18, aim: 1.1, cooldown: 4.5, lead: .9 },
   },
   // Awareness is what they know; aggression is how hard they answer, and only your own (and your herd's) harm raises

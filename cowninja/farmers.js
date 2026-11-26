@@ -27,6 +27,9 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
     let person = null;
     try { person = C?.create(THREE, look); } catch (error) { console.warn('[cowninja] farmer', error); }
     if (person) { person.root.castShadow = true; turn.add(person.root); }
+    // Police wear dark blue, heavy units drab green: the same people, their clothes tinted.
+    if (person && (role === 'police' || role === 'heavy')) { const cloth = new THREE.Color(role === 'police' ? 0x3a4a8c : 0x56604a);
+      person.root.traverse(o => { if (o.isSkinnedMesh) { const tint = m => { const c = m.clone(); c.color?.multiply(cloth); return c; }; o.material = Array.isArray(o.material) ? o.material.map(tint) : tint(o.material); } }); }
     const fork = new THREE.Group(); fork.position.set(.3, 1.05, -.2); group.add(fork);
     if (role === 'guard') {
       const shaft = new THREE.Mesh(cube, shaftWood); shaft.scale.set(.04, .04, 1.5); shaft.position.z = -.35; shaft.castShadow = true; fork.add(shaft);
@@ -135,7 +138,10 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
       else if (f.state === 'chase') { tx = c.x; tz = c.z; pace = ranged && sees && dist < W.standoff ? 0 : 3.7;
         // Round the walls rather than into them, when there is no straight line to you.
         if (pace && nav && dist > 3 && world.sightBlocked?.(f.p.x, f.p.z, c.x, c.z)) { if (!chase || time - chaseAt > .5 || chase.version !== nav.version) { chase = nav.field(c.x, c.z); chaseAt = time; } step = chase.dir(f.p.x, f.p.z, out); } }
-      else { f.at %= f.route.length; const w = f.route[f.at]; tx = w[0]; tz = w[1]; pace = f.alert > .3 ? 0 : 1.25; if (Math.hypot(tx - f.p.x, tz - f.p.z) < .5) f.at = (f.at + 1) % f.route.length; }
+      else { f.at %= f.route.length; const w = f.route[f.at]; tx = w[0]; tz = w[1]; pace = f.alert > .3 ? 0 : 1.25; if (Math.hypot(tx - f.p.x, tz - f.p.z) < .5) {
+          // A worker stops at each point of his round and works there for a while before moving on.
+          if (f.role === 'worker' && f.route.length > 1) { f.work = (f.work || 0) + dt; pace = 0; if (f.work > .2 && !f.working) { f.working = true; f.person?.motion.play?.('interact', { fade: .2, speed: .8, mask: 'upper' }); } if (f.work > 5.5) { f.work = 0; f.working = false; f.at = (f.at + 1) % f.route.length; } else if (f.working && f.work % 1.8 < dt) f.person?.motion.play?.('interact', { fade: .2, speed: .8, mask: 'upper' }); }
+          else f.at = (f.at + 1) % f.route.length; } }
       const routed = step && (step.x || step.z), mx = routed ? step.x : tx - f.p.x, mz = routed ? step.z : tz - f.p.z, md = Math.hypot(mx, mz) || 1;
       if (f.state === 'patrol' && f.route.length === 1 && md < .6) pace = 0;   // holding a post
       const want = f.state === 'flee' ? Math.atan2(mx, -mz) : f.state === 'chase' || f.alert > .3 ? Math.atan2(dx, -dz) : Math.atan2(mx, -mz);

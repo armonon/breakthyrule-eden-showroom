@@ -350,7 +350,11 @@ def terrain():
 terrain_h = terrain()
 
 # Perimeter fence (chain-link panels placed by the game along these runs) and its collision.
-FENCE = [[FX0, FZ0, GATE[0], FZ0], [GATE[1], FZ0, FX1, FZ0], [FX0, FZ0, FX0, FZ1], [FX1, FZ0, FX1, FZ1], [FX0, FZ1, FX1, FZ1]]
+# The staff gate on the east side stands open: a gap a person walks through and a cow cannot. It is the way in.
+SIDE = (29.25, 30.75)
+FENCE = [[FX0, FZ0, GATE[0], FZ0], [GATE[1], FZ0, FX1, FZ0], [FX0, FZ0, FX0, FZ1], [FX1, FZ0, FX1, SIDE[0]], [FX1, SIDE[1], FX1, FZ1], [FX0, FZ1, FX1, FZ1]]
+for z in SIDE: box('sidepost', (FX1 - .14, 0, z - .14 + (.3 if z == SIDE[1] else -.3)), (FX1 + .14, 2.7, z + .14 + (.3 if z == SIDE[1] else -.3)), 'yellow')
+box('side-path', (FX1 - 9, 0, 28.6), (FX1 + 16, .02, 31.4), 'gravel', solid=False)
 for x1, z1, x2, z2 in FENCE: solid_only((min(x1, x2) - .15, 0, min(z1, z2) - .15), (max(x1, x2) + .15, 2.5, max(z1, z2) + .15), surface=False)
 for x in GATE: box('gatepost', (x - .25, 0, FZ0 - .25), (x + .25, 3.2, FZ0 + .25), 'yellow')
 
@@ -516,6 +520,13 @@ PW, PD, LANE0, LANE1 = 16, 16, 23, 37
 PEN_COLS = (34, 54, 74)
 PENS, GATES = [{'id': 'hall', 'minX': PEN['minX'], 'maxX': PEN['maxX'], 'minZ': PEN['minZ'], 'maxZ': PEN['maxZ'], 'count': 8}], []
 GATES.append({'id': 'hall', 'kind': 'hall', 'x': 6, 'z': 34.5, 'axis': 'z', 'half': 2.55, 'n': [-1, 0], 'lever': {'x': 5.2, 'z': 31.2}, 'strength': 30, 'planks': True})
+# Each pen is its own small problem: how many cows, how strong the gate, and where the lever is.
+#   pen1 lever by the gate (the first one you meet)      pen4 lever up on a feed platform: climb for it
+#   pen2 lever round the back of the pen                  pen5 the strongest gate, its lever in a guard's booth, feeders across the run-up
+#   pen3 a big pen, a stout gate                          pen6 a weak gate, lever behind the hay
+VARIETY = {1: dict(count=4, strength=24), 2: dict(count=5, strength=30, lever='back'), 3: dict(count=6, strength=38),
+           4: dict(count=5, strength=30, lever='platform'), 5: dict(count=6, strength=46, lever='booth'), 6: dict(count=4, strength=22, lever='hay')}
+EXTRA_PATROLS = []
 k = 0
 for row, (z0, z1, gz, nz) in enumerate(((LANE0 - PD, LANE0, LANE0, 1), (LANE1, LANE1 + PD, LANE1, -1))):
     for x0 in PEN_COLS:
@@ -526,8 +537,24 @@ for row, (z0, z1, gz, nz) in enumerate(((LANE0 - PD, LANE0, LANE0, 1), (LANE1, L
         box('trough', (x0 + 1.2, 0, far + (.5 if nz == 1 else -1.1)), (x0 + 4.2, .6, far + (1.1 if nz == 1 else -.5)), 'concrete')
         cyl('hay', (x1 - 2.6, .7, far + nz * 2.2), (x1 - 1.4, .7, far + nz * 2.2), .7, 'hay', 18)
         box('pen-straw', (x0 + .3, .02, z0 + .3), (x1 - .3, .05, z1 - .3), 'hay', solid=False)
-        PENS.append({'id': f'pen{k}', 'minX': x0 + 1.6, 'maxX': x1 - 1.6, 'minZ': z0 + 1.6, 'maxZ': z1 - 1.6, 'count': 5})
-        GATES.append({'id': f'pen{k}', 'kind': 'pen', 'x': cx, 'z': gz, 'axis': 'x', 'half': 2.5, 'n': [0, nz], 'lever': {'x': cx + 3.3, 'z': gz + nz * .7}, 'strength': 30})
+        V = VARIETY[k]; lever = {'x': cx + 3.3, 'z': gz + nz * .7}
+        if V.get('lever') == 'back': lever = {'x': cx, 'z': far - nz * 1.0}
+        elif V.get('lever') == 'platform':   # a feed platform beside the gate, 2.2 m up, with crates to climb
+            px, pz = cx + 4.2, gz + nz * 1.9; box('feed-platform', (px - 1.3, 0, pz - 1.3), (px + 1.3, 2.2, pz + 1.3), 'concrete'); box('feed-step', (px + 1.3, 0, pz - .7), (px + 2.5, 1.1, pz + .7), 'planks')
+            lever = {'x': px, 'z': pz, 'y': 2.2}
+        elif V.get('lever') == 'booth':      # a three-sided booth with a guard standing in it; feeders narrow the run-up
+            px, pz = cx + 4.4, gz + nz * 1.6
+            box('booth-back', (px + 1.1, 0, pz - 1.3), (px + 1.3, 2.3, pz + 1.3), 'cladding'); box('booth-side', (px - 1.1, 0, pz - nz * 1.3 - .1), (px + 1.3, 2.3, pz - nz * 1.3 + .1), 'cladding'); box('booth-roof', (px - 1.3, 2.3, pz - 1.5), (px + 1.5, 2.42, pz + 1.5), 'roof')
+            lever = {'x': px + .4, 'z': pz}; EXTRA_PATROLS.append([[px - .6, pz + nz * .2]])
+            for fx in (cx - 1.6, cx + 1.6): box('feeder', (fx - 1.1, 0, gz + nz * 7.2 - .5), (fx + 1.1, 1.1, gz + nz * 7.2 + .5), 'concrete')
+        elif V.get('lever') == 'hay':
+            lever = {'x': x1 + 1.6, 'z': gz - nz * 3.0}
+            for i in range(3): cyl('hay', (x1 + 1.0 + i * .1, .7 + (i == 2) * 1.2, gz - nz * (1.2 - (i == 2) * .0) + (i == 1) * nz * -1.5), (x1 + 2.3 + i * .1, .7 + (i == 2) * 1.2, gz - nz * 1.2 + (i == 1) * nz * -1.5), .7, 'hay', 18)
+        PENS.append({'id': f'pen{k}', 'minX': x0 + 1.6, 'maxX': x1 - 1.6, 'minZ': z0 + 1.6, 'maxZ': z1 - 1.6, 'count': V['count']})
+        GATES.append({'id': f'pen{k}', 'kind': 'pen', 'x': cx, 'z': gz, 'axis': 'x', 'half': 2.5, 'n': [0, nz], 'lever': lever, 'strength': V['strength']})
+# Cover along the lane and round the farm: crate stacks to move between.
+for (x, z) in ((51, 26.5), (71, 33.5), (91.5, 25), (94, 36), (31, 12), (93, 50)):
+    box('crate', (x - .9, 0, z - .9), (x + .9, 1.7, z + .9), 'planks'); box('crate', (x + .9, 0, z - .6), (x + 2.1, 1.0, z + .6), 'planks')
 # The main exit: a barred gate across the road, opened by the lever in the gatehouse or broken by a herd at a run.
 GATES.append({'id': 'main', 'kind': 'main', 'x': 0, 'z': FZ0, 'axis': 'x', 'half': GATE[1], 'n': [0, -1], 'lever': {'x': -12.4, 'z': -56.4}, 'strength': 110})
 if 'cattle-race-panel' in MODLY:   # the race: solid generated panels (collision here, the models placed below)
@@ -736,7 +763,7 @@ for hx, hz, hr in HAY:
     emit('haypile', bm, 'hay', 'kit')
 
 POINTS = {
-    'spawn': {'x': 0, 'z': -78, 'yaw': 0}, 'cowSpawn': {'x': 16, 'z': 40, 'yaw': -math.pi / 2},
+    'spawn': {'x': FX1 + 9, 'z': 30, 'yaw': -math.pi / 2}, 'cowSpawn': {'x': 16, 'z': 40, 'yaw': -math.pi / 2},
     'exit': {'x': 0, 'z': -128, 'radius': 18}, 'gateZ': FZ0, 'pens': PENS, 'gates': GATES, 'bounds': [-150, 150, -340, 160],
     'pen': PEN, 'gate': {'x': 6, 'z': 34.5, 'half': 2.55}, 'lever': {'x': 5.2, 'z': 31.2},
     'escape': [[9, 34.5], [3, 34.5], [0, 27], [0, 12], [0, -3], [0, -30]],
@@ -744,17 +771,17 @@ POINTS = {
     'fence': FENCE, 'gateX': GATE,
     'patrols': [
         [[-20, -40], [20, -40], [20, -12], [-20, -12]],
-        [[32, 2], [96, 2], [96, 63.5], [32, 63.5]],
+        [[32, 2], [92, 2], [92, 63.5], [32, 63.5]],
         [[-12, -4], [12, -4]],
         [[-22, 8], [-2, 8], [-2, 33], [-22, 33]],
         [[8, 18], [24, 18]],
         [[3.2, 26], [3.2, 45]],
         [[-22, 41], [-9, 41]],
         [[-20, 57], [24, 57]],
-        [[37, 30], [92, 30]],
+        [[37, 30], [70, 30]],
         [[40, -22], [90, -22]],
         [[-11.6, -51], [-3, -51]],
-    ],
+    ] + EXTRA_PATROLS,
 }
 
 # ---------------------------------------------------------------------------------------------------- the gore pass

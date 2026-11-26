@@ -239,7 +239,7 @@ async function boot() {
     if (p.busy || p.climbing || p.airborne) return null;
     const near = Math.abs(p.y) < .2 ? farmers.nearest(p.x, p.z, 1.7) : null;
     if (near && (near.behind || near.unaware)) return { kind: 'takedown', label: 'TAKE DOWN', farmer: near.farmer };
-    { const g = world.leverNear(p.x, p.z, 2.4); if (g) return { kind: 'latch', label: g.kind === 'main' ? 'OPEN THE MAIN GATE' : 'PULL THE LEVER', gate: g }; }
+    { const g = world.leverNear(p.x, p.z, 2.4, p.y); if (g) return { kind: 'latch', label: g.kind === 'main' ? 'OPEN THE MAIN GATE' : 'PULL THE LEVER', gate: g }; }
     if (Math.hypot(p.x - cow.state.x, p.z - cow.state.z) < 2.9) return { kind: 'mount', label: 'RIDE' };
     if (herd.free) { const other = herd.nearest(p.x, p.z, 2.6); if (other) return { kind: 'mount', label: 'RIDE', swap: other }; }
     return near ? { kind: 'none', label: 'HE SEES YOU' } : null;
@@ -297,7 +297,7 @@ async function boot() {
   }
   function restart() { location.reload(); }
   $('cn-again').onclick = restart;
-  $('cn-enter').onclick = () => { $('cn-gate').hidden = true; phase = 'play'; stats.start = performance.now(); renderer.domElement.focus(); audio.start(); foot.enter(world.spawn.x, world.spawn.z, world.spawn.yaw); if (!touch.active) renderer.domElement.requestPointerLock?.(); say('FREE THE COWS: A RED LEVER BY EVERY PEN · THEN GET THEM OUT THE MAIN GATE', 6); };
+  $('cn-enter').onclick = () => { $('cn-gate').hidden = true; phase = 'play'; stats.start = performance.now(); renderer.domElement.focus(); audio.start(); foot.enter(world.spawn.x, world.spawn.z, world.spawn.yaw); if (!touch.active) renderer.domElement.requestPointerLock?.(); say('THE STAFF GATE IS OPEN · A RED LEVER FREES EACH PEN · GET THEM OUT THE MAIN GATE', 6); };
 
   // Camera. Riding: behind and above, swinging wider and lower with speed. On foot: an orbit you steer with the mouse,
   // pulled in when a wall is in the way. Both are shaken by impacts.
@@ -367,7 +367,7 @@ async function boot() {
   function objective(a) {
     const main = world.gates.find(g => g.kind === 'main'), free = herd.freeCount, tally = `${herd.penned} PENNED · ${free} FREE · ${herd.saved}/${herd.count} SAFE${herd.lost ? ` · ${herd.lost} LOST` : ''}`;
     if (!free && herd.penned) { let best = null, d = 1e9; for (const g of world.gates) if (!g.open && g.kind !== 'main') { const r = Math.hypot(g.lever.x - a.x, g.lever.z - a.z); if (r < d) { d = r; best = g; } }
-      if (best) return { at: [best.lever.x, 2.6, best.lever.z], text: `PULL A RED LEVER TO FREE A PEN · ${tally}` }; }
+      if (best) return { at: [best.lever.x, 2.6 + (best.lever.y || 0), best.lever.z], text: `PULL A RED LEVER TO FREE A PEN · ${tally}` }; }
     if (main && !main.open) return { at: [main.x, 3, main.z], text: `MAIN GATE: THE GATEHOUSE LEVER, OR A HERD CHARGE (F ON THE GATE) · ${tally}` };
     return { at: [world.exit.x, 3, world.exit.z], text: `LEAD THEM TO THE SAFE GROUND BEYOND THE GATE · ${tally}` };
   }
