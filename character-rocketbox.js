@@ -43,6 +43,57 @@
   const make=(kind)=>{const extra=kind==='opacity'?{map:map('opacity'),alphaTest:.45,side:T.DoubleSide}:{map:map(kind),normalMap:map(kind+'-n',false)};const m=GardenCharacterDetails.material(T,'#ffffff',extra);m.userData.shared=true;m.name='Rocketbox '+kind;return m;};
   const set=Object.fromEntries([...new Set(mesh.sections.map(s=>s.material))].map(kind=>[kind,make(kind)]));sets.set(key,set);return set;
  }
+ // Beyond Eden at night: the same textures on physical materials, so people read the baked night light by where they
+ // stand (eden-baked-light.js) like everything else there: dark in shadow, warm under a lamp. No self-lit floor; skin
+ // takes a soft wrap with a reddish terminator and a broad, faint sheen instead of plastic; clothes are matte, with a
+ // little dust low down and wear in the weave. Eden, the creator and the expedition keep the Lambert set above.
+ const NOISE=`float rbH(vec3 p){p=fract(p*.3183099+.1);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
+ float rbN(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(mix(rbH(i),rbH(i+vec3(1,0,0)),f.x),mix(rbH(i+vec3(0,1,0)),rbH(i+vec3(1,1,0)),f.x),f.y),mix(mix(rbH(i+vec3(0,0,1)),rbH(i+vec3(1,0,1)),f.x),mix(rbH(i+vec3(0,1,1)),rbH(i+vec3(1,1,1)),f.x),f.y),f.z);}
+ // Skin from the texel's colour (body textures hold skin and clothes together): warm, r>g>b, hue between red and khaki.
+ float rbSkin(vec3 c){vec3 s=sqrt(max(c,0.));float rb=s.r-s.b,hue=(s.g-s.b)/max(rb,1e-3);return smoothstep(.05,.12,rb)*step(s.b,s.g+.01)*step(s.g,s.r)*smoothstep(.08,.2,hue)*(1.-smoothstep(.55,.68,hue));}
+ float rbSkinW=0.;\n`;
+ const nightSets=new Map();
+ function nightMaterials(T,id,day){
+  if(nightSets.has(id))return nightSets.get(id);
+  const set={};
+  for(const [kind,d] of Object.entries(day)){
+   const hair=kind==='opacity',cloth=kind==='body';
+   const m=new T.MeshStandardMaterial({map:d.map,normalMap:d.normalMap||null,alphaTest:d.alphaTest,side:d.side,roughness:hair?.72:.88,metalness:0,envMapIntensity:.6});
+   if(m.normalMap)m.normalScale.setScalar(cloth?1.15:.85);
+   m.userData.shared=true;m.name='Rocketbox '+kind+' (night)';
+   m.onBeforeCompile=sh=>{
+    sh.vertexShader='varying vec3 vRbP;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvRbP=position;');
+    let pars=T.ShaderChunk.lights_physical_pars_fragment;
+    // Wrapped diffuse for skin only; the specular keeps the true angle.
+    const a='vec3 irradiance = dotNL * directLight.color;',b='reflectedLight.directDiffuse += irradiance *';
+    if(!hair&&pars.includes(a)&&pars.includes(b))pars=pars.replace(a,a+'\n\tfloat rbNL=dot( geometryNormal, directLight.direction );vec3 rbW=vec3(.5,.24,.16)*rbSkinW;vec3 rbIrr=clamp((rbNL+rbW)/(1.+rbW),0.,1.)*directLight.color;').replace(b,'reflectedLight.directDiffuse += rbIrr *');
+    sh.fragmentShader='varying vec3 vRbP;\n'+NOISE+sh.fragmentShader.replace('#include <lights_physical_pars_fragment>',pars)
+     .replace('#include <map_fragment>',`#include <map_fragment>
+      float rbSkinM=${hair?'0.':'rbSkin(diffuseColor.rgb)'},rbDirt=0.;
+      ${cloth?`{float n=rbN(vRbP*4.3)*.62+rbN(vRbP*13.)*.38,low=1.-smoothstep(.12,.85,vRbP.y);
+       rbDirt=clamp((n-.5)*1.5+low*(.35+.5*n),0.,1.)*(1.-rbSkinM);
+       diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.62,.56,.48)+vec3(.012,.01,.007),rbDirt*.7);
+       float wear=smoothstep(.62,.86,rbN(vRbP*31.))*(1.-rbSkinM);diffuseColor.rgb=mix(diffuseColor.rgb,vec3(dot(diffuseColor.rgb,vec3(.3,.59,.11))),wear*.22);}`:''}
+      rbSkinW=rbSkinM;`)
+     .replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
+      roughnessFactor=mix(roughnessFactor,.66,rbSkinM)+rbDirt*.07;`)
+     // Skin keeps a broad, faint sheen, not the plastic one a dielectric gets; hair cards take none (edge-on they flare white).
+     .replace('#include <lights_fragment_end>',`#include <lights_fragment_end>
+      {float rbSpec=${hair?'0.':'mix(1.,.45,rbSkinW)'};reflectedLight.directSpecular*=rbSpec;reflectedLight.indirectSpecular*=rbSpec;}`);
+   };
+   m.customProgramCacheKey=()=>'rocketbox-night-4-'+kind;
+   set[kind]=m;
+  }
+  // The matrix form-in (bots crystallising out of glyphs) patches what a body wears: the night set must carry it too.
+  if(root.edenMatrix)for(const m of new Set(Object.values(set)))if(m?.isMeshStandardMaterial)root.edenMatrix.patch(T,m,'form');
+  nightSets.set(id,set);return set;
+ }
+ // Which set a body draws with: night only in the main scene of the showroom while it is in Beyond Eden with its bake.
+ let oldEntry=null;
+ function nightNow(scene){
+  if(api.nightLook===false)return false;oldEntry??=!!root.document?.body?.classList.contains('expedition-entry');if(oldEntry)return false;
+  const main=root.breakThyRuleShowroom?.scene?.();return !!main&&scene===main&&(root.edenBaked?.nightStrength?.()||0)>0;
+ }
  const CHAIN={root:'spine03',spine03:'spine02',spine02:'spine01',spine01:'neck01',neck01:'head'};
  for(const s of 'LR')Object.assign(CHAIN,{['upperarm01.'+s]:'lowerarm01.'+s,['lowerarm01.'+s]:'wrist.'+s,['upperleg01.'+s]:'lowerleg01.'+s,['lowerleg01.'+s]:'foot.'+s,['foot.'+s]:'toes.'+s});
  // The sliders as per-bone changes: torso bones widen about the spine, limbs thicken about their own axis, arms and legs
@@ -91,10 +142,14 @@
   g.setAttribute('skinIndex',new T.Uint16BufferAttribute(mesh.joints,4));g.setAttribute('skinWeight',new T.BufferAttribute(mesh.weights,4));g.setIndex(new T.BufferAttribute(mesh.index,1));
   const set=materials(T,id,mesh),list=mesh.sections.map((s,i)=>{g.addGroup(s.start,s.count,i);return set[s.material];});
   const body=new T.SkinnedMesh(g,list);body.name='Character: '+id;body.frustumCulled=false;group.add(body);body.bind(skeleton,new T.Matrix4());parts.push(body);
+  // The set is picked as the body is drawn (it takes effect from the next frame): world changes happen behind a loading screen.
+  let night=false,nightList=null;
+  body.onBeforeRender=(renderer,scene)=>{const want=nightNow(scene);if(want===night)return;night=want;
+   if(want)nightList??=mesh.sections.map(s=>nightMaterials(T,id,set)[s.material]);body.material=want?nightList:list;};
   const mass=(Number.isFinite(a?.weight)?a.weight-72:0)/100;
   const blob=new T.Mesh(new T.PlaneGeometry(1,1).rotateX(-Math.PI/2),new T.MeshBasicMaterial({map:GardenCharacterDetails.blobTexture(T),transparent:true,depthWrite:false,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-2}));
   blob.name='Blob shadow';blob.position.y=.006;blob.scale.set(.62+mass*.25,1,.42+mass*.2);blob.renderOrder=-1;group.add(blob);parts.push(blob);
   return rig;
  }
- root.GardenCharacterRocketbox={buildRig,textureListeners,CATALOG,DEFAULT,idFor,load,build,loaded:id=>meshes.has(id),thumb:id=>BASE+id+'/thumb.webp?v='+VERSION};
+ const api=root.GardenCharacterRocketbox={nightLook:true,buildRig,textureListeners,CATALOG,DEFAULT,idFor,load,build,loaded:id=>meshes.has(id),thumb:id=>BASE+id+'/thumb.webp?v='+VERSION};
 })(typeof window==='object'?window:globalThis);

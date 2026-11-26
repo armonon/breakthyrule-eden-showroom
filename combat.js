@@ -589,6 +589,8 @@
   }
   // Beyond Eden's footage look (app.js bodycam): everything here that is only for it asks this.
   const real=()=>!!root.bodycam?.active?.();
+  // The post chain the body camera's look lives in (app.js window.edenPost): its barrel bend, weapon mask and hit jolt.
+  const lensPost=()=>o.post||root.edenPost||null;
   const shellDir=new T.Vector3(),bodyVel=new T.Vector3(),flatQ=new T.Quaternion(),shellE=new T.Euler();
   // What a surface gives back: bounce, grip and how loudly brass rings on it.
   const GIVE={earth:[.10,.35,.12],brick:[.36,.6,1],paving:[.42,.66,1],stone:[.46,.7,1.1],concrete:[.4,.64,1],asphalt:[.34,.55,.8],wet:[.08,.4,.1]};
@@ -664,7 +666,7 @@
   // Billboards in view space. vWorldY / vDepth give cheap "soft particles": the sprite fades where it meets the
   // ground plane under it and right in front of the camera, so smoke never shows a hard cut line.
   const FLIP_VERT='uniform float rot;varying vec2 vUv;varying float vWorldY,vDepth;void main(){vUv=uv*.98+.01;vec4 mv=modelViewMatrix*vec4(0.,0.,0.,1.);vec2 sc=vec2(length(modelMatrix[0].xyz),length(modelMatrix[1].xyz));float c=cos(rot),s=sin(rot);vec2 p=position.xy*sc;p=vec2(c*p.x-s*p.y,s*p.x+c*p.y);mv.xy+=p;vec3 right=vec3(viewMatrix[0][0],viewMatrix[1][0],viewMatrix[2][0]),up=vec3(viewMatrix[0][1],viewMatrix[1][1],viewMatrix[2][1]);vWorldY=(modelMatrix[3].xyz+right*p.x+up*p.y).y;vDepth=-mv.z;gl_Position=projectionMatrix*mv;}';
-  const FLIP_FRAG=`uniform sampler2D map;uniform float cols,frames,frame,opacity,glow,light,groundY,soft;uniform vec3 tint;varying vec2 vUv;varying float vWorldY,vDepth;
+  const FLIP_FRAG=`uniform sampler2D map;uniform float cols,frames,frame,opacity,glow,light,groundY,soft;uniform vec2 near;uniform vec3 tint;varying vec2 vUv;varying float vWorldY,vDepth;
    vec4 cell(float f){float c=mod(f,cols),r=floor(f/cols);return texture2D(map,(vec2(c,cols-1.-r)+vUv)/cols);}
    void main(){float f=clamp(frame,0.,frames-1.),f0=floor(f);vec4 a=mix(cell(f0),cell(min(f0+1.,frames-1.)),f-f0);
    #ifdef GLOW
@@ -672,7 +674,7 @@
    #else
     float lum=max(a.r,max(a.g,a.b));float fire=smoothstep(.45,.9,lum);float sun=mix(.72,1.12,smoothstep(.15,.85,vUv.y));
     vec3 col=a.rgb*mix(vec3(light*sun),vec3(1.),fire)*mix(tint,vec3(1.),fire);
-    float sf=smoothstep(0.,soft,vWorldY-groundY)*smoothstep(.25,1.4,vDepth);gl_FragColor=vec4(col,a.a*opacity*sf);
+    float sf=smoothstep(0.,soft,vWorldY-groundY)*smoothstep(near.x,near.y,vDepth);gl_FragColor=vec4(col,a.a*opacity*sf);
    #endif
    }`;
   function flipBook(name){
@@ -686,7 +688,7 @@
    let f=flips.find(x=>!x.alive&&x.name===name&&!!x.glowMesh===!!opts.glow);
    if(!f){
     if(poolsReady)return null;
-    const uni=()=>({map:{value:fb.tex},cols:{value:fb.cols},frames:{value:fb.frames},frame:{value:0},opacity:{value:1},glow:{value:1},light:{value:1},tint:{value:new T.Color(1,1,1)},rot:{value:0},groundY:{value:-99},soft:{value:.6}});
+    const uni=()=>({map:{value:fb.tex},cols:{value:fb.cols},frames:{value:fb.frames},frame:{value:0},opacity:{value:1},glow:{value:1},light:{value:1},tint:{value:new T.Color(1,1,1)},rot:{value:0},groundY:{value:-99},soft:{value:.6},near:{value:new T.Vector2(.25,1.4)}});
     const m=new T.Mesh(flipGeo,new T.ShaderMaterial({uniforms:uni(),vertexShader:FLIP_VERT,fragmentShader:FLIP_FRAG,transparent:true,depthWrite:false}));
     m.frustumCulled=false;m.renderOrder=2;m.userData.noHit=true;fxGroup.add(m);
     let gm=null;if(opts.glow){gm=new T.Mesh(flipGeo,new T.ShaderMaterial({uniforms:m.material.uniforms,vertexShader:FLIP_VERT,fragmentShader:FLIP_FRAG,defines:{GLOW:1},transparent:true,depthWrite:false,blending:T.AdditiveBlending}));gm.frustumCulled=false;gm.layers.set(GLOW);m.add(gm);}
@@ -695,7 +697,7 @@
    const u=f.mesh.material.uniforms;
    f.alive=true;f.t=-(opts.delay||0);f.life=opts.life;f.s0=opts.size[0];f.s1=opts.size[1];f.curve=opts.curve||1;f.loop=opts.loop||0;f.start=opts.start||0;
    f.a0=opts.alpha??1;f.fadeIn=opts.fadeIn||0;f.drag=opts.drag??.6;f.rise=opts.rise||0;f.spin=opts.spin||0;f.night=opts.night!==false;
-   f.vel.copy(opts.vel||effectZero);f.mesh.position.copy(opts.pos);u.rot.value=opts.rot??Math.random()*TAU;u.glow.value=opts.glowGain||0;u.groundY.value=opts.groundY??-99;u.soft.value=opts.soft??.6;if(Array.isArray(opts.tint))u.tint.value.setRGB(...opts.tint);else u.tint.value.set(opts.tint??0xffffff);
+   f.vel.copy(opts.vel||effectZero);f.mesh.position.copy(opts.pos);u.rot.value=opts.rot??Math.random()*TAU;u.glow.value=opts.glowGain||0;u.groundY.value=opts.groundY??-99;u.soft.value=opts.soft??.6;if(opts.near)u.near.value.fromArray(opts.near);else u.near.value.set(.25,1.4);if(Array.isArray(opts.tint))u.tint.value.setRGB(...opts.tint);else u.tint.value.set(opts.tint??0xffffff);
    f.mesh.visible=false;f.mesh.scale.setScalar(f.s0);return f;
   }
   function updateFlips(dt){
@@ -726,14 +728,18 @@
    if(!heat.length)return;
    if(!heatFX){
     const ft=new T.FramebufferTexture(4,4);
-    const mat=new T.ShaderMaterial({uniforms:{frame:{value:ft},res:{value:new T.Vector2()},time:{value:0},amount:{value:0}},transparent:true,depthWrite:false,depthTest:true,
+    // mask: the weapon drawn in front of the lens (Beyond Eden, eden-post overlayMask), in the picture's unbent coordinates:
+    // the haze is in the air beyond it, so it neither covers the weapon nor drags the weapon's pixels into the shimmer.
+    const mat=new T.ShaderMaterial({uniforms:{frame:{value:ft},res:{value:new T.Vector2()},time:{value:0},amount:{value:0},mask:{value:null},masked:{value:0},lens:{value:0},aspect:{value:1}},transparent:true,depthWrite:false,depthTest:true,
      vertexShader:'varying vec2 vUv;void main(){vUv=uv;vec4 mv=modelViewMatrix*vec4(0.,0.,0.,1.);mv.xy+=position.xy*vec2(length(modelMatrix[0].xyz),length(modelMatrix[1].xyz));gl_Position=projectionMatrix*mv;}',
-     fragmentShader:`uniform sampler2D frame;uniform vec2 res;uniform float time,amount;varying vec2 vUv;
+     fragmentShader:`uniform sampler2D frame,mask;uniform vec2 res;uniform float time,amount,masked,lens,aspect;varying vec2 vUv;
+      vec2 bend(vec2 v){vec2 q=(v-.5)*vec2(aspect,1.);return .5+(v-.5)*(1.-lens*(1.-dot(q,q)/(aspect*aspect*.25+.25)));}
+      float held(vec2 s){return masked>0.?clamp(texture2D(mask,bend(s)).a,0.,1.):0.;}
       float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
       float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
       void main(){vec2 c=vUv-.5;float m=smoothstep(.5,.1,length(c*vec2(1.,.8)));
        vec2 q=vUv*6.+vec2(0.,-time*2.2);vec2 d=vec2(n(q)-.5,n(q+7.3)-.5);
-       vec2 uv=gl_FragCoord.xy/res+d*amount*m*.035;gl_FragColor=vec4(texture2D(frame,uv).rgb,m*min(1.,amount*3.));}`});
+       vec2 s=gl_FragCoord.xy/res,uv=s+d*amount*m*.035;uv=mix(uv,s,held(uv));gl_FragColor=vec4(texture2D(frame,uv).rgb,m*min(1.,amount*3.)*(1.-held(s)));}`});
     const mesh=new T.Mesh(new T.PlaneGeometry(1,1),mat);mesh.frustumCulled=false;const sc=new T.Scene();sc.add(mesh);
     heatFX={ft,mat,mesh,scene:sc,size:new T.Vector2(),origin:new T.Vector2()};
    }
@@ -741,6 +747,7 @@
    if(heatFX.ft.image.width!==heatFX.size.x||heatFX.ft.image.height!==heatFX.size.y){heatFX.ft.dispose();heatFX.ft=new T.FramebufferTexture(heatFX.size.x,heatFX.size.y);heatFX.mat.uniforms.frame.value=heatFX.ft;}
    renderer.copyFramebufferToTexture(heatFX.ft,heatFX.origin);
    heatFX.mat.uniforms.res.value.copy(heatFX.size);heatFX.mat.uniforms.time.value=lastTime;
+   {const P=lensPost(),mask=P?.overlayMask?.()||null,u=heatFX.mat.uniforms;u.mask.value=mask;u.masked.value=mask?1:0;u.lens.value=mask?P.bend?.()||0:0;u.aspect.value=heatFX.size.x/heatFX.size.y;}
    const auto=renderer.autoClear;renderer.autoClear=false;
    for(const hz of heat){const k=hz.t/hz.life;heatFX.mesh.position.copy(hz.pos);heatFX.mesh.scale.setScalar(hz.size*(.8+k*.4));heatFX.mat.uniforms.amount.value=Math.sin(Math.min(1,k*4)*Math.PI/2)*(1-k);renderer.render(heatFX.scene,camera);}
    renderer.autoClear=auto;
@@ -1052,6 +1059,7 @@
    // Muzzle flash (view + world light), smoke
    state.flash=1;state.flashVariant=Math.floor(Math.random()*(tx.flashes?.length||1));state.flashRot=rand(0,TAU);state.flashScale=rand(.85,1.2);flashLight.position.copy(muzzleWorld);o.onMuzzleFlash?.(w.id);
    for(let i=0;i<(w.id==='pump'?2:1);i++)spawnFlip('wisp',{pos:muzzleWorld.clone().addScaledVector(forward,.05+i*.08),size:[w.id==='pump'?.22:.14,w.id==='pump'?.75:.45],life:rand(1.1,1.6),loop:28,start:rand(0,63),fadeIn:.06,alpha:w.id==='pump'?.5:.38,vel:forward.clone().multiplyScalar(rand(.5,1.2)).add(new T.Vector3(0,.12,0)),rise:.18,drag:1.6,spin:rand(-.4,.4),tint:0xd9d4cb});
+   barrelShot(w.id);
    (sfx[w.snd||w.id]||sfx.pistol)(isTrue);sfx.weight(w.id);
    // Recoil
    const recovery=RECOIL_RECOVERY[w.id]||RECOIL_RECOVERY.pistol;look.kickPitch.k=recovery[0];look.kickPitch.d=recovery[1];look.kickYaw.k=recovery[0]*1.15;look.kickYaw.d=recovery[1];look.fovPulse=Math.max(look.fovPulse||0,recovery[2]);
@@ -1068,6 +1076,27 @@
    if(w.id==='sniper'&&s.ammo>0)setTimeout(()=>{if(current?.id==='sniper'&&!state.sniper.action)startAction('bolt',.85);},260);
    if(w.id==='pump'){s.chamber=false;const quick=lerp(1,.72,adsBlend);if(s.ammo>0)setTimeout(()=>{if(current?.id==='pump'&&!state.pump.action)startAction('pump',.42*quick);},170*quick);}
    requestFrame();
+  }
+
+  // Body camera: after three or more quick shots the hot barrel smokes for a moment once you stop, a thin wisp off the muzzle
+  // that keeps your pace at first and then falls behind (not with reduced motion).
+  const hot={quick:0,last:-9,until:-9,next:0,k:0,span:1,id:null,seen:false},barrelAt=new T.Vector3(),barrelVel=new T.Vector3();
+  function barrelShot(id){
+   if(!real()||o.reduced||id==='axe'||id==='fists'||id==='c4'){hot.quick=0;return;}
+   hot.quick=lastTime-hot.last<.45&&hot.id===id?hot.quick+1:1;hot.last=lastTime;hot.id=id;
+   if(hot.quick>=3){hot.k=Math.min(1,.45+hot.quick*.06);hot.span=lerp(1.3,2.6,hot.k);hot.until=lastTime+hot.span;}
+  }
+  // Where the muzzle is on the picture, as a point in the world (taken while the frame is drawn, when the lens and the weapon
+  // are where the picture sees them; the next update spawns from it): the weapon camera has its own narrower lens, so its view-space
+  // position is spread out by the ratio of the two before it is placed in front of the body camera's lens.
+  function muzzleOnLens(out){const m=models[current.id];m.holder.updateMatrixWorld(true);m.parts.muzzle.getWorldPosition(out).applyQuaternion(free.view);
+   const k=Math.tan(camera.fov*Math.PI/360)/(camera.zoom||1)/Math.tan(viewCamera.fov*Math.PI/360);out.x*=k;out.y*=k;camera.localToWorld(out);return out;}
+  function updateBarrel(){
+   if(hot.until<=lastTime)return;
+   if(!armed||current?.id!==hot.id||!real()||o.reduced||!models[hot.id]?.parts?.muzzle){hot.until=-9;return;}
+   if(lastTime-hot.last<.12||lastTime<hot.next)return;hot.next=lastTime+.075;
+   if(!hot.seen)return;const left=(hot.until-lastTime)/hot.span;barrelVel.copy(bodyVel).multiplyScalar(.9);barrelVel.x+=rand(-.03,.03);barrelVel.y+=rand(.08,.16);barrelVel.z+=rand(-.03,.03);
+   spawnFlip('wisp',{pos:barrelAt,size:[.05,rand(.24,.34)],life:rand(1.1,1.6),loop:16,start:rand(0,63),fadeIn:.12,alpha:.9*hot.k*Math.min(1,left*1.6),vel:barrelVel,rise:.2,drag:.9,spin:rand(-.7,.7),tint:[2.3,2.25,2.2],near:[.04,.16],soft:.05});
   }
 
   function reload(){
@@ -1419,7 +1448,7 @@
    lastTime=time;
    if(!built)return;
    // Effects keep running even when holstered
-   updateParticles(dt);updateEmbers(dt);for(let i=heat.length-1;i>=0;i--){heat[i].t+=dt;heat[i].pos.y+=dt*.6;if(heat[i].t>=heat[i].life)heat.splice(i,1);}updateFlips(dt);updateShells(dt);updateCharges(dt);
+   updateParticles(dt);updateEmbers(dt);for(let i=heat.length-1;i>=0;i--){heat[i].t+=dt;heat[i].pos.y+=dt*.6;if(heat[i].t>=heat[i].life)heat.splice(i,1);}updateBarrel();updateFlips(dt);updateShells(dt);updateCharges(dt);
    for(const tr of tracers){if(!tr.alive)continue;tr.t+=dt;tr.mesh.material.opacity=1-tr.t/tr.life;if(tr.t>=tr.life){tr.alive=false;tr.mesh.visible=false;}}
    for(let i=debris.length-1;i>=0;i--){const d=debris[i];d.t+=dt;const k=d.t/d.life;if(d.ring){d.mesh.scale.setScalar(1+k*9);d.mesh.material.opacity=.5*(1-k);}if(k>=1){d.mesh.parent?.remove(d.mesh);debris.splice(i,1);}}
    for(const d of decals){const age=time-d.userData.born;if(age>d.userData.life-2)d.material.opacity=Math.max(0,(d.userData.life-age)/2);if(age>d.userData.life)d.visible=false;}
@@ -1546,13 +1575,16 @@
    const now=performance.now(),k=lightAt?1-Math.exp(-Math.min(.2,(now-lightAt)/1000)*7):1;lightAt=now;
    for(const n of ['sky','ground','key','rim'])lightNow[n].lerp(lightTo[n],k);for(const n of ['keyDir','rimDir'])lightNow[n].lerp(lightTo[n],k);lightNow.env+=(lightTo.env-lightNow.env)*k;
    // Not the lens's own turn: the weapon moves inside the frame, and light does not turn with it.
-   viewQ.copy(camera.quaternion).invert();
+   // The view scene is the camera's frame turned by the free aim (viewCamera looks along free.view): undo both, so a lamp stays
+   // where it is in the world as the weapon swings inside the frame, and its highlight slides along the slide as it should.
+   viewQ.copy(camera.quaternion).multiply(free.view).invert();
    viewHemi.color.copy(lightNow.sky);viewHemi.groundColor.copy(lightNow.ground);viewHemi.position.set(0,1,0).applyQuaternion(viewQ);viewHemi.intensity=1;
    sunView.position.copy(lightNow.keyDir).normalize().applyQuaternion(viewQ);sunView.target.position.set(0,0,0);sunView.color.copy(lightNow.key);sunView.intensity=1;
    viewRim.position.copy(lightNow.rimDir).normalize().applyQuaternion(viewQ);viewRim.color.copy(lightNow.rim);viewRim.intensity=1;viewScene.environmentIntensity=lightNow.env;dimStudio(lightNow.env);
    return true;
   }
   // Drawn by the post chain in front of the lens (Beyond Eden), or straight onto the finished picture.
+  const keyView=new T.Vector3(),keyBlack=new T.Color(0,0,0);
   const viewHidden=()=>!built||!armed||current?.id==='fists'||scoped||(o.thirdPerson?.()||0)>.35||handsBusy&&equipBlend<.04;
   function renderOverlay(){if(viewHidden())return false;renderViewmodel(true);return true;}
   function renderViewmodel(target=false){
@@ -1565,11 +1597,12 @@
    const night=clamp(-(camera.position.z+11)/30,0,1);if(!lit){viewHemi.position.set(0,1,0);sunView.color.setHex(0xfff0d0);viewHemi.color.setHex(0xe6f2ff);viewHemi.groundColor.setHex(0x4a4a32);viewRim.color.setHex(0xbfd6ff);viewRim.position.set(-1,.5,1);sunView.intensity=lerp(2.6,.5,night);viewScene.environmentIntensity=lerp(1,.12,night);if(viewRim)viewRim.intensity=lerp(.8,.16,night);if(viewHemi)viewHemi.intensity=lerp(.9,.12,night);}
    // Muzzle flash sprite rendered in view space
    ensureViewFlash();
+   if(hot.until>lastTime&&current?.id===hot.id&&models[hot.id]?.parts?.muzzle){muzzleOnLens(barrelAt);hot.seen=true;}else hot.seen=false;
    const fl=viewScene.userData.flash,fll=viewScene.userData.flashLight;
    const fa=state.flash||0;fl.visible=fa>.05&&current&&current.id!=='axe'&&current.id!=='fists'&&current.id!=='c4';
    if(fl.visible){models[current.id].holder.updateMatrixWorld(true);models[current.id].parts.muzzle.getWorldPosition(fl.position);const s=(current.id==='pump'?.32:.2)*(.7+fa*.5)*(state.flashScale||1);fl.scale.set(s,s,s);if(tx.flashes)fl.material.map=tx.flashes[state.flashVariant||0];fl.material.rotation=state.flashRot||0;fl.material.opacity=Math.min(1,fa*1.4);fll.position.copy(fl.position);}
    fll.intensity=fa*fa*3;
-   const auto=renderer.autoClear;renderer.autoClear=false;if(!target)renderer.clearDepth();const exposure=renderer.toneMappingExposure;renderer.toneMappingExposure=lit?exposure:exposure*lerp(1,.5,night);renderer.render(viewScene,viewCamera);renderer.toneMappingExposure=exposure;renderer.autoClear=auto;
+   const auto=renderer.autoClear;renderer.autoClear=false;if(!target)renderer.clearDepth();const exposure=renderer.toneMappingExposure;renderer.toneMappingExposure=lit?exposure:exposure*lerp(1,.5,night);armsRig?.setLook?.(real()?1:0);if(armsRig?.setKey){viewCamera.updateMatrixWorld();keyView.copy(sunView.position).normalize().transformDirection(viewCamera.matrixWorldInverse);armsRig.setKey(keyView,lit?sunView.color:keyBlack);}try{renderer.render(viewScene,viewCamera);}finally{armsRig?.setLook?.(0);}renderer.toneMappingExposure=exposure;renderer.autoClear=auto;
   }
 
   /* ------------------------------------------------------------ bloom + lens flares (shot effects only) */
@@ -1612,14 +1645,17 @@
       r+=ca(ho,dir,k*2.)*hw*vec3(.85,.9,1.)*.12*edge(ho);
       gl_FragColor=vec4(r,1.);}`});
    const lens=lensTextures();
-   const comp=new T.ShaderMaterial({uniforms:{a:{value:null},b:{value:null},g:{value:null},dirt:{value:lens.dirt},star:{value:lens.star},starRot:{value:0},aspect:{value:1},strength:{value:1},flare:{value:1}},vertexShader:vert,transparent:true,depthTest:false,depthWrite:false,blending:T.AdditiveBlending,
-    fragmentShader:`uniform sampler2D a,b,g,dirt,star;uniform float starRot,aspect,strength,flare;varying vec2 vUv;
+   const comp=new T.ShaderMaterial({uniforms:{a:{value:null},b:{value:null},g:{value:null},dirt:{value:lens.dirt},star:{value:lens.star},starRot:{value:0},aspect:{value:1},strength:{value:1},flare:{value:1},bend:{value:0}},vertexShader:vert,transparent:true,depthTest:false,depthWrite:false,blending:T.AdditiveBlending,
+    fragmentShader:`uniform sampler2D a,b,g,dirt,star;uniform float starRot,aspect,strength,flare,bend;varying vec2 vUv;
      void main(){
-      vec3 bloom=texture2D(a,vUv).rgb*1.1+texture2D(b,vUv).rgb*1.7;
+      // Drawn over the finished picture: look the glow up through the same barrel bend (eden-post finish) so it sits on the
+      // muzzle it came from. The dirt and the starburst are on the glass and stay put.
+      vec2 q=(vUv-.5)*vec2(aspect,1.),at=.5+(vUv-.5)*(1.-bend*(1.-dot(q,q)/(aspect*aspect*.25+.25)));
+      vec3 bloom=texture2D(a,at).rgb*1.1+texture2D(b,at).rgb*1.7;
       float d=texture2D(dirt,vUv).r;
       vec2 s=(vUv-.5)*vec2(aspect,1.);float cs=cos(starRot),sn=sin(starRot);s=vec2(cs*s.x-sn*s.y,sn*s.x+cs*s.y)*.9+.5;
       float st=texture2D(star,s).r;
-      vec3 ghosts=texture2D(g,vUv).rgb*flare;
+      vec3 ghosts=texture2D(g,at).rgb*flare;
       vec3 c=bloom+bloom*d*1.1+ghosts*(d*1.6+.3)+min(bloom,vec3(3.))*st*.18;
       c*=strength;c=1.-exp(-c);gl_FragColor=vec4(c,1.);}`});
    const quadScene=new T.Scene(),quad=new T.Mesh(quadGeo,blur);quad.frustumCulled=false;quadScene.add(quad);
@@ -1656,7 +1692,7 @@
    renderer.setRenderTarget(post.e);renderer.render(post.quadScene,post.cam);pass(post.e,post.c,1.5,0);pass(post.c,post.e,0,1.5);
    // 4. Composite: bloom + lens dirt + ghosts lit by a diffraction starburst that turns with the view.
    const u=post.comp.uniforms;u.a.value=post.a.texture;u.b.value=post.d.texture;u.g.value=post.e.texture;u.aspect.value=post.size.x/post.size.y;
-   u.starRot.value=yaw*.8+pitch*.5;u.strength.value=lerp(.95,.65,clamp(state.blast||0,0,1));u.flare.value=1;
+   u.starRot.value=yaw*.8+pitch*.5;u.strength.value=lerp(.95,.65,clamp(state.blast||0,0,1));u.flare.value=1;u.bend.value=lensPost()?.bend?.()||0;
    renderer.setRenderTarget(prevTarget);renderer.render(post.overlay,post.cam);
    renderer.setClearColor(post.clear,clearAlpha);renderer.autoClear=auto;
   }
@@ -1677,6 +1713,9 @@
    // Shot while aiming down the sights: the sights get knocked off target (flank people who are scoped in).
    const flinch=1+adsBlend*(ZOOM[current?.id]>3?2.2:1.2);
    hud.hurt(.35+amount/40,ang);look.kickPitch.kick((amount*.055+.15)*flinch);if(adsBlend>.2)look.kickYaw.kick(rand(-1,1)*amount*.05*adsBlend);look.kickYaw.kick(rand(-1,1)*amount*.035+Math.sin(ang)*amount*.02);look.shake=Math.max(look.shake,Math.min(.75,.18+amount/45));sfx.hurt(amount);if(amount>=18)o.hitStop?.(Math.min(140,40+amount*2));
+   // Body camera: a hard hit from someone close (a blow, a tackle, a point-blank shot) knocks the picture out of sync for a
+   // few frames. Not the zone's burn (no one struck you), not with reduced motion.
+   if(fromPos&&real()&&!o.reduced){const near=1-clamp((fromPos.distanceTo(camera.position)-2.5)/4,0,1),k=clamp((amount-10)/30,0,1)*(.45+.55*near);if(amount>=14&&(near>0||amount>=30))lensPost()?.jolt?.(Math.max(.35,k));}
   }
   const arsenalApi={
    set(a){build();if(!a){arsenal=null;resetState();hud.el.classList.remove('empty');if(!armed)hud.el.classList.remove('on');hud.update();return;}
@@ -1728,7 +1767,7 @@
    busy:()=>armed||(built&&(glowActive()||embers.length||heat.length||flips.some(f=>f.alive)||particles.some(p=>p.alive)||chipList.some(c=>c.alive)||shells.some(s=>s.mesh.visible&&(s.real?!s.rest:s.bounces<4))||charges.some(c=>!c.done)||targets.some(t=>Math.abs(t.swing.v)>.001||Math.abs(t.swing.x)>.001||t.down)||debris.length||tracers.some(t=>t.alive)||(state.blast||0)>0)),
    blocks(p){for(const t of targets){const q=t.root.position;if(t.kind==='plate'?Math.abs(p.x-q.x)<.62&&Math.abs(p.z-q.z)<.25:Math.hypot(p.x-q.x,p.z-q.z)<t.radius)return true;}return false;},
    inspect:()=>({audio:recorded?.inspect(),pools:{ready:poolsReady,particles:particles.length,tracers:tracers.length,shells:shells.length,decals:decals.length,flips:flips.length},aimAssist:window.edenSettings?.get('aimAssist')||'high',wallPull,action:current?state[current.id]?.action?.name||null:null,built,armed,locked,weapon:current?.id||null,ammo:current?state[current.id].ammo:null,focus:current?state[current.id].focus:0,charges:charges.filter(c=>!c.done).length,stats:{...stats},targets:targets.length,particles:particles.filter(p=>p.alive).length}),
-   _debug:{shells:()=>shells,chips:()=>chipList,look:(dx,dy)=>{freeLook(dx,dy);requestFrame();},startAudioCapture:()=>recorded?.startCapture(),stopAudioCapture:()=>recorded?.stopCapture(),explodeAt:(x,z)=>{const g=new T.Group();g.position.set(x,groundAt(x,z)+.05,z);world.add(g);state.blastSeen=1;explode({group:g});},viewScene:()=>viewScene,fire:()=>{if(current)fire();},state,models,setButtons:b=>Object.assign(buttons,b),setLocked:v=>{locked=v;},detonate:()=>detonate(),reload:()=>{const l=locked;locked=true;reload();locked=l;}}
+   _debug:{shells:()=>shells,flips:()=>flips,barrel:()=>({...hot}),chips:()=>chipList,look:(dx,dy)=>{freeLook(dx,dy);requestFrame();},startAudioCapture:()=>recorded?.startCapture(),stopAudioCapture:()=>recorded?.stopCapture(),explodeAt:(x,z)=>{const g=new T.Group();g.position.set(x,groundAt(x,z)+.05,z);world.add(g);state.blastSeen=1;explode({group:g});},viewScene:()=>viewScene,fire:()=>{if(current)fire();},state,models,setButtons:b=>Object.assign(buttons,b),setLocked:v=>{locked=v;},detonate:()=>detonate(),reload:()=>{const l=locked;locked=true;reload();locked=l;}}
   };
  }
  root.createCombat=createCombat;

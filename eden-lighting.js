@@ -5,6 +5,12 @@ window.createEdenLighting=function(T,renderer,scene,{sun,hemi,camera,mobile=fals
  let disposed=false;const lifetime=new AbortController();
  const original={hemi:hemi.intensity,mapSize:sun.shadow.mapSize.x,frustum:(({left,right,top,bottom,near,far})=>({left,right,top,bottom,near,far}))(sun.shadow.camera),position:sun.position.clone()};
  const settings={environment:true,followShadow:true,hemi:.6,strength:.7};
+ // Shadow maps redraw only on request (renderer.shadowMap.needsUpdate). The night district's lamp shadows want theirs every
+ // frame (shadowMap.lampUpdate, night-district.js); the sun's (the moon's) map then still redraws only when it was asked
+ // for, as before, instead of with every lamp frame.
+ {const map=renderer.shadowMap;let wants=!!map.needsUpdate,lamps=false;sun.shadow.autoUpdate=false;sun.shadow.needsUpdate=true;
+  Object.defineProperty(map,'needsUpdate',{configurable:true,get:()=>wants||lamps,set(v){wants=!!v;if(v)sun.shadow.needsUpdate=true;else lamps=false;}});
+  Object.defineProperty(map,'lampUpdate',{configurable:true,get:()=>lamps,set(v){lamps=!!v;}});}
  // Shadow re-renders are the uneven frames while walking: the map now follows in 2.5 m steps (it was 0.5 m, and small
 // camera turns crossed that), over a slightly larger area so coverage near the player is unchanged, and never more
 // often than every 120 ms. That is about a fifth of the shadow passes.
