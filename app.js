@@ -382,9 +382,16 @@ let roadCaption='';
 // turning, sensor noise that rises in the dark, compression blocks, and the clip of a muzzle flash. Low has no post pass
 // at all, so there it is only the chest-mounted view and free aim (camera-sway.js, combat.js).
 const BODYCAM={low:{lens:0,chroma:0,air:0,grade:0,turnBlur:0,sensor:0,block:0,flashClip:0},
- medium:{haze:.45,lens:.045,chroma:.0016,air:1,grade:1,bloom:.42,bloomThreshold:.72,grain:.04,aoRadius:1.1,exposure:1.3,exposureUp:2.6,exposureDown:.8,exposureAuto:.3,exposureKey:.16,exposureMin:.72,exposureMax:1.9,turnBlur:.55,sensor:.03,block:.4,flashClip:.8},
- high:{haze:.5,lens:.06,chroma:.0022,air:1,grade:1,bloom:.5,bloomThreshold:.7,grain:.04,aoRadius:1.2,exposure:1.3,exposureUp:2.6,exposureDown:.8,exposureAuto:.3,exposureKey:.16,exposureMin:.72,exposureMax:1.9,turnBlur:.7,sensor:.036,block:.5,flashClip:1}};BODYCAM.photo=BODYCAM.high;
-const BODYCAM_OFF={lens:0,chroma:0,air:0,grade:0,aoRadius:.7,bloomThreshold:.9,exposureUp:.7,exposureDown:.7,exposureAuto:0,exposureKey:.18,exposureMin:.55,exposureMax:1.6,turnBlur:0,sensor:0,block:0,flashClip:0};
+ medium:{haze:.45,lens:.045,chroma:.0016,air:1,cones:1,grade:1,bloom:.42,bloomThreshold:.72,grain:.04,aoRadius:1.1,exposure:1.3,exposureUp:2.2,exposureDown:.8,exposureAuto:.38,exposureKey:.16,exposureMin:.72,exposureMax:2.3,exposureScene:18,turnBlur:.55,sensor:.03,block:.4,flashClip:.8},
+ high:{haze:.5,lens:.06,chroma:.0022,air:1,cones:1,grade:1,bloom:.5,bloomThreshold:.7,grain:.04,aoRadius:1.2,exposure:1.3,exposureUp:2.2,exposureDown:.8,exposureAuto:.38,exposureKey:.16,exposureMin:.72,exposureMax:2.3,exposureScene:18,turnBlur:.7,sensor:.036,block:.5,flashClip:1}};BODYCAM.photo=BODYCAM.high;
+// The night as this camera sees it (eden-baked-light.js tune): a moonlit sky floor so shapes read about 10 m into an unlit
+// lane, a soft roll-off of bright baked light, and lamps that are small sources rather than points (no white wall a metre
+// from a lamp). Every quality level; the expedition page never sets it.
+const BODYCAM_NIGHT={floor:.012,knee:.35,near:.6};
+// Live shadows from the lamps nearest you (night-district.js): desktop High only. Decided by the graphics setting alone,
+// never per frame or per world, since the number of shadowed lights is part of every material's program.
+const LAMP_SHADOWS=2;
+const BODYCAM_OFF={lens:0,chroma:0,air:0,cones:0,grade:0,aoRadius:.7,bloomThreshold:.9,exposureUp:.7,exposureDown:.7,exposureAuto:0,exposureKey:.18,exposureMin:.55,exposureMax:1.6,exposureScene:0,turnBlur:0,sensor:0,block:0,flashClip:0};
 // Body-camera switches. The chest-mounted view and free aim apply in Beyond Eden on foot in first person (not in the
 // expedition, a pocket world or the online arena). Free aim is the setting `bodycamAim` (window.edenSettings, on unless
 // set to false): off, the weapon stays centred and the crosshair returns. `chest` is a debug switch for the view alone.
@@ -420,7 +427,9 @@ let interiorGrade=false;
 function updateRealism(){const pocket=pockets?.inside(camera.position)||null,inside=!!pocket;
  // Room acoustics follow where you are: the white world, the museum's halls, stone interiors, the night courtyard, open air.
  window.edenAcoustics?.setSpace(pocket?(pocket.name==='Black box'?'blackbox':pocket.name==='Museum'?'museum':'stone'):garden.nightBuilt()&&garden.pyramid?.gathering?.inspect?.().inside?'stone':camera.position.z<-21?'courtyard':'garden');
- const beyond=!inside&&worlds?.world()==='beyond';bodyLight.update(beyond&&!expedition?.active());const key=graphics+(inside?'i':'o')+(beyond?'b':'')+state.view;if(key===realismShown)return;realismShown=key;const B=BODYCAM[graphics]||BODYCAM.low;post.set(beyond?B:{...BODYCAM_OFF,haze:GRAPHICS[graphics].haze,bloom:GRAPHICS[graphics].bloom,grain:photoreal?.active?.022:.028});
+ const beyond=!inside&&worlds?.world()==='beyond';bodyLight.update(beyond&&!expedition?.active());
+ const lampShadows=!mobileDevice&&(graphics==='high'||graphics==='photo')?LAMP_SHADOWS:0;window.edenLampShadows=lampShadows;if(garden.nightBuilt())garden.district.setLampShadows?.(lampShadows);
+ const key=graphics+(inside?'i':'o')+(beyond?'b':'')+state.view;if(key===realismShown)return;realismShown=key;window.edenBaked?.tune?.(beyond?BODYCAM_NIGHT:{});const B=BODYCAM[graphics]||BODYCAM.low;post.set(beyond?B:{...BODYCAM_OFF,haze:GRAPHICS[graphics].haze,bloom:GRAPHICS[graphics].bloom,grain:photoreal?.active?.022:.028});
  // Slow frames may have switched eye adaptation and blur off (postSteps); the body camera does not switch them back on. Reduced motion: no blur.
  post.set(postStep>0?{exposure:0,turnBlur:0,haze:0}:beyond?(reduced?{turnBlur:0}:{}):{exposure:GRAPHICS[graphics].exposure});post.set({clouds:inside?0:realism.clouds,dof:state.view!=='free'&&state.view!=='spawn'?realism.dof:0});}
 function updateGrade(){const inside=!!pockets?.inside(camera.position);if(!inside)renderer.toneMappingExposure=worlds?.world()==='beyond'?2.25:photoreal?.level==='full'?1.8:photoreal?.active?1.65:1.5;if(inside===interiorGrade)return;interiorGrade=inside;renderer.toneMapping=inside?T.NeutralToneMapping:T.AgXToneMapping;renderer.toneMappingExposure=inside?.9:1.5;post.set({lut:inside?0:1});}

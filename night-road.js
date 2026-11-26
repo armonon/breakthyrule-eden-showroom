@@ -2,7 +2,7 @@
 window.createNightRoad=function(T,scene,{sections,roadX,roadStart,nightStart=roadStart,roadLength,clearingStart=-Infinity,district,sky,bark,forest,roadMaterial,vergeMaterial,clouds,mobile}){
  // The expedition's own page keeps the night it was built with.
  const old=!!document.body?.classList.contains('expedition-entry');
- const smooth=T.MathUtils.smoothstep,parts=[],lights=scene.children.filter(o=>o.isLight&&!o.userData.bodyLight).map(light=>({light,intensity:light.intensity,color:light.color.clone(),ground:light.groundColor?.clone()}));
+ const smooth=T.MathUtils.smoothstep,parts=[],lights=scene.children.filter(o=>o.isLight&&!o.userData.bodyLight&&!o.userData.nightLamp).map(light=>({light,intensity:light.intensity,color:light.color.clone(),ground:light.groundColor?.clone()}));
  const originalFog=scene.fog.color.clone(),nightFog=new T.Color(old?0x07110d:0x0a0d12),originalRoad=roadMaterial.color.clone(),originalVerge=vergeMaterial.color.clone();
  const moonColor=new T.Color(old?0x9fc9c4:0xa8bcd8),moonGround=new T.Color(old?0x0c1a13:0x10141a),nightRoadColor=new T.Color(old?0x909f97:0x97999c),nightVerge=new T.Color(old?0x60775a:0x62685c);
  const dummy=new T.Object3D(),leafTint=new T.Color();
@@ -53,7 +53,8 @@ window.createNightRoad=function(T,scene,{sections,roadX,roadStart,nightStart=roa
   // Where the night bake is in force (eden-baked-light.js) it replaces the hemisphere light on every standard surface with
   // far darker measured sky light; what is left of the hemisphere lights the characters and the land beyond the bake, and
   // comes down with it so they do not glow against the baked dark.
-  const skyFill=.8-.45*(window.edenBaked?.nightStrength()||0);
+  // (The showroom keeps a little more of it than the expedition page, so a figure in an unlit lane still reads as a shape.)
+  const skyFill=.8-(old?.45:.36)*(window.edenBaked?.nightStrength()||0);
   for(const state of lights){const l=state.light;l.color.copy(state.color).lerp(moonColor,amount);l.intensity=T.MathUtils.lerp(state.intensity,l.isHemisphereLight?skyFill:state.intensity>1?(old?1.5:2.1):.34,amount);if(state.ground)l.groundColor.copy(state.ground).lerp(moonGround,amount);}
   roadMaterial.color.copy(originalRoad).lerp(nightRoadColor,amount);vergeMaterial.color.copy(originalVerge).lerp(nightVerge,amount);
   clouds.forEach(cloud=>{cloud.material.opacity=.65*(1-amount);});stars.material.opacity=matrixSky?0:amount*.8;
