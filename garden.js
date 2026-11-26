@@ -197,17 +197,28 @@ float lawnNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mi
  const nightNear=p=>p.z<doorZ+6;
  function buildNight(all=false){nightSteps??=[...nightBuilders];while(nightSteps.length){nightSteps.shift()();if(!all)break;}}
  const nightBuilt=()=>!!nightRoad;
+  function limit(position,previous,feet,body){
+  if(previous.z< -20){if(position.z< -111)pyramid.constrain(position);else{const width=T.MathUtils.lerp(2.7,90,T.MathUtils.smoothstep(-position.z,20,30));position.x=T.MathUtils.clamp(position.x,roadX-width,roadX+width);}}
+  else{position.x=T.MathUtils.clamp(position.x,-20,20);if(position.z< -20&&Math.abs(position.x-roadX)>2.7)position.z=-20;}
+  if((!body&&district?.blocks(position,feet))||pyramid?.blocks(position)||skybox.blocks(position,previous))position.copy(previous);
+  if(position.z>26&&!window.edenValley.reaches(position.x,position.z)){if(previous.z>26)position.copy(previous);else position.z=26;}
+ }
  return {snake,skybox,get castle(){return castle;},get worldProps(){return worldProps;},get altar(){return altar;},setAltar,gardenModels,get nightRoad(){return nightRoad;},get pyramid(){buildNight(true);return pyramid;},get district(){buildNight(true);return district;},nightBuilt,
   // prewarm.js: one Beyond Eden build step per call, in idle time, so its lights exist before its shaders compile.
   warmNight(){buildNight();return !!nightSteps&&!nightSteps.length;},
   ready:Promise.allSettled(assetJobs),constrain(position,previous,feet=null,body=null){
   if(position.z< -12&&!nightBuilt())buildNight(true);
-  if(previous.z< -20){if(position.z< -111)pyramid.constrain(position);else{const width=T.MathUtils.lerp(2.7,90,T.MathUtils.smoothstep(-position.z,20,30));position.x=T.MathUtils.clamp(position.x,roadX-width,roadX+width);}}
-  else{position.x=T.MathUtils.clamp(position.x,-20,20);if(position.z< -20&&Math.abs(position.x-roadX)>2.7)position.z=-20;}
-  if((!body&&district?.blocks(position,feet))||pyramid?.blocks(position)||skybox.blocks(position,previous))position.copy(previous);
-  if(position.z>26&&!window.edenValley.reaches(position.x,position.z)){if(previous.z>26)position.copy(previous);else position.z=26;}
+  // An edge stops you or lets you slide along it; it never moves you further than the step you took. Where two limits
+  // meet out of line (the district's sides and the pyramid clearing's, at z = -111), clamping alone threw a runner
+  // metres sideways each time they crossed it, which read as being dragged back.
+  const want=position.clone(),step=Math.hypot(want.x-previous.x,want.z-previous.z);limit(position,previous,feet,body);
+  if(Math.hypot(position.x-want.x,position.z-want.z)>step+.05){
+   const tries=[[want.x,previous.z],[previous.x,want.z]].map(([x,z])=>{const c=want.clone().set(x,want.y,z);limit(c,previous,feet,body);return {c,err:Math.hypot(c.x-x,c.z-z)};}).filter(t=>t.err<.05).sort((a,b)=>Math.hypot(b.c.x-previous.x,b.c.z-previous.z)-Math.hypot(a.c.x-previous.x,a.c.z-previous.z));
+   position.copy(tries[0]?.c||previous);
+  }
   return position;
- },road:{x:roadX,start:roadStart,end:roadEnd,door:skybox.door.z,inspect:()=>({first:roadFirst,sections:roadSections.length,near:roadStart-roadFirst*roadLength,far:Math.max(roadEnd,roadStart-(roadFirst+roadSections.length)*roadLength)})},update(time,viewer,active=true){
+ },
+ road:{x:roadX,start:roadStart,end:roadEnd,door:skybox.door.z,inspect:()=>({first:roadFirst,sections:roadSections.length,near:roadStart-roadFirst*roadLength,far:Math.max(roadEnd,roadStart-(roadFirst+roadSections.length)*roadLength)})},update(time,viewer,active=true){
   if(viewer){lastViewer=viewer;if(gardenModels){if(viewer.position.z>-30)gardenModels.update(viewer);else gardenModels.clear();}if(worldProps&&viewer.position.z>-8)worldProps.clear();if(activeGrass.update(viewer.position))onChange();flora.setVisible(viewer.position.z>-45);flora.lod(viewer.position,viewer);if(!nightBuilt()&&(nightSteps||nightNear(viewer.position))){buildNight();onChange();}updateRoad(viewer.position);sky.position.copy(viewer.position);skyMoving=skybox.update(time,viewer,Math.min(.05,Math.max(0,time-lastTime)));lastTime=time;snake.update(time,viewer,active);if(nightBuilt()){const near=nightNear(viewer.position);nightRoad.setEnabled(near);district.root.visible=near;nightRoad.update(time,viewer,active);pyramid.update(viewer,time);if(near){district.update(time,viewer,nightRoad.amount);castle?.update(viewer);altar?.update(time);worldProps?.update(viewer);}}}
   if(reduced)return;wind.value=time;flora.update(time);waterUniforms.time.value=time;dust.rotation.y=Math.sin(time*.025)*.07;
  },get animating(){return skyMoving;},foliage:flora.leaves,flora,sky,get grassMesh(){return activeGrass.mesh;},pond:{water,lilies,time:waterUniforms.time,bed:groundLitter},stones,stoneSpots,
