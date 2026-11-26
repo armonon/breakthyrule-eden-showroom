@@ -376,7 +376,7 @@
   }
   const aimList=[];
   function damage(target,amount,attacker,meta={}){
-   if(!target?.alive||phase==='ended')return {killed:false};
+   if(!active||!target?.alive||phase==='ended')return {killed:false};
    if(phase==='countdown')return {killed:false};
    if(!target.bot&&godMode)return {killed:false};
    if(target===player&&clock<(player.protectUntil||0))return {killed:false};
@@ -752,7 +752,7 @@
      const un=untilNight(),mm=x=>`${Math.floor(x/60)}:${String(Math.floor(x)%60).padStart(2,'0')}`;
      const open=templeOpen(),inT=pages.filter(pg=>pg.state==='delivered').length,mine=player?pagesOf(player):0;
      text('.ar-zone',(open?`MOON TEMPLE OPEN · CLOSES IN ${mm(Math.max(0,-un))}`:`TEMPLE OPENS IN ${mm(un)}`)+(event?.kind==='supply'?` · ${event.label}`:'')+(window.edenStory?.has('pages')&&!window.edenStory.has('office')?' · THE OFFICE IS OPEN: THE PYRAMID':''));
-     html('.ar-pages',Array.from({length:PAGE_COUNT},(_,k)=>`<i class="pg ${k<inT?'delivered':k<inT+mine?'carried mine':'home'}"></i>`).join('')+`<span>${mine?`<b>${mine}</b> CARRIED · `:''}${inT}/${PAGE_COUNT} IN THE TEMPLE · ${pages.filter(pg=>pg.state==='home'||pg.state==='loose').length} ON THE MAP${pinged&&clock<pingUntil?` · <em>${pinged===player?'YOU ARE':nameOf(pinged)+' IS'} PINGED</em>`:''}</span>`);
+     html('.ar-pages',Array.from({length:PAGE_COUNT},(_,k)=>`<i class="pg ${k<inT?'delivered':k<inT+mine?'carried mine':'home'}"></i>`).join('')+`<span>${mine?`<b>${mine}</b> CARRIED · `:''}${inT}/${PAGE_COUNT} IN THE TEMPLE · ${pages.filter(pg=>pg.state!=='delivered'&&!(pg.state==='carried')).length} ON THE MAP${pinged&&clock<pingUntil?` · <em>${pinged===player?'YOU ARE':nameOf(pinged)+' IS'} PINGED</em>`:''}</span>`);
      {const pw=player?.power||0,lv=Math.min(POWER_MAX,pw),top=strongest();html('.ar-power',(pw?`<b>POWER ${pw}</b><span>+${Math.round(lv*POWER_DMG*100)}% DAMAGE · +${lv*POWER_SHIELD} SHIELD${pw>=POWER_GLOW?' · <em>YOU GLOW RED</em>':''}</span>`:'')+(top&&top!==player?`<small>STRONGEST: ${nameOf(top)} · POWER ${top.power}</small>`:''));}
      const board=q('.ar-board');if(!board.hidden)board.innerHTML='<h3>BEYOND EDEN · OPEN MATCH</h3><table><tr><th></th><th>SCORE</th><th>KILLS</th><th>PAGES</th><th>POWER</th><th>DEATHS</th></tr>'+everyone.map((c,i)=>`<tr class="${c===player?'me':''}"><td>${i+1}. ${nameOf(c)}${pinged===c&&clock<pingUntil?' ◉':''}</td><td>${c.score||0}</td><td>${c.kills||0}</td><td>${c.delivered||0}${pagesOf(c)?' +'+pagesOf(c):''}</td><td${(c.power||0)>=POWER_GLOW?' class="glow"':''}>${c.power||0}</td><td>${c.deaths||0}</td></tr>`).join('')+'</table>';
      if(player){const sh=Math.max(0,player.shield||0);q('.ar-shield i').style.width=(player.shieldMax?sh/player.shieldMax*100:0)+'%';text('.ar-shield span',sh>0?'SHIELD '+Math.ceil(sh):'SHIELD DOWN');q('.ar-shield').classList.toggle('down',sh<=0);
@@ -884,7 +884,7 @@
    const site=layout.landmarks.find(l=>l.id===infoOf(i)?.site);
    const F=site&&window.edenRoofs?.[site.id];
    if(F&&Math.random()<.18){const cells=[];for(let r=1;r<F.rows-1;r++)for(let c=1;c<F.cols-1;c++){const h=F.h[r*F.cols+c];if(h>=F.eave-.3&&h<=F.eave+1.5&&Math.abs(F.h[r*F.cols+c+1]-h)<.5&&Math.abs(F.h[(r+1)*F.cols+c]-h)<.5)cells.push([r,c,h]);}
-    if(cells.length){const [r,c,h]=pick(cells),v=new T.Vector3(F.minX+(c+.5)*F.cell,h,F.minZ+(r+.5)*F.cell);if(!avoid||v.distanceTo(avoid)>2)return v;}}
+    if(cells.length){const [r,c,h]=pick(cells),v=new T.Vector3(F.minX+(c+.5)*F.cell,h,F.minZ+(r+.5)*F.cell);if((!avoid||v.distanceTo(avoid)>2)&&!pages.some(pg=>pg.loot&&pg.i!==i&&pg.loot.pos.distanceTo(v)<2.5))return v;}}
    const info=infoOf(i),sockets=(info?.sockets||[]).slice().sort(()=>Math.random()-.5),taken=v=>pages.some(pg=>pg.loot&&pg.i!==i&&pg.loot.pos.distanceTo(v)<2.5);
    for(const [x,z] of sockets){const v=new T.Vector3(x,0,z);if(!blocked(v)&&!taken(v)&&(!avoid||v.distanceTo(avoid)>2))return v;}
    for(let k=0;k<16;k++){const lm=pick(nearLandmarks()),v=new T.Vector3(lm.x+rand(-lm.w/2,lm.w/2),0,lm.z+lm.d/2+rand(3,9));if(!blocked(v)&&!taken(v))return v;}
@@ -899,8 +899,9 @@
   }
   function scatterPages(){
    if(attendant){attendant.page=null;attendant.fetch=null;attendant.think=0;}
-   for(const pg of pages)if(pg.loot&&loot.includes(pg.loot))removeLoot(pg.loot);
-   pages=[];for(let i=0;i<PAGE_TOTAL;i++){const pg={i,state:'home',carrier:null,loot:null,since:clock,by:null};pages.push(pg);placePage(pg,pageSpot(i));}
+   for(const pg of pages)if(pg.state!=='carried'&&pg.loot&&loot.includes(pg.loot))removeLoot(pg.loot);
+   // Pages someone is still carrying stay theirs; everything else scatters again.
+   const kept=pages.filter(pg=>pg.state==='carried'&&pg.carrier?.alive);pages=kept.slice();for(let i=0;i<PAGE_TOTAL;i++){if(kept.some(pg=>pg.i===i))continue;const pg={i,state:'home',carrier:null,loot:null,since:clock,by:null};pages.push(pg);placePage(pg,pageSpot(i));}
    for(const c of [player,...bots])if(c)c.delivered=0;
   }
   function takePage(c,l){const pg=pages.find(pg=>pg.loot===l);removeLoot(l);if(!pg)return;pg.loot=null;pg.state='carried';pg.carrier=c;pg.since=clock;}
@@ -981,7 +982,7 @@
      damage(t,night?WATCHER.hitNight:WATCHER.hitDay,null,{kind:'attendant',blast:true,dir});chime([62,41],.16,.09);if(t===player)o.onImpact?.(a.pos,1.2);
      if(t.alive&&pagesOf(t)){dropPages(t);if(t===player)announce('THE WATCHER TORE THE PAGES FROM YOU');}}
     if(a.mode==='fetch'&&a.fetch&&d<1.3){const pg=a.fetch;if(pg.state==='loose'&&pg.loot){removeLoot(pg.loot);pg.loot=null;pg.state='watcher';pg.carrier=null;a.page=pg;a.think=0;}a.fetch=null;}
-    if(a.mode==='return'&&a.page&&d<1.3){const pg=a.page;placePage(pg,pg.home||pageSpot(pg.i));a.page=null;a.think=0;pushFeed(`<i>THE WATCHER RETURNED PAGE ${pg.i+1}</i>`);}
+    if(a.mode==='return'&&a.page&&d<1.3){const pg=a.page;placePage(pg,pg.home&&!pages.some(o2=>o2!==pg&&o2.loot&&o2.loot.pos.distanceTo(pg.home)<2.5)?pg.home:pageSpot(pg.i));a.page=null;a.think=0;pushFeed(`<i>THE WATCHER RETURNED PAGE ${pg.i+1}</i>`);}
    }
    w.position.set(a.pos.x,groundY(a.pos.x,a.pos.z)+Math.sin(clock*1.7)*.06+(clock<a.stunUntil?-.4:0),a.pos.z);
    // The page he carries glows in his hand.

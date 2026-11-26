@@ -118,3 +118,11 @@ body.combat-armed #scene canvas{cursor:crosshair}
 .ch-hit.kill i{background:#ff2d24;box-shadow:0 0 10px #ff2d24,0 0 0 1px rgba(0,0,0,.6);width:18px;height:3.5px}
 .ch-hit.kill.show{animation:ch-kill .46s cubic-bezier(.2,.9,.3,1)}
 @media (prefers-reduced-motion:reduce){.ch-hit.show,.ch-hit.kill.show{animation-duration:.01s}}
+
+/* Headshots mark orange, kills red and larger. */
+.ch-hit.head i{background:#ff9a3c;box-shadow:0 0 5px #ff9a3c}
+.ch-hit.kill i{background:#ff3b30;box-shadow:0 0 7px #ff3b30}
+.ch-hit.kill{scale:1.25}
+/* Suppression: being shot at closes the picture in at the edges. */
+#combat-hud.suppressed::after{content:'';position:fixed;inset:0;pointer-events:none;opacity:var(--suppress,0);background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.55) 100%);-webkit-mask:radial-gradient(ellipse at center,transparent 50%,#000 95%);mask:radial-gradient(ellipse at center,transparent 50%,#000 95%)}
+@media (pointer:fine){#combat-hud.suppressed::after{backdrop-filter:blur(calc(var(--suppress,0) * 3px))}}
