@@ -18,6 +18,9 @@ export function createFoot({ scene, world, onEffect }) {
   G.createExpeditionConstraints = ({ layout }) => (next) => { const [a, b, c, d] = layout.bounds; next.x = Math.max(a, Math.min(b, next.x)); next.z = Math.max(c, Math.min(d, next.z)); return next; };
   const walls = world.solids.filter(b => !b.roof && b.bottom < .5).map(b => [(b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2, b.maxX - b.minX, b.maxZ - b.minZ, b.top]);
   const surfaces = world.solids.filter(b => b.surface !== false || b.bottom < .5).map(b => ({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ, top: b.top, bottom: b.bottom }));
+  // A gate that opens stops being in the way (the movement code reads these lists live).
+  for (const g of world.gates || []) { const w = walls.find(o => o[0] === g.x && o[1] === g.z && o[4] === g.height), f = surfaces.find(o => o.minX === g.solid.minX && o.minZ === g.solid.minZ && o.top === g.height); g.footParts = { w, f }; }
+  world.onGate?.(g => { const { w, f } = g.footParts || {}; if (w) { w[2] = 0; w[3] = 0; w[4] = -10; w[1] = 1e6; } if (f) { f.top = -10; f.bottom = -11; f.minX = f.maxX = 1e6; } });
   // The roof's terraces are walkable too; pipes, ropes and bars come from the site (parkour.js reads this global).
   for (const [x0, x1, z0, z1, top, bottom] of world.roofSteps || []) surfaces.push({ minX: x0, maxX: x1, minZ: z0, maxZ: z1, top, bottom });
   G.parkourGrips = { grips: (world.grips || []).map((g, id) => ({ ...g, id })), boxes: [] };   // parkour.js looks grips up by id

@@ -316,7 +316,7 @@ def rail_fence(x1, z1, x2, z2, h=1.4, bars=4, key='steel', solid=True, name='fen
     if solid: solid_only((min(x1, x2) - .08, 0, min(z1, z2) - .08), (max(x1, x2) + .08, h, max(z1, z2) + .08), surface=False)
 
 # ---------------------------------------------------------------------------------------------------- the site
-FX0, FX1, FZ0, FZ1 = -56, 56, -62, 72          # perimeter fence
+FX0, FX1, FZ0, FZ1 = -56, 100, -62, 72         # perimeter fence (the east side holds the farm)
 GATE = (-7, 7)                                    # north gate gap (x)
 H, T = 7.0, .3                                    # main building wall height and thickness
 BX0, BX1, BZ0, BZ1 = -26, 26, 0, 48               # main building footprint
@@ -326,7 +326,7 @@ box('ground', (FX0 - 8, -.5, FZ0 - 8), (FX1 + 8, 0, FZ1 + 8), 'ground', walker=F
 box('road', (-5, 0, -340), (5, .015, -2), 'road', solid=False)
 box('apron', (-30, 0, -24), (30, .02, -.5), 'apron', solid=False)
 box('carpark', (-50, 0, -56), (-22, .018, -30), 'gravel', solid=False)
-box('lairage-pad', (28, 0, -2), (54, .02, 46), 'apron', solid=False)
+box('farm-pad', (30, 0, 3), (96, .02, 57), 'apron', solid=False)
 box('backyard', (-46, 0, 48.5), (50, .02, 66), 'apron', solid=False)
 
 def terrain():
@@ -361,7 +361,6 @@ wall('z', gx0, gz0, gz1, 2.9, .2, 'brick', name='gatehouse'); wall('z', gx1, gz0
 box('gatehouse-roof', (gx0 - .4, 2.9, gz0 - .4), (gx1 + .4, 3.1, gz1 + .4), 'roof')
 CEILINGS.append([gx0, gx1, gz0, gz1, 2.9]); INTERIORS.append([gx0, gx1, gz0, gz1])
 box('barrier-post', (-8.3, 0, -61.2), (-7.7, 1.1, -60.6), 'yellow')
-obox('barrier-arm', (-8, 3.4, -60.9), (.06, 2.4, .06), rot_z(-.12), 'red')
 
 # ---- the main building
 openN = [(-4, 4, 0, 5.2), (8, 12, 1.1, 2.3, 'glass'), (14, 18, 1.1, 2.3, 'glass'), (20, 24, 1.1, 2.3, 'glass')]
@@ -509,19 +508,31 @@ for z in (9.5, 14.5, 17.5, 22.5): box('bumper', (BX0 - 10.2, .35, z), (BX0 - 10,
 ang = math.atan2(1.3, 8); L = math.hypot(8, 1.3)
 obox('dock-ramp', (BX0 - 5, .62, 6 - L / 2 * math.cos(ang) + .05), (4.8, .09, L / 2), rot_x(ang), 'concrete', group='arch')
 RAMPS.append({'c': [BX0 - 5, .62, 6 - L / 2 * math.cos(ang) + .05], 'h': [4.8, .09, L / 2], 'q': list(rot_x(ang).to_quaternion()[1:]) + [rot_x(ang).to_quaternion()[0]]})
-# Lairage: four outdoor pens east of the building, a race into the holding pen, troughs, hay, the unloading ramp.
-LX0, LX1, LZ0, LZ1 = 30, 50, 4, 44
-rail_fence(LX0, LZ0, LX1, LZ0); rail_fence(LX1, LZ0, LX1, LZ1); rail_fence(LX0, LZ1, LX1, LZ1)
-rail_fence(LX0, LZ0, LX0, 29.6); rail_fence(LX0, 33, LX0, LZ1)
-for z in (14, 24, 34): rail_fence(LX0, z, LX1 - 4, z)
+# The farm: six cattle pens east of the building, three either side of a wide lane. Each pen has its own gate onto
+# the lane and its own lever on a post beside it. The race from the lane's west end runs into the indoor holding
+# pen. Alleys between the pens and the passage along the building lead north to the yard: room for a herd to gather,
+# turn and run.
+PW, PD, LANE0, LANE1 = 16, 16, 23, 37
+PEN_COLS = (34, 54, 74)
+PENS, GATES = [{'id': 'hall', 'minX': PEN['minX'], 'maxX': PEN['maxX'], 'minZ': PEN['minZ'], 'maxZ': PEN['maxZ'], 'count': 8}], []
+GATES.append({'id': 'hall', 'kind': 'hall', 'x': 6, 'z': 34.5, 'axis': 'z', 'half': 2.55, 'n': [-1, 0], 'lever': {'x': 5.2, 'z': 31.2}, 'strength': 30, 'planks': True})
+k = 0
+for row, (z0, z1, gz, nz) in enumerate(((LANE0 - PD, LANE0, LANE0, 1), (LANE1, LANE1 + PD, LANE1, -1))):
+    for x0 in PEN_COLS:
+        k += 1; x1 = x0 + PW; cx = (x0 + x1) / 2; far = z0 if nz == 1 else z1
+        rail_fence(x0, far, x1, far, name='pen-fence'); rail_fence(x0, z0, x0, z1, name='pen-fence'); rail_fence(x1, z0, x1, z1, name='pen-fence')
+        rail_fence(x0, gz, cx - 2.5, gz, name='pen-fence'); rail_fence(cx + 2.5, gz, x1, gz, name='pen-fence')
+        for gx in (cx - 2.5, cx + 2.5): box('gate-post', (gx - .12, 0, gz - .12), (gx + .12, 1.9, gz + .12), 'yellow', group='kit')
+        box('trough', (x0 + 1.2, 0, far + (.5 if nz == 1 else -1.1)), (x0 + 4.2, .6, far + (1.1 if nz == 1 else -.5)), 'concrete')
+        cyl('hay', (x1 - 2.6, .7, far + nz * 2.2), (x1 - 1.4, .7, far + nz * 2.2), .7, 'hay', 18)
+        box('pen-straw', (x0 + .3, .02, z0 + .3), (x1 - .3, .05, z1 - .3), 'hay', solid=False)
+        PENS.append({'id': f'pen{k}', 'minX': x0 + 1.6, 'maxX': x1 - 1.6, 'minZ': z0 + 1.6, 'maxZ': z1 - 1.6, 'count': 5})
+        GATES.append({'id': f'pen{k}', 'kind': 'pen', 'x': cx, 'z': gz, 'axis': 'x', 'half': 2.5, 'n': [0, nz], 'lever': {'x': cx + 3.3, 'z': gz + nz * .7}, 'strength': 30})
+# The main exit: a barred gate across the road, opened by the lever in the gatehouse or broken by a herd at a run.
+GATES.append({'id': 'main', 'kind': 'main', 'x': 0, 'z': FZ0, 'axis': 'x', 'half': GATE[1], 'n': [0, -1], 'lever': {'x': -12.4, 'z': -56.4}, 'strength': 110})
 if 'cattle-race-panel' in MODLY:   # the race: solid generated panels (collision here, the models placed below)
-    for z in (29.6, 33): solid_only((BX1 + .2, 0, z - .1), (LX0, 1.6, z + .1), surface=False)
-else: rail_fence(BX1 + .2, 29.6, LX0, 29.6, 1.6); rail_fence(BX1 + .2, 33, LX0, 33, 1.6)   # the race
-for x in (34, 44): box('trough', (x, 0, LZ0 + .3), (x + 2.4, .6, LZ0 + .9), 'concrete')
-for i, (x, z) in enumerate([(47, 8), (47.5, 18), (46.8, 28), (47.3, 38)]):
-    cyl('hay', (x - .6, .7, z), (x + .6, .7, z), .7, 'hay', 18)
-ang = math.atan2(1.0, 4)
-obox('unload-ramp', (40, .5, LZ0 - 2.1), (1.4, .08, 2.1), rot_x(-ang), 'plate', group='kit')
+    for z in (29.6, 33): solid_only((BX1 + .2, 0, z - .1), (30, 1.6, z + .1), surface=False)
+else: rail_fence(BX1 + .2, 29.6, 30, 29.6, 1.6); rail_fence(BX1 + .2, 33, 30, 33, 1.6)   # the race
 # The cattle trailer backed up to the ramp: slatted aluminium sides, gooseneck, six wheels.
 def trailer(x, z):
     bm = bmesh.new(); y0 = 1.05
@@ -538,7 +549,7 @@ def trailer(x, z):
         for s in (-1, 1): bm_cyl(wh, (x + s * 1.05, .48, z + dz), (x + s * 1.35, .48, z + dz), .48, 14)
     emit('trailer-wheels', wh, 'blackrubber', 'kit')
     solid_only((x - 1.3, 0, z - 7.4), (x + 1.3, y0 + 2.75, z + 5), surface=True)
-trailer(40, -7.4)
+trailer(62, -9)
 # Boiler house with its chimney, silos, a blood tank, offal skips along the back.
 wall('x', 52, -44, -34, 4.6, .3, 'brick', name='boiler'); wall('x', 62, -44, -34, 4.6, .3, 'brick', name='boiler')
 wall('z', -44, 52, 62, 4.6, .3, 'brick', name='boiler'); wall('z', -34, 52, 62, 4.6, .3, 'brick', [(55, 56.6, 0, 2.3)], name='boiler')
@@ -579,7 +590,6 @@ for i in range(140):
 
 # ---- props placed by the game (Poly Haven and the main game's library): [name, x, y, z, yaw, scale, part]
 PROPS += [
-    ['large_iron_gate', -6.2, 0, FZ0 - 2.4, 1.25, 1.25, None], ['large_iron_gate', 6.2, 0, FZ0 - 2.4, -1.25, 1.25, None],
     ['bull_head', 0, 6.0, -.3, math.pi, 4.2, None], ['security_camera_01', 4.6, 5.6, -.25, math.pi + .4, 1.2, None], ['security_camera_01', BX1 + .25, 5.4, 14, -math.pi / 2, 1.2, None],
     ['rollershutter_door', BX0 - .2, 1.3, 14.0, -math.pi / 2, 1.33, 'rollershutter_door'], ['rollershutter_door', BX0 - .2, 1.3, 22.0, -math.pi / 2, 1.33, 'rollershutter_door_graffiti'],
     ['utility_box_01', -12, 0, -.35, math.pi, 1.3, None], ['utility_box_01', 14, 0, 48.4, 0, 1.3, None],
@@ -593,6 +603,7 @@ PROPS += [
     ['wooden_ladder', 30.2, 0, 49.5, math.pi, 1.6, None], ['tool_cart', -8, .05, 31, .3, 1.0, None],
 ]
 for x in (-30, -36, -42): PROPS.append(['street_lamp_01', x, 0, -24 if x != -42 else -36, 0, 1.6, None])
+for (x, z) in ((52, 30), (72, 30), (62, 1)): PROPS.append(['street_lamp_01', x - .7, 0, z, 0, 1.6, None])
 LOOSE += [  # [name, x, z, yaw, scale, mass, part, y]
     ['plain-iron-gurney-v001', -6, 14, .3, 1.5, 40, None, 0], ['worn-iron-gurney-v002', -18, 18, 1.4, 1.5, 40, None, 0],
     ['plain-iron-operating-table-v001', -8, 28, 0, 1.6, 70, None, 0], ['old-iron-operating-table-v002', -20, 32, 1.57, 1.6, 70, None, 0],
@@ -617,7 +628,7 @@ for (x, z) in [(-30, -24), (-36, -24), (30, -36), (-42, -36)]: pass
 lamp((-29.3, 5.9, -24), 0xffa64d, 300, 40); lamp((30, 5.9, -36), 0xffa64d, 300, 40); lamp((-41.3, 5.9, -36), 0xffa64d, 260, 36)
 lamp((0, 6.2, -.5), 0xffd2a0, 160, 26, 0, [.5, .12, .25])          # over the main door
 lamp((BX1 + .4, 4.6, 31.3), 0xffd2a0, 110, 22, 0, [.4, .12, .25]) # over the race door
-lamp((40, 5.5, 2), 0xffa64d, 200, 32)                             # lairage
+lamp((52, 5.8, 30), 0xffa64d, 240, 34); lamp((72, 5.8, 30), 0xffa64d, 240, 34); lamp((62, 5.8, 1), 0xffa64d, 200, 32)   # the farm lane and its north side
 lamp((-37, 3.6, 49.5), 0xffa64d, 120, 20)                         # boiler yard
 for (x, z) in [(-20, 8), (-6, 8), (-20, 26), (-6, 26), (2, 14)]: lamp((x, 5.6, z), 0xd8f0e6, 46, 24, .8, [1.9, .05, .12])
 for (x, z) in [(-20, 42), (-11, 42)]: lamp((x, 3.9, z), 0xbfe6ff, 26, 14, .2, [1.6, .05, .12])
@@ -686,7 +697,6 @@ for (x, y, z, yaw) in ((-10, 3.4, BZ0 - T / 2 - .12, math.pi), (10, 3.4, BZ0 - T
 # ---- race, lairage gates, the pickup wreck; pallets of boxed beef in the chiller and on the dock
 for z in (29.6, 33):
     for x in (27.45, 29.35): modly('cattle-race-panel', x, 0, z, math.pi / 2, 1.0)
-for z in (14, 24, 34): modly('cattle-gate', LX1 - 2, 0, z, 0, 1.25)
 modly('old-pickup', -40, 0, -46, .35, .86)
 for (x, y, z) in ((-8.3, .034, 46.4), (-8.3, .034, 44.9), (-30, 1.3, 9), (-31.5, 1.3, 11), (-33, 1.3, 23)): modly('pallet-cartons', x, y, z, R.uniform(-.1, .1), 1.0, solid=True)
 # ---- loose things you can knock about: trolleys, bins, tubs, buckets, the pallet jack, cartons
@@ -719,7 +729,7 @@ for g in GRIPS:
     else:
         cyl('grip-bar', g['a'], g['b'], .035, 'stainless', 8)
         for p in (g['a'], g['b']): box('grip-post', (p[0] - .06, 0, p[2] - .06), (p[0] + .06, p[1] + .1, p[2] + .06), 'steel', group='kit')
-HAY = [[28.8, 19, 1.9], [-38.5, 31, 1.9], [9.5, -3.4, 1.7], [15, 44.5, 1.7], [-28.8, 40, 1.7], [36, 50, 1.8]]
+HAY = [[28.8, 19, 1.9], [-38.5, 31, 1.9], [9.5, -3.4, 1.7], [15, 44.5, 1.7], [-28.8, 40, 1.7], [31.5, 56, 1.8], [92.5, 30, 1.8]]
 for hx, hz, hr in HAY:
     bm = bmesh.new(); bmesh.ops.create_uvsphere(bm, u_segments=16, v_segments=8, radius=1)
     for v in bm.verts: v.co = Vector((hx + v.co.x * hr, -(hz + v.co.y * hr), max(0, v.co.z * .75 + .12) * 1.1))
@@ -727,20 +737,23 @@ for hx, hz, hr in HAY:
 
 POINTS = {
     'spawn': {'x': 0, 'z': -78, 'yaw': 0}, 'cowSpawn': {'x': 16, 'z': 40, 'yaw': -math.pi / 2},
-    'exit': {'x': 0, 'z': -72, 'radius': 9}, 'gateZ': FZ0, 'bounds': [-150, 150, -340, 160],
+    'exit': {'x': 0, 'z': -128, 'radius': 18}, 'gateZ': FZ0, 'pens': PENS, 'gates': GATES, 'bounds': [-150, 150, -340, 160],
     'pen': PEN, 'gate': {'x': 6, 'z': 34.5, 'half': 2.55}, 'lever': {'x': 5.2, 'z': 31.2},
     'escape': [[9, 34.5], [3, 34.5], [0, 27], [0, 12], [0, -3], [0, -30]],
     'truckStart': {'x': 44, 'z': -40, 'yaw': math.pi},
     'fence': FENCE, 'gateX': GATE,
     'patrols': [
         [[-20, -40], [20, -40], [20, -12], [-20, -12]],
-        [[27, -6], [54, -6], [54, 47], [27, 47]],
+        [[32, 2], [96, 2], [96, 63.5], [32, 63.5]],
         [[-12, -4], [12, -4]],
         [[-22, 8], [-2, 8], [-2, 33], [-22, 33]],
         [[8, 18], [24, 18]],
         [[3.2, 26], [3.2, 45]],
         [[-22, 41], [-9, 41]],
         [[-20, 57], [24, 57]],
+        [[37, 30], [92, 30]],
+        [[40, -22], [90, -22]],
+        [[-11.6, -51], [-3, -51]],
     ],
 }
 
