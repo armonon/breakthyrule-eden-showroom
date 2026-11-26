@@ -103,7 +103,10 @@
    if(spec==='c4')return {type:'c4',count:1,rarity:'uncommon',label:'C4 CHARGE'};
    if(spec==='ammo'){const k=pick(Object.keys(AMMO_FOR));return rollItem({ammo:AMMO_FOR[k][0]});}
    if(spec.ammo){const [type,n]=Object.values(AMMO_FOR).find(([t])=>t===spec.ammo)||[spec.ammo,20];return {type:'ammo',ammo:type,count:n,rarity:'common',label:AMMO_LABEL[type]+' AMMO ×'+n};}
-   if(spec.weapon){const W=combat.weapons.find(w=>w.id===spec.weapon);return {type:'weapon',weapon:spec.weapon,loaded:W.mag,rarity:GUN_RARITY[spec.weapon]||'uncommon',label:W.name+' · '+W.kind};}
+   if(spec.weapon){const W=combat.weapons.find(w=>w.id===spec.weapon);
+    // Any gun of the class can turn up: its own model or one of its variants, equally often.
+    const pool=[null,...(combat.variants?.[spec.weapon]||[]).map(v=>v.id)],variant=spec.variant!==undefined?spec.variant:pick(pool);
+    return {type:'weapon',weapon:spec.weapon,variant,loaded:W.mag,rarity:GUN_RARITY[spec.weapon]||'uncommon',label:combat.gunLabel?combat.gunLabel(spec.weapon,variant):W.name+' · '+W.kind};}
    return null;
   }
 
@@ -629,9 +632,13 @@
    if(it.type==='page'){takePage(player,l);const n=pagesOf(player);toast(`${it.label} · ${n} CARRIED · ${nightLevel()>.5?'THE TEMPLE IS OPEN':'THE TEMPLE OPENS WITH THE WATCH'}`);hud.update();return;}
    if(it.type==='weapon'){
     const inv=ars.inspect();const guns=inv.owned.filter(id=>!['axe','c4'].includes(id));
+    if(inv.owned.includes(it.weapon)&&(it.variant||null)!==(ars.variantOf?.(it.weapon)||null)){
+     // Same class, different gun: trade the carried one (and what is in it) for this one.
+     const old=ars.variantOf(it.weapon),loaded=ars.drop(it.weapon),d=rollItem({weapon:it.weapon,variant:old});d.loaded=loaded;d.droppedAt=clock;const p=posOf(player);dropItem(d,p.x+rand(-.5,.5),p.z+rand(-.5,.5));
+     ars.give(it.weapon,it.loaded,it.variant);combat.equip(it.weapon);toast(it.label);removeLoot(l);hud.update();return;}
     if(inv.owned.includes(it.weapon)){ars.addAmmo(W(it.weapon).ammo,it.loaded);toast('+'+it.loaded+' '+AMMO_LABEL[W(it.weapon).ammo]);removeLoot(l);return;}
-    if(guns.length>=2){const cur=combat.inspect().weapon;const swap=guns.includes(cur)?cur:guns[0];const loaded=ars.drop(swap);const d=rollItem({weapon:swap});d.loaded=loaded;d.droppedAt=clock;const p=posOf(player);dropItem(d,p.x+rand(-.5,.5),p.z+rand(-.5,.5));}
-    ars.give(it.weapon,it.loaded);const [t,n]=AMMO_FOR[it.weapon]||[];if(t&&!(inv.reserve[t]>0))ars.addAmmo(t,Math.round(n*.5));combat.equip(it.weapon);
+    if(guns.length>=2){const cur=combat.inspect().weapon;const swap=guns.includes(cur)?cur:guns[0];const old=ars.variantOf?.(swap)||null,loaded=ars.drop(swap);const d=rollItem({weapon:swap,variant:old});d.loaded=loaded;d.droppedAt=clock;const p=posOf(player);dropItem(d,p.x+rand(-.5,.5),p.z+rand(-.5,.5));}
+    ars.give(it.weapon,it.loaded,it.variant);const [t,n]=AMMO_FOR[it.weapon]||[];if(t&&!(inv.reserve[t]>0))ars.addAmmo(t,Math.round(n*.5));combat.equip(it.weapon);
    }else if(it.type==='armor'){
     if(player.garment&&player.armor>0){const p=posOf(player);dropItem({type:'armor',armor:Math.round(player.armor),garment:player.garment,rarity:player.garment.rarity,label:player.garment.name.toUpperCase()+' · '+Math.round(player.armor)+' ARMOR'},p.x+.6,p.z);}
     player.armor=it.armor;player.armorMax=Math.max(it.armor,player.garment?.armor||0);player.garment=it.garment;player.worn.add(it.garment);
@@ -992,7 +999,7 @@
   function tackled(b,dir){
    if(!player?.alive||clock<(player.protectUntil||0))return;
    const cur=combat.inspect().weapon;let lost=null;
-   if(cur&&!['axe','c4','fists'].includes(cur)){const loaded=combat.arsenal.drop(cur);const it=rollItem({weapon:cur});it.loaded=loaded;const p=posOf(player);const l=dropItem(it,p.x,p.z,new T.Vector3(dir.x*2.2+rand(-.5,.5),3.8,dir.z*2.2+rand(-.5,.5)));if(l){l.y=p.y+1.3;l.group.position.y=l.y;}lost=W(cur)?.name||cur;}
+   if(cur&&!['axe','c4','fists'].includes(cur)){const old=combat.arsenal.variantOf?.(cur)||null,loaded=combat.arsenal.drop(cur);const it=rollItem({weapon:cur,variant:old});it.loaded=loaded;const p=posOf(player);const l=dropItem(it,p.x,p.z,new T.Vector3(dir.x*2.2+rand(-.5,.5),3.8,dir.z*2.2+rand(-.5,.5)));if(l){l.y=p.y+1.3;l.group.position.y=l.y;}lost=W(cur)?.name||cur;}
    damage(player,15,b,{weapon:'melee',dir:dir.clone()});o.onTackled?.(dir);
    announce(lost?`${b.name} TACKLED YOU · ${lost} KNOCKED LOOSE · ${window.edenControls?.hint('loot')||'F'} TO CATCH`:`${b.name} TACKLED YOU`);chime([120,80],.14,.05);
   }
