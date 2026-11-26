@@ -191,9 +191,11 @@ window.createEdenPost=function(T,renderer,scene,camera,{enabled=true}={}){
    if(cones>0.){float jit=fract(52.9829*fract(dot(gl_FragCoord.xy,vec2(.0671106,.0058372))));
     for(int i=0;i<3;i++){vec4 l=airPos[i];if(l.w<=0.)continue;vec3 q=camPos-l.xyz;float b=dot(ray,q),m=dot(q,q)-b*b;if(m>49.)continue;
      float h=sqrt(49.-m),t0=max(0.,-b-h),t1=min(reach,-b+h);if(t1<=t0)continue;float dt=(t1-t0)/8.,acc=0.;
-     for(int k=0;k<8;k++){vec3 p=camPos+ray*(t0+(float(k)+jit)*dt),v=p-l.xyz;float d2=dot(v,v),down=-v.y*inversesqrt(d2+1e-4);
-      acc+=(.08+smoothstep(-.15,.8,down)*1.6)/(d2+.35)*lampVisible(p)*step(0.,p.y);}
-     fog+=airColor[i]*l.w*acc*dt*cones*(1.-smoothstep(25.,49.,m));}}
+     for(int k=0;k<8;k++){float t=t0+(float(k)+jit)*dt;vec3 p=camPos+ray*t,v=p-l.xyz;float d2=dot(v,v),down=-v.y*inversesqrt(d2+1e-4);
+      // (the air right at the lens is not seen lit: a lamp overhead would otherwise haze the whole frame)
+      acc+=(.08+smoothstep(-.15,.8,down)*1.6)/(d2+1.)*lampVisible(p)*step(0.,p.y)*smoothstep(.6,3.,t);}
+     // (capped like the even glow, so standing under a lamp does not fill the frame with light)
+     fog+=airColor[i]*l.w*min(acc*dt,1.8)*cones*(1.-smoothstep(25.,49.,m));}}
    float n=texture2D(tNoise,(camPos.xz+ray.xz*min(reach,14.))*.05+cloudOffset*40.).r;c=1.-(1.-c)*(1.-clamp(fog*air*(.55+.9*n),0.,.85));}
   if(clouds+wet+haze>0.){float d=texture2D(tDepth,vUv).x;if(d<1.){vec4 p=projInv*vec4(vec3(vUv,d)*2.-1.,1.);vec3 vp=p.xyz/p.w;float dist=length(vp);vec3 wp=camPos+camRot*vp;
    // cloud shadows: drifting noise on the ground plane dims what is lit (bright pixels) more than what is already in shade

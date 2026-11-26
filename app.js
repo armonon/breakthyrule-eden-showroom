@@ -386,8 +386,9 @@ const BODYCAM={low:{lens:0,chroma:0,air:0,grade:0,turnBlur:0,sensor:0,block:0,fl
  high:{haze:.5,lens:.06,chroma:.0022,air:1,cones:1,grade:1,bloom:.5,bloomThreshold:.7,grain:.04,aoRadius:1.2,exposure:1.3,exposureUp:2.2,exposureDown:.8,exposureAuto:.38,exposureKey:.16,exposureMin:.72,exposureMax:2.3,exposureScene:18,turnBlur:.7,sensor:.036,block:.5,flashClip:1}};BODYCAM.photo=BODYCAM.high;
 // The night as this camera sees it (eden-baked-light.js tune): a moonlit sky floor so shapes read about 10 m into an unlit
 // lane, a soft roll-off of bright baked light, and lamps that are small sources rather than points (no white wall a metre
-// from a lamp). Every quality level; the expedition page never sets it.
-const BODYCAM_NIGHT={floor:.012,knee:.35,near:.6};
+// from a lamp), and the live lamp shadows (High) dimming the baked lamp light too. Every quality level; the expedition
+// page never sets it.
+const BODYCAM_NIGHT={floor:.06,knee:.5,near:.9,shade:.7};
 // Live shadows from the lamps nearest you (night-district.js): desktop High only. Decided by the graphics setting alone,
 // never per frame or per world, since the number of shadowed lights is part of every material's program.
 const LAMP_SHADOWS=2;

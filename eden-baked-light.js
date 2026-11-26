@@ -17,7 +17,8 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
  // The two probe grids share one volume: where each sits in it (in texels), and the fine grid's box in the world (far away until loaded).
  // Showroom-only tuning of the night (neutral by default, so the expedition page keeps its exact look): x = a moonlit sky
  // floor added to the baked light (beyondFloor is its colour), y = a soft shoulder on bright baked light (lamp hot spots on
- // walls a metre from a lamp), z = the live point lights' near softening radius squared (m^2), w unused.
+ // walls a metre from a lamp), z = the live point lights' near softening radius squared (m^2), w = how far live lamp
+ // shadows also dim the baked light.
  const beyondTune=shared(new T.Vector4()),beyondFloor=shared(new T.Color(.42,.52,.72));
  const beyondAtlas=shared(new T.Vector3(1,1,1)),beyondGridC=shared(new T.Vector3(1,1,1)),beyondGridD=shared(new T.Vector3(1,1,1)),beyondGridO=shared(new T.Vector3()),beyondDetailMin=shared(new T.Vector3(1e6,1e6,1e6)),beyondDetailSize=shared(new T.Vector3(1,1,1));
  const stack=(a,b,nx,ny,nz)=>{const out=new Uint8Array(a.length*2),row=nx*ny*4;for(let z=0;z<nz;z++){out.set(a.subarray(z*row,(z+1)*row),z*row*2);out.set(b.subarray(z*row,(z+1)*row),z*row*2+row);}return out;};
@@ -44,6 +45,15 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
   if(begin.split(spot).length===2&&begin.split(dir).length===2&&begin.indexOf(spot)<begin.indexOf(dir)){
    T.ShaderChunk.lights_fragment_begin=begin.replace(spot,'#ifdef STANDARD\nvec3 beyondPointD=reflectedLight.directDiffuse,beyondPointS=reflectedLight.directSpecular;\n#endif\n'+spot).replace(dir,'#ifdef STANDARD\nvec3 beyondLocalD=reflectedLight.directDiffuse,beyondLocalS=reflectedLight.directSpecular;\n#endif\n'+dir);
    T.ShaderChunk.lights_physical_pars_fragment='#define BEYOND_SPLIT\n'+T.ShaderChunk.lights_physical_pars_fragment;}}
+ // Live lamp shadows (night-district.js, desktop High) fall only from what moves, but most of a lamp's light near it is in
+ // the bake, which they cannot shade. The point-light loop notes how much of the live lamp light each pixel loses to
+ // them, and the bake's light there is dimmed by that fraction (beyondTune.w: how far), so a figure under a lamp throws
+ // a shadow that reads.
+ {const begin=T.ShaderChunk.lights_fragment_begin,shade='directLight.color *= ( directLight.visible && receiveShadow ) ? getPointShadow(';
+  const i=begin.indexOf(shade),end=i<0?-1:begin.indexOf(';',begin.indexOf(')',i+shade.length)+1);
+  if(i>=0&&end>0&&begin.split(shade).length===2){const call=begin.slice(i+'directLight.color *= '.length,end);
+   T.ShaderChunk.lights_fragment_begin='float beyondShadeW=0.,beyondLitW=0.;\n'+begin.slice(0,i)+'{float beyondSh='+call+';float beyondW=dot(directLight.color,vec3(.333))*saturate(dot(geometryNormal,directLight.direction));beyondLitW+=beyondW;beyondShadeW+=beyondW*(1.-beyondSh);directLight.color*=beyondSh;}'+begin.slice(end+1);
+   T.ShaderChunk.lights_physical_pars_fragment='#define BEYOND_LAMP_SHADE\n'+T.ShaderChunk.lights_physical_pars_fragment;}}
  T.ShaderChunk.lights_fragment_maps+=`
  #if defined(RE_IndirectDiffuse)&&defined(STANDARD)
  #ifdef USE_LIGHTMAP
@@ -93,6 +103,9 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
   // The camera's view of the night (beyondTune, 0 on the expedition page): bright baked light rolls off softly (lamp hot
   // spots), and a little moonlit sky comes down everywhere, more on what faces up, less where things meet the ground.
   light/=1.+dot(light,vec3(.333))*beyondTune.y;light+=beyondFloor*beyondTune.x*(.6+.4*n.y)*contact;
+  #ifdef BEYOND_LAMP_SHADE
+  if(beyondLitW>1e-4)light*=1.-beyondTune.w*beyondShadeW/beyondLitW;
+  #endif
   irradiance=mix(irradiance,light*beyondBake.z,amount);
   // Static shadows from the bake on the live lights; moving characters still cast onto the ground and each other in
   // the tight live moon map. Lamps and altar lights take their own baked shadow, the chest light a touch of contact
@@ -163,8 +176,8 @@ window.createEdenBakedLight=function(T,{url='/assets/eden-bake/',beyondUrl='/ass
    const s=probes.scale*beyondParams.z;out.color.setRGB(sum[0]**3*s,sum[1]**3*s,sum[2]**3*s);out.direction.set(sum[4]*2-1,sum[5]*2-1,sum[6]*2-1);out.lamps=sum[3];out.moon=sum[7];return true;
   },
   // The showroom's night look (see beyondTune): floor (sky light added, irradiance), knee (roll-off of bright baked light),
-  // near (the live point lights' softening radius, m). All 0 by default.
-  tune({floor=0,knee=0,near=0}={}){beyondTune.set(floor,knee,near*near,0);},
+  // near (the live point lights' softening radius, m), shade (live lamp shadows dim the bake too, 0..1). All 0 by default.
+  tune({floor=0,knee=0,near=0,shade=0}={}){beyondTune.set(floor,knee,near*near,shade);},
   // The probe volume and its placement, for screen passes that read the bake (eden-post.js light cones). Null until loaded.
   volume:()=>probes?{texture:beyondA,min:beyondMin,size:beyondSize,grid:beyondGridC,atlas:beyondAtlas,detailMin:beyondDetailMin,detailSize:beyondDetailSize,detailGrid:beyondGridD,detailOffset:beyondGridO}:null,
   dynamicShadowOnly:()=>staticOff,

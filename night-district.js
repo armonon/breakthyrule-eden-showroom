@@ -180,14 +180,17 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
  // Live shadows from the nearest lamps (desktop High, setLampShadows(n)): the first n pooled lamps are lit by their own
  // shadow-casting lights instead (worlds.js mirrors plain point lights through its stable pool, which cannot cast). The
  // count only changes with the graphics setting, as it is part of every material's program. A shadowed lamp further
- // than SHADOW_REACH from you fades its shadow out and stops re-rendering it. In Beyond Eden the static world casts no
- // live shadows (its shadow is in the bake, eden-baked-light.js), so the cube maps hold only what moves: characters, you
- // and loose props, which is also why nothing is darkened twice by the bake's lamp shadow and the live one.
- const SHADOW_REACH=16,shadowPool=[],shadowRenderer=()=>window.breakThyRuleShowroom?.renderer?.();
+ // than SHADOW_REACH from you fades its shadow out and stops re-rendering it. The static world's lamp shadow is in the bake
+ // (eden-baked-light.js), so only characters land in the cube maps: their shadow cameras see layer SHADOW_LAYER alone,
+ // which is switched on for every skinned mesh (people, bots, you) every couple of seconds. That keeps the maps cheap,
+ // nothing is darkened twice, and props or models that never registered with the bake cannot shade a lamp from inside
+ // its own lantern.
+ const SHADOW_REACH=16,SHADOW_LAYER=7,shadowPool=[],shadowRenderer=()=>window.breakThyRuleShowroom?.renderer?.();let castersAt=-1e9;
+ function tagCasters(time){if(time-castersAt<2)return;castersAt=time;scene.traverse(o=>{if(o.isSkinnedMesh&&o.castShadow)o.layers.enable(SHADOW_LAYER);});}
  function setLampShadows(n){n=Math.max(0,Math.min(3,n|0));
   while(shadowPool.length>n){const l=shadowPool.pop();scene.remove(l);l.shadow.map?.dispose();l.dispose?.();}
   while(shadowPool.length<n){const l=new T.PointLight(0xffc68c,0,13,1.7);l.name='District lamp (shadow)';l.userData.nightLamp=true;l.castShadow=true;
-   Object.assign(l.shadow,{bias:-.003,normalBias:.035,radius:2,autoUpdate:false});l.shadow.mapSize.set(512,512);l.shadow.camera.near=.2;scene.add(l);shadowPool.push(l);}}
+   Object.assign(l.shadow,{bias:-.003,normalBias:.035,radius:2,autoUpdate:false});l.shadow.mapSize.set(512,512);l.shadow.camera.near=.2;l.shadow.camera.layers.set(SHADOW_LAYER);scene.add(l);shadowPool.push(l);castersAt=-1e9;}}
  setLampShadows(window.edenLampShadows);
  const pageRoot=new T.Group();root.add(pageRoot);const pages=new Map();
  const paper=document.createElement('canvas');paper.width=256;paper.height=384;const ctx=paper.getContext('2d');ctx.fillStyle='#dfd5b5';ctx.fillRect(0,0,256,384);ctx.strokeStyle='#85764f';ctx.lineWidth=2;ctx.strokeRect(15,15,226,354);ctx.beginPath();ctx.arc(128,98,37,0,Math.PI*2);ctx.moveTo(89,124);ctx.lineTo(128,51);ctx.lineTo(167,124);ctx.closePath();ctx.stroke();for(let y=169;y<325;y+=15){ctx.fillStyle=y%3?'#746851':'#afa083';ctx.fillRect(36,y,184-((y*7)%50),2);}const pageMap=new T.CanvasTexture(paper);pageMap.colorSpace=T.SRGBColorSpace;
@@ -210,7 +213,7 @@ window.createNightDistrict=function(T,scene,{stone,leafMat,layout,reduced,prepar
    if(own){const reach=Math.sqrt(distances[i]);l.shadow.intensity=1-T.MathUtils.smoothstep(reach,SHADOW_REACH-4,SHADOW_REACH);if(l.intensity>0&&l.shadow.intensity>0){l.shadow.needsUpdate=true;shadowDirty=true;}}});
    // The renderer only redraws shadow maps on request (app.js); a shadowed lamp in reach asks every frame, so moving
    // characters' shadows follow them (eden-lighting.js keeps the moon's map from redrawing with them).
-   if(shadowDirty){const r=shadowRenderer();if(r){if('lampUpdate' in r.shadowMap)r.shadowMap.lampUpdate=true;else r.shadowMap.needsUpdate=true;}}if(snapshot){const w=snapshot.watcher;watcher.position.lerp(watcherTarget.set(w.x,w.y||0,w.z),.3);watcher.rotation.y=w.yaw;arms.forEach((a,i)=>{a.rotation.x=reduced?0:Math.sin(time*2+i*Math.PI)*.06;});sigil.material.emissive.set(0x503c22);sigil.material.emissiveIntensity=.2;}},
+   if(shadowDirty){tagCasters(time);const r=shadowRenderer();if(r){if('lampUpdate' in r.shadowMap)r.shadowMap.lampUpdate=true;else r.shadowMap.needsUpdate=true;}}if(snapshot){const w=snapshot.watcher;watcher.position.lerp(watcherTarget.set(w.x,w.y||0,w.z),.3);watcher.rotation.y=w.yaw;arms.forEach((a,i)=>{a.rotation.x=reduced?0:Math.sin(time*2+i*Math.PI)*.06;});sigil.material.emissive.set(0x503c22);sigil.material.emissiveIntensity=.2;}},
   inspect:()=>({lod:{enabled:lodEnabled,high:[...loadedModels.values()].filter(e=>e.scene.visible).length,low:[...loadedModels.values()].filter(e=>e.shell.visible).length},routes:(authority?.routes||[]).map(r=>({id:r.id,difficulty:r.difficulty,points:r.points.length})),routeDecks:authority?.routeSurfaces.length||0,landmarks:layout.landmarks.map(s=>({name:s.name,x:s.x,z:s.z})),batches:batches.size,theatre:modelState.playhouse==='model'?'model':'fallback',models:{...modelState},pages:pages.size,watcher:watcher.position.toArray()})
  };
 };
