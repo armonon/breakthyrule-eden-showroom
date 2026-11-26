@@ -250,6 +250,8 @@ window.showroomEnableKTX2(renderer);
 if(mobileDevice)renderer.capabilities.maxTextureSize=Math.min(renderer.capabilities.maxTextureSize,512);
 window.edenBaked=window.createEdenBakedLight(T,{beyondUrl:'/assets/beyond-night/',onShadowChange:()=>{renderer.shadowMap.needsUpdate=true;}}); // before any material compiles
 const scene=new T.Scene();scene.background=null;
+// World roots whose still objects stop recomposing their matrices every frame (static-freeze.js).
+const staticFreeze=window.createStaticFreeze?.(T,scene,['Beyond Eden / the old civilization','Garden of Eden','Pyramid at the end of the road','Parkour grips','Eden sky box']);window.__staticFreeze=staticFreeze;
 const camera=new T.PerspectiveCamera(44,stage.clientWidth/stage.clientHeight,.05,220),aim=new T.Vector3(0,1.2,-1.4),targetAim=aim.clone(),targetPosition=new T.Vector3();
 renderer.domElement.tabIndex=-1;
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -369,7 +371,7 @@ function perfFrame(raw){if(!perfOn||!raw)return;perf.n++;perf.sum+=raw;perf.wors
 document.addEventListener('keydown',e=>{if(e.key!=='F9')return;e.preventDefault();perfOn=!perfOn;if(!perfBox){perfBox=document.createElement('div');perfBox.id='perf-hud';perfBox.style.cssText='position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:80;background:rgba(0,0,0,.6);color:#9effa8;font:600 11px monospace;padding:4px 10px;pointer-events:none;letter-spacing:.04em';document.body.append(perfBox);}perfBox.hidden=!perfOn;perfBox.textContent='measuring…';requestDraw();});
 // ?slowmo=0.25 runs the whole game clock at a quarter speed, for checking animations frame by frame.
 const SLOWMO=Math.min(1,Math.max(.05,+new URLSearchParams(location.search).get('slowmo')||1));
-function draw(time){frame=0;if(!pageActive()){previous=0;quality.pause();return;}if(!state.ready)return;if(lookLocked&&modalOpen())document.exitPointerLock?.();if(worlds?.loading())quality.pause();else quality.frame(time,!!previous);const melee=window.EdenMelee?.timeScale?.()??1,raw=Math.min((time-(previous||time))/1000,.25)*SLOWMO*melee,dt=Math.min(raw,.05);previous=time;if(melee<1)requestDraw();perfFrame(raw);
+function draw(time){frame=0;if(!pageActive()){previous=0;quality.pause();return;}if(!state.ready)return;staticFreeze?.update(time);if(lookLocked&&modalOpen())document.exitPointerLock?.();if(worlds?.loading())quality.pause();else quality.frame(time,!!previous);const melee=window.EdenMelee?.timeScale?.()??1,raw=Math.min((time-(previous||time))/1000,.25)*SLOWMO*melee,dt=Math.min(raw,.05);previous=time;if(melee<1)requestDraw();perfFrame(raw);
  // Movement and the match run in steps of at most 50 ms, so a long frame catches up instead of slowing the game down
  // and snapping back (what reads as rubber banding when the frame rate dips).
  const steps=Math.max(1,Math.ceil(raw/.05-1e-6)),sdt=(raw||.016)/steps;

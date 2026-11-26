@@ -150,6 +150,8 @@
    box(.08,.1,.03,M.brass,g,0,.4,.29);
    const glow=new T.Mesh(new T.PlaneGeometry(2.2,2.2),new T.MeshBasicMaterial({map:M.ring,color:0xffd27a,transparent:true,opacity:.2,depthWrite:false,blending:T.AdditiveBlending}));glow.rotation.x=-Math.PI/2;glow.position.y=.03;g.add(glow);
    g.traverse(n=>n.userData.noHit=false);
+   // Body and lid each one draw per material (the lid still opens).
+   if(window.mergeStatic){window.mergeStatic(T,g,{filter:m=>{for(let p=m;p;p=p.parent)if(p===lidPivot)return false;return true;}});window.mergeStatic(T,lidPivot);}
    const c={group:g,lidPivot,glow,open:false,openT:0,pos:new T.Vector3(x,y,z)};chests.push(c);window.edenMatrix?.form(T,g,{duration:1.4});return c;
   }
 
@@ -158,7 +160,8 @@
   // (eden-baked-light.js), and the lamps and muzzle flashes put real highlights on it. One copy per source material.
   const worldSteel=new Map(),BLUED=new T.Color(.42,.45,.53);
   function worldGun(g){
-   g?.traverse(n=>{if(!n.isMesh||Array.isArray(n.material)||!n.material)return;const src=n.material;let m=worldSteel.get(src);
+   // In the world a gun is culled like anything else (the first-person copy it came from never is).
+   g?.traverse(n=>{if(n.isMesh)n.frustumCulled=true;if(!n.isMesh||Array.isArray(n.material)||!n.material)return;const src=n.material;let m=worldSteel.get(src);
     if(!m){m=src.clone();m.onBeforeCompile=src.onBeforeCompile;m.customProgramCacheKey=src.customProgramCacheKey;
      if(m.metalness>.5){m.color.multiply(BLUED);m.envMapIntensity=src.envMapIntensity*.2;}else m.envMapIntensity=src.envMapIntensity*.45;
      worldSteel.set(src,m);}
@@ -167,17 +170,17 @@
   }
   function itemVisual(item){
    const M=materials(),g=new T.Group();
-   if(item.type==='weapon'){const m=worldGun(combat.weaponModel(item.weapon));if(m){m.rotation.set(0,0,Math.PI/2);m.position.y=.05;const s=new T.Group();s.add(m);g.add(s);}else box(.5,.08,.12,M.iron,g);}
+   if(item.type==='weapon'){const m=worldGun(combat.weaponModel(item.weapon,item.variant,worldGun));if(m){m.rotation.set(0,0,Math.PI/2);m.position.y=.05;const s=new T.Group();s.add(m);g.add(s);}else box(.5,.08,.12,M.iron,g);}
    else if(item.type==='armor'){const t=item.garment.image?new T.TextureLoader().load(item.garment.image,()=>o.requestDraw()):null;if(t)t.colorSpace=T.SRGBColorSpace;
     const fold=new T.Mesh(new T.BoxGeometry(.42,.07,.34),[M.white,M.white,new T.MeshStandardMaterial({map:t,color:t?0xffffff:0xdddddd,roughness:.9}),M.white,M.white,M.white]);fold.position.y=.04;fold.castShadow=true;g.add(fold);}
    else if(item.type==='heal'){if(item.heal==='medkit'){box(.34,.2,.24,M.white,g,0,.1,0);box(.2,.21,.06,M.red,g,0,.1,0);box(.06,.21,.2,M.red,g,0,.1,0);}else{for(const dx of [-.07,.07]){const r=new T.Mesh(new T.CylinderGeometry(.06,.06,.1,16),M.gauze);r.rotation.z=Math.PI/2;r.position.set(dx,.06,0);g.add(r);}}}
    else if(item.type==='ammo'){box(.26,.16,.16,new T.MeshStandardMaterial({color:M.ammo[item.ammo]||0x555555,roughness:.6}),g,0,.08,0);box(.27,.03,.17,M.iron,g,0,.17,0);}
-   else if(item.type==='c4'){const m=combat.weaponModel('c4');if(m){m.position.y=.04;g.add(m);}}
+   else if(item.type==='c4'){const m=combat.weaponModel('c4',item.variant);if(m){m.position.y=item.variant?.06:.04;if(item.variant)m.rotation.z=Math.PI/2;g.add(m);}}
    else if(item.type==='page'){const m=new T.Mesh(new T.PlaneGeometry(.32,.42),new T.MeshStandardMaterial({color:0xf3e6c4,emissive:0xffcf7a,emissiveIntensity:.8,roughness:.9,side:T.DoubleSide}));m.position.y=.32;m.rotation.x=-.25;g.add(m);}
    const col=RARITY[item.rarity]||RARITY.common;
    const ring=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshBasicMaterial({map:M.ring,color:col,transparent:true,opacity:.6,depthWrite:false,blending:T.AdditiveBlending}));ring.rotation.x=-Math.PI/2;ring.position.y=.02;g.add(ring);
    const beam=new T.Mesh(new T.PlaneGeometry(.18,item.rarity==='epic'?3.2:item.rarity==='rare'?2.4:1.4),new T.MeshBasicMaterial({map:M.beam,color:col,transparent:true,opacity:.55,depthWrite:false,blending:T.AdditiveBlending,side:T.DoubleSide}));beam.position.y=beam.geometry.parameters.height/2;g.add(beam);
-   g.userData.beam=beam;g.traverse(n=>{n.userData.noHit=true;});
+   g.userData.beam=beam;g.userData.ring=ring;g.traverse(n=>{n.userData.noHit=true;});
    return g;
   }
   function dropItem(item,x,z,vel=null){
@@ -1031,7 +1034,10 @@
    for(const lm of layout.landmarks){if(lm.id==='gardens')continue;
     for(const end of [-1,1]){const z=lm.z+end*lm.d/2,g=new T.Group();g.position.set(lm.x,groundY(lm.x,z),z);root.add(g);
      const leaves=[-1,1].map(side=>{const pivot=new T.Group();pivot.position.set(side*1.62,0,0);g.add(pivot);const leaf=box(1.58,2.82,.07,M.door||M.wood,pivot,-side*.8,1.41,0);box(.06,.18,.12,M.brass,pivot,-side*1.45,1.15,0);if(M.door){/* raised panels and iron straps, so a door has depth */for(const [py,ph] of [[.62,.9],[1.88,1.3]])for(const s2 of [1,-1])box(1.3,ph,.03,M.door,leaf,0,py-1.41,s2*.045).castShadow=false;for(const sy of [-.95,.95])box(1.5,.07,.02,M.doorIron,leaf,0,sy,.05).castShadow=false;}return {pivot,leaf,side,a:0,v:0,gone:false};});
-     g.traverse(n=>{n.userData.noHit=true;});doors.push({g,end,lm,leaves,x:lm.x,z,brokenAt:0});}}
+     g.traverse(n=>{n.userData.noHit=true;});
+     // Panels and straps join their leaf (one or two draws a leaf, not eight); the leaf itself still swings and flies off.
+     for(const l of leaves)if(l.leaf)window.mergeStatic?.(T,l.leaf,{into:true});
+     doors.push({g,end,lm,leaves,x:lm.x,z,brokenAt:0});}}
   }
   function smashDoor(d,dir,force=6){
    if(d.leaves.every(l=>l.gone))return false;
@@ -1312,7 +1318,11 @@
     else{l.group.position.y=l.y+.08+Math.sin(clock*2+l.phase)*.04;l.group.children[0].rotation.y=clock*.8+l.phase;
      // Run, slide or dive through loot and you send it skittering.
      if(player?.alive&&(player.speed||0)>5.2&&l.item.type!=='page'){const q=posOf(player),dx=l.pos.x-q.x,dz=l.pos.z-q.z,d=Math.hypot(dx,dz);if(d<.75&&d>1e-3){const k=(player.speed||0)*.45;l.vel=new T.Vector3(dx/d*k+rand(-.4,.4),1.6+rand(0,.8),dz/d*k+rand(-.4,.4));l.y+=.05;}}}
-    if(l.group.userData.beam)l.group.userData.beam.lookAt(camera.position.x,l.group.userData.beam.getWorldPosition(new T.Vector3()).y,camera.position.z);
+    // Distance detail: up close the item, its ring and its beam; from 26 m only the item and beam; past 40 m just the
+    // beam (the marker you see across the map); past 110 m nothing. 80 items were ~650 draw calls a frame.
+    const U=l.group.userData,gp=l.group.position,dd=(gp.x-camera.position.x)**2+(gp.z-camera.position.z)**2,lod=dd<676?0:dd<1600?1:dd<12100?2:3;
+    if(U.lod!==lod){U.lod=lod;for(const ch of l.group.children){ch.visible=ch===U.beam?lod<3:ch===U.ring?lod===0:lod<2;}}
+    if(U.beam&&lod<3)U.beam.lookAt(camera.position.x,gp.y+U.beam.position.y,camera.position.z);
    }
    for(const c of chests){if(c.jolt>0){c.jolt=Math.max(0,c.jolt-dt*1.5);c.group.position.y=c.pos.y+Math.abs(Math.sin(c.jolt*18))*c.jolt*.5;c.group.rotation.z=Math.sin(c.jolt*23)*c.jolt*.25;if(!c.jolt){c.group.position.y=c.pos.y;c.group.rotation.z=0;}}if(c.open){const k=clamp((clock-c.openT)/.45,0,1);c.lidPivot.rotation.x=-k*1.9*(1-.08*Math.sin(k*9)*(1-k));}}
    if(Math.floor(clock*4)!==Math.floor((clock-dt)*4))hud.update();

@@ -1139,13 +1139,24 @@
   function configureAssist(){const selected=window.edenSettings?.get('aimAssist')||'high';assistStrength=({off:0,low:.5,medium:1,high:1.35})[selected]??1;for(const k of ['cone','coneAds','frictionCone'])ASSIST[k]=ASSIST_BASE[k]*Math.sqrt(assistStrength);ASSIST.magnet=Math.min(.97,ASSIST_BASE.magnet*assistStrength);ASSIST.friction=Math.max(.28,1-(1-ASSIST_BASE.friction)*assistStrength);ASSIST.pull=ASSIST_BASE.pull*assistStrength;}
   configureAssist();window.edenSettings?.on(k=>{if(!k||k==='aimAssist')configureAssist();});
   const assist={target:null,angle:Infinity,point:new T.Vector3(),head:false,dist:0,friction:1},asEye=new T.Vector3(),asFwd=new T.Vector3(),asTo=new T.Vector3();
+  // Line of sight to an assist point, cached for a tenth of a second while neither you nor the point move much:
+  // a full scenery ray per target point per frame was most of a gunfight's CPU time.
+  const assistSight=new Map();
+  function assistSees(t,pointIndex,p,d){
+   const key=t.c||t;let e=assistSight.get(key);if(!e){e=[null,null];assistSight.set(key,e);}
+   const c=e[pointIndex];
+   if(c&&lastTime-c.at<.12&&c.p.distanceToSquared(p)<.09&&c.eye.distanceToSquared(asEye)<.09)return c.ok;
+   const obstacle=worldHits(asEye,asTo,d),ok=!(obstacle&&obstacle.distance<d-.25);
+   if(assistSight.size>64)assistSight.clear();
+   e[pointIndex]={at:lastTime,ok,p:p.clone(),eye:asEye.clone()};return ok;
+  }
   function assistScan(){
    const previous=assist.target?.c;assist.target=null;assist.angle=Infinity;assist.friction=1;let best=Infinity;
    const list=armed&&zoomable()&&assistStrength?o.aimTargets?.():null;if(!list?.length)return;
    lensPosition(asEye);aimForward(asFwd);const far=Math.min(ASSIST.range,current?.range||160);
    for(const t of list)for(let pointIndex=0;pointIndex<2;pointIndex++){const p=pointIndex?t.head:t.chest;if(!p)continue;asTo.copy(p).sub(asEye);const d=asTo.length();if(d<.65||d>far)continue;asTo.divideScalar(d);const a=Math.acos(clamp(asTo.dot(asFwd),-1,1)),score=a*(previous&&previous===t.c? .8:1)*(pointIndex?1.12:1);
     if(a>ASSIST.frictionCone||score>=best)continue;
-    const obstacle=worldHits(asEye,asTo,d);if(obstacle&&obstacle.distance<d-.25)continue;
+    if(!assistSees(t,pointIndex,p,d))continue;
     best=score;assist.angle=a;assist.target=t;assist.point.copy(p);assist.head=!!pointIndex;assist.dist=d;
    }
    if(assist.target&&assist.angle<ASSIST.frictionCone)assist.friction=lerp(ASSIST.friction,1,assist.angle/ASSIST.frictionCone);
@@ -1925,7 +1936,12 @@
    primeView(){build();ensureViewFlash();const hidden=[];viewScene.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}});const auto=renderer.autoClear,wasArmed=armed;try{renderer.autoClear=false;renderer.render(viewScene,viewCamera);armed=true;warmPost();}finally{armed=wasArmed;renderer.autoClear=auto;for(const o of hidden)o.visible=false;}},
    prewarmShaders(){build();sfx.init();ensureViewFlash();warmPost();const hidden=[];viewScene.traverse(x=>{if(!x.visible&&!x.isLight){hidden.push(x);x.visible=true;}});try{const job=renderer.compileAsync?renderer.compileAsync(viewScene,viewCamera):renderer.compile(viewScene,viewCamera);job?.catch?.(()=>{});}catch(e){console.warn('Weapon prewarm failed',e);}finally{for(const x of hidden)x.visible=false;}return hidden.length;},
    ready(){build();return armsRig?armsRig.ready.then(()=>true,()=>false):Promise.resolve(false);},
-   weaponModel(id){build();if(id==='c4'){const g=buildC4Block();return g;}const w=armsRig?.weapons[id];if(!w)return null;const c=w.model.clone(true),own=weaponSkins;/* its own materials: the ones in your hands are dimmed with the place you stand in */c.traverse(x=>{x.visible=true;if(x.isMesh&&!Array.isArray(x.material)&&x.material){let m=own.get(x.material);if(!m){m=x.material.clone();m.onBeforeCompile=x.material.onBeforeCompile;m.customProgramCacheKey=x.material.customProgramCacheKey;m.envMapIntensity=studio.get(x.material)??x.material.envMapIntensity;own.set(x.material,m);}x.material=m;}});return c;},
+   // A copy of a gun for the world (loot, bots' hands). vid: a variant, whose model arrives later; onReady(model) runs
+   // when it is in place (callers restyle its materials then).
+   weaponModel(id,vid=null,onReady=null){build();const v=variantOfSpec(id,vid);
+    if(v){const g=new T.Group(),done=src=>{const c=src.clone(true);c.traverse(x=>{x.visible=true;if(x.isMesh)x.frustumCulled=true;});g.add(c);onReady?.(c);requestFrame();};
+     if(id==='c4')throwableModel(v).then(done).catch(()=>{});else armsRig?.loadVariant(id,v).then(gun=>done(gun.model)).catch(()=>{});return g;}
+    if(id==='c4'){const g=buildC4Block();return g;}const w=armsRig?.weapons[id];if(!w)return null;const c=w.model.clone(true),own=weaponSkins;/* its own materials: the ones in your hands are dimmed with the place you stand in */c.traverse(x=>{x.visible=true;if(x.isMesh&&!Array.isArray(x.material)&&x.material){let m=own.get(x.material);if(!m){m=x.material.clone();m.onBeforeCompile=x.material.onBeforeCompile;m.customProgramCacheKey=x.material.customProgramCacheKey;m.envMapIntensity=studio.get(x.material)??x.material.envMapIntensity;own.set(x.material,m);}x.material=m;}});return c;},
    setHudMode(mode){build();hud.el.dataset.mode=mode||'';},
    armed:()=>armed,
    weapon:()=>current&&current.id!=='fists'?current.id:null,
