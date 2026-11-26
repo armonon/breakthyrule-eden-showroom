@@ -18,11 +18,11 @@ window.createAdaptiveResolution=function(renderer,{max=Math.min(devicePixelRatio
  // Every resolution change reallocates the canvas and every post-processing target: a visible hitch. To stop a
  // borderline machine bouncing between two ratios, each drop doubles the calm time needed before climbing again
  // (8 s, 30 s, 60 s ... 5 min), and after three drops in one session it stays where it settled.
- let drops=0,climbWait=8000;
+ let drops=0,climbWait=8000,trial=null,cpuBound=false;
  renderer.setPixelRatio(ratio);
  function set(next,time){
   next=Math.max(min,Math.min(max,Math.round(next/step)*step));if(next===ratio)return;
-  ratio=next;lastChange=time;smoothSince=time;average=vsync;slowFrames=0;renderer.setPixelRatio(ratio);onChange(ratio);
+  ratio=next;lastChange=time;smoothSince=time;average=0;slowFrames=0;renderer.setPixelRatio(ratio);onChange(ratio);
  }
  return {
   // Call once per rendered frame with the rAF timestamp; `consecutive` is false after an idle pause.
@@ -35,14 +35,17 @@ window.createAdaptiveResolution=function(renderer,{max=Math.min(devicePixelRatio
    average=average?average+(interval-average)*.08:interval;
    const pressured=average>vsync*(target?1.15:1.6);slowFrames=pressured?slowFrames+1:0;if(pressured)smoothSince=0;
    if(time-lastChange<2500)return;
-   if(pressured){if(slowFrames<pressureFrames)return;if(ratio>min){set(ratio-step,time);drops++;climbWait=Math.min(300000,climbWait<30000?30000:climbWait*2);}else{lastChange=time;average=vsync;slowFrames=0;onFloor();}}
+   // A drop that did not make frames faster means the slowness is not pixels (a busy CPU, usually on phones):
+   // put the sharpness back and stop trading it away; the host's cheaper-rendering steps (onFloor) take over.
+   if(trial&&time-trial.at>=2500){const helped=average<trial.before*.9;if(!helped){cpuBound=true;set(trial.ratio,time);}trial=null;return;}
+   if(pressured){if(slowFrames<pressureFrames)return;if(ratio>min&&!cpuBound){const before=average,from=ratio;set(ratio-step,time);trial={at:time,before,ratio:from};drops++;climbWait=Math.min(300000,climbWait<30000?30000:climbWait*2);}else{lastChange=time;average=vsync;slowFrames=0;onFloor();}}
    else if(average<vsync*(target?1.05:1.25)){if(!smoothSince)smoothSince=time;else if(drops<3&&time-smoothSince>climbWait&&ratio<max)set(ratio+step,time);}
    else smoothSince=0;
   },
   pause(){last=0;smoothSince=0;average=0;slowFrames=0;},
   // The graphics setting moves the ceiling; the current ratio follows it down at once, or climbs to it later.
   setMax(next){max=next;if(ratio>max){ratio=max;renderer.setPixelRatio(ratio);onChange(ratio);}},
-  inspect:()=>({pixelRatio:ratio,max,min,frameMs:+average.toFixed(1),drops,climbWaitS:Math.round(climbWait/1000),vsyncMs:+vsync.toFixed(1),targetFps:target?+(1000/target).toFixed(2):null})
+  inspect:()=>({pixelRatio:ratio,cpuBound,max,min,frameMs:+average.toFixed(1),drops,climbWaitS:Math.round(climbWait/1000),vsyncMs:+vsync.toFixed(1),targetFps:target?+(1000/target).toFixed(2):null})
  };
 };
 
@@ -82,4 +85,21 @@ window.mergeStaticMeshes=function(T,root,{skip=()=>false,minGroup=2,ignoreNames=
   for(const mesh of meshes)mesh.removeFromParent();merged++;removed+=meshes.length;
  }
  return {merged,removed};
+};
+
+// Small-object culling for phones. Anything whose bounding radius is under `ratio` of its distance from the eye
+// (a few pixels across on a phone screen, and mostly lost in the night fog) is left out of the draw. It works inside
+// the frustum test, so visibility, layers and raycasts are untouched: bullets still hit what is not drawn.
+// Skinned bodies, instanced batches and anything under the `keep` roots (muzzle flashes, tracers) always draw.
+window.createSmallCull=function(T,{ratio=.006,keep=[]}={}){
+ const proto=T.Frustum.prototype,base=proto.intersectsObject,eye=new T.Vector3(),k2=ratio*ratio,keepSet=new Set(keep);let on=false,culled=0;
+ const exempt=o=>{if(o.__smallCull!==undefined&&o.__smallCullParent===o.parent)return o.__smallCull;let skip=!!(o.isSkinnedMesh||o.isInstancedMesh||o.userData?.alwaysDraw);
+  for(let p=o.parent;p&&!skip;p=p.parent)if(keepSet.has(p.name))skip=true;o.__smallCull=skip;o.__smallCullParent=o.parent;return skip;};
+ proto.intersectsObject=function(o){
+  if(on&&o.geometry){const g=o.geometry;if(!g.boundingSphere)g.computeBoundingSphere();const e=o.matrixWorld.elements,
+    s2=Math.max(e[0]*e[0]+e[1]*e[1]+e[2]*e[2],e[4]*e[4]+e[5]*e[5]+e[6]*e[6],e[8]*e[8]+e[9]*e[9]+e[10]*e[10]),r2=g.boundingSphere.radius*g.boundingSphere.radius*s2,
+    c=g.boundingSphere.center,dx=e[0]*c.x+e[4]*c.y+e[8]*c.z+e[12]-eye.x,dy=e[1]*c.x+e[5]*c.y+e[9]*c.z+e[13]-eye.y,dz=e[2]*c.x+e[6]*c.y+e[10]*c.z+e[14]-eye.z;
+   if(r2<k2*(dx*dx+dy*dy+dz*dz)&&!exempt(o)){culled++;return false;}}
+  return base.call(this,o);};
+ return {set(next){on=!!next;},eye(v){eye.copy(v);culled=0;},inspect:()=>({on,ratio,culled})};
 };

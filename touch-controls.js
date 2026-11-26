@@ -10,13 +10,13 @@
   const movementKey=move||key,cap=(node,id)=>{try{node.setPointerCapture(id);}catch{}};
   const uncap=(node,id)=>{try{if(id!==null&&node.hasPointerCapture(id))node.releasePointerCapture(id);}catch{}};
   const el=document.createElement('div');el.id='touch-controls';el.hidden=true;el.setAttribute('aria-label','Touch game controls');
-  el.innerHTML=`<div class="tc-look" aria-hidden="true"></div><div class="tc-stick" role="group" aria-label="Movement joystick; drag inside the circle to walk, outside it to sprint"><i></i><span class="tc-stick-label">MOVE</span></div>
+  el.innerHTML=`<div class="tc-look" aria-hidden="true"></div><div class="tc-stick-zone" aria-hidden="true"></div><div class="tc-stick" role="group" aria-label="Movement joystick; drag inside the circle to walk, outside it to sprint"><i></i><span class="tc-stick-label">MOVE</span></div>
    <button type="button" class="tc-fire" aria-label="Fire">FIRE</button><button type="button" class="tc-aim" aria-label="Aim">AIM</button>
    <button type="button" class="tc-jump" aria-label="Jump">JUMP</button><button type="button" class="tc-slide" aria-label="Hold to crouch or slide while running">CROUCH</button>
    <button type="button" class="tc-use" aria-label="Interact">USE</button><button type="button" class="tc-reload" aria-label="Reload">RELOAD</button>
    <button type="button" class="tc-swap" aria-label="Next weapon">SWAP</button><button type="button" class="tc-melee" aria-label="Melee (hold for a slam)">HIT</button><button type="button" class="tc-guard" aria-label="Block (tap just before a hit to parry)">BLOCK</button>
    <button type="button" class="tc-third" aria-label="Switch camera view">VIEW</button><button type="button" class="tc-leave" aria-label="Leave arena and return to Eden" hidden>EDEN</button><button type="button" class="tc-settings" aria-label="Settings: look sensitivity, aim assist, graphics" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.4 2.9a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.6 7.6 0 0 0 1.7 1L11 21h4l.4-2.9a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg></button>`;
-  (host||document.body).append(el);const q=s=>el.querySelector(s),stick=q('.tc-stick'),nub=stick.querySelector('i'),pad=q('.tc-look');
+  (host||document.body).append(el);const q=s=>el.querySelector(s),stick=q('.tc-stick'),nub=stick.querySelector('i'),pad=q('.tc-look'),zone=q('.tc-stick-zone');
   let disposed=false,shown=false,sid=null,lid=null,origin=null,lastLook=null,held=new Set(),slot=0,lastMode=null;
   const releases=new Map(),blocked=()=>!!document.querySelector('dialog[open],#night-chat:not([hidden]),#social-panel:not([hidden])');
   const canInput=()=>!disposed&&!document.hidden&&visible()&&!blocked();
@@ -24,7 +24,7 @@
    for(const k of held)if(!want.has(k))movementKey(k,false);for(const k of want)if(!held.has(k))movementKey(k,true);held=want;
    if(stick.classList.contains('running')!==want.has('Shift')){stick.classList.toggle('running',want.has('Shift'));stick.querySelector('.tc-stick-label').textContent=want.has('Shift')?'SPRINTING':'MOVE';}
   }
-  function endStick(){const id=sid;sid=null;origin=null;nub.style.transform='';setKeys(0,0);uncap(stick,id);}
+  function endStick(){const id=sid;sid=null;origin=null;nub.style.transform='';stick.style.transform='';stick.classList.remove('floating');setKeys(0,0);uncap(stick,id);uncap(zone,id);}
   function endLook(){const id=lid;lid=null;lastLook=null;uncap(pad,id);}
   function reset(){endStick();endLook();for(const end of [...releases.values()])end();combat()?.touchFire?.(false);onReset?.();}
   function begin(e){if(e.button!==0||!canInput())return false;e.preventDefault();return true;}
@@ -34,6 +34,14 @@
   listen(stick,'pointerdown',e=>{if(sid!==null||!begin(e))return;sid=e.pointerId;origin=stickOrigin();cap(stick,sid);updateStick(e);});
   listen(stick,'pointermove',updateStick,{passive:false});
   for(const type of ['pointerup','pointercancel','lostpointercapture'])listen(stick,type,e=>{if(e.pointerId===sid)endStick();});
+  // Floating stick: a thumb landing anywhere on the lower left brings the stick to it, so a press that misses the
+  // ring still walks. It goes home on release. Buttons on that side sit above the zone and keep their taps.
+  listen(zone,'pointerdown',e=>{if(sid!==null||!begin(e))return;const home=stick.getBoundingClientRect(),cx=home.x+home.width/2,cy=home.y+home.height/2,half=home.width/2;
+   const x=Math.max(half+4,Math.min(innerWidth*.5,e.clientX)),y=Math.max(innerHeight*.3,Math.min(innerHeight-half-4,e.clientY));
+   stick.style.transform=`translate(${x-cx}px,${y-cy}px)`;stick.classList.add('floating');sid=e.pointerId;
+   origin={x,y,r:home.width*.36,sprintRadius:half,walkRadius:home.width*.42};cap(zone,sid);updateStick(e);});
+  listen(zone,'pointermove',updateStick,{passive:false});
+  for(const type of ['pointerup','pointercancel','lostpointercapture'])listen(zone,type,e=>{if(e.pointerId===sid)endStick();});
   // Phone look: a touch pixel is worth more than a mouse pixel, and fast swipes turn further
   // (gentle acceleration) so one thumb can turn around while slow drags stay precise.
   // A small dead zone keeps a tap from nudging the view; the movement past it is kept.
@@ -87,7 +95,7 @@
   for(const id of ['night-chat','social-panel']){const panel=document.getElementById(id);if(panel)observer.observe(panel,{attributes:true,attributeFilter:['hidden']});}
   for(const type of ['blur','pagehide','orientationchange'])listen(root,type,reset);
   // iOS resizes the viewport as its address bar slides: keep held fingers, re-measure the stick.
-  const remeasure=()=>{if(sid!==null)origin=stickOrigin();};listen(root,'resize',remeasure);if(root.visualViewport)listen(root.visualViewport,'resize',remeasure);
+  const remeasure=()=>{if(sid!==null&&!stick.classList.contains('floating'))origin=stickOrigin();};listen(root,'resize',remeasure);if(root.visualViewport)listen(root.visualViewport,'resize',remeasure);
   listen(document,'visibilitychange',()=>{reset();sync();});listen(document,'btr:page-visibility',()=>{reset();sync();});
   if(document.body.classList.contains('expedition-entry'))document.body.classList.add('entry-touch');sync();
   return {element:el,reset,dispose(){if(disposed)return;disposed=true;clearInterval(timer);observer.disconnect();abort.abort();reset();combat()?.setTouch?.(false);document.body.classList.remove('touch-play','touch-arena','entry-touch');el.remove();},inspect:()=>({shown,keys:[...held],stick:sid!==null,look:lid!==null,actions:releases.size,mode:lastMode})};

@@ -19,9 +19,16 @@
      if(!own.has(o))tracked.add(o);});}
    stats.tracked=tracked.size;
   }
+  // A hidden world (the museum, the library, the amphitheater while you are in Beyond Eden) is not drawn, but Three
+  // still walked it and recomposed every matrix in it each frame. Its root now skips that while hidden and refreshes
+  // the whole subtree the frame it shows again. A forced call (someone asking for exact matrices) still goes through.
+  const keepWalking=new Set(['Player body']);
+  function skipHidden(o){if(o.__skipHidden||o.isCamera||keepWalking.has(o.name))return;o.__skipHidden=true;let stale=false;const base=o.updateMatrixWorld;
+   o.updateMatrixWorld=function(force){if(!this.visible&&!force){stale=true;return;}if(stale){stale=false;force=true;}return base.call(this,force);};}
   return {
    update(time){
     const t=time/1000;if(t<next)return;next=t+every;
+    for(const child of scene.children)skipHidden(child);
     if(lastScan<0||t-lastScan>2){lastScan=t;rescan();}
     for(const o of tracked){const e=seen.get(o);if(!e)continue;
      if(e.frozen){if(!same(o,e.s)){o.matrixAutoUpdate=true;e.frozen=false;e.since=t;snap(o,e.s);stats.thawed++;}continue;}

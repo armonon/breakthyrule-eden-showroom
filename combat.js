@@ -1045,7 +1045,8 @@
    yaw+=dx*share;pitch=clamp(pitch+dy*share,-1.35,1.35);free.x+=dx*(1-share);free.y+=dy*(1-share);freeClamp();
   }
   function freeUpdate(dt,sprinting){
-   const on=armed&&!!o.freeAim?.()&&!((o.thirdPerson?.()||0)>.35);
+   // Phones keep a fixed crosshair: a thumb drag turns the view, it never walks the gun around the frame.
+   const on=armed&&!touchMode&&!!o.freeAim?.()&&!((o.thirdPerson?.()||0)>.35);
    if(on!==free.on){free.on=on;document.body.classList.toggle('bodycam-aim',on);if(!on){if(armed){free.endX=free.x;free.endY=free.y;}else{yaw+=free.x;pitch=clamp(pitch+free.y,-1.35,1.35);}free.x=free.y=0;}else{free.endX=free.endY=0;}}
    // The view comes round to where the muzzle was instead of jumping there.
    if(free.endX||free.endY){const k=armed?1-Math.exp(-16*dt):1,dx=free.endX*k,dy=free.endY*k;yaw+=dx;pitch=clamp(pitch+dy,-1.35,1.35);free.endX-=dx;free.endY-=dy;if(Math.hypot(free.endX,free.endY)<.0005)free.endX=free.endY=0;}

@@ -121,3 +121,7 @@ body.touch-arena .ar-zone{display:block;max-width:150px;white-space:nowrap;overf
 #touch-controls.tc-expedition .tc-settings{left:auto;transform:none;right:max(12px,env(safe-area-inset-right));top:64px}
 @media(max-height:500px) and (orientation:landscape){#touch-controls.tc-expedition .tc-settings{right:auto;left:calc(18px + env(safe-area-inset-left));top:60px}}
 @media(orientation:portrait){#touch-controls.tc-arena .tc-settings{left:calc(18px + env(safe-area-inset-left));top:auto;bottom:calc(240px + env(safe-area-inset-bottom));transform:none}}
+
+/* Floating stick (touch-controls.js): the lower-left area catches a thumb that misses the ring. */
+.tc-stick-zone{position:absolute;left:0;bottom:0;width:44%;height:68%;background:transparent;touch-action:none}
+#touch-controls .tc-stick.floating{transition:none}
