@@ -15,7 +15,8 @@
  // Jumps go higher the longer Space is held (up to HOLD_MAX seconds of extra lift). Both live in the snapshot so the
  // shared simulation and prediction stay in step.
  const MOM={build:1/3.2,air:.04,walk:.55,stop:1.6,speed:.45,jump:.22},HOLD_MAX=.28,HOLD_LIFT=9;
- let momentum=0,jumpHold=-1;
+ let momentum=0,jumpHold=-1,rollTime=null;
+ const ROLL_TIME=.8;
  // Safety net: whatever left the body overlapping solid geometry (a climb that began and failed on a crate edge, a
  // respawn on a prop, a world edit), step it out to the nearest free spot: up onto the obstacle if it is low enough,
  // else outward in widening rings at the same height (in the air) or on the floor there (on the ground). Pure
@@ -135,7 +136,7 @@ const DIVE_HOLD=.16;
 function startDive(){
  const speed=Math.hypot(walkVelocity.x,walkVelocity.z),dir=slide.dir.clone();
  if(!motion.jump(4.3))return;
- slide=null;dive={t:0,dir,speed:Math.max(speed,6.5)*1.15};walkVelocity.copy(dir).multiplyScalar(dive.speed);diveCount++;
+ slide=null;rollTime=null;dive={t:0,dir,speed:Math.max(speed,6.5)*1.15};walkVelocity.copy(dir).multiplyScalar(dive.speed);diveCount++;
  // Launch happens after this frame's landing check. Record it now so a correction
  // or interrupted frame that grounds us before the next sample still lands the dive.
  wasAirborne=true;airTime=0;airPeak=targetPosition.y-1.75;
@@ -144,16 +145,16 @@ function startDive(){
 function landDive(){
  const speed=Math.hypot(walkVelocity.x,walkVelocity.z);
  // Holding a direction as you land turns the belly flop into a roll: back on your feet almost at once, still moving.
- if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].some(k=>keys.has(k))){rolls++;sway.bump(.6,Math.random()<.5?-1:1);footsteps?.land(surfaceAt(targetPosition),.7);{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,6,.7);}
+ if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].some(k=>keys.has(k))){rolls++;rollTime=0;sway.bump(.6,rolls%2?-1:1);footsteps?.land(surfaceAt(targetPosition),.7);{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,6,.7);}
   slide={kind:'slide',dur:.4,t:0,dir:dive.dir.clone(),speed:Math.max(4.5,speed*.85),belly:true,roll:true};proneT=.22;h.kick(3);dive=null;return;}
- sway.bump(1.1,Math.random()<.5?-1:1);footsteps?.land(surfaceAt(targetPosition),1);hitStop(45);
+ sway.bump(1.1,diveCount%2?-1:1);footsteps?.land(surfaceAt(targetPosition),1);hitStop(45);
  {const feet=targetPosition.clone();feet.y-=1.72;puff(feet,9,.9);}
  slide={kind:'slide',dur:.55,t:0,dir:dive.dir.clone(),speed:Math.max(3.2,speed*.7),belly:true};footsteps?.slide(surfaceAt(targetPosition),.55);
  proneT=.75;dive=null;
 }
 // Vault: jump into something low (a chest, a low wall, a bench) and you hop over it to the far side.
 let vault=null,vaultCount=0,wallPops=0,rolls=0;
-function cancelTraversal(){vault=null;slide=null;dive=null;proneT=0;jumpBuffer=0;coyote=0;}
+function cancelTraversal(){vault=null;slide=null;dive=null;proneT=0;jumpBuffer=0;coyote=0;rollTime=null;}
 function vaultPoint(v,k){
  // Carry on over the planted take-off foot (v.lead metres, at about its pace) while rising, so it does not slide back;
  // finish rising outside the near face, cross above the obstacle, then settle. Older snapshots have no lead: 0.
@@ -255,12 +256,13 @@ function updateJump(dt){
  }
  // Landings, wall and ledge moves in the air, and what follows from them.
  function updateAir(dt,speed,airborne,tick=null){
+ if(rollTime!==null){rollTime+=dt;if(rollTime>=ROLL_TIME||airborne)rollTime=null;}
  const Pk=h.parkourOn()?h.parkour():null;if(Pk&&!Pk.active()&&!Pk.updated?.(tick)){Pk.update(dt,tick);if(airborne)Pk.air(dt);}
  // Parkour owns the player while it is active: a caught ledge is not a landing, and a later fall counts from where you let go.
- if(h.parkour()?.active()){slide=null;dive=null;airTime=0;wasAirborne=false;airPeak=targetPosition.y-1.75;proneT=Math.max(0,proneT-dt);return;}
+ if(h.parkour()?.active()){slide=null;dive=null;rollTime=null;airTime=0;wasAirborne=false;airPeak=targetPosition.y-1.75;proneT=Math.max(0,proneT-dt);return;}
  if(airborne){airTime+=dt;airPeak=Math.max(airPeak,targetPosition.y-1.75);}else if(wasAirborne){
   const fell=airPeak-(targetPosition.y-1.75),res=Pk?.land(fell);airPeak=targetPosition.y-1.75;
-  if(res?.kind==='roll'){proneT=0;h.kick(4);h.playerBody?.anim?.('roll',{fade:.06,speed:1.9});{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,8,.8);}}else if(res?.kind==='hard'){proneT=res.stun;momentum=0;h.playerBody?.anim?.('jumpLand',{fade:.06,speed:1.6});}footsteps?.land(surfaceAt(targetPosition),Math.min(1,airTime/.7));if(airTime>.45){const feet=targetPosition.clone();feet.y-=1.72;puff(feet,5,.7);}airTime=0;
+  if(res?.kind==='roll'){proneT=0;rollTime=0;h.kick(4);{const feet=targetPosition.clone();feet.y-=1.72;puff(feet,8,.8);}}else if(res?.kind==='hard'){proneT=res.stun;momentum=0;h.playerBody?.anim?.('jumpLand',{fade:.06,speed:1.6});}footsteps?.land(surfaceAt(targetPosition),Math.min(1,airTime/.7));if(airTime>.45){const feet=targetPosition.clone();feet.y-=1.72;puff(feet,5,.7);}airTime=0;
   if(dive)landDive();
   // Land with C held at speed and you go straight into a slide.
   else if(crouchHeld&&!slide&&speed>4.2){slide={kind:'slide',dur:SLIDE_TIME,t:0,dir:walkVelocity.clone().setY(0).normalize(),speed:speed*1.15,noDive:true};footsteps?.slide(surfaceAt(targetPosition),SLIDE_TIME);}}
@@ -269,7 +271,7 @@ function updateJump(dt){
  if(dive)dive.t+=dt;proneT=Math.max(0,proneT-dt);
  tryTackle();
  }
- function captureState(){return root.createMovementStateCodec({T}).encode({version:1,crouchHeld,crouchAmount,slide,airTime,wasAirborne,dive,proneT,diveCount,tackleCount,airPeak,coyote,jumpBuffer,vault,vaultCount,wallPops,rolls,lastTap,lastBump,bumpCount,momentum,jumpHold});}
+ function captureState(){return root.createMovementStateCodec({T}).encode({version:1,crouchHeld,crouchAmount,slide,airTime,wasAirborne,dive,proneT,diveCount,tackleCount,airPeak,coyote,jumpBuffer,vault,vaultCount,wallPops,rolls,lastTap,lastBump,bumpCount,momentum,jumpHold,rollTime});}
  function validateState(value){const s=root.createMovementStateCodec({T}).decode(value);
   if(s.version!==1||typeof s.crouchHeld!=='boolean'||typeof s.wasAirborne!=='boolean'||!['crouchAmount','airTime','proneT','diveCount','tackleCount','airPeak','coyote','jumpBuffer','vaultCount','wallPops','rolls','lastBump','bumpCount'].every(k=>Number.isFinite(s[k]))||s.crouchAmount<0||s.crouchAmount>1||!s.lastTap||!Number.isFinite(s.lastTap.a)||!Number.isFinite(s.lastTap.d))throw Error('Incompatible locomotion snapshot.');
   const nonnegative=['airTime','proneT','diveCount','tackleCount','coyote','jumpBuffer','vaultCount','wallPops','rolls','lastBump','bumpCount'];
@@ -279,15 +281,16 @@ function updateJump(dt){
   if(s.dive!==null&&(!s.dive||!vec(s.dive.dir)||!numbers(s.dive,['t','speed'])||s.dive.t<0))throw Error('Invalid dive snapshot.');
   if(s.vault!==null&&(!s.vault||!vec(s.vault.from)||!vec(s.vault.to)||!numbers(s.vault,['t','dur','lift','speed'])||s.vault.lead!==undefined&&!(Number.isFinite(s.vault.lead)&&s.vault.lead>=0&&s.vault.lead<=.5)||s.vault.t<0||s.vault.dur<=0))throw Error('Invalid vault snapshot.');
   if(s.momentum!==undefined&&(!Number.isFinite(s.momentum)||s.momentum<0||s.momentum>1)||s.jumpHold!==undefined&&(!Number.isFinite(s.jumpHold)||s.jumpHold<-1||s.jumpHold>1))throw Error('Invalid momentum snapshot.');
+  if(s.rollTime!=null&&(!Number.isFinite(s.rollTime)||s.rollTime<0||s.rollTime>=ROLL_TIME))throw Error('Invalid landing roll clock.');
   return s;
  }
- function restoreState(value){const s=validateState(value);momentum=s.momentum??0;jumpHold=s.jumpHold??-1;
+ function restoreState(value){const s=validateState(value);momentum=s.momentum??0;jumpHold=s.jumpHold??-1;rollTime=s.rollTime??null;
   ({crouchHeld,crouchAmount,slide,airTime,wasAirborne,dive,proneT,diveCount,tackleCount,airPeak,coyote,jumpBuffer,vault,vaultCount,wallPops,rolls,lastBump,bumpCount}=s);Object.assign(lastTap,s.lastTap);
  }
  const api={captureState,restoreState,validateState,move,jump,updateJump,tryVault,cancelTraversal,bodyHeight,tryStep,startSlide,tapDodge,updateCrouch,updateAir,
-  needsStep:()=>!!(keys.size||walkVelocity.lengthSq()||slide||vault||h.parkour()?.active()||momentum>0),
+  needsStep:()=>!!(keys.size||walkVelocity.lengthSq()||slide||vault||h.parkour()?.active()||momentum>0||rollTime!==null),
   momentum:()=>h.momentumEnabled?.()===false?0:momentum,
-  traversal:()=>h.parkour()?.presentation?.()||(vault?{kind:'vault',time:vault.t,duration:vault.dur,lift:vaultLift(vault)}:dive?{kind:'dive',time:dive.t}:slide?{kind:slide.kind,time:slide.t,duration:slide.dur}:null),
+  traversal:()=>h.parkour()?.presentation?.()||(vault?{kind:'vault',time:vault.t,duration:vault.dur,lift:vaultLift(vault)}:dive?{kind:'dive',time:dive.t}:rollTime!==null?{kind:'roll',time:rollTime,duration:ROLL_TIME}:slide?{kind:slide.kind,time:slide.t,duration:slide.dur}:null),
   get slide(){return slide;},set slide(v){slide=v;},get dive(){return dive;},set dive(v){dive=v;},get vault(){return vault;},set vault(v){if(v===null)cancelTraversal();},
   // Exactly one answer to "what is the player doing".
   state:()=>h.parkour()?.kind()||(vault?'vault':dive?'dive':slide?slide.kind:motion.inspect().airborne?'air':proneT>0?'prone':crouchAmount>.1?'crouch':'ground'),

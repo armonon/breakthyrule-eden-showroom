@@ -1,8 +1,8 @@
 'use strict';
 // Authored animation clips for the shared rig, layered under the procedural motion (character-motion.js).
 //
-// assets/anim/clips.json (baked by tools/animation/bake-clips.cjs from Quaternius' Universal Animation Libraries,
-// CC0, and Microsoft Rocketbox animations, MIT) stores, per clip and bone, the bone's world rotation relative to the
+// assets/anim/clips.json combines Quaternius' Universal Animation Libraries (CC0), Microsoft Rocketbox (MIT),
+// and Mixamo exports (see assets/anim/CREDITS.txt and tools/animation/README.md). It stores each bone's world rotation relative to the
 // source skeleton's rest pose, in the rig's axes (x = the character's left, y = up, z = forward), plus each source
 // bone's rest direction. For a given character this file corrects for the difference between those rest directions
 // and the character's own (a T-pose arm against an A-pose arm), then turns world rotations into the rig's local
@@ -18,7 +18,7 @@
    if(!source?.dirs||Object.values(source.dirs).some(v=>!Array.isArray(v)||v.length!==3||v.some(n=>!Number.isFinite(n))))throw Error('Invalid animation source directions.');
   }
   for(const [id,c] of Object.entries(j.clips)){
-   if(!c||!Object.hasOwn(j.sources,c.src)||!Number.isInteger(c.n)||c.n<2||c.n>36000||!Number.isFinite(c.fps)||c.fps<=0||c.fps>240||!Number.isFinite(c.duration)||c.duration<=0||!encoded(c.q,c.n*j.bones.length*8)||!encoded(c.hip,c.n*2))throw Error('Invalid animation clip: '+id);
+   if(!c||!Object.hasOwn(j.sources,c.src)||!Number.isInteger(c.n)||c.n<2||c.n>36000||!Number.isFinite(c.fps)||c.fps<=0||c.fps>240||!Number.isFinite(c.duration)||c.duration<=0||!encoded(c.q,c.n*j.bones.length*8)||!encoded(c.hip,c.n*2)||c.rootXZ!==undefined&&!encoded(c.rootXZ,c.n*4))throw Error('Invalid animation clip: '+id);
   }
   return j;
  }
@@ -26,7 +26,7 @@
   for(let attempt=0;attempt<2;attempt++){
    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
    try{
-    const response=await fetch('/assets/anim/clips.json?v=20261122-no-unused-clip',{signal:controller.signal});
+    const response=await fetch('/assets/anim/clips.json?v=20261125-mixamo-parkour',{signal:controller.signal});
     if(!response.ok){const error=Error('Animation library HTTP '+response.status);error.retry=response.status>=500||response.status===429;throw error;}
     return validate(await response.json());
    }catch(error){
@@ -40,7 +40,15 @@
   loading??=request().then(j=>{data=j;return j;}).catch(e=>{console.warn('Animation clips unavailable; keeping procedural movement.',e);loading=null;});
   return loading;
  }
- function clip(id){if(!data?.clips[id])return null;let c=decoded.get(id);if(!c){const s=data.clips[id];c={...s,q:b64(s.q,Int16Array),hip:b64(s.hip,Int16Array)};decoded.set(id,c);}return c;}
+ function clip(id){if(!data?.clips[id])return null;let c=decoded.get(id);if(!c){const s=data.clips[id];c={...s,q:b64(s.q,Int16Array),hip:b64(s.hip,Int16Array),...(s.rootXZ?{rootXZ:b64(s.rootXZ,Int16Array)}:{})};decoded.set(id,c);}return c;}
+ // Paired actions opt into root translation explicitly; normal movement remains controller-owned.
+ // Offsets are in bind-hip-height units, x = character left and z = forward. The caller scales and rotates
+ // them into world space, subtracting the starting sample when playing a cropped segment.
+ function rootOffset(id,time,out={x:0,z:0}){
+  const c=clip(id);out.x=0;out.z=0;if(!c?.rootXZ)return out;
+  const f=Math.min(c.n-1,Math.max(0,(Number.isFinite(time)?time:0)*c.fps)),a=Math.floor(f),b=Math.min(c.n-1,a+1),k=f-a;
+  out.x=(c.rootXZ[a*2]*(1-k)+c.rootXZ[b*2]*k)/10000;out.z=(c.rootXZ[a*2+1]*(1-k)+c.rootXZ[b*2+1]*k)/10000;return out;
+ }
  const MASKS={};
  function masks(){if(MASKS.full)return MASKS;const B=data.bones;
   MASKS.full=B.map(()=>1);
@@ -62,7 +70,7 @@
   const ours=B.map((n,i)=>{const b=bones[i],c=CH[n]&&bone(CH[n]);if(!b||!c)return null;const d=wr(c).clone().sub(wr(b));return d.lengthSq()>1e-10?d.normalize():null;});
   const corr={};
   for(const [src,{dirs}] of Object.entries(data.sources))corr[src]=B.map((n,i)=>{const s=dirs[n],o=ours[i];if(!s||!o)return new T.Quaternion();return new T.Quaternion().setFromUnitVectors(o,new T.Vector3(...s));});
-  const pelvis=bone('root'),r={bones,parent,corr,hipY:model.userData?.animBindHipY??(pelvis?pelvis.position.y:1),pelvis,q:B.map(()=>new T.Quaternion()),l:B.map(()=>new T.Quaternion())};
+  const pelvis=bone('root'),r={bones,parent,corr,hipY:model.userData?.animBindHipY??(pelvis?pelvis.position.y:1),pelvis,q:B.map(()=>new T.Quaternion()),l:B.map(()=>new T.Quaternion()),mixed:B.map(()=>new T.Quaternion()),mass:new Float64Array(B.length)};
   model.userData||(model.userData={});model.userData.animRig=r;return r;
  }
  // Pose one clip at time t (seconds): world rotations into r.q, returns the hip offset in metres.
@@ -75,13 +83,30 @@
    q.normalize().multiply(corr[i]);}
   return ((c.hip[f0]*(1-k)+c.hip[f1]*k)/10000)*r.hipY;
  }
- // Blend layers [{id, t, weight, mask (array), loop (optional override)}] over the current (procedural) pose.
+ // Ordinary layers remain ordered overlays. Layers with the same `blend` key form one normalized crossfade:
+ // two half-weight traversal poses produce one complete pose, rather than attenuating each other against the gait.
  function apply(T,model,layers){
-  if(!data||!layers.length)return;const r=rig(T,model);const B=r.bones.length;
-  for(const L of layers){const c=clip(L.id);if(!c||L.weight<=.001)continue;const hip=poseWorld(T,r,c,L.t,L.loop),m=L.mask||masks().full;
+  if(!data||!layers.length)return;const r=rig(T,model),B=r.bones.length,done=new Set();
+  for(const L of layers){
+   if(L.blend){
+    if(done.has(L.blend))continue;done.add(L.blend);r.mass.fill(0);let hip=0,hipMass=0;
+    for(const entry of layers){if(entry.blend!==L.blend||entry.weight<=.001)continue;const c=clip(entry.id);if(!c)continue;
+     const h=poseWorld(T,r,c,entry.t,entry.loop),mask=entry.mask||masks().full;
+     for(let i=0;i<B;i++){if(!r.bones[i])continue;const weight=entry.weight*mask[i];if(!(weight>0))continue;const parent=r.parent[i];
+      const local=parent<0?r.l[i].copy(r.q[i]):r.l[i].copy(r.q[parent]).invert().multiply(r.q[i]);
+      const total=r.mass[i]+weight;if(!r.mass[i])r.mixed[i].copy(local);else r.mixed[i].slerp(local,weight/total);r.mass[i]=total;
+     }
+     hip+=h*entry.weight*mask[0];hipMass+=entry.weight*mask[0];
+    }
+    for(let i=0;i<B;i++)if(r.bones[i]&&r.mass[i]>0)r.bones[i].quaternion.slerp(r.mixed[i],Math.min(1,r.mass[i]));
+    if(r.pelvis&&hipMass>0)r.pelvis.position.y+=hip/Math.max(1,hipMass);
+    continue;
+   }
+   const c=clip(L.id);if(!c||L.weight<=.001)continue;const hip=poseWorld(T,r,c,L.t,L.loop),m=L.mask||masks().full;
    for(let i=0;i<B;i++){const b=r.bones[i];if(!b||!m[i])continue;const p=r.parent[i];
     const local=p<0?r.l[i].copy(r.q[i]):r.l[i].copy(r.q[p]).invert().multiply(r.q[i]);b.quaternion.slerp(local,L.weight*m[i]);}
-   if(m[0]&&r.pelvis)r.pelvis.position.y+=hip*L.weight*m[0];}
+   if(m[0]&&r.pelvis)r.pelvis.position.y+=hip*L.weight*m[0];
+  }
  }
- root.GardenAnim={load,ready:()=>!!data,clip,masks:()=>data?masks():null,apply,duration:id=>data?.clips[id]?.duration||0,phase0:id=>data?.clips[id]?.phase0||0,has:id=>!!data&&Object.hasOwn(data.clips,id)};
+ root.GardenAnim={load,ready:()=>!!data,clip,rootOffset,masks:()=>data?masks():null,apply,duration:id=>data?.clips[id]?.duration||0,phase0:id=>data?.clips[id]?.phase0||0,has:id=>!!data&&Object.hasOwn(data.clips,id)};
 })(window);

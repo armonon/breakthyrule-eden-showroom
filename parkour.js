@@ -27,7 +27,7 @@
   let lastUpdateTick=null;
   const codec=()=>root.createMovementStateCodec({T,boxes:()=>{refresh();return boxes;},fields:()=>{refresh();return fields;}});
   // Momentum from player-movement.js (0..1) and the wall-jump chain since the last landing.
-  let mom=0,chain=0,bonus=0;const CHAIN_MAX=6;
+  let mom=0,chain=0,bonus=0,dropAt=null;const CHAIN_MAX=6;
   let boxes=[],fields=[],sig='',state=null,cool={wallrun:0,grab:0,walljump:0,grip:0,auto:0},crouchAt=-9,clock=0,lean=0,fov=0,lift=0,stats={wallruns:0,scrambles:0,grabs:0,climbs:0,hangs:0,leaps:0,drops:0,rolls:0,hard:0,walljumps:0,grips:0,auto:0};
 
   const profile=()=>P.bodyDimensions?.()||root.playerBodyProfile?.(root.GardenPlayerCharacter)||{height:1.75,radius:.26,crouch:1.19};
@@ -111,14 +111,16 @@
 
   /* ---------------------------------------------------------------- moves */
   function startHang(ledge,from='grab'){
+   dropAt=null;
    const n=ledge.normal,tan=new T.Vector3(n.z,0,-n.x);state={kind:'hang',ledge:{...ledge,tangent:tan},t:0,from};
    P.motion.reset();P.vel.set(0,0,0);place(ledge.point.x+n.x*.38,hangFeet(ledge.top),ledge.point.z+n.z*.38);
    stats.hangs++;P.sway.bump(.45,0);P.footsteps?.land('stone',.35);P.requestDraw();
   }
   function startClimb(ledge,quick){
-   state={kind:'climb',t:0,dur:quick?.38:.72,from:P.pos.clone().setY(feetOf()),ledge,quick,entry:Math.hypot(P.vel.x,P.vel.z)};P.motion.reset();P.vel.set(0,0,0);stats.climbs++;P.footsteps?.land('stone',.3);P.requestDraw();
+   const style=state?.kind==='pipe'?'ladderExit':null;dropAt=null;
+   state={kind:'climb',t:0,dur:style?1.1:quick?.38:.72,from:P.pos.clone().setY(feetOf()),ledge,quick,style,entry:Math.hypot(P.vel.x,P.vel.z)};P.motion.reset();P.vel.set(0,0,0);stats.climbs++;P.footsteps?.land('stone',.3);P.requestDraw();
   }
-  function startWarp(to,{dur,arc,then,ledge=null}){state={kind:'warp',t:0,dur,arc,from:P.pos.clone().setY(feetOf()),to:to.clone(),then,ledge,entry:Math.hypot(P.vel.x,P.vel.z)};P.motion.reset();stats.leaps++;P.sway.bump(.35,0);P.requestDraw();}
+  function startWarp(to,{dur,arc,then,ledge=null,action='leap'}){dropAt=null;state={kind:'warp',t:0,dur,arc,from:P.pos.clone().setY(feetOf()),to:to.clone(),then,ledge,action,entry:Math.hypot(P.vel.x,P.vel.z)};P.motion.reset();stats.leaps++;P.sway.bump(.35,0);P.requestDraw();}
 
   // Jump pressed. Returns true if parkour took it.
   function onJump({late=false}={}){
@@ -166,9 +168,9 @@
    }
    return best;}
   function startGrip(hit){
-   const g=hit.g,v=P.vel.clone().setY(0);P.motion.reset();stats.grips++;P.sway.bump(.35,0);P.footsteps?.land('stone',.3);
+   const g=hit.g,v=P.vel.clone().setY(0),groundEntry=!P.motion.inspect().airborne;dropAt=null;P.motion.reset();stats.grips++;P.sway.bump(.35,0);P.footsteps?.land('stone',.3);
    if(g.type==='bar'){const ab=V(g.b).sub(V(g.a)).setY(0).normalize(),n=new T.Vector3(ab.z,0,-ab.x);if(v.dot(n)<0)n.negate();state={kind:'bar',id:g.id,t:0,u:hit.t,n,ang:0,av:clamp(v.dot(n)/1.5,0,3.2)*(1+.25*mom),cReady:false};}
-   else if(g.type==='pipe'){state={kind:'pipe',id:g.id,t:0,y:hit.y,n:new T.Vector3(g.n[0],0,g.n[1]),step:0,cReady:false};P.vel.set(0,0,0);}
+   else if(g.type==='pipe'){state={kind:'pipe',id:g.id,t:0,y:hit.y,n:new T.Vector3(g.n[0],0,g.n[1]),step:0,cReady:false,groundEntry};P.vel.set(0,0,0);}
    else{const L=hit.s+.9;state={kind:'rope',id:g.id,t:0,s:hit.s,qx:0,qz:0,wx:clamp(v.x/L,-2.5,2.5),wz:clamp(v.z/L,-2.5,2.5),cReady:false};}
    P.vel.set(0,0,0);P.requestDraw();
   }
@@ -196,7 +198,9 @@
    }
    if(s.kind==='pipe'){
     const up=w.z>0?1:w.z<0?-1:0,floor=floorAt(g.x+g.n[0]*.45,g.z+g.n[1]*.45,s.y+STEP);
+    const previousY=s.y;
     s.y=clamp(s.y+up*(2.1+1.4*mom)*dt,Math.max(g.y0-.2,floor),g.y1-1.05);
+    s.travelSpeed=dt>0?Math.abs(s.y-previousY)/dt:0;
     if(up){s.step+=dt;if(s.step>.32){s.step=0;P.footsteps?.step('stone',3);}}
     if(!safePlace(g.x+g.n[0]*.45,s.y,g.z+g.n[1]*.45))return;
     // At the top, climb over onto whatever the pipe runs up (the tower roof).
@@ -205,7 +209,9 @@
     return;
    }
    // Rope: a two-axis pendulum from the anchor. W / S climb; Shift pumps toward where you look, A / D to the side.
+   const previousLength=s.s;
    s.s=clamp(s.s-(w.z>0?1:w.z<0?-1:0)*(1.5+1*mom)*dt,.5,g.len-.1);
+   s.travelSpeed=dt>0?Math.abs(s.s-previousLength)/dt:0;
    // Pumping adds energy along the chosen direction in time with the swing (from rest it starts toward that way).
    const L=s.s+.9,dirP=f.clone().multiplyScalar(P.keys.has('shift')?1:0).addScaledVector(r,w.x),pk=(3.6+1.6*mom)*(Math.hypot(s.qx,s.qz)<1.1?1:0);
    let px=0,pz=0;if(dirP.lengthSq()>.01){dirP.normalize();const along=s.wx*dirP.x+s.wz*dirP.z,sg=Math.abs(along)<.2?1:Math.sign(along);px=dirP.x*sg*pk;pz=dirP.z*sg*pk;}
@@ -237,12 +243,17 @@
     for(let d=1;d<=3.6;d+=.2){const q=L.point.clone().addScaledVector(dir,d).addScaledVector(L.normal,-.12);refresh();
      for(const b of boxes)if(b!==L.box&&inside(b,q.x,q.z)&&Math.abs(b.top-L.top)<1.6){
       const pt=new T.Vector3(q.x,b.top,q.z).addScaledVector(L.normal,.12);const ledge={box:b,point:pt,normal:L.normal.clone(),top:b.top,stand:pt.clone().addScaledVector(L.normal,-.45)};
-      startWarp(new T.Vector3(pt.x+L.normal.x*.38,hangFeet(b.top),pt.z+L.normal.z*.38),{dur:.42,arc:.5,then:'hang',ledge});return;}}
+      startWarp(new T.Vector3(pt.x+L.normal.x*.38,hangFeet(b.top),pt.z+L.normal.z*.38),{dur:.56,arc:.5,then:'hang',ledge,action:w.x<0?'hopLeft':'hopRight'});return;}}
     P.sway.bump(.2,s);return;}
    if(w.z<0){// kick off backwards, onto a ledge or roof behind you if there is one
     const back=L.normal.clone(),f=feetOf(),ledge=ledgeAhead(P.pos,f,back,-1,1.8,5);
     if(ledge){startWarp(new T.Vector3(ledge.point.x+ledge.normal.x*.38,hangFeet(ledge.top),ledge.point.z+ledge.normal.z*.38),{dur:.55,arc:1,then:'hang',ledge});return;}
     state=null;release(back.multiplyScalar(4.6),4.2);return;}
+   // Space + forward reaches the next handhold when one is above the current ledge.
+   // The same swept, collision-checked path is used by the client and server.
+   if(w.z>0){const f=feetOf(),upper=ledgeAhead(P.pos,f,L.normal.clone().negate(),L.top-f+.4,L.top-f+1.6,1.2);
+    if(upper){const to=new T.Vector3(upper.point.x+upper.normal.x*.38,hangFeet(upper.top),upper.point.z+upper.normal.z*.38);
+     if(bodyFits(to)){startWarp(to,{dur:.65,arc:.35,then:'hang',ledge:upper,action:'hopUp'});return;}}}
    tryClimb();
   }
   function tryClimb(){const L=state.ledge;if(!bodyFits(L.stand)){P.sway.bump(.15,0);return;}startClimb(L,false);}
@@ -294,8 +305,8 @@
   }
   // Landing from a fall of `height` metres.
   function land(height,speed){
-   chain=0;if(height<2.2+1.2*mom)return null;
-   if(clock-crouchAt<.38){stats.rolls++;P.sway.bump(.6,Math.random()<.5?-1:1);P.footsteps?.land(P.surface(),.6);return {kind:'roll'};}
+   chain=0;dropAt=null;if(height<2.2+1.2*mom)return null;
+   if(clock-crouchAt<.38){stats.rolls++;P.sway.bump(.6,stats.rolls%2?-1:1);P.footsteps?.land(P.surface(),.6);return {kind:'roll'};}
    stats.hard++;stats.lastFall=+height.toFixed(2);P.sway.bump(Math.min(1.6,.6+height*.15),0);P.footsteps?.land(P.surface(),1);P.vel.multiplyScalar(height<4?.55:.25);
    if(height>5.5)P.onFall?.(Math.round((height-5.5)*10));return {kind:'hard',stun:Math.min(.7,.2+height*.06)};
   }
@@ -304,6 +315,7 @@
   function update(dt,tick=null){
    if(tick!==null&&lastUpdateTick===tick)return false;lastUpdateTick=tick;
    clock+=dt;
+   if(dropAt!==null&&clock-dropAt>=.4)dropAt=null;
    lean+=((state?.kind==='wallrun'?-state.side*.17:0)-lean)*(1-Math.exp(-10*dt));
    fov+=((state?.kind==='wallrun'?7:state?.kind==='warp'?5:0)+(Math.hypot(P.vel.x,P.vel.z)>4?mom*6:0)-fov)*(1-Math.exp(-8*dt));
    // First person, the eye rises towards a ledge you hold so your hands on it are in view; it settles again as you climb.
@@ -344,7 +356,7 @@
     const L=s.ledge,w=wish();
     // Let go: S, or a fresh press of C (holding C from walking off the edge does not drop you).
     if(!P.crouchHeld())s.cReady=true;
-    if(w.z<0&&s.t>.25||P.crouchHeld()&&s.cReady&&s.t>.25){cool.grab=clock+.5;release(L.normal.clone().multiplyScalar(.6),0);return true;}
+    if(w.z<0&&s.t>.25||P.crouchHeld()&&s.cReady&&s.t>.25){cool.grab=clock+.5;dropAt=clock;release(L.normal.clone().multiplyScalar(.6),0);return true;}
     // Climb on a fresh press of W (so holding W while dropping onto a ledge does not climb straight back up).
     const held=P.keys.has('w')||P.keys.has('arrowup');if(!held)s.wReady=true;
     if(w.z>0&&s.t>.3&&s.wReady){tryClimb();return true;}
@@ -368,23 +380,27 @@
    if(s.kind==='rope'){const g=gripOf(s.id);if(!g)return null;const q=Math.min(1.3,Math.hypot(s.qx,s.qz)),k=x=>new T.Vector3(g.x+x*Math.sin(s.qx),g.top-x*Math.cos(q),g.z+x*Math.sin(s.qz));return [k(s.s-.05),k(s.s+.22)];}
    const L=s.ledge;if(s.kind==='hang'||s.kind==='climb'&&s.t/s.dur<.85){const tan=L.tangent||new T.Vector3(L.normal.z,0,-L.normal.x);return [L.point.clone().addScaledVector(tan,.19),L.point.clone().addScaledVector(tan,-.19)];}return null;}
 
-  function captureState(){refresh();return codec().encode({version:1,sig,state,cool,crouchAt,clock,lean,fov,lift,stats,lastUpdateTick,mom,chain,bonus});}
+  function captureState(){refresh();return codec().encode({version:1,sig,state,cool,crouchAt,clock,lean,fov,lift,stats,lastUpdateTick,mom,chain,bonus,dropAt});}
   function validateState(value){refresh();const s=codec().decode(value);
    if(s.version!==1||s.sig!==sig||!['crouchAt','clock','lean','fov','lift'].every(k=>Number.isFinite(s[k]))||!s.cool||!Number.isFinite(s.cool.wallrun)||!Number.isFinite(s.cool.grab)||s.state&&!['hang','climb','warp','scramble','wallrun','bar','pipe','rope'].includes(s.state.kind))throw Error('Incompatible parkour snapshot.');
    if(s.lastUpdateTick!==null&&(!Number.isSafeInteger(s.lastUpdateTick)||s.lastUpdateTick<0)||s.clock<0||!s.stats||['wallruns','scrambles','grabs','climbs','hangs','leaps','drops','rolls','hard'].some(k=>!Number.isSafeInteger(s.stats[k])||s.stats[k]<0))throw Error('Invalid parkour counters.');
    if(s.mom!==undefined&&(!Number.isFinite(s.mom)||s.mom<0||s.mom>1)||s.chain!==undefined&&(!Number.isSafeInteger(s.chain)||s.chain<0||s.chain>CHAIN_MAX)||s.bonus!==undefined&&(!Number.isFinite(s.bonus)||s.bonus<0||s.bonus>1)||s.cool.walljump!==undefined&&(!Number.isFinite(s.cool.walljump)||s.cool.walljump<0)||s.stats.walljumps!==undefined&&(!Number.isSafeInteger(s.stats.walljumps)||s.stats.walljumps<0))throw Error('Invalid parkour momentum snapshot.');
    if(s.cool.grip!==undefined&&(!Number.isFinite(s.cool.grip)||s.cool.grip<0)||s.stats.grips!==undefined&&(!Number.isSafeInteger(s.stats.grips)||s.stats.grips<0))throw Error('Invalid grip counters.');
    if(s.cool.auto!==undefined&&(!Number.isFinite(s.cool.auto)||s.cool.auto<0)||s.stats.auto!==undefined&&(!Number.isSafeInteger(s.stats.auto)||s.stats.auto<0))throw Error('Invalid free-run counters.');
+   if(s.dropAt!=null&&(!Number.isFinite(s.dropAt)||s.dropAt<0||s.dropAt>s.clock))throw Error('Invalid ledge release clock.');
    const v=s.state,vec=p=>p?.isVector3&&[p.x,p.y,p.z].every(Number.isFinite),nums=(o,ks)=>ks.every(k=>Number.isFinite(o[k]));
    const ledge=L=>L&&L.box&&vec(L.point)&&vec(L.normal)&&vec(L.stand)&&Number.isFinite(L.top)&&(!L.tangent||vec(L.tangent));
    if(v){if(!Number.isFinite(v.t)||v.t<0)throw Error('Invalid parkour timer.');
     if(['hang','climb'].includes(v.kind)&&!ledge(v.ledge))throw Error('Invalid ledge snapshot.');
     if(v.kind==='hang'&&(typeof v.from!=='string'||v.cReady!==undefined&&typeof v.cReady!=='boolean'||v.wReady!==undefined&&typeof v.wReady!=='boolean'))throw Error('Invalid hang snapshot.');
     if(v.kind==='climb'&&(!vec(v.from)||!nums(v,['dur','entry'])||v.dur<=0||typeof v.quick!=='boolean'))throw Error('Invalid climb snapshot.');
+    if(v.kind==='climb'&&v.style!=null&&v.style!=='ladderExit'||v.kind==='pipe'&&v.groundEntry!==undefined&&typeof v.groundEntry!=='boolean')throw Error('Invalid ladder presentation.');
     if(v.kind==='warp'&&(!vec(v.from)||!vec(v.to)||!nums(v,['dur','arc','entry'])||v.dur<=0||!['hang','land'].includes(v.then)||v.then==='hang'&&!ledge(v.ledge)))throw Error('Invalid leap snapshot.');
+    if(v.kind==='warp'&&v.action!==undefined&&!['leap','hopLeft','hopRight','hopUp'].includes(v.action))throw Error('Invalid ledge hop presentation.');
     if(v.kind==='scramble'&&(!vec(v.normal)||!nums(v,['vy'])))throw Error('Invalid scramble snapshot.');
     if(['bar','pipe','rope'].includes(v.kind)){
      const g=gripOf(v.id);
+     if(v.travelSpeed!==undefined&&(!Number.isFinite(v.travelSpeed)||v.travelSpeed<0))throw Error('Invalid grip presentation speed.');
      if(!Number.isSafeInteger(v.id)||!g||g.type!==v.kind||typeof v.cReady!=='boolean'||v.kind==='bar'&&(!vec(v.n)||!nums(v,['ang','av','u'])||v.u<.06||v.u>.94||Math.abs(v.ang)>1.65)||v.kind==='pipe'&&(!vec(v.n)||!nums(v,['y','step'])||v.y<g.y0-.2||v.y>g.y1-1.05||v.step<0)||v.kind==='rope'&&(!nums(v,['s','qx','qz','wx','wz'])||v.s<.5||v.s>g.len-.1||Math.abs(v.qx)>1.2||Math.abs(v.qz)>1.2))throw Error('Invalid grip snapshot.');
     }
     if(v.kind==='wallrun'&&(!vec(v.normal)||!vec(v.tangent)||!nums(v,['speed','vy','side','step'])||!v.box))throw Error('Invalid wallrun snapshot.');
@@ -393,11 +409,18 @@
   }
   function restoreState(value){const s=validateState(value);
    ({state,cool,crouchAt,clock,lean,fov,lift,stats,lastUpdateTick}=s);cool.walljump??=0;cool.grip??=0;cool.auto??=0;stats.walljumps??=0;stats.grips??=0;stats.auto??=0;
-   mom=s.mom??0;chain=s.chain??0;bonus=s.bonus??0;
+   mom=s.mom??0;chain=s.chain??0;bonus=s.bonus??0;dropAt=s.dropAt??null;
+  }
+  function presentation(){
+   if(!state)return dropAt!==null&&P.motion.inspect().airborne?{kind:'hangdrop',time:clock-dropAt,duration:.4}:null;
+   const s=state,enter=s.kind==='pipe'&&s.groundEntry&&s.t<.7;
+   return {kind:s.style||s.kind,time:s.t||0,duration:enter?.7:s.dur||0,side:s.side||0,normal:s.kind==='wallrun'&&s.normal?[s.normal.x,s.normal.z]:null,
+    wall:s.kind==='wallrun'?wallGap(s):null,shimmy:s.kind==='hang'?wish().x:0,vertical:['pipe','rope'].includes(s.kind)?wish().z:undefined,travelSpeed:['pipe','rope'].includes(s.kind)?s.travelSpeed:undefined,
+    phase:s.kind==='pipe'?(enter?'enter':'loop'):undefined,action:s.kind==='warp'?s.action||'leap':undefined,landing:s.then||null};
   }
   return {ropePose,setMomentum(v){mom=clamp(+v||0,0,1);},takeMomentumBonus(){const b=bonus;bonus=0;return b;},chain:()=>chain,captureState,restoreState,validateState,updated:tick=>tick!==null&&lastUpdateTick===tick,wallBeside,wallAhead,floorAt,supportAt,solid,ledgeAhead,bodyFits,bodySweep,raycast,update,onJump,air,land,dropToHang,hands,
    crouchPressed(){crouchAt=clock;},active:()=>!!state,busy:()=>['climb','warp','scramble'].includes(state?.kind),kind:()=>state?.kind||null,lean:()=>lean,fov:()=>fov,lift:()=>lift,handsFull:()=>['hang','climb','scramble','bar','pipe','rope'].includes(state?.kind),
-   presentation:()=>state?{kind:state.kind,time:state.t||0,duration:state.dur||0,side:state.side||0,normal:state.kind==='wallrun'&&state.normal?[state.normal.x,state.normal.z]:null,wall:state.kind==='wallrun'?wallGap(state):null,shimmy:state.kind==='hang'?wish().x:0,landing:state.then||null}:null,
-   reset(){state=null;},inspect:()=>({state:state?.kind||null,boxes:boxes.length,fields:fields.length,stats:{...stats}})};
+   presentation,
+   reset(){state=null;dropAt=null;},inspect:()=>({state:state?.kind||null,boxes:boxes.length,fields:fields.length,stats:{...stats}})};
  };
 })(window);

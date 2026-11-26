@@ -1,10 +1,12 @@
 'use strict';
-// Procedural motion for the shared 17-bone rig. Nothing is keyframed: a speed-matched gait plants the feet, springs
-// add weight and follow-through, and two-bone IK puts hands and feet on targets chosen by layers (arm swing, guard,
-// waving, wall contact, grabbing, punches). Hits kick springs on the spine, head and pelvis as a light physical reaction.
+// Motion for the shared rig combines authored animation layers with a procedural base: a speed-matched gait plants
+// the feet, springs add weight and follow-through, and two-bone IK puts hands and feet on targets chosen by layers
+// (arm swing, guard, waving, wall contact, grabbing, punches). Hits kick springs on the spine, head and pelvis.
 (function(root){
  const clamp=(n,l,h)=>Math.max(l,Math.min(h,n)),smooth=(l,h,n)=>{const t=clamp((n-l)/(h-l),0,1);return t*t*(3-2*t);};
  const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
+ const traversalClips=new Set(['slideStart','slideLoop','climbUp','dash','sprint','pkLeap','pkVault','pkClimb','pkScramble','pkHang','pkShimmyL','pkShimmyR','pkWallRun','pkWallRunR','pkLadder','pkLadderEnter','pkLadderExit','pkHopL','pkHopR','pkHopUp','pkHangDrop','pkRoll']);
+ const freeLegClips=new Set([...traversalClips,'roll','getUp','slideExit','stealthAssassin','stealthVictim']);
  // Natural-motion features, each switchable so the same build can be compared side by side (?natural=0 turns all off).
  const naturalOff=typeof location==='object'&&/[?&]natural=0(&|$)/.test(location.search||'');
  const natural={feet:!naturalOff,hands:!naturalOff,weight:!naturalOff,blend:!naturalOff,net:!naturalOff,camera:!naturalOff};
@@ -176,9 +178,11 @@
   const tempV=(x=0,y=0,z=0)=>frameV[vi++].set(x,y,z),copyV=v=>frameV[vi++].copy(v),tempQ=()=>frameQ[qi++].identity();
   const localTemp=p=>group.worldToLocal(copyV(p)),worldTemp=p=>group.localToWorld(copyV(p));
   const gaitOffsets=[0,0],animList=[],animEntries=Array.from({length:80},()=>({})),locoEntries=Array.from({length:8},()=>({}));let animCount=0,locoCount=0,travelMask=null;
-  const addAnim=(id,t,weight,mask,loop)=>{const e=animEntries[animCount++];e.id=id;e.t=t;e.weight=weight;e.mask=mask;e.loop=loop;animList.push(e);};
+  const addAnim=(id,t,weight,mask,loop,blend=null)=>{const e=animEntries[animCount++];e.id=id;e.t=t;e.weight=weight;e.mask=mask;e.loop=loop;e.blend=blend;animList.push(e);};
   const api={
    tune:{guardLift:0,wadeLift:0},
+   // Captured before posing; callers receive the fitted world height, never the current crouched pelvis.
+   bindHipHeight:()=>pelvisRest.y*group.scale.y,
    // Local-player-only view presentation. It never changes the root or the aim.
    presentation({firstPerson=0,sprint=0,lookYawRate=0,lookPitchRate=0,effects=null}={}){if(canonical)return;view.firstTarget=clamp(firstPerson,0,1);view.sprintTarget=clamp(sprint,0,1);view.yawTarget=clamp(lookYawRate,-6,6);view.pitchTarget=clamp(lookPitchRate,-6,6);view.enabled=effects?!!effects.cameraEffects:!reduced;view.bob=effects?.bob!==false;view.sway=effects?.sway!==false;},
    // A layer asks for a hand on a world point; weight 0 lets the hand go back to swinging.
@@ -207,27 +211,52 @@
    // Active layers already live in the canonical snapshot; no second clock.
    traversal(move){
     const A=root.GardenAnim;if(!A?.ready())return;
-    const kind=move?.kind,t=move?.time||0,duration=move?.duration||0;
-    let id=null,loop=false,speed=1,start=0;
-    if(kind==='slide'){id=t<.12?'slideStart':'slideLoop';loop=id==='slideLoop';speed=id==='slideStart'?A.duration(id)/.12:1;}
-    else if(kind==='dive'||kind==='dash'){id='dash';speed=1.3;}
-    // Mixamo parkour clips (tools/animation/bake-mixamo.cjs) where they are baked; the older clips otherwise.
-    const pick=(...ids)=>ids.find(i=>A.has(i)),timed=(i,lp=false)=>{id=i;loop=lp;speed=duration&&!lp?A.duration(i)/duration:1;start=lp?0:Math.min(t*speed,A.duration(i)*.98);};
-    if(kind==='warp'){const leap=pick('pkLeap');if(leap)timed(leap);else{id='dash';speed=duration?Math.max(.8,A.duration(id)/duration):1.2;start=Math.min(t*speed,A.duration(id)*.9);}}// a gap leap reads as a lunge, not a climb
-    else if(kind==='vault'){const v=pick('pkVault','climbUp');timed(v);if(v==='pkVault'){const lead=.2,span=A.duration(v)-lead;speed=duration?span/duration:1;start=lead+Math.min(t*speed,span*.98);}}// skip the clip's approach steps: the run-up is ours
+    const kind=move?.kind,t=Math.max(0,Number.isFinite(move?.time)?move.time:0),duration=Number.isFinite(move?.duration)?Math.max(0,move.duration):0;
+    const pick=(...ids)=>ids.find(i=>A.has(i));
+    let id=null,loop=false,speed=1,start=0,synced=false;
+    const timed=(i,lp=false)=>{id=i;loop=lp;speed=duration&&!lp?A.duration(i)/duration:1;start=lp?0:Math.min(t*speed,A.duration(i));synced=!lp;};
+    const climbing=()=>{
+     const vertical=Number.isFinite(move.vertical)?clamp(move.vertical,-1,1):1,lateral=Number.isFinite(move.lateral)?clamp(move.lateral,-1,1):0;
+     const previous=state.layers.find(L=>L.traversal&&!L.out&&['pkScramble','pkLadder','pkShimmyL','pkShimmyR','pkHang','climbUp'].includes(L.id));
+     const travel=(kind==='pipe'||kind==='rope')&&Number.isFinite(move.travelSpeed)?Math.max(0,move.travelSpeed):null;
+     const stationary=move.moving===false||Math.abs(vertical)+Math.abs(lateral)<.01||travel===0;
+     id=stationary?previous?.id||pick(kind==='wallclimb'?'pkScramble':'pkLadder','pkHang','climbUp'):
+      Math.abs(lateral)>.01?pick(lateral<0?'pkShimmyL':'pkShimmyR','pkHang'):pick(kind==='wallclimb'?'pkScramble':'pkLadder','climbUp');
+     loop=true;speed=stationary?0:Math.abs(lateral)>.01?Math.abs(lateral):vertical;
+     // The ladder source rises .474849 bind-hip heights in .766667 seconds. Match its contact cycle to real
+     // controller displacement, so avatar height, blocked travel and faster game modes do not cause foot skating.
+     if(travel!==null)speed=Math.sign(speed)*clamp(travel/Math.max(.001,api.bindHipHeight()*(.474849/.766667)),0,8);
+     else speed*=Number.isFinite(move.speed)?clamp(move.speed,0,8):1;
+     start=stationary?A.duration(id)*.25:t*speed;
+    };
+    if(kind==='slide'){id=t<.12?'slideStart':'slideLoop';loop=id==='slideLoop';speed=id==='slideStart'?A.duration(id)/.12:1;start=loop?t-.12:t*speed;synced=true;}
+    else if(kind==='dive'||kind==='dash'){id='dash';speed=1.3;start=t*speed;synced=true;}
+    else if(kind==='roll')timed(pick('pkRoll','roll'));
+    else if(kind==='warp')timed(pick(({hopLeft:'pkHopL',hopRight:'pkHopR',hopUp:'pkHopUp'})[move.action],'pkLeap','dash'));
+    else if(kind==='vault'){timed(pick('pkVault','climbUp'));if(id==='pkVault'){const lead=.2,span=Math.max(.01,A.duration(id)-lead);speed=duration?span/duration:1;start=lead+Math.min(t*speed,span);}}
     else if(kind==='climb')timed(pick('pkClimb','climbUp'));
-    else if(kind==='scramble')timed(pick('pkScramble','climbUp'),true);
-    else if(kind==='pipe')timed('climbUp',true);
-    else if(kind==='hang'){const sh=move.shimmy||0,c=sh<0?pick('pkShimmyL'):sh>0?pick('pkShimmyR'):null;const h=c||pick('pkHang');if(h){id=h;loop=true;}}
-    // The wall-run clip has the wall on the runner's left; the mirrored copy serves a wall on the right (side 1). It
-    // carries the first 0.6 s (its strides up the wall); after that it only tucks both feet up to push off, so a longer run
-    // crossfades into the looping sprint stride, banked into the wall by traverseBody, instead of floating in the tuck.
-    else if(kind==='wallrun'){const w=pick(...(move.side>0?['pkWallRunR','pkWallRun']:['pkWallRun']));if(w&&t<.6){id=w;start=Math.min(t,A.duration(w)*.98);}else{id='sprint';loop=true;speed=1.15;}}
-    const managed=['slideStart','slideLoop','climbUp','dash','sprint','pkLeap','pkVault','pkClimb','pkScramble','pkHang','pkShimmyL','pkShimmyR','pkWallRun','pkWallRunR'];
+    else if(kind==='ladderExit')timed(pick('pkLadderExit','pkClimb','climbUp'));
+    else if(kind==='ladderEnter'||kind==='pipe'&&move.phase==='enter')timed(pick('pkLadderEnter','climbUp'));
+    else if(kind==='wallclimb'||kind==='pipe'||kind==='rope')climbing();
+    else if(kind==='scramble'){timed(pick('pkScramble','climbUp'),true);speed=Number.isFinite(move.speed)?clamp(move.speed,0,8):1;start=t*speed;}
+    else if(kind==='hangdrop'){id=pick('pkHangDrop','jumpLoop');start=Math.min(t,A.duration(id));synced=true;}
+    else if(kind==='hang'||kind==='bar'){const sh=move.shimmy||0;id=pick(sh<0?'pkShimmyL':sh>0?'pkShimmyR':'pkHang','climbUp');loop=true;speed=Number.isFinite(move.speed)?clamp(move.speed,0,8):1;start=t*speed;}
+    // Keep the authored first strides, then leave its push-off tuck for a banked sprint loop.
+    else if(kind==='wallrun'){const w=pick(...(move.side>0?['pkWallRunR','pkWallRun']:['pkWallRun']));if(w&&t<.6){id=w;start=Math.min(t,A.duration(w));synced=true;}else{id='sprint';loop=true;speed=1.15;start=Math.max(0,t-.6)*speed;}}
     const sliding=api.playing('slideStart')||api.playing('slideLoop');
-    for(const clip of managed)if(clip!==id)api.stop(clip,.12);
-    if(id){api.stop('slideExit',.14);api.stop('jumpStart',.14);if(!api.playing(id))api.play(id,{fade:.16,mask:'full',weight:.85,loop,speed,start,hold:!loop});}
-    else if(sliding&&!state.airborne)api.play('slideExit',{fade:.16,speed:1.5,mask:'full',weight:.8});
+    // Explicit play('pkRoll') calls remain independent; only controller-owned rolls stop with their traversal.
+    for(const L of state.layers)if((L.traversal||traversalClips.has(L.id)&&L.id!=='pkRoll')&&L.id!==id){L.out=true;L.fade=.16;}
+    if(id){
+     api.stop('slideExit',.16);api.stop('jumpStart',.12);api.stop('jumpLand',.12);
+     let L=state.layers.find(L=>L.id===id&&!L.out);
+     if(!L){
+      // Reversing input during a fade reuses its layer instead of adding another copy of the same clip.
+      L=state.layers.find(L=>L.id===id&&L.traversal&&L.out);
+      if(L){L.out=false;L.fade=.16;}
+      else L=api.play(id,{fade:.16,mask:'full',weight:.92,loop,speed,start,hold:!loop});
+     }
+     if(L){L.traversal=true;L.speed=speed;L.loop=loop;L.hold=!loop;if(synced)L.syncTime=start;else delete L.syncTime;}
+    }else if(sliding&&!state.airborne)api.play('slideExit',{fade:.16,speed:1.5,mask:'full',weight:.8});
    },
    // Jab with the hand furthest back; returns the seconds until the fist lands.
    punch(target){const s=sides[state.punches++%2];s.punch={t:0,target:target?toLocal(target):s.shoulder.clone().add(new T.Vector3(-s.sign*.08,.02,.62))};return .12;},
@@ -278,13 +307,15 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     // Landing weight: the landing clip and an extra sink into the knees both scale with how fast the body came down,
     // so a hop barely dips and a long drop sinks deep before standing up again.
     let landWeight=.85;if(!canonical&&natural.hands&&wasFlying&&!state.airborne){const fall=clamp(-nat.fallVy,0,14);landWeight=clamp(.18+fall*.07,.18,.9);state.crouch??={x:0,v:0};state.crouch.v+=clamp(fall-1.5,0,12)*1.4;nat.fallVy=0;}
-    if(state.airborne!==wasFlying){api.stop(state.airborne?'jumpLand':'jumpStart',.1);if(state.airborne||!api.playing('jumpLand')&&!api.playing('roll')&&!api.playing('pkRoll'))api.play(state.airborne?'jumpStart':'jumpLand',{fade:.08,speed:2.2,mask:'full',weight:state.airborne?.85:landWeight});wasFlying=state.airborne;}
+    if(state.airborne!==wasFlying){api.stop(state.airborne?'jumpLand':'jumpStart',.1);if(!state.layers.some(L=>L.traversal&&!L.out)&&!state.layers.some(L=>!L.out&&['stealthAssassin','stealthVictim'].includes(L.id))&&(state.airborne||!api.playing('jumpLand')&&!api.playing('roll')&&!api.playing('pkRoll')))api.play(state.airborne?'jumpStart':'jumpLand',{fade:.08,speed:2.2,mask:'full',weight:state.airborne?.85:landWeight});wasFlying=state.airborne;}
     pelvis.position.copy(pelvisRest);for(const b of model.skeleton.bones)b.quaternion.identity();
     // Pelvis: drop on each footfall, shift over the planted foot, twist with the stride. Springs keep it heavy.
     const ph=state.phase*Math.PI*2,bob=-(.018+.03*run)*w*(.5+.5*Math.cos(2*ph)),sway=.02*w*(1-run)*Math.sin(ph);
     const breath=reduced?0:Math.sin(state.time*1.6)*.004*(1-w);
     spring(state.stumble,v3.set(0,0,0),dt,2.2,.55);
-    state.crouch??={x:0,v:0};scalar(state.crouch,state.crouchTarget||0,dt,9,.95);const crouch=clamp(state.crouch.x,0,1);
+    state.crouch??={x:0,v:0};scalar(state.crouch,state.crouchTarget||0,dt,9,.95);
+    const rollWeight=state.layers.reduce((w,L)=>['roll','pkRoll'].includes(L.id)?Math.max(w,L.w*L.weight):w,0);
+    const crouch=clamp(state.crouch.x,0,1)*(1-clamp(rollWeight,0,1));
     pelvis.position.add(v3.set(sway+state.stumble.x.x,bob+breath+(state.airborne?.06:0)-pelvisRest.y*.34*crouch,state.stumble.x.z+pelvisRest.y*.06*crouch));
     nat.bob=bob*scale;nat.dip=Math.max(0,crouch-(state.crouchTarget||0))*pelvisRest.y*.34*scale;
     pelvis.rotation.set(0,.13*w*Math.sin(ph)*(1-.4*run),0);
@@ -429,8 +460,9 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     const A=root.GardenAnim;
     if(A?.ready()){
      const busy=state.hold.x>.05||sides.some(s=>s.touchWeight.x>.05||s.punch)||state.guard.x>.08;
-     let full=0;for(const L of state.layers){L.t+=dt*L.speed;if(!L.loop&&L.t>=L.dur){if(L.hold)L.t=L.dur;else L.out=true;}
-      const target=L.out?0:1,rate=dt/Math.max(.01,L.fade);L.w=target>L.w?Math.min(target,L.w+rate):Math.max(target,L.w-rate);/* settle on the target: at w=1 the old else-branch faded a held layer out every other frame */if(L.mask==='full')full=Math.max(full,L.w*L.weight);}
+     let full=0,traversalFull=0;for(const L of state.layers){if(Number.isFinite(L.syncTime)){L.t=L.syncTime;delete L.syncTime;}else L.t+=dt*L.speed;if(!L.loop&&L.t>=L.dur){if(L.hold)L.t=L.dur;else L.out=true;}
+      const target=L.out?0:1,rate=dt/Math.max(.01,L.fade);L.w=target>L.w?Math.min(target,L.w+rate):Math.max(target,L.w-rate);/* settle on the target: at w=1 the old else-branch faded a held layer out every other frame */if(L.mask==='full'){if(L.traversal)traversalFull+=L.w*L.weight;else full=Math.max(full,L.w*L.weight);}}
+     full=Math.max(full,Math.min(1,traversalFull));
      let layerCount=0;for(const L of state.layers)if(!(L.out&&L.w<=0))state.layers[layerCount++]=L;state.layers.length=layerCount;
      const M=A.masks(),noArms=k=>{const key=k+'-noarms';M[key]??=M[k].map((v,i)=>M.arms[i]?0:v);return M[key];},list=animList;list.length=0;animCount=locoCount=0;
      loco.length=0;
@@ -449,12 +481,12 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
       // Preserve visible camera-space grips for local actions; the same authored
       // action still drives the torso, and progressively regains arms in third person.
       if(view.first>.001&&['pistolShoot','pistolReload','pickup','interact'].includes(L.id)){L.viewMask??=mask.slice();for(let i=0;i<mask.length;i++)L.viewMask[i]=mask[i]*(M.arms[i]?1-view.first:1);mask=L.viewMask;}
-      addAnim(L.id,L.t,L.w*L.weight,mask,L.loop);}
+      addAnim(L.id,L.t,L.w*L.weight,mask,L.loop,L.traversal?'traversal':null);}
      A.apply(T,model,list);
      // Cosmetic torso/clip layers must not detach solved world contacts. Reuse
      // this frame's targets; do not advance gait, springs or action time twice.
      group.updateMatrixWorld(true);
-     const freeLegs=state.layers.some(L=>L.mask==='full'&&L.w>.01&&['roll','pkRoll','getUp','slideStart','slideLoop','slideExit','climbUp','dash','sprint','pkLeap','pkVault','pkClimb','pkScramble','pkHang','pkShimmyL','pkShimmyR','pkWallRun','pkWallRunR'].includes(L.id));
+     const freeLegs=state.layers.some(L=>L.mask==='full'&&L.w>.01&&freeLegClips.has(L.id));
      for(const [i,s] of sides.entries()){
       if(!state.airborne&&!freeLegs){
        // Keep planted feet fixed, but retain the clip's knee lift on the swing.
@@ -515,7 +547,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
     if(next.hits!==undefined&&(!Array.isArray(next.hits)||next.hits.length>128||!next.hits.every(num)))fail();
     if(next.held!==null&&(!next.held||Object.keys(next.held).some(k=>k!=='kind')||next.held.kind!==null&&typeof next.held.kind!=='string'))fail();
     if(!Array.isArray(next.layers)||next.layers.length>64)fail();
-    for(const l of next.layers)if(!root.GardenAnim?.has(l.id)||l.dur!==root.GardenAnim.duration(l.id)||!['t','speed','fade','weight','w'].every(k=>num(l[k]))||!['loop','arms','hold','out'].every(k=>typeof l[k]==='boolean')||!['full','upper','torso','arms'].includes(l.mask))fail();
+    for(const l of next.layers)if(!root.GardenAnim?.has(l.id)||l.dur!==root.GardenAnim.duration(l.id)||!['t','speed','fade','weight','w'].every(k=>num(l[k]))||!['loop','arms','hold','out'].every(k=>typeof l[k]==='boolean')||!['full','upper','torso','arms'].includes(l.mask)||l.traversal!==undefined&&typeof l.traversal!=='boolean'||l.syncTime!==undefined&&!num(l.syncTime))fail();
     if(!Array.isArray(limbs)||limbs.length!==2)fail();for(const s of limbs){if(!s||Object.keys(s).some(k=>!sideFields.includes(k))||!spring(s.hand)||!spring(s.foot)||!scalar(s.curl)||!scalar(s.touchWeight)||!num(s.touchTarget)||s.touch!==null&&(!vector(s.touch.point)||s.touch.normal!==null&&!vector(s.touch.normal)||!['grab','press'].includes(s.touch.kind))||s.punch!==null&&(!num(s.punch.t)||!vector(s.punch.target)))fail();}
     if(!value.view||Object.keys(value.view).length!==Object.keys(view).length||!Object.keys(view).every(k=>typeof view[k]==='boolean'?typeof value.view[k]==='boolean':num(value.view[k])))fail();
     if(canonical&&['first','firstTarget','sprint','sprintTarget','yaw','pitch','yawTarget','pitchTarget'].some(k=>value.view[k]!==0))fail();
@@ -558,7 +590,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
   const shoulder=model.byName['upperarm01.L'],at=shoulder&&model.skeleton.boneInverses[model.skeleton.bones.indexOf(shoulder)]?.elements;
   const shoulderUp=at?-at[13]*model.root.scale.y:1.4,riseTo=hands?Math.max(0,Math.min(.7,hands[0].y-.33-(model.root.position.y+shoulderUp))):0;
   handRise+=(riseTo-handRise)*(1-Math.exp(-14*dt));model.root.position.y+=handRise;
-  const tr=pose?.traversal,push=natural.hands&&tr?.kind==='climb'&&tr.duration>0&&tr.time/tr.duration>.5,upward=traverseBody.up||(traverseBody.up=new T.Vector3(0,1,0));
+  const tr=pose?.traversal,push=natural.hands&&['climb','ladderExit'].includes(tr?.kind)&&tr.duration>0&&tr.time/tr.duration>.5,upward=traverseBody.up||(traverseBody.up=new T.Vector3(0,1,0));
   let wallTouch=false;
   if(hands){const swap=shoulder?.getWorldPosition(probe).distanceToSquared(hands[0])>probe.distanceToSquared(hands[1]);model.motion.touch('L',hands[swap?1:0],push?upward:null,1,push?'press':'grab');model.motion.touch('R',hands[swap?0:1],push?upward:null,1,push?'press':'grab');handsOn=true;}
   else if(natural.hands&&tr?.kind==='wallrun'&&tr.normal){
@@ -585,7 +617,9 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
   if(pose?.traversal?.kind==='vault'&&pose.traversal.lift>0&&root.GardenAnim?.has?.('pkVault'))model.root.position.y-=pose.traversal.lift;
   const bank=pose?.traversal?.kind==='wallrun'?-(pose.traversal.side||1)*(wallTouch?.18:.28):0;// A hand on the wall leans out less, so the arm reaches.
   model.root.rotation.z+=(bank-model.root.rotation.z)*(1-Math.exp(-12*dt));
-  model.root.rotation.order='YXZ';const pitchTo=pose?(pose.dive||0)*1.25-(pose.slide||0)*.32:0;model.root.rotation.x+=(pitchTo-model.root.rotation.x)*(1-Math.exp(-10*dt));if(pose?.dive)model.root.position.y+=.35*pose.dive;
+  // A landing roll already carries its full-body tuck. Prone clearance remains in the controller, not in an extra visual dive.
+  const authoredRoll=pose?.traversal?.kind==='roll';
+  model.root.rotation.order='YXZ';const pitchTo=pose&&!authoredRoll?(pose.dive||0)*1.25-(pose.slide||0)*.32:0;model.root.rotation.x+=(pitchTo-model.root.rotation.x)*(1-Math.exp(-10*dt));if(pose?.dive&&!authoredRoll)model.root.position.y+=.35*pose.dive;
   return {handRise,handsOn};
  }
  root.GardenCharacterMotion={create,applyHit,turnBody,traverseBody,natural,ground:null,attention:null,bodies:new Set(),solid:null,serverDecides:false};
