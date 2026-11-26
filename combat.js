@@ -75,6 +75,11 @@
    {id:'oracle',name:'ORACLE',kind:'.308 BOLT RIFLE',file:'m700.glb',points:{muzzle:[0,.129,-.892],sight:[0,.15,-.125]},stats:{interval:1}},
    {id:'deacon',name:'DEACON',kind:'.30 LEVER RIFLE',file:'leveraction.glb',points:{muzzle:[0,.114,-.892],sight:[0,.135,-.125]},stats:{interval:.6,scope:false,zoom:1.8}}
   ],
+  // Thrown explosives share the C4 slot and its pouch: no remote, they bounce and go off on a fuse.
+  c4:[
+   {id:'frag',name:'TRUMPET',kind:'FRAG GRENADE',file:'fraggrenade.glb',fuse:2.4,radius:7.5,dmg:130,speed:11,bounce:.38},
+   {id:'pipe',name:'JERICHO',kind:'PIPE BOMB',file:'pipebomb.glb',fuse:3.2,radius:9.5,dmg:165,speed:9,bounce:.25}
+  ],
   pump:[
    {id:'lament',name:'LAMENT',kind:'12GA PUMP',file:'shotgun870.glb',points:{muzzle:[0,.098,-.715],sight:[0,.115,-.125]},stats:{interval:.22}}
   ]
@@ -383,10 +388,24 @@
    for(const k of VARIANT_STATS){if(b[k]===undefined)delete W[k];else W[k]=b[k];}
    if(v)Object.assign(W,v.stats||{},{name:v.name,kind:v.kind});
    hud?.update();
+   if(id==='c4'){heldThrowable(v);return;}
    const R=armsRig;if(!R||!baseGuns[id])return;
    const G=R.grips[id];if(G){baseGrips[id]=baseGrips[id]||G.left;G.left=v?.left&&G.left?{...baseGrips[id],pos:v.left}:baseGrips[id];}
    if(!v){wireGun(id,baseGuns[id]);return;}
    R.loadVariant(id,v).then(gun=>{if(variants[id]===v.id)wireGun(id,gun);requestFrame();}).catch(e=>{console.warn('Variant model unavailable',v.file,e);});
+  }
+  // Grenade models (variants of the C4 slot), centred on the hand's hold point; one copy in the hand, clones thrown.
+  const throwableModels={};
+  function throwableModel(v){
+   return throwableModels[v.file]||(throwableModels[v.file]=window.showroomAssets.model('/models/combat/variants/'+v.file).then(gltf=>{
+    const g=new T.Group(),s=gltf.scene;s.traverse(x=>{if(x.isMesh){x.castShadow=false;x.frustumCulled=false;x.userData.noHit=true;}});
+    const box=new T.Box3().setFromObject(s),c=box.getCenter(new T.Vector3());s.position.sub(c);g.add(s);g.userData.size=box.getSize(new T.Vector3());return g;}));
+  }
+  function heldThrowable(v){
+   const m=models.c4;if(!m)return;
+   if(m.held){m.holder.remove(m.held);m.held=null;}
+   m.model.visible=!v;if(!v||!window.showroomAssets)return;
+   throwableModel(v).then(g=>{if(variants.c4!==v.id)return;const h=g.clone();h.position.set(.035,-.03,-.02);h.rotation.set(-.3,.2,.4);m.holder.add(h);m.held=h;m.model.visible=false;requestFrame();}).catch(e=>console.warn('Grenade model unavailable',v.file,e));
   }
   function upgradeModels(){
    const R=armsRig;if(!R)return;
@@ -673,7 +692,9 @@
 
   /* ------------------------------------------------------------ C4 */
   function throwCharge(){
-   if(charges.filter(c=>!c.done).length>=WEAPONS[3].mag){hud.toast('Detonate before placing more · '+controlHint('detonate','G'));return false;}
+   const gv=variantOfSpec('c4',variants.c4);
+   if(gv)return throwGrenade(gv);
+   if(charges.filter(c=>!c.done&&!c.fuse).length>=WEAPONS[3].mag){hud.toast('Detonate before placing more · '+controlHint('detonate','G'));return false;}
    if(arsenal){if(!(arsenal.reserve.c4>0)){hud.toast('NO CHARGES LEFT');return false;}arsenal.reserve.c4--;}
    const g=buildC4Block();g.traverse(x=>x.userData.noHit=true);world.add(g);
    const start=viewToWorld(new T.Vector3(.15,-.12,-.45));start.y-=o.lensDrop?.()||0;
@@ -682,8 +703,33 @@
    const c={group:g,vel:dir.multiplyScalar(8.5).add(new T.Vector3(0,2.2,0)),spin:new T.Vector3(rand(-9,9),rand(-6,6),rand(-9,9)),stuck:false,done:false,age:0,led:g.userData.led};
    charges.push(c);sfx.throw();return true;
   }
+  function throwGrenade(v){
+   if(arsenal){if(!(arsenal.reserve.c4>0)){hud.toast('NONE LEFT');return false;}arsenal.reserve.c4--;}
+   const g=new T.Group();world.add(g);
+   throwableModel(v).then(src=>{const k=src.clone();g.add(k);}).catch(()=>{const b=buildC4Block();g.add(b);});
+   const start=viewToWorld(new T.Vector3(.15,-.08,-.45));start.y-=o.lensDrop?.()||0;g.position.copy(start);
+   const dir=aimForward();
+   charges.push({group:g,vel:dir.multiplyScalar(v.speed).add(new T.Vector3(0,3,0)),spin:new T.Vector3(rand(-12,12),rand(-8,8),rand(-12,12)),stuck:false,done:false,age:0,fuse:v.fuse,radius:v.radius,dmg:v.dmg,bounce:v.bounce,rest:false});
+   sfx.throw();hud.update();return true;
+  }
+  // A thrown grenade: bounces off what it meets, rolls to a stop, and goes off when its fuse runs out.
+  function stepGrenade(c,dt){
+   if(c.age>=c.fuse){c.done=true;explode(c);return;}
+   if(c.rest)return;
+   const pos=c.group.position,step=c.vel.clone().multiplyScalar(dt),len=step.length();
+   const h=len>1e-4?worldHits(pos,step.clone().normalize(),len+.05):null;
+   if(h){const n=h.face?h.face.normal.clone().transformDirection(h.object.matrixWorld):new T.Vector3(0,1,0);
+    pos.copy(h.point).addScaledVector(n,.05);const vn=c.vel.dot(n);c.vel.addScaledVector(n,-(1+c.bounce)*vn).multiplyScalar(.7);c.spin.multiplyScalar(.6);
+    if(Math.abs(vn)>1.2)sfx.stick(h.point);}
+   else{c.vel.y-=9.8*dt;pos.add(step);}
+   const floor=groundAt(pos.x,pos.z,pos.y+.5)+.05;
+   if(pos.y<floor){pos.y=floor;if(c.vel.y<0){const vy=-c.vel.y;c.vel.y=vy*c.bounce;c.vel.x*=.7;c.vel.z*=.7;if(vy>1.2)sfx.stick(pos.clone());}}
+   if(pos.y<=floor+.01&&c.vel.lengthSq()<.05){c.rest=true;c.vel.set(0,0,0);}
+   c.group.rotation.x+=c.spin.x*dt;c.group.rotation.y+=c.spin.y*dt;c.group.rotation.z+=c.spin.z*dt;
+  }
   function updateCharges(dt){
    for(const c of charges){if(c.done)continue;c.age+=dt;
+    if(c.fuse){stepGrenade(c,dt);continue;}
     if(!c.stuck){
      const step=c.vel.clone().multiplyScalar(dt),len=step.length();
      const h=len>0?worldHits(c.group.getWorldPosition(new T.Vector3()),step.clone().normalize(),len+.04):null;
@@ -701,7 +747,7 @@
    }
   }
   function detonate(){
-   const live=charges.filter(c=>!c.done);
+   const live=charges.filter(c=>!c.done&&!c.fuse);
    if(!live.length){hud.toast('No charges placed');return;}
    const r=models.c4.parts;state.c4press=lastTime;r.remoteLed.material.emissiveIntensity=6;sfx.beep();
    live.forEach((c,i)=>{c.done=true;setTimeout(()=>explode(c),260+i*140);});
@@ -827,7 +873,7 @@
    heat.push({pos:p.clone().add(new T.Vector3(0,1.6,0)),t:0,life:2.2,size:7.5});
    const dist0=camera.position.distanceTo(p);
    if(dist0<14){hud.flash(clamp(1.15-dist0/12,.15,.95));sfx.deafen(clamp(1.2-dist0/12,.1,1));}
-   o.onExplosion?.(p,6.5,WEAPONS[3].dmg,{player:!c.remote});
+   o.onExplosion?.(p,c.radius||6.5,c.dmg||WEAPONS[3].dmg,{player:!c.remote});
    for(const t of targets){const tp=t.root.getWorldPosition(new T.Vector3());const d=tp.distanceTo(p);if(d<6.5){const f=1-d/6.5;t.swing.kick(f*14*(Math.random()<.5?-1:1));t.twist.kick(f*8*(Math.random()-.5));if(d<3.2&&!t.down){t.down=1;t.downT=lastTime;t.fallDir=Math.atan2(tp.x-p.x,tp.z-p.z);}}}
    const dist=camera.position.distanceTo(p);look.shake=Math.max(look.shake,clamp(1.6-dist/20,.15,1.6));
    sfx.boom(p,dist);requestFrame();
@@ -1779,6 +1825,7 @@
    drop(id){if(!arsenal)return 0;const ammo=state[id]?.ammo||0;arsenal.owned.delete(id);if(current?.id===id){const n=arsenal.slots()[0];if(n)equip(n);else holster();}hud.update();return ammo;},
    addAmmo(type,n){if(!arsenal)return;arsenal.reserve[type]=(arsenal.reserve[type]||0)+n;hud.update();},
    variantOf:id=>variants[id]||null,
+   setVariant(id,vid){build();if(VARIANTS[id])applyVariant(id,vid||null);},
    inspect(){return arsenal?{owned:[...arsenal.owned].filter(id=>id!=='fists'),reserve:{...arsenal.reserve},variants:{...variants},loaded:Object.fromEntries([...arsenal.owned].filter(id=>id!=='fists').map(id=>[id,state[id]?.ammo||0]))}:null;}
   };
 

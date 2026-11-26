@@ -8,7 +8,7 @@
 | `shotgun.glb` | Mossberg 500, from the 3D Model Haven gun pack ([archive](https://archive.org/details/gun_models.7z)) | Rajil Jose Macatangay | CC0 |
 | `hatchet/` | [Hatchet](https://polyhaven.com/a/hatchet), 1k glTF | Poly Haven | CC0 |
 | `variants/1911.glb`, `variants/tec9.glb`, `variants/mp5.glb`, `variants/mac10.glb`, `variants/m14.glb`, `variants/m700.glb`, `variants/leveraction.glb` | [Free Classic Weapons Pack](https://stein-indie.itch.io/classic-weapons-pack) v1.2 | Stein Games | CC0 |
-| `variants/luger.glb`, `variants/makarov.glb`, `variants/greasegun.glb`, `variants/suomi.glb`, `variants/m4a1.glb`, `variants/shotgun870.glb` | [Free CC0 Guns & Explosives Pack](https://3dmodelscc0.itch.io/free-cc0-guns-explosives-pack) | 3DModelsCC0 | CC0 |
+| `variants/luger.glb`, `variants/makarov.glb`, `variants/greasegun.glb`, `variants/suomi.glb`, `variants/m4a1.glb`, `variants/shotgun870.glb`, `variants/fraggrenade.glb`, `variants/pipebomb.glb` | [Free CC0 Guns & Explosives Pack](https://3dmodelscc0.itch.io/free-cc0-guns-explosives-pack) | 3DModelsCC0 | CC0 |
 
 The arms, pistol and shotgun GLBs are the first-person conversions published in
 [vvanghelue/mini-cry](https://github.com/vvanghelue/mini-cry) (`public/models/fp`): re-oriented into

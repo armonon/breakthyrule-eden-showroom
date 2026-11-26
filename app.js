@@ -935,7 +935,7 @@ battle=window.createBattleArena?.({T,scene,camera,combat,garden,playerAnchor:()=
  onDeath(){sway.bump(1.5,Math.random()<.5?-1:1);hitStop(160);requestDraw();},
  dodging:()=>movement.slide?.kind==='dash'||!!movement.dive||!!movement.vault,
  onGuardBroken(){sway.bump(1.1,Math.random()<.5?-1:1);playerBody?.anim?.('hitChest',{fade:.05,mask:'upper'});requestDraw();},
- onTackled(dir){playerBody?.anim?.('knockback',{fade:.05});movement.proneT=1;movement.slide=null;movement.dive=null;walkVelocity.copy(dir).setY(0).multiplyScalar(4.5);sway.bump(1.4,Math.random()<.5?-1:1);hitStop(90);footsteps?.land(surfaceAt(targetPosition),1);requestDraw();},
+ onBlastLaunch(vel){if(movement.launch?.(vel)){sway.bump(1.8,Math.random()<.5?-1:1);hitStop(60);requestDraw();}},onTackled(dir){playerBody?.anim?.('knockback',{fade:.05});movement.proneT=1;movement.slide=null;movement.dive=null;walkVelocity.copy(dir).setY(0).multiplyScalar(4.5);sway.bump(1.4,Math.random()<.5?-1:1);hitStop(90);footsteps?.land(surfaceAt(targetPosition),1);requestDraw();},
  onPagesComplete(fresh){garden.pyramid.setPages(8);if(fresh)worlds?.card('THE OFFICE IS OPEN','ALL EIGHT PAGES ARE IN · FOLLOW THE BRICK ROAD TO THE PYRAMID','EIGHT PAGES',3600);},
  onSoul(on){document.body.classList.toggle('soul-taken',!!on);requestDraw();},
  onImpact(at,k=1){const d=at.distanceTo(targetPosition);if(d<30){sway.bump(k*(1-d/30),0);const p=at.clone();puff(p,8,1.6,'stone');}},

@@ -19,8 +19,8 @@
 
  // Loot tables. Weights are relative. Guns in the centre are deliberately rare.
  const CENTER_TABLE=[
-  [30,'armor'],[18,'bandage'],[10,'medkit'],[9,'c4'],[8,'ammo'],
-  [8,{weapon:'pistol'}],[3,{weapon:'smg'}],[14,'nothing']
+  [30,'armor'],[18,'bandage'],[10,'medkit'],[14,'c4'],[8,'ammo'],
+  [8,{weapon:'pistol'}],[3,{weapon:'smg'}],[9,'nothing']
  ];
  const AMMO_FOR={pistol:['pistol',24],smg:['smg',60],rifle:['rifle',60],sniper:['sniper',10],pump:['shells',12]};
  const AMMO_LABEL={pistol:'9MM',smg:'.45 ACP',rifle:'7.62',sniper:'.308',shells:'12GA'};
@@ -104,7 +104,8 @@
    if(spec==='armor'){const g=pick(garments);return g?{type:'armor',armor:g.armor,garment:g,rarity:g.rarity,label:g.name.toUpperCase()+' · '+g.armor+' ARMOR'}:null;}
    if(spec==='bandage')return {type:'heal',heal:'bandage',count:2,rarity:'common',label:'BANDAGES ×2'};
    if(spec==='medkit')return {type:'heal',heal:'medkit',count:1,rarity:'uncommon',label:'MEDKIT'};
-   if(spec==='c4')return {type:'c4',count:1,rarity:'uncommon',label:'C4 CHARGE'};
+   // The explosives slot: C4 (remote), or a frag grenade or pipe bomb (thrown, on a fuse); grenades turn up most.
+   if(spec==='c4'){const variant=pick([null,'frag','frag','pipe']),count=variant?2:1;return {type:'c4',variant,count,rarity:'uncommon',label:(variant&&combat.gunLabel?combat.gunLabel('c4',variant).split(' · ')[1]:'C4 CHARGE')+(count>1?' ×'+count:'')};}
    if(spec==='ammo'){const k=pick(Object.keys(AMMO_FOR));return rollItem({ammo:AMMO_FOR[k][0]});}
    if(spec.ammo){const [type,n]=Object.values(AMMO_FOR).find(([t])=>t===spec.ammo)||[spec.ammo,20];return {type:'ammo',ammo:type,count:n,rarity:'common',label:AMMO_LABEL[type]+' AMMO ×'+n};}
    if(spec.weapon){const W=combat.weapons.find(w=>w.id===spec.weapon);
@@ -309,6 +310,16 @@
   // character-motion.js still layers on the pose the motors chase. Light hits push at most every 0.22 s, so a spray
   // jostles rather than topples. Returns false (the caller keeps the procedural reaction) when it is unavailable.
   let reactions=null;
+  // Blasts throw people: up and away, harder the closer they stood (near the charge, three seconds or so in the air),
+  // a tumbling ragdoll the whole way (character-motion.js); bots get up where they come down, corpses stay there.
+  function launch(c,dir,near,scale=1){
+   const k=Math.max(0,Math.min(1,near))*scale;if(k<.08)return;
+   const up=(5+8*k)*rand(.9,1.1),out=(3+6.5*k)*rand(.85,1.15);
+   if(c===player){o.onBlastLaunch?.(new T.Vector3(dir.x*out,up*1.2,dir.z*out));return;}
+   const motion=c.model?.motion;if(!motion?.knockdown)return;
+   reactions?.release?.(c.model);c.stagger=null;c.stunT=0;c.lunge=null;
+   motion.knockdown(dir,3,{stay:!c.alive,launch:new T.Vector3(dir.x*out,up,dir.z*out)});
+  }
   function physicalHit(b,dir,strength,zone){
    const light=strength<1.2;
    if(!reactions||(light&&clock-(b.lastPhysical??-9)<.5))return false;
@@ -691,7 +702,7 @@
     player.armor=it.armor;player.armorMax=Math.max(it.armor,player.garment?.armor||0);player.garment=it.garment;player.worn.add(it.garment);
    }else if(it.type==='ammo')ars.addAmmo(it.ammo,it.count);
    else if(it.type==='heal')player.heals[it.heal]+=it.count;
-   else if(it.type==='c4'){const inv=ars.inspect();if(!inv.owned.includes('c4'))ars.give('c4',0);ars.addAmmo('c4',it.count);}
+   else if(it.type==='c4'){const inv=ars.inspect();if(!inv.owned.includes('c4'))ars.give('c4',0,it.variant);else if((it.variant||null)!==(ars.variantOf?.('c4')||null))ars.setVariant?.('c4',it.variant);ars.addAmmo('c4',it.count);}
    toast(it.label);removeLoot(l);hud.update();
   }
   function useHeal(){
@@ -1322,11 +1333,12 @@
    hurtPlayer(amount,from=null){if(!active||!player?.alive)return;const dir=from?posOf(player).clone().sub(from).setY(0).normalize():null;damage(player,amount,null,{weapon:'melee',...(dir?{dir}:{})});},
    fallDamage(d){if(active&&player?.alive&&d>0)damage(player,d,null,{kind:'fall'});},
    tackle,heldStrike,hold:()=>player?.hold?{name:player.hold.b.name,t:+player.hold.t.toFixed(2),punches:player.hold.punches,finishing:player.hold.finishing,pinned:!!player.hold.b.model.motion?.pinned?.()}:null,releaseHold:()=>endHold('released'),reactions:()=>reactions?.inspect()||null,holdEnded:()=>player?.holdEnded||null,doors:()=>doors.map(d=>({x:d.x,z:d.z,open:+Math.max(...d.leaves.map(l=>Math.abs(l.a))).toFixed(2),broken:d.leaves.every(l=>l.gone)})),smashDoor:i=>smashDoor(doors[i],new T.Vector3(0,0,1)),
-   onExplosion(p,radius,dmg){if(!active)return;
+   onExplosion(p,radius,dmg,opts={}){if(!active)return;dmg=opts.dmg??dmg;radius=opts.radius??radius;
     // The blast throws loot and jolts chests.
     for(const l of loot){if(l.item.type==='page')continue;const d=l.group.position.distanceTo(p);if(d<radius*1.3){const out=l.group.position.clone().sub(p).setY(0);if(out.lengthSq()<1e-4)out.set(rand(-1,1),0,rand(-1,1));out.normalize().multiplyScalar(6*(1-d/(radius*1.3))+1);l.vel=out.add(new T.Vector3(0,4+rand(0,2),0));l.y+=.05;}}
     for(const c of chests){const d=c.pos.distanceTo(p);if(d<radius){c.jolt=.5*(1-d/radius)+.15;}}
-    for(const dr of doors){const dd=Math.hypot(dr.x-p.x,dr.z-p.z);if(dd<radius+1)smashDoor(dr,new T.Vector3(dr.x-p.x,0,dr.z-p.z),9*(1-dd/(radius+1))+3);}if(attendant&&attendant.pos.distanceTo(p)<radius)hurtAttendant(dmg);for(const c of combatants()){const d=posOf(c).distanceTo(p);if(d<radius&&los(p.clone().add(new T.Vector3(0,.4,0)),eyeOf(c)))damage(c,dmg*Math.pow(1-d/radius,1.2),player,{weapon:'c4',blast:true,dir:posOf(c).clone().sub(p).setY(0).normalize()});}},
+    for(const dr of doors){const dd=Math.hypot(dr.x-p.x,dr.z-p.z);if(dd<radius+1)smashDoor(dr,new T.Vector3(dr.x-p.x,0,dr.z-p.z),9*(1-dd/(radius+1))+3);}if(attendant&&attendant.pos.distanceTo(p)<radius)hurtAttendant(dmg);for(const c of combatants()){const d=posOf(c).distanceTo(p);if(d<radius&&los(p.clone().add(new T.Vector3(0,.4,0)),eyeOf(c))){const dir=posOf(c).clone().sub(p).setY(0);if(dir.lengthSq()<1e-4)dir.set(rand(-1,1),0,rand(-1,1));dir.normalize();
+     damage(c,dmg*Math.pow(1-d/radius,1.2),player,{weapon:'c4',blast:true,dir:dir.clone()});launch(c,dir,1-d/radius,opts.throw??1);}}},
    inspect:()=>({active,phase,clock:+clock.toFixed(1),alive:combatants().length,event:event&&{kind:event.kind,label:event.label},night:+nightLevel().toFixed(2),attendant:attendant&&{x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1),stunned:clock<attendant.stunUntil},pages:player?pagesOf(player):0,power:player?.power||0,pageState:pages.map(pg=>pg.state),delivered:pages.filter(pg=>pg.state==='delivered').length,pinged:pinged?nameOf(pinged):null,watcher:attendant&&{mode:attendant.mode,page:attendant.page?attendant.page.i:null,x:+attendant.pos.x.toFixed(1),z:+attendant.pos.z.toFixed(1)},templeOpen:templeOpen(),soul:!!player?.soul,nextEvent:+(nextEventAt-clock).toFixed(1),pads:pads.length,player:player&&{alive:player.alive,stomps:player.stomps||0,rams:player.rams||0,score:player.score||0,deaths:player.deaths||0,hp:Math.round(player.hp),shield:Math.round(player.shield),armor:Math.round(player.armor),garment:player.garment?.name||null,heals:player.heals,kills:player.kills},
     bots:bots.map(b=>({name:b.name,score:b.score||0,kills:b.kills||0,alive:b.alive,hp:Math.round(b.hp),shield:Math.round(b.shield),down:+(b.model.motion?.downAmount?.()||0).toFixed(2),state:b.state,weapon:b.weapon,armor:b.armor,x:+b.root.position.x.toFixed(1),z:+b.root.position.z.toFixed(1)})),
     zone:zone&&{phase:zone.phase,state:zone.state,r:+zone.r.toFixed(1),x:+zone.center.x.toFixed(1),z:+zone.center.z.toFixed(1)},chests:chests.filter(c=>c.open).length+'/'+chests.length,loot:loot.length,arsenal:combat.arsenal.inspect()}),
