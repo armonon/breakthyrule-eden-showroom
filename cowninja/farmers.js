@@ -156,7 +156,7 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
       const ranged = f.role === 'gunner' || f.role === 'police' || f.role === 'heavy', W = f.role === 'heavy' ? S.heavy : S.pistol;
       if (f.state === 'flee') {   // a worker running to report: stop him before he gets there and nobody hears of it
         tx = f.report[0]; tz = f.report[1]; pace = S.fleeSpeed; step = fieldTo(tx, tz)?.dir(f.p.x, f.p.z, out); f.fleeFor += dt;
-        if (Math.hypot(tx - f.p.x, tz - f.p.z) < 2 || f.fleeFor > 25) { f.state = 'cower'; f.alert = .2; onEvent?.({ type: 'reported', farmer: f }); }
+        if (Math.hypot(tx - f.p.x, tz - f.p.z) < 2 || f.fleeFor > 25) { f.state = 'cower'; f.alert = .2; f.person?.motion.play?.('crouchIdle', { fade: .3, loop: true, mask: 'full' }); onEvent?.({ type: 'reported', farmer: f }); }
       }
       else if (f.state === 'search') {
         tx = f.search.x; tz = f.search.z; pace = 1.9; const there = Math.hypot(tx - f.p.x, tz - f.p.z) < 1.6;
@@ -191,12 +191,14 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
       if (ranged && live && f.state === 'chase') {
         if (f.cool > 0) { f.cool -= dt; f.aim = 0; }
         else if (dist > W.min && dist < W.range && (sees || (f.role === 'heavy' && f.alert >= 1))) {
-          if (!f.aim) onEvent?.({ type: 'aiming', farmer: f }); f.aim += dt;
+          if (!f.aim) { onEvent?.({ type: 'aiming', farmer: f }); if (f.role !== 'heavy') f.aimLayer = f.person?.motion.play?.('pistolAim', { fade: .12, mask: 'upper', hold: true, arms: true }); } f.aim += dt;
           if (f.aim >= W.aim) { f.aim = 0; f.cool = W.cooldown;
+            if (f.aimLayer) { f.person?.motion.stop?.('pistolAim', .1); f.aimLayer = null; }
+            f.person?.motion.play?.(f.role === 'heavy' ? 'throw' : 'pistolShoot', { fade: .05, speed: f.role === 'heavy' ? 1.3 : 1, mask: 'upper', arms: true });
             if (f.role === 'heavy') onEvent?.({ type: 'lob', farmer: f, x: c.x + c.velocity.x * W.lead, z: c.z + c.velocity.z * W.lead });
             else { const chance = Math.max(.06, Math.min(.95, W.accuracy - Math.hypot(c.velocity.x, c.velocity.z) * W.dodge - dist / W.range * .35)) * (c.crouched ? .7 : 1);
               onEvent?.({ type: 'shot', farmer: f, hit: Math.random() < chance, dx: dx / (dist || 1), dz: dz / (dist || 1) }); } }
-        } else f.aim = 0;
+        } else { f.aim = 0; if (f.aimLayer) { f.person?.motion.stop?.('pistolAim', .2); f.aimLayer = null; } }
       }
       if (f.role !== 'guard') { /* only guards use the fork */ }
       else if (f.windup > 0) { f.windup -= dt; if (f.windup <= 0 && live && dist < 2.3) onEvent?.({ type: 'stabbed', farmer: f, dx: dx / (dist || 1), dz: dz / (dist || 1) }); }

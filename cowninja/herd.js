@@ -150,7 +150,10 @@ export function createHerd({ scene, world, cow, farmers, assets, leader, onEvent
     for (const c of cows) {
       let ax = 0, az = 0, cap = 1.1, turnRate = 2, graze = 0;
       if (c.stun > 0) c.stun -= dt;
-      if (c.state === 'lost') continue;
+      if (c.state === 'lost') {   // going over: a short fall onto its side, legs stiffening; then it lies there
+        if (c.dying != null && c.dying < 1) { c.dying = Math.min(1, c.dying + dt / .7); const k = c.dying * c.dying; c.model.group.rotation.z = c.side * k * 1.45; c.model.group.position.y = Math.sin(c.dying * Math.PI) * .15 + k * .25; animateCow(c.model, { dead: c.dying }); }
+        continue;
+      }
       if (c.state === 'penned' || c.state === 'saved') {   // mill about: in the pen, or on the grass once safe
         c.wander += Math.sin(time * .7 + c.slot * 2.1) * dt;
         const cx = c.state === 'saved' ? exit.x : (c.pen.minX + c.pen.maxX) / 2, cz = c.state === 'saved' ? exit.z : (c.pen.minZ + c.pen.maxZ) / 2;
@@ -187,7 +190,8 @@ export function createHerd({ scene, world, cow, farmers, assets, leader, onEvent
       if (charging && c.state === 'free' && target > c.speed) c.speed = Math.min(target, c.speed + H.chargeAccel * dt);
       else c.speed += (target - c.speed) * Math.min(1, dt * 3);
       if (c.stun > 0) c.speed *= Math.max(0, 1 - dt * 6);
-      if (target > .2 && c.stun <= 0) { let turn = Math.atan2(ax, -az) - c.yaw; turn = Math.atan2(Math.sin(turn), Math.cos(turn)); c.yaw += turn * Math.min(1, dt * turnRate); }
+      c.turn = (c.turn || 0) * Math.exp(-6 * dt);
+      if (target > .2 && c.stun <= 0) { let turn = Math.atan2(ax, -az) - c.yaw; turn = Math.atan2(Math.sin(turn), Math.cos(turn)); const d = turn * Math.min(1, dt * turnRate); c.yaw += d; c.turn += (Math.max(-1, Math.min(1, d / Math.max(dt, .001) * .5)) - c.turn) * Math.min(1, dt * 8); }
       const vx = Math.sin(c.yaw) * c.speed, vz = -Math.cos(c.yaw) * c.speed;
       if (c.state === 'penned') { c.p.x = Math.max(c.pen.minX + .8, Math.min(c.pen.maxX - .8, c.p.x + vx * dt)); c.p.z = Math.max(c.pen.minZ + .8, Math.min(c.pen.maxZ - .8, c.p.z + vz * dt)); }
       else {
@@ -212,9 +216,9 @@ export function createHerd({ scene, world, cow, farmers, assets, leader, onEvent
       // Draw. Far from the action a cow only keeps its place.
       const run = Math.min(1, c.speed / 15), moving = Math.min(1, c.speed / 1.2);
       c.gait += dt * (.5 + c.speed * .19) * moving;
-      c.model.group.position.set(c.p.x, Math.abs(Math.sin(c.gait * Math.PI * 2)) * .05 * run, c.p.z); c.model.group.rotation.y = -c.yaw;
+      c.model.group.position.set(c.p.x, Math.abs(Math.sin(c.gait * Math.PI * 2)) * .05 * run, c.p.z); c.model.group.rotation.y = -c.yaw; c.model.group.rotation.z = -c.turn * .12 * run;
       const far = focus ? Math.hypot(c.p.x - focus.x, c.p.z - focus.z) : 0; c.model.group.visible = far < 150;
-      if (far < 70) animateCow(c.model, { gait: c.gait, run, moving, charge: charging && c.state === 'free' ? 1 : 0, time: time + c.slot * 1.7, graze: graze * (1 - moving) });
+      if (far < 70) animateCow(c.model, { gait: c.gait, run, moving, charge: charging && c.state === 'free' ? 1 : 0, time: time + c.slot * 1.7, graze: graze * (1 - moving), turn: c.turn || 0, recoil: c.stun > 0 && c.hitGate ? Math.sin(Math.min(1, c.stun / H.bounceStun) * Math.PI) : 0, toss: c.state === 'penned' && Math.sin(time * .7 + c.slot * 3.1) > .985 ? 1 : 0, stumble: c.flee && time < c.flee.until && c.speed > 3 ? Math.max(0, Math.sin(time * 5 + c.slot)) * .5 : 0 });
     }
     // The ridden cow counts against a gate like any other.
     if (cow.state.mounted !== false && Math.abs(cow.state.speed) > 3 && time - (cow.herdHitAt || -9) > 1) {
@@ -231,7 +235,7 @@ export function createHerd({ scene, world, cow, farmers, assets, leader, onEvent
     let killed = 0, scattered = 0;
     for (const c of cows) {
       if (c.state === 'lost' || c.state === 'saved') continue; const d = Math.hypot(c.p.x - x, c.p.z - z);
-      if (d < lethal && !covered(c.p.x, c.p.z)) { c.state = 'lost'; lost++; killed++; c.speed = 0; c.model.group.rotation.z = Math.PI / 2 * (c.slot % 2 ? 1 : -1); c.model.group.position.y = .42; onEvent({ type: 'cow-lost', x: c.p.x, z: c.p.z, lost }); }
+      if (d < lethal && !covered(c.p.x, c.p.z)) { c.state = 'lost'; lost++; killed++; c.speed = 0; c.dying = 0; c.side = (c.p.x - x) * Math.cos(c.yaw) + (c.p.z - z) * Math.sin(c.yaw) > 0 ? -1 : 1; onEvent({ type: 'cow-lost', x: c.p.x, z: c.p.z, lost }); }
       else if (d < scatter && c.state === 'free') { c.flee = { x, z, until: time + seconds * (1 - d / scatter * .5) }; c.stun = 0; scattered++; }
     }
     return { killed, scattered };

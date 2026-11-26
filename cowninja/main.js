@@ -65,7 +65,7 @@ async function boot() {
   // Whoever the yard is reacting to: the cow while you ride it, the ninja while you are on foot.
   const actor = () => mode === 'foot' ? foot.state : cow.state;
   function damage(amount, dx, dz, push) {
-    if (phase !== 'play' || window.cowNinja?.god || performance.now() < graceUntil) return; health = Math.max(0, health - amount); kick(dx || 0, dz || 0, Math.min(.6, amount * .02)); stats.hits++; hurtFlash = 1; shake = Math.max(shake, .5);
+    if (phase !== 'play' || window.cowNinja?.god || performance.now() < graceUntil) return; health = Math.max(0, health - amount); kick(dx || 0, dz || 0, Math.min(.6, amount * .02)); if (mode === 'foot' && !foot.state.busy && !foot.state.climbing) foot.play(amount > 15 ? 'hitHead' : 'hitChest', { fade: .04, speed: 1.4, mask: 'upper' }); stats.hits++; hurtFlash = 1; shake = Math.max(shake, .5);
     if (mode === 'foot') foot.cancelAction();
     const a = actor(); if (mode === 'ride') cow.hit(dx, dz, push); blood.burst(a.x, 1.2, a.z, dx * 4, dz * 4, 6); audio.hit('body', a.x, a.z, 1);
     if (mode === 'ride' && health > 0 && amount >= TUNE.rider.throwDamage) throwOff(dx, dz, 'THROWN OFF · E ON ANY COW TO RIDE AGAIN');
@@ -79,7 +79,7 @@ async function boot() {
     const c = cow.state, spot = [[dx * 1.8, dz * 1.8], [-1.5, 0], [1.5, 0], [0, 1.9], [0, -1.9]].map(([ox, oz]) => [c.x + ox, c.z + oz]).find(([x, z]) => !world.blocked(x, z, .4));
     if (!spot) return false;
     const yaw = Math.PI - c.yaw; if (!foot.enter(spot[0], spot[1], yaw)) return false;
-    mode = 'foot'; cow.setRider(false); calling = 0; keys.delete('shift'); camEase = 1.2; rig.wideUntil = performance.now() + 2500;
+    mode = 'foot'; cow.setRider(false); calling = 0; keys.delete('shift'); camEase = 1.2; rig.wideUntil = performance.now() + 2500; foot.play('cnRoll', { fade: .04, speed: 1.2, mask: 'full' });
     // Face where help is: the herd if there is one nearby, else the cow that threw you.
     { const list = herd.cows.filter(o => o.state === 'free'); let tx = c.x, tz = c.z; if (list.length) { tx = 0; tz = 0; for (const o of list) { tx += o.p.x; tz += o.p.z; } tx /= list.length; tz /= list.length; }
       camYaw = Math.hypot(tx - spot[0], tz - spot[1]) > 2 ? Math.atan2(tx - spot[0], tz - spot[1]) : yaw; camPitch = -.22; } graceUntil = performance.now() + TUNE.rider.recoverGrace * 1000;
@@ -193,8 +193,8 @@ async function boot() {
     if (phase !== 'play' || d >= b.radius || covered(a.x, a.z)) return;   // missed you, or you were behind something
     const k = 1 - d / b.radius * .6;
     if (mode === 'ride') {
-      if (shaken && now - shakenAt > 350) { shaken = false; stats.blasted = (stats.blasted || 0) + 1; throwOff(dx / d, dz / d, 'THE BLAST THREW YOU · ON FOOT NOW · Q CALLS THE HERD'); herd.blast(a.x, a.z, { lethal: 0, time: now / 1000 }); damage(TUNE.blast.damageRide * k, dx / d, dz / d, 0); }
-      else if (!shaken) { shaken = true; shakenAt = now; cow.hit(dx / d, dz / d, 5); damage(TUNE.blast.damageRide * k, dx / d, dz / d, 2); say('SHAKEN · ONE MORE BLAST THROWS YOU · GET CLEAR', 3.5); audio.moo(.4); }
+      if (shaken && now - shakenAt > 350) { shaken = false; cow.setShaken(false); stats.blasted = (stats.blasted || 0) + 1; throwOff(dx / d, dz / d, 'THE BLAST THREW YOU · ON FOOT NOW · Q CALLS THE HERD'); herd.blast(a.x, a.z, { lethal: 0, time: now / 1000 }); damage(TUNE.blast.damageRide * k, dx / d, dz / d, 0); }
+      else if (!shaken) { shaken = true; shakenAt = now; cow.setShaken(true); cow.hit(dx / d, dz / d, 5); damage(TUNE.blast.damageRide * k, dx / d, dz / d, 2); say('SHAKEN · ONE MORE BLAST THROWS YOU · GET CLEAR', 3.5); audio.moo(.4); }
     } else damage(TUNE.blast.damageFoot * k, dx / d, dz / d, 0);
   } });
   // Where the herd has been sent: a ring on the ground (green: go and hold; red: charge this gate).
@@ -301,9 +301,9 @@ async function boot() {
       if (!side) { say('NO ROOM TO GET OFF', 1.2); return; }
       camYaw = Math.PI - c.yaw; camPitch = -.15;
       if (!foot.enter(side[0], side[1], camYaw)) return;
-      mode = 'foot'; cow.setRider(false); calling = 0; keys.delete('shift'); say('ON FOOT · C CROUCH · E USE · Q CALL THE COW', 3);
+      mode = 'foot'; cow.setRider(false); calling = 0; keys.delete('shift'); foot.play('jumpLand', { fade: .05, speed: 1.3, mask: 'full' }); say('ON FOOT · C CROUCH · E USE · Q CALL THE HERD', 3);
       if (!touch.active) renderer.domElement.requestPointerLock?.();
-    } else if (o.kind === 'mount') { if (o.swap) herd.swap(o.swap, cow); mode = 'ride'; foot.leave(); cow.setRider(true); calling = 0; document.exitPointerLock?.(); audio.moo(.14); }
+    } else if (o.kind === 'mount') { const fx = foot.state.x, fz = foot.state.z; if (o.swap) herd.swap(o.swap, cow); mode = 'ride'; foot.leave(); cow.mountFrom(fx, fz); calling = 0; document.exitPointerLock?.(); audio.moo(.14); }
     else if (o.kind === 'takedown') {
       const f = o.farmer, A = window.GardenAnim;
       // The source pair faces the same way, with the ninja behind the farmer. Both sample the same clock, so slow
@@ -325,7 +325,7 @@ async function boot() {
         farmers.knock(f, (f.p.x - p.x) / d * 2.4, (f.p.z - p.z) / d * 2.4, 'takedown');
       }
     }
-    else if (o.kind === 'latch') { rig.closeUntil = performance.now() + 1400; world.openGate(o.gate.id); foot.play('interact', { fade: .08, mask: 'upper' }); audio.hit(o.gate.kind === 'main' ? 'metal' : 'wood', o.gate.x, o.gate.z, .8); if (o.gate.kind === 'main') say('THE MAIN GATE IS OPEN · GET THEM OUT', 3); }
+    else if (o.kind === 'latch') { rig.closeUntil = performance.now() + 1400; const g = o.gate, p = foot.state; foot.face?.(Math.atan2(g.lever.x - p.x, g.lever.z - p.z), .55); foot.play('push', { fade: .08, speed: 1.35, mask: 'full' }); setTimeout(() => { if (phase === 'play') world.openGate(g.id); }, 330); audio.hit(o.gate.kind === 'main' ? 'metal' : 'wood', o.gate.x, o.gate.z, .8); if (o.gate.kind === 'main') say('THE MAIN GATE IS OPEN · GET THEM OUT', 3); }
   }
   // The whistle: on foot it brings the cow to you. Anyone close enough hears it too.
   function whistle() {
@@ -487,7 +487,7 @@ async function boot() {
       if (bodyAlarm && now > bodyAlarm.at) { if (!bodyAlarm.farmer.ragdoll) raiseAlarm('THE BODY WAS REPORTED · THE ALARM IS UP'); bodyAlarm = null; }
       updateResponse(now, farmers.alertLevel());
       // Shaken lasts as long as the bombardment does: it passes once nothing has gone off near you for a while.
-      if (shaken) { if (mode === 'ride') shake = Math.max(shake, .14); if (!blasts.pending && now - threatAt > TUNE.blast.recover * 1000) { shaken = false; say('STEADY AGAIN', 1.6); } }
+      if (shaken) { if (mode === 'ride') shake = Math.max(shake, .14); if (!blasts.pending && now - threatAt > TUNE.blast.recover * 1000) { shaken = false; cow.setShaken(false); say('STEADY AGAIN', 1.6); } }
       // Done: you stand on the safe ground and every cow still alive is there too. (With cows left behind, E leaves.)
       if (herd.saved > 0 && herd.freeCount === 0 && herd.penned === 0 && Math.hypot(a.x - world.exit.x, a.z - world.exit.z) < world.exit.radius + 3 && now - lastSaveAt > 1500) end(true);
     }
