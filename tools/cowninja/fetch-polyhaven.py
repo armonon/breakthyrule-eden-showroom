@@ -66,6 +66,16 @@ for name in SITE_TEXTURES:
         for kind, key in (('diff', 'Diffuse'), ('nor', 'nor_gl'), ('arm', 'arm')): get(f[key]['1k']['jpg']['url'], os.path.join(WORK, 'tex', f'{name}-{kind}.jpg'))
         print('site texture', name)
     except Exception as e: print('FAILED site texture', name, e)
+# Plants: the glTF download's colour textures are JPEGs, with no alpha; the leaf cut-outs come as separate
+# "Alpha" (or "<part>_alpha") maps. Fetch them beside the model's textures; pack-props.py merges them in.
+for name in MODELS + SITE_MODELS:
+    try:
+        f = files(name)
+        for key, v in f.items():
+            if key.lower() == 'alpha' or key.lower().endswith('_alpha'):
+                url = v['1k']['jpg']['url']; get(url, os.path.join(WORK, 'models', name, 'textures', os.path.basename(url)))
+                print('alpha', name, key)
+    except Exception as e: print('FAILED alpha', name, e)
 os.makedirs(os.path.join(ROOT, 'tex', 'ground'), exist_ok=True)
 for name in GROUND:
     try:
