@@ -624,7 +624,7 @@
     b.heading=Math.atan2(to.x,to.z);b.model.motion?.aimAt?.(eyeOf(b.target).add(new T.Vector3(0,-.3,0)));
     const id=b.weapon,w=W(id);
     // Bot melee uses the shared moves: the swing is telegraphed for its windup, then lands if you are still in reach.
-    if(id==='axe'){move.copy(to);const claw=!!b.K?.unarmed;speed=claw?(dist<4?4.3:2.2):5;const m=claw?{...botMove('botBash'),damage:b.K.hit,reach:1.75}:botMove('botChop');if(dist<1.8&&b.fireT<=0){b.fireT=m.windup+m.recover+(claw?.35:0);telegraph(b,m,claw?pick(['hook','swingA']):Math.random()<.5?'swingA':'swingB');setTimeout(()=>botStrike(b,m,claw?'melee':'axe'),m.windup*1000);}}
+    if(id==='axe'){move.copy(to);const claw=!!b.K?.unarmed;speed=claw?(dist<3?3.3:1.6):5;const m=claw?{...botMove('botBash'),damage:b.K.hit,reach:1.75}:botMove('botChop');if(dist<1.8&&b.fireT<=0){b.fireT=m.windup+m.recover+(claw?.35:0);telegraph(b,m,claw?pick(['hook','swingA']):Math.random()<.5?'swingA':'swingB');setTimeout(()=>botStrike(b,m,claw?'melee':'axe'),m.windup*1000);}}
     else{
      let ideal=id==='pump'?6:id==='smg'?12:id==='pistol'?14:id==='sniper'?45:24;
      if(b.target===player&&player.shield<=0)ideal*=.55; // smells blood: closes in while your shield is down
@@ -659,7 +659,7 @@
    // Walking into a bot shoulders it aside; running into it staggers it.
    if(player?.alive){const q=posOf(player),dx=p.x-q.x,dz=p.z-q.z,d=Math.hypot(dx,dz);if(Math.abs(p.y-q.y)<1&&d<.9&&d>1e-4){const push=(.9-d)*(1+(player.speed||0)*.4);const np=p.clone();np.x+=dx/d*push*dt*6;np.z+=dz/d*push*dt*6;if(!blocked(np)){p.x=np.x;p.z=np.z;}
     if((player.speed||0)>4.8&&clock-b.lastFlinch>.9){b.lastFlinch=clock;b.model.motion?.hit?.(new T.Vector3(dx/d,0,dz/d),.9);}}}
-   if(b.kind==='zombie'){if(b.state!=='fight')speed=Math.min(speed,1.5);}else if(b.K?.speed)speed*=b.K.speed*(b.K.nightSpeed?lerp(1,b.K.nightSpeed/b.K.speed,nightLevel()):1);
+   if(b.kind==='zombie'){if(b.state!=='fight')speed=Math.min(speed,1.1);}else if(b.K?.speed)speed*=b.K.speed*(b.K.nightSpeed?lerp(1,b.K.nightSpeed/b.K.speed,nightLevel()):1);
    if((b.limpT||0)>0){b.limpT-=dt;speed*=.62;} // a leg that was shot
    if(move.lengthSq()>0){move.normalize().multiplyScalar(speed*dt);const next=p.clone().add(move);
     if(!blocked(next)&&next.x>B[0]+1&&next.x<B[1]-1&&next.z>B[2]+1&&next.z<B[3]-1){p.x=next.x;p.z=next.z;}

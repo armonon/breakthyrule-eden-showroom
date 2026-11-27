@@ -66,8 +66,8 @@
      const wantYaw=Math.atan2(lagDir.x,-lagDir.z),wantPitch=Math.asin(T.MathUtils.clamp(lagDir.y,-1,1));
      if(lagYaw===null||!(turnLag>0)){lagYaw=wantYaw;lagPitch=wantPitch;}
      else{let d=Math.atan2(Math.sin(wantYaw-lagYaw),Math.cos(wantYaw-lagYaw));if(Math.abs(d)>1){lagYaw=wantYaw;lagPitch=wantPitch;d=0;}
-      const k=1-Math.exp(-24*dt);lagYaw+=d*k;lagPitch+=(wantPitch-lagPitch)*k;
-      const m=.06;d=Math.atan2(Math.sin(wantYaw-lagYaw),Math.cos(wantYaw-lagYaw));if(Math.abs(d)>m)lagYaw=wantYaw-Math.sign(d)*m;if(Math.abs(wantPitch-lagPitch)>m)lagPitch=wantPitch-Math.sign(wantPitch-lagPitch)*m;}
+      const k=1-Math.exp(-36*dt);lagYaw+=d*k;lagPitch+=(wantPitch-lagPitch)*k;
+      const m=.035;d=Math.atan2(Math.sin(wantYaw-lagYaw),Math.cos(wantYaw-lagYaw));if(Math.abs(d)>m)lagYaw=wantYaw-Math.sign(d)*m;if(Math.abs(wantPitch-lagPitch)>m)lagPitch=wantPitch-Math.sign(wantPitch-lagPitch)*m;}
      const w=cw*steady*T.MathUtils.clamp(turnLag,0,1),dy=Math.atan2(Math.sin(lagYaw-wantYaw),Math.cos(lagYaw-wantYaw))*w,dp=(lagPitch-wantPitch)*w;lagErr=Math.hypot(dy,dp);
      const yaw=wantYaw+dy+Math.sin(phase)*.0055*intensity*(1-slideK)*cw*steady,pitch=T.MathUtils.clamp(wantPitch+dp+(Math.sin(breathPhase+.7)*(.002+.004*exert)+nod*.9)*cw*steady,-1.5,1.5);
      look.set(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(reach).add(camera.position);

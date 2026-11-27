@@ -710,7 +710,7 @@ function selectFilm(){go('film');wallFilm?.playWithSound();}
 const raycaster=new T.Raycaster(),pointer=new T.Vector2();
 // Mouse look: on a desktop the mouse steers the view directly once the scene is clicked (pointer lock); Esc frees the
 // cursor. While looking, clicks act on whatever is under the centre dot. Touch keeps drag-to-look.
-let lookLocked=false;const lookSensitivity=.0022;
+let lookLocked=false;const lookSensitivity=.0027;
 const lookDot=document.createElement('div');lookDot.id='look-dot';lookDot.setAttribute('aria-hidden','true');stage.after(lookDot);
 function lockLook(){if(!state.ready||modalOpen()||document.pointerLockElement)return;const el=renderer.domElement,fallback=()=>{try{el.requestPointerLock?.()?.catch?.(()=>{});}catch{}};try{const p=el.requestPointerLock?.({unadjustedMovement:true});p?.catch?.(fallback);}catch{fallback();}}
 document.addEventListener('pointerlockchange',()=>{lookLocked=document.pointerLockElement===renderer.domElement;document.body.classList.toggle('look-locked',lookLocked);if(lookLocked){drag=null;keys.clear();}requestDraw();});
