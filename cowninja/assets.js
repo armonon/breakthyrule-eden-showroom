@@ -15,7 +15,12 @@ export const PROPS = ['barrel_02', 'modular_airduct_rectangular_01', 'covered_ca
   'metal_office_desk', 'metal_stool_01', 'tool_cart', 'metal_jerrycan', 'wooden_bucket_01', 'cardboard_box_01', 'dead_tree_trunk', 'boulder_01',
   'shrub_02', 'shrub_04', 'grass_medium_01', 'grass_medium_02', 'fir_sapling', 'tree_stump_01', 'nettle_plant', 'weed_plant_02', 'barrel_01', 'barrel_03', 'bull_head', 'caged_hanging_light', 'cement_bag', 'concrete_road_barrier', 'large_iron_gate', 'metal_trash_can',
   'modular_chainlink_fence', 'modular_industrial_pipes_01', 'mounted_fluorescent_lights', 'old_tyre', 'propane_tank', 'rollershutter_door', 'street_lamp_01',
-  'trashbag', 'utility_box_01', 'wooden_crate_02', 'pickup'];
+  'trashbag', 'utility_box_01', 'wooden_crate_02', 'pickup',
+  // the detail pass
+  'security_light', 'security_camera_02', 'overhead_crane', 'power_box_01', 'utility_box_02', 'hand_truck', 'industrial_storage_cart', 'plastic_crate_01',
+  'wooden_barrels_01', 'industrial_pastic_container', 'small_lpg_tank', 'metal_tool_chest', 'old_military_crate', 'plastic_jerrycan', 'rusted_spade_01',
+  'watering_can_metal_01', 'rubber_boots', 'sledgehammer_01', 'plastic_broom', 'rusted_wheel_rim_01', 'worn_metal_rack', 'wooden_ladder_02',
+  'garden_hose_wall_mounted_01', 'wooden_crate_01'];
 export const GAME_PROPS = ['chipped-granite-trough-v001', 'plain-limestone-trough-v001', 'plain-iron-gurney-v001', 'worn-iron-gurney-v002', 'plain-iron-operating-table-v001',
   'old-iron-operating-table-v002', 'weathered-wood-cart-v001', 'sturdy-wood-cart-v001', 'weathered-wood-barricade-v001', 'plain-wood-barricade-v001', 'old-iron-drainpipe-v001',
   'worn-iron-cell-door-v001', 'sturdy-wood-table-v001'];
