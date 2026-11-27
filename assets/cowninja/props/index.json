@@ -1871,5 +1871,637 @@
     -0.0
    ]
   }
+ },
+ "garden_hose_wall_mounted_01": {
+  "tris": 3000,
+  "min": [
+   -0.234,
+   -0.302,
+   -0.006
+  ],
+  "max": [
+   0.232,
+   0.255,
+   0.245
+  ],
+  "parts": {
+   "garden_hose": [
+    -0.013,
+    -0.056,
+    0.064
+   ],
+   "garden_hose_wall_bracket": [
+    0.0,
+    0.0,
+    -0.0
+   ]
+  }
+ },
+ "hand_truck": {
+  "tris": 3000,
+  "min": [
+   -0.297,
+   -0.0,
+   -0.096
+  ],
+  "max": [
+   0.297,
+   1.402,
+   0.597
+  ],
+  "parts": {}
+ },
+ "industrial_pastic_container": {
+  "tris": 5000,
+  "min": [
+   -0.237,
+   0.0,
+   -0.316
+  ],
+  "max": [
+   0.239,
+   0.423,
+   0.315
+  ],
+  "parts": {
+   "industrial_pastic_container": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "industrial_pastic_container_lid_a": [
+    0.167,
+    0.409,
+    -0.001
+   ],
+   "industrial_pastic_container_lid_b": [
+    -0.167,
+    0.409,
+    -0.0
+   ]
+  }
+ },
+ "industrial_storage_cart": {
+  "tris": 4000,
+  "min": [
+   -0.802,
+   0.002,
+   -0.551
+  ],
+  "max": [
+   0.802,
+   1.38,
+   0.551
+  ],
+  "parts": {}
+ },
+ "metal_tool_chest": {
+  "tris": 3000,
+  "min": [
+   -0.369,
+   0.001,
+   -0.197
+  ],
+  "max": [
+   0.316,
+   0.653,
+   0.21
+  ],
+  "parts": {
+   "metal_tool_chest_chest": [
+    -0.027,
+    0.191,
+    0.027
+   ],
+   "metal_tool_chest_handle_left": [
+    -0.363,
+    0.218,
+    0.027
+   ],
+   "metal_tool_chest_handle_right": [
+    0.31,
+    0.218,
+    0.027
+   ],
+   "metal_tool_chest_hinge_chest": [
+    -0.027,
+    0.323,
+    0.01
+   ],
+   "metal_tool_chest_hinge_lid": [
+    -0.027,
+    0.477,
+    -0.144
+   ],
+   "metal_tool_chest_lid": [
+    -0.027,
+    0.345,
+    -0.129
+   ],
+   "metal_tool_chest_lock": [
+    -0.027,
+    0.303,
+    0.183
+   ]
+  }
+ },
+ "old_military_crate": {
+  "tris": 2500,
+  "min": [
+   -0.913,
+   -0.0,
+   -0.67
+  ],
+  "max": [
+   0.902,
+   0.301,
+   0.309
+  ],
+  "parts": {
+   "old_military_crate_a": [
+    -0.5,
+    0.0,
+    -0.0
+   ],
+   "old_military_crate_b": [
+    0.5,
+    0.0,
+    -0.0
+   ],
+   "old_military_crate_cloth_a": [
+    -0.5,
+    0.024,
+    -0.0
+   ],
+   "old_military_crate_cloth_b": [
+    0.5,
+    0.024,
+    -0.0
+   ],
+   "old_military_crate_latch_a": [
+    -0.5,
+    0.227,
+    0.227
+   ],
+   "old_military_crate_latch_b": [
+    0.5,
+    0.227,
+    0.227
+   ],
+   "old_military_crate_lid_a": [
+    -0.354,
+    0.251,
+    -0.222
+   ],
+   "old_military_crate_lid_b": [
+    0.646,
+    0.251,
+    -0.222
+   ],
+   "old_military_crate_loop_a": [
+    -0.5,
+    0.209,
+    0.223
+   ],
+   "old_military_crate_loop_b": [
+    0.5,
+    0.209,
+    0.223
+   ]
+  }
+ },
+ "overhead_crane": {
+  "tris": 18000,
+  "min": [
+   -6.246,
+   -3.913,
+   -0.955
+  ],
+  "max": [
+   6.246,
+   1.219,
+   3.045
+  ],
+  "parts": {
+   "overhead_crane": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "overhead_crane_rails": [
+    0.0,
+    -0.404,
+    -0.955
+   ],
+   "overhead_crane_winch": [
+    -0.066,
+    -0.566,
+    0.029
+   ]
+  }
+ },
+ "plastic_broom": {
+  "tris": 1500,
+  "min": [
+   -0.208,
+   -0.0,
+   -0.528
+  ],
+  "max": [
+   0.208,
+   1.197,
+   0.039
+  ],
+  "parts": {}
+ },
+ "plastic_crate_01": {
+  "tris": 1500,
+  "min": [
+   -0.149,
+   0.0,
+   -0.204
+  ],
+  "max": [
+   0.149,
+   0.264,
+   0.204
+  ],
+  "parts": {}
+ },
+ "plastic_jerrycan": {
+  "tris": 1500,
+  "min": [
+   -0.135,
+   -0.0,
+   -0.167
+  ],
+  "max": [
+   0.133,
+   0.318,
+   0.174
+  ],
+  "parts": {}
+ },
+ "power_box_01": {
+  "tris": 2500,
+  "min": [
+   -0.288,
+   -0.252,
+   -0.047
+  ],
+  "max": [
+   0.175,
+   0.252,
+   0.354
+  ],
+  "parts": {
+   "power_box_01_box": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "power_box_01_door": [
+    -0.164,
+    0.0,
+    0.043
+   ]
+  }
+ },
+ "rubber_boots": {
+  "tris": 2000,
+  "min": [
+   -0.445,
+   0.0,
+   -0.134
+  ],
+  "max": [
+   0.445,
+   0.373,
+   0.132
+  ],
+  "parts": {
+   "rubber_boots_dirt_r": [
+    0.2,
+    0.0,
+    -0.0
+   ],
+   "rubber_boots_dirty_l": [
+    0.4,
+    0.0,
+    -0.0
+   ],
+   "rubber_boots_l": [
+    -0.2,
+    0.0,
+    -0.0
+   ],
+   "rubber_boots_r": [
+    -0.4,
+    0.0,
+    -0.0
+   ]
+  }
+ },
+ "rusted_spade_01": {
+  "tris": 1200,
+  "min": [
+   -0.084,
+   -0.503,
+   -0.023
+  ],
+  "max": [
+   0.084,
+   0.598,
+   0.023
+  ],
+  "parts": {}
+ },
+ "rusted_wheel_rim_01": {
+  "tris": 2500,
+  "min": [
+   -0.202,
+   -0.193,
+   -0.077
+  ],
+  "max": [
+   0.2,
+   0.202,
+   0.077
+  ],
+  "parts": {}
+ },
+ "security_camera_02": {
+  "tris": 2000,
+  "min": [
+   -0.07,
+   -0.045,
+   -0.0
+  ],
+  "max": [
+   0.07,
+   0.164,
+   0.394
+  ],
+  "parts": {
+   "security_camera_02": [
+    0.0,
+    0.028,
+    0.152
+   ],
+   "security_camera_02_mount": [
+    0.0,
+    0.0,
+    -0.0
+   ]
+  }
+ },
+ "security_light": {
+  "tris": 2000,
+  "min": [
+   -0.162,
+   -0.359,
+   -0.031
+  ],
+  "max": [
+   0.161,
+   0.172,
+   0.386
+  ],
+  "parts": {
+   "security_light": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "security_light_glass": [
+    0.0,
+    0.0,
+    -0.0
+   ]
+  }
+ },
+ "sledgehammer_01": {
+  "tris": 1200,
+  "min": [
+   -0.104,
+   -0.747,
+   -0.045
+  ],
+  "max": [
+   0.104,
+   0.259,
+   0.045
+  ],
+  "parts": {}
+ },
+ "small_lpg_tank": {
+  "tris": 2500,
+  "min": [
+   -0.205,
+   0.0,
+   -0.205
+  ],
+  "max": [
+   0.205,
+   0.642,
+   0.204
+  ],
+  "parts": {}
+ },
+ "utility_box_02": {
+  "tris": 2500,
+  "min": [
+   -0.46,
+   0.0,
+   -0.21
+  ],
+  "max": [
+   0.46,
+   1.12,
+   0.222
+  ],
+  "parts": {}
+ },
+ "watering_can_metal_01": {
+  "tris": 2000,
+  "min": [
+   -0.095,
+   -0.001,
+   -0.175
+  ],
+  "max": [
+   0.096,
+   0.196,
+   0.278
+  ],
+  "parts": {}
+ },
+ "wooden_barrels_01": {
+  "tris": 6000,
+  "min": [
+   -2.332,
+   -0.04,
+   -1.933
+  ],
+  "max": [
+   2.108,
+   0.917,
+   1.412
+  ],
+  "parts": {
+   "wooden_barrels_01_barrel01": [
+    1.476,
+    0.0,
+    -1.561
+   ],
+   "wooden_barrels_01_barrel02": [
+    -0.94,
+    0.0,
+    -1.561
+   ],
+   "wooden_barrels_01_piece01": [
+    -0.738,
+    0.0,
+    -0.007
+   ],
+   "wooden_barrels_01_piece02": [
+    -2.036,
+    0.005,
+    0.013
+   ],
+   "wooden_barrels_01_piece03": [
+    0.373,
+    0.051,
+    -0.0
+   ],
+   "wooden_barrels_01_piece04": [
+    1.466,
+    0.056,
+    -0.0
+   ],
+   "wooden_barrels_01_piece05": [
+    1.759,
+    0.053,
+    -0.0
+   ],
+   "wooden_barrels_01_piece06": [
+    2.073,
+    0.051,
+    -0.0
+   ],
+   "wooden_barrels_01_piece07": [
+    1.193,
+    0.023,
+    -0.33
+   ],
+   "wooden_barrels_01_piece08": [
+    0.741,
+    0.0,
+    1.015
+   ],
+   "wooden_barrels_01_piece09": [
+    0.741,
+    0.0,
+    1.126
+   ],
+   "wooden_barrels_01_piece10": [
+    -0.442,
+    0.035,
+    0.691
+   ],
+   "wooden_barrels_01_piece11": [
+    -0.444,
+    0.035,
+    1.092
+   ],
+   "wooden_barrels_01_piece12": [
+    -0.451,
+    0.035,
+    1.342
+   ],
+   "wooden_barrels_01_piece13": [
+    -1.411,
+    0.037,
+    0.642
+   ],
+   "wooden_barrels_01_piece14": [
+    -1.383,
+    0.037,
+    0.945
+   ],
+   "wooden_barrels_01_piece15": [
+    1.268,
+    -0.01,
+    1.076
+   ],
+   "wooden_barrels_01_piece16": [
+    1.498,
+    -0.01,
+    1.071
+   ],
+   "wooden_barrels_01_piece17": [
+    1.688,
+    -0.013,
+    1.06
+   ]
+  }
+ },
+ "wooden_crate_01": {
+  "tris": 2000,
+  "min": [
+   -0.413,
+   -0.008,
+   -0.196
+  ],
+  "max": [
+   0.413,
+   0.342,
+   0.213
+  ],
+  "parts": {
+   "wooden_crate_01": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "wooden_crate_01_latch": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "wooden_crate_01_lid": [
+    0.0,
+    0.0,
+    -0.0
+   ]
+  }
+ },
+ "wooden_ladder_02": {
+  "tris": 2000,
+  "min": [
+   -0.537,
+   -0.002,
+   -0.312
+  ],
+  "max": [
+   0.452,
+   1.721,
+   0.306
+  ],
+  "parts": {}
+ },
+ "worn_metal_rack": {
+  "tris": 4000,
+  "min": [
+   -0.46,
+   -0.0,
+   -0.3
+  ],
+  "max": [
+   0.455,
+   1.9,
+   0.3
+  ],
+  "parts": {}
  }
 }

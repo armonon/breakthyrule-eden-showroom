@@ -19,6 +19,12 @@ SITE_MODELS = ['modular_electricity_poles', 'modular_airduct_rectangular_01', 'c
                'shrub_04', 'grass_medium_01', 'grass_medium_02', 'nettle_plant', 'weed_plant_02', 'wooden_bucket_01', 'metal_jerrycan',
                'portable_generator', 'cardboard_box_01', 'Barrel_02', 'namaqualand_boulder_02', 'fir_sapling', 'pine_sapling_medium',
                'dry_branches_medium_01', 'tool_cart', 'wooden_crate_01']
+# The detail pass: plant on roofs and walls, yard and farm clutter, tools.
+SITE_MODELS += ['exterior_aircon_unit', 'flood_lights', 'security_light', 'security_camera_02', 'overhead_crane', 'modular_fire_escape',
+                'power_box_01', 'utility_box_02', 'hand_truck', 'industrial_storage_cart', 'plastic_crate_01', 'compost_bags', 'wooden_barrels_01',
+                'industrial_pastic_container', 'small_lpg_tank', 'metal_tool_chest', 'old_military_crate', 'plastic_jerrycan', 'rusted_spade_01',
+                'watering_can_metal_01', 'rubber_boots', 'sledgehammer_01', 'plastic_broom', 'rusted_wheel_rim_01', 'worn_metal_rack',
+                'wooden_ladder_02', 'garden_hose_wall_mounted_01']
 def get(url, path):
     if os.path.exists(path) and os.path.getsize(path): return
     os.makedirs(os.path.dirname(path), exist_ok=True)

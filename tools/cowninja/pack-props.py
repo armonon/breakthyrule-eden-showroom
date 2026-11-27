@@ -14,8 +14,19 @@ def bounds(objs):
     return lo, hi
 PLANTS = ('tree', 'shrub', 'grass', 'plant', 'sapling', 'nettle', 'weed', 'boulder', 'stump', 'trunk')
 LIMITS = {'pine_tree_01': 26000, 'fir_tree_01': 26000, 'grass_medium_01': 1200, 'grass_medium_02': 1200, 'nettle_plant': 1500, 'weed_plant_02': 1500, 'shrub_02': 2400, 'shrub_04': 1800, 'fir_sapling': 3000, 'boulder_01': 1200, 'tree_stump_01': 1500, 'dead_tree_trunk': 3000, 'modular_electricity_poles': 9000, 'modular_chainlink_fence': 5000, 'wooden_crate_02': 1600, 'street_lamp_01': 4000, 'security_camera_01': 2500, 'concrete_road_barrier': 4000, 'metal_jerrycan': 3000, 'cardboard_box_01': 1500}
+# The detail pass's props: big pieces keep more triangles; small clutter is cut hard and its textures halved.
+DETAIL = {'overhead_crane': 18000, 'modular_fire_escape': 14000, 'exterior_aircon_unit': 6000, 'flood_lights': 4000, 'security_light': 2000, 'security_camera_02': 2000,
+          'power_box_01': 2500, 'utility_box_02': 2500, 'hand_truck': 3000, 'industrial_storage_cart': 4000, 'plastic_crate_01': 1500, 'compost_bags': 4000,
+          'wooden_barrels_01': 6000, 'industrial_pastic_container': 5000, 'small_lpg_tank': 2500, 'metal_tool_chest': 3000, 'old_military_crate': 2500,
+          'plastic_jerrycan': 1500, 'rusted_spade_01': 1200, 'watering_can_metal_01': 2000, 'rubber_boots': 2000, 'sledgehammer_01': 1200, 'plastic_broom': 1500,
+          'rusted_wheel_rim_01': 2500, 'worn_metal_rack': 4000, 'wooden_ladder_02': 2000, 'garden_hose_wall_mounted_01': 3000, 'wooden_crate_01': 2000}
 def export(name, limit=14000):
-    limit = LIMITS.get(name, limit)
+    limit = DETAIL.get(name, LIMITS.get(name, limit))
+    if name in DETAIL and DETAIL[name] < 9000:
+        for img in list(bpy.data.images):
+            try:
+                if img.size[0] > 512: img.scale(512, max(1, int(512 * img.size[1] / img.size[0])))
+            except Exception: pass
     bpy.context.view_layer.update()
     meshes = [o for o in bpy.data.objects if o.type == 'MESH']
     tris = sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in meshes)

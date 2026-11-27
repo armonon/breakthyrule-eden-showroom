@@ -182,6 +182,8 @@ async function boot() {
   function toggleCrouch() {
     if (phase !== 'play' || mode !== 'foot') return;
     if (foot.state.climbing) { letGo = 3; return; }
+    // In the air, C flips instead.
+    if (foot.state.airborne) { if (foot.flipJump?.()) { stats.flips2 = (stats.flips2 || 0) + 1; audio.land?.('grass', .3); } return; }
     crouchOn = !crouchOn;
   }
   function footKeys() {

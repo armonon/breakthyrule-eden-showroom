@@ -32,3 +32,8 @@ modly/*.glb         Generated with Modly (image to 3D) from the prompts in docs/
                     tools/cowninja/compress-modly.sh. Originals on the claude/cowninja-modly branch.
 Animation (cn* clips in assets/anim/clips.json): Adobe Mixamo, baked by tools/cowninja/bake-anims.cjs. Royalty-free for
                     use in projects; the raw Mixamo files are not redistributed (kept out of the repository's tree).
+
+Detail pass props (Poly Haven, CC0, https://polyhaven.com): security_light, security_camera_02, overhead_crane, power_box_01, utility_box_02,
+hand_truck, industrial_storage_cart, plastic_crate_01, wooden_barrels_01, industrial_pastic_container, small_lpg_tank, metal_tool_chest,
+old_military_crate, plastic_jerrycan, rusted_spade_01, watering_can_metal_01, rubber_boots, sledgehammer_01, plastic_broom, rusted_wheel_rim_01,
+worn_metal_rack, wooden_ladder_02, garden_hose_wall_mounted_01, wooden_crate_01.

@@ -150,8 +150,28 @@ export function createFoot({ scene, world, onEffect }) {
   const once = (id, options = {}) => hasClip(id) ? ninja?.person.motion.play?.(id, { mask: 'full', loop: false, ...options }) : null;
   let pipeClip = false;
   // One 60 Hz tick. keys: Set of 'w','a','s','d','shift','space','crouch'; yaw/pitch: where the camera looks.
+  // A flip: C in the air. The authored flip clips over the jump (start, tuck loop, landing), and a little more carry.
+  let flip = null;
+  function flipJump() {
+    const motion = ninja?.person.motion;
+    if (!controller || !state.active || !state.airborne || state.climbing || state.busy || flip || !motion || !hasClip('flipStart')) return false;
+    flip = { t: 0, loop: false }; motion.play('flipStart', { fade: .05, speed: 1.35, mask: 'full', arms: true });
+    controller.velocity.x *= 1.12; controller.velocity.z *= 1.12; state.flipping = true;
+    return true;
+  }
+  function stepFlip() {
+    if (!flip) return; flip.t += 1 / 60; const motion = ninja?.person.motion;
+    if (!state.airborne || state.climbing || flip.t > 2.5) {
+      motion?.stop?.('flipStart', .1); motion?.stop?.('flipLoop', .12);
+      if (!state.climbing && !state.airborne && hasClip('flipLand')) once('flipLand', { fade: .06, speed: 1.5 });
+      flip = null; state.flipping = false; return;
+    }
+    const d = (G.GardenAnim?.duration('flipStart') || .6) / 1.35;
+    if (!flip.loop && flip.t > d * .85 && hasClip('flipLoop')) { flip.loop = true; motion?.play?.('flipLoop', { fade: .08, loop: true, mask: 'full', arms: true }); }
+  }
   function step(keys, yaw, pitch = 0) {
     if (!controller || !state.active) return;
+    stepFlip();
     traversalRate = 1;
     if (action) { stepAction(keys); return; }
     if (mantle) { stepMantle(keys); return; }
@@ -262,5 +282,5 @@ export function createFoot({ scene, world, onEffect }) {
     scriptedPose(null, dt); lastJump = keys.has('space'); lastCrouch = keys.has('crouch');
     if (progress >= 1) { action = null; state.busy = false; ninja.person.motion.stop?.('stealthAssassin', .2); a.onFinish?.(); }
   }
-  return { state, enter, leave, step, play, face, shove, setGuard, facing, beginAction, cancelAction, available: !!controller, controller, ninja, holder };
+  return { state, enter, leave, step, flipJump, play, face, shove, setGuard, facing, beginAction, cancelAction, available: !!controller, controller, ninja, holder };
 }
