@@ -17,6 +17,8 @@ import { createAwareness } from '/cowninja/awareness.js';
 import { createMinimap } from '/cowninja/minimap.js';
 import { createFx } from '/cowninja/fx.js';
 import { createSearchlights } from '/cowninja/searchlights.js';
+import { createGrass } from '/cowninja/grass.js';
+import { createBushes } from '/cowninja/bushes.js';
 import { createBlood } from '/cowninja/blood.js';
 import { createGrimPost } from '/cowninja/post.js';
 import { createFoot } from '/cowninja/foot.js';
@@ -55,7 +57,7 @@ async function boot() {
     // (never allowed to hold the page: after 30 s the game starts and they appear when they arrive)
     Promise.race([Promise.all([...['harbor', 'boulevard', 'coast', 'midnight'].map(id => window.GardenCharacterRocketbox?.load(id).catch(() => {})), Promise.resolve(window.GardenAnim?.load?.()).catch(() => {})]), new Promise(r => setTimeout(r, 30000))]).catch(() => {}),
   ]);
-  const world = createWorld({ scene, physics, assets, shadows: query.has('sh') ? Number(query.get('sh')) : matchMedia?.('(pointer: coarse)').matches ? 2 : 7 });
+  const world = createWorld({ scene, physics, assets, quality: Number(query.get('q') ?? (matchMedia?.('(pointer: coarse)').matches ? 2 : 0)), shadows: query.has('sh') ? Number(query.get('sh')) : matchMedia?.('(pointer: coarse)').matches ? 2 : 7 });
   const blood = createBlood({ scene });
   const audio = createAudio({ camera });
   const stats = { knockouts: 0, herdKnockouts: 0, flips: 0, hits: 0, start: 0, time: 0, thrown: 0 };
@@ -160,6 +162,7 @@ async function boot() {
   }
   const herd = createHerd({ scene, world, cow, farmers, assets, leader: actor, onEvent: onHerd });
   farmers.setNav(herd.nav);
+  const grass = query.get('grass') === '0' ? { update() {}, count: 0 } : createGrass({ scene, world, mask: world.groundMask, quality: Number(query.get('q') ?? (matchMedia?.('(pointer: coarse)').matches ? 2 : 0)) });
   const minimap = createMinimap({ canvas: $('cn-map'), world, herd, farmers });
   const awareness = createAwareness({ root: container, scene, camera, farmers });
   let caughtAt = 0;
@@ -169,18 +172,30 @@ async function boot() {
   const stone = new THREE.Mesh(new THREE.IcosahedronGeometry(.07, 0), new THREE.MeshStandardMaterial({ color: 0x77706a, roughness: .9 })); stone.visible = false; scene.add(stone);
   let flight = null;
   function throwStone(atX = null, atZ = null) {
-    const now = performance.now(); if (phase !== 'play' || mode !== 'foot' || dragging || foot.state.busy || foot.state.climbing || now - throwAt < 2200) return;
+    const now = performance.now(); if (phase !== 'play' || mode !== 'foot' || dragging || boxed || foot.state.busy || foot.state.climbing || now - throwAt < 2200) return;
     ray.setFromCamera({ x: 0, y: 0 }, camera); const p = foot.state; let tx, tz;
     if (atX != null) { tx = atX; tz = atZ; } else if (ray.ray.intersectPlane(ground, hitPoint)) { tx = hitPoint.x; tz = hitPoint.z; } else { tx = p.x + Math.sin(camYaw) * 18; tz = p.z + Math.cos(camYaw) * 18; }
     const d = Math.hypot(tx - p.x, tz - p.z), far = Math.min(24, Math.max(4, d)); tx = p.x + (tx - p.x) / (d || 1) * far; tz = p.z + (tz - p.z) / (d || 1) * far;
     throwAt = now; foot.face?.(Math.atan2(tx - p.x, tz - p.z), .4); foot.play('throw', { fade: .06, speed: 1.6, mask: 'upper' });
     flight = { x0: p.x, z0: p.z, y0: p.y + 1.6, x1: tx, z1: tz, t: 0, T: .35 + far * .03 };
   }
+  // Cardboard boxes (config.js lists where they lie). In one you creep at a crouch and cannot run, jump, climb or
+  // fight; keep still and nobody sees you.
+  const boxes = TUNE.boxes.spots.map(([x, y, z, yaw]) => {
+    const g = new THREE.Group(), m = assets.clone('cardboard_box_01');
+    if (m) { m.scale.set(2.7, 3.0, 2.5); m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); g.add(m); }
+    else { const b = new THREE.Mesh(new THREE.BoxGeometry(1.05, 1.0, 1.3), new THREE.MeshStandardMaterial({ color: 0x9a7448, roughness: .9 })); b.position.y = .5; b.castShadow = true; g.add(b); }
+    g.position.set(x, y, z); g.rotation.y = yaw; scene.add(g); return g; });
+  let boxed = null;
+  // Bushes to hide in (config.js, bushes.js).
+  const bushes = createBushes({ scene, spots: TUNE.bushes.spots, radius: TUNE.bushes.radius }); world.bushes = bushes.list;
+  const boxNear = (p) => boxes.find(b => b !== boxed && Math.hypot(b.position.x - p.x, b.position.z - p.z) < 1.4 && Math.abs(b.position.y - p.y) < .7);
+  function boxKeys() { held.clear(); for (const k of keys) if (k !== 'shift' && k !== 'space') held.add(k); held.add('crouch'); return held; }
   const held = new Set();
   // Crouch is a toggle (C, or LOW on a touch screen); breaking into a sprint stands you up. Climbing, C still lets go.
   let crouchOn = false, letGo = 0;
   function toggleCrouch() {
-    if (phase !== 'play' || mode !== 'foot') return;
+    if (phase !== 'play' || mode !== 'foot' || boxed) return;
     if (foot.state.climbing) { letGo = 3; return; }
     // In the air, C flips instead.
     if (foot.state.airborne) { if (foot.flipJump?.()) { stats.flips2 = (stats.flips2 || 0) + 1; audio.land?.('grass', .3); } return; }
@@ -289,7 +304,7 @@ async function boot() {
   renderer.domElement.addEventListener('click', () => { if (phase === 'play' && mode === 'foot' && document.pointerLockElement !== renderer.domElement) renderer.domElement.requestPointerLock?.(); });
   addEventListener('mousemove', e => { if (document.pointerLockElement === renderer.domElement) look(e.movementX, e.movementY); });
   // Fists: left mouse (or J) punches, tap for jab/cross and hold for the haymaker; right mouse (or K) guards.
-  const fighting = () => phase === 'play' && mode === 'foot';
+  const fighting = () => phase === 'play' && mode === 'foot' && !boxed;
   renderer.domElement.addEventListener('mousedown', e => { if (!fighting() || document.pointerLockElement !== renderer.domElement) return; if (e.button === 0) fight.attack(true); else if (e.button === 2) fight.guard(true); });
   addEventListener('mouseup', e => { if (e.button === 0) fight.attack(false); else if (e.button === 2) fight.guard(false); });
   renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
@@ -304,18 +319,22 @@ async function boot() {
     if (mode === 'ride') return foot.available && Math.abs(cow.state.speed) < 5 && !cow.state.airborne ? { kind: 'dismount', label: 'GET OFF' } : null;
     const p = foot.state;
     if (p.busy || p.climbing || p.airborne) return null;
+    if (boxed) return { kind: 'unbox', label: 'GET OUT OF THE BOX' };
     if (dragging) return { kind: 'drop', label: world.inHay(p.x, p.z) ? 'HIDE THE BODY IN THE HAY' : 'LET GO OF THE BODY' };
     const near = Math.abs(p.y) < .2 ? farmers.nearest(p.x, p.z, 1.7) : null;
     if (near && (near.behind || near.unaware)) return { kind: 'takedown', label: 'TAKE DOWN', farmer: near.farmer };
     { const g = world.leverNear(p.x, p.z, 2.4, p.y); if (g) return { kind: 'latch', label: g.kind === 'main' ? 'OPEN THE MAIN GATE' : 'PULL THE LEVER', gate: g }; }
     if (Math.hypot(p.x - cow.state.x, p.z - cow.state.z) < 2.9) return { kind: 'mount', label: 'RIDE' };
     { const b = Math.abs(p.y) < .3 ? farmers.downNear(p.x, p.z, 1.9) : null; if (b) return { kind: 'drag', label: 'DRAG THE BODY', body: b }; }
+    { const b = boxNear(p); if (b && !near) return { kind: 'box', label: 'GET IN THE BOX', box: b }; }
     if (herd.free) { const other = herd.nearest(p.x, p.z, 2.6); if (other) return { kind: 'mount', label: 'RIDE', swap: other }; }
     return near ? { kind: 'none', label: 'HE SEES YOU' } : null;
   }
   function use() {
     const o = option(); if (!o) return;
     if (o.kind === 'leave') { end(true); return; }
+    if (o.kind === 'box') { boxed = o.box; crouchOn = false; foot.state.boxed = true; say('IN A BOX · KEEP STILL AND NOBODY SEES YOU · E GETS OUT', 3); audio.hit('wood', boxed.position.x, boxed.position.z, .4, 1.4); return; }
+    if (o.kind === 'unbox') { const b = boxed; boxed = null; foot.state.boxed = false; foot.holder.visible = true; b.rotation.x = b.rotation.z = 0; b.position.y = foot.state.y; foot.play('jumpLand', { fade: .05, speed: 1.4, mask: 'full' }); return; }
     if (o.kind === 'drag') { dragging = o.body; foot.play('pickup', { fade: .1, speed: 1.4, mask: 'upper' }); say('DRAGGING · FIND HAY TO HIDE HIM · E LETS GO', 2.4); return; }
     if (o.kind === 'drop') { const p = foot.state, t = dragging.ragdoll.pelvis(); if (world.inHay(p.x, p.z) && Math.hypot(t.x - p.x, t.z - p.z) < 2.6) { farmers.hide(dragging); stats.hidden = (stats.hidden || 0) + 1; say('HIDDEN', 1.2); audio.hit('body', p.x, p.z, .5); } dragging = null; return; }
     if (o.kind === 'dismount') {
@@ -491,7 +510,9 @@ async function boot() {
   const none = new Set();
   function tick(live) {
     if (mode === 'ride') cow.control(STEP, keys, !live);
-    else { cow.control(STEP, !live ? none : bolt && performance.now() < bolt.until ? cow.steerTo(bolt.x, bolt.z, 1.5) : calling > 0 ? cow.steerTo(foot.state.x, foot.state.z) : none, !live); if (live) foot.step(dragging ? dragKeys() : footKeys(), camYaw, camPitch); }
+    else { cow.control(STEP, !live ? none : bolt && performance.now() < bolt.until ? cow.steerTo(bolt.x, bolt.z, 1.5) : calling > 0 ? cow.steerTo(foot.state.x, foot.state.z) : none, !live); if (live) foot.step(boxed ? boxKeys() : dragging ? dragKeys() : footKeys(), camYaw, camPitch); }
+    if (boxed) { const p = foot.state; p.boxed = true; p.hidden = p.speed < TUNE.boxes.still && !p.airborne; p.noise *= .4;
+      const t = performance.now() / 1000; boxed.position.set(p.x, p.y, p.z); boxed.rotation.set(p.speed > .3 ? Math.sin(t * 9) * .03 : 0, p.facing ?? boxed.rotation.y, p.speed > .3 ? Math.sin(t * 9 + 1) * .025 : 0); foot.holder.visible = false; }
     updateStone(STEP);
     // Dragging: you go bent over at a crouch, and the body comes along behind; climbing or jumping lets go.
     if (dragging) { const p = foot.state; if (mode !== 'foot' || p.climbing || p.airborne || !dragging.ragdoll) dragging = null; else farmers.drag(dragging, p.x - p.forward.x * .95, p.z - p.forward.z * .95, STEP); }
@@ -541,7 +562,10 @@ async function boot() {
       if (c.speed > 5 && Math.random() < dt * (2 + c.speed * .3)) fx.hoofDust(c.p.x + Math.sin(c.yaw) * (Math.random() - .6) * 2, c.p.z - Math.cos(c.yaw) * (Math.random() - .6) * 2, c.speed);
       if (near < 18 && Math.random() < dt * .45) fx.breath(c.p.x + Math.sin(c.yaw) * 1.25, 1.05, c.p.z - Math.cos(c.yaw) * 1.25, Math.sin(c.yaw), -Math.cos(c.yaw)); }
     if (mode === 'ride' && Math.random() < dt * .4) fx.breath(cow.state.x + cow.state.forward.x * 1.3, 1.05, cow.state.z + cow.state.forward.z * 1.3, cow.state.forward.x, cow.state.forward.z);
-    fx.update(dt, time, a); searchlights.update(dt, time, { active: alarm && live, actor: a, onFoot: mode === 'foot' });
+    fx.update(dt, time, a); grass.update(camera.position); searchlights.update(dt, time, { active: alarm && live, actor: a, onFoot: mode === 'foot' });
+    // Pushing through a bush shakes it.
+    if (mode === 'foot') { const b = foot.state.inBush ? world.inBush(foot.state.x, foot.state.z) : null; if (b && foot.state.speed > .3) b.shake = 1; }
+    bushes.update(dt, time);
     awareness.update({ actor: a, crouched: mode === 'foot' && foot.state.crouched, width: container.clientWidth, height: container.clientHeight, time, live });
     // Air takedown: come down on a farmer from above and he is out, silently.
     if (live && mode === 'foot' && foot.state.airborne && foot.state.velocity.y < -2.5 && foot.state.y < 2.8) {
@@ -591,7 +615,7 @@ async function boot() {
       hud.health.style.transform = `scaleX(${(health / 100).toFixed(2)})`;
       hud.goal.textContent = phase === 'intro' ? '' : (shaken ? 'SHAKEN · ' : '') + objective(a).text;
       hud.count.textContent = `HERD ${herd.freeCount} · ${herd.status.toUpperCase()} · ${farmers.out()} DOWN · HEAT ${response.aggression}`;
-      hud.seen.style.transform = `scaleX(${level.toFixed(2)})`; hud.stealth.textContent = mode === 'foot' && foot.state.hidden ? 'IN THE HAY' : response.stage >= 3 ? STAGES[response.stage] : alarm ? 'ALARM' : level >= 1 ? 'SPOTTED' : level > .3 ? 'SUSPICIOUS' : 'HIDDEN'; hud.stealth.parentElement.dataset.state = alarm || level >= 1 ? 'hot' : level > .3 ? 'warm' : 'cold';
+      hud.seen.style.transform = `scaleX(${level.toFixed(2)})`; hud.stealth.textContent = mode === 'foot' && foot.state.hidden ? (boxed ? 'IN A BOX' : foot.state.inBush ? 'IN A BUSH' : world.inCover?.(foot.state.x, foot.state.z) ? 'IN THE GRASS' : 'IN THE HAY') : response.stage >= 3 ? STAGES[response.stage] : alarm ? 'ALARM' : level >= 1 ? 'SPOTTED' : level > .3 ? 'SUSPICIOUS' : 'HIDDEN'; hud.stealth.parentElement.dataset.state = alarm || level >= 1 ? 'hot' : level > .3 ? 'warm' : 'cold';
       // With nothing to use, the prompt forecasts a charge at the gate you are aiming at, before you order it.
       let forecast = '';
       if (!o && live && herd.freeCount) { ray.setFromCamera(pointer, camera); if (ray.ray.intersectPlane(ground, mark)) { const g = world.gateNear(mark.x, mark.z, TUNE.herd.commandGateRadius); if (g) { const f = herd.assess(g); forecast = `${touch.active ? 'TAP' : 'F'} · CHARGE · ${f.verdict}`; } } }
@@ -604,7 +628,7 @@ async function boot() {
   addEventListener('resize', () => { renderer.setSize(container.clientWidth, container.clientHeight, false); camera.aspect = container.clientWidth / container.clientHeight; camera.updateProjectionMatrix(); });
   status.hidden = true; $('cn-gate').hidden = false;
   renderer.setAnimationLoop(frame);
-  window.cowNinja = { fight, assets, renderer, scene, camera, cow, foot, farmers, truck, herd, blood, world, physics, audio, keys, stats, use, whistle, look, option, command, TUNE, cycleView, toggleCrouch, get crouchOn() { return crouchOn; }, blasts, police, response, throwStone, fx, searchlights, get dragging() { return dragging; }, provoke, raiseAlarm,
+  window.cowNinja = { fight, assets, renderer, scene, camera, cow, foot, farmers, truck, herd, blood, world, physics, audio, keys, stats, use, whistle, look, option, command, TUNE, cycleView, toggleCrouch, grass, boxes, get boxed() { return boxed; }, get crouchOn() { return crouchOn; }, blasts, police, response, throwStone, fx, searchlights, get dragging() { return dragging; }, provoke, raiseAlarm,
     get post() { return post; }, get mode() { return mode; }, set yaw(v) { camYaw = v; }, get yaw() { return camYaw; },
     state: () => ({ phase, mode, health, alarm, quality, takedowns, level: farmers.alertLevel(), option: option()?.kind || null, cow: { ...cow.state, forward: cow.state.forward.toArray(), velocity: cow.state.velocity.toArray() }, foot: { ...foot.state, forward: foot.state.forward.toArray(), velocity: foot.state.velocity.toArray() }, out: farmers.out(), flips: stats.flips, herdFree: herd.free, saved: herd.saved, response: { stage: response.stage, name: STAGES[response.stage], aggression: response.aggression }, shaken, thrown: stats.thrown, lost: herd.lost, herd: { status: herd.status, order: herd.order.type, free: herd.freeCount, penned: herd.penned, count: herd.count }, gates: world.gates.filter(g => g.open).map(g => g.id), blood: blood.inspect(), truckFlipped: truck.flipped }),
     begin: () => $('cn-enter').click(),

@@ -31,6 +31,12 @@ SITE_MODELS += ['concrete_road_barrier_02', 'industrial_wall_lamp', 'industrial_
                 'plastic_crate_02', 'metal_jerrycan_green', 'rusted_wheel_rim_02', 'wooden_broom', 'multi_cleaner_5_litre', 'korean_fire_extinguisher_01',
                 'medical_box', 'drawer_cabinet', 'metal_stool_02', 'wooden_military_crate', 'plastic_bottle_gallon', 'street_lamp_02', 'dead_tree_trunk_02',
                 'tree_stump_02', 'wall_clock']
+# Vegetation: wildflowers, weeds, ferns, shrubs, roots, mossy rocks and stones, a small tree.
+SITE_MODELS += ['fern_02', 'dandelion_01', 'celandine_01', 'grass_bermuda_01', 'shrub_sorrel_01', 'wild_rooibos_bush', 'searsia_lucida', 'shrub_03',
+                'pine_roots', 'root_cluster_01', 'rock_moss_set_02', 'stone_01', 'rock_07', 'moss_01', 'tree_small_02', 'bark_debris_01',
+                'periwinkle_plant', 'pine_sapling_small']
+# The ground the game blends at run time (world.js): diffuse and normal maps, 1k WebP, in tex/ground/.
+GROUND = ['aerial_grass_rock', 'dry_ground_01', 'brown_mud_leaves_01', 'gravel_floor_02']
 def get(url, path):
     if os.path.exists(path) and os.path.getsize(path): return
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -60,6 +66,16 @@ for name in SITE_TEXTURES:
         for kind, key in (('diff', 'Diffuse'), ('nor', 'nor_gl'), ('arm', 'arm')): get(f[key]['1k']['jpg']['url'], os.path.join(WORK, 'tex', f'{name}-{kind}.jpg'))
         print('site texture', name)
     except Exception as e: print('FAILED site texture', name, e)
+os.makedirs(os.path.join(ROOT, 'tex', 'ground'), exist_ok=True)
+for name in GROUND:
+    try:
+        f = files(name)
+        for kind, key in (('diff', 'Diffuse'), ('nor', 'nor_gl')):
+            src = os.path.join(WORK, 'tex', f'{name}-{kind}.jpg'); get(f[key]['1k']['jpg']['url'], src)
+            dst = os.path.join(ROOT, 'tex', 'ground', f'{name}-{kind}.webp')
+            if not os.path.exists(dst): Image.open(src).convert('RGB').save(dst, quality=80 if kind == 'diff' else 76, method=6)
+        print('ground', name)
+    except Exception as e: print('FAILED ground', name, e)
 try:
     get(files(SKY)['hdri']['1k']['hdr']['url'], os.path.join(ROOT, 'night-sky.hdr')); print('sky', SKY)
 except Exception as e: print('FAILED sky', e)

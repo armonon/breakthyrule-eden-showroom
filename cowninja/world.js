@@ -5,14 +5,19 @@
 // chain-link fence, Poly Haven and main-game props (loose ones are physics bodies), the countryside scatter, the pen
 // gate planks and the red lever. Units are metres; +x east, -z north (the way out).
 import * as THREE from 'three/webgpu';
+import { buildMask, groundMaterial } from '/cowninja/ground.js';
 
-export function createWorld({ scene, physics, assets, shadows = 7 }) {
+export function createWorld({ scene, physics, assets, shadows = 7, quality = 0 }) {
   const data = assets.siteData, P = data.points;
   const root = new THREE.Group(); root.name = 'COWNinja site'; scene.add(root);
   const walls2d = [], solids = [], dynamic = [], lights = [];
   const box3 = new THREE.Box3(), tmp = new THREE.Matrix4();
 
   // ---- the built site, with its baked light
+  // The ground: the yard inside the fence and the countryside round it, re-dressed with the blended surfaces
+  // (ground.js) on a mask built from the site's paved areas. Kept when the textures are missing.
+  const groundFence = P.fence ? [Math.min(...P.fence.map(f => Math.min(f[0], f[2]))), Math.max(...P.fence.map(f => Math.max(f[0], f[2]))), Math.min(...P.fence.map(f => Math.min(f[1], f[3]))), Math.max(...P.fence.map(f => Math.max(f[1], f[3])))] : null;
+  const groundMask = buildMask({ paved: P.paved || [], fence: groundFence });
   if (assets.site) {
     const site = assets.site; root.add(site);
     const lm = assets.lightmap, scale = (P.lightmap?.scale || 1) * .3, lit = new Map();
@@ -101,7 +106,9 @@ export function createWorld({ scene, physics, assets, shadows = 7 }) {
   for (const [name, x, z, yaw, scale, mass, part, y] of data.loose) looseModel(name, x, z, { yaw, scale, mass, part, y });
 
   // Countryside: each model's variants share the copies out; grass and weeds cast no shadow.
-  for (const [name, list] of Object.entries(data.scatter)) {
+  for (let [name, list] of Object.entries(new URLSearchParams(location.search).get('veg') === '0' ? {} : data.scatter)) {
+    // The long grass in the cover strips is drawn by the grass field (grass.js) now: skip the heavy clumps there.
+    if (/^grass_medium/.test(name)) list = list.filter(([x, , z]) => !(P.cover || []).some(c => x > c[0] && x < c[1] && z > c[2] && z < c[3]));
     const kinds = variants(name), groups = new Map();
     list.forEach((p, i) => { const v = kinds.length ? kinds[i % kinds.length] : null; if (!groups.has(v)) groups.set(v, []); groups.get(v).push(p); });
     for (const [v, ps] of groups) {
@@ -123,6 +130,11 @@ export function createWorld({ scene, physics, assets, shadows = 7 }) {
     instanced(panel, placements, { cast: false });
   }
 
+  if (assets.site && assets.maps.get('ground/aerial_grass_rockdiff')) {
+    const swapped = new Map();
+    assets.site.traverse(o => { if (!o.isMesh) return; const m = o.material; if (Array.isArray(m) || !/^(ground|grass)$/.test(m?.name || '')) return;
+      if (!swapped.has(m)) swapped.set(m, groundMaterial({ maps: assets.maps, mask: groundMask, base: m, quality })); o.material = swapped.get(m); o.receiveShadow = true; });
+  }
   // ---- gates and their levers. Every enclosure (the holding pen in the hall, six pens on the farm) has a barred
   // gate and a red lever beside it; the main gate has its lever in the gatehouse. A closed gate is a barrier for
   // cows, the rider and anyone on foot (who can climb over). A lever swings its gate open; enough force breaks it.
@@ -255,9 +267,10 @@ export function createWorld({ scene, physics, assets, shadows = 7 }) {
   }
 
   return {
-    root, mat, blocked, walk, update, gateBroken, openGate, gates, gateAt, gateNear, leverNear, onGate: fn => gateListeners.push(fn), pens: P.pens || [], solids, solidAt, sightBlocked, ceilingAt, indoors, walls2d, dynamic, loose, looseModel, place,
+    groundMask, fence: groundFence, ceilingsList: data.ceilings || [], root, mat, blocked, walk, update, gateBroken, openGate, gates, gateAt, gateNear, leverNear, onGate: fn => gateListeners.push(fn), pens: P.pens || [], solids, solidAt, sightBlocked, ceilingAt, indoors, walls2d, dynamic, loose, looseModel, place,
     grips: data.grips || [], hay: data.hay || [], roofSteps: data.roofSteps || [],
     inHay: (x, z) => (data.hay || []).some(h => Math.hypot(x - h[0], z - h[1]) < h[2] * .85),
+    bushes: [], inBush(x, z) { return this.bushes.find(b => Math.hypot(x - b.x, z - b.z) < b.r * .85) || null; },
     inCover: (x, z) => (P.cover || []).some(c => x > c[0] && x < c[1] && z > c[2] && z < c[3]),
     gatePost: P.lever, spawn: P.spawn, cowSpawn: P.cowSpawn, exit: P.exit, gateZ: P.gateZ, bounds: P.bounds, pen: P.pen, escape: P.escape, truckStart: P.truckStart, patrols: P.patrols,
   };

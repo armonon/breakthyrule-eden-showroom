@@ -48,9 +48,10 @@ export function createFoot({ scene, world, onEffect }) {
     // How far you can be heard, 0..1: nothing standing still or creeping, everything at a sprint or a landing.
     // In a hay pile and not sprinting: out of sight entirely.
     // Hidden: in hay, or crouched in tall grass.
-    state.hidden = (!!world.inHay?.(p.x, p.z) && state.speed < 4.2 && p.y < 2) || (state.crouched && p.y < .6 && !!world.inCover?.(p.x, p.z));
+    state.inBush = p.y < .6 && !!world.inBush?.(p.x, p.z);
+    state.hidden = (!!world.inHay?.(p.x, p.z) && state.speed < 4.2 && p.y < 2) || (state.crouched && p.y < .6 && !!world.inCover?.(p.x, p.z)) || (state.inBush && state.speed < 3.2);
     state.climbing = CLIMBS.has(p.movement) || p.movement === 'bar' || p.movement === 'wallrun';
-    state.noise = state.hidden ? 0 : state.speed < .3 ? 0 : state.crouched ? .12 : p.movement === 'slide' ? .5 : state.speed > 4.6 ? .85 : .38;
+    state.noise = state.inBush && state.speed > .3 ? .18 : state.hidden ? 0 : state.speed < .3 ? 0 : state.crouched ? .12 : p.movement === 'slide' ? .5 : state.speed > 4.6 ? .85 : .38;
   }
   // ---- Free climbing (this mode's own, on top of parkour.js): any tall solid face can be climbed. Sprint into a wall
   // too high to grab and you take hold of it; W/S climb, A/D traverse, Space kicks off, C lets go; at the top you

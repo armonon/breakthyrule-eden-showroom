@@ -947,6 +947,7 @@ for (x0, x1, z0, z1) in COVER:
     n = int((x1 - x0) * (z1 - z0) * .55); rr = random.Random(int(x0 * 7 + z0))
     for i in range(n):
         x, z = rr.uniform(x0, x1), rr.uniform(z0, z1)
+        if True: continue   # the grass field (grass.js) draws the long grass now
         SCATTER.setdefault('grass_medium_01' if i % 2 else 'grass_medium_02', []).append([round(x, 2), 0, round(z, 2), round(rr.uniform(0, math.tau), 2), round(rr.uniform(2.2, 2.9), 2)])
 
 # ================================================================================================== the detail pass
@@ -1119,6 +1120,49 @@ for (x, y, z, yaw) in ((OUT_E + .1, 3.4, 4, math.pi / 2), (OUT_E + .1, 3.4, 44, 
     PROPS.append(['industrial_wall_lamp', x, y, z, yaw, 1.4, None])
 for (x, y, z, yaw) in ((gx0 - .2, 2.6, -56.5, -math.pi / 2), (-33.9, 3.0, 52, math.pi)): PROPS.append(['street_lamp_02', x, y, z, yaw, 1.2, None])
 
+# =============================================================================================== the vegetation pass
+# The ground the game blends (ground.js) needs to know what is paved or built on; the plants keep off it too.
+PAVED = [[-5, 5, -340, -2], [-30, 30, -24, -.5], [-50, -22, -56, -30], [30, 96, 3, 57], [-46, 50, 48.5, 66], [BX0 - .3, BX1 + .3, BZ0 - .3, BZ1 + .3],
+         [BX0 - 10, BX0, 6, 26], [gx0, gx1, gz0, gz1], [-44.2, -33.8, 51.8, 62.2], [BB0 - .3, BB1 + .3, BZa - .5, BZb + .3], [55.4, 82, -52.2, -29.8], [26.8, 30.8, 23.8, 33.2]]
+def unpaved(x, z, pad=.4):
+    if not (FX0 + .5 < x < FX1 - .5 and FZ0 + .5 < z < FZ1 - .5): return False
+    if any(r[0] - pad < x < r[1] + pad and r[2] - pad < z < r[3] + pad for r in PAVED): return False
+    return not any(b['b'][0] - .3 < x < b['b'][3] + .3 and b['b'][2] - .3 < z < b['b'][5] + .3 and b['b'][1] < 1.2 and b['b'][4] > .2 and (b['b'][3] - b['b'][0]) < 60 for b in SOLIDS)
+VR = random.Random(23)
+def plant(name, x, z, s0, s1, y=0):
+    SCATTER.setdefault(name, []).append([round(x, 2), y, round(z, 2), round(VR.uniform(0, math.tau), 2), round(VR.uniform(s0, s1), 2)])
+def sow(names, n, s0, s1, test, tries=60):
+    placed = 0
+    for _ in range(n * tries):
+        if placed >= n: break
+        x, z = VR.uniform(FX0, FX1), VR.uniform(FZ0, FZ1)
+        if not test(x, z) or not unpaved(x, z): continue
+        plant(names[placed % len(names)], x, z, s0, s1); placed += 1
+# Along the fence and the foot of every wall: weeds and wildflowers where the mower never reaches.
+WALL_LINES = [(FX0, None), (FX1, None), (None, FZ0), (None, FZ1), (BX0 - .5, None), (BX1 + .5, None), (None, BZ0 - .5), (None, BZ1 + .5)]
+def by_edge(x, z):
+    return any((ax is not None and abs(x - ax) < 1.6) or (az is not None and abs(z - az) < 1.6) for ax, az in WALL_LINES)
+sow(['dandelion_01', 'celandine_01', 'shrub_sorrel_01', 'periwinkle_plant', 'nettle_plant', 'weed_plant_02', 'grass_bermuda_01'], 620, .9, 1.4, by_edge)
+# Open ground: flowers and low grasses in drifts, stones, bark and twigs.
+drift = lambda x, z: math.sin(x * .09) * math.sin(z * .07 + 1.3) > -.1
+sow(['dandelion_01', 'celandine_01', 'grass_bermuda_01', 'grass_bermuda_01'], 520, .9, 1.5, drift)
+sow(['stone_01', 'rock_07'], 110, 1.5, 3.5, lambda x, z: True)
+sow(['bark_debris_01'], 26, .8, 1.2, lambda x, z: True)
+# Shrubs, roots and mossy rocks in the corners and the long grass.
+corner = lambda x, z: (min(abs(x - FX0), abs(x - FX1)) < 9 and min(abs(z - FZ0), abs(z - FZ1)) < 12) or any(c[0] < x < c[1] and c[2] < z < c[3] for c in COVER)
+sow(['shrub_03', 'wild_rooibos_bush', 'pine_sapling_small', 'searsia_lucida'], 44, .8, 1.2, corner)
+sow(['rock_moss_set_02'], 7, .7, 1.0, corner); sow(['pine_roots', 'root_cluster_01'], 8, .8, 1.1, corner)
+# Beyond the fence: a scatter of small trees with ferns and roots at their feet, bushes and rocks.
+for i in range(110):
+    a, r = VR.uniform(0, math.tau), VR.uniform(16, 110); x, z = math.cos(a) * r * 1.3 + 22, math.sin(a) * r - 6
+    if FX0 - 6 < x < FX1 + 6 and FZ0 - 6 < z < FZ1 + 6 or (abs(x) < 10 and z < FZ0): continue
+    y = round(terrain_h(x, z), 2); plant('tree_small_02', x, z, .9, 1.5, y)
+    for k in range(3): fx, fz = x + VR.uniform(-3, 3), z + VR.uniform(-3, 3); plant('fern_02' if k < 2 else 'pine_roots', fx, fz, .8, 1.3, round(terrain_h(fx, fz), 2))
+for i in range(60):
+    a, r = VR.uniform(0, math.tau), VR.uniform(10, 120); x, z = math.cos(a) * r * 1.3 + 22, math.sin(a) * r - 6
+    if FX0 - 3 < x < FX1 + 3 and FZ0 - 3 < z < FZ1 + 3 or (abs(x) < 9 and z < FZ0): continue
+    plant(['searsia_lucida', 'wild_rooibos_bush', 'shrub_03', 'rock_moss_set_02', 'rock_07', 'pine_sapling_small'][i % 6], x, z, .8, 1.3, round(terrain_h(x, z), 2))
+
 # Freerunning: drainpipes to the eaves on every side, a rope from the trusses, bars across the yard; hay to leap into
 # and hide in. parkour.js reads GRIPS (the same format as parkour-grips.js).
 GRIPS = [
@@ -1155,7 +1199,7 @@ for hx, hz, hr in HAY:
 
 POINTS = {
     'spawn': {'x': FX1 + 9, 'z': 30, 'yaw': -math.pi / 2}, 'cowSpawn': {'x': 16, 'z': 40, 'yaw': -math.pi / 2},
-    'exit': {'x': 0, 'z': -128, 'radius': 18}, 'cover': COVER, 'cowWalls': COW_WALLS, 'gateZ': FZ0, 'pens': PENS, 'gates': GATES, 'bounds': [-150, 150, -340, 160],
+    'exit': {'x': 0, 'z': -128, 'radius': 18}, 'cover': COVER, 'cowWalls': COW_WALLS, 'paved': PAVED, 'gateZ': FZ0, 'pens': PENS, 'gates': GATES, 'bounds': [-150, 150, -340, 160],
     'pen': PEN, 'gate': {'x': 6, 'z': 34.5, 'half': 2.55}, 'lever': {'x': 5.2, 'z': 31.2},
     'escape': [[9, 34.5], [3, 34.5], [0, 27], [0, 12], [0, -3], [0, -30]],
     'truckStart': {'x': 44, 'z': -40, 'yaw': math.pi},
