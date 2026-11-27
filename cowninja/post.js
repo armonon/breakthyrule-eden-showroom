@@ -11,14 +11,15 @@
 // reflections, 2 no reflections or occlusion, 3 also no temporal AA.
 import * as THREE from 'three/webgpu';
 import { float, vec2, vec3, vec4, uniform, pass, mrt, output, normalView, metalness, roughness, velocity, packNormalToRGB, unpackRGBToNormal, sample,
-  screenUV, dot, mix, max, smoothstep, pow, length, uv, texture as sampleTexture } from 'three/tsl';
+  screenUV, dot, mix, max, min, smoothstep, pow, length, uv, abs, floor, clamp, screenSize, perspectiveDepthToViewZ, cameraNear, cameraFar, texture as sampleTexture } from 'three/tsl';
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { film } from 'three/addons/tsl/display/FilmNode.js';
 import { ao } from 'three/addons/tsl/display/GTAONode.js';
 import { ssr } from 'three/addons/tsl/display/SSRNode.js';
 import { traa } from 'three/addons/tsl/display/TRAANode.js';
 
-export function createGrimPost({ renderer, scene, camera, level = 0, occlusion = true }) {
+export function createGrimPost({ renderer, scene, camera, level = 0, occlusion = true, style = 'photo' }) {
+  const painted = style === 'painted';
   if (!occlusion) level = Math.max(level, 2);
   const pipeline = new THREE.RenderPipeline(renderer);
   const wash = uniform(.12), grain = uniform(.05), vignette = uniform(.3), hurt = uniform(0), crush = uniform(1.0), fringe = uniform(.0035), warp = uniform(.02);
@@ -38,7 +39,7 @@ export function createGrimPost({ renderer, scene, camera, level = 0, occlusion =
       lit = lit.mul(mix(float(1), aoPass.getTextureNode().r, .9)); } catch (error) { console.warn('[cowninja] occlusion off:', error?.message || error); }
   }
   // Reflections: added on top of the lit colour, weighted by the reflection pass's own alpha.
-  if (level < 1) {
+  if (level < 1 && !painted) {
     try {
       const reflect = ssr(color, depth, normal, { metalnessNode: metalRough.r, roughnessNode: metalRough.g, reflectNonMetals: true, camera });
       reflect.resolutionScale = .5; reflect.maxDistance.value = 14; reflect.thickness.value = .04; reflect.quality.value = .5; extras.push(reflect);
@@ -46,11 +47,25 @@ export function createGrimPost({ renderer, scene, camera, level = 0, occlusion =
       lit = lit.add(r.rgb.mul(r.a).mul(.85));
     } catch (error) { console.warn('[cowninja] reflections off:', error?.message || error); }
   }
-  const glow = bloom(vec4(lit, 1), .32, .5, .95);
+  // The painted style (an animated-film look): soft cel bands in the light, richer colour, warm highlights, and ink
+  // outlines where depth jumps or surfaces turn sharply.
+  if (painted) {
+    const px = vec2(1).div(screenSize), viewZ = at => perspectiveDepthToViewZ(depth.sample(at).r, cameraNear, cameraFar);
+    const z0 = viewZ(screenUV), nrm = at => unpackRGBToNormal(normalTex.sample(at).rgb), n0 = nrm(screenUV);
+    let dz = float(0), dn = float(0);
+    for (const o of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const at = screenUV.add(px.mul(vec2(o[0], o[1]))); dz = max(dz, abs(viewZ(at).sub(z0)).div(abs(z0).add(.5))); dn = max(dn, float(1).sub(dot(nrm(at), n0))); }
+    const far = smoothstep(float(25), float(70), abs(z0));   // lines fade out with distance, like a painted background
+    const ink = max(smoothstep(float(.12), float(.3), dz), smoothstep(float(.5), float(.9), dn)).mul(float(1).sub(far)).mul(.75);
+    const l = dot(lit, vec3(.2126, .7152, .0722)), band = floor(l.mul(4).add(.35)).div(4).add(.06), cel = mix(float(1), band.div(max(l, float(.02))), .5);
+    lit = lit.mul(clamp(cel, float(.6), float(1.6)));
+    lit = mix(vec3(dot(lit, vec3(.2126, .7152, .0722))), lit, 1.32);
+    lit = new URLSearchParams(location.search).has('inkdebug') ? mix(lit, vec3(4, 0, 0), ink) : lit.mul(float(1).sub(ink)).add(vec3(.02, .015, .03).mul(ink));   // ink darkens what is under it
+  }
+  const glow = bloom(vec4(lit, 1), painted ? .55 : .32, painted ? .6 : .5, painted ? .8 : .95);
   let out = lit.add(glow.rgb);
   // Grade: a little cooler in the shadows, warmer in the highlights, colour kept; optional monochrome wash.
   const luma = dot(out, vec3(.2126, .7152, .0722));
-  out = mix(out, vec3(luma).mul(vec3(.9, .99, 1.04)), wash);
+  out = mix(out, vec3(luma).mul(vec3(.9, .99, 1.04)), painted ? float(0) : wash);
   out = out.mul(mix(vec3(.94, .98, 1.04), vec3(1.04, 1.0, .95), smoothstep(.05, .6, luma)));
   out = pow(max(out, vec3(0)), vec3(crush));
   let image = vec4(out, 1);

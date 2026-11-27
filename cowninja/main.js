@@ -29,12 +29,14 @@ import { pairedAnchor } from '/cowninja/animation-path.js';
 
 const $ = id => document.getElementById(id);
 const query = new URLSearchParams(location.search);
+// The look: photoreal at night (default) or the painted late-afternoon style (?style=painted, or P in game).
+const STYLE = /^(painted|ghibli)$/.test(query.get('style') || '') ? 'painted' : 'photo';
 const STEP = 1 / 60;
 
 async function boot() {
   const container = $('scene'), status = $('cn-status');
   const renderer = new THREE.WebGPURenderer({ antialias: false, forceWebGL: query.get('webgl') === '1', powerPreference: 'high-performance' });
-  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.AgXToneMapping; renderer.toneMappingExposure = 1.35;
+  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.AgXToneMapping; renderer.toneMappingExposure = STYLE === 'painted' ? 1.0 : 1.35;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5)); renderer.setSize(container.clientWidth, container.clientHeight, false);
   container.append(renderer.domElement); await renderer.init();
@@ -57,7 +59,7 @@ async function boot() {
     // (never allowed to hold the page: after 30 s the game starts and they appear when they arrive)
     Promise.race([Promise.all([...['harbor', 'boulevard', 'coast', 'midnight'].map(id => window.GardenCharacterRocketbox?.load(id).catch(() => {})), Promise.resolve(window.GardenAnim?.load?.()).catch(() => {})]), new Promise(r => setTimeout(r, 30000))]).catch(() => {}),
   ]);
-  const world = createWorld({ scene, physics, assets, quality: Number(query.get('q') ?? (matchMedia?.('(pointer: coarse)').matches ? 2 : 0)), shadows: query.has('sh') ? Number(query.get('sh')) : matchMedia?.('(pointer: coarse)').matches ? 2 : 7 });
+  const world = createWorld({ scene, physics, assets, style: STYLE, quality: Number(query.get('q') ?? (matchMedia?.('(pointer: coarse)').matches ? 2 : 0)), shadows: query.has('sh') ? Number(query.get('sh')) : matchMedia?.('(pointer: coarse)').matches ? 2 : 7 });
   const blood = createBlood({ scene });
   const audio = createAudio({ camera });
   const stats = { knockouts: 0, herdKnockouts: 0, flips: 0, hits: 0, start: 0, time: 0, thrown: 0 };
@@ -255,14 +257,14 @@ async function boot() {
     onHit: ({ farmer }) => { audio.hit('body', farmer.p.x, farmer.p.z, 1); farmers.noise(farmer.p.x, farmer.p.z, 9, .35); } } });
   // Phones and tablets start without reflections and occlusion; desktops get everything and step down if slow.
   const handheld = matchMedia?.('(pointer: coarse)').matches;
-  let quality = Number(query.get('q') ?? (handheld ? 2 : 0)), post = createGrimPost({ renderer, scene, camera, level: quality, occlusion: query.get('ao') !== '0' });
+  let quality = Number(query.get('q') ?? (handheld ? 2 : 0)), post = createGrimPost({ renderer, scene, camera, level: quality, occlusion: query.get('ao') !== '0', style: STYLE });
 
   // Input. `keys` holds what is held; E (use) and Q (whistle) are single presses.
   const keys = new Set(), map = { KeyW: 'w', ArrowUp: 'w', KeyS: 's', ArrowDown: 's', KeyA: 'a', ArrowLeft: 'a', KeyD: 'd', ArrowRight: 'd', ShiftLeft: 'shift', ShiftRight: 'shift', Space: 'space',  ControlLeft: 'crouch' };
   let camYaw = world.spawn.yaw, camPitch = -.12;
   addEventListener('keydown', e => {
     const k = map[e.code];
-    if (!k) { if (e.repeat) return; if (e.code === 'KeyR' && phase !== 'intro') restart(); else if (e.code === 'KeyE') use(); else if (e.code === 'KeyQ') whistle(); else if (e.code === 'KeyF') { if (phase === 'play') { aim.on = true; aim.at = performance.now(); aim.checkedAt = 0; } } else if (e.code === 'KeyC') toggleCrouch(); else if (e.code === 'KeyV') cycleView(); else if (e.code === 'KeyG') throwStone(); return; }
+    if (!k) { if (e.repeat) return; if (e.code === 'KeyR' && phase !== 'intro') restart(); else if (e.code === 'KeyE') use(); else if (e.code === 'KeyQ') whistle(); else if (e.code === 'KeyF') { if (phase === 'play') { aim.on = true; aim.at = performance.now(); aim.checkedAt = 0; } } else if (e.code === 'KeyC') toggleCrouch(); else if (e.code === 'KeyV') cycleView(); else if (e.code === 'KeyG') throwStone(); else if (e.code === 'KeyP') { const q = new URLSearchParams(location.search); if (STYLE === 'painted') q.delete('style'); else q.set('style', 'painted'); location.search = q.toString(); } return; }
     e.preventDefault(); if (k === 'space' && e.repeat) return; keys.add(k);
   });
   addEventListener('keyup', e => { const k = map[e.code]; if (k) keys.delete(k); if (e.code === 'KeyF' && aim.on) { aim.on = false; commandAt2D(pointer.x, pointer.y); } });
@@ -529,7 +531,7 @@ async function boot() {
     if (average < .03) return;
     quality++; measureFrom = now + 1500;
     // 1: no reflections · 2: also no occlusion, pixel ratio 1 · 3: also no temporal AA, pixel ratio .75, smaller shadows.
-    post.dispose(); post = createGrimPost({ renderer, scene, camera, level: quality });
+    post.dispose(); post = createGrimPost({ renderer, scene, camera, level: quality, style: STYLE });
     if (quality === 2) renderer.setPixelRatio(1);
     if (quality === 3) { renderer.setPixelRatio(.75); scene.traverse(o => { if (o.isLight && o.castShadow && o.shadow.mapSize.x > 512 && !o.isDirectionalLight) { o.shadow.mapSize.set(512, 512); o.shadow.map?.dispose(); o.shadow.map = null; } }); }
     renderer.setSize(container.clientWidth, container.clientHeight, false);

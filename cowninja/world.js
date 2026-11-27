@@ -6,8 +6,14 @@
 // gate planks and the red lever. Units are metres; +x east, -z north (the way out).
 import * as THREE from 'three/webgpu';
 import { buildMask, groundMaterial } from '/cowninja/ground.js';
+import { positionWorldDirection, mix, vec3, smoothstep, pow, max, float } from 'three/tsl';
+function paintedSky() {
+  const y = positionWorldDirection.y, top = vec3(.18, .38, .72), mid = vec3(.55, .74, .92), low = vec3(.98, .86, .7);
+  return mix(mix(low, mid, smoothstep(float(-.02), float(.18), y)), top, pow(max(y, float(0)), float(.65)));
+}
 
-export function createWorld({ scene, physics, assets, shadows = 7, quality = 0 }) {
+export function createWorld({ scene, physics, assets, shadows = 7, quality = 0, style = 'photo' }) {
+  const painted = style === 'painted';
   const data = assets.siteData, P = data.points;
   const root = new THREE.Group(); root.name = 'COWNinja site'; scene.add(root);
   const walls2d = [], solids = [], dynamic = [], lights = [];
@@ -31,7 +37,7 @@ export function createWorld({ scene, physics, assets, shadows = 7, quality = 0 }
         if (m.transparent) { m.depthWrite = false; m.side = THREE.DoubleSide; }
         if (lm && (o.userData.lightmap || o.parent?.userData?.lightmap) && o.geometry.attributes.uv1) {
           // Its own copy: the same material may also be on unbaked kit, which has no lightmap UVs.
-          if (!lit.has(m)) { const c = m.clone(); c.lightMap = lm; c.lightMapIntensity = scale; c.envMapIntensity = .2; lit.set(m, c); }
+          if (!lit.has(m)) { const c = m.clone(); c.lightMap = lm; c.lightMapIntensity = scale * (painted ? .45 : 1); c.envMapIntensity = .2; lit.set(m, c); }
           if (Array.isArray(o.material)) o.material = o.material.map(x => x === m ? lit.get(m) : x); else o.material = lit.get(m);
         }
       }
@@ -228,10 +234,16 @@ export function createWorld({ scene, physics, assets, shadows = 7, quality = 0 }
   // ---- light: the night sky as image-based light (dimmed: the baked map carries the ambient on the architecture),
   // a cold moon whose shadow follows the action, and the site's lamps (tubes stutter)
   if (assets.sky) { scene.environment = assets.sky; scene.environmentIntensity = .25; /* clamped sky: reflections and a little fill */ scene.background = assets.sky; scene.backgroundIntensity = .22; scene.backgroundBlurriness = .04; }
-  scene.add(new THREE.HemisphereLight(0x8fa4b5, 0x1d1b18, .35));
-  const moon = new THREE.DirectionalLight(0xbfd2e6, 2.4); moon.castShadow = true;
+  scene.add(painted ? new THREE.HemisphereLight(0xbcd6f2, 0x5e6a3c, 1.25) : new THREE.HemisphereLight(0x8fa4b5, 0x1d1b18, .35));
+  const moon = painted ? new THREE.DirectionalLight(0xffd7a0, 4.2) : new THREE.DirectionalLight(0xbfd2e6, 2.4); moon.castShadow = true;
+  // The painted style is late afternoon: a sky graded from deep blue overhead through pale blue to a warm haze at the
+  // horizon, low warm sun, cool shade, and a soft haze that pales distant hills.
+  if (painted) {
+    scene.backgroundNode = paintedSky(); scene.environment = null; scene.environmentIntensity = 0;
+    scene.fog = new THREE.Fog(0xdfe6df, 70, 420);
+  }
   moon.shadow.mapSize.set(2048, 2048); Object.assign(moon.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 10, far: 190 }); moon.shadow.bias = -.0003; moon.shadow.normalBias = .04;
-  const moonOffset = new THREE.Vector3(-38, 60, -30); moon.position.copy(moonOffset); scene.add(moon, moon.target);
+  const moonOffset = painted ? new THREE.Vector3(-70, 34, -46) : new THREE.Vector3(-38, 60, -30);   // painted: a low afternoon sun, long shadows moon.position.copy(moonOffset); scene.add(moon, moon.target);
   const glow = new THREE.BoxGeometry(1, 1, 1);
   // Ceiling tubes indoors are spotlights pointing down that cast shadows (rails, chains, carcasses, people throw real
   // shadows on the floor); the rest are point lights. `shadows` is how many may cast (0 on slow devices).
