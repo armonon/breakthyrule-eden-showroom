@@ -29,14 +29,15 @@ import { pairedAnchor } from '/cowninja/animation-path.js';
 
 const $ = id => document.getElementById(id);
 const query = new URLSearchParams(location.search);
-// The look: photoreal at night (default) or the painted late-afternoon style (?style=painted, or P in game).
-const STYLE = /^(painted|ghibli)$/.test(query.get('style') || '') ? 'painted' : 'photo';
+// The look: photoreal at night (default); anime dusk or anime rain (?style=dusk | rain; P cycles them in game);
+// or the painted late-afternoon style (?style=painted).
+const STYLE = { painted: 'painted', ghibli: 'painted', dusk: 'dusk', anime: 'dusk', rain: 'rain' }[query.get('style') || ''] || 'photo';
 const STEP = 1 / 60;
 
 async function boot() {
   const container = $('scene'), status = $('cn-status');
   const renderer = new THREE.WebGPURenderer({ antialias: false, forceWebGL: query.get('webgl') === '1', powerPreference: 'high-performance' });
-  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.AgXToneMapping; renderer.toneMappingExposure = STYLE === 'painted' ? 1.0 : 1.35;
+  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.AgXToneMapping; renderer.toneMappingExposure = { painted: 1.0, dusk: 1.05, rain: 1.15 }[STYLE] ?? 1.35;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5)); renderer.setSize(container.clientWidth, container.clientHeight, false);
   container.append(renderer.domElement); await renderer.init();
@@ -142,7 +143,7 @@ async function boot() {
     else if (e.type === 'flipped') { { const t = truck.body.read().p; fx.sparks(t[0], .5, t[2], 0, 0, 40); fx.puff(t[0], .3, t[2], 14); } provoke('vehicle', 'truck'); stats.flips++; say('TRUCK FLIPPED', 2); audio.hit('metal', cow.state.x, cow.state.z, 1.5, .55); }
     else if (e.type === 'truck-coming') say('THEY CALLED THE TRUCK', 2.4);
   }
-  const fx = createFx({ scene, camera, quality: Number(query.get('q') ?? (matchMedia?.('(pointer: coarse)').matches ? 2 : 0)), rain: query.get('rain') === '1' });
+  const fx = createFx({ scene, camera, quality: Number(query.get('q') ?? (matchMedia?.('(pointer: coarse)').matches ? 2 : 0)), rain: query.get('rain') === '1' || STYLE === 'rain' });
   const farmers = createFarmers({ scene, physics, world, cow, blood, onEvent, target: actor });
   const truck = createTruck({ scene, physics, world, cow, blood, onEvent, assets, target: actor });
   // The herd reports what happens to it: cows freed, blows on a gate, a gate that gives or holds, cows made safe.
@@ -264,7 +265,7 @@ async function boot() {
   let camYaw = world.spawn.yaw, camPitch = -.12;
   addEventListener('keydown', e => {
     const k = map[e.code];
-    if (!k) { if (e.repeat) return; if (e.code === 'KeyR' && phase !== 'intro') restart(); else if (e.code === 'KeyE') use(); else if (e.code === 'KeyQ') whistle(); else if (e.code === 'KeyF') { if (phase === 'play') { aim.on = true; aim.at = performance.now(); aim.checkedAt = 0; } } else if (e.code === 'KeyC') toggleCrouch(); else if (e.code === 'KeyV') cycleView(); else if (e.code === 'KeyG') throwStone(); else if (e.code === 'KeyP') { const q = new URLSearchParams(location.search); if (STYLE === 'painted') q.delete('style'); else q.set('style', 'painted'); location.search = q.toString(); } return; }
+    if (!k) { if (e.repeat) return; if (e.code === 'KeyR' && phase !== 'intro') restart(); else if (e.code === 'KeyE') use(); else if (e.code === 'KeyQ') whistle(); else if (e.code === 'KeyF') { if (phase === 'play') { aim.on = true; aim.at = performance.now(); aim.checkedAt = 0; } } else if (e.code === 'KeyC') toggleCrouch(); else if (e.code === 'KeyV') cycleView(); else if (e.code === 'KeyG') throwStone(); else if (e.code === 'KeyP') { const q = new URLSearchParams(location.search), next = { photo: 'dusk', dusk: 'rain', rain: null, painted: null }[STYLE]; if (next) q.set('style', next); else q.delete('style'); location.search = q.toString(); } return; }
     e.preventDefault(); if (k === 'space' && e.repeat) return; keys.add(k);
   });
   addEventListener('keyup', e => { const k = map[e.code]; if (k) keys.delete(k); if (e.code === 'KeyF' && aim.on) { aim.on = false; commandAt2D(pointer.x, pointer.y); } });

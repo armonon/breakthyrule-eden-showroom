@@ -54,7 +54,7 @@ export function buildMask({ paved = [], fence = null, bounds = [-200, 220, -380,
 }
 
 // The blended material, on top of what the baked mesh had (its light map).
-export function groundMaterial({ maps, mask, base, quality = 0 }) {
+export function groundMaterial({ maps, mask, base, quality = 0, wet = false }) {
   const m = new THREE.MeshStandardNodeMaterial({ roughness: .95, metalness: 0 });
   if (base?.lightMap) { m.lightMap = base.lightMap; m.lightMapIntensity = base.lightMapIntensity; }
   m.envMapIntensity = .25;
@@ -76,6 +76,6 @@ export function groundMaterial({ maps, mask, base, quality = 0 }) {
   const tone = mx_noise_float(p.mul(.012)).mul(.14).add(.92);
   m.colorNode = vec4(col.mul(tone).mul(.5), 1);
   m.normalNode = normalMap(nor, vec2(1.1, 1.1));
-  m.roughnessNode = rough;
+  m.roughnessNode = wet ? rough.mul(.45) : rough;   // rain: everything glistens
   return m;
 }

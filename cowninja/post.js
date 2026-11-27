@@ -19,7 +19,7 @@ import { ssr } from 'three/addons/tsl/display/SSRNode.js';
 import { traa } from 'three/addons/tsl/display/TRAANode.js';
 
 export function createGrimPost({ renderer, scene, camera, level = 0, occlusion = true, style = 'photo' }) {
-  const painted = style === 'painted';
+  const painted = style === 'painted', dusk = style === 'dusk', rain = style === 'rain', toon = painted || dusk || rain;
   if (!occlusion) level = Math.max(level, 2);
   const pipeline = new THREE.RenderPipeline(renderer);
   const wash = uniform(.12), grain = uniform(.05), vignette = uniform(.3), hurt = uniform(0), crush = uniform(1.0), fringe = uniform(.0035), warp = uniform(.02);
@@ -39,7 +39,7 @@ export function createGrimPost({ renderer, scene, camera, level = 0, occlusion =
       lit = lit.mul(mix(float(1), aoPass.getTextureNode().r, .9)); } catch (error) { console.warn('[cowninja] occlusion off:', error?.message || error); }
   }
   // Reflections: added on top of the lit colour, weighted by the reflection pass's own alpha.
-  if (level < 1 && !painted) {
+  if (level < 1 && (!toon || rain)) {   // the rain look keeps the wet reflections
     try {
       const reflect = ssr(color, depth, normal, { metalnessNode: metalRough.r, roughnessNode: metalRough.g, reflectNonMetals: true, camera });
       reflect.resolutionScale = .5; reflect.maxDistance.value = 14; reflect.thickness.value = .04; reflect.quality.value = .5; extras.push(reflect);
@@ -49,7 +49,8 @@ export function createGrimPost({ renderer, scene, camera, level = 0, occlusion =
   }
   // The painted style (an animated-film look): soft cel bands in the light, richer colour, warm highlights, and ink
   // outlines where depth jumps or surfaces turn sharply.
-  if (painted) {
+  if (toon) {
+    const before = lit, sky = smoothstep(float(.99995), float(1), depth.sample(screenUV).r);   // the sky keeps its own painted colours
     const px = vec2(1).div(screenSize), viewZ = at => perspectiveDepthToViewZ(depth.sample(at).r, cameraNear, cameraFar);
     const z0 = viewZ(screenUV), nrm = at => unpackRGBToNormal(normalTex.sample(at).rgb), n0 = nrm(screenUV);
     let dz = float(0), dn = float(0);
@@ -58,14 +59,24 @@ export function createGrimPost({ renderer, scene, camera, level = 0, occlusion =
     const ink = max(smoothstep(float(.12), float(.3), dz), smoothstep(float(.5), float(.9), dn)).mul(float(1).sub(far)).mul(.75);
     const l = dot(lit, vec3(.2126, .7152, .0722)), band = floor(l.mul(4).add(.35)).div(4).add(.06), cel = mix(float(1), band.div(max(l, float(.02))), .5);
     lit = lit.mul(clamp(cel, float(.6), float(1.6)));
-    lit = mix(vec3(dot(lit, vec3(.2126, .7152, .0722))), lit, 1.32);
+    if (painted) lit = mix(vec3(dot(lit, vec3(.2126, .7152, .0722))), lit, 1.32);
+    else {
+      // The anime grade: brightness mapped onto a narrow palette (dusk: violet shadow, mauve middle, rose-cream light;
+      // rain: blue-black, slate, pale grey), keeping only a little of the scene's own colour.
+      const L = clamp(dot(lit, vec3(.2126, .7152, .0722)), float(0), float(1.4));
+      const [sh, md, hi] = dusk ? [vec3(.05, .035, .09), vec3(.42, .3, .46), vec3(1.0, .84, .8)] : [vec3(.035, .045, .06), vec3(.3, .35, .4), vec3(.86, .9, .94)];
+      const graded = mix(mix(sh, md, smoothstep(float(0), float(.42), L)), hi, smoothstep(float(.42), float(1.1), L));
+      lit = mix(graded, lit, dusk ? .22 : .16);
+      if (dusk) lit = lit.mul(.82);   // against a bright dusk sky the ground reads darker, nearer silhouette
+    }
+    lit = mix(lit, dusk ? mix(vec3(dot(before, vec3(.2126, .7152, .0722))), before, 1.45) : before, sky);
     lit = new URLSearchParams(location.search).has('inkdebug') ? mix(lit, vec3(4, 0, 0), ink) : lit.mul(float(1).sub(ink)).add(vec3(.02, .015, .03).mul(ink));   // ink darkens what is under it
   }
-  const glow = bloom(vec4(lit, 1), painted ? .55 : .32, painted ? .6 : .5, painted ? .8 : .95);
+  const glow = bloom(vec4(lit, 1), painted ? .55 : toon ? .45 : .32, painted ? .6 : toon ? .55 : .5, painted ? .8 : toon ? .82 : .95);
   let out = lit.add(glow.rgb);
   // Grade: a little cooler in the shadows, warmer in the highlights, colour kept; optional monochrome wash.
   const luma = dot(out, vec3(.2126, .7152, .0722));
-  out = mix(out, vec3(luma).mul(vec3(.9, .99, 1.04)), painted ? float(0) : wash);
+  out = mix(out, vec3(luma).mul(vec3(.9, .99, 1.04)), toon ? float(0) : wash);
   out = out.mul(mix(vec3(.94, .98, 1.04), vec3(1.04, 1.0, .95), smoothstep(.05, .6, luma)));
   out = pow(max(out, vec3(0)), vec3(crush));
   let image = vec4(out, 1);
