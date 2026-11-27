@@ -817,7 +817,7 @@ function cameraBlock(origin,dir,far){
 }
 // Free running: the camera swings out behind you while you vault, leap, climb or run a wall, then returns to the view you chose. Sprinting alone does not.
 const runCam={owned:false,since:0,k:0};
-let thirdSide=1,thirdSideK=1,thirdK=0,thirdOn=false,thirdOffset=null,lastThirdToggle=0,heldWeapon=null;
+let takedownView=null,thirdSide=1,thirdSideK=1,thirdK=0,thirdOn=false,thirdOffset=null,lastThirdToggle=0,heldWeapon=null;
 const thirdAllowed=()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident&&!arena?.active()&&!fistsEngaged()&&!battle?.dead?.();
 function setThird(on){const t=performance.now();if(on===thirdOn||t-lastThirdToggle<260)return false;if(on&&!thirdAllowed())return false;lastThirdToggle=t;runCam.owned=false;if(on&&!thirdOn){thirdSide=window.edenSettings?.get('shoulder')==='left'?-1:1;}thirdOn=on;if(on)combat?.zoom?.(0);requestDraw();return true;}
 const playerBody=window.createPlayerBody?.({T,scene,camera,pickables,requestDraw,hitStop:ms=>hitStop(ms),canPunch:()=>!expedition?.active(),enabled:()=>state.ready&&state.view==='free'&&!modalOpen()&&!followResident&&!arena?.active()&&(thirdK>.05||parkour?.handsFull()||!battle?.active()&&!combat?.armed()&&!fistsEngaged())});
@@ -927,7 +927,17 @@ combat=window.createCombat?.({T,scene,camera,renderer,stage,sky:garden.sky,fill,
 // No expeditions while a battle is on: its gate, its entry screen and the Attendant stay out of the arena.
 {const openNight=$('night-launch').onclick;$('night-launch').onclick=event=>{if(battle?.active())battle.suspend();combat?.leaveRange?.();openNight?.(event);};}
 battle=window.createBattleArena?.({T,scene,camera,combat,garden,playerAnchor:()=>targetPosition,hitStop:ms=>hitStop(ms),
- movement:()=>({airborne:motion.inspect().airborne,momentum:movement.momentum(),velocity:walkVelocity}),
+ movement:()=>({airborne:motion.inspect().airborne,momentum:movement.momentum(),velocity:walkVelocity,crouched:movement.crouchAmount>.5}),
+ playerModel:()=>playerBody?.model?.()||null,
+ // Stealth takedown (battle-arena.js): out to third person for the grab, the body on the assassin clip at the arena's
+ // clock, the player carried along its authored path facing the victim's way; back to the previous view after.
+ onTakedown(stage,info={}){
+  if(stage==='start'){takedownView={third:thirdOn,layer:playerBody?.anim?.('stealthAssassin',{fade:.18,speed:0,start:info.start,mask:'full',arms:true,hold:true})||null};lastThirdToggle=0;setThird(true);}
+  else if(stage==='step'){targetPosition.x=info.x;targetPosition.z=info.z;walkVelocity.set(0,0,0);targetAim.set(info.x+Math.sin(info.yaw)*5,targetPosition.y-.35,info.z+Math.cos(info.yaw)*5);if(takedownView?.layer)takedownView.layer.t=info.time;}
+  else{playerBody?.model?.()?.motion?.stop?.('stealthAssassin',.25);const back=takedownView&&!takedownView.third;takedownView=null;walkVelocity.set(0,0,0);
+   // Stay out behind the body while it lets go, then back to the eyes (unless another takedown has started).
+   if(back)setTimeout(()=>{if(!takedownView){lastThirdToggle=0;setThird(false);}},350);}
+  requestDraw();},
  onPlayerAction(id){playerBody?.anim?.(id,{fade:.16,mask:'upper',arms:true,weight:.65,speed:1.4});},
  // Ground hold (battle-arena.js): settle onto the one you tackled, crouched over them; each blow is an IK punch at
  // their head (character-motion.js punch) with a jolt through the view, the axe finisher a full swing.

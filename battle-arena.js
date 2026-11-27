@@ -568,7 +568,7 @@
    if(b.alive&&(b.flinchT||0)>0){b.flinchT=Math.max(0,b.flinchT-dt);b.root.rotation.x=-Math.sin(Math.min(1,b.flinchT/.22)*Math.PI)*.15;if(!b.flinchT)b.root.rotation.x=0;}
    const p=b.root.position;
    if(!b.alive){if(b.respawnAt&&clock>=b.respawnAt){respawnBot(b);return;}if(b.model.motion?.downAmount?.()>0){b.model.animate?.(clock,0);return;}const k=clamp((clock-b.deathT)/.6,0,1);b.root.rotation.x=-k*k*Math.PI/2*.96;b.root.position.y=groundY(p.x,p.z)+k*.15;return;}
-   if(b.frozen){b.model.animate?.(clock,0);return;}
+   if(b.frozen||b.takedown){b.model.animate?.(clock,0);return;}
    // Zone damage
    if(phase==='live'&&outside(p)>0){b.zoneTick=(b.zoneTick||0)+dt;if(b.zoneTick>=1){b.zoneTick=0;damage(b,zoneDps(),null,{kind:'zone'});if(!b.alive)return;}}
    if(b.model.motion?.downAmount?.()>0){b.model.animate?.(clock,0);return;}
@@ -585,7 +585,7 @@
     let best=null,bd=1e9;const sight=b.weapon==='sniper'?120:b.weapon==='rifle'?70:45;
     const attacked=b.seen&&b.seen.alive&&clock-b.lastHurt<4?b.seen:null;
     let reach=b.state==='rush'?4.5:b.weapon==='axe'?9:sight;if(b.K?.sight)reach=lerp(b.K.sight[0],b.K.sight[1],nightLevel());
-    for(const c of combatants()){if(c===b||(b.team&&c.team===b.team))continue;const d=posOf(c).distanceTo(p)/(1+Math.min(POWER_MAX,c.power||0)*.25),glow=(c.power||0)>=POWER_GLOW;if((d<reach*(glow?1.6:1)||c===attacked&&d<sight)&&d<bd&&(b.kind==='zombie'&&d<6||los(eye,eyeOf(c)))){best=c;bd=d;}}
+    for(const c of combatants()){if(c===b||(b.team&&c.team===b.team))continue;const raw=posOf(c).distanceTo(p),d=raw/(1+Math.min(POWER_MAX,c.power||0)*.25),glow=(c.power||0)>=POWER_GLOW;if(c===player&&c!==attacked&&!glow&&!noticesPlayer(b,raw))continue;if((d<reach*(glow?1.6:1)||c===attacked&&d<sight)&&d<bd&&(b.kind==='zombie'&&d<6||los(eye,eyeOf(c)))){best=c;bd=d;}}
     if(best&&(b.state!=='fight'||b.target!==best)){if(b.target!==best)b.aimT=b.reaction;b.target=best;b.state='fight';}
     if(b.kind==='rival'&&b.state==='fight'&&b.target&&!attacked&&b.weapon==='axe'&&posOf(b.target).distanceTo(p)>12){b.state='loot';b.target=null;b.goal=null;}
     if(!best&&b.state==='fight'&&(!b.target?.alive||posOf(b.target).distanceTo(p)>60)){b.state='roam';b.target=null;b.goal=null;}
@@ -752,10 +752,13 @@
    for(const l of loot){if(!l.vel||l.item.type==='page')continue;const g=l.group.position;const d=Math.hypot(g.x-p.x,g.z-p.z);if(d<2.4&&g.y>p.y+.4){const s=4+(2.4-d);if(s>bs){bs=s;best={loot:l,catch:true};}}}
    for(const l of loot){if(l.vel||Math.abs(l.pos.y-p.y)>1.4)continue;const d=Math.hypot(l.pos.x-p.x,l.pos.z-p.z);if(d<2){const s=(2-d)+Math.max(0,fwd.dot(l.pos.clone().sub(camera.position).normalize()))*1.2;if(s>bs){bs=s;best={loot:l};}}}
    if(player.hold){player.focus=null;hud.prompt(holdPrompt(),'epic');return;}
+   if(player.takedown){player.focus=null;hud.prompt(null);return;}
+   {const td=takedownTarget();if(td){player.focus={takedown:td};hud.prompt('TAKE DOWN · '+td.name,'epic');return;}}
    player.focus=best;hud.prompt(best?.catch?'CATCH '+best.loot.item.label:best?best.chest?'OPEN CHEST':(best.loot.item.type==='weapon'&&(combat.arsenal.inspect()?.owned||[]).filter(id=>!['axe','c4'].includes(id)).length>=2&&!(combat.arsenal.inspect()?.owned||[]).includes(best.loot.item.weapon)?'SWAP FOR ':'PICK UP ')+best.loot.item.label:null,best?.loot?.item.rarity);
   }
   function interact(){
    if(phase!=='live'||!player?.alive)return true;const f=player.focus;if(!f)return false;
+   if(f.takedown){if(!startTakedown(f.takedown))announce('NO ROOM FOR A TAKEDOWN');return true;}
    if(f.chest)openChest(f.chest,player);else{if(f.catch){if(!loot.includes(f.loot))return;announce('CAUGHT · '+f.loot.item.label);chime([523,784],.06,.05);}playerTake(f.loot);}
    return true;
   }
@@ -927,7 +930,7 @@
    b.weapons={axe:{loaded:0},pistol:{loaded:12}};b.reserve={pistol:24};setBotWeapon(b,'pistol');}
   function kitPlayer(){combat.arsenal.set({owned:['axe','pistol'],reserve:{pistol:24},loaded:{pistol:12}});combat.equip('pistol');}
   function respawnBot(b){
-   const spot=spawnFor(b);b.model.motion?.revive?.();b.root.position.set(spot.x,groundY(spot.x,spot.z),spot.z);b.root.rotation.set(0,rand(0,TAU),0);
+   const spot=spawnFor(b);b.takedown=null;b.model.motion?.stop?.('stealthVictim',0);b.model.motion?.revive?.();b.root.position.set(spot.x,groundY(spot.x,spot.z),spot.z);b.root.rotation.set(0,rand(0,TAU),0);
    Object.assign(b,{stagger:null,stunT:0,limpT:0,hurtSum:0,lastFold:-9,lastStep:-9,lastLeg:-9,lastArm:-9,hp:100,shield:SHIELD_BOT,shieldMax:SHIELD_BOT,armor:0,armorMax:0,garment:null,alive:true,respawnAt:0,lastHurt:-9,lastFlinch:-9,flinchT:0,dodgeT:0,bashT:0,deathT:0,target:null,goal:null,seen:null,healing:null,healT:0,fireT:0,reloadT:0,aimT:0,think:rand(0,.3),repath:0,strafeT:0,stride:0,heading:b.root.rotation.y,heals:{bandage:0,medkit:0},state:'roam'});
    b.hp=b.hpMax||100;b.shield=b.shieldMax=b.K?.shield??SHIELD_BOT;
    b.path.length=0;kitBot(b);formBot(b);rendererShadowDirty();
@@ -1219,6 +1222,99 @@
    (player.runPoint??=new T.Vector3()).copy(p);
   }
 
+  // ---------- Stealth takedown ----------
+  // Come up behind someone (or on one who is busy with someone else) and press F: you grab them from behind and put them
+  // down quietly. It is the paired Mixamo assassination COWNinja uses (cowninja/main.js): assassin and victim sample one
+  // clock, so the grab never drifts apart, and both authored paths are checked against walls before either one commits.
+  // The view swings out to third person for it and back after. Getting shot does not stop it; you dying, or the victim
+  // being killed by someone else, does (the victim then knows you are there).
+  const TAKEDOWN={reach:1.9,behind:-.2,start:2,speed:1.45};
+  // Bots see what is in front of them (a 160 degree view). Behind, they only hear you: a sprint carries, a walk less,
+  // a crouch almost nothing. One already fighting you keeps track of you.
+  function noticesPlayer(b,raw){
+   if(b.state==='fight'&&b.target===player)return true;
+   const q=b.root.position,pp=posOf(player),dx=pp.x-q.x,dz=pp.z-q.z,d=Math.hypot(dx,dz)||1,h=b.root.rotation.y;
+   if((Math.sin(h)*dx+Math.cos(h)*dz)/d>.17)return true;
+   const m=o.movement?.(),speed=m?Math.hypot(m.velocity.x,m.velocity.z):0,hear=m?.crouched?1.4:speed>5.5?14:speed>.6?4.5:2.2;
+   return raw<hear;
+  }
+  // Paired-clip placement (same maths as cowninja/animation-path.js, which is an ES module this classic script cannot import).
+  function hipScale(model){
+   const h=model?.motion?.bindHipHeight?.();if(Number.isFinite(h)&&h>0)return h;
+   const r=model?.skeleton?.bones?.findIndex(n=>n.name==='root'),inv=model?.skeleton?.boneInverses?.[r];
+   return inv?Math.abs(inv.clone().invert().elements[13]*model.root.scale.y):1;
+  }
+  function clipPath(A,id,model,{x,z,yaw,start,end}){
+   const base=A.rootOffset?.(id,start)||{x:0,z:0},k=hipScale(model),c=Math.cos(yaw),s=Math.sin(yaw);
+   return {sample(progress){const time=start+clamp(progress,0,1)*(end-start),q=A.rootOffset?.(id,time)||base,dx=(q.x-base.x)*k,dz=(q.z-base.z)*k;return {x:x+c*dx+s*dz,z:z-s*dx+c*dz,time};}};
+  }
+  function pairedAnchor(A,attacker,victim,{x,z,yaw,start}){
+   const a=A.rootOffset?.('stealthAssassin',start)||{x:0,z:0},v=A.rootOffset?.('stealthVictim',start)||{x:0,z:0},sa=hipScale(attacker),sv=hipScale(victim);
+   const dx=v.x*sv-a.x*sa,dz=1.83*(sa+sv)/2+v.z*sv-a.z*sa;
+   return {x:x-Math.cos(yaw)*dx-Math.sin(yaw)*dz,z:z+Math.sin(yaw)*dx-Math.cos(yaw)*dz};
+  }
+  function pathClear(path,from){
+   const probe=new T.Vector3(),ok=(x,z)=>{probe.set(x,0,z);return !blocked(probe);};
+   let at=from||path.sample(0);
+   for(let i=0;i<=60;i++){const next=path.sample(i/60),n=Math.max(1,Math.ceil(Math.hypot(next.x-at.x,next.z-at.z)/.1));
+    for(let j=1;j<=n;j++)if(!ok(at.x+(next.x-at.x)*j/n,at.z+(next.z-at.z)*j/n))return false;at=next;}
+   return true;
+  }
+  function takedownTarget(){
+   const A=window.GardenAnim;
+   if(phase!=='live'||!player?.alive||player.hold||player.takedown||!A?.has?.('stealthAssassin')||!A.has('stealthVictim'))return null;
+   if(o.movement?.()?.airborne)return null;
+   const p=posOf(player);let best=null,bd=TAKEDOWN.reach;
+   for(const b of bots){
+    if(!b.alive||b.takedown||b.frozen||!b.model.motion?.play||b.model.motion.downAmount?.()>0)continue;
+    const q=b.root.position;if(Math.abs(q.y-p.y)>.6)continue;
+    const dx=p.x-q.x,dz=p.z-q.z,d=Math.hypot(dx,dz);if(d>=bd||d<.05)continue;
+    const h=b.root.rotation.y,behind=(Math.sin(h)*dx+Math.cos(h)*dz)/d<TAKEDOWN.behind,unaware=!(b.state==='fight'&&b.target===player);
+    if(!behind&&!unaware)continue;
+    if(!los(p.clone().setY(p.y+1.1),q.clone().setY(q.y+1.1)))continue;
+    best=b;bd=d;
+   }
+   return best;
+  }
+  function startTakedown(b){
+   const A=window.GardenAnim,me=o.playerModel?.()||b.model;if(!b?.alive||b.takedown||player.takedown)return false;
+   const end=Math.min(A.duration('stealthAssassin'),A.duration('stealthVictim')),start=Math.min(TAKEDOWN.start,end*.3),yaw=b.root.rotation.y,q=b.root.position;
+   const victim=clipPath(A,'stealthVictim',b.model,{x:q.x,z:q.z,yaw,start,end}),at=pairedAnchor(A,me,b.model,{x:q.x,z:q.z,yaw,start});
+   const path=clipPath(A,'stealthAssassin',me,{x:at.x,z:at.z,yaw,start,end}),from=posOf(player);
+   if(!pathClear(victim)||!pathClear(path,{x:from.x,z:from.z}))return false;
+   const motion=b.model.motion;motion.stop?.(null,.14);motion.guard?.(0);motion.hold?.(null);b.hand.clear();
+   const layer=motion.play('stealthVictim',{fade:.18,speed:0,start,mask:'full',arms:true,weight:1,hold:true});
+   if(!layer){setBotWeapon(b,b.weapon);return false;}
+   b.takedown={layer,path:victim};b.stagger=null;b.fireT=Math.max(b.fireT,9);b.bashT=Math.max(b.bashT,9);
+   const weapon=combat.armed?.()?combat.inspect().weapon:null;combat.holster?.();
+   player.takedown={b,t:0,start,duration:(end-start)/TAKEDOWN.speed,path,from:{x:from.x,z:from.z},yaw,weapon,
+    align:clamp(Math.hypot(at.x-from.x,at.z-from.z)/3,.16,.45)};
+   o.onTakedown?.('start',{start});chime([98,73],.08,.09);
+   return true;
+  }
+  function updateTakedown(dt){
+   const t=player?.takedown;if(!t)return;const b=t.b;
+   if(!player.alive||phase!=='live'||!b.alive||!b.takedown){endTakedown();return;}
+   t.t+=dt;
+   const k=clamp(t.t/t.align,0,1),e=k*k*(3-2*k),progress=clamp((t.t-t.align)/t.duration,0,1);
+   const v=b.takedown.path.sample(progress);b.takedown.layer.t=v.time;b.root.position.set(v.x,feetY(v.x,v.z,b.root.position.y),v.z);
+   const a=t.path.sample(progress);
+   o.onTakedown?.('step',{x:t.from.x+(a.x-t.from.x)*e,z:t.from.z+(a.z-t.from.z)*e,yaw:t.yaw,time:a.time});
+   if(progress>=1){
+    b.takedown=null;player.takedowns=(player.takedowns||0)+1;
+    const dir=new T.Vector3(Math.sin(t.yaw),0,Math.cos(t.yaw)),res=damage(b,9999,player,{weapon:'takedown',pinned:true,dir});
+    if(res?.killed){announce('SILENT TAKEDOWN · '+b.name);window.EdenMelee?.pop?.('TAKEDOWN','ko');}
+    endTakedown();
+   }
+  }
+  function endTakedown(){
+   const t=player?.takedown;if(!t)return;player.takedown=null;const b=t.b;
+   if(b.takedown){b.takedown=null;b.model.motion?.stop?.('stealthVictim',.18);
+    if(b.alive){setBotWeapon(b,b.weapon);b.state='fight';b.target=player;b.aimT=b.reaction;b.fireT=Math.max(1,b.fireT-8);b.bashT=0;}}
+   o.onTakedown?.('end',{});
+   if(player.alive&&t.weapon)combat.equip?.(t.weapon);
+  }
+
   // ---------- Ground hold: a tackle you stay on ----------
   // Land a tackle (slide or dive, sprint shoulder, momentum landing) and stop moving within HOLD.window seconds while
   // the one you knocked down lies close: you keep hold of them, mounted on their chest, and they stay pinned. Punches
@@ -1256,6 +1352,7 @@
   // Returns false when the hold does not take the input (a gun still shoots), 'swing' for the axe finisher (combat.js
   // plays the swing without its own hit test), 'bash' for a punch thrown with a gun in hand, or true.
   function heldStrike(input,weapon=heldWeapon()){
+   if(player?.takedown)return true;
    const h=player?.hold;if(!h||!h.b.alive||phase!=='live'||!player.alive)return false;
    if(weapon&&weapon!=='axe'&&input==='fire')return false;
    if(weapon==='c4')return false;
@@ -1398,7 +1495,7 @@
    if(Math.floor(clock)!==Math.floor(clock-dt))restock();
    if(player&&!player.alive&&player.respawnAt!=null){const left=player.respawnAt-clock;if(left<=0)respawnPlayer();else hud.count(Math.ceil(left));}
    updateRunTackle(dt);
-   updateHold();
+   updateHold();updateTakedown(dt);
    for(const b of bots){updateBot(b,dt);const p=b.root.position;if(dt>0)(b.vel??=new T.Vector3()).set((p.x-(b.px??p.x))/dt,0,(p.z-(b.pz??p.z))/dt);b.px=p.x;b.pz=p.z;}
    if(reactions)try{reactions.update(dt);}catch(error){console.warn('Physical hit reactions stopped; keeping procedural ones.',error);try{reactions.clear();}catch{}reactions=null;}
    updateGlints(dt);updateMuzzle(dt);
@@ -1433,7 +1530,7 @@
    lowHealth:()=>active?Math.max(lowHealth(),bloodHit*.5):0,soul:()=>active&&!!player&&!player.alive&&!!player.soul,
    active:()=>active,busy:()=>active||entering,suspended:()=>suspended,dead:()=>active&&!!player&&!player.alive,
    canMove:()=>!active||phase==='live'||phase==='ended',
-   canAct:()=>!active||(phase==='live'&&!!player?.alive),
+   canAct:()=>!active||(phase==='live'&&!!player?.alive&&!player.takedown),
    shotHook(origin,dir,maxDist,meta={}){if(!active)return null;const h=hitTest(origin,dir,maxDist,player);
     // Shots that pass by loot knock it about.
     if(meta.weapon&&meta.weapon!=='melee'&&meta.weapon!=='axe'){const lim=h?h.distance:maxDist;for(const l of loot){if(l.vel||l.item.type==='page')continue;const c=l.group.position.clone().add(new T.Vector3(0,.15,0)),t=c.clone().sub(origin).dot(dir);if(t<0||t>lim)continue;if(origin.clone().addScaledVector(dir,t).distanceTo(c)<.3){l.vel=dir.clone().setY(0).multiplyScalar(2.6).add(new T.Vector3(0,2.4,0));l.y+=.05;}}}
@@ -1443,7 +1540,7 @@
    // Something outside the match hurts you (the office crowd): ordinary damage, shields first.
    hurtPlayer(amount,from=null){if(!active||!player?.alive)return;const dir=from?posOf(player).clone().sub(from).setY(0).normalize():null;damage(player,amount,null,{weapon:'melee',...(dir?{dir}:{})});},
    fallDamage(d){if(active&&player?.alive&&d>0)damage(player,d,null,{kind:'fall'});},
-   tackle,heldStrike,hold:()=>player?.hold?{name:player.hold.b.name,t:+player.hold.t.toFixed(2),punches:player.hold.punches,finishing:player.hold.finishing,pinned:!!player.hold.b.model.motion?.pinned?.()}:null,releaseHold:()=>endHold('released'),reactions:()=>reactions?.inspect()||null,holdEnded:()=>player?.holdEnded||null,doors:()=>doors.map(d=>({x:d.x,z:d.z,open:+Math.max(...d.leaves.map(l=>Math.abs(l.a))).toFixed(2),broken:d.leaves.every(l=>l.gone)})),smashDoor:i=>smashDoor(doors[i],new T.Vector3(0,0,1)),
+   tackle,heldStrike,takedown:()=>player?.takedown?{name:player.takedown.b.name,t:+player.takedown.t.toFixed(2)}:null,takedowns:()=>player?.takedowns||0,takedownTarget:()=>takedownTarget()?.name||null,hold:()=>player?.hold?{name:player.hold.b.name,t:+player.hold.t.toFixed(2),punches:player.hold.punches,finishing:player.hold.finishing,pinned:!!player.hold.b.model.motion?.pinned?.()}:null,releaseHold:()=>endHold('released'),reactions:()=>reactions?.inspect()||null,holdEnded:()=>player?.holdEnded||null,doors:()=>doors.map(d=>({x:d.x,z:d.z,open:+Math.max(...d.leaves.map(l=>Math.abs(l.a))).toFixed(2),broken:d.leaves.every(l=>l.gone)})),smashDoor:i=>smashDoor(doors[i],new T.Vector3(0,0,1)),
    onExplosion(p,radius,dmg,opts={}){if(!active)return;dmg=opts.dmg??dmg;radius=opts.radius??radius;
     // The blast throws loot and jolts chests.
     for(const l of loot){if(l.item.type==='page')continue;const d=l.group.position.distanceTo(p);if(d<radius*1.3){const out=l.group.position.clone().sub(p).setY(0);if(out.lengthSq()<1e-4)out.set(rand(-1,1),0,rand(-1,1));out.normalize().multiplyScalar(6*(1-d/(radius*1.3))+1);l.vel=out.add(new T.Vector3(0,4+rand(0,2),0));l.y+=.05;}}
