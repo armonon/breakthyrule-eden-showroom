@@ -47,7 +47,8 @@ export function createFoot({ scene, world, onEffect }) {
     state.forward.set(Math.sin(p.yaw), 0, Math.cos(p.yaw)); state.velocity.set(v.x, p.vy || 0, v.z);
     // How far you can be heard, 0..1: nothing standing still or creeping, everything at a sprint or a landing.
     // In a hay pile and not sprinting: out of sight entirely.
-    state.hidden = !!world.inHay?.(p.x, p.z) && state.speed < 4.2 && p.y < 2;
+    // Hidden: in hay, or crouched in tall grass.
+    state.hidden = (!!world.inHay?.(p.x, p.z) && state.speed < 4.2 && p.y < 2) || (state.crouched && p.y < .6 && !!world.inCover?.(p.x, p.z));
     state.climbing = CLIMBS.has(p.movement) || p.movement === 'bar' || p.movement === 'wallrun';
     state.noise = state.hidden ? 0 : state.speed < .3 ? 0 : state.crouched ? .12 : p.movement === 'slide' ? .5 : state.speed > 4.6 ? .85 : .38;
   }
@@ -149,8 +150,28 @@ export function createFoot({ scene, world, onEffect }) {
   const once = (id, options = {}) => hasClip(id) ? ninja?.person.motion.play?.(id, { mask: 'full', loop: false, ...options }) : null;
   let pipeClip = false;
   // One 60 Hz tick. keys: Set of 'w','a','s','d','shift','space','crouch'; yaw/pitch: where the camera looks.
+  // A flip: C in the air. The authored flip clips over the jump (start, tuck loop, landing), and a little more carry.
+  let flip = null;
+  function flipJump() {
+    const motion = ninja?.person.motion;
+    if (!controller || !state.active || !state.airborne || state.climbing || state.busy || flip || !motion || !hasClip('flipStart')) return false;
+    flip = { t: 0, loop: false }; motion.play('flipStart', { fade: .05, speed: 1.35, mask: 'full', arms: true });
+    controller.velocity.x *= 1.12; controller.velocity.z *= 1.12; state.flipping = true;
+    return true;
+  }
+  function stepFlip() {
+    if (!flip) return; flip.t += 1 / 60; const motion = ninja?.person.motion;
+    if (!state.airborne || state.climbing || flip.t > 2.5) {
+      motion?.stop?.('flipStart', .1); motion?.stop?.('flipLoop', .12);
+      if (!state.climbing && !state.airborne && hasClip('flipLand')) once('flipLand', { fade: .06, speed: 1.5 });
+      flip = null; state.flipping = false; return;
+    }
+    const d = (G.GardenAnim?.duration('flipStart') || .6) / 1.35;
+    if (!flip.loop && flip.t > d * .85 && hasClip('flipLoop')) { flip.loop = true; motion?.play?.('flipLoop', { fade: .08, loop: true, mask: 'full', arms: true }); }
+  }
   function step(keys, yaw, pitch = 0) {
     if (!controller || !state.active) return;
+    stepFlip();
     traversalRate = 1;
     if (action) { stepAction(keys); return; }
     if (mantle) { stepMantle(keys); return; }
@@ -209,7 +230,7 @@ export function createFoot({ scene, world, onEffect }) {
     const want = moving > .4 ? Math.atan2(v.x, v.z) : bodyYaw ?? state.yaw;
     if (tick < faceUntil) bodyYaw = faceYaw;   // a punch or a guard holds the body on its target
     else if (M?.turnBody) ({ yaw: bodyYaw, turning } = M.turnBody(bodyYaw, turning, want, moving, dt)); else bodyYaw = want;
-    person.root.position.set(state.x, state.y, state.z); person.root.rotation.y = bodyYaw;
+    person.root.position.set(state.x, state.y, state.z); person.root.rotation.y = bodyYaw; state.facing = bodyYaw;   // the way the body faces (the camera follows it)
     const dive = m.dive ? Math.min(1, m.dive.t * 4) : m.proneT > 0 ? Math.min(1, m.proneT / .4) : 0, slide = m.slide?.kind === 'slide' && !m.slide.belly ? 1 - m.slide.t / m.slide.dur : 0;
     const drop = m.crouchAmount * .55 + (m.dive ? Math.min(1, m.dive.t * 5) * .55 : 0) + (m.proneT > 0 ? Math.min(1, m.proneT / .25) * .75 : 0);
     let traversal = m.traversal();
@@ -261,5 +282,5 @@ export function createFoot({ scene, world, onEffect }) {
     scriptedPose(null, dt); lastJump = keys.has('space'); lastCrouch = keys.has('crouch');
     if (progress >= 1) { action = null; state.busy = false; ninja.person.motion.stop?.('stealthAssassin', .2); a.onFinish?.(); }
   }
-  return { state, enter, leave, step, play, face, shove, setGuard, facing, beginAction, cancelAction, available: !!controller, controller, ninja, holder };
+  return { state, enter, leave, step, flipJump, play, face, shove, setGuard, facing, beginAction, cancelAction, available: !!controller, controller, ninja, holder };
 }

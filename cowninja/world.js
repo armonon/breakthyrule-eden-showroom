@@ -231,6 +231,8 @@ export function createWorld({ scene, physics, assets, shadows = 7 }) {
     }
     return false;
   }
+  // Walls for the herd and the staff only (crawl holes a person fits through on hands and knees).
+  for (const w of P.cowWalls || []) walls2d.push(w);
   const solidAt = (x, y, z, pad = .15) => { for (const b of solids) if (x > b.minX - pad && x < b.maxX + pad && z > b.minZ - pad && z < b.maxZ + pad && y < b.top + pad && y > b.bottom - pad) return true; return false; };
   // The lowest ceiling over a point (Infinity outdoors), and whether a point is under a roof.
   const ceilingAt = (x, z) => { let y = Infinity; for (const c of data.ceilings) if (x > c[0] && x < c[1] && z > c[2] && z < c[3]) y = Math.min(y, c[4]); return y; };
@@ -256,6 +258,7 @@ export function createWorld({ scene, physics, assets, shadows = 7 }) {
     root, mat, blocked, walk, update, gateBroken, openGate, gates, gateAt, gateNear, leverNear, onGate: fn => gateListeners.push(fn), pens: P.pens || [], solids, solidAt, sightBlocked, ceilingAt, indoors, walls2d, dynamic, loose, looseModel, place,
     grips: data.grips || [], hay: data.hay || [], roofSteps: data.roofSteps || [],
     inHay: (x, z) => (data.hay || []).some(h => Math.hypot(x - h[0], z - h[1]) < h[2] * .85),
+    inCover: (x, z) => (P.cover || []).some(c => x > c[0] && x < c[1] && z > c[2] && z < c[3]),
     gatePost: P.lever, spawn: P.spawn, cowSpawn: P.cowSpawn, exit: P.exit, gateZ: P.gateZ, bounds: P.bounds, pen: P.pen, escape: P.escape, truckStart: P.truckStart, patrols: P.patrols,
   };
 }

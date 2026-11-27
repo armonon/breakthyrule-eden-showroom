@@ -177,6 +177,20 @@ async function boot() {
     flight = { x0: p.x, z0: p.z, y0: p.y + 1.6, x1: tx, z1: tz, t: 0, T: .35 + far * .03 };
   }
   const held = new Set();
+  // Crouch is a toggle (C, or LOW on a touch screen); breaking into a sprint stands you up. Climbing, C still lets go.
+  let crouchOn = false, letGo = 0;
+  function toggleCrouch() {
+    if (phase !== 'play' || mode !== 'foot') return;
+    if (foot.state.climbing) { letGo = 3; return; }
+    // In the air, C flips instead.
+    if (foot.state.airborne) { if (foot.flipJump?.()) { stats.flips2 = (stats.flips2 || 0) + 1; audio.land?.('grass', .3); } return; }
+    crouchOn = !crouchOn;
+  }
+  function footKeys() {
+    if (crouchOn && keys.has('shift') && (keys.has('w') || keys.has('a') || keys.has('s') || keys.has('d'))) crouchOn = false;
+    if (!crouchOn && letGo <= 0) return keys;
+    held.clear(); for (const k of keys) held.add(k); held.add('crouch'); if (letGo > 0) letGo--; return held;
+  }
   function dragKeys() { held.clear(); for (const k of keys) if (k !== 'shift' && k !== 'space') held.add(k); held.add('crouch'); return held; }
   function updateStone(dt) {
     if (!flight) { stone.visible = false; return; } flight.t += dt; const k = Math.min(1, flight.t / flight.T);
@@ -217,7 +231,7 @@ async function boot() {
   // Camera state beyond position: the rider's orbit (right-drag or touch-drag while riding; eases back behind the cow
   // once you let go), zoom (mouse wheel), a spring for the chase view, a dip on landings, a kick from blows, a roll
   // into turns, and framing requests (close for a takedown or a lever, wide when the police arrive or a gate goes).
-  const rig = { orbitYaw: 0, orbitPitch: 0, orbitIdle: 9, zoom: 1, vel: new THREE.Vector3(), dip: 0, dipV: 0, kick: new THREE.Vector3(), roll: 0, lastYaw: 0, closeUntil: 0, wideUntil: 0, airFoot: false, airCow: false };
+  const rig = { lookIdle: 9, orbitYaw: 0, orbitPitch: 0, orbitIdle: 9, zoom: 1, vel: new THREE.Vector3(), dip: 0, dipV: 0, kick: new THREE.Vector3(), roll: 0, lastYaw: 0, closeUntil: 0, wideUntil: 0, airFoot: false, airCow: false };
   const kick = (dx, dz, amount) => { rig.kick.x += dx * amount; rig.kick.z += dz * amount; rig.kick.y -= amount * .3; };
   // Aiming a herd order: hold F, a cursor shows where it will land and what it will do; let go to give it.
   const aim = { on: false, at: 0, x: 0, z: 0, check: null, checkedAt: 0 };
@@ -229,11 +243,11 @@ async function boot() {
   let quality = Number(query.get('q') ?? (handheld ? 2 : 0)), post = createGrimPost({ renderer, scene, camera, level: quality, occlusion: query.get('ao') !== '0' });
 
   // Input. `keys` holds what is held; E (use) and Q (whistle) are single presses.
-  const keys = new Set(), map = { KeyW: 'w', ArrowUp: 'w', KeyS: 's', ArrowDown: 's', KeyA: 'a', ArrowLeft: 'a', KeyD: 'd', ArrowRight: 'd', ShiftLeft: 'shift', ShiftRight: 'shift', Space: 'space', KeyC: 'crouch', ControlLeft: 'crouch' };
+  const keys = new Set(), map = { KeyW: 'w', ArrowUp: 'w', KeyS: 's', ArrowDown: 's', KeyA: 'a', ArrowLeft: 'a', KeyD: 'd', ArrowRight: 'd', ShiftLeft: 'shift', ShiftRight: 'shift', Space: 'space',  ControlLeft: 'crouch' };
   let camYaw = world.spawn.yaw, camPitch = -.12;
   addEventListener('keydown', e => {
     const k = map[e.code];
-    if (!k) { if (e.repeat) return; if (e.code === 'KeyR' && phase !== 'intro') restart(); else if (e.code === 'KeyE') use(); else if (e.code === 'KeyQ') whistle(); else if (e.code === 'KeyF') { if (phase === 'play') { aim.on = true; aim.at = performance.now(); aim.checkedAt = 0; } } else if (e.code === 'KeyV') cycleView(); else if (e.code === 'KeyG') throwStone(); return; }
+    if (!k) { if (e.repeat) return; if (e.code === 'KeyR' && phase !== 'intro') restart(); else if (e.code === 'KeyE') use(); else if (e.code === 'KeyQ') whistle(); else if (e.code === 'KeyF') { if (phase === 'play') { aim.on = true; aim.at = performance.now(); aim.checkedAt = 0; } } else if (e.code === 'KeyC') toggleCrouch(); else if (e.code === 'KeyV') cycleView(); else if (e.code === 'KeyG') throwStone(); return; }
     e.preventDefault(); if (k === 'space' && e.repeat) return; keys.add(k);
   });
   addEventListener('keyup', e => { const k = map[e.code]; if (k) keys.delete(k); if (e.code === 'KeyF' && aim.on) { aim.on = false; commandAt2D(pointer.x, pointer.y); } });
@@ -271,7 +285,7 @@ async function boot() {
   addEventListener('blur', () => keys.clear());
   const look = (dx, dy) => {
     if (mode === 'ride') { rig.orbitYaw = Math.max(-2.6, Math.min(2.6, rig.orbitYaw - dx * .004)); rig.orbitPitch = Math.max(-.35, Math.min(.6, rig.orbitPitch - dy * .003)); rig.orbitIdle = 0; return; }
-    camYaw -= dx * .0024; camPitch = Math.max(-1.1, Math.min(.75, camPitch - dy * .002)); };
+    camYaw -= dx * .0024; camPitch = Math.max(-1.1, Math.min(.75, camPitch - dy * .002)); rig.lookIdle = 0; };
   renderer.domElement.addEventListener('click', () => { if (phase === 'play' && mode === 'foot' && document.pointerLockElement !== renderer.domElement) renderer.domElement.requestPointerLock?.(); });
   addEventListener('mousemove', e => { if (document.pointerLockElement === renderer.domElement) look(e.movementX, e.movementY); });
   // Fists: left mouse (or J) punches, tap for jab/cross and hold for the haymaker; right mouse (or K) guards.
@@ -281,7 +295,7 @@ async function boot() {
   renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
   addEventListener('keydown', e => { if (e.repeat || !fighting()) return; if (e.code === 'KeyJ') fight.attack(true); else if (e.code === 'KeyK') fight.guard(true); });
   addEventListener('keyup', e => { if (e.code === 'KeyJ') fight.attack(false); else if (e.code === 'KeyK') fight.guard(false); });
-  const touch = createTouch({ root: $('cn-touch'), keys, onAct: () => use(), onWhistle: () => whistle(), onLook: look, onThrow: () => throwStone(), onAttack: down => { if (fighting() || !down) fight.attack(down); }, onGuard: down => { if (fighting() || !down) fight.guard(down); } });
+  const touch = createTouch({ root: $('cn-touch'), keys, onAct: () => use(), onWhistle: () => whistle(), onLook: look, onThrow: () => throwStone(), onCrouch: () => toggleCrouch(), onAttack: down => { if (fighting() || !down) fight.attack(down); }, onGuard: down => { if (fighting() || !down) fight.guard(down); } });
 
   // What E would do right now, or null. Riding: get off. On foot: a takedown, the pen latch, or back on the cow.
   function option() {
@@ -311,7 +325,7 @@ async function boot() {
       if (!foot.enter(side[0], side[1], camYaw)) return;
       mode = 'foot'; cow.setRider(false); calling = 0; keys.delete('shift'); foot.play('jumpLand', { fade: .05, speed: 1.3, mask: 'full' }); say('ON FOOT · C CROUCH · E USE · Q CALL THE HERD', 3);
       if (!touch.active) renderer.domElement.requestPointerLock?.();
-    } else if (o.kind === 'mount') { const fx = foot.state.x, fz = foot.state.z; if (o.swap) herd.swap(o.swap, cow); mode = 'ride'; foot.leave(); cow.mountFrom(fx, fz); calling = 0; document.exitPointerLock?.(); audio.moo(.14); }
+    } else if (o.kind === 'mount') { const fx = foot.state.x, fz = foot.state.z; if (o.swap) herd.swap(o.swap, cow); mode = 'ride'; crouchOn = false; foot.leave(); cow.mountFrom(fx, fz); calling = 0; document.exitPointerLock?.(); audio.moo(.14); }
     else if (o.kind === 'takedown') {
       const f = o.farmer, A = window.GardenAnim;
       // The source pair faces the same way, with the ninja behind the farmer. Both sample the same clock, so slow
@@ -426,6 +440,16 @@ async function boot() {
       // frame, pulls back and tips down on a fall so the landing is, leads the way you are moving, and widens with speed.
       // A takedown or a lever pull brings it in close over the shoulder.
       const p = foot.state, climbing = p.climbing, falling = p.airborne && p.velocity.y < -3, fast = Math.min(1, p.speed / 7.5), close = p.busy || now < rig.closeUntil;
+      // The camera keeps to his back: a moment after you stop steering it with the mouse, it swings round behind the
+      // way he faces (faster the faster he moves, and on a climb, behind him on the wall). Walking straight back at
+      // the camera it holds still rather than spin; standing still, it settles behind him after a little while.
+      rig.lookIdle += dt;
+      if (TUNE.camera.follow && p.facing != null && rig.lookIdle > TUNE.camera.followDelay) {
+        let d = p.facing - camYaw; d = Math.atan2(Math.sin(d), Math.cos(d));
+        const moving = p.speed > .6 || climbing, toward = Math.abs(d) > 2.5 && !climbing;
+        if ((moving && !toward) || rig.lookIdle > 2.5) { const rate = climbing ? 4 : moving ? 1.6 + p.speed * .45 : 1.2; camYaw += d * (1 - Math.exp(-rate * dt)); }
+        if (moving && !climbing) camPitch += (-.14 - camPitch) * (1 - Math.exp(-1.2 * dt));
+      }
       const k = 1 - Math.exp(-4.5 * dt);
       cam.reach += (((close ? 2.2 : climbing ? 5.0 : p.airborne ? 5.2 : 3.3 + fast * 1.1) + wide * 5.5) * rig.zoom - cam.reach) * k;
       cam.tilt += ((close ? -.06 : climbing ? .3 : falling ? -.38 : 0) - wide * .32 - cam.tilt) * k;
@@ -467,7 +491,7 @@ async function boot() {
   const none = new Set();
   function tick(live) {
     if (mode === 'ride') cow.control(STEP, keys, !live);
-    else { cow.control(STEP, !live ? none : bolt && performance.now() < bolt.until ? cow.steerTo(bolt.x, bolt.z, 1.5) : calling > 0 ? cow.steerTo(foot.state.x, foot.state.z) : none, !live); if (live) foot.step(dragging ? dragKeys() : keys, camYaw, camPitch); }
+    else { cow.control(STEP, !live ? none : bolt && performance.now() < bolt.until ? cow.steerTo(bolt.x, bolt.z, 1.5) : calling > 0 ? cow.steerTo(foot.state.x, foot.state.z) : none, !live); if (live) foot.step(dragging ? dragKeys() : footKeys(), camYaw, camPitch); }
     updateStone(STEP);
     // Dragging: you go bent over at a crouch, and the body comes along behind; climbing or jumping lets go.
     if (dragging) { const p = foot.state; if (mode !== 'foot' || p.climbing || p.airborne || !dragging.ragdoll) dragging = null; else farmers.drag(dragging, p.x - p.forward.x * .95, p.z - p.forward.z * .95, STEP); }
@@ -580,7 +604,7 @@ async function boot() {
   addEventListener('resize', () => { renderer.setSize(container.clientWidth, container.clientHeight, false); camera.aspect = container.clientWidth / container.clientHeight; camera.updateProjectionMatrix(); });
   status.hidden = true; $('cn-gate').hidden = false;
   renderer.setAnimationLoop(frame);
-  window.cowNinja = { fight, assets, renderer, scene, camera, cow, foot, farmers, truck, herd, blood, world, physics, audio, keys, stats, use, whistle, look, option, command, TUNE, cycleView, blasts, police, response, throwStone, fx, searchlights, get dragging() { return dragging; }, provoke, raiseAlarm,
+  window.cowNinja = { fight, assets, renderer, scene, camera, cow, foot, farmers, truck, herd, blood, world, physics, audio, keys, stats, use, whistle, look, option, command, TUNE, cycleView, toggleCrouch, get crouchOn() { return crouchOn; }, blasts, police, response, throwStone, fx, searchlights, get dragging() { return dragging; }, provoke, raiseAlarm,
     get post() { return post; }, get mode() { return mode; }, set yaw(v) { camYaw = v; }, get yaw() { return camYaw; },
     state: () => ({ phase, mode, health, alarm, quality, takedowns, level: farmers.alertLevel(), option: option()?.kind || null, cow: { ...cow.state, forward: cow.state.forward.toArray(), velocity: cow.state.velocity.toArray() }, foot: { ...foot.state, forward: foot.state.forward.toArray(), velocity: foot.state.velocity.toArray() }, out: farmers.out(), flips: stats.flips, herdFree: herd.free, saved: herd.saved, response: { stage: response.stage, name: STAGES[response.stage], aggression: response.aggression }, shaken, thrown: stats.thrown, lost: herd.lost, herd: { status: herd.status, order: herd.order.type, free: herd.freeCount, penned: herd.penned, count: herd.count }, gates: world.gates.filter(g => g.open).map(g => g.id), blood: blood.inspect(), truckFlipped: truck.flipped }),
     begin: () => $('cn-enter').click(),
