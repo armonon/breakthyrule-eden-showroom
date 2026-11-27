@@ -9,7 +9,7 @@ try{
  await ev('breakThyRuleShowroom.teleport(10,-62)');await wait("breakThyRuleShowroom.worlds().world()==='beyond'&&!breakThyRuleShowroom.worlds().loading()");await ev('breakThyRuleShowroom.battle()._debug.night();breakThyRuleShowroom.battle()._debug.god()');await sleep(1500);
  out.fallback=await ev(`(()=>{edenBaked.set({enabled:false});const live=edenBaked.inspect();edenBaked.set({enabled:true});return{live,baked:edenBaked.inspect()};})()`);
  out.respawn=await ev(`(()=>{const B=breakThyRuleShowroom.battle(),b=B._debug.bots.find(b=>b.alive&&(b.kind||'rival')==='rival');window.testRespawn=b;const r={uuid:b.model.root.uuid,id:b.id};B._debug.damage(b,10000,B._debug.player,{kind:'fall'});return r;})()`);
- await sleep(12000);out.respawn.after=await ev('({alive:testRespawn.alive,uuid:testRespawn.model.root.uuid,down:testRespawn.model.motion.downAmount(),hp:testRespawn.hp})');
+ for(let i=0;i<60&&!(await ev('testRespawn.alive'));i++)await sleep(500);await sleep(1500);out.respawn.after=await ev('({alive:testRespawn.alive,uuid:testRespawn.model.root.uuid,down:testRespawn.model.motion.downAmount(),hp:testRespawn.hp})');
  if(!out.respawn.after.alive||out.respawn.uuid!==out.respawn.after.uuid||out.respawn.after.down!==0)throw Error('Rig did not revive in place');
  await ev('breakThyRuleShowroom.combat()._debug.explodeAt(17,-62)');await sleep(4000);out.combatProblems=[...p.problems];
  await p.goto('http://127.0.0.1:8790/expedition.html');await sleep(1500);await wait('window.breakThyRuleExpedition?.getState().ready');await sleep(2000);

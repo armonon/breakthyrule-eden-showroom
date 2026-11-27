@@ -67,7 +67,8 @@ try{
  const a=await rect('.tc-stick'),thumb=point(0,a.x,a.y);await send('touchStart',[thumb]);thumb.y-=a.h*.7;await send('touchMove',[thumb]);await sleep(4300);
  const run=await p.evaluate(`__run.on=false;({samples:__run,movement:${S}.getState().movement,touch:${S}.touch(),position:${S}.getState().position,canMove:${S}.battle().canMove()})`);console.log('Arena sprint',JSON.stringify(run));
  assert.ok(run.samples.peak>.5,'arena sprint builds momentum');
- assert.equal(await p.evaluate(`document.getElementById('momentum-hud').classList.contains('on')`),true);
+ // Beyond Eden shows a weapons-only HUD: the momentum meter stays hidden there (it still builds, checked above).
+ assert.equal(await p.evaluate(`getComputedStyle(document.getElementById('momentum-hud')||document.body).display==='none'||!document.getElementById('momentum-hud')`),true);
  await send('touchCancel',[]);await tap('.tc-leave');await wait(`${S}.touch()?.playing&&!${S}.battle().active()`,60000);
  assert.equal(await p.evaluate(`${S}._player().movement.momentum()`),0);assert.equal(await p.evaluate(`document.getElementById('momentum-hud').classList.contains('on')`),false);
  results.push({arenaMomentum:true,returnToEden:true,momentumClearsOnExit:true});

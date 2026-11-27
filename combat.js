@@ -1027,7 +1027,7 @@
   // x/y: the muzzle's angle off the look (radians); yaw/pitch: the look as last sent to the host (recoil included);
   // view/local: that angle as a rotation in the weapon camera's space and in the main camera's.
   const FREE_ZONE={x:.1,y:.075,soft:.3};
-  const TURN_SHARE=.8; // how much of a quick turn goes straight to the view (the rest moves the gun in the frame first) // smaller and quicker to hand over to the view, so a full turn takes no extra mouse travel
+  const TURN_SHARE=1; // how much of a quick turn goes straight to the view (the rest moves the gun in the frame first)
   const free={on:false,x:0,y:0,yaw:0,pitch:0,view:new T.Quaternion(),local:new T.Quaternion(),dir:new T.Vector3(),screen:{x:0,y:0}},freeTmp=new T.Vector3(),freeInv=new T.Quaternion(),FREE_FWD=new T.Vector3(0,0,-1);
   const freeZone=()=>{const k=1-clamp(adsBlend/.8,0,1);return k*k*(3-2*k);};
   // Whatever lies outside the zone (it shrinks to nothing down the sights) is handed to the view, so the muzzle keeps its direction.
@@ -1041,7 +1041,7 @@
    const k=freeZone(),lx=FREE_ZONE.x*k||1e-6,ly=FREE_ZONE.y*k||1e-6,r=Math.hypot(free.x/lx,free.y/ly),outward=dx*free.x/(lx*lx)+dy*free.y/(ly*ly)>0;
    let share=0;if(outward){const t=clamp((r-FREE_ZONE.soft)/(1-FREE_ZONE.soft),0,1);share=t*t*(3-2*t);}
    // A quick turn goes straight to the view, as it did before free aim: only slow, small movements move the gun in the frame.
-   {const fast=clamp((Math.hypot(dx,dy)-.004)/.012,0,1);share=Math.max(share,TURN_SHARE*fast*fast*(3-2*fast));}
+   {const fast=clamp((Math.hypot(dx,dy)-.002)/.006,0,1);share=Math.max(share,TURN_SHARE*fast*fast*(3-2*fast));}
    yaw+=dx*share;pitch=clamp(pitch+dy*share,-1.35,1.35);free.x+=dx*(1-share);free.y+=dy*(1-share);freeClamp();
   }
   function freeUpdate(dt,sprinting){
@@ -1143,7 +1143,7 @@
   // Aim assist: a wider visible-target cone, stable target preference, slower
   // look over targets, and bounded tracking while firing, aiming or moving.
   const ASSIST_BASE={cone:.085,coneAds:.055,magnet:.9,frictionCone:.13,friction:.46,pull:3.2,range:90},ASSIST={...ASSIST_BASE};let assistStrength=1;
-  function configureAssist(){const selected=window.edenSettings?.get('aimAssist')||'high';assistStrength=({off:0,low:.5,medium:1,high:1.35})[selected]??1;for(const k of ['cone','coneAds','frictionCone'])ASSIST[k]=ASSIST_BASE[k]*Math.sqrt(assistStrength);ASSIST.magnet=Math.min(.97,ASSIST_BASE.magnet*assistStrength);ASSIST.friction=Math.max(.28,1-(1-ASSIST_BASE.friction)*assistStrength);ASSIST.pull=ASSIST_BASE.pull*assistStrength;}
+  function configureAssist(){const selected=window.edenSettings?.get('aimAssist')||'high';assistStrength=({off:0,low:.5,medium:1,high:1.35})[selected]??1;for(const k of ['cone','coneAds','frictionCone'])ASSIST[k]=ASSIST_BASE[k]*Math.sqrt(assistStrength);ASSIST.magnet=Math.min(.97,ASSIST_BASE.magnet*assistStrength);ASSIST.friction=Math.max(.6,1-(1-ASSIST_BASE.friction)*assistStrength*.6);ASSIST.pull=ASSIST_BASE.pull*assistStrength;}
   configureAssist();window.edenSettings?.on(k=>{if(!k||k==='aimAssist')configureAssist();});
   const assist={target:null,angle:Infinity,point:new T.Vector3(),head:false,dist:0,friction:1},asEye=new T.Vector3(),asFwd=new T.Vector3(),asTo=new T.Vector3();
   // Line of sight to an assist point, cached for a tenth of a second while neither you nor the point move much:
@@ -1477,7 +1477,7 @@
   /* ------------------------------------------------------------ input */
   function requestLock(){if(!armed)return;sfx.init();const el=renderer.domElement,fallback=()=>{try{el.requestPointerLock?.()?.catch?.(()=>{});}catch{}};try{const p=el.requestPointerLock?.({unadjustedMovement:true});p?.catch?.(fallback);}catch{fallback();}}
   function onLockChange(){locked=document.pointerLockElement===renderer.domElement;if(!locked)releaseInputs();hud?.update();requestFrame();}
-  function onMouseMove(e){if(!locked||!armed||!o.canAct())return;awayFrom(e.movementX);const z=zoomOf(current)||1,sens=.0021*lerp(1,Math.min(.7,1.35/z),adsBlend)*lookScale()*lerp(assist.friction,1,Math.min(1,Math.hypot(e.movementX,e.movementY)/20));freeLook(e.movementX*sens,-e.movementY*sens*ySign());const heavy=1+(WEIGHT[current?.id]||0)*1.6;anim.swayX.kick(-e.movementX*.012*heavy*(1-adsBlend*.6));anim.swayY.kick(e.movementY*.012*heavy*(1-adsBlend*.6));requestFrame();}
+  function onMouseMove(e){if(!locked||!armed||!o.canAct())return;awayFrom(e.movementX);const z=zoomOf(current)||1,sens=.0027*lerp(1,Math.min(.7,1.35/z),adsBlend)*lookScale()*lerp(assist.friction,1,Math.min(1,Math.hypot(e.movementX,e.movementY)/8));freeLook(e.movementX*sens,-e.movementY*sens*ySign());const heavy=1+(WEIGHT[current?.id]||0)*1.6;anim.swayX.kick(-e.movementX*.012*heavy*(1-adsBlend*.6));anim.swayY.kick(e.movementY*.012*heavy*(1-adsBlend*.6));requestFrame();}
   function inputKey(e){return root.edenControls?.key(e)??e.key?.toLowerCase()??'';}
   function controlHint(action,fallback){return root.edenControls?.hint(action)||fallback;}
   function inputBlocked(e){return (window.edenControls?.blockedModifiers(e)??(e.ctrlKey||e.metaKey||e.altKey||e.isComposing))||e.target?.isContentEditable||/^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(e.target?.tagName)||(window.edenControls?.modalOpen?.()??!!document.querySelector('dialog[open]'));}
@@ -1925,7 +1925,7 @@
     // A swipe away from the assisted target hands control back to the thumb (see the pull above).
     awayFrom(dx);
     // Friction slows fine aiming over a target; a quick swipe turns at full speed.
-    const friction=lerp(assist.friction,1,Math.min(1,Math.hypot(dx,dy)/14)),z=zoomOf(current)||1,sens=.0042*lerp(1,Math.min(.7,1.35/z),adsBlend)*lookScale()*friction;freeLook(dx*sens,-dy*sens*ySign());anim.swayX.kick(-dx*.02);anim.swayY.kick(dy*.02);requestFrame();},
+    const friction=lerp(assist.friction,1,Math.min(1,Math.hypot(dx,dy)/8)),z=zoomOf(current)||1,sens=.0052*lerp(1,Math.min(.7,1.35/z),adsBlend)*lookScale()*friction;freeLook(dx*sens,-dy*sens*ySign());anim.swayX.kick(-dx*.02);anim.swayY.kick(dy*.02);requestFrame();},
    touchFire(on){if(!armed){if(on)raiseFists();return;}buttons.left=!!on;if(on)pendingFire=true;requestFrame();},
    touchMelee(){if(!armed)return;if(current?.id==='c4')detonate();else bash();},
    // Phones: the HIT button follows the keyboard (tap to bash, hold to slam); BLOCK raises the guard while held.
