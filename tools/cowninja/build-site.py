@@ -153,6 +153,7 @@ gen_textures()
 material('hay', 'hay', 1.4, normal=1.6)
 material('bale', 'bale', 1.1, normal=1.8)
 material('twine', None, color=(.62, .2, .04), rough=.55)
+material('plinth', 'concrete_wall_008', 1.5, color=(.62, .61, .58))
 # A hay bale: rounded edges, a little uneven, two bands of orange baler twine round its short way.
 def bale(x0, y0, z0, x1, y1, z1, solid=True, group='kit'):
     rr = random.Random(int(x0 * 131 + z0 * 71 + y0 * 37))
@@ -183,7 +184,8 @@ def rbale(a, b, r, group='kit'):
     for k in range(len(rv) - 1):
         for i in range(seg): j = (i + 1) % seg; bm.faces.new((rv[k][i], rv[k][j], rv[k + 1][j], rv[k + 1][i]))
     bm.faces.new(rv[0][::-1]); bm.faces.new(rv[-1])
-    emit('round-bale', bm, 'bale', group)
+    o = emit('round-bale', bm, 'bale', group)
+    for f in o.data.polygons: f.use_smooth = len(f.vertices) == 4   # smooth round the drum, flat ends
 # Loose straw: thin strands lying on the ground (or on a pile, `top(x, z)` its height), pointing every way.
 def straw(cx, cz, rx, rz, n, seed, top=None, y0=.02):
     rr = random.Random(seed); bm = bmesh.new()
@@ -1059,8 +1061,8 @@ def spans(a0, a1, holes):
     return out
 def plinth(axis, at, sign, a0, a1, holes, h=.62, t=.06):
     for (p0, p1) in spans(a0, a1, holes):
-        if axis == 'x': box('plinth', (p0, 0, min(at, at + sign * t)), (p1, h, max(at, at + sign * t)), 'concrete', group='kit', solid=False)
-        else: box('plinth', (min(at, at + sign * t), 0, p0), (max(at, at + sign * t), h, p1), 'concrete', group='kit', solid=False)
+        if axis == 'x': box('plinth', (p0, 0, min(at, at + sign * t)), (p1, h, max(at, at + sign * t)), 'plinth', group='kit', solid=False)
+        else: box('plinth', (min(at, at + sign * t), 0, p0), (max(at, at + sign * t), h, p1), 'plinth', group='kit', solid=False)
 OUT_N, OUT_S, OUT_W, OUT_E = BZ0 - T / 2, BZ1 + T / 2, BX0 - T / 2, BX1 + T / 2
 plinth('x', OUT_N, -1, BX0 - .2, BX1 + .2, [(-4, 4)]); plinth('x', OUT_S, 1, BX0 - .2, BX1 + .2, [(-21, -17), (12, 13.6)])
 plinth('z', OUT_W, -1, BZ0, BZ1, [(6, 26), (32.5, 33.8)]); plinth('z', OUT_E, 1, BZ0, BZ1, [(15, 16.8), (20, 21.3), (30, 32.6)])
@@ -1146,7 +1148,8 @@ for hx, hz, hr in HAY:
     for v in bm.verts:
         d = v.co.normalized(); n = 1 + .11 * math.sin(d.x * 5 + ph[0]) * math.sin(d.y * 4 + ph[1]) + .07 * math.sin(d.x * 11 + d.y * 9 + ph[2]) + .045 * math.sin(d.y * 19 + d.x * 7 + ph[3]) + .03 * math.sin(d.x * 31 + ph[4])
         v.co = Vector((hx + v.co.x * hr * n, -(hz + v.co.y * hr * n), max(0, v.co.z * .75 + .12) * 1.1 * n))
-    emit('haypile', bm, 'hay', 'kit')
+    o = emit('haypile', bm, 'hay', 'kit')
+    for f in o.data.polygons: f.use_smooth = True   # a soft heap, not facets
     dome = lambda x, z, hx=hx, hz=hz, hr=hr: max(0, 1 - (math.hypot(x - hx, z - hz) / hr) ** 2) ** .5 * .96
     straw(hx, hz, hr * .9, hr * .9, int(140 * hr), int(hx * 13 + hz), top=dome); straw(hx, hz, hr * 1.6, hr * 1.6, int(90 * hr), int(hx * 5 + hz * 3))
 
@@ -1414,11 +1417,7 @@ OBJS['arch'] = join_by_material(OBJS['arch'], 'arch')
 OBJS['kit'] = join_by_material(OBJS['kit'], 'kit')
 if BAKE: bake()
 for o in OBJS['arch']: o['lightmap'] = 1
-for o in bpy.data.objects:
-    if o.type == 'MESH':
-        for p in o.data.polygons:
-            if o.name.startswith('terrain') or 'half' in o.name: continue
-            p.use_smooth = False
+# Faces are flat unless something asked for smooth (the terrain, hay piles, round bales): keep what was set.
 bpy.ops.object.select_all(action='DESELECT')
 bpy.ops.export_scene.gltf(filepath=f'{OUT}/site.glb', export_format='GLB', export_image_format='WEBP', export_image_quality=80, export_extras=True,
                           export_apply=True, export_animations=False, export_yup=True, export_lights=False, export_cameras=False)
