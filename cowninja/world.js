@@ -270,6 +270,7 @@ export function createWorld({ scene, physics, assets, shadows = 7, quality = 0 }
     groundMask, fence: groundFence, ceilingsList: data.ceilings || [], root, mat, blocked, walk, update, gateBroken, openGate, gates, gateAt, gateNear, leverNear, onGate: fn => gateListeners.push(fn), pens: P.pens || [], solids, solidAt, sightBlocked, ceilingAt, indoors, walls2d, dynamic, loose, looseModel, place,
     grips: data.grips || [], hay: data.hay || [], roofSteps: data.roofSteps || [],
     inHay: (x, z) => (data.hay || []).some(h => Math.hypot(x - h[0], z - h[1]) < h[2] * .85),
+    bushes: [], inBush(x, z) { return this.bushes.find(b => Math.hypot(x - b.x, z - b.z) < b.r * .85) || null; },
     inCover: (x, z) => (P.cover || []).some(c => x > c[0] && x < c[1] && z > c[2] && z < c[3]),
     gatePost: P.lever, spawn: P.spawn, cowSpawn: P.cowSpawn, exit: P.exit, gateZ: P.gateZ, bounds: P.bounds, pen: P.pen, escape: P.escape, truckStart: P.truckStart, patrols: P.patrols,
   };

@@ -26,6 +26,7 @@ export function createMinimap({ canvas, world, herd, farmers, scale = 2.2, reach
     for (const g of world.gates) { const [a, b] = at(g.x, g.z); ctx.fillStyle = g.open ? 'rgba(109,255,160,.6)' : g.kind === 'main' ? '#ff6a30' : '#ff3a20';
       if (g.axis === 'x') ctx.fillRect(a - g.half, b - .5 * m * 2, g.half * 2, m * 3); else ctx.fillRect(a - m * 1.5, b - g.half, m * 3, g.half * 2);
       if (!g.open) { const [lx, lz] = at(g.lever.x, g.lever.z); dot(lx, lz, m * 3.2, '#ff3a20'); } }
+    for (const b of world.bushes || []) { const [a, bz] = at(b.x, b.z); dot(a, bz, b.r * .8, 'rgba(70,110,60,.55)'); }
     for (const c of herd.cows) { if (c.state === 'saved') continue; const [a, b] = at(c.p.x, c.p.z); if (Math.abs(a) > reach * 1.5 || Math.abs(b) > reach * 1.5) continue;
       dot(a, b, m * (c.state === 'free' ? 2.4 : 1.6), c.state === 'free' ? '#f2efe8' : c.state === 'lost' ? '#7a1a12' : 'rgba(200,200,200,.45)'); }
     for (const f of farmers.farmers) { if (f.ragdoll || f.hidden) continue; const [a, b] = at(f.p.x, f.p.z); const d = Math.hypot(a, b); if (d > reach * 1.4) continue;

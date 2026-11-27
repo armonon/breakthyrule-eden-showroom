@@ -18,6 +18,7 @@ import { createMinimap } from '/cowninja/minimap.js';
 import { createFx } from '/cowninja/fx.js';
 import { createSearchlights } from '/cowninja/searchlights.js';
 import { createGrass } from '/cowninja/grass.js';
+import { createBushes } from '/cowninja/bushes.js';
 import { createBlood } from '/cowninja/blood.js';
 import { createGrimPost } from '/cowninja/post.js';
 import { createFoot } from '/cowninja/foot.js';
@@ -186,6 +187,8 @@ async function boot() {
     else { const b = new THREE.Mesh(new THREE.BoxGeometry(1.05, 1.0, 1.3), new THREE.MeshStandardMaterial({ color: 0x9a7448, roughness: .9 })); b.position.y = .5; b.castShadow = true; g.add(b); }
     g.position.set(x, y, z); g.rotation.y = yaw; scene.add(g); return g; });
   let boxed = null;
+  // Bushes to hide in (config.js, bushes.js).
+  const bushes = createBushes({ scene, spots: TUNE.bushes.spots, radius: TUNE.bushes.radius }); world.bushes = bushes.list;
   const boxNear = (p) => boxes.find(b => b !== boxed && Math.hypot(b.position.x - p.x, b.position.z - p.z) < 1.4 && Math.abs(b.position.y - p.y) < .7);
   function boxKeys() { held.clear(); for (const k of keys) if (k !== 'shift' && k !== 'space') held.add(k); held.add('crouch'); return held; }
   const held = new Set();
@@ -560,6 +563,9 @@ async function boot() {
       if (near < 18 && Math.random() < dt * .45) fx.breath(c.p.x + Math.sin(c.yaw) * 1.25, 1.05, c.p.z - Math.cos(c.yaw) * 1.25, Math.sin(c.yaw), -Math.cos(c.yaw)); }
     if (mode === 'ride' && Math.random() < dt * .4) fx.breath(cow.state.x + cow.state.forward.x * 1.3, 1.05, cow.state.z + cow.state.forward.z * 1.3, cow.state.forward.x, cow.state.forward.z);
     fx.update(dt, time, a); grass.update(camera.position); searchlights.update(dt, time, { active: alarm && live, actor: a, onFoot: mode === 'foot' });
+    // Pushing through a bush shakes it.
+    if (mode === 'foot') { const b = foot.state.inBush ? world.inBush(foot.state.x, foot.state.z) : null; if (b && foot.state.speed > .3) b.shake = 1; }
+    bushes.update(dt, time);
     awareness.update({ actor: a, crouched: mode === 'foot' && foot.state.crouched, width: container.clientWidth, height: container.clientHeight, time, live });
     // Air takedown: come down on a farmer from above and he is out, silently.
     if (live && mode === 'foot' && foot.state.airborne && foot.state.velocity.y < -2.5 && foot.state.y < 2.8) {
@@ -609,7 +615,7 @@ async function boot() {
       hud.health.style.transform = `scaleX(${(health / 100).toFixed(2)})`;
       hud.goal.textContent = phase === 'intro' ? '' : (shaken ? 'SHAKEN · ' : '') + objective(a).text;
       hud.count.textContent = `HERD ${herd.freeCount} · ${herd.status.toUpperCase()} · ${farmers.out()} DOWN · HEAT ${response.aggression}`;
-      hud.seen.style.transform = `scaleX(${level.toFixed(2)})`; hud.stealth.textContent = mode === 'foot' && foot.state.hidden ? (boxed ? 'IN A BOX' : world.inCover?.(foot.state.x, foot.state.z) ? 'IN THE GRASS' : 'IN THE HAY') : response.stage >= 3 ? STAGES[response.stage] : alarm ? 'ALARM' : level >= 1 ? 'SPOTTED' : level > .3 ? 'SUSPICIOUS' : 'HIDDEN'; hud.stealth.parentElement.dataset.state = alarm || level >= 1 ? 'hot' : level > .3 ? 'warm' : 'cold';
+      hud.seen.style.transform = `scaleX(${level.toFixed(2)})`; hud.stealth.textContent = mode === 'foot' && foot.state.hidden ? (boxed ? 'IN A BOX' : foot.state.inBush ? 'IN A BUSH' : world.inCover?.(foot.state.x, foot.state.z) ? 'IN THE GRASS' : 'IN THE HAY') : response.stage >= 3 ? STAGES[response.stage] : alarm ? 'ALARM' : level >= 1 ? 'SPOTTED' : level > .3 ? 'SUSPICIOUS' : 'HIDDEN'; hud.stealth.parentElement.dataset.state = alarm || level >= 1 ? 'hot' : level > .3 ? 'warm' : 'cold';
       // With nothing to use, the prompt forecasts a charge at the gate you are aiming at, before you order it.
       let forecast = '';
       if (!o && live && herd.freeCount) { ray.setFromCamera(pointer, camera); if (ray.ray.intersectPlane(ground, mark)) { const g = world.gateNear(mark.x, mark.z, TUNE.herd.commandGateRadius); if (g) { const f = herd.assess(g); forecast = `${touch.active ? 'TAP' : 'F'} · CHARGE · ${f.verdict}`; } } }

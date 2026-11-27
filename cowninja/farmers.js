@@ -130,7 +130,8 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
       // In a cardboard box: still, it is just a box; on the move, only someone close notices that boxes do not walk.
       const boxMove = c.boxed && !c.hidden ? TUNE.boxes.sightMoving : 1;
       const range = (foot ? SEE * (c.crouched ? .5 : .8) : SEE) * busy * boxMove;
-      const sees = live && !c.hidden && dist < range && facing > SEE_COS && !(foot && world.sightBlocked?.(f.p.x, f.p.z, c.x, c.z));
+      // Hidden (hay, a bush, a box, long grass) until someone walks right into you.
+      const sees = live && (!c.hidden || dist < 1.3) && dist < range && facing > SEE_COS && !(foot && world.sightBlocked?.(f.p.x, f.p.z, c.x, c.z));
       const hears = live && !c.hidden && (foot ? dist < HEAR * 1.25 * (c.noise || 0) : dist < HEAR * (c.charging || c.skid > .4 ? 1.6 : Math.abs(c.speed) > 6 ? 1 : .45));
       if (sees || hears) { f.alert = Math.min(1, f.alert + dt * (sees ? (foot ? (c.crouched ? .55 : 1) * (1.7 - dist / range) * (c.boxed ? TUNE.boxes.alertMoving : 1) : 1.8) : .9)); f.seenAt = time; f.heard = { x: c.x, z: c.z, at: time }; } else if (time - f.seenAt > (c.hidden ? 1.5 : 4)) f.alert = Math.max(0, f.alert - dt * (c.hidden ? .6 : .3));
       // A body on the ground, seen: whoever finds it knows something is wrong (a quiet takedown is only quiet until then).
