@@ -209,7 +209,9 @@ export function createFarmers({ scene, physics, world, cow, blood, onEvent, targ
       // Pose: the character animates itself from how fast its root is moving; the fork comes up in a chase.
       if (live && f.state === 'chase' && dist < 1.9 && f.strike > 1.25) f.person?.motion.play?.('swingA', { fade: .06, speed: 1.5, mask: 'upper' });
       f.group.position.set(f.p.x, 0, f.p.z); f.group.rotation.y = -f.yaw;
-      if (f.person) { if (f.shadowed !== f.person.skeleton && f.person.skeleton) { f.shadowed = f.person.skeleton; f.person.root.traverse(o => { if (o.isSkinnedMesh) o.castShadow = true; }); } f.person.motion.update(dt); }
+      // Far from the action, a person's pose is worked out every third frame (with the time saved up), not every frame.
+      if (f.person) { if (f.shadowed !== f.person.skeleton && f.person.skeleton) { f.shadowed = f.person.skeleton; f.person.root.traverse(o => { if (o.isSkinnedMesh) o.castShadow = true; }); }
+        f.lodDt = (f.lodDt || 0) + dt; f.lodN = (f.lodN || 0) + 1; if (dist < 45 || f.lodN % 3 === 0) { f.person.motion.update(f.lodDt); f.lodDt = 0; } }
       f.fork.rotation.x = f.state === 'chase' ? -.1 : .9; f.fork.position.z = -.2 - (f.strike > 1 ? (f.strike - 1) * 2.2 : 0);
     }
   }

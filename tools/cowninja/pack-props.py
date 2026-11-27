@@ -29,7 +29,7 @@ DETAIL = {'overhead_crane': 18000, 'modular_fire_escape': 14000, 'exterior_airco
           'searsia_lucida': 2500, 'shrub_03': 2400, 'pine_roots': 2500, 'root_cluster_01': 2500, 'rock_moss_set_02': 3000, 'stone_01': 800,
           'rock_07': 1500, 'moss_01': 1200, 'tree_small_02': 6000, 'bark_debris_01': 1200, 'periwinkle_plant': 1000, 'pine_sapling_small': 2500}
 # Foliage budgets (more for the few big plants placed sparingly).
-FOLIAGE = {'shrub_02': 7000, 'shrub_04': 2500, 'wild_rooibos_bush': 6000, 'searsia_lucida': 9000, 'tree_small_02': 18000, 'fir_sapling': 6000,
+FOLIAGE = {'shrub_02': 7000, 'shrub_04': 1000, 'wild_rooibos_bush': 6000, 'searsia_lucida': 9000, 'tree_small_02': 18000, 'fir_sapling': 6000,
            'pine_sapling_small': 6000, 'fern_02': 3000, 'shrub_03': 3000, 'nettle_plant': 1600, 'weed_plant_02': 1600, 'grass_medium_01': 1200,
            'grass_medium_02': 1200, 'grass_bermuda_01': 1500, 'dandelion_01': 1400, 'celandine_01': 1400, 'shrub_sorrel_01': 1600}
 def thin_foliage(name, budget):
@@ -138,8 +138,21 @@ def export(name, limit=14000):
     meshes = [o for o in bpy.data.objects if o.type == 'MESH']
     tris = sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in meshes)
     if tris > limit:
+        import bmesh
         for o in meshes:
+            # Weld split vertices first: the collapse cannot merge edges across them and stalls far above the target.
+            if o.data.users > 1: o.data = o.data.copy()
+            bm = bmesh.new(); bm.from_mesh(o.data); bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-4); bm.to_mesh(o.data); bm.free()
             m = o.modifiers.new('lighter', 'DECIMATE'); m.ratio = limit / tris
+    # Apply the reductions here: the glTF exporter quietly skips modifiers on meshes with shape keys (the boulder had
+    # them, and shipped at 26,000 triangles).
+    for o in [o for o in bpy.data.objects if o.type == 'MESH' and o.modifiers]:
+        if o.data.shape_keys: o.shape_key_clear()
+        if o.data.users > 1: o.data = o.data.copy()
+        bpy.ops.object.select_all(action='DESELECT'); o.select_set(True); bpy.context.view_layer.objects.active = o
+        for m in list(o.modifiers):
+            try: bpy.ops.object.modifier_apply(modifier=m.name)
+            except Exception as error: print('modifier', o.name, error)
     if any(k in name for k in PLANTS):
         # Plants: textures to 512 px, and single-channel masks copied into RGBA so they can be written as WebP.
         for img in list(bpy.data.images):

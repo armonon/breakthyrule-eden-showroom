@@ -10,7 +10,7 @@ export function createSearchlights({ scene, world, farmers, onCaught }) {
     { at: [-12.2, 4.4, -56.6], sweep: [[-30, -50], [30, -50], [20, -20], [-20, -20]] },
   ];
   const lights = RIGS.map(r => {
-    const light = new THREE.SpotLight(0xe8f0ff, 0, 90, .16, .45, 1.2); light.position.set(...r.at); scene.add(light, light.target);
+    const light = new THREE.SpotLight(0xe8f0ff, 0, 90, .16, .45, 1.2); light.position.set(...r.at); light.visible = false; scene.add(light, light.target);
     const beam = new THREE.Mesh(new THREE.CylinderGeometry(.25, 3.2, 1, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xc8d8ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
     beam.renderOrder = 3; scene.add(beam);
     const lamp = new THREE.Mesh(new THREE.CylinderGeometry(.35, .45, .5, 12), new THREE.MeshStandardMaterial({ color: 0x22262a, metalness: .7, roughness: .4, emissive: 0x000000 })); lamp.position.set(...r.at); scene.add(lamp);
@@ -21,6 +21,7 @@ export function createSearchlights({ scene, world, farmers, onCaught }) {
   function update(dt, time, { active, actor, onFoot }) {
     on += ((active ? 1 : 0) - on) * Math.min(1, dt * 1.5);
     for (const s of lights) {
+      s.light.visible = on > .02;   // not in the scene's light list until the alarm (each light costs every pixel)
       s.light.intensity = on * 5200; s.beam.material.opacity = on * .05; s.lamp.material.emissive.setScalar(on * .9); s.beam.visible = on > .02;
       if (on < .02) continue;
       // Sweep along the loop, or hold on the player when caught.

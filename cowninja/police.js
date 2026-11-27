@@ -14,7 +14,7 @@ export function createPolice({ scene, physics, assets, farmers, herd, cow, audio
     if (model) { model.position.y = -REST; model.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); o.material.color?.multiply(new THREE.Color(kind === 'heavy' ? 0x4a5246 : 0x38508a)); o.castShadow = true; } }); group.add(model); }
     else { const part = (x, y, z, sx, sy, sz) => { const m = new THREE.Mesh(cube, paint); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; group.add(m); }; part(0, -.1, 0, 1.96, .7, 4.1); part(0, .5, -.3, 1.8, .62, 2.0); }
     const bar = [0x2050ff, 0xff2020].map((c, i) => { const m = new THREE.Mesh(cube, new THREE.MeshBasicMaterial({ color: c })); m.position.set(i ? .35 : -.35, .95, -.4); m.scale.set(.5, .14, .22); group.add(m); return m; });
-    const light = new THREE.PointLight(0x3060ff, 0, 30, 1.7); light.position.set(0, 1.4, -.4); group.add(light);
+    const light = { color: new THREE.Color(), intensity: 0 };   // the bar glows; the sweeping beacon below is the car's one real light
     // A turning beacon: a spot that sweeps round the car, washing the yard in red and blue.
     const sweep = new THREE.SpotLight(0x3060ff, 0, 45, .5, .6, 1.4); sweep.position.set(0, 1.5, -.4); group.add(sweep, sweep.target);
     scene.add(group); return { group, bar, light, sweep };

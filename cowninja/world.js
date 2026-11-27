@@ -85,6 +85,21 @@ export function createWorld({ scene, physics, assets, shadows = 7, quality = 0 }
   // Many copies of one model (or one of its parts) in a single draw call per mesh.
   // Copies are split into 48 m tiles so each tile is culled on its own (one batch spanning the whole map would be
   // drawn in full for every camera and every shadow).
+  // The countryside scatter: one instanced mesh per piece for the whole map, refilled with only the instances within
+  // reach of the camera whenever it has moved a little (small plants close, shrubs further, trees far).
+  const scatterSets = []; let scatterAt = { x: 1e9, z: 1e9 };
+  const REACH = name => /tree|fir|boulder|trunk|stump/.test(name) ? 450 : /shrub|searsia|rooibos|sapling|rock_moss|root|pine_roots/.test(name) ? 160 : 75;
+  function scattered(node, placements, reach) {
+    if (!node || !placements.length) return; node.updateMatrixWorld(true);
+    node.traverse(m => { if (!m.isMesh) return;
+      const mats = placements.map(p => new THREE.Matrix4().multiplyMatrices(p, m.matrixWorld)), at = placements.map(p => [p.elements[12], p.elements[14]]);
+      const im = new THREE.InstancedMesh(m.geometry, m.material, mats.length); im.count = 0; im.frustumCulled = false; im.castShadow = false; im.receiveShadow = true; root.add(im);
+      scatterSets.push({ im, mats, at, r2: reach * reach }); });
+  }
+  function updateScatter(focus) {
+    if (Math.hypot(focus.x - scatterAt.x, focus.z - scatterAt.z) < 12) return; scatterAt = { x: focus.x, z: focus.z };
+    for (const s of scatterSets) { let n = 0; for (let i = 0; i < s.mats.length; i++) { const dx = s.at[i][0] - focus.x, dz = s.at[i][1] - focus.z; if (dx * dx + dz * dz < s.r2) s.im.setMatrixAt(n++, s.mats[i]); } s.im.count = n; s.im.instanceMatrix.needsUpdate = true; }
+  }
   function instanced(node, placements, { cast = true, tile = 48 } = {}) {
     if (!node || !placements.length) return;
     node.updateMatrixWorld(true);
@@ -102,7 +117,16 @@ export function createWorld({ scene, physics, assets, shadows = 7, quality = 0 }
   // The named variants inside a model (Poly Haven packs several clumps or shrubs in one file).
   const variants = name => { const m = assets.models.get(name); if (!m) return []; const out = []; m.traverse(o => { if (o !== m && o.name && (o.isMesh || o.children.some(k => k.isMesh)) && (o.parent === m || o.parent?.parent === m && !o.parent.isMesh && o.parent.children.length === 1)) out.push(o.name); }); return out.length > 1 ? out : []; };
 
-  for (const [name, x, y, z, yaw, scale, part] of data.props) place(name, x, y, z, { yaw, scale, part });
+  // Props: a model placed more than once becomes one instanced mesh per piece (one draw instead of one per copy).
+  { const groups = new Map();
+    for (const pr of data.props) { const [name, , , , , , part] = pr; if (name.startsWith('modly:')) { place(name, pr[1], pr[2], pr[3], { yaw: pr[4], scale: pr[5], part }); continue; } const k = name + '|' + (part || ''); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(pr); }
+    const q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
+    for (const list of groups.values()) {
+      const [name, , , , , , part] = list[0];
+      if (list.length < 2) { place(name, list[0][1], list[0][2], list[0][3], { yaw: list[0][4], scale: list[0][5], part }); continue; }
+      const node = assets.clone(name, part); if (!node) continue;
+      instanced(node, list.map(([, x, y, z, yaw, sc]) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), q.setFromAxisAngle(up, yaw).clone(), new THREE.Vector3(sc, sc, sc))), { cast: true, tile: 1e6 });
+    } }
   for (const [name, x, z, yaw, scale, mass, part, y] of data.loose) looseModel(name, x, z, { yaw, scale, mass, part, y });
 
   // Countryside: each model's variants share the copies out; grass and weeds cast no shadow.
@@ -114,7 +138,7 @@ export function createWorld({ scene, physics, assets, shadows = 7, quality = 0 }
     for (const [v, ps] of groups) {
       const node = assets.clone(name, v); if (!node) continue;
       node.position.set(0, 0, 0);
-      instanced(node, ps.map(([x, y, z, yaw, s]) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(s, s, s))), { cast: false });   // plants: no shadow casting (they are outdoors at night; casting would redraw them per shadow)
+      scattered(node, ps.map(([x, y, z, yaw, s]) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(s, s, s))), REACH(name));   // plants: no shadow casting
     }
   }
 
@@ -151,7 +175,7 @@ export function createWorld({ scene, physics, assets, shadows = 7, quality = 0 }
     part(rod, dark, 0, .36, 0, .045, .72, .045, arm); part(rod, grip, 0, .74, 0, .09, .2, .09, arm);
     const sign = part(cube, new THREE.MeshBasicMaterial({ color: 0xff3020 }), 0, 2.25, 0, .16, .16, .16);
     // Only the hall's and the main gate's levers carry a real light (lights are costly); the rest glow.
-    let light = null; if (big) { light = new THREE.PointLight(0xff3a20, 14, 9, 1.6); light.position.set(0, 2.2, 0); lever.add(light); }
+    const light = null;   // the sign glows by itself; real lights come from the lamp pool
     physics.staticBox([at.x, base + .55, at.z], [.14, .55, .12]);
     return { group: lever, arm, sign, light, pulled: 0 };
   }
@@ -211,17 +235,27 @@ export function createWorld({ scene, physics, assets, shadows = 7, quality = 0 }
   const glow = new THREE.BoxGeometry(1, 1, 1);
   // Ceiling tubes indoors are spotlights pointing down that cast shadows (rails, chains, carcasses, people throw real
   // shadows on the floor); the rest are point lights. `shadows` is how many may cast (0 on slow devices).
-  let shadowBudget = shadows;
-  for (const L of data.lights) {
-    const tube = L.b && L.b[0] > 1 && indoors(L.p[0], L.p[2]);
-    const l = tube ? new THREE.SpotLight(L.c, L.i * 1.6, L.d * 1.3, 1.25, .85, 1.6) : new THREE.PointLight(L.c, L.i, L.d, 1.8);
-    l.position.set(...L.p); scene.add(l);
-    if (tube) { l.target.position.set(L.p[0], 0, L.p[2]); scene.add(l.target);
-      if (shadowBudget-- > 0) { l.castShadow = true; l.shadow.mapSize.set(1024, 1024); l.shadow.bias = -.0006; l.shadow.normalBias = .03; l.shadow.camera.near = .2; l.shadow.camera.far = L.d * 1.3; } }
+  // Lamps: every lamp keeps its glowing fitting, but only a fixed pool of real lights is ever live: the nearest
+  // lamps to the action borrow them (a few times a second). The baked light map already carries the lamps' light
+  // on the architecture; the pool lights people, cows and anything that moves, and gives the speculars. A fixed
+  // count means no shader rebuilds as you move. Indoor tubes that cast shadows share a smaller pool of spotlights.
+  const POOL = quality >= 3 ? 4 : quality >= 2 ? 6 : 8, SPOTS = Math.min(shadows, quality >= 3 ? 0 : quality >= 2 ? 1 : 2);
+  const lamps = data.lights.map(L => {
     const bulb = new THREE.Mesh(glow, new THREE.MeshBasicMaterial({ color: L.c })); bulb.position.set(...L.p); bulb.scale.set(...(L.b || [.28, .08, .28])); root.add(bulb);
-    lights.push({ light: l, bulb, base: L.i, flicker: L.f, phase: Math.random() * 10 });
+    return { L, bulb, base: L.i, flicker: L.f, phase: Math.random() * 10, tube: !!(L.b && L.b[0] > 1 && indoors(L.p[0], L.p[2])), drop: 1 };
+  });
+  const pool = Array.from({ length: POOL }, () => { const l = new THREE.PointLight(0xffffff, 0, 10, 1.8); scene.add(l); return { light: l, lamp: null }; });
+  const spotPool = Array.from({ length: SPOTS }, () => { const l = new THREE.SpotLight(0xffffff, 0, 10, 1.25, .85, 1.6); l.castShadow = true; l.shadow.mapSize.set(1024, 1024); l.shadow.bias = -.0006; l.shadow.normalBias = .03; l.shadow.camera.near = .2; l.shadow.autoUpdate = false; scene.add(l, l.target); return { light: l, lamp: null }; });
+  let poolAt = -1e9, frameNo = 0;
+  function assignLamps(focus, now) {
+    if (now - poolAt < 250) return; poolAt = now;
+    const score = m => { const dx = m.L.p[0] - focus.x, dz = m.L.p[2] - focus.z; return (dx * dx + dz * dz) / Math.max(.3, m.L.d * m.L.d); };
+    const tubes = lamps.filter(m => m.tube).sort((a, b) => score(a) - score(b)).slice(0, SPOTS);
+    const rest = lamps.filter(m => !tubes.includes(m)).sort((a, b) => score(a) - score(b)).slice(0, POOL);
+    spotPool.forEach((s, i) => { const m = tubes[i]; s.lamp = m || null; if (!m) { s.light.intensity = 0; return; }
+      s.light.color.set(m.L.c); s.light.distance = m.L.d * 1.3; s.light.position.set(...m.L.p); s.light.target.position.set(m.L.p[0], 0, m.L.p[2]); s.light.target.updateMatrixWorld(); s.light.shadow.camera.far = m.L.d * 1.3; s.light.shadow.needsUpdate = true; });
+    pool.forEach((s, i) => { const m = rest[i]; s.lamp = m || null; if (!m) { s.light.intensity = 0; return; } s.light.color.set(m.L.c); s.light.distance = m.L.d; s.light.position.set(...m.L.p); });
   }
-
   // ---- queries
   function blocked(x, z, r = .35) { for (const w of walls2d) if (x > w[0] - r && x < w[1] + r && z > w[2] - r && z < w[3] + r) return true; return false; }
   function walk(p, dx, dz, r) {
@@ -252,10 +286,15 @@ export function createWorld({ scene, physics, assets, shadows = 7, quality = 0 }
 
   function update(time, focus = null) {
     for (const d of dynamic) { const t = d.body.read(); d.mesh.position.set(t.p[0], t.p[1], t.p[2]); d.mesh.quaternion.set(t.q[0], t.q[1], t.q[2], t.q[3]); }
-    for (const l of lights) if (l.flicker) {
-      const n = Math.sin(time * 31 + l.phase) * Math.sin(time * 7.3 + l.phase * 2), drop = n > .82 - l.flicker * .25 ? .15 : 1;
-      l.light.intensity = l.base * drop * (.92 + .08 * Math.sin(time * 60 + l.phase)); l.bulb.material.color.setScalar(drop).multiply(l.light.color);
+    for (const m of lamps) if (m.flicker) {
+      const n = Math.sin(time * 31 + m.phase) * Math.sin(time * 7.3 + m.phase * 2); m.drop = n > .82 - m.flicker * .25 ? .15 : 1;
+      m.bulb.material.color.set(m.L.c).multiplyScalar(m.drop);
     }
+    if (focus) assignLamps(focus, performance.now());
+    for (const s of pool) if (s.lamp) s.light.intensity = s.lamp.base * s.lamp.drop * (s.lamp.flicker ? .92 + .08 * Math.sin(time * 60 + s.lamp.phase) : 1);
+    frameNo++;
+    for (const s of spotPool) if (s.lamp) { s.light.intensity = s.lamp.base * 1.6 * s.lamp.drop; if (frameNo % 2 === 0) s.light.shadow.needsUpdate = true; }   // shadows refresh every other frame
+    if (focus) updateScatter(focus);
     const now = performance.now();
     for (const g of gates) {
       const post = g.post, pulled = post.pulled ? Math.min(1, (now - post.pulled) / 260) : 0; post.arm.rotation.x = -.85 + pulled * 1.7;
