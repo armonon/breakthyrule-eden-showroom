@@ -19,7 +19,12 @@ DETAIL = {'overhead_crane': 18000, 'modular_fire_escape': 14000, 'exterior_airco
           'power_box_01': 2500, 'utility_box_02': 2500, 'hand_truck': 3000, 'industrial_storage_cart': 4000, 'plastic_crate_01': 1500, 'compost_bags': 4000,
           'wooden_barrels_01': 6000, 'industrial_pastic_container': 5000, 'small_lpg_tank': 2500, 'metal_tool_chest': 3000, 'old_military_crate': 2500,
           'plastic_jerrycan': 1500, 'rusted_spade_01': 1200, 'watering_can_metal_01': 2000, 'rubber_boots': 2000, 'sledgehammer_01': 1200, 'plastic_broom': 1500,
-          'rusted_wheel_rim_01': 2500, 'worn_metal_rack': 4000, 'wooden_ladder_02': 2000, 'garden_hose_wall_mounted_01': 3000, 'wooden_crate_01': 2000}
+          'rusted_wheel_rim_01': 2500, 'worn_metal_rack': 4000, 'wooden_ladder_02': 2000, 'garden_hose_wall_mounted_01': 3000, 'wooden_crate_01': 2000,
+          'concrete_road_barrier_02': 2500, 'industrial_wall_lamp': 2000, 'industrial_caged_sconce': 2000, 'old_military_compressor': 6000, 'portable_welding_cart': 5000,
+          'bench_vice_01': 2500, 'metal_toolbox': 2500, 'wooden_bucket_02': 2000, 'wicker_basket_01': 3000, 'tire_pump': 2000, 'ladder_sectioned_01': 3000,
+          'can_rusted': 800, 'oil_tin': 1000, 'plastic_crate_02': 1500, 'metal_jerrycan_green': 1500, 'rusted_wheel_rim_02': 2500, 'wooden_broom': 1200,
+          'multi_cleaner_5_litre': 1000, 'korean_fire_extinguisher_01': 2000, 'medical_box': 1200, 'drawer_cabinet': 3000, 'metal_stool_02': 2000,
+          'wooden_military_crate': 2500, 'plastic_bottle_gallon': 1000, 'street_lamp_02': 4000, 'dead_tree_trunk_02': 6000, 'tree_stump_02': 4000, 'wall_clock': 1000}
 def export(name, limit=14000):
     limit = DETAIL.get(name, LIMITS.get(name, limit))
     if name in DETAIL and DETAIL[name] < 9000:

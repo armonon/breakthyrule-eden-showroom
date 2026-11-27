@@ -25,6 +25,12 @@ SITE_MODELS += ['exterior_aircon_unit', 'flood_lights', 'security_light', 'secur
                 'industrial_pastic_container', 'small_lpg_tank', 'metal_tool_chest', 'old_military_crate', 'plastic_jerrycan', 'rusted_spade_01',
                 'watering_can_metal_01', 'rubber_boots', 'sledgehammer_01', 'plastic_broom', 'rusted_wheel_rim_01', 'worn_metal_rack',
                 'wooden_ladder_02', 'garden_hose_wall_mounted_01']
+# Second detail pass: workshop and wall kit, more yard and farm clutter, trees.
+SITE_MODELS += ['concrete_road_barrier_02', 'industrial_wall_lamp', 'industrial_caged_sconce', 'old_military_compressor', 'portable_welding_cart',
+                'bench_vice_01', 'metal_toolbox', 'wooden_bucket_02', 'wicker_basket_01', 'tire_pump', 'ladder_sectioned_01', 'can_rusted', 'oil_tin',
+                'plastic_crate_02', 'metal_jerrycan_green', 'rusted_wheel_rim_02', 'wooden_broom', 'multi_cleaner_5_litre', 'korean_fire_extinguisher_01',
+                'medical_box', 'drawer_cabinet', 'metal_stool_02', 'wooden_military_crate', 'plastic_bottle_gallon', 'street_lamp_02', 'dead_tree_trunk_02',
+                'tree_stump_02', 'wall_clock']
 def get(url, path):
     if os.path.exists(path) and os.path.getsize(path): return
     os.makedirs(os.path.dirname(path), exist_ok=True)

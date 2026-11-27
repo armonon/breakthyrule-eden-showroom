@@ -100,18 +100,39 @@ def gen_textures():
     from PIL import Image, ImageFilter
     g = f'{WORK}/gen'; os.makedirs(g, exist_ok=True)
     rnd = random.Random(3)
-    if not os.path.exists(f'{g}/hay-diff.jpg'):
-        im = Image.new('RGB', (512, 512)); px = im.load()
-        for y in range(512):
-            for x in range(512): t = rnd.random(); px[x, y] = (int(150 + 70 * t), int(120 + 60 * t), int(50 + 40 * t))
-        im = im.filter(ImageFilter.GaussianBlur(.6))
+    def straw(name, aligned, seed):
+        # Strands drawn over a golden base, each with a shadow under it and a highlight along it, wrapped so the image
+        # tiles; the stack of strands is also a height field, turned into the normal map and the occlusion.
+        if os.path.exists(f'{g}/{name}-v2'): return
+        import numpy as np
         from PIL import ImageDraw
-        d = ImageDraw.Draw(im)
-        for _ in range(2600):
-            x, y = rnd.randrange(512), rnd.randrange(512); l = rnd.randrange(8, 40); c = rnd.randrange(150, 235)
-            d.line([(x, y), (x + rnd.randrange(-6, 6), y + l)], fill=(c, int(c * .82), int(c * .38)), width=1)
-        im.save(f'{g}/hay-diff.jpg', quality=88)
-        Image.new('RGB', (4, 4), (128, 128, 255)).save(f'{g}/hay-nor.jpg'); Image.new('RGB', (4, 4), (255, 235, 0)).save(f'{g}/hay-arm.jpg')
+        N = 1024; rr = random.Random(seed)
+        col = Image.new('RGB', (N, N), (150, 118, 58)); hgt = Image.new('L', (N, N), 0)
+        dc, dh = ImageDraw.Draw(col), ImageDraw.Draw(hgt)
+        pal = [(222, 190, 112), (204, 168, 88), (236, 212, 146), (176, 140, 72), (150, 116, 56), (214, 186, 120), (190, 150, 70)]
+        for i in range(16000 if aligned else 13000):
+            x, y = rr.uniform(0, N), rr.uniform(0, N)
+            ang = (math.pi / 2 + rr.gauss(0, .12)) if aligned else rr.uniform(0, math.pi)
+            L = rr.uniform(40, 150) if aligned else rr.uniform(24, 110); w = rr.choice((2, 2, 3, 3, 4))
+            dx, dy = math.cos(ang) * L, math.sin(ang) * L
+            c = pal[rr.randrange(len(pal))]; k = rr.uniform(.85, 1.08); c = tuple(min(255, int(v * k)) for v in c)
+            h = int(60 + 190 * i / (16000 if aligned else 13000))
+            for ox in (-N, 0, N):
+                for oy in (-N, 0, N):
+                    p0, p1 = (x + ox, y + oy), (x + ox + dx, y + oy + dy)
+                    dc.line([(p0[0] + 2, p0[1] + 2), (p1[0] + 2, p1[1] + 2)], fill=(70, 52, 24), width=w + 1)
+                    dc.line([p0, p1], fill=c, width=w); dh.line([p0, p1], fill=h, width=w)
+                    if w > 2: dc.line([(p0[0] - .6, p0[1] - .6), (p1[0] - .6, p1[1] - .6)], fill=tuple(min(255, v + 28) for v in c), width=1)
+        col = col.filter(ImageFilter.GaussianBlur(.5)); col.save(f'{g}/{name}-diff.jpg', quality=90)
+        H = np.asarray(hgt.filter(ImageFilter.GaussianBlur(1.2)), dtype=np.float32) / 255.0
+        gx = (np.roll(H, -1, 1) - np.roll(H, 1, 1)) * 3.0; gy = (np.roll(H, -1, 0) - np.roll(H, 1, 0)) * 3.0
+        nz = 1.0 / np.sqrt(gx * gx + gy * gy + 1.0)
+        nor = np.stack([(-gx * nz) * .5 + .5, (gy * nz) * .5 + .5, nz * .5 + .5], -1)
+        Image.fromarray((nor * 255).astype(np.uint8)).save(f'{g}/{name}-nor.jpg', quality=92)
+        ao = np.clip(.45 + H * .8, 0, 1); rough = np.clip(.95 - H * .2, 0, 1)
+        Image.fromarray((np.stack([ao, rough, np.zeros_like(H)], -1) * 255).astype(np.uint8)).save(f'{g}/{name}-arm.jpg', quality=90)
+        open(f'{g}/{name}-v2', 'w').write('1')
+    straw('hay', False, 3); straw('bale', True, 4)
     if not os.path.exists(f'{g}/meat-diff.jpg') or True:
         im = Image.new('RGB', (512, 512)); px = im.load()
         for y in range(512):
@@ -123,13 +144,56 @@ def gen_textures():
                 f = min(1, fat); px[x, y] = (int(r + (208 - r) * f), int(gg + (180 - gg) * f), int(bb + (140 - bb) * f))
         im.filter(ImageFilter.GaussianBlur(1.1)).save(f'{g}/meat-diff.jpg', quality=88)
         Image.new('RGB', (4, 4), (128, 128, 255)).save(f'{g}/meat-nor.jpg'); Image.new('RGB', (4, 4), (255, 90, 0)).save(f'{g}/meat-arm.jpg')
-    for name in ('hay', 'meat'):
+    for name in ('hay', 'bale', 'meat'):
         for kind in ('diff', 'nor', 'arm'):
             dst = f'{WORK}/tex/{name}-{kind}.jpg'
             if os.path.exists(dst): os.remove(dst)
             os.link(f'{g}/{name}-{kind}.jpg', dst)
 gen_textures()
-material('hay', 'hay', 1.0)
+material('hay', 'hay', 1.4, normal=1.6)
+material('bale', 'bale', 1.1, normal=1.8)
+material('twine', None, color=(.62, .2, .04), rough=.55)
+# A hay bale: rounded edges, a little uneven, two bands of orange baler twine round its short way.
+def bale(x0, y0, z0, x1, y1, z1, solid=True, group='kit'):
+    rr = random.Random(int(x0 * 131 + z0 * 71 + y0 * 37))
+    c = [(x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2]; h = [(x1 - x0) / 2 * .985, (y1 - y0) / 2 * .97, (z1 - z0) / 2 * .985]
+    bm = bmesh.new(); bm_box(bm, c, h)
+    try: bmesh.ops.bevel(bm, geom=bm.edges[:], offset=min(h) * .3, segments=3, profile=.7, affect='EDGES')
+    except Exception as error: print('bale bevel', error)
+    for v in bm.verts: v.co += Vector((rr.uniform(-.014, .014), rr.uniform(-.014, .014), rr.uniform(-.01, .01)))
+    emit('bale', bm, 'bale', group)
+    along_x = (x1 - x0) >= (z1 - z0)
+    for t in (.3, .7):
+        if along_x:
+            xb = x0 + (x1 - x0) * t
+            box('twine', (xb - .012, y1 - .002, z0 + .05), (xb + .012, y1 + .006, z1 - .05), 'twine', group='kit', solid=False)
+            for z in (z0 - .004, z1 - .004): box('twine', (xb - .012, y0 + .05, z), (xb + .012, y1 - .05, z + .008), 'twine', group='kit', solid=False)
+        else:
+            zb = z0 + (z1 - z0) * t
+            box('twine', (x0 + .05, y1 - .002, zb - .012), (x1 - .05, y1 + .006, zb + .012), 'twine', group='kit', solid=False)
+            for x in (x0 - .004, x1 - .004): box('twine', (x, y0 + .05, zb - .012), (x + .008, y1 - .05, zb + .012), 'twine', group='kit', solid=False)
+    if solid: SOLIDS.append({'b': [round(v, 3) for v in (x0, y0, z0, x1, y1, z1)], 'w': True, 's': True})
+# A round bale lying on its side: a drum with softened shoulders.
+def rbale(a, b, r, group='kit'):
+    a, b = Vector(a), Vector(b); d = b - a; L = d.length; n = d.normalized()
+    u = n.cross(Vector((0, 1, 0)) if abs(n.y) < .9 else Vector((1, 0, 0))).normalized(); v = n.cross(u); seg = 24
+    rings = [(0, r * .82), (.07, r * .97), (.16, r), (L - .16, r), (L - .07, r * .97), (L, r * .82)]
+    bm = bmesh.new(); rv = []
+    for (t, rad) in rings: rv.append([bm.verts.new(B(a + n * t + (u * math.cos(q) + v * math.sin(q)) * rad)) for q in (i / seg * math.tau for i in range(seg))])
+    for k in range(len(rv) - 1):
+        for i in range(seg): j = (i + 1) % seg; bm.faces.new((rv[k][i], rv[k][j], rv[k + 1][j], rv[k + 1][i]))
+    bm.faces.new(rv[0][::-1]); bm.faces.new(rv[-1])
+    emit('round-bale', bm, 'bale', group)
+# Loose straw: thin strands lying on the ground (or on a pile, `top(x, z)` its height), pointing every way.
+def straw(cx, cz, rx, rz, n, seed, top=None, y0=.02):
+    rr = random.Random(seed); bm = bmesh.new()
+    for i in range(n):
+        x, z = cx + rr.uniform(-rx, rx), cz + rr.uniform(-rz, rz); y = (top(x, z) if top else y0) + .004
+        L = rr.uniform(.1, .3); ang = rr.uniform(0, math.tau); lift = rr.uniform(0, .5) if top else rr.uniform(0, .18)
+        dx, dz, dy = math.cos(ang) * L * math.cos(lift), math.sin(ang) * L * math.cos(lift), L * math.sin(lift); w = rr.uniform(.004, .008)
+        ps = [(x - math.sin(ang) * w, y, z + math.cos(ang) * w), (x + math.sin(ang) * w, y, z - math.cos(ang) * w), (x + dx, y + dy, z + dz)]
+        bm.faces.new([bm.verts.new(B(p)) for p in ps])
+    if n: emit('straw', bm, 'hay', 'kit')
 # Blood decals (generated RGBA, alpha-blended): fresh and wet, smeared, sprayed, dripping, dried brown; pink wash water.
 def blood_textures():
     from PIL import Image, ImageDraw, ImageFilter
@@ -542,8 +606,9 @@ for row, (z0, z1, gz, nz) in enumerate(((LANE0 - PD, LANE0, LANE0, 1), (LANE1, L
         rail_fence(x0, gz, cx - 2.5, gz, name='pen-fence'); rail_fence(cx + 2.5, gz, x1, gz, name='pen-fence')
         for gx in (cx - 2.5, cx + 2.5): box('gate-post', (gx - .12, 0, gz - .12), (gx + .12, 1.9, gz + .12), 'yellow', group='kit')
         box('trough', (x0 + 1.2, 0, far + (.5 if nz == 1 else -1.1)), (x0 + 4.2, .6, far + (1.1 if nz == 1 else -.5)), 'concrete')
-        cyl('hay', (x1 - 2.6, .7, far + nz * 2.2), (x1 - 1.4, .7, far + nz * 2.2), .7, 'hay', 18)
+        rbale((x1 - 2.6, .7, far + nz * 2.2), (x1 - 1.4, .7, far + nz * 2.2), .7)
         box('pen-straw', (x0 + .3, .02, z0 + .3), (x1 - .3, .05, z1 - .3), 'hay', solid=False)
+        straw((x0 + x1) / 2, (z0 + z1) / 2, (x1 - x0) / 2 - .4, (z1 - z0) / 2 - .4, 260, int(x0 * 3 + z0), y0=.05)
         V = VARIETY[k]; lever = {'x': cx + 3.3, 'z': gz + nz * .7}
         if V.get('lever') == 'back': lever = {'x': cx, 'z': far - nz * 1.0}
         elif V.get('lever') == 'platform':   # a feed platform beside the gate, 2.2 m up, with crates to climb
@@ -556,7 +621,7 @@ for row, (z0, z1, gz, nz) in enumerate(((LANE0 - PD, LANE0, LANE0, 1), (LANE1, L
             for fx in (cx - 1.6, cx + 1.6): box('feeder', (fx - 1.1, 0, gz + nz * 7.2 - .5), (fx + 1.1, 1.1, gz + nz * 7.2 + .5), 'concrete')
         elif V.get('lever') == 'hay':
             lever = {'x': x1 + 1.6, 'z': gz - nz * 3.0}
-            for i in range(3): cyl('hay', (x1 + 1.0 + i * .1, .7 + (i == 2) * 1.2, gz - nz * (1.2 - (i == 2) * .0) + (i == 1) * nz * -1.5), (x1 + 2.3 + i * .1, .7 + (i == 2) * 1.2, gz - nz * 1.2 + (i == 1) * nz * -1.5), .7, 'hay', 18)
+            for i in range(3): rbale((x1 + 1.0 + i * .1, .7 + (i == 2) * 1.2, gz - nz * 1.2 + (i == 1) * nz * -1.5), (x1 + 2.3 + i * .1, .7 + (i == 2) * 1.2, gz - nz * 1.2 + (i == 1) * nz * -1.5), .7)
         PENS.append({'id': f'pen{k}', 'minX': x0 + 1.6, 'maxX': x1 - 1.6, 'minZ': z0 + 1.6, 'maxZ': z1 - 1.6, 'count': V['count']})
         GATES.append({'id': f'pen{k}', 'kind': 'pen', 'x': cx, 'z': gz, 'axis': 'x', 'half': 2.5, 'n': [0, nz], 'lever': lever, 'strength': V['strength']})
 # A working farm: trodden mud at every gate and round the troughs, water in the troughs, a muddy track down the
@@ -582,7 +647,8 @@ box('lane-track', (31, .021, 27.2), (98, .026, 32.8), 'tracks', solid=False)
 for (x, z, r) in ((44, 29, 1.6), (58.5, 31.2, 1.1), (67, 28.6, 2.0), (79, 31, 1.3), (88, 29.4, 1.7), (36, 30.5, 1.2), (96, 12, 1.5), (34, 50, 1.4)):
     cyl('water', (x, .028, z), (x, .034, z), r, 'water', 20, group='kit')
 for (x, z, n) in ((38.5, 2.5, 3), (73, 60.5, 2), (97.5, 45, 3), (49, 62, 2)):
-    for i in range(n): box('bale', (x - 1.1, i * .55, z - .5 + (i % 2) * .1), (x + 1.1, i * .55 + .55, z + .5 + (i % 2) * .1), 'hay')
+    for i in range(n): bale(x - 1.1, i * .55, z - .5 + (i % 2) * .1, x + 1.1, i * .55 + .55, z + .5 + (i % 2) * .1, group='arch')
+    straw(x, z, 2, 1.4, 70, int(x * 7 + z))
 # Cover along the lane and round the farm: crate stacks to move between.
 for (x, z) in ((51, 26.5), (71, 33.5), (91.5, 25), (94, 36), (31, 12), (93, 50)):
     box('crate', (x - .9, 0, z - .9), (x + .9, 1.7, z + .9), 'planks'); box('crate', (x + .9, 0, z - .6), (x + 2.1, 1.0, z + .6), 'planks')
@@ -834,8 +900,11 @@ BB0, BB1, BZa, BZb = 58, 84, 58.5, 70
 posts([(x, z) for x in (58, 64.5, 71, 77.5, 84) for z in (58.5, 70)], 7.6, 'planks', .14)
 wall('x', BZb + .15, BB0, BB1, 7.4, .2, 'cladding', name='barn'); wall('z', BB0 - .15, BZa + 4, BZb, 6, .2, 'cladding', name='barn'); wall('z', BB1 + .15, BZa + 4, BZb, 6, .2, 'cladding', name='barn')
 deck(BB0, 64, BB1, BZb, 3.6, 'planks', rail=True)
-for i in range(6): box('bale', (79 - i * 1.1, 0, 60.5), (80.2 - i * 1.1, .6 * (i + 1), 61.6), 'hay')   # bales stacked as steps to the loft
-for (x, z) in ((62, 66), (66, 68), (74, 67)): box('bale', (x - 1.1, 3.6, z - .5), (x + 1.1, 4.2, z + .5), 'hay')
+for i in range(6):   # bales stacked as steps to the loft
+    for k in range(i + 1): bale(79 - i * 1.1, .6 * k, 60.5, 80.2 - i * 1.1, .6 * (k + 1), 61.6, solid=False, group='arch')
+    solid_only((79 - i * 1.1, 0, 60.5), (80.2 - i * 1.1, .6 * (i + 1), 61.6))
+for (x, z) in ((62, 66), (66, 68), (74, 67), (62, 66.05), (79, 68.4)): bale(x - 1.1, 3.6, z - .5, x + 1.1, 4.2, z + .5)
+bale(60.9, 4.2, 65.55, 63.1, 4.8, 66.55); straw((BB0 + BB1) / 2, 67, 12, 2.6, 300, 41, y0=3.6); straw((BB0 + BB1) / 2, 63, 12, 4, 360, 42, y0=.06)
 ladder(BB0 + .3, 63.4, BB0 + .9, 64.0, 3.6)
 # Roof: a monopitch from 7.6 at the back to 6.4 at the front, walked as terraces.
 pitch_b = math.atan2(1.2, BZb - BZa)
@@ -977,6 +1046,77 @@ for g in GATES[1:7]:
     nz = g['n'][1]; CLUTTER += [('watering_can_metal_01', g['x'] - 3.4, 0, g['z'] - nz * .6, R2.uniform(0, 6), 1.0), ('plastic_jerrycan', g['x'] + 4.6, 0, g['z'] - nz * .7, R2.uniform(0, 6), 1.3)]
 for (name, x, y, z, yaw, sc) in CLUTTER: PROPS.append([name, x, y, z, round(yaw, 3), sc, None])
 
+# ================================================================================================= the realism pass
+# What makes a shed read as real: a concrete plinth where the walls meet the ground, flashing on the corners, fascia
+# and barge boards on the roof edges, a ridge cap, sills under the windows with rust running down from them,
+# louvred vents and an extract fan high on the walls, and the same on the gatehouse, boiler house and barn.
+def spans(a0, a1, holes):
+    out, cur = [], a0
+    for (h0, h1) in sorted(holes):
+        if h0 > cur: out.append((cur, h0))
+        cur = max(cur, h1)
+    if cur < a1: out.append((cur, a1))
+    return out
+def plinth(axis, at, sign, a0, a1, holes, h=.62, t=.06):
+    for (p0, p1) in spans(a0, a1, holes):
+        if axis == 'x': box('plinth', (p0, 0, min(at, at + sign * t)), (p1, h, max(at, at + sign * t)), 'concrete', group='kit', solid=False)
+        else: box('plinth', (min(at, at + sign * t), 0, p0), (max(at, at + sign * t), h, p1), 'concrete', group='kit', solid=False)
+OUT_N, OUT_S, OUT_W, OUT_E = BZ0 - T / 2, BZ1 + T / 2, BX0 - T / 2, BX1 + T / 2
+plinth('x', OUT_N, -1, BX0 - .2, BX1 + .2, [(-4, 4)]); plinth('x', OUT_S, 1, BX0 - .2, BX1 + .2, [(-21, -17), (12, 13.6)])
+plinth('z', OUT_W, -1, BZ0, BZ1, [(6, 26), (32.5, 33.8)]); plinth('z', OUT_E, 1, BZ0, BZ1, [(15, 16.8), (20, 21.3), (30, 32.6)])
+for (cx, cz, sx, sz) in ((BX0, BZ0, -1, -1), (BX1, BZ0, 1, -1), (BX0, BZ1, -1, 1), (BX1, BZ1, 1, 1)):   # corner flashing
+    box('flashing', (cx + sx * T / 2 - (.3 if sx > 0 else 0), 0, cz + sz * T / 2 - (.04 if sz > 0 else 0)), (cx + sx * T / 2 + (0 if sx > 0 else .3), H, cz + sz * T / 2 + (0 if sz > 0 else .04)), 'galv', group='kit', solid=False)
+    box('flashing', (cx + sx * T / 2 - (.04 if sx > 0 else 0), 0, cz + sz * T / 2 - (.3 if sz > 0 else 0)), (cx + sx * T / 2 + (0 if sx > 0 else .04), H, cz + sz * T / 2 + (0 if sz > 0 else .3)), 'galv', group='kit', solid=False)
+for sx in (-1, 1): box('fascia', (sx * (BX1 + .6) - .03, H - .42, -.6), (sx * (BX1 + .6) + .03, H - .14, 48.6), 'galv', group='kit', solid=False)
+for z in (-.66, 48.66):   # barge boards up the gable edges
+    for sx in (-1, 1):
+        run = (BX1 + .6) / math.cos(pitch); obox('barge', (sx * (BX1 + .6) / 2, (H + RIDGE) / 2 + .02, z), (run / 2, .16, .03), rot_z(-sx * pitch), 'galv', group='kit')
+box('ridge-cap', (-.32, RIDGE + .08, -.66), (.32, RIDGE + .2, 48.66), 'galv', group='kit', solid=False)
+for (a0, a1, y0, y1, *g) in openN:
+    if g: box('sill', (a0 - .08, y0 - .08, OUT_N - .16), (a1 + .08, y0, OUT_N), 'concrete', group='kit', solid=False); LATER_DECALS.append(lambda a0=a0, a1=a1, y0=y0: decal('grime_rust', (a0 + a1) / 2, .05, OUT_N - .02, a1 - a0 + .3, y0 - .1, face=('z', '-')))
+box('sill', (OUT_W - .16, 2.42, 27.92), (OUT_W, 2.5, 30.08), 'concrete', group='kit', solid=False)
+for z in (8, 40):   # louvred vents high on the east wall, and an extract fan
+    box('louvre', (OUT_E, 5.0, z - .6), (OUT_E + .12, 5.9, z + .6), 'grate', group='kit', solid=False)
+    for k in range(5): box('louvre-blade', (OUT_E + .02, 5.08 + k * .17, z - .58), (OUT_E + .16, 5.12 + k * .17, z + .58), 'galv', group='kit', solid=False)
+cyl('extract-fan', (OUT_E, 5.4, 35.5), (OUT_E + .35, 5.4, 35.5), .5, 'galv', 20); box('fan-guard', (OUT_E + .35, 4.95, 35.05), (OUT_E + .38, 5.85, 35.95), 'grate', group='kit', solid=False)
+cyl('extract-fan', (OUT_W, 5.4, 12), (OUT_W - .35, 5.4, 12), .5, 'galv', 20); box('fan-guard', (OUT_W - .38, 4.95, 11.55), (OUT_W - .35, 5.85, 12.45), 'grate', group='kit', solid=False)
+for (x, z) in ((-14, 48.4), (16, 48.4)): LATER_DECALS.append(lambda x=x, z=z: decal('grime_rust', x, H - 3.2, OUT_S + .02, 1.6, 3.0, face=('z', '+')))   # rust run from the gutter outlets
+# The gatehouse and the boiler house: plinths, fascias, sills.
+plinth('x', gz0 - .1, -1, gx0 - .1, gx1 + .1, []); plinth('x', gz1 + .1, 1, gx0 - .1, gx1 + .1, []); plinth('z', gx0 - .1, -1, gz0, gz1, []); plinth('z', gx1 + .1, 1, gz0, gz1, [(-56.8, -55.6)])
+box('fascia', (gx0 - .42, 2.72, gz0 - .42), (gx1 + .42, 2.9, gz0 - .38), 'galv', group='kit', solid=False); box('fascia', (gx0 - .42, 2.72, gz1 + .38), (gx1 + .42, 2.9, gz1 + .42), 'galv', group='kit', solid=False)
+box('sill', (-13.58, .92, gz1 + .1), (-10.92, 1.0, gz1 + .24), 'concrete', group='kit', solid=False)
+plinth('x', 51.85, -1, -44.2, -33.8, []); plinth('x', 62.15, 1, -44.2, -33.8, []); plinth('z', -44.15, -1, 52, 62, []); plinth('z', -33.85, 1, 52, 62, [(55, 56.6)])
+# The barn: corner flashing, rot and muck along the bottom of the cladding.
+for (x, z) in ((BB0 - .25, BZb + .25), (BB1 + .25, BZb + .25)): box('flashing', (x - .06, 0, z - .06), (x + .06, 7.2, z + .06), 'galv', group='kit', solid=False)
+LATER_DECALS.append(lambda: decal('grime_base', (BB0 + BB1) / 2, .02, BZb + .27, BB1 - BB0, 1.3, face=('z', '+')))
+for x in (BB0 - .27, BB1 + .27): LATER_DECALS.append(lambda x=x: decal('grime_base', x, .02, (BZa + 4 + BZb) / 2, BZb - BZa - 4, 1.2, face=('x', '-' if x < BB0 else '+')))
+
+# More things: workbenches in the barn and the container yard with their tools, lamps and extinguishers round the
+# hall, a compressor and a welding cart in the yard, barriers, ladders, buckets and baskets, fallen trees outside.
+def workbench(x0, z0, x1, z1, items):
+    box('bench-top', (x0, .86, z0), (x1, .92, z1), 'planks'); box('bench-shelf', (x0 + .05, .2, z0 + .05), (x1 - .05, .24, z1 - .05), 'planks', group='kit', solid=False)
+    for (x, z) in ((x0 + .06, z0 + .06), (x1 - .06, z0 + .06), (x0 + .06, z1 - .06), (x1 - .06, z1 - .06)): box('bench-leg', (x - .04, 0, z - .04), (x + .04, .86, z + .04), 'steel', group='kit', solid=False)
+    for (name, fx, fz, yaw, sc) in items: PROPS.append([name, round(x0 + (x1 - x0) * fx, 3), .92, round(z0 + (z1 - z0) * fz, 3), yaw, sc, None])
+workbench(79.4, 69.2, 83.4, 69.9, [('metal_toolbox', .15, .5, .2, 1.0), ('oil_tin', .38, .4, .9, 1.0), ('can_rusted', .45, .6, 0, 1.0), ('multi_cleaner_5_litre', .62, .5, .4, 1.0), ('plastic_bottle_gallon', .72, .45, 1.2, 1.0), ('medical_box', .88, .5, .1, 1.0)])
+workbench(64.2, -31.2, 67.6, -30.4, [('metal_toolbox', .2, .5, -.3, 1.0), ('oil_tin', .5, .5, .4, 1.0), ('can_rusted', .58, .4, 0, 1.0), ('multi_cleaner_5_litre', .82, .5, 1.0, 1.0)])
+MORE = [
+    ('drawer_cabinet', 78.6, 0, 69.6, math.pi, 1.0), ('metal_stool_02', 81, 0, 68.6, .4, 1.0), ('tire_pump', 83.7, 0, 68.9, -1.2, 1.0), ('wall_clock', 71, 2.6, 69.98, math.pi, 1.0),
+    ('wooden_bucket_02', 61.8, 0, 59.6, 0, 1.0), ('wicker_basket_01', 62.6, 0, 59.3, .6, 1.4), ('wooden_broom', 58.6, 0, 63.7, .2, 1.0), ('korean_fire_extinguisher_01', 71.3, 0, 58.9, math.pi, 1.0),
+    ('old_military_compressor', 62.6, 0, -29.6, math.pi / 2, 1.0), ('portable_welding_cart', 75, 0, -34, 2.4, 1.0), ('wooden_military_crate', 69.6, 0, -44, .2, 1.0), ('wooden_military_crate', 69.6, .47, -44, .25, 1.0),
+    ('metal_jerrycan_green', 61.6, 0, -30.1, .3, 1.0), ('metal_jerrycan_green', 61.95, 0, -30.2, .5, 1.0), ('rusted_wheel_rim_02', 80.1, 0, -46.0, .4, 1.0), ('plastic_crate_02', 74.8, 0, -30.9, 0, 1.4), ('plastic_crate_02', 74.8, .35, -30.9, .2, 1.4),
+    ('ladder_sectioned_01', 55.7, 0, -47.6, -math.pi / 2, 1.0), ('korean_fire_extinguisher_01', 63.8, 0, -29.9, math.pi, 1.0), ('metal_stool_02', 65.6, 0, -29.6, 1.3, 1.0),
+    ('concrete_road_barrier_02', 53.6, 0, -27.8, 0, 1.0), ('concrete_road_barrier_02', 55.3, 0, -27.8, .05, 1.0), ('concrete_road_barrier_02', 83.6, 0, -27.8, 0, 1.0), ('concrete_road_barrier_02', -8.6, 0, -64.5, 0, 1.0), ('concrete_road_barrier_02', 8.6, 0, -64.5, 0, 1.0),
+    ('korean_fire_extinguisher_01', BX1 - .55, 0, 14.4, -math.pi / 2, 1.0), ('korean_fire_extinguisher_01', -4.7, 0, .6, 0, 1.0), ('korean_fire_extinguisher_01', BX0 + .55, 0, 27.4, math.pi / 2, 1.0), ('korean_fire_extinguisher_01', -10.4, 0, -54.7, 0, 1.0),
+    ('wooden_broom', -33.6, 1.3, 25.4, 1.4, 1.0), ('wooden_bucket_02', -30.2, 1.3, 7.2, 0, 1.0), ('metal_stool_02', -11.6, 0, -57.4, .3, 1.0), ('drawer_cabinet', -14.4, 0, -55.3, math.pi / 2, .9),
+    ('dead_tree_trunk_02', -48, 0, 20, .4, 1.4), ('dead_tree_trunk_02', 98.2, 0, 52, 1.7, 1.2), ('tree_stump_02', 40.5, 0, 68.5, .3, 1.2), ('tree_stump_02', -30, 0, 69.6, 2, 1.1), ('tree_stump_02', 97.8, 0, 12, .9, 1.0),
+    ('dead_tree_trunk_02', 64, 0, -59.6, 2.9, 1.3), ('tree_stump_02', -53, 0, -40, 1.2, 1.2),
+]
+for (name, x, y, z, yaw, sc) in MORE: PROPS.append([name, x, y, z, round(yaw, 3), sc, None])
+for (x, y, z, yaw) in ((OUT_E + .1, 3.4, 4, math.pi / 2), (OUT_E + .1, 3.4, 44, math.pi / 2), (OUT_W - .1, 3.4, 30, -math.pi / 2), (OUT_W - .1, 3.4, 44, -math.pi / 2),
+                       (-8, 3.4, OUT_S + .1, 0), (22, 3.4, OUT_S + .1, 0), (-18, 3.4, OUT_N - .1, math.pi), (gx1 + .15, 2.3, -58, math.pi / 2), (BB0 - .3, 4.2, 64, -math.pi / 2), (BB1 + .3, 4.2, 64, math.pi / 2)):
+    PROPS.append(['industrial_wall_lamp', x, y, z, yaw, 1.4, None])
+for (x, y, z, yaw) in ((gx0 - .2, 2.6, -56.5, -math.pi / 2), (-33.9, 3.0, 52, math.pi)): PROPS.append(['street_lamp_02', x, y, z, yaw, 1.2, None])
+
 # Freerunning: drainpipes to the eaves on every side, a rope from the trusses, bars across the yard; hay to leap into
 # and hide in. parkour.js reads GRIPS (the same format as parkour-grips.js).
 GRIPS = [
@@ -1001,9 +1141,14 @@ for g in GRIPS:
         for p in (g['a'], g['b']): box('grip-post', (p[0] - .06, 0, p[2] - .06), (p[0] + .06, p[1] + .1, p[2] + .06), 'steel', group='kit')
 HAY = [[28.8, 19, 1.9], [-38.5, 31, 1.9], [9.5, -3.4, 1.7], [15, 44.5, 1.7], [-28.8, 40, 1.7], [31.5, 56, 1.8], [92.5, 30, 1.8]] + EXTRA_HAY
 for hx, hz, hr in HAY:
-    bm = bmesh.new(); bmesh.ops.create_uvsphere(bm, u_segments=16, v_segments=8, radius=1)
-    for v in bm.verts: v.co = Vector((hx + v.co.x * hr, -(hz + v.co.y * hr), max(0, v.co.z * .75 + .12) * 1.1))
+    rr = random.Random(int(hx * 31 + hz * 17)); ph = [rr.uniform(0, 6.28) for _ in range(5)]
+    bm = bmesh.new(); bmesh.ops.create_uvsphere(bm, u_segments=30, v_segments=15, radius=1)
+    for v in bm.verts:
+        d = v.co.normalized(); n = 1 + .11 * math.sin(d.x * 5 + ph[0]) * math.sin(d.y * 4 + ph[1]) + .07 * math.sin(d.x * 11 + d.y * 9 + ph[2]) + .045 * math.sin(d.y * 19 + d.x * 7 + ph[3]) + .03 * math.sin(d.x * 31 + ph[4])
+        v.co = Vector((hx + v.co.x * hr * n, -(hz + v.co.y * hr * n), max(0, v.co.z * .75 + .12) * 1.1 * n))
     emit('haypile', bm, 'hay', 'kit')
+    dome = lambda x, z, hx=hx, hz=hz, hr=hr: max(0, 1 - (math.hypot(x - hx, z - hz) / hr) ** 2) ** .5 * .96
+    straw(hx, hz, hr * .9, hr * .9, int(140 * hr), int(hx * 13 + hz), top=dome); straw(hx, hz, hr * 1.6, hr * 1.6, int(90 * hr), int(hx * 5 + hz * 3))
 
 POINTS = {
     'spawn': {'x': FX1 + 9, 'z': 30, 'yaw': -math.pi / 2}, 'cowSpawn': {'x': 16, 'z': 40, 'yaw': -math.pi / 2},

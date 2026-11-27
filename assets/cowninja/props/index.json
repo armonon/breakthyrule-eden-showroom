@@ -2503,5 +2503,590 @@
    0.3
   ],
   "parts": {}
+ },
+ "can_rusted": {
+  "tris": 800,
+  "min": [
+   -0.062,
+   -0.001,
+   -0.061
+  ],
+  "max": [
+   0.063,
+   0.15,
+   0.063
+  ],
+  "parts": {}
+ },
+ "concrete_road_barrier_02": {
+  "tris": 2500,
+  "min": [
+   -0.776,
+   -0.003,
+   -0.254
+  ],
+  "max": [
+   0.789,
+   1.109,
+   0.188
+  ],
+  "parts": {}
+ },
+ "dead_tree_trunk_02": {
+  "tris": 6000,
+  "min": [
+   -1.924,
+   -0.328,
+   -0.501
+  ],
+  "max": [
+   2.127,
+   0.727,
+   0.555
+  ],
+  "parts": {}
+ },
+ "drawer_cabinet": {
+  "tris": 3000,
+  "min": [
+   -0.571,
+   0.0,
+   -0.248
+  ],
+  "max": [
+   0.571,
+   1.881,
+   0.24
+  ],
+  "parts": {
+   "drawer_cabinet": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "drawer_cabinet_drawer_01": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "drawer_cabinet_drawer_02": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "drawer_cabinet_drawer_03": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "drawer_cabinet_drawer_04": [
+    0.0,
+    0.0,
+    -0.0
+   ]
+  }
+ },
+ "industrial_wall_lamp": {
+  "tris": 2000,
+  "min": [
+   -0.137,
+   -0.215,
+   0.0
+  ],
+  "max": [
+   0.137,
+   0.215,
+   0.14
+  ],
+  "parts": {}
+ },
+ "korean_fire_extinguisher_01": {
+  "tris": 2000,
+  "min": [
+   -0.14,
+   -0.0,
+   -0.123
+  ],
+  "max": [
+   0.14,
+   0.659,
+   0.244
+  ],
+  "parts": {}
+ },
+ "ladder_sectioned_01": {
+  "tris": 3000,
+  "min": [
+   -0.301,
+   -0.0,
+   -0.096
+  ],
+  "max": [
+   0.361,
+   2.134,
+   0.081
+  ],
+  "parts": {
+   "ladder_ribbon": [
+    0.03,
+    0.0,
+    -0.052
+   ],
+   "ladder_section_01": [
+    0.03,
+    -0.0,
+    -0.022
+   ],
+   "ladder_section_02": [
+    0.03,
+    -0.002,
+    0.017
+   ],
+   "ladder_section_03": [
+    0.03,
+    -0.0,
+    0.057
+   ]
+  }
+ },
+ "medical_box": {
+  "tris": 1200,
+  "min": [
+   -0.263,
+   0.0,
+   -0.172
+  ],
+  "max": [
+   0.263,
+   0.098,
+   0.178
+  ],
+  "parts": {
+   "medical_box": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "medical_box_handle": [
+    0.0,
+    0.044,
+    0.169
+   ],
+   "medical_box_latch": [
+    0.0,
+    0.057,
+    0.17
+   ],
+   "medical_box_latch_rings": [
+    0.0,
+    0.035,
+    0.171
+   ],
+   "medical_box_lid": [
+    0.0,
+    0.066,
+    -0.169
+   ]
+  }
+ },
+ "metal_jerrycan_green": {
+  "tris": 1500,
+  "min": [
+   -0.202,
+   0.0,
+   -0.085
+  ],
+  "max": [
+   0.172,
+   0.501,
+   0.085
+  ],
+  "parts": {
+   "metal_jerrycan_green_body": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "metal_jerrycan_green_cap": [
+    -0.162,
+    0.421,
+    0.029
+   ],
+   "metal_jerrycan_green_fastener": [
+    -0.157,
+    0.456,
+    0.026
+   ],
+   "metal_jerrycan_green_latch": [
+    -0.172,
+    0.435,
+    0.029
+   ],
+   "metal_jerrycan_green_pin": [
+    -0.157,
+    0.456,
+    0.027
+   ]
+  }
+ },
+ "metal_stool_02": {
+  "tris": 2000,
+  "min": [
+   -0.224,
+   -0.0,
+   -0.235
+  ],
+  "max": [
+   0.224,
+   0.458,
+   0.238
+  ],
+  "parts": {}
+ },
+ "metal_toolbox": {
+  "tris": 2500,
+  "min": [
+   -0.2,
+   0.0,
+   -0.179
+  ],
+  "max": [
+   0.2,
+   0.347,
+   0.114
+  ],
+  "parts": {
+   "metal_toolbox": [
+    -0.0,
+    0.001,
+    -0.0
+   ],
+   "metal_toolbox_handle": [
+    -0.0,
+    0.253,
+    -0.118
+   ],
+   "metal_toolbox_handle_latch_l": [
+    -0.118,
+    0.299,
+    0.006
+   ],
+   "metal_toolbox_handle_latch_r": [
+    0.118,
+    0.299,
+    0.006
+   ],
+   "metal_toolbox_lid": [
+    -0.0,
+    0.12,
+    -0.103
+   ],
+   "metal_toolbox_tray": [
+    0.0,
+    0.152,
+    -0.0
+   ]
+  }
+ },
+ "multi_cleaner_5_litre": {
+  "tris": 1000,
+  "min": [
+   -0.115,
+   -0.0,
+   -0.053
+  ],
+  "max": [
+   0.105,
+   0.3,
+   0.053
+  ],
+  "parts": {
+   "multi_cleaner_5_litre": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "multi_cleaner_5_litre_cap": [
+    0.056,
+    0.276,
+    -0.0
+   ]
+  }
+ },
+ "oil_tin": {
+  "tris": 1000,
+  "min": [
+   -0.067,
+   -0.001,
+   -0.078
+  ],
+  "max": [
+   0.048,
+   0.205,
+   0.076
+  ],
+  "parts": {
+   "oil_tin": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "oil_tin_handle": [
+    -0.001,
+    0.193,
+    -0.009
+   ]
+  }
+ },
+ "old_military_compressor": {
+  "tris": 6000,
+  "min": [
+   -0.721,
+   -0.002,
+   -5.057
+  ],
+  "max": [
+   -0.123,
+   1.177,
+   -3.381
+  ],
+  "parts": {}
+ },
+ "plastic_bottle_gallon": {
+  "tris": 1000,
+  "min": [
+   -0.088,
+   -0.0,
+   -0.065
+  ],
+  "max": [
+   0.078,
+   0.274,
+   0.061
+  ],
+  "parts": {}
+ },
+ "plastic_crate_02": {
+  "tris": 1500,
+  "min": [
+   -0.253,
+   -0.0,
+   -0.203
+  ],
+  "max": [
+   0.253,
+   0.254,
+   0.203
+  ],
+  "parts": {}
+ },
+ "portable_welding_cart": {
+  "tris": 5000,
+  "min": [
+   -0.423,
+   -0.002,
+   -0.387
+  ],
+  "max": [
+   0.416,
+   1.561,
+   0.268
+  ],
+  "parts": {}
+ },
+ "rusted_wheel_rim_02": {
+  "tris": 2500,
+  "min": [
+   -0.167,
+   -0.169,
+   -0.057
+  ],
+  "max": [
+   0.169,
+   0.169,
+   0.064
+  ],
+  "parts": {}
+ },
+ "street_lamp_02": {
+  "tris": 4000,
+  "min": [
+   -0.193,
+   -0.395,
+   -0.0
+  ],
+  "max": [
+   0.193,
+   1.28,
+   0.807
+  ],
+  "parts": {}
+ },
+ "tire_pump": {
+  "tris": 2000,
+  "min": [
+   -0.127,
+   0.0,
+   -0.06
+  ],
+  "max": [
+   0.127,
+   0.58,
+   0.041
+  ],
+  "parts": {}
+ },
+ "tree_stump_02": {
+  "tris": 4000,
+  "min": [
+   -0.718,
+   -0.233,
+   -0.674
+  ],
+  "max": [
+   0.804,
+   0.289,
+   0.718
+  ],
+  "parts": {}
+ },
+ "wall_clock": {
+  "tris": 1000,
+  "min": [
+   -0.16,
+   -0.16,
+   -0.0
+  ],
+  "max": [
+   0.16,
+   0.16,
+   0.047
+  ],
+  "parts": {
+   "wall_clock": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "wall_clock_hours_hand": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "wall_clock_minute_hand": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "wall_clock_second_hand": [
+    0.0,
+    0.0,
+    -0.0
+   ]
+  }
+ },
+ "wicker_basket_01": {
+  "tris": 3000,
+  "min": [
+   -0.192,
+   -0.001,
+   -0.148
+  ],
+  "max": [
+   0.191,
+   0.117,
+   0.147
+  ],
+  "parts": {}
+ },
+ "wooden_broom": {
+  "tris": 1200,
+  "min": [
+   -0.245,
+   -0.122,
+   -0.056
+  ],
+  "max": [
+   0.245,
+   1.331,
+   0.056
+  ],
+  "parts": {
+   "wooden_broom": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "wooden_broom_bristles": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "wooden_broom_handle": [
+    0.0,
+    0.0,
+    -0.0
+   ]
+  }
+ },
+ "wooden_bucket_02": {
+  "tris": 2000,
+  "min": [
+   -0.308,
+   0.0,
+   -0.309
+  ],
+  "max": [
+   0.308,
+   0.351,
+   0.308
+  ],
+  "parts": {
+   "wooden_bucket_02": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "wooden_bucket_02_handle_01": [
+    -0.294,
+    0.257,
+    0.001
+   ],
+   "wooden_bucket_02_handle_02": [
+    0.293,
+    0.257,
+    0.001
+   ]
+  }
+ },
+ "wooden_military_crate": {
+  "tris": 2500,
+  "min": [
+   -0.621,
+   0.0,
+   -0.26
+  ],
+  "max": [
+   0.621,
+   0.465,
+   0.26
+  ],
+  "parts": {
+   "wooden_military_crate": [
+    0.0,
+    0.034,
+    -0.0
+   ],
+   "wooden_military_crate_latch": [
+    0.0,
+    0.397,
+    0.235
+   ],
+   "wooden_military_crate_lid": [
+    0.0,
+    0.416,
+    -0.232
+   ]
+  }
  }
 }
