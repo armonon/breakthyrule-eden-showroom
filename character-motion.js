@@ -488,7 +488,7 @@ const scale=group.scale.x||1;group.updateMatrixWorld(true);
       const forwardBlend=smooth(.2,.85,heading.z),baseMask=busy?noArms('full'):M.full;
       for(let i=0;i<travelMask.length;i++)travelMask[i]=baseMask[i]*(state.airborne?1:i===0?.2:!M.upper[i]?.35*forwardBlend:1);
       const mask=travelMask;
-      const add=(id,weight,walking=false)=>{weight*=1-full;if(weight<=.005||!A.has(id))return;const entry=locoEntries[locoCount++];entry.id=id;entry.weight=Math.round(weight*1000)/1000;loco.push(entry);addAnim(id,walking?((state.phase+A.phase0(id))%1)*A.duration(id):(state.time||0)%A.duration(id),weight,mask);};
+      const add=(id,weight,walking=false)=>{const swap=api.gait?.[id];if(swap&&A.has(swap))id=swap;/* a per-body gait (battle-arena.js enemies: an agent's formal walk, a zombie's shamble) */weight*=1-full;if(weight<=.005||!A.has(id))return;const entry=locoEntries[locoCount++];entry.id=id;entry.weight=Math.round(weight*1000)/1000;loco.push(entry);addAnim(id,walking?((state.phase+A.phase0(id))%1)*A.duration(id):(state.time||0)%A.duration(id),weight,mask);};
       // Adjacent gaits crossfade at one shared footfall phase instead of popping.
       add('walk',.85*state.locoK*(1-crouch)*(1-jog),true);add('jog',.85*state.locoK*(1-crouch)*jog*(1-sprint),true);add('sprint',.85*state.locoK*(1-crouch)*sprint,true);
       add('crouchWalk',.7*state.locoK*crouch,true);add('idle',.55*state.idleK*(1-crouch));add('crouchIdle',.65*state.idleK*crouch);

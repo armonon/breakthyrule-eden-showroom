@@ -52,9 +52,62 @@
  // Skin from the texel's colour (body textures hold skin and clothes together): warm, r>g>b, hue between red and khaki.
  float rbSkin(vec3 c){vec3 s=sqrt(max(c,0.));float rb=s.r-s.b,hue=(s.g-s.b)/max(rb,1e-3);return smoothstep(.05,.12,rb)*step(s.b,s.g+.01)*step(s.g,s.r)*smoothstep(.08,.2,hue)*(1.-smoothstep(.55,.68,hue));}
  float rbSkinW=0.;\n`;
+ // Enemy looks (battle-arena.js): the same people re-dressed in the shader, so every body, rig and animation still fits.
+ // agent: a black suit, white shirt and black tie, hands and face left bare; order: a black robe to the wrists, the face
+ // dim inside its hood (the hood and skirt are meshes, battle-enemies.js); zombie: grey-green bruised skin, filthy clothes
+ // and blood. vLkP is the bind-pose position (metres, facing +z): wrists sit at |x| ~0.55, the collar at y ~1.45.
+ const LOOK_GLSL=`varying vec3 vLkP;float lkSpec=1.;
+ float lkH(vec3 p){p=fract(p*.3183099+.1);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
+ float lkN(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(mix(lkH(i),lkH(i+vec3(1,0,0)),f.x),mix(lkH(i+vec3(0,1,0)),lkH(i+vec3(1,1,0)),f.x),f.y),mix(mix(lkH(i+vec3(0,0,1)),lkH(i+vec3(1,0,1)),f.x),mix(lkH(i+vec3(0,1,1)),lkH(i+vec3(1,1,1)),f.x),f.y),f.z);}
+ float lkSkin(vec3 c){vec3 s=sqrt(max(c,0.));float rb=s.r-s.b,hue=(s.g-s.b)/max(rb,1e-3);return smoothstep(.05,.12,rb)*step(s.b,s.g+.01)*step(s.g,s.r)*smoothstep(.08,.2,hue)*(1.-smoothstep(.55,.68,hue));}\n`;
+ const LOOKS={
+  agent:{
+   body:`{vec3 c=diffuseColor.rgb;float s=lkSkin(c),l=dot(c,vec3(.3,.59,.11)),y=vLkP.y,ax=abs(vLkP.x);
+    float bare=s*max(smoothstep(.5,.54,ax),smoothstep(1.44,1.48,y));
+    vec3 suit=vec3(.0035,.0037,.0045)+l*.01+vec3(.0015)*lkN(vLkP*60.);
+    float open=clamp((y-1.16)/.28,0.,1.),front=step(.03,vLkP.z)*step(1.16,y)*step(y,1.46);
+    float shirt=front*step(ax,.008+.055*open),tie=front*step(ax,.011+.006*(1.-open))*step(y,1.42)*step(1.19,y);
+    vec3 o=mix(suit,vec3(.6,.61,.63),shirt);o=mix(o,vec3(.0025,.0025,.0035),tie);
+    diffuseColor.rgb=mix(o,c,bare);lkSpec=mix(mix(.22,.6,shirt),1.,bare);}`,
+   head:'',opacity:'diffuseColor.rgb*=.15;lkSpec=.5;'},
+  order:{
+   body:`{vec3 c=diffuseColor.rgb;float s=lkSkin(c),hand=smoothstep(.52,.56,abs(vLkP.x))*s;
+    vec3 robe=vec3(.0032,.003,.0035)+vec3(.003)*lkN(vLkP*18.);
+    diffuseColor.rgb=mix(robe,c*.42,hand);lkSpec=mix(.1,.6,hand);}`,
+   head:'diffuseColor.rgb*=.26;lkSpec=.4;',opacity:'diffuseColor.rgb=vec3(.003);lkSpec=.1;'},
+  zombie:{
+   body:`{vec3 c=diffuseColor.rgb;float s=lkSkin(c),l=dot(c,vec3(.3,.59,.11)),n=lkN(vLkP*9.),n2=lkN(vLkP*23.+7.);
+    vec3 rot=vec3(l)*vec3(.5,.62,.42)*.85;rot=mix(rot,rot*vec3(.5,.38,.58),smoothstep(.56,.82,n));rot=mix(rot,rot*vec3(.45,.5,.6),smoothstep(.7,.8,lkN(vLkP*42.))*.6);
+    vec3 cloth=c*vec3(.36,.34,.28)*(.6+.6*n2);
+    vec3 o=mix(cloth,rot,s);
+    float blood=smoothstep(.6,.7,lkN(vLkP*5.5+3.))*smoothstep(.75,1.2,vLkP.y);
+    diffuseColor.rgb=mix(o,vec3(.15,.012,.008)*(.6+.7*n2),blood*.9);}`,
+   head:`{vec3 c=diffuseColor.rgb;float s=lkSkin(c),l=dot(c,vec3(.3,.59,.11)),n=lkN(vLkP*11.);
+    vec3 rot=vec3(l)*vec3(.5,.62,.42)*.85;rot=mix(rot,rot*vec3(.48,.36,.55),smoothstep(.55,.85,n));
+    vec3 o=mix(c*.8,rot,s);
+    float mouth=step(.05,vLkP.z)*smoothstep(1.6,1.54,vLkP.y)*smoothstep(1.45,1.52,vLkP.y)*smoothstep(.45,.6,lkN(vLkP*30.));
+    diffuseColor.rgb=mix(o,vec3(.14,.01,.006),mouth*.85);}`,
+   opacity:'diffuseColor.rgb=mix(diffuseColor.rgb,vec3(dot(diffuseColor.rgb,vec3(.33))),.7)*.6;'}
+ };
+ function withLook(sh,look,kind){
+  const code=LOOKS[look]?.[kind];if(!code)return;
+  sh.vertexShader='varying vec3 vLkP;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvLkP=position;');
+  // The cloth's sheen goes with its colour: a black suit or robe under a lamp otherwise reads as grey denim.
+  sh.fragmentShader=LOOK_GLSL+sh.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\n'+code)
+   .replace('#include <lights_fragment_end>','#include <lights_fragment_end>\nreflectedLight.directSpecular*=lkSpec;reflectedLight.indirectSpecular*=lkSpec;');
+ }
+ // Day (Lambert) set with a look: a copy of each shared material that runs the base shader edit, then the look.
+ const daySets=new Map();
+ function dayLook(T,id,day,look){
+  const key=id+'|'+look;if(daySets.has(key))return daySets.get(key);
+  const set={};for(const [kind,d] of Object.entries(day)){if(!LOOKS[look][kind]){set[kind]=d;continue;}
+   const m=d.clone(),base=d.onBeforeCompile,baseKey=d.customProgramCacheKey.bind(d);m.userData.shared=true;m.name=d.name+' · '+look;
+   m.onBeforeCompile=(sh,r)=>{base.call(m,sh,r);withLook(sh,look,kind);};m.customProgramCacheKey=()=>baseKey()+'|look-'+look+'-'+kind;set[kind]=m;}
+  daySets.set(key,set);return set;
+ }
  const nightSets=new Map();
- function nightMaterials(T,id,day){
-  if(nightSets.has(id))return nightSets.get(id);
+ function nightMaterials(T,id,day,look=null){
+  const setKey=look?id+'|'+look:id;if(nightSets.has(setKey))return nightSets.get(setKey);
   const set={};
   for(const [kind,d] of Object.entries(day)){
    const hair=kind==='opacity',cloth=kind==='body';
@@ -81,12 +134,13 @@
      .replace('#include <lights_fragment_end>',`#include <lights_fragment_end>
       {float rbSpec=${hair?'0.':'mix(1.,.45,rbSkinW)'};reflectedLight.directSpecular*=rbSpec;reflectedLight.indirectSpecular*=rbSpec;}`);
    };
-   m.customProgramCacheKey=()=>'rocketbox-night-4-'+kind;
+   if(look){const inner=m.onBeforeCompile;m.onBeforeCompile=(sh,r)=>{inner(sh,r);withLook(sh,look,kind);};}
+   m.customProgramCacheKey=()=>'rocketbox-night-4-'+kind+(look?'-look-'+look:'');
    set[kind]=m;
   }
   // The matrix form-in (bots crystallising out of glyphs) patches what a body wears: the night set must carry it too.
   if(root.edenMatrix)for(const m of new Set(Object.values(set)))if(m?.isMeshStandardMaterial)root.edenMatrix.patch(T,m,'form');
-  nightSets.set(id,set);return set;
+  nightSets.set(setKey,set);return set;
  }
  // Which set a body draws with: night only in the main scene of the showroom while it is in Beyond Eden with its bake.
  let oldEntry=null;
@@ -140,16 +194,16 @@
   const rig=buildRig(T,mesh,a,group,joints),{skeleton,parts}=rig;
   const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(position,3));g.setAttribute('normal',new T.BufferAttribute(mesh.normal,3));g.setAttribute('uv',new T.BufferAttribute(mesh.uv,2));
   g.setAttribute('skinIndex',new T.Uint16BufferAttribute(mesh.joints,4));g.setAttribute('skinWeight',new T.BufferAttribute(mesh.weights,4));g.setIndex(new T.BufferAttribute(mesh.index,1));
-  const set=materials(T,id,mesh),list=mesh.sections.map((s,i)=>{g.addGroup(s.start,s.count,i);return set[s.material];});
+  const look=Object.hasOwn(LOOKS,a?.look||'')?a.look:null,base=materials(T,id,mesh),set=look?dayLook(T,id,base,look):base,list=mesh.sections.map((s,i)=>{g.addGroup(s.start,s.count,i);return set[s.material];});
   const body=new T.SkinnedMesh(g,list);body.name='Character: '+id;body.frustumCulled=false;group.add(body);body.bind(skeleton,new T.Matrix4());parts.push(body);
   // The set is picked as the body is drawn (it takes effect from the next frame): world changes happen behind a loading screen.
   let night=false,nightList=null;
   body.onBeforeRender=(renderer,scene)=>{const want=nightNow(scene);if(want===night)return;night=want;
-   if(want)nightList??=mesh.sections.map(s=>nightMaterials(T,id,set)[s.material]);body.material=want?nightList:list;};
+   if(want)nightList??=mesh.sections.map(s=>nightMaterials(T,id,base,look)[s.material]);body.material=want?nightList:list;};
   const mass=(Number.isFinite(a?.weight)?a.weight-72:0)/100;
   const blob=new T.Mesh(new T.PlaneGeometry(1,1).rotateX(-Math.PI/2),new T.MeshBasicMaterial({map:GardenCharacterDetails.blobTexture(T),transparent:true,depthWrite:false,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-2}));
   blob.name='Blob shadow';blob.position.y=.006;blob.scale.set(.62+mass*.25,1,.42+mass*.2);blob.renderOrder=-1;group.add(blob);parts.push(blob);
   return rig;
  }
- const api=root.GardenCharacterRocketbox={nightLook:true,buildRig,textureListeners,CATALOG,DEFAULT,idFor,load,build,loaded:id=>meshes.has(id),thumb:id=>BASE+id+'/thumb.webp?v='+VERSION};
+ const api=root.GardenCharacterRocketbox={nightLook:true,LOOKS:Object.keys(LOOKS),buildRig,textureListeners,CATALOG,DEFAULT,idFor,load,build,loaded:id=>meshes.has(id),thumb:id=>BASE+id+'/thumb.webp?v='+VERSION};
 })(typeof window==='object'?window:globalThis);
