@@ -27,7 +27,9 @@ export const PROPS = ['barrel_02', 'modular_airduct_rectangular_01', 'covered_ca
   'dead_tree_trunk_02', 'tree_stump_02', 'wall_clock',
   // vegetation
   'fern_02', 'dandelion_01', 'celandine_01', 'grass_bermuda_01', 'shrub_sorrel_01', 'wild_rooibos_bush', 'searsia_lucida', 'shrub_03', 'pine_roots',
-  'root_cluster_01', 'rock_moss_set_02', 'stone_01', 'rock_07', 'tree_small_02', 'bark_debris_01', 'periwinkle_plant', 'pine_sapling_small'];
+  'root_cluster_01', 'rock_moss_set_02', 'stone_01', 'rock_07', 'tree_small_02', 'bark_debris_01', 'periwinkle_plant', 'pine_sapling_small',
+  // their distance versions (impostor cards)
+  'shrub_02_far', 'wild_rooibos_bush_far', 'shrub_03_far', 'grass_medium_01_far', 'grass_medium_02_far', 'nettle_plant_far'];
 export const GAME_PROPS = ['chipped-granite-trough-v001', 'plain-limestone-trough-v001', 'plain-iron-gurney-v001', 'worn-iron-gurney-v002', 'plain-iron-operating-table-v001',
   'old-iron-operating-table-v002', 'weathered-wood-cart-v001', 'sturdy-wood-cart-v001', 'weathered-wood-barricade-v001', 'plain-wood-barricade-v001', 'old-iron-drainpipe-v001',
   'worn-iron-cell-door-v001', 'sturdy-wood-table-v001'];

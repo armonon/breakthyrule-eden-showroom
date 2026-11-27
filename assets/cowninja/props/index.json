@@ -3588,11 +3588,11 @@
   }
  },
  "shrub_03": {
-  "tris": 3655,
+  "tris": 3332,
   "min": [
-   -0.055,
+   -0.069,
    -0.137,
-   -0.084
+   -0.09
   ],
   "max": [
    1.303,
@@ -3721,15 +3721,15 @@
   "parts": {}
  },
  "wild_rooibos_bush": {
-  "tris": 6684,
+  "tris": 6245,
   "min": [
-   -0.33,
-   -0.265,
+   -0.366,
+   -0.196,
    -0.475
   ],
   "max": [
-   1.997,
-   0.679,
+   1.956,
+   0.618,
    0.347
   ],
   "parts": {
@@ -3807,6 +3807,301 @@
     -0.2,
     0.0,
     -0.0
+   ]
+  }
+ },
+ "grass_medium_01_far": {
+  "tris": 68,
+  "min": [
+   -0.167,
+   -0.036,
+   -0.164
+  ],
+  "max": [
+   0.176,
+   0.322,
+   0.175
+  ],
+  "parts": {
+   "grass_medium_01_large_a_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_01_large_b_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_01_large_c_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_01_mid_a_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_01_mid_b_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_01_mid_c_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_01_small_a_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_01_small_b_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_01_tall_a_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_01_tall_b_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_01_tall_c_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_01_tiny_a_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_01_tiny_b_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_01_tiny_c_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_01_tiny_d_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_01_tiny_e_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_01_tiny_f_LOD0": [
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ "grass_medium_02_far": {
+  "tris": 20,
+  "min": [
+   -0.261,
+   -0.016,
+   -0.184
+  ],
+  "max": [
+   0.19,
+   0.437,
+   0.267
+  ],
+  "parts": {
+   "grass_medium_02_a": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_02_b": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_02_c": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_02_d": [
+    0,
+    0,
+    0
+   ],
+   "grass_medium_02_e": [
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ "nettle_plant_far": {
+  "tris": 24,
+  "min": [
+   -0.114,
+   -0.016,
+   -0.113
+  ],
+  "max": [
+   0.112,
+   0.212,
+   0.112
+  ],
+  "parts": {
+   "nettle_plant_medium_a_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "nettle_plant_medium_b_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "nettle_plant_small_a_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "nettle_plant_small_b_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "nettle_plant_tall_a_LOD0": [
+    0,
+    0,
+    0
+   ],
+   "nettle_plant_tall_b_LOD0": [
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ "shrub_02_far": {
+  "tris": 16,
+  "min": [
+   -1.216,
+   -0.611,
+   -1.236
+  ],
+  "max": [
+   1.421,
+   2.027,
+   1.402
+  ],
+  "parts": {
+   "shrub_02_a": [
+    0,
+    0,
+    0
+   ],
+   "shrub_02_b": [
+    0,
+    0,
+    0
+   ],
+   "shrub_02_c": [
+    0,
+    0,
+    0
+   ],
+   "shrub_02_d": [
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ "shrub_03_far": {
+  "tris": 16,
+  "min": [
+   -0.184,
+   -0.012,
+   -0.207
+  ],
+  "max": [
+   0.236,
+   0.407,
+   0.212
+  ],
+  "parts": {
+   "shrub_03_a": [
+    0,
+    0,
+    0
+   ],
+   "shrub_03_b": [
+    0,
+    0,
+    0
+   ],
+   "shrub_03_c": [
+    0,
+    0,
+    0
+   ],
+   "shrub_03_d": [
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ "wild_rooibos_bush_far": {
+  "tris": 20,
+  "min": [
+   -0.441,
+   -0.012,
+   -0.554
+  ],
+  "max": [
+   0.437,
+   0.865,
+   0.323
+  ],
+  "parts": {
+   "wild_rooibos_bush_a": [
+    0,
+    0,
+    0
+   ],
+   "wild_rooibos_bush_b": [
+    0,
+    0,
+    0
+   ],
+   "wild_rooibos_bush_c": [
+    0,
+    0,
+    0
+   ],
+   "wild_rooibos_bush_d": [
+    0,
+    0,
+    0
+   ],
+   "wild_rooibos_bush_e": [
+    0,
+    0,
+    0
    ]
   }
  }

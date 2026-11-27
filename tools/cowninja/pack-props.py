@@ -77,6 +77,8 @@ def thin_foliage(name, budget):
 # web budget and still look leafy. Each of their pieces becomes an impostor instead: rendered in Cycles from the
 # front and from the side onto textures with alpha, shown as two crossed cut-out cards the size of the plant.
 IMPOSTOR = {'tree_small_02': 1024, 'searsia_lucida': 512, 'fir_sapling': 512, 'pine_sapling_small': 512}
+# Distance versions (<name>_far.glb) of the plants scattered thickly: the game swaps to them beyond a few tens of metres.
+FAR = {'shrub_02': 256, 'wild_rooibos_bush': 256, 'shrub_03': 256, 'grass_medium_01': 256, 'grass_medium_02': 256, 'nettle_plant': 256}
 def impostor(name, res):
     import bmesh
     sc = bpy.context.scene; sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'; sc.cycles.samples = 24; sc.cycles.use_denoising = False
@@ -204,6 +206,11 @@ for name in sorted(os.listdir(os.path.join(WORK, 'models'))):
     bpy.ops.import_scene.gltf(filepath=os.path.join(WORK, 'models', name, name + '.gltf'))
     if any(k in name.lower() for k in PLANTS + ('fern', 'dandelion', 'celandine', 'sorrel', 'rooibos', 'searsia', 'periwinkle')): add_alpha(name)
     export(name.lower())
+    if name.lower() in FAR:   # and a distance version: the same pieces as front/side impostor cards
+        bpy.ops.wm.read_factory_settings(use_empty=True); bpy.ops.import_scene.gltf(filepath=os.path.join(WORK, 'models', name, name + '.gltf')); add_alpha(name)
+        impostor(name.lower() + '_far', FAR[name.lower()]); meshes = [o for o in bpy.data.objects if o.type == 'MESH']; lo, hi = bounds(meshes)
+        index[name.lower() + '_far'] = {'tris': 4 * len(meshes), 'min': [round(lo[0], 3), round(lo[2], 3), round(-hi[1], 3)], 'max': [round(hi[0], 3), round(hi[2], 3), round(-lo[1], 3)], 'parts': {o.name: [0, 0, 0] for o in meshes} if len(meshes) > 1 else {}}
+        bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, name.lower() + '_far.glb'), export_format='GLB', export_image_format='WEBP', export_image_quality=76, export_apply=True, export_animations=False, export_yup=True)
 
 # The pickup: nose toward -Z in glTF, 4.1 m long, wheels kept as separate objects named wheel-fl/fr/rl/rr.
 bpy.ops.wm.read_factory_settings(use_empty=True); bpy.ops.import_scene.fbx(filepath=args[1])

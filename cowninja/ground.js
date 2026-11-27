@@ -20,7 +20,8 @@ function vnoise(x, z) {
 const fbm = (x, z) => vnoise(x, z) * .55 + vnoise(x * 2.03 + 17, z * 2.03 + 9) * .3 + vnoise(x * 4.1 + 3, z * 4.1 + 41) * .15;
 
 // The mask over `bounds` [x0, x1, z0, z1]: RGBA = grass, dry earth, mud, gravel (sums to 255).
-export function buildMask({ paved = [], fence = null, bounds = [-200, 220, -380, 220], res = 512 }) {
+export function buildMask({ paved = [], fence = null, bounds = [-200, 220, -380, 220], res = 512, fields = [], track = null, creek = null, pond = null }) {
+  const seg = (x, z, pts) => { let best = 1e9; if (!pts) return best; for (let k = 0; k < pts.length - 1; k++) { const [ax, az] = pts[k], [bx, bz] = pts[k + 1], dx = bx - ax, dz = bz - az, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz))); best = Math.min(best, Math.hypot(x - ax - dx * t, z - az - dz * t)); } return best; };
   const [x0, x1, z0, z1] = bounds, data = new Uint8Array(res * res * 4), grassW = new Float32Array(res * res);
   const sx = (x1 - x0) / res, sz = (z1 - z0) / res;
   const distPaved = (x, z) => { let d = 1e9; for (const r of paved) { const dx = Math.max(r[0] - x, 0, x - r[1]), dz = Math.max(r[2] - z, 0, z - r[3]); d = Math.min(d, Math.hypot(dx, dz)); if (d === 0) break; } return d; };
@@ -40,6 +41,16 @@ export function buildMask({ paved = [], fence = null, bounds = [-200, 220, -380,
     } else {
       // Beyond the fence: meadow, with dry patches and a muddy verge along the road.
       g = .7 + (n - .5) * 1.4; d = Math.max(0, .55 - n) * 1.2 + (n2 > .7 ? .3 : 0); m = Math.exp(-dp / 2.5) * .6; v = Math.exp(-dp / .8) * .7;
+      // Each field as it is worked: pasture green, stubble dry and pale, plough brown earth in furrows.
+      const f = fields.find(q => x > q[0] && x < q[1] && z > q[2] && z < q[3]);
+      if (f) { const edge = Math.min(x - f[0], f[1] - x, z - f[2], f[3] - z), headland = Math.max(0, 1 - edge / 5);   // a green margin round every field
+        if (f[4] === 'stubble') { g = .25 + headland; d = 1.2 * (1 - headland) + (n - .5) * .4; m = .05; }
+        else if (f[4] === 'plough') { const furrow = Math.sin((x + z * .15) * 2.4) * .5 + .5; g = headland * 1.2; d = .3; m = (.8 + furrow * .9) * (1 - headland); }
+        else { g = 1.1 + (n - .5) * .6; d *= .5; } }
+      // The track is bare earth with gravel; the creek and pond banks are mud.
+      const dt = seg(x, z, track); if (dt < 3.2) { const k = 1 - dt / 3.2; m += k * 1.4; v += Math.max(0, .9 - dt) * 1.2; g *= 1 - k; }
+      const dc = seg(x, z, creek); if (dc < 10) { const k = 1 - dc / 10; m += k * 1.6; g *= 1 - k * .6; }
+      if (pond) { const dpd = Math.hypot(x - pond[0], z - pond[1]); if (dpd < pond[2] + 6) { const k = Math.min(1, (pond[2] + 6 - dpd) / 8); m += k * 1.5; g *= 1 - k * .7; } }
     }
     g = Math.max(0, g); d = Math.max(0, d); m = Math.max(0, m); v = Math.max(0, v);
     if (dp === 0) { g *= .1; }   // under paving it does not show anyway

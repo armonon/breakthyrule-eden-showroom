@@ -6,7 +6,30 @@
 // gate planks and the red lever. Units are metres; +x east, -z north (the way out).
 import * as THREE from 'three/webgpu';
 import { buildMask, groundMaterial } from '/cowninja/ground.js';
-import { positionWorldDirection, mix, vec3, vec2, smoothstep, pow, max, float, time, mx_fractal_noise_float } from 'three/tsl';
+import { positionWorldDirection, mix, vec3, vec2, smoothstep, pow, max, float, time, mx_fractal_noise_float, texture as tslTexture, equirectUV, Fn, Loop, exp, dot, clamp, hash, screenUV } from 'three/tsl';
+// The night sky with volumetric cloud: the photographed sky behind, and a layer of cloud between 900 m and 1,700 m
+// marched through in ten steps per pixel. Each step's density comes from drifting 3D noise; a second look toward the
+// moon darkens what is in the cloud's own shadow, so tops catch silver light and undersides go dark.
+function nightSky(sky, moonDir, intensity) {
+  return Fn(() => {
+    const d = positionWorldDirection, up = max(d.y, float(.035)), md = vec3(moonDir.x, moonDir.y, moonDir.z);
+    const base = tslTexture(sky, equirectUV(d)).rgb.mul(intensity);
+    const T = float(1).toVar(), light = vec3(0).toVar();
+    const jitter = hash(screenUV.mul(vec2(1973, 9277)).add(time.mul(.37).fract())).mul(.9).add(.05);   // a different start per pixel and frame: no banding once anti-aliased
+    const t0 = float(900).div(up), t1 = float(1700).div(up), dt = t1.sub(t0).div(10), wind = vec3(time.mul(3.2), 0, time.mul(1.4));
+    Loop(10, ({ i }) => {
+      const p = d.mul(t0.add(dt.mul(float(i).add(jitter)))).add(wind);
+      const n = mx_fractal_noise_float(p.mul(.0011), 4).mul(.5).add(.5), h = clamp(p.y.sub(900).div(800), float(0), float(1));
+      const dens = max(n.sub(.56).mul(3.2).mul(smoothstep(float(0), float(.25), h)).mul(smoothstep(float(1), float(.6), h)), float(0));
+      const shade = mx_fractal_noise_float(p.add(md.mul(160)).mul(.0011), 3).mul(.5).add(.5), lit = exp(max(shade.sub(.5), float(0)).mul(-7));
+      const a = float(1).sub(exp(dens.mul(dt).mul(-.004)));
+      light.addAssign(mix(vec3(.012, .016, .028), vec3(.2, .23, .3), lit).mul(a).mul(T));
+      T.mulAssign(float(1).sub(a));
+    });
+    const horizon = smoothstep(float(.0), float(.12), d.y);   // thin out at the horizon, where the layer would be endless
+    return mix(base, base.mul(T).add(light), horizon);
+  })();
+}
 // Anime skies: dusk, graded from a hot pink-orange horizon through rose and lavender to deep violet, with dark
 // painted cloud banks drifting across it; rain, a heavy grey-blue overcast with darker rolling cloud.
 function animeSky(mood) {
@@ -36,7 +59,16 @@ export function createWorld({ scene, physics, assets, shadows = 7, quality = 0, 
   // The ground: the yard inside the fence and the countryside round it, re-dressed with the blended surfaces
   // (ground.js) on a mask built from the site's paved areas. Kept when the textures are missing.
   const groundFence = P.fence ? [Math.min(...P.fence.map(f => Math.min(f[0], f[2]))), Math.max(...P.fence.map(f => Math.max(f[0], f[2]))), Math.min(...P.fence.map(f => Math.min(f[1], f[3]))), Math.max(...P.fence.map(f => Math.max(f[1], f[3])))] : null;
-  const groundMask = buildMask({ paved: P.paved || [], fence: groundFence });
+  // The countryside's height (site.json terrain: a 4 m grid), for anything that stands on the slopes.
+  const T = data.terrain;
+  function heightAt(x, z) {
+    if (!T) return 0; const fx = (x - T.x0) / T.step, fz = (z - T.z0) / T.step, i = Math.floor(fx), j = Math.floor(fz);
+    if (i < 0 || j < 0 || i >= T.n - 1 || j >= T.n - 1) return 0;
+    const u = fx - i, v = fz - j, k = j * T.n + i, h = T.h;
+    return (h[k] * (1 - u) + h[k + 1] * u) * (1 - v) + (h[k + T.n] * (1 - u) + h[k + T.n + 1] * u) * v;
+  }
+  const groundMask = buildMask({ paved: P.paved || [], fence: groundFence, fields: P.fields, track: P.track, creek: P.creek, pond: P.pond,
+    bounds: T ? [T.x0, T.x0 + (T.n - 1) * T.step, T.z0, T.z0 + (T.n - 1) * T.step] : undefined, res: T ? 640 : 512 });
   if (assets.site) {
     const site = assets.site; root.add(site);
     const lm = assets.lightmap, scale = (P.lightmap?.scale || 1) * .3, lit = new Map();
@@ -108,16 +140,16 @@ export function createWorld({ scene, physics, assets, shadows = 7, quality = 0, 
   // reach of the camera whenever it has moved a little (small plants close, shrubs further, trees far).
   const scatterSets = []; let scatterAt = { x: 1e9, z: 1e9 };
   const REACH = name => /tree|fir|boulder|trunk|stump/.test(name) ? 450 : /shrub|searsia|rooibos|sapling|rock_moss|root|pine_roots/.test(name) ? 160 : 75;
-  function scattered(node, placements, reach) {
+  function scattered(node, placements, reach, near = 0) {
     if (!node || !placements.length) return; node.updateMatrixWorld(true);
     node.traverse(m => { if (!m.isMesh) return;
       const mats = placements.map(p => new THREE.Matrix4().multiplyMatrices(p, m.matrixWorld)), at = placements.map(p => [p.elements[12], p.elements[14]]);
       const im = new THREE.InstancedMesh(m.geometry, m.material, mats.length); im.count = 0; im.frustumCulled = false; im.castShadow = false; im.receiveShadow = true; root.add(im);
-      scatterSets.push({ im, mats, at, r2: reach * reach }); });
+      scatterSets.push({ im, mats, at, r2: reach * reach, n2: near * near }); });
   }
   function updateScatter(focus) {
     if (Math.hypot(focus.x - scatterAt.x, focus.z - scatterAt.z) < 12) return; scatterAt = { x: focus.x, z: focus.z };
-    for (const s of scatterSets) { let n = 0; for (let i = 0; i < s.mats.length; i++) { const dx = s.at[i][0] - focus.x, dz = s.at[i][1] - focus.z; if (dx * dx + dz * dz < s.r2) s.im.setMatrixAt(n++, s.mats[i]); } s.im.count = n; s.im.instanceMatrix.needsUpdate = true; }
+    for (const s of scatterSets) { let n = 0; for (let i = 0; i < s.mats.length; i++) { const dx = s.at[i][0] - focus.x, dz = s.at[i][1] - focus.z; const d2 = dx * dx + dz * dz; if (d2 < s.r2 && d2 >= s.n2) s.im.setMatrixAt(n++, s.mats[i]); } s.im.count = n; s.im.instanceMatrix.needsUpdate = true; }
   }
   function instanced(node, placements, { cast = true, tile = 48 } = {}) {
     if (!node || !placements.length) return;
@@ -157,7 +189,10 @@ export function createWorld({ scene, physics, assets, shadows = 7, quality = 0, 
     for (const [v, ps] of groups) {
       const node = assets.clone(name, v); if (!node) continue;
       node.position.set(0, 0, 0);
-      scattered(node, ps.map(([x, y, z, yaw, s]) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(s, s, s))), REACH(name));   // plants: no shadow casting
+      // A distance version (cards) exists for this plant: the model up close, the cards beyond.
+      const farNode = assets.models.has(name + '_far') ? assets.clone(name + '_far', v) : null, NEAR = 42;
+      if (farNode) { farNode.position.set(0, 0, 0); scattered(farNode, ps.map(([x, y, z, yaw, s]) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(s, s, s))), REACH(name), NEAR); }
+      scattered(node, ps.map(([x, y, z, yaw, s]) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(s, s, s))), farNode ? NEAR : REACH(name));   // plants: no shadow casting
     }
   }
 
@@ -246,7 +281,8 @@ export function createWorld({ scene, physics, assets, shadows = 7, quality = 0, 
 
   // ---- light: the night sky as image-based light (dimmed: the baked map carries the ambient on the architecture),
   // a cold moon whose shadow follows the action, and the site's lamps (tubes stutter)
-  if (assets.sky) { scene.environment = assets.sky; scene.environmentIntensity = .25; /* clamped sky: reflections and a little fill */ scene.background = assets.sky; scene.backgroundIntensity = .22; scene.backgroundBlurriness = .04; }
+  if (assets.sky) { scene.environment = assets.sky; scene.environmentIntensity = .25; /* clamped sky: reflections and a little fill */ scene.background = assets.sky; scene.backgroundIntensity = .22; scene.backgroundBlurriness = .04;
+    if (new URLSearchParams(location.search).get('clouds') !== '0') scene.backgroundNode = nightSky(assets.sky, new THREE.Vector3(-38, 60, -30).normalize(), .22); }
   scene.add(painted ? new THREE.HemisphereLight(0xbcd6f2, 0x5e6a3c, 1.25) : dusk ? new THREE.HemisphereLight(0xc9a6d6, 0x2a2238, .9) : rain ? new THREE.HemisphereLight(0x9fb0c0, 0x30363c, 1.1) : new THREE.HemisphereLight(0x8fa4b5, 0x1d1b18, .35));
   const moon = painted ? new THREE.DirectionalLight(0xffd7a0, 4.2) : dusk ? new THREE.DirectionalLight(0xffb0a0, 3.2) : rain ? new THREE.DirectionalLight(0xc8d4e0, 1.1) : new THREE.DirectionalLight(0xbfd2e6, 2.4); moon.castShadow = true;
   // The painted style is late afternoon: a sky graded from deep blue overhead through pale blue to a warm haze at the
@@ -333,7 +369,7 @@ export function createWorld({ scene, physics, assets, shadows = 7, quality = 0, 
   }
 
   return {
-    groundMask, fence: groundFence, ceilingsList: data.ceilings || [], root, mat, blocked, walk, update, gateBroken, openGate, gates, gateAt, gateNear, leverNear, onGate: fn => gateListeners.push(fn), pens: P.pens || [], solids, solidAt, sightBlocked, ceilingAt, indoors, walls2d, dynamic, loose, looseModel, place,
+    groundMask, heightAt, fence: groundFence, ceilingsList: data.ceilings || [], root, mat, blocked, walk, update, gateBroken, openGate, gates, gateAt, gateNear, leverNear, onGate: fn => gateListeners.push(fn), pens: P.pens || [], solids, solidAt, sightBlocked, ceilingAt, indoors, walls2d, dynamic, loose, looseModel, place,
     grips: data.grips || [], hay: data.hay || [], roofSteps: data.roofSteps || [],
     inHay: (x, z) => (data.hay || []).some(h => Math.hypot(x - h[0], z - h[1]) < h[2] * .85),
     bushes: [], inBush(x, z) { return this.bushes.find(b => Math.hypot(x - b.x, z - b.z) < b.r * .85) || null; },

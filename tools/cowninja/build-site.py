@@ -402,24 +402,61 @@ box('carpark', (-50, 0, -56), (-22, .018, -30), 'gravel', solid=False)
 box('farm-pad', (30, 0, 3), (96, .02, 57), 'apron', solid=False)
 box('backyard', (-46, 0, 48.5), (50, .02, 66), 'apron', solid=False)
 
+# ---- the countryside: sculpted. Rolling farmland round the site, cut into fields by hedgerows; a creek winding
+# down the east side between real banks; a pond to the west; a dirt track from the main road round to the staff
+# gate (the way you came); woodland on the hills beyond and bigger hills further out. The site and a margin round
+# it stay flat. The game gets a height map of it (site.json terrain.h) so grass and plants grow on the slopes.
+CREEK = [(300, -330), (230, -230), (175, -120), (150, -20), (165, 80), (150, 170), (95, 250), (20, 300)]
+POND = (-150, 70, 20)
+TRACK = [(5, -170), (55, -158), (112, -100), (122, -30), (116, 12), (110, 30)]
+def seg_dist(x, z, pts):
+    best = 1e9
+    for (ax, az), (bx, bz) in zip(pts, pts[1:]):
+        dx, dz = bx - ax, bz - az; t = max(0, min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz))); best = min(best, math.hypot(x - ax - dx * t, z - az - dz * t))
+    return best
+def terrain_height(x, z):
+    margin = max(FX0 - 14 - x, x - FX1 - 14, FZ0 - 14 - z, z - FZ1 - 14, 0)
+    road = max(0, 1 - max(0, abs(x) - 7) / 18) if z < FZ0 else 0
+    hills = (math.sin(x * .011) * 7 + math.sin(z * .013 + 1.3) * 6 + math.sin((x + z) * .025) * 3 + math.sin(x * .05 + z * .03) * 1.2)
+    farm = (math.sin(x * .031 + 2.1) * math.sin(z * .027) * 1.1 + math.sin(x * .07 + z * .05) * .35)   # gentle swells across the fields
+    near = min(1, margin / 30) ** 1.5; far = min(1, max(0, margin - 120) / 140) ** 1.3
+    y = -.04 + near * farm * 1.4 + far * (hills + 9) * 1.15
+    y *= (1 - road * .85)
+    dc = seg_dist(x, z, CREEK)                               # the creek: a bed 2.4 m down, banks easing out over 9 m
+    if dc < 12: y -= 2.4 * (1 - smooth(min(1, max(0, dc - 2.5) / 9)))
+    dp = math.hypot(x - POND[0], z - POND[1])
+    if dp < POND[2] + 10: y -= 2.2 * (1 - smooth(min(1, max(0, dp - POND[2] * .6) / (POND[2] * .4 + 10))))
+    dt = seg_dist(x, z, TRACK)                               # the track: worn a little into the ground
+    if dt < 4 and margin > 0: y = y * (min(1, dt / 4)) - .08 * (1 - dt / 4)
+    return y
+def smooth(t): return t * t * (3 - 2 * t)
+TERRAIN = {'x0': -380.0, 'z0': -440.0, 'size': 760.0}
 def terrain():
-    N, S = 150, 720.0; bm = bmesh.new(); verts = []
-    def h(x, z):
-        inside = max(FX0 - 14 - x, x - FX1 - 14, FZ0 - 14 - z, z - FZ1 - 14, 0)
-        road = max(0, 1 - max(0, abs(x) - 7) / 18) if z < FZ0 else 0
-        hills = (math.sin(x * .011) * 7 + math.sin(z * .013 + 1.3) * 6 + math.sin((x + z) * .025) * 3 + math.sin(x * .05 + z * .03) * 1.2)
-        rise = min(1, inside / 90) ** 1.4
-        return -.04 + rise * (hills + 9) * (1 - road * .85)
+    N, S = 230, TERRAIN['size']; bm = bmesh.new(); verts = []
     for j in range(N + 1):
         row = []
         for i in range(N + 1):
-            x = -S / 2 + S * i / N; z = -S / 2 + S * j / N - 60; row.append(bm.verts.new(B((x, h(x, z), z))))
+            x = TERRAIN['x0'] + S * i / N; z = TERRAIN['z0'] + S * j / N; row.append(bm.verts.new(B((x, terrain_height(x, z), z))))
         verts.append(row)
     for j in range(N):
         for i in range(N): bm.faces.new((verts[j][i], verts[j][i + 1], verts[j + 1][i + 1], verts[j + 1][i]))
     o = emit('terrain', bm, 'grass', 'terrain')
     for p in o.data.polygons: p.use_smooth = True
-    return h
+    # Water: a ribbon down the creek and a disc in the pond, a little below the banks.
+    bm = bmesh.new(); pts = []
+    for (ax, az), (bx, bz) in zip(CREEK, CREEK[1:]):
+        n = max(2, int(math.hypot(bx - ax, bz - az) / 4))
+        for k in range(n): pts.append((ax + (bx - ax) * k / n, az + (bz - az) * k / n))
+    pts.append(CREEK[-1]); prev = None
+    for k, (x, z) in enumerate(pts):
+        nx, nz = pts[min(k + 1, len(pts) - 1)][0] - pts[max(k - 1, 0)][0], pts[min(k + 1, len(pts) - 1)][1] - pts[max(k - 1, 0)][1]; L = math.hypot(nx, nz) or 1
+        ox, oz = -nz / L * 3.6, nx / L * 3.6; y = terrain_height(x, z) + .75
+        pair = (bm.verts.new(B((x + ox, y, z + oz))), bm.verts.new(B((x - ox, y, z - oz))))
+        if prev: bm.faces.new((prev[0], prev[1], pair[1], pair[0]))
+        prev = pair
+    emit('creek', bm, 'water', 'terrain')
+    bm = bmesh.new(); bm_cyl(bm, (POND[0], terrain_height(*POND[:2]) + 1.2, POND[1]), (POND[0], terrain_height(*POND[:2]) + 1.22, POND[1]), POND[2] * .92, 40); emit('pond', bm, 'water', 'terrain')
+    return terrain_height
 terrain_h = terrain()
 
 # Perimeter fence (chain-link panels placed by the game along these runs) and its collision.
@@ -707,6 +744,32 @@ scatter('fir_sapling', 130, (14, 240), (2.6, 4.2));   # grown on: the full Poly 
 scatter('boulder_01', 30, (6, 200), (.6, 1.8)); scatter('shrub_02', 120, (3, 160), (.7, 1.3)); scatter('shrub_04', 80, (3, 160), (.7, 1.3))
 scatter('grass_medium_01', 420, (1, 90), (.8, 1.4)); scatter('grass_medium_02', 300, (1, 90), (.8, 1.4))
 scatter('fir_sapling', 40, (4, 120), (.9, 1.5)); scatter('tree_stump_01', 14, (4, 80), (.9, 1.3))
+# ---- the countryside planting: hedgerows along every field boundary (shrubs every couple of metres, a tree every
+# fifteen or twenty), gaps for the road and the track; woodland in drifts on the hills; field types for the
+# ground blend (pasture, stubble, plough).
+HEDGES = [[(-120, -220), (-120, 200)], [(-220, -140), (-14, -140)], [(14, -140), (148, -140)], [(-220, 150), (140, 150)], [(60, -220), (60, -84)],
+          [(-220, -60), (-74, -60)], [(232, -200), (232, 200)], [(-220, -220), (-220, 200)]]
+FIELDS = [[-220, -120, -140, -60, 'stubble'], [-220, -120, -60, 150, 'pasture'], [-120, -14, -220, -140, 'plough'], [14, 60, -220, -140, 'stubble'],
+          [60, 150, -220, -84, 'pasture'], [-120, -70, -140, 150, 'pasture'], [-220, 140, 150, 232, 'stubble'], [118, 232, -84, 150, 'pasture'], [-220, -120, -220, -140, 'plough']]
+HR = random.Random(31)
+def hedge(a, b):
+    L = math.hypot(b[0] - a[0], b[1] - a[1]); n = int(L / 2.3); next_tree = HR.uniform(6, 18)
+    for k in range(n):
+        t = k / max(1, n); x = a[0] + (b[0] - a[0]) * t + HR.uniform(-.6, .6); z = a[1] + (b[1] - a[1]) * t + HR.uniform(-.6, .6)
+        if abs(x) < 10 and z < FZ0 or seg_dist(x, z, TRACK) < 5 or seg_dist(x, z, CREEK) < 6: continue
+        y = round(terrain_height(x, z), 2)
+        SCATTER.setdefault(HR.choice(['shrub_02', 'shrub_02', 'wild_rooibos_bush', 'searsia_lucida', 'pine_sapling_small']), []).append([round(x, 2), y, round(z, 2), round(HR.uniform(0, 6.28), 2), round(HR.uniform(1.0, 1.6), 2)])
+        if k * 2.3 >= next_tree:
+            next_tree += HR.uniform(14, 24); SCATTER.setdefault('tree_small_02', []).append([round(x, 2), y, round(z, 2), round(HR.uniform(0, 6.28), 2), round(HR.uniform(1.5, 2.4), 2)])
+for a, b in HEDGES: hedge(a, b)
+for i in range(4000):
+    x, z = HR.uniform(TERRAIN['x0'] + 20, TERRAIN['x0'] + TERRAIN['size'] - 20), HR.uniform(TERRAIN['z0'] + 20, TERRAIN['z0'] + TERRAIN['size'] - 20)
+    margin = max(FX0 - 14 - x, x - FX1 - 14, FZ0 - 14 - z, z - FZ1 - 14, 0)
+    if margin < 150 or abs(x) < 14 and z < FZ0: continue
+    if math.sin(x * .018 + 1.7) * math.sin(z * .021) + math.sin((x - z) * .009) * .5 < .25: continue   # woodland comes in drifts
+    if len(SCATTER.get('tree_small_02', [])) + len(SCATTER.get('fir_sapling', [])) > 900: break
+    SCATTER.setdefault('tree_small_02' if HR.random() < .6 else 'fir_sapling', []).append([round(x, 2), round(terrain_height(x, z), 2), round(z, 2), round(HR.uniform(0, 6.28), 2), round(HR.uniform(1.6, 2.8), 2)])
+
 # Weeds along the inside of the fence.
 for i in range(140):
     side = i % 4; t = random.random()
@@ -1199,7 +1262,7 @@ for hx, hz, hr in HAY:
 
 POINTS = {
     'spawn': {'x': FX1 + 9, 'z': 30, 'yaw': -math.pi / 2}, 'cowSpawn': {'x': 16, 'z': 40, 'yaw': -math.pi / 2},
-    'exit': {'x': 0, 'z': -128, 'radius': 18}, 'cover': COVER, 'cowWalls': COW_WALLS, 'paved': PAVED, 'gateZ': FZ0, 'pens': PENS, 'gates': GATES, 'bounds': [-150, 150, -340, 160],
+    'exit': {'x': 0, 'z': -128, 'radius': 18}, 'cover': COVER, 'cowWalls': COW_WALLS, 'paved': PAVED, 'fields': FIELDS, 'track': TRACK, 'creek': CREEK, 'pond': list(POND), 'gateZ': FZ0, 'pens': PENS, 'gates': GATES, 'bounds': [-150, 150, -340, 160],
     'pen': PEN, 'gate': {'x': 6, 'z': 34.5, 'half': 2.55}, 'lever': {'x': 5.2, 'z': 31.2},
     'escape': [[9, 34.5], [3, 34.5], [0, 27], [0, 12], [0, -3], [0, -30]],
     'truckStart': {'x': 44, 'z': -40, 'yaw': math.pi},
@@ -1465,7 +1528,9 @@ for o in OBJS['arch']: o['lightmap'] = 1
 bpy.ops.object.select_all(action='DESELECT')
 bpy.ops.export_scene.gltf(filepath=f'{OUT}/site.glb', export_format='GLB', export_image_format='WEBP', export_image_quality=80, export_extras=True,
                           export_apply=True, export_animations=False, export_yup=True, export_lights=False, export_cameras=False)
-data = {'version': 1, 'grips': GRIPS, 'hay': HAY, 'roofSteps': ROOF_STEPS, 'modly': sorted(MODLY), 'solids': SOLIDS, 'ceilings': CEILINGS, 'interiors': INTERIORS, 'ramps': RAMPS, 'lights': LIGHTS, 'props': PROPS, 'loose': LOOSE, 'scatter': SCATTER, 'points': POINTS}
+STEP = 4.0; TN = int(TERRAIN['size'] / STEP) + 1
+TERRAIN_DATA = {'x0': TERRAIN['x0'], 'z0': TERRAIN['z0'], 'step': STEP, 'n': TN, 'h': [round(terrain_height(TERRAIN['x0'] + i * STEP, TERRAIN['z0'] + j * STEP), 2) for j in range(TN) for i in range(TN)]}
+data = {'version': 1, 'terrain': TERRAIN_DATA, 'grips': GRIPS, 'hay': HAY, 'roofSteps': ROOF_STEPS, 'modly': sorted(MODLY), 'solids': SOLIDS, 'ceilings': CEILINGS, 'interiors': INTERIORS, 'ramps': RAMPS, 'lights': LIGHTS, 'props': PROPS, 'loose': LOOSE, 'scatter': SCATTER, 'points': POINTS}
 json.dump(data, open(f'{OUT}/site.json', 'w'), separators=(',', ':'))
 tris = sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in bpy.data.objects if o.type == 'MESH')
 print('SITE', os.path.getsize(f'{OUT}/site.glb') // 1024, 'KB', tris, 'tris', len(SOLIDS), 'solids', sum(len(v) for v in SCATTER.values()), 'scattered', flush=True)

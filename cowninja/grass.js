@@ -30,7 +30,7 @@ function clump() {
   geo.setAttribute('normal', new THREE.Float32BufferAttribute(new Array(pos.length / 3).fill(0).flatMap(() => [0, 1, 0]), 3)); geo.setIndex(idx); return geo;
 }
 
-export function createGrass({ scene, world, mask, quality = 0, reach = 40, cell = 12 }) {
+export function createGrass({ scene, world, mask, quality = 0, reach = 40, far = 120, cell = 12 }) {
   if (!mask) return { update() {} };
   const N = quality >= 3 ? 6000 : quality >= 2 ? 14000 : 30000;
   const map = bladeTexture(), m = new THREE.MeshStandardNodeMaterial({ roughness: .9, metalness: 0, side: THREE.DoubleSide, alphaTest: .45 });
@@ -40,13 +40,14 @@ export function createGrass({ scene, world, mask, quality = 0, reach = 40, cell 
   const sway = v.mul(v), phase = h.mul(6.28), gust = sin(time.mul(.35).add(phase.mul(.2))).mul(.5).add(.8);
   m.positionNode = positionLocal.add(vec3(sin(time.mul(1.7).add(phase)).mul(.09).mul(sway).mul(gust), float(0), cos(time.mul(1.3).add(phase)).mul(.06).mul(sway).mul(gust)));
   const mesh = new THREE.InstancedMesh(clump(), m, N); mesh.count = 0; mesh.frustumCulled = false; mesh.receiveShadow = true; scene.add(mesh);
+  const NF = quality >= 3 ? 0 : quality >= 2 ? 5000 : 12000, farMesh = new THREE.InstancedMesh(mesh.geometry, m, Math.max(1, NF)); farMesh.count = 0; farMesh.frustumCulled = false; scene.add(farMesh);
   // Where a clump may not grow: under anything solid near the ground (rasterised once, half-metre cells).
   const fence = world.fence || [-56, 100, -62, 72], G = .5, gx0 = fence[0] - 14, gz0 = fence[2] - 14, gw = Math.ceil((fence[1] - fence[0] + 28) / G), gh = Math.ceil((fence[3] - fence[2] + 28) / G);
   const blocked = new Uint8Array(gw * gh);
   for (const b of world.solids) { if (b.bottom > 1.2 || b.top < .15 || b.maxX - b.minX > 60 || b.maxZ - b.minZ > 60) continue;
     for (let j = Math.max(0, Math.floor((b.minZ - gz0) / G)); j <= Math.min(gh - 1, Math.floor((b.maxZ - gz0) / G)); j++) for (let i = Math.max(0, Math.floor((b.minX - gx0) / G)); i <= Math.min(gw - 1, Math.floor((b.maxX - gx0) / G)); i++) blocked[j * gw + i] = 1; }
   for (const c of world.ceilingsList || []) for (let j = Math.max(0, Math.floor((c[2] - gz0) / G)); j <= Math.min(gh - 1, Math.floor((c[3] - gz0) / G)); j++) for (let i = Math.max(0, Math.floor((c[0] - gx0) / G)); i <= Math.min(gw - 1, Math.floor((c[1] - gx0) / G)); i++) blocked[j * gw + i] = 1;
-  const isBlocked = (x, z) => { const i = Math.floor((x - gx0) / G), j = Math.floor((z - gz0) / G); return i < 0 || j < 0 || i >= gw || j >= gh || blocked[j * gw + i] === 1; };
+  const isBlocked = (x, z) => { const i = Math.floor((x - gx0) / G), j = Math.floor((z - gz0) / G); return i >= 0 && j >= 0 && i < gw && j < gh && blocked[j * gw + i] === 1; };   // beyond the site grid: open country
   const hsh = (x, z, k) => { const s = Math.sin(x * 12.9898 + z * 78.233 + k * 37.719) * 43758.5453; return s - Math.floor(s); };
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), p = new THREE.Vector3(), sc = new THREE.Vector3();
   const step = Math.sqrt((reach * 2) ** 2 / N) * .9;
@@ -59,10 +60,20 @@ export function createGrass({ scene, world, mask, quality = 0, reach = 40, cell 
       const covered = world.inCover?.(wx, wz), green = covered ? 1 : mask.grass(wx, wz);
       if (hsh(i, j, 3) > green * 1.15 - .05 || isBlocked(wx, wz)) continue;
       const fade = Math.min(1, (reach - d) / 8), tall = covered ? 1.05 + hsh(i, j, 4) * .45 : .3 + hsh(i, j, 4) * .45 * (.6 + green * .6);
-      q.setFromAxisAngle(up, hsh(i, j, 5) * 6.28); sc.set(.8 + hsh(i, j, 6) * .6, tall * fade, .8 + hsh(i, j, 6) * .6); p.set(wx, 0, wz);
+      q.setFromAxisAngle(up, hsh(i, j, 5) * 6.28); sc.set(.8 + hsh(i, j, 6) * .6, tall * fade, .8 + hsh(i, j, 6) * .6); p.set(wx, world.heightAt ? world.heightAt(wx, wz) : 0, wz);
       m4.compose(p, q, sc); mesh.setMatrixAt(n++, m4);
     }
     mesh.count = n; mesh.instanceMatrix.needsUpdate = true;
+    // The far ring: fewer, bigger clumps out to `far` metres, so the meadows stay grassy to the hills.
+    let k = 0; const fstep = step * 2.6;
+    const fi0 = Math.floor((x - far) / fstep), fi1 = Math.ceil((x + far) / fstep), fj0 = Math.floor((z - far) / fstep), fj1 = Math.ceil((z + far) / fstep);
+    for (let j = fj0; j <= fj1 && k < NF; j++) for (let i = fi0; i <= fi1 && k < NF; i++) {
+      const wx = (i + hsh(i, j, 11)) * fstep, wz = (j + hsh(i, j, 12)) * fstep, d = Math.hypot(wx - x, wz - z); if (d > far || d < reach - 6) continue;
+      const green = mask.grass(wx, wz); if (hsh(i, j, 13) > green * 1.1 - .1 || isBlocked(wx, wz)) continue;
+      const fade = Math.min(1, (far - d) / 25, (d - reach + 6) / 6); q.setFromAxisAngle(up, hsh(i, j, 15) * 6.28); const sz = (1.6 + hsh(i, j, 16)) * fade;
+      sc.set(sz * 1.4, sz * (.5 + green * .35), sz * 1.4); p.set(wx, world.heightAt ? world.heightAt(wx, wz) : 0, wz); m4.compose(p, q, sc); farMesh.setMatrixAt(k++, m4);
+    }
+    farMesh.count = k; farMesh.instanceMatrix.needsUpdate = true;
   }
   function update(focus) {
     const nx = Math.round(focus.x / cell) * cell, nz = Math.round(focus.z / cell) * cell;
