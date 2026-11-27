@@ -24,7 +24,10 @@ export const PROPS = ['barrel_02', 'modular_airduct_rectangular_01', 'covered_ca
   'concrete_road_barrier_02', 'industrial_wall_lamp', 'old_military_compressor', 'portable_welding_cart', 'metal_toolbox', 'wooden_bucket_02', 'wicker_basket_01',
   'tire_pump', 'ladder_sectioned_01', 'can_rusted', 'oil_tin', 'plastic_crate_02', 'metal_jerrycan_green', 'rusted_wheel_rim_02', 'wooden_broom', 'multi_cleaner_5_litre',
   'korean_fire_extinguisher_01', 'medical_box', 'drawer_cabinet', 'metal_stool_02', 'wooden_military_crate', 'plastic_bottle_gallon', 'street_lamp_02',
-  'dead_tree_trunk_02', 'tree_stump_02', 'wall_clock'];
+  'dead_tree_trunk_02', 'tree_stump_02', 'wall_clock',
+  // vegetation
+  'fern_02', 'dandelion_01', 'celandine_01', 'grass_bermuda_01', 'shrub_sorrel_01', 'wild_rooibos_bush', 'searsia_lucida', 'shrub_03', 'pine_roots',
+  'root_cluster_01', 'rock_moss_set_02', 'stone_01', 'rock_07', 'tree_small_02', 'bark_debris_01', 'periwinkle_plant', 'pine_sapling_small'];
 export const GAME_PROPS = ['chipped-granite-trough-v001', 'plain-limestone-trough-v001', 'plain-iron-gurney-v001', 'worn-iron-gurney-v002', 'plain-iron-operating-table-v001',
   'old-iron-operating-table-v002', 'weathered-wood-cart-v001', 'sturdy-wood-cart-v001', 'weathered-wood-barricade-v001', 'plain-wood-barricade-v001', 'old-iron-drainpipe-v001',
   'worn-iron-cell-door-v001', 'sturdy-wood-table-v001'];
@@ -69,6 +72,8 @@ export async function loadAssets({ renderer, onProgress } = {}) {
     for (const name of d.modly || []) jobs.push(load('modly:' + name, `${BASE}modly/${name}.glb`)); }), 'site.json', true));
   jobs.push(track(textures.loadAsync(BASE + 'site-lightmap.webp').then(t => { t.channel = 1; t.colorSpace = THREE.SRGBColorSpace; t.flipY = false; lightmap = t; }).catch(() => {}), 'lightmap'));
   for (const name of PROPS) jobs.push(load(name, `${BASE}props/${name}.glb`));
+  // The ground's photo-scanned surfaces, blended at run time (ground.js).
+  for (const name of ['aerial_grass_rock', 'dry_ground_01', 'brown_mud_leaves_01', 'gravel_floor_02']) { jobs.push(map('ground/' + name, 'diff', true)); jobs.push(map('ground/' + name, 'nor', false)); }
   for (const name of GAME_PROPS) jobs.push(load(name, `/assets/world-props/${name}.glb`));
   // (The older code-built yard's tiling surfaces, SURFACES, are no longer loaded: the site carries its own materials.)
   let sky = null;

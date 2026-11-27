@@ -24,7 +24,10 @@ DETAIL = {'overhead_crane': 18000, 'modular_fire_escape': 14000, 'exterior_airco
           'bench_vice_01': 2500, 'metal_toolbox': 2500, 'wooden_bucket_02': 2000, 'wicker_basket_01': 3000, 'tire_pump': 2000, 'ladder_sectioned_01': 3000,
           'can_rusted': 800, 'oil_tin': 1000, 'plastic_crate_02': 1500, 'metal_jerrycan_green': 1500, 'rusted_wheel_rim_02': 2500, 'wooden_broom': 1200,
           'multi_cleaner_5_litre': 1000, 'korean_fire_extinguisher_01': 2000, 'medical_box': 1200, 'drawer_cabinet': 3000, 'metal_stool_02': 2000,
-          'wooden_military_crate': 2500, 'plastic_bottle_gallon': 1000, 'street_lamp_02': 4000, 'dead_tree_trunk_02': 6000, 'tree_stump_02': 4000, 'wall_clock': 1000}
+          'wooden_military_crate': 2500, 'plastic_bottle_gallon': 1000, 'street_lamp_02': 4000, 'dead_tree_trunk_02': 6000, 'tree_stump_02': 4000, 'wall_clock': 1000,
+          'fern_02': 1500, 'dandelion_01': 600, 'celandine_01': 800, 'grass_bermuda_01': 900, 'shrub_sorrel_01': 1200, 'wild_rooibos_bush': 2000,
+          'searsia_lucida': 2500, 'shrub_03': 2400, 'pine_roots': 2500, 'root_cluster_01': 2500, 'rock_moss_set_02': 3000, 'stone_01': 800,
+          'rock_07': 1500, 'moss_01': 1200, 'tree_small_02': 6000, 'bark_debris_01': 1200, 'periwinkle_plant': 1000, 'pine_sapling_small': 2500}
 def export(name, limit=14000):
     limit = DETAIL.get(name, LIMITS.get(name, limit))
     if name in DETAIL and DETAIL[name] < 9000:

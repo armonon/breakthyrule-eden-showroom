@@ -53,5 +53,9 @@ export const TUNE = {
   // saves you. Mounted: the first blast that reaches you shakes you, the second (while still shaken) throws you.
   blast: { fuse: 1.9, radius: 6.5, lethal: 2.6, scatter: 15, scatterSeconds: 4, damageFoot: 34, damageRide: 8, recover: 9, threatRange: 45 },          // a hit this hard or harder throws you off the cow
   camera: { follow: true, followDelay: .6, rideBack: 6.2, rideUp: 3.3, herdBack: 9, herdUp: 8, herdFull: 14 },   // the wide view is fully out at `herdFull` cows
+  // Cardboard boxes to wear: where they lie (x, y, z, yaw); still, you are invisible; moving, guards see the box at
+  // this fraction of their usual range and grow suspicious more slowly.
+  boxes: { spots: [[97.5, 0, 27.2, 0], [50.5, 0, 26.2, .3], [66.5, 0, -36.5, 1], [-31, 1.3, 15, 0], [-18, 0, 5.5, .5], [70, 0, 64.5, 0], [-16.6, 0, -57.5, 0], [12, 0, -8, 0], [88, 0, 45, 0], [3.5, 0, 40, 1.2]],
+    still: .35, sightMoving: .35, alertMoving: .55 },
   finish: { linger: 5, par: 900 },     // par: seconds for the quick-run rating; linger: seconds after you reach safety before the count is final
 };
