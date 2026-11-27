@@ -47,7 +47,8 @@ export function createFoot({ scene, world, onEffect }) {
     state.forward.set(Math.sin(p.yaw), 0, Math.cos(p.yaw)); state.velocity.set(v.x, p.vy || 0, v.z);
     // How far you can be heard, 0..1: nothing standing still or creeping, everything at a sprint or a landing.
     // In a hay pile and not sprinting: out of sight entirely.
-    state.hidden = !!world.inHay?.(p.x, p.z) && state.speed < 4.2 && p.y < 2;
+    // Hidden: in hay, or crouched in tall grass.
+    state.hidden = (!!world.inHay?.(p.x, p.z) && state.speed < 4.2 && p.y < 2) || (state.crouched && p.y < .6 && !!world.inCover?.(p.x, p.z));
     state.climbing = CLIMBS.has(p.movement) || p.movement === 'bar' || p.movement === 'wallrun';
     state.noise = state.hidden ? 0 : state.speed < .3 ? 0 : state.crouched ? .12 : p.movement === 'slide' ? .5 : state.speed > 4.6 ? .85 : .38;
   }
@@ -209,7 +210,7 @@ export function createFoot({ scene, world, onEffect }) {
     const want = moving > .4 ? Math.atan2(v.x, v.z) : bodyYaw ?? state.yaw;
     if (tick < faceUntil) bodyYaw = faceYaw;   // a punch or a guard holds the body on its target
     else if (M?.turnBody) ({ yaw: bodyYaw, turning } = M.turnBody(bodyYaw, turning, want, moving, dt)); else bodyYaw = want;
-    person.root.position.set(state.x, state.y, state.z); person.root.rotation.y = bodyYaw;
+    person.root.position.set(state.x, state.y, state.z); person.root.rotation.y = bodyYaw; state.facing = bodyYaw;   // the way the body faces (the camera follows it)
     const dive = m.dive ? Math.min(1, m.dive.t * 4) : m.proneT > 0 ? Math.min(1, m.proneT / .4) : 0, slide = m.slide?.kind === 'slide' && !m.slide.belly ? 1 - m.slide.t / m.slide.dur : 0;
     const drop = m.crouchAmount * .55 + (m.dive ? Math.min(1, m.dive.t * 5) * .55 : 0) + (m.proneT > 0 ? Math.min(1, m.proneT / .25) * .75 : 0);
     let traversal = m.traversal();

@@ -59,6 +59,10 @@ material('grass', 'withered_grass', 6, color=(.62, .64, .55))
 material('mud', 'brown_mud_leaves_01', 2.5, color=(.62, .56, .5), rough=.36)
 material('tracks', 'muddy_tracks', 3, color=(.7, .66, .62), rough=.5)
 material('water', None, color=(.025, .04, .045), rough=.03, metal=0)
+material('container_red', 'corrugated_iron_02', 1.6, color=(.62, .2, .14), rough=.55)
+material('container_blue', 'corrugated_iron_02', 1.6, color=(.2, .32, .46), rough=.55)
+material('container_green', 'corrugated_iron_02', 1.6, color=(.24, .38, .27), rough=.55)
+material('container_rust', 'rusty_corrugated_iron', 1.6, color=(.8, .7, .62))
 material('road', 'asphalt_02', 4) if os.path.exists(f'{WORK}/tex/asphalt_02-diff.jpg') else material('road', 'hangar_concrete_floor', 4, color=(.55, .55, .55))
 material('gravel', 'gravel_floor_02', 3, color=(.6, .6, .6))
 material('apron', 'hangar_concrete_floor', 4, color=(.85, .84, .82))
@@ -371,8 +375,8 @@ box('barrier-post', (-8.3, 0, -61.2), (-7.7, 1.1, -60.6), 'yellow')
 
 # ---- the main building
 openN = [(-4, 4, 0, 5.2), (8, 12, 1.1, 2.3, 'glass'), (14, 18, 1.1, 2.3, 'glass'), (20, 24, 1.1, 2.3, 'glass')]
-openE = [(15, 16.8, 0, 2.3), (30, 32.6, 0, 2.6)]                                # staff door, race door into the pen
-openW = [(10, 14, 1.3, 4.6), (18, 22, 1.3, 4.6), (28, 30, 2.5, 3.5, 'glass')]  # dock shutters (at dock height), a window
+openE = [(15, 16.8, 0, 2.3), (20, 21.3, 0, 1.3), (30, 32.6, 0, 2.6)]              # staff door, a crawl hole, race door into the pen
+openW = [(10, 14, 1.3, 4.6), (18, 22, 1.3, 4.6), (28, 30, 2.5, 3.5, 'glass'), (32.5, 33.8, 0, 1.3)]  # dock shutters (at dock height), a window, a crawl hole
 openS = [(-21, -17, 0, 3.4), (12, 13.6, 0, 2.3)]                                # chiller loadout, rear door
 wall('x', BZ0, BX0, BX1, H, T, 'blockwall', openN, skin=-1, name='north')
 wall('x', BZ1, BX0, BX1, H, T, 'blockwall', openS, skin=1, name='south')
@@ -615,7 +619,7 @@ for i, x in enumerate((38, 45.5)):
     cyl('silo', (x, 2.2, 58), (x, 13, 58), 3.0, 'galv', 24); cyl('silo-top', (x, 13, 58), (x, 15.4, 58), 3.0, 'galv', 24, r2=.3)
     cyl('silo-hopper', (x, .9, 58), (x, 2.2, 58), .5, 'galv', 16, r2=3.0)
     for a in range(4): box('silo-leg', (x + math.cos(a * math.pi / 2 + .78) * 2.4 - .1, 0, 58 + math.sin(a * math.pi / 2 + .78) * 2.4 - .1), (x + math.cos(a * math.pi / 2 + .78) * 2.4 + .1, 2.4, 58 + math.sin(a * math.pi / 2 + .78) * 2.4 + .1), 'galv', group='kit', solid=False)
-    solid_only((x - 3, 0, 55), (x + 3, 15, 61), surface=False)
+    solid_only((x - 3, 0, 55), (x + 3, 15, 61), surface=True)   # the top is somewhere to stand
 cyl('blood-tank', (-2, 1.3, 53), (8, 1.3, 53), 1.25, 'galv', 20); solid_only((-2, 0, 51.7), (8, 2.6, 54.3), surface=True)
 for x in (14, 18.5):
     box('skip', (x, 0, 50.4), (x + 3.6, 1.6, 52.4), 'rust', group='kit');
@@ -761,6 +765,119 @@ for (n, x, z, yaw, m) in (('meat-trolley', -14, 33.2, .3, 35), ('meat-trolley', 
 for (x, z) in ((-29, 14), (-29.6, 14.4), (-31, 20)): loose_modly('carton-boxed-beef', x, z, R.uniform(0, 3), 1.0, 14, 1.3)
 loose_modly('pallet-jack', -32, 18, 1.2, 1.0, 60, 1.3)
 
+# ================================================================================================ the parkour layer
+# The site is built to be crossed off the ground. Every area has a high route and a low one: the lane gantry from the
+# staff gate over the pens to the hall roof, beams over the kill floor to drop on guards from, a container yard to
+# run across, an awning over the dock, silos to climb and leap from into hay, a hay barn with a loft and a walkable
+# roof, a water tower to look out from, crawl holes into the hall too low for anyone standing, and tall grass along
+# the fences to move through unseen.
+EXTRA_GRIPS, EXTRA_HAY, COVER, COW_WALLS = [], [], [], []
+def ladder(x0, z0, x1, z1, top, rungs_along='x'):
+    # A ladder is a climbable block (the free-climb takes it) with rails and rungs drawn on it.
+    solid_only((x0, 0, z0), (x1, top, z1), surface=True)
+    for i in range(int(top / .3)):
+        box('ladder-rung', (x0, .25 + i * .3, z0), (x1, .29 + i * .3, z1), 'steel', group='kit', solid=False)
+    for (a, b) in (((x0, z0), (x0 + .05, z0 + .05)), ((x1 - .05, z1 - .05), (x1, z1))): box('ladder-rail', (a[0], 0, a[1]), (b[0], top + .9, b[1]), 'steel', group='kit', solid=False)
+def deck(x0, z0, x1, z1, y, key='grate', rail=True):
+    box('deck', (x0, y - .12, z0), (x1, y, z1), key)
+    if rail:   # a hand rail you can vault, not a wall
+        for (a, b, c, d) in ((x0, z0, x1, z0), (x0, z1, x1, z1)) if (x1 - x0) > (z1 - z0) else ((x0, z0, x0, z1), (x1, z0, x1, z1)):
+            cyl('deck-rail', (a, y + 1.0, b), (c, y + 1.0, d), .03, 'galv', 6)
+def posts(points, y, key='galv', r=.1):
+    for (x, z) in points: box('post', (x - r, 0, z - r), (x + r, y, z + r), key, group='kit')
+# -- the lane gantry: a feed conveyor walkway at 4.4 m from the staff gate to the hall, frames over the alleys
+GY = 4.4
+for fx in (31.4, 52, 72, 92, 97.4):
+    posts([(fx, 23.7), (fx, 36.3)], GY + .3)
+    box('gantry-frame', (fx - .12, GY - .32, 23.6), (fx + .12, GY - .12, 36.4), 'galv', group='kit', solid=False)
+deck(31, 29.3, 97.8, 30.7, GY)
+for x in range(32, 98, 4): cyl('gantry-truss', (x, GY - .12, 29.3), (x + 2, GY - 1.1, 29.3), .035, 'galv', 6); cyl('gantry-truss', (x + 2, GY - 1.1, 30.7), (x + 4, GY - .12, 30.7), .035, 'galv', 6)
+box('conveyor', (31, GY + .05, 29.45), (97.8, GY + .35, 29.85), 'blackrubber', group='kit', solid=False)
+ladder(97.6, 30.75, 98.2, 31.35, GY)                                    # up from the staff gate
+for (x, z) in ((52, 25.2), (72, 34.8), (92, 25.2)): EXTRA_GRIPS.append({'type': 'rope', 'x': x, 'z': z, 'top': GY - .3, 'len': 3.6})
+for x in (41, 62.5, 83): EXTRA_GRIPS.append({'type': 'bar', 'a': [x, GY - .55, 24.2], 'b': [x, GY - .55, 28.8]}); EXTRA_GRIPS.append({'type': 'bar', 'a': [x, GY - .55, 31.2], 'b': [x, GY - .55, 35.8]})
+# West end: scaffolding against the hall up to the eave.
+posts([(27.1, 24.2), (30.5, 24.2), (27.1, 28.4), (30.5, 28.4)], 6.7, 'galv', .05)
+deck(27, 24.1, 30.6, 28.5, GY, 'planks', rail=False); deck(27, 24.1, 30.6, 28.5, 6.6, 'planks', rail=False)
+ladder(30.0, 24.2, 30.6, 24.8, 6.6)
+# -- the container yard (north-east of the road): stacks of one, two and three, gaps to jump, lanes to hide in
+CONT = []
+def container(x0, z0, along, level, key):
+    L, W, Hc = 6.06, 2.44, 2.59
+    x1, z1 = (x0 + L, z0 + W) if along == 'x' else (x0 + W, z0 + L)
+    box('container', (x0, level * Hc, z0), (x1, level * Hc + Hc, z1), key)
+    for i in range(1, 6):   # door bars and corner castings for scale
+        t = i / 6
+        if along == 'x': box('container-rib', (x0 + (x1 - x0) * t - .03, level * Hc + .1, z0 - .03), (x0 + (x1 - x0) * t + .03, level * Hc + Hc - .1, z0), 'steel', group='kit', solid=False)
+        else: box('container-rib', (x0 - .03, level * Hc + .1, z0 + (z1 - z0) * t - .03), (x0, level * Hc + Hc - .1, z0 + (z1 - z0) * t + .03), 'steel', group='kit', solid=False)
+    CONT.append((x0, z0, x1, z1, level))
+for (x0, z0, along, n, keys) in (
+        (56, -52, 'x', 2, ('container_red', 'container_blue')), (63, -52, 'x', 1, ('container_rust',)), (70, -52, 'x', 3, ('container_green', 'container_red', 'container_blue')),
+        (58, -47, 'x', 1, ('container_blue',)), (65.6, -47, 'x', 2, ('container_rust', 'container_green')), (73.2, -47, 'x', 1, ('container_red',)),
+        (56, -40, 'z', 2, ('container_green', 'container_rust')), (60.8, -38, 'z', 1, ('container_red',)), (76.5, -42, 'z', 2, ('container_blue', 'container_green')), (67, -36, 'x', 1, ('container_rust',))):
+    for lv in range(n): container(x0, z0, along, lv, keys[lv])
+deck(76.06, -51.2, 79.2, -50.4, 7.77, 'planks', rail=False)            # a plank out from the top of the three-high
+deck(66.6, -49.56, 67.4, -47, 5.18, 'planks', rail=False)              # and one across between rows
+ladder(55.4, -50.6, 56, -50, 5.18); ladder(76.5, -42.6, 77.1, -42, 5.18)
+EXTRA_GRIPS.append({'type': 'bar', 'a': [69.3, 4.0, -51.5], 'b': [69.3, 4.0, -49.9]})
+# -- the dock awning: a roof over the loading bay to run along, a pipe up its end post
+posts([(-35.8, 6.2), (-35.8, 16), (-35.8, 25.8)], 4.2, 'galv', .08)
+box('dock-awning', (-36.4, 4.2, 5.6), (BX0 - .2, 4.38, 26.4), 'roof')
+EXTRA_GRIPS.append({'type': 'pipe', 'x': -36.85, 'z': 25.8, 'y0': .2, 'y1': 4.38 + 1.35, 'n': [-1, 0]})
+# -- the silos: a caged ladder up the west one, a walkway between their tops, and hay below to leap into
+EXTRA_GRIPS.append({'type': 'pipe', 'x': 34.75, 'z': 58, 'y0': .2, 'y1': 15 + 1.35, 'n': [-1, 0]})
+for y in range(3, 15, 1): cyl('silo-cage', (34.5, y, 57.4), (34.5, y, 58.6), .025, 'galv', 6)
+deck(41, 57.3, 42.5, 58.7, 15.0, 'grate', rail=True)
+EXTRA_HAY.append([51.5, 58, 2.1])
+# -- the hay barn (north of the south pens): open front, a loft at the back, a roof you can walk
+BB0, BB1, BZa, BZb = 58, 84, 58.5, 70
+posts([(x, z) for x in (58, 64.5, 71, 77.5, 84) for z in (58.5, 70)], 7.6, 'planks', .14)
+wall('x', BZb + .15, BB0, BB1, 7.4, .2, 'cladding', name='barn'); wall('z', BB0 - .15, BZa + 4, BZb, 6, .2, 'cladding', name='barn'); wall('z', BB1 + .15, BZa + 4, BZb, 6, .2, 'cladding', name='barn')
+deck(BB0, 64, BB1, BZb, 3.6, 'planks', rail=True)
+for i in range(6): box('bale', (79 - i * 1.1, 0, 60.5), (80.2 - i * 1.1, .6 * (i + 1), 61.6), 'hay')   # bales stacked as steps to the loft
+for (x, z) in ((62, 66), (66, 68), (74, 67)): box('bale', (x - 1.1, 3.6, z - .5), (x + 1.1, 4.2, z + .5), 'hay')
+ladder(BB0 + .3, 63.4, BB0 + .9, 64.0, 3.6)
+# Roof: a monopitch from 7.6 at the back to 6.4 at the front, walked as terraces.
+pitch_b = math.atan2(1.2, BZb - BZa)
+obox('barn-roof', ((BB0 + BB1) / 2, 7.0 + .1, (BZa + BZb) / 2), ((BB1 - BB0) / 2 + .5, .06, (BZb - BZa) / 2 / math.cos(pitch_b) + .4), rot_x(pitch_b), 'roof', group='arch')
+for i in range(5):
+    za, zb = BZa - .4 + (BZb - BZa + .8) * i / 5, BZa - .4 + (BZb - BZa + .8) * (i + 1) / 5; top = 6.4 + 1.2 * (i + .5) / 5 + .16
+    ROOF_STEPS.append([BB0 - .5, BB1 + .5, round(za, 2), round(zb, 2), round(top, 3), round(top - .3, 3)])
+CEILINGS.append([BB0, BB1, BZa, BZb, 6.2]); INTERIORS.append([BB0, BB1, BZa, BZb])
+EXTRA_GRIPS.append({'type': 'pipe', 'x': BB1 + .45, 'z': 58.5, 'y0': .2, 'y1': 6.6 + 1.35, 'n': [1, 0]})
+EXTRA_GRIPS.append({'type': 'rope', 'x': 70, 'z': 61.5, 'top': 6.2, 'len': 4.8})
+EXTRA_HAY += [[67, 61.5, 1.6], [61.5, 66.5, 1.5]]
+# -- the water tower: a lookout over the farm and the yard
+WX, WZ = 93, 64
+posts([(WX - 2, WZ - 2), (WX + 2, WZ - 2), (WX - 2, WZ + 2), (WX + 2, WZ + 2)], 8, 'rust', .12)
+for y in (2.6, 5.3): cyl('tower-brace', (WX - 2, y, WZ - 2), (WX + 2, y + 2.5, WZ - 2), .04, 'rust', 6); cyl('tower-brace', (WX + 2, y, WZ + 2), (WX - 2, y + 2.5, WZ + 2), .04, 'rust', 6)
+deck(WX - 2.8, WZ - 2.8, WX + 2.8, WZ + 2.8, 8.0, 'grate', rail=True)
+cyl('tower-tank', (WX, 8.0, WZ), (WX, 11.4, WZ), 2.1, 'galv', 20); solid_only((WX - 1.5, 8, WZ - 1.5), (WX + 1.5, 11.4, WZ + 1.5), surface=True)
+EXTRA_GRIPS.append({'type': 'pipe', 'x': WX - 3.05, 'z': WZ, 'y0': .2, 'y1': 8 + 1.35, 'n': [-1, 0]})
+EXTRA_HAY.append([88.5, 60, 1.8])
+# -- inside the hall: walkable beams on the trusses over the kill floor (headroom only towards the ridge), a beam
+# along the ridge joining them, and a pipe up from the catwalk; from up there you drop onto whoever walks below
+for z in range(3, 48, 6): box('truss-beam', (-13.5, 6.86, z - .14), (13.5, 7.0, z + .14), 'steel', group='kit')
+box('ridge-beam', (-.14, 6.86, 2.6), (.14, 7.0, 45.4), 'steel', group='kit')
+EXTRA_GRIPS.append({'type': 'pipe', 'x': -12.0, 'z': 2.85, 'y0': 3.25, 'y1': 7.0 + 1.3, 'n': [0, -1]})
+EXTRA_GRIPS.append({'type': 'pipe', 'x': 6.2, 'z': 9.0, 'y0': 3.3, 'y1': 7.0 + 1.3, 'n': [1, 0]})   # from the office roof
+# -- crawl holes: a short duct round each; a cow cannot follow (a wall for the herd only)
+for (x0, x1, z0, z1) in ((BX1 - .3, BX1 + .9, 20, 21.3), (BX0 - .9, BX0 + .3, 32.5, 33.8)):
+    COW_WALLS.append([x0, x1, z0, z1])
+    box('duct', (x0, 1.3, z0 - .1), (x1, 1.42, z1 + .1), 'galv', group='kit', solid=False)
+    box('duct', (x0, 0, z0 - .12), (x1, 1.42, z0 - .02), 'galv', group='kit', solid=False); box('duct', (x0, 0, z1 + .02), (x1, 1.42, z1 + .12), 'galv', group='kit', solid=False)
+# -- rooftop plant on the hall: units to hide behind up there (searchlights sweep the roof)
+for (x, z) in ((-8, 16), (8, 38), (-15, 40), (16, 22)):
+    ry = RIDGE - abs(x) / (BX1 + .6) * (RIDGE - H) + .16
+    box('roof-unit', (x - 1.1, ry - .3, z - 1.4), (x + 1.1, ry + 1.4, z + 1.4), 'galv'); box('roof-fan', (x - .7, ry + 1.4, z - .7), (x + .7, ry + 1.55, z + .7), 'grate', group='kit', solid=False)
+# -- tall grass along the fences: crouched in it, nobody sees you
+COVER += [[96.6, 99.6, 38, 71.5], [30, 99.6, -61.6, -57.4], [-55.6, -51, -60, 70], [-46, 26, 67.5, 71.6], [91, 99.6, 3, 21]]
+for (x0, x1, z0, z1) in COVER:
+    n = int((x1 - x0) * (z1 - z0) * .55); rr = random.Random(int(x0 * 7 + z0))
+    for i in range(n):
+        x, z = rr.uniform(x0, x1), rr.uniform(z0, z1)
+        SCATTER.setdefault('grass_medium_01' if i % 2 else 'grass_medium_02', []).append([round(x, 2), 0, round(z, 2), round(rr.uniform(0, math.tau), 2), round(rr.uniform(2.2, 2.9), 2)])
+
 # Freerunning: drainpipes to the eaves on every side, a rope from the trusses, bars across the yard; hay to leap into
 # and hide in. parkour.js reads GRIPS (the same format as parkour-grips.js).
 GRIPS = [
@@ -773,7 +890,7 @@ GRIPS = [
     {'type': 'rope', 'x': -6, 'z': 30, 'top': H - .2, 'len': 5.6},
     {'type': 'rope', 'x': 0, 'z': 14, 'top': H - .2, 'len': 5.6},
     {'type': 'bar', 'a': [26.6, 3.0, -14], 'b': [29.4, 3.0, -14]}, {'type': 'bar', 'a': [26.6, 3.0, -17], 'b': [29.4, 3.0, -17]},
-]
+] + EXTRA_GRIPS
 for g in GRIPS:
     if g['type'] == 'pipe':
         cyl('grip-pipe', (g['x'], 0, g['z']), (g['x'], g['y1'] + .1, g['z']), .06, 'pipe_grey', 10)
@@ -783,7 +900,7 @@ for g in GRIPS:
     else:
         cyl('grip-bar', g['a'], g['b'], .035, 'stainless', 8)
         for p in (g['a'], g['b']): box('grip-post', (p[0] - .06, 0, p[2] - .06), (p[0] + .06, p[1] + .1, p[2] + .06), 'steel', group='kit')
-HAY = [[28.8, 19, 1.9], [-38.5, 31, 1.9], [9.5, -3.4, 1.7], [15, 44.5, 1.7], [-28.8, 40, 1.7], [31.5, 56, 1.8], [92.5, 30, 1.8]]
+HAY = [[28.8, 19, 1.9], [-38.5, 31, 1.9], [9.5, -3.4, 1.7], [15, 44.5, 1.7], [-28.8, 40, 1.7], [31.5, 56, 1.8], [92.5, 30, 1.8]] + EXTRA_HAY
 for hx, hz, hr in HAY:
     bm = bmesh.new(); bmesh.ops.create_uvsphere(bm, u_segments=16, v_segments=8, radius=1)
     for v in bm.verts: v.co = Vector((hx + v.co.x * hr, -(hz + v.co.y * hr), max(0, v.co.z * .75 + .12) * 1.1))
@@ -791,14 +908,14 @@ for hx, hz, hr in HAY:
 
 POINTS = {
     'spawn': {'x': FX1 + 9, 'z': 30, 'yaw': -math.pi / 2}, 'cowSpawn': {'x': 16, 'z': 40, 'yaw': -math.pi / 2},
-    'exit': {'x': 0, 'z': -128, 'radius': 18}, 'gateZ': FZ0, 'pens': PENS, 'gates': GATES, 'bounds': [-150, 150, -340, 160],
+    'exit': {'x': 0, 'z': -128, 'radius': 18}, 'cover': COVER, 'cowWalls': COW_WALLS, 'gateZ': FZ0, 'pens': PENS, 'gates': GATES, 'bounds': [-150, 150, -340, 160],
     'pen': PEN, 'gate': {'x': 6, 'z': 34.5, 'half': 2.55}, 'lever': {'x': 5.2, 'z': 31.2},
     'escape': [[9, 34.5], [3, 34.5], [0, 27], [0, 12], [0, -3], [0, -30]],
     'truckStart': {'x': 44, 'z': -40, 'yaw': math.pi},
     'fence': FENCE, 'gateX': GATE,
     'patrols': [
         [[-20, -40], [20, -40], [20, -12], [-20, -12]],
-        [[32, 2], [92, 2], [92, 63.5], [32, 63.5]],
+        [[32, 2], [92, 2], [92, 55.5], [50.5, 55.5], [50.5, 63.5], [32, 63.5]],
         [[-12, -4], [12, -4]],
         [[-22, 8], [-2, 8], [-2, 33], [-22, 33]],
         [[8, 18], [24, 18]],
